@@ -79,6 +79,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $follow_master
  * @property bool $show_in_website
  * @property int|null $webpage_id
+ * @property bool $is_in_website has a live webpage, mirrored into the search index
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
  * @property int|null $top_seller
@@ -88,7 +89,6 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
- * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property bool|null $is_name_reviewed
@@ -115,6 +115,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $showcase_image_id
  * @property bool|null $has_gr_vol_discount
  * @property bool $follow_master_gr
+ * @property bool $not_follow_master_prices
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -175,6 +176,14 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasSearch;
+    protected static function booted(): void
+    {
+        static::saved(function (ProductCategory $productCategory) {
+            if ($productCategory->wasChanged('webpage_id')) {
+                \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($productCategory);
+            }
+        });
+    }
 
     protected $guarded = [];
 
@@ -194,6 +203,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'last_fetched_at'               => 'datetime',
         'offers_data'                   => 'array',
         'mismatch_with_master_detected' => 'boolean',
+        'not_follow_master_prices'      => 'boolean',
     ];
 
     protected $attributes = [
@@ -214,6 +224,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
             'description'       => (string)$this->description,
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
+            'is_in_website'     => (bool) $this->is_in_website,
             'image'             => json_encode(Arr::get($this->web_images, 'main.thumbnail')),
             'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
@@ -230,6 +241,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'code',
         'name',
         'description',
+        'not_follow_master_prices',
+        'follow_master_gr',
     ];
 
     public function getRouteKeyName(): string

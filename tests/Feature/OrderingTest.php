@@ -59,6 +59,7 @@ use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
+use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\StoreTransactionFromAdjustment;
 use App\Actions\Ordering\Transaction\StoreTransactionFromCharge;
@@ -110,6 +111,7 @@ use App\Models\Ordering\Adjustment;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\Ordering\TransactionImport;
 use App\Models\Helpers\Upload;
+use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
@@ -119,6 +121,7 @@ use App\Models\SysAdmin\Permission;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Queue;
@@ -522,6 +525,16 @@ test('update order state to in warehouse', function (Order $order) {
     return $order;
 })->depends('update order state to submitted');
 
+test('update order private warehouse note propagates to delivery note', function (Order $order) {
+    $order = UpdateOrder::make()->action($order, ['private_warehouse_note' => 'fragile, double box']);
+    /** @var DeliveryNote $deliveryNote */
+    $deliveryNote = $order->deliveryNotes()->first();
+    expect($order->private_warehouse_note)->toBe('fragile, double box')
+        ->and($deliveryNote->private_warehouse_note)->toBe('fragile, double box');
+
+    return $order;
+})->depends('update order state to in warehouse');
+
 test('update order state to Handling', function (Order $order) {
     $order = UpdateOrderStateToHandling::make()->action($order);
     $order->refresh();
@@ -645,7 +658,10 @@ test('delete invoice transaction', function (InvoiceTransaction $invoiceTransact
     DeleteInProcessInvoiceTransaction::make()->action($invoiceTransaction);
     $invoice->refresh();
     expect($invoice)->toBeInstanceOf(Invoice::class)
-        ->and($invoice->stats->number_invoice_transactions)->toBe(0);
+        ->and($invoice->stats->number_invoice_transactions)->toBe(0)
+        ->and((float) $invoice->net_amount)->toBe(0.0)
+        ->and((float) $invoice->tax_amount)->toBe(0.0)
+        ->and((float) $invoice->total_amount)->toBe(0.0);
 
     return $invoice;
 })->depends('update invoice transaction');
@@ -808,6 +824,65 @@ test('UI show ordering backlog', function () {
                     ->etc()
             );
     });
+});
+
+test('UI show order navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeOrder = function (string $date, int $netAmount) {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        $order->update(['state' => OrderStateEnum::IN_WAREHOUSE, 'date' => $date, 'net_amount' => $netAmount, 'submitted_at' => null]);
+
+        return $order->refresh();
+    };
+
+    $newest = $makeOrder('2026-07-20 10:00:00', 300);
+    $middle = $makeOrder('2026-07-19 10:00:00', 200);
+    $oldest = $makeOrder('2026-07-18 10:00:00', 100);
+
+    $routeParameters = [$this->organisation->slug, $this->shop->slug, $middle->slug];
+
+    $response = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop');
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    $ascendingByAmount = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=net_amount');
+    $ascendingByAmount->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    $byJoinedColumn = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=-customer_name');
+    $byJoinedColumn->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    $byNullColumn = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=submitted_at');
+    $byNullColumn->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    $withoutBucket = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters));
+    $withoutBucket->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+
 });
 
 test('UI show ordering backlog waiting crm items', function () {
@@ -1714,4 +1789,97 @@ test('transaction import marks rows with missing code or quantity as failed', fu
     $import->storeModel(collect(['code' => $this->product->code]), $missingQuantityRecord);
     expect($missingQuantityRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
         ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
+});
+
+test('recalculating basket totals skips orders that are no longer baskets', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 111.11, 'total_amount' => 111.11]);
+
+    // A bulk run selects baskets when it queues the jobs, but drains for hours. An order submitted
+    // in the meantime must not be repriced from current prices after the fact.
+    \App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket::make()->handle($order->id);
+
+    expect((float) $order->refresh()->net_amount)->toBe(111.11)
+        ->and((float) $order->total_amount)->toBe(111.11)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('bulk basket recalculation skips orders submitted while the job was waiting', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 222.22, 'total_amount' => 222.22]);
+
+    // Offer activation lists baskets then queues one job each with a delay. An order submitted
+    // inside that window must be left alone by both halves of the recalculation.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()
+        ->handle($order, true, true, false, true, true);
+    \App\Actions\Ordering\Order\CalculateOrderDiscounts::make()->handle($order, true);
+
+    expect((float) $order->refresh()->net_amount)->toBe(222.22)
+        ->and((float) $order->total_amount)->toBe(222.22);
+
+    // Without the flag the same call still works on a submitted order, as other callers rely on.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()->handle($order);
+
+    expect((float) $order->refresh()->total_amount)->not->toBe(222.22);
+});
+
+test('invoice totals from a part picked order keep net plus tax equal to the total', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->update(['tax_category_id' => TaxCategory::where('rate', 0.2)->firstOrFail()->id]);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 100]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 3]
+    ));
+    $transaction->update(['gross_amount' => 300, 'net_amount' => 300, 'quantity_bonus' => 0]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    // A partial pick makes the net land on 266.622, where net, tax and total each round differently.
+    DB::table('delivery_note_items')->insert([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'shop_id'           => $order->shop_id,
+        'delivery_note_id'  => $deliveryNote->id,
+        'transaction_id'    => $transaction->id,
+        'state'             => 'picked',
+        'quantity_required' => 100000,
+        'quantity_picked'   => 88874,
+        'data'              => '{}',
+    ]);
+
+    $order->refresh();
+    $order->update(['shipping_amount' => 0, 'charges_amount' => 0, 'amount_off' => 0]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTotals($order, $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(266.62)
+        ->and($totals['tax_amount'])->toBe(53.32)
+        ->and($totals['total_amount'])->toBe(319.94)
+        ->and($totals['net_amount'] + $totals['tax_amount'])->toBe($totals['total_amount']);
 });

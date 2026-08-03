@@ -11,6 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditMasterDepartment extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithMasterDepartmentNavigation;
 
     private MasterShop|Group $parent;
@@ -98,7 +100,7 @@ class EditMasterDepartment extends OrgAction
                                     'options'   => [
                                         'counter'   => true,
                                     ],
-                                    'toogle'  => [
+                                    'toggle'  => [
                                           'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                           'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
                                           'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -111,29 +113,12 @@ class EditMasterDepartment extends OrgAction
                                     'options'   => [
                                         'counter'   => true,
                                     ],
-                                    'toogle'  => [
+                                    'toggle'  => [
                                           'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                           'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
                                           'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value' => $masterProductCategory->description_extra
-                                ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('Pricing'),
-                            'icon'   => 'fa-light fa-money-bill',
-                            'fields' => [
-                                'cost_price_ratio' => [
-                                    'type'          => 'input_number',
-                                    'bind' => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'         => __('Pricing ratio'),
-                                    'placeholder'   => __('Cost price ratio'),
-                                    'required'      => true,
-                                    'value'         => $masterProductCategory->cost_price_ratio,
-                                    'min'           => 0
                                 ],
                             ]
                         ],
@@ -156,9 +141,10 @@ class EditMasterDepartment extends OrgAction
                             'icon'   => 'fa-light fa-question-circle',
                             'fields' => [
                                 'faq' => [
-                                    'type'  => 'faq-master',
-                                    'label' => __('FAQ'),
-                                    'value' => $masterProductCategory->faq,
+                                    'type'                      => 'faq-master',
+                                    'label'                     => __('FAQ'),
+                                    'value'                     => $masterProductCategory->faq,
+                                    'master_product_category_id' => $masterProductCategory->id,
                                 ],
                             ]
                         ],

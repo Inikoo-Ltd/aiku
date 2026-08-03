@@ -26,6 +26,7 @@ import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
 const layout = inject('layout', retinaLayoutStructure)
+const isPriceVisible = computed(() => Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price))
 
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
@@ -37,12 +38,14 @@ const props = withDefaults(defineProps<{
     buttonStyleLogin?: object | undefined
     addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
-    isLoadingFavourite: boolean
-    isLoadingRemindBackInStock: boolean
+    isLoadingFavourite?: boolean
+    isLoadingRemindBackInStock?: boolean
     screenType: string
     hideLogin?:boolean
     routeGettransactionProductData?:routeType
 }>(), {
+    isLoadingFavourite: false,
+    isLoadingRemindBackInStock: false,
     basketButton: true,
     addToBasketRoute: {
         name: 'iris.models.transaction.store',
@@ -87,6 +90,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
 const onClickVariant = (product: ProductResource, event: Event) => {
     emits('onVariantClick', product.variant, event)
 
+}
+
+const goToLogin = () => {
+    window.location.href = urlLoginWithRedirect()
 }
 
 
@@ -176,7 +183,7 @@ defineExpose({
     <div id="product-card-ecom-3" class="text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
-        <div class="text-gray-800 isolate h-full">
+        <div class="text-gray-800 isolate">
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
                 :screenType="screenType" />
 
@@ -196,18 +203,19 @@ defineExpose({
                                 class="mobile-slider flex w-full h-full overflow-x-auto scroll-smooth snap-x snap-mandatory"
                                 @scroll="onScroll">
 
-                                <div v-for="(img, i) in images" :key="i" class="w-full h-full flex-shrink-0 snap-start">
+                                <div v-for="(img, i) in images" :key="i"
+                                    class="relative w-full h-full flex-shrink-0 snap-start">
 
                                     <Image :src="img" :alt="product.name"
-                                        class="w-full h-full select-none pointer-events-none"
-                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                        class="absolute inset-0 w-full h-full select-none pointer-events-none"
+                                        :style="{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
                             </div>
 
                             <!-- SINGLE IMAGE -->
-                            <div v-else class="w-full h-full">
-                                <Image :src="images[0]" :alt="product.name" class="w-full h-full"
-                                    :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                            <div v-else class="relative w-full h-full">
+                                <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                    :style="{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }" />
                             </div>
 
                             <!-- DOTS -->
@@ -230,6 +238,8 @@ defineExpose({
                                 <div class="w-full h-full flex-shrink-0 relative">
                                     <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
                                         :style="{
+                                            width: '100%',
+                                            height: '100%',
                                             objectFit: 'contain',
                                             objectPosition: 'center'
                                         }" />
@@ -239,6 +249,8 @@ defineExpose({
                                 <div v-if="images.length > 1" class="w-full h-full flex-shrink-0 relative">
                                     <Image :src="images[1]" :alt="product.name" class="absolute inset-0 w-full h-full"
                                         :style="{
+                                            width: '100%',
+                                            height: '100%',
                                             objectFit: 'contain',
                                             objectPosition: 'center'
                                         }" />
@@ -292,9 +304,22 @@ defineExpose({
                 <div v-if="layout?.iris?.is_logged_in && product.variant"
                     class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
                     <div class="flex justify-center">
-                        <Button :label="trans('Choose variants')" size="xs"
-                            @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" />
+                        <Button  size="xs"
+                            @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" >
+                        <template #label>
+                            <span>
+                                {{ ctrans('Choose variants') }}
+                            </span>
+                        </template>
+                        </Button>
                     </div>
+                </div>
+
+                <!-- Section: Login (overlay at the bottom of the image) -->
+                <div v-if="!layout?.iris?.is_logged_in && !hideLogin" class="absolute inset-x-0 bottom-2 z-10 px-3">
+                    <Button :label="trans('Login or Register for Wholesale Prices')"
+                        class="w-full rounded-none text-[9px] md:text-[10px] py-1 leading-tight" full
+                        :injectStyle="buttonStyleLogin" @click.prevent.stop="goToLogin" />
                 </div>
 
             </component>
@@ -316,7 +341,7 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <section v-if="layout?.iris?.is_logged_in">
+            <section v-if="isPriceVisible">
                   <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket/>
             </section>
             <section v-else class="text-xs leading-tight space-y-1">
@@ -325,14 +350,10 @@ defineExpose({
                 <div class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
                     <!-- RRP + UNIT  -->
                     <span class="truncate min-w-0 overflow-hidden text-primary">
-                     {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
+                     {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
                     </span>
 
-                </div> 
-                <a  v-if="!hideLogin" :href="urlLoginWithRedirect()" class="block w-full">
-                    <Button :label="trans('Login or Register for Wholesale Prices')"
-                        class="w-full rounded-none text-xs py-2" full :injectStyle="buttonStyleLogin" />
-                </a>
+                </div>
 
             </section>
         </div>

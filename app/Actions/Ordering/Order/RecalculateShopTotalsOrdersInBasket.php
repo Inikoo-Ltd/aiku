@@ -36,10 +36,10 @@ class RecalculateShopTotalsOrdersInBasket implements ShouldBeUnique
         foreach ($shop->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
 
             if ($order->updated_by_customer_at && $order->updated_by_customer_at->isAfter(Carbon::now()->subHours(3))) {
-                CalculateOrderTotalAmounts::dispatch($order, true, true, false, true);
+                CalculateOrderTotalAmounts::dispatch($order, true, true, false, true, true);
             } else {
-                $randomDelay = rand(300, 7200);
-                CalculateOrderTotalAmounts::dispatch($order, true, true, false, false)->delay($randomDelay)->onQueue('hydrators-slave-low-priority');
+                $randomDelay = rand(30, 600);
+                CalculateOrderTotalAmounts::dispatch($order, true, true, false, false, true)->delay($randomDelay)->onQueue('hydrators-slave-low-priority');
             }
         }
     }

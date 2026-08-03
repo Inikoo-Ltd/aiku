@@ -111,7 +111,7 @@ class UpdateMasterProductCategory extends OrgAction
         $grUpdating = false;
         $grDeleting = false;
         if (Arr::has($modelData, 'vol_gr_offer')) {
-            $volGR = Arr::pull($modelData, 'vol_gr_offer');
+            $volGR      = Arr::pull($modelData, 'vol_gr_offer');
             if ($volGR) {
                 data_set($modelData, 'has_gr_vol_discount', true);
                 data_set($modelData, 'gr_vol_discount_percentage', $volGR['percentage_off']);
@@ -156,54 +156,54 @@ class UpdateMasterProductCategory extends OrgAction
             }
         }
 
-        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'faq'])) {
+        if (Arr::has($changed, 'faq')) {
+            CascadeMasterProductCategoryFaqToChildren::dispatch($masterProductCategory);
+        }
+
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
 
             $english      = Language::where('code', 'en')->first();
 
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 $shop = $productCategory->shop;
-                if (!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) {
-                    continue;
-                }
+
+                $followMaster = data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master");
 
                 $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
 
                 // Updates the affected field name using translation if follow_master_{field} is true
+                // Regardless, update is_x_reviewed to false when master is updated, to make it easier to track changes
                 if (Arr::has($changed, 'name')) {
-                    $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage, 'gpt-5-nano');
+                    if ($followMaster) {
+                        $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage, 'gpt-5-nano');
+                    }
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description_title')) {
-                    $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage, 'gpt-5-nano');
+                    if ($followMaster) {
+                        $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage, 'gpt-5-nano');
+                    }
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description')) {
-                    $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage, 'gpt-5-nano');
+                    if ($followMaster) {
+                        $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage, 'gpt-5-nano');
+                    }
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description_extra')) {
-                    $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage, 'gpt-5-nano');
+                    if ($followMaster) {
+                        $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage, 'gpt-5-nano');
+                    }
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'code')) {
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
-                }
-
-                // Temporary setup, auto translate FAQ
-                if (Arr::has($changed, 'faq')) {
-                    if ($shop->language->code != 'en') {
-                        $translatedFaq = Translate::run(json_encode($masterProductCategory->faq), $english, $shopLanguage, 'gpt-5-nano');
-                        if (is_string($translatedFaq)) {
-                            $dataToBeUpdated['faq'] = json_decode($translatedFaq, true);
-                        }
-                    } else {
-                        $dataToBeUpdated['faq'] = $masterProductCategory->faq;
-                    }
                 }
 
                 if ($dataToBeUpdated) {
@@ -306,7 +306,6 @@ class UpdateMasterProductCategory extends OrgAction
                 'min:1',
                 'max:100'
             ],
-            'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
             'faq'                           => ['sometimes', 'array'],
             'faq.*.question'                => ['sometimes', 'nullable', 'string'],

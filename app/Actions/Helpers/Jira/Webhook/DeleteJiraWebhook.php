@@ -7,7 +7,7 @@
 
 namespace App\Actions\Helpers\Jira\Webhook;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Jira\Traits\WithJiraApiRequest;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\Group;
@@ -15,7 +15,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsCommand;
 
-class DeleteJiraWebhook extends GrpAction
+class DeleteJiraWebhook extends OrgAction
 {
     use WithJiraApiRequest;
     use WithActionUpdate;
@@ -49,7 +49,7 @@ class DeleteJiraWebhook extends GrpAction
     public function action(Group $group, array $webhookIds): ?array
     {
         $this->asAction = true;
-        $this->initialisation($group, []);
+        $this->initialisationFromGroup($group, []);
 
         return $this->handle($group, $webhookIds);
     }

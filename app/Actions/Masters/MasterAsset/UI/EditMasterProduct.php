@@ -8,20 +8,28 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\OrgAction;
+use App\Actions\Masters\MasterAsset\TaxPresetBasketProgress;
+use App\Actions\Traits\WithLineTaxCategories;
+use App\Actions\Traits\WithUnitsChangeConfirmation;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\MorphPivot;
 use Lorisleiva\Actions\ActionRequest;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
+use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
-class EditMasterProduct extends GrpAction
+class EditMasterProduct extends OrgAction
 {
     use WithMasterProductNavigation;
+    use WithLineTaxCategories;
+    use WithUnitsChangeConfirmation;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
@@ -30,14 +38,14 @@ class EditMasterProduct extends GrpAction
 
     public function asController(MasterShop $masterShop, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }
 
     public function inGroup(MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterProduct->group, $request);
+        $this->initialisationFromGroup($masterProduct->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -45,7 +53,7 @@ class EditMasterProduct extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartment(MasterAsset $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterProduct->group, $request);
+        $this->initialisationFromGroup($masterProduct->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -53,7 +61,7 @@ class EditMasterProduct extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -61,7 +69,7 @@ class EditMasterProduct extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -75,10 +83,10 @@ class EditMasterProduct extends GrpAction
             'EditModel',
             [
                 'title'       => __('Editing master product').': '.$masterAsset->code,
-                'warning'     => $masterAsset->products ? [
+                'warning'     => $masterAsset->units_review ? [
                     'type'  => 'warning',
-                    'title' => __('Important'),
-                    'text'  => __('Changes to this master name or descriptions will overwrite child product names and descriptions where “Follow Master” is enabled.'),
+                    'title' => __('Units need review'),
+                    'text'  => __('This master product has a units mismatch with its shop products (:bucket) — per-unit prices may be wrong, review before editing.', ['bucket' => $masterAsset->units_review]),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -131,23 +139,83 @@ class EditMasterProduct extends GrpAction
      */
     public function getBlueprint(MasterAsset $masterProduct): array
     {
-        $barcodes = $masterProduct->tradeUnits->pluck('barcode')->filter()->unique();
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) {
+            /** @var MorphPivot $pivot */
+            $pivot = $tradeUnit->getRelationValue('pivot');
 
-        $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
-            return array_merge(
-                ['quantity' => (int)$t->pivot->quantity],
-                ['fraction' => $t->pivot->quantity / $packedIn[$t->id]],
-                ['packed_in' => $packedIn[$t->id]],
-                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity / $packedIn[$t->id])), $packedIn[$t->id])],
-                $t->toArray()
-            );
+            return [
+                'quantity' => (int) $pivot->getAttribute('quantity'),
+                'code'     => $tradeUnit->code,
+            ];
         });
 
+        $currenciesRate = GetMasterShopCurrenciesRate::run($masterProduct->masterShop);
+
+        $costs = null;
+        if ($masterProduct->effective_cost !== null) {
+            $groupCurrency = $masterProduct->group->currency;
+            $currencies    = Currency::whereIn('code', $currenciesRate->keys())->get()->keyBy('code');
+
+            $costs = $currenciesRate->map(function ($rate, $currencyCode) use ($masterProduct, $groupCurrency, $currencies) {
+                $exchange = GetCurrencyExchange::run($groupCurrency, $currencies[$currencyCode]);
+
+                return $exchange ? round((float) $masterProduct->effective_cost * $exchange, 2) : null;
+            });
+        }
+
+        $unitsReview = [
+            'master'   => $masterProduct->units_review,
+            'products' => $masterProduct->products()
+                ->whereNotNull('units_review')
+                ->join('shops', 'shops.id', 'products.shop_id')
+                ->pluck('products.units_review', 'shops.code')
+                ->all(),
+        ];
+        if (!$unitsReview['master'] && !$unitsReview['products']) {
+            $unitsReview = null;
+        }
+
+        $pricesUpdateRoute = [
+            'name'       => 'grp.models.master_asset.prices.update',
+            'parameters' => [
+                'masterAsset' => $masterProduct->id
+            ]
+        ];
+
+        /*
+         * Price and composition are one decision: changing what the product physically is
+         * either scales the price (repackaging) or the composition was wrong and the price
+         * already fits. The price fields live in both sections so nobody saves one half.
+         */
+        $masterPricesField = [
+            'type'         => 'multiple_price_currency',
+            'label'        => __('Price').' / '.__('Outer'),
+            'required'     => true,
+            'currencies'   => $currenciesRate,
+            'value'        => $masterProduct->master_prices,
+            'masterAsset'  => $masterProduct->id,
+            'unitsReview'  => $unitsReview,
+            'updateRoute'  => $pricesUpdateRoute,
+            'noSaveButton' => true,
+            'costs'        => $costs,
+            'units'        => (float) $masterProduct->units,
+            'type_input'   => 'price'
+        ];
+
+        $masterRRPsField = [
+            'type'              => 'multiple_price_currency',
+            'label'             => __('RRP').' / '.__('Unit'),
+            'required'          => true,
+            'currencies'        => $currenciesRate,
+            'value'             => $masterProduct->master_rrps,
+            'masterAsset'       => $masterProduct->id,
+            'unitsReview'       => $unitsReview,
+            'updateRoute'       => $pricesUpdateRoute,
+            'noSaveButton'      => true,
+            'perUnits'          => (float) $masterProduct->units,
+            'counterpartRecord' => $masterProduct->master_prices,
+            'type_input'        => 'rrp'
+        ];
 
         return [
             [
@@ -173,14 +241,6 @@ class EditMasterProduct extends GrpAction
                         ],
                         'value'   => $masterProduct->name
                     ],
-                    /*  'description_title' => [
-                         'type'    => 'input',
-                         'label'   => __('Description title'),
-                         'options' => [
-                             'counter' => true,
-                         ],
-                         'value'   => $masterProduct->description_title
-                     ], */
                     'description'       => [
                         'type'    => 'textEditor',
                         'label'   => __('Description'),
@@ -188,7 +248,7 @@ class EditMasterProduct extends GrpAction
                             'counter' => true,
                         ],
                         'value'   => $masterProduct->description,
-                        'toogle'  => [
+                        'toggle'  => [
                             'heading2',
                             'heading3',
                             'fontSize',
@@ -218,7 +278,7 @@ class EditMasterProduct extends GrpAction
                             'counter' => true,
                         ],
                         'value'   => $masterProduct->description_extra,
-                        'toogle'  => [
+                        'toggle'  => [
                             'heading2',
                             'heading3',
                             'fontSize',
@@ -247,27 +307,8 @@ class EditMasterProduct extends GrpAction
                 'label'  => __('Pricing'),
                 'icon'   => 'fa-light fa-money-bill',
                 'fields' => [
-                    'price'            => [
-                        'type'     => 'input_number',
-                        'label'    => __('Price').'/'.__('outer'),
-                        'required' => true,
-                        'bind'     => [
-                            'minFractionDigits' => 0,
-                            'maxFractionDigits' => 2,
-                        ],
-                        'value'    => $masterProduct->price,
-                    ],
-                    'rrp_per_unit'  => [
-                        'type'     => 'input_number',
-                        'label'    => __('RRP').'/'.__('unit'),
-                        'required' => true,
-                        'bind'     => [
-                            'minFractionDigits' => 0,
-                            'maxFractionDigits' => 2,
-                        ],
-                        'value'    => ($masterProduct->rrp / trimDecimalZeros($masterProduct->units)),
-                        'min'      => 0.01
-                    ],
+                    'master_prices' => $masterPricesField,
+                    'master_rrps'   => $masterRRPsField,
                 ]
             ],
             [
@@ -280,16 +321,34 @@ class EditMasterProduct extends GrpAction
                         'label' => __('Unit label'),
                         'value' => $masterProduct->unit,
                     ],
-                    'barcode' => [
-                        'type'     => 'select',
-                        'label'    => __('Barcode'),
-                        'value'    => $masterProduct->barcode,
-                        'readonly' => $masterProduct->tradeUnits->count() == 1,
-                        'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                            return [$barcode => $barcode];
-                        })->toArray()
-                    ],
 
+                ]
+            ],
+            [
+                'label'  => __('Tax'),
+                'icon'   => 'fa-light fa-percent',
+                'fields' => [
+                    'tax_preset' => [
+                        'type'             => 'tax_preset',
+                        'mode'             => 'card',
+                        'columns'          => 1,
+                        'valueProp'        => 'value',
+                        'label'            => __('Tax treatment'),
+                        'options'          => $this->getTaxPresetOptions($masterProduct->tax_category ?? []),
+                        'master_asset_id'  => $masterProduct->id,
+                        /** Only a sweep still running matters on load; a finished one is history. */
+                        'sweep'            => ($sweep = TaxPresetBasketProgress::get($masterProduct)) && $sweep['state'] != 'finished' ? $sweep : null,
+                        'affected_baskets' => $affectedBaskets = $this->getTaxChangeAffectedBasketCount($masterProduct),
+                        'saveConfirmation' => [
+                            'title'       => __('Change the tax treatment?'),
+                            'description' => trans_choice(
+                                '{0} No open basket holds this product right now. Orders already submitted keep the tax they were sold under.|{1} :count open basket holds this product and will be retaxed. Orders already submitted keep the tax they were sold under.|[2,*] :count open baskets hold this product and will be retaxed. Orders already submitted keep the tax they were sold under.',
+                                $affectedBaskets
+                            ),
+                            'yesLabel'    => __('Yes, change the tax'),
+                        ],
+                        'value'            => $masterProduct->tax_preset ?? 'custom',
+                    ],
                 ]
             ],
             [
@@ -322,45 +381,25 @@ class EditMasterProduct extends GrpAction
                 'label'  => __('Trade units'),
                 'icon'   => 'fa-light fa-atom',
                 'fields' => [
-                    'trade_units' => [
-                        'label'        => __('Trade units'),
-                        'type'         => 'list-selector-trade-unit',
-                        'key_quantity' => 'quantity',
-                        'withQuantity' => true,
-                        'full'         => true,
+                    /*
+                     * Composition, per-warehouse packing and the price they imply are one
+                     * decision with too many controls for this form, so they live on their
+                     * own page. This is only the summary and the door.
+                     */
+                    'composition' => [
+                        'type'         => 'button',
                         'noSaveButton' => true,
-                        'use_confirm'  => true,
-                        'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
-                        'tabs' => array_values(array_filter([
-                            $masterProduct->masterFamily ? [
-                                'label'      => __('To do'),
-                                'routeFetch' => [
-                                    'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                    'parameters' => [
-                                        'masterProductCategory' => $masterProduct->masterFamily->id,
-                                    ],
-                                ],
-                            ] : null,
-
-                            $masterProduct->masterFamily ? [
-                                'label'      => __('Done'),
-                                'routeFetch' => [
-                                    'name'       => 'grp.json.master-product-category.taken-trade-units',
-                                    'parameters' => [
-                                        'masterProductCategory' => $masterProduct->masterFamily->id,
-                                    ],
-                                ],
-                            ] : null,
-
-                            [
-                                'label'      => __('All'),
-                                'search'     => true,
-                                'routeFetch' => [
-                                    'name' => 'grp.json.master_product_category.all_trade_units',
-                                ],
-                            ],
-                        ])),
-                        'value'        => $tradeUnits,
+                        'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']).' × '.$tradeUnit['code'])->implode(', '),
+                        'label_button' => __('Edit composition & packing'),
+                        'icon'         => 'fal fa-atom',
+                        'type_button'  => 'secondary',
+                        'route'        => [
+                            'name'       => 'grp.masters.master_shops.show.master_products.composition',
+                            'parameters' => [
+                                'masterShop'    => $masterProduct->masterShop->slug,
+                                'masterProduct' => $masterProduct->slug,
+                            ]
+                        ],
                     ],
                 ],
             ],

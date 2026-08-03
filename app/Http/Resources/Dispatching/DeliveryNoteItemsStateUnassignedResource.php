@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_picked
  * @property mixed $org_stock_code
  * @property mixed $org_stock_name
+ * @property mixed $barcode
  * @property mixed $is_handled
  * @property mixed $quantity_packed
  * @property mixed $quantity_not_picked
@@ -26,6 +27,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $packed_in
  * @property mixed $batch_code
  * @property mixed $expiry_date
+ * @property mixed $un_numbers
  */
 class DeliveryNoteItemsStateUnassignedResource extends JsonResource
 {
@@ -59,6 +61,7 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             'org_stock_slug'               => $this->org_stock_slug,
             'org_stock_code'               => $this->org_stock_code,
             'org_stock_name'               => $this->org_stock_name,
+            'barcode'                      => $this->barcode,
             'org_stock_id'                 => $this->org_stock_id,
             'batch_code'                   => $this->batch_code,
             'expiry_date'                  => $this->expiry_date,

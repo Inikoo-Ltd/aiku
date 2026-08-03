@@ -45,13 +45,14 @@ class UpsertPicking extends OrgAction
                 $picking = Picking::find($pickingID);
             }
 
+            $user = request()->user() ?? auth()->user();
+
             if ($picking) {
                 $modelData = [
                     'quantity' => Arr::get($modelData, 'quantity', 0),
                 ];
-                UpdatePicking::run($picking, $modelData);
+                UpdatePicking::run($picking, $modelData, $user);
             } else {
-                $user = request()->user() ?? auth()->user();
                 data_set($modelData, 'picker_user_id', $user->id, false);
                 StorePicking::make()->action($deliveryNoteItem, $user, $modelData);
             }

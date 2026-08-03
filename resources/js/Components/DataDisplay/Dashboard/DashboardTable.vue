@@ -15,6 +15,8 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import axios from "axios"
 import { debounce } from 'lodash-es'
 import DashboardCell from "./DashboardCell.vue"
+import { formatInTimeZone } from "date-fns-tz"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 
@@ -82,6 +84,20 @@ const props = withDefaults(defineProps<{
 const emits = defineEmits<(e: "onChangeTab", val: string) => void>()
 
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
+
+const layout = inject('layout', layoutStructure)
+
+/** Midnight UTC — where the dashboard's day boundary falls — expressed in the user's own timezone. */
+const utcDayStartInUserTime = computed(() => {
+	const timezone = layout?.user?.timezone
+	if (!timezone || timezone === 'UTC') {
+		return null
+	}
+
+	const midnightUtc = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00Z')
+
+	return formatInTimeZone(midnightUtc, timezone, 'HH:mm')
+})
 
 const localCurrentTab = ref(props.tableData.current_tab)
 watch(() => props.tableData.current_tab, (newVal) => {
@@ -229,6 +245,11 @@ const updateTab = (value: string) => {
 				<LoadingIcon />
 			</div>
 
+			<div class="mt-1 text-right text-[10px] text-gray-400">
+				{{ trans('Periods run from midnight UTC') }}<template v-if="utcDayStartInUserTime">
+					{{ trans('— that is :time for you', { time: utcDayStartInUserTime }) }}
+				</template>
+			</div>
 
 		</div>
 	</div>

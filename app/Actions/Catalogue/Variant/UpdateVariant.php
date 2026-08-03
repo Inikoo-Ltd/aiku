@@ -12,9 +12,12 @@ namespace App\Actions\Catalogue\Variant;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
+use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
+use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Models\Catalogue\Shop;
@@ -81,21 +84,40 @@ class UpdateVariant extends OrgAction
                         'comment' => 'first publish'
                     ]);
                     $leader->refresh();
+                } else {
+                    UpdateWebpage::make()->action($leader->webpage()->first(), [
+                        'state_data' => [
+                            'state'                 => WebpageStateEnum::LIVE->value,
+                        ]
+                    ]);
                 }
 
                 foreach ($productsInVariant as $product) {
+                    if ($product->id == $leader->id) continue; // Skip if leader
+
                     if ($product->webpage()->exists()) {
                         UpdateWebpage::make()->action($product->webpage()->first(), [
                              'state_data' => [
-                                 'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
-                                 'redirect_webpage_id'   => $variant->leaderProduct->webpage?->id
+                                 'state'                 => WebpageStateEnum::CLOSED->value,
+                                 'redirect_webpage_id'   => $leader->webpage->id,
                              ]
                         ]);
                     } else {
-                        StoreRedirectFromWebsite::make()->action($website, [
-                            'from_url'     => $product->slug,
-                            'to_url'       => $leader->webpage->id,
-                        ]);
+                        $webpage = $product->webpage()->first();
+                        if ($redirect = $webpage?->redirectedTo) {
+                            $redirect->update([
+                                'from_webpage_id'   => $webpage->id
+                            ]);
+                            $redirect->refresh();
+                            UpdateRedirect::make()->action($redirect, [
+                                'to_webpage_id' => $leader->webpage->id,
+                            ]);
+                        } else {
+                            StoreRedirectFromWebsite::make()->action($website, [
+                                'from_url'     => strtolower($product->code),
+                                'to_url'       => $leader->webpage->id,
+                            ]);
+                        }
                     }
                 }
             } else {

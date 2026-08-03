@@ -86,19 +86,25 @@ defineExpose({
 </script>
 
 <template>
-    <div class="space-y-4 ">
+    <div class="flex flex-col min-h-0 max-h-[65vh]">
         <!-- V-FOR 1: Existing locations -->
-        <div class="flex flex-col gap-y-3">
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-y-3 pr-4 pb-3">
             <template v-if="props.locations.length > 0">
+                <div class="grid grid-cols-7 gap-x-3 items-center gap-2 border-b pb-2 pt-1 font-semibold sticky top-0 z-10 bg-white">
+                    <div class="col-span-2 flex items-center gap-x-2 font-semibold">
+                        Location code
+                    </div>
+                    <div class="col-span-5 text-end font-semibold">
+                        Current stock
+                    </div>
+                </div>
                 <div v-for="(loc, idx) in props.locations" :key="'existing-' + loc.id"
                     class="grid grid-cols-7 gap-x-3 items-center gap-2 border-b pb-2">
                     <div class="col-span-2 flex items-center gap-x-2">
                         {{ loc.code }}
                     </div>
-                    <div class="col-span-5 text-end">
-                        <span class="text-sm italic text-gray-400">
-                            {{ trans("Current Stock") }} {{ Number(loc.quantity) }}
-                        </span>
+                    <div class="col-span-5 text-end tabular-nums">
+                        {{ Number(loc.quantity) }}
                     </div>
                 </div>
             </template>
@@ -116,8 +122,10 @@ defineExpose({
             </div>
         </div>
 
+        <hr class="shrink-0 border-t border-gray-300 border-dashed mt-4">
+
         <!-- Add new location section -->
-        <div class="border-gray-200 mt-3">
+        <div class="shrink-0 border-gray-200 mt-3">
             <div class="text-sm font-medium text-gray-600 mb-2">{{ trans("Add New Location") }}</div>
             <div class="flex gap-x-2 items-center">
                 <div class="flex-1">
@@ -142,7 +150,7 @@ defineExpose({
             </div>
         </div>
         <!-- Section: buttons -->
-        <div class="relative flex gap-x-2 isolate z-30 mt-4 justify-self-end">
+        <div class="shrink-0 relative flex gap-x-2 isolate z-30 pt-3 mt-4 border-t bg-white">
             <Button :label="trans('Cancel')" type="tertiary" icon="far fa-arrow-left" @click="() => emits('close')" />
         </div>
 

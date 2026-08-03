@@ -252,6 +252,23 @@ class ShowProduct extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ]
             ];
+
+            if ($product->shop->type != ShopTypeEnum::EXTERNAL) {
+                $actions[] = [
+                    'type'  => 'button',
+                    'style' => 'edit',
+                    'label' => __('Composition'),
+                    'icon'  => ['fal', 'fa-atom'],
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.catalogue.products.all_products.composition',
+                        'parameters' => [
+                            'organisation' => $product->organisation->slug,
+                            'shop'         => $product->shop->slug,
+                            'product'      => $product->slug,
+                        ]
+                    ]
+                ];
+            }
         }
 
         // $actions[] = [
@@ -438,6 +455,8 @@ class ShowProduct extends OrgAction
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
                 ],
                 'product_id'           => $product->id,
+                'product_units'        => (int)$product->units,
+                'product_unit'         => $product->unit,
                 'shop_data'            => [
                     'id'            => $product->shop_id,
                     'slug'          => $product->shop->slug,

@@ -45,6 +45,12 @@ class TranslateModel
         if (Arr::get($translationData, 'description_extra') && (!$model->is_description_extra_reviewed || $overwrite)) {
             data_set($modelData, 'description_extra', Translate::run($translationData['description_extra'], $english, $shopLanguage, 'gpt-5-nano'));
         }
+        if (Arr::get($translationData, 'faq') && $model instanceof ProductCategory) {
+            $translatedFaq = Translate::run(json_encode($model->faq), $english, $shopLanguage, 'gpt-5-nano');
+            if (is_string($translatedFaq)) {
+                data_set($modelData, 'faq', json_decode($translatedFaq, true));
+            }
+        }
 
         if ($model instanceof ProductCategory) {
             UpdateProductCategory::run($model, $modelData);

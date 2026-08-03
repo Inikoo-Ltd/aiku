@@ -203,7 +203,7 @@ const handleClick = (event: MouseEvent) => {
   </a>
 
   <!-- fallback -->
-  <div v-else>
+  <div v-else :class="class" :style="style" :id="id">
     <slot>{{ label }}</slot>
   </div>
 </template>

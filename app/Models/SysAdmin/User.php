@@ -17,6 +17,7 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\OutBoxHasSubscriber;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\Helpers\Timezone;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\JobPosition;
 use App\Models\Inventory\Warehouse;
@@ -37,7 +38,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\PasskeyAuthenticatable;
-use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
@@ -83,6 +83,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_two_factor_required
  * @property array<array-key, mixed> $bookmarks
  * @property int|null $employed_in_organisation_id
+ * @property bool $can_use_mcp
+ * @property bool $can_use_mcp_sql
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedDigitalAgencyOrganisations
@@ -109,7 +111,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \App\Models\SysAdmin\UserHasPseudoJobPositions|null $pivot
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JobPosition> $pseudoJobPositions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\SysAdmin\UserStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OutBoxHasSubscriber> $subscribedOutboxes
@@ -140,12 +142,18 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     use WithPushNotifications;
     use IsUserable;
     use HasImage;
-    use HasApiTokens;
     use HasSearch;
     use PasskeyAuthenticatable;
 
     protected $guarded = [
     ];
+
+    /**
+     * Roles and permissions are all stored under the web guard. Without this,
+     * spatie resolves the guard from the active auth driver, so requests
+     * authenticated on another guard (mcp, mcp-oauth) match nothing.
+     */
+    protected $guard_name = 'web';
 
     protected $hidden = [
         'password',
@@ -265,6 +273,38 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     public function employedInOrganisation(): BelongsTo
     {
         return $this->belongsTo(Organisation::class, 'employed_in_organisation_id');
+    }
+
+    public function timezone(): BelongsTo
+    {
+        return $this->belongsTo(Timezone::class);
+    }
+
+    private ?string $resolvedTimezoneName = null;
+
+    /**
+     * The timezone this user's clock should be shown in: their own choice when they
+     * have made one, otherwise the timezone of the organisation they work for.
+     *
+     * Resolved rather than stored so users follow their organisation without a backfill.
+     */
+    public function getTimezoneNameAttribute(): string
+    {
+        if ($this->timezone_id) {
+            return $this->timezone->name;
+        }
+
+        // ponytail: memoised per instance only; cache across requests if the join shows up in profiling
+        if ($this->resolvedTimezoneName === null) {
+            $organisation = $this->employees()
+                ->with('organisation.timezone')
+                ->orderBy('employees.organisation_id')
+                ->first()?->organisation;
+
+            $this->resolvedTimezoneName = $organisation?->timezone?->name ?? config('app.timezone');
+        }
+
+        return $this->resolvedTimezoneName;
     }
 
 

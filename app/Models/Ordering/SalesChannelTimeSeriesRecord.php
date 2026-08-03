@@ -44,6 +44,15 @@ class SalesChannelTimeSeriesRecord extends Model
     protected function casts(): array
     {
         return [
+            'sales_external' => 'decimal:2',
+            'sales_org_currency_external' => 'decimal:2',
+            'sales_grp_currency_external' => 'decimal:2',
+            'lost_revenue' => 'decimal:2',
+            'lost_revenue_org_currency' => 'decimal:2',
+            'lost_revenue_grp_currency' => 'decimal:2',
+            'sales_internal' => 'decimal:2',
+            'sales_org_currency_internal' => 'decimal:2',
+            'sales_grp_currency_internal' => 'decimal:2',
             'from' => 'datetime',
             'to'   => 'datetime',
         ];

@@ -285,6 +285,18 @@ class AuroraOrganisationService implements SourceOrganisationService
         return (new FetchAuroraService($this))->fetch($id);
     }
 
+    protected bool $forcedFetch = false;
+
+    public function isForcedFetch(): bool
+    {
+        return $this->forcedFetch;
+    }
+
+    public function setForcedFetch(bool $forcedFetch): void
+    {
+        $this->forcedFetch = $forcedFetch;
+    }
+
     public function fetchStock($id): ?array
     {
         return (new FetchAuroraStock($this))->fetch($id);

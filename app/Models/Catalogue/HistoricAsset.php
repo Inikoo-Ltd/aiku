@@ -56,6 +56,7 @@ class HistoricAsset extends Model implements Auditable
 
 
     protected $casts = [
+        'tax_category' => 'array',
         'status' => 'boolean',
     ];
 

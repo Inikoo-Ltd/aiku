@@ -35,7 +35,7 @@ trait HasOrderStateUpdates
             OrderStateEnum::CREATING,
             OrderStateEnum::SUBMITTED,
         ])) {
-            // INI-1811: Guard, is follow on products must always be 0 
+            // INI-1811: Guard, is follow on products must always be 0
             foreach ($order->transactions()->where('model_type', 'Product')->where('is_follow_on', false)->get() as $transaction) {
                 $packedData = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNote);
 

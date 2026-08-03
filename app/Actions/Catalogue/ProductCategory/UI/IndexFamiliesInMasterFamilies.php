@@ -19,6 +19,7 @@ use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
+use App\Http\Resources\Catalogue\FamiliesNeedReviewsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
@@ -266,6 +267,20 @@ class IndexFamiliesInMasterFamilies extends OrgAction
             'icon' => 'fal fa-store',
         ];
 
+        $masterShop         = $this->parent->masterShop;
+        $activeShops        = $masterShop
+            ->shops()
+            ->where('shops.state', ShopStateEnum::OPEN);
+
+        $actions         = [
+            [
+                'key'       => 'assign',
+                'type'      => 'button',
+                'style'     => 'create',
+                'label'     => __('Add to Other Shop'),
+                'disabled'  => count($this->parent->productCategories) == $activeShops->count()
+            ]
+        ];
 
         return Inertia::render(
             'Org/Catalogue/Families',
@@ -284,19 +299,30 @@ class IndexFamiliesInMasterFamilies extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
+                    'actions'       => $actions
                 ],
                 'data'                                => FamiliesResource::collection($families),
                 'tabs'                                => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
+                'shops_do_not_have_family'      => $activeShops
+                    ->whereNotIn('id', $this->parent->productCategories()->pluck('shop_id'))
+                    ->select([
+                        'shops.id',
+                        'shops.slug',
+                        'shops.code',
+                        'shops.name'
+                    ])
+                    ->get(),
+                'master_product_category_id'    => $this->parent?->id,
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => FamiliesResource::collection($families)
                     : Inertia::optional(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
-                    fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::optional(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
+                    : Inertia::optional(fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
 
                 ProductCategoryTabsEnum::MISSING_GR->value => $this->tab == ProductCategoryTabsEnum::MISSING_GR->value
                     ? fn () => FamiliesResource::collection($this->handle($this->parent, ProductCategoryTabsEnum::MISSING_GR->value, missingGr: true))

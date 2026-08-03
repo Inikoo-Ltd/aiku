@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnitFamily;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Traits\WithActionUpdate;
@@ -16,7 +16,7 @@ use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateTradeUnitFamily extends GrpAction
+class UpdateTradeUnitFamily extends OrgAction
 {
     use WithActionUpdate;
 
@@ -49,7 +49,7 @@ class UpdateTradeUnitFamily extends GrpAction
 
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): TradeUnitFamily
     {
-        $this->initialisation($tradeUnitFamily->group, $request);
+        $this->initialisationFromGroup($tradeUnitFamily->group, $request);
 
         return $this->handle($tradeUnitFamily, $this->validatedData);
     }

@@ -14,7 +14,7 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
@@ -29,7 +29,7 @@ class UpdateTransaction extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
-    public function handle(Transaction $transaction, array $modelData, $calculateShipping = true): Transaction
+    public function handle(Transaction $transaction, array $modelData, $calculateShipping = true, bool $calculateDiscounts = true): Transaction
     {
         if (Arr::has($modelData, 'units_ordered')) {
             $unitsOrders = Arr::pull($modelData, 'units_ordered');
@@ -48,7 +48,7 @@ class UpdateTransaction extends OrgAction
 
 
         if (Arr::exists($modelData, 'quantity_ordered') && $this->strict) {
-            if ($modelData['quantity_ordered'] == 0 && $transaction->order->status == OrderStatusEnum::CREATING) {
+            if ($modelData['quantity_ordered'] == 0 && ($transaction->order->state == OrderStateEnum::CREATING || $transaction->order->state == OrderStateEnum::SUBMITTED)) {
                 return DeleteTransaction::run($transaction);
             }
 
@@ -97,7 +97,7 @@ class UpdateTransaction extends OrgAction
 
             if (Arr::hasAny($changes, ['quantity_ordered', 'net_amount', 'gross_amount'])) {
                 OrderHydrateCategoriesData::run($transaction->order);
-                CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping);
+                CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping, $calculateDiscounts);
             }
         }
 

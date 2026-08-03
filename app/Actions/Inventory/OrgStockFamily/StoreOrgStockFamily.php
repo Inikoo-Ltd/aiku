@@ -42,7 +42,6 @@ class StoreOrgStockFamily extends OrgAction
         /** @var OrgStockFamily $orgStockFamily */
         $orgStockFamily = $stockFamily->orgStockFamilies()->create($modelData);
         $orgStockFamily->stats()->create();
-        $orgStockFamily->intervals()->create();
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             $orgStockFamily->timeSeries()->create(['frequency' => $frequency]);

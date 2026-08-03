@@ -8,7 +8,7 @@
 
 namespace App\Actions\Helpers\Gallery\UI\StockImages;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Http\Resources\Helpers\ImageResource;
 use App\InertiaTable\InertiaTable;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Services\QueryBuilder;
 
-class IndexBannersStockImages extends GrpAction
+class IndexBannersStockImages extends OrgAction
 {
     public function handle(Group $group, $subScope, $prefix = null): LengthAwarePaginator
     {
@@ -77,21 +77,21 @@ class IndexBannersStockImages extends GrpAction
     // todo delete this method
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group, BannerTypeEnum::LANDSCAPE);
     }
 
     public function landscape(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group, BannerTypeEnum::LANDSCAPE);
     }
 
     public function square(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group, BannerTypeEnum::SQUARE);
     }

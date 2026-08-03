@@ -86,6 +86,7 @@ class WebpageResource extends JsonResource
             'state'                        => $webpage->state,
             'title'                        => $webpage->title,
             'luigi_data' => [
+                'iris_search_model'     => Arr::get($website->settings, "iris_search_model", "luigi"),
                 'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
                 'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
                 'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),

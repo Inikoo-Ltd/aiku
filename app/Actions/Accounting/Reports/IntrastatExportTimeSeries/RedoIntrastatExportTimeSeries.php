@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Reports\IntrastatExportTimeSeries;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -67,10 +68,12 @@ class RedoIntrastatExportTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessIntrastatExportTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessIntrastatExportTimeSeriesRecords::dispatch($organisation->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessIntrastatExportTimeSeriesRecords::run($organisation->id, $frequency, $from, $to);
+                ProcessIntrastatExportTimeSeriesRecords::run($organisation->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

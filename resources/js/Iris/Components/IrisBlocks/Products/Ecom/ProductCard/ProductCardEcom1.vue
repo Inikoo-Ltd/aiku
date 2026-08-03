@@ -18,6 +18,8 @@ import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartBu
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
+import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
+import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 import { routeType } from '@/types/route'
 
 library.add(faStarHalfAlt, faQuestionCircle)

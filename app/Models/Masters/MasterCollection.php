@@ -70,7 +70,6 @@ use App\Models\Traits\HasSearch;
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterProducts
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
- * @property-read \App\Models\Masters\MasterCollectionOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterCollectionOrderingStats|null $orderingStats
  * @property-read Model|\Eloquent $parent
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $parentMasterDepartments
@@ -157,12 +156,6 @@ class MasterCollection extends Model implements Auditable, HasMedia
     public function parent(): MorphTo
     {
         return $this->morphTo();
-    }
-
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(MasterCollectionOrderingIntervals::class);
     }
 
     public function orderingStats(): HasOne

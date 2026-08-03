@@ -47,6 +47,12 @@ class ProductCategoryTimeSeriesRecord extends Model
     protected function casts(): array
     {
         return [
+            'sales_external' => 'decimal:2',
+            'sales_org_currency_external' => 'decimal:2',
+            'sales_grp_currency_external' => 'decimal:2',
+            'sales_internal' => 'decimal:2',
+            'sales_org_currency_internal' => 'decimal:2',
+            'sales_grp_currency_internal' => 'decimal:2',
             'from' => 'datetime',
             'to' => 'datetime',
         ];

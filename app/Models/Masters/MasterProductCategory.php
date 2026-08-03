@@ -67,7 +67,6 @@ use App\Models\Traits\HasSearch;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property array<array-key, mixed>|null $offers_data
@@ -184,7 +183,10 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         'description',
         'description_title',
         'description_extra',
-        'cost_price_ratio'
+        'cost_price_ratio',
+        'has_gr_vol_discount',
+        'gr_vol_discount_percentage',
+        'gr_vol_discount_quantity'
     ];
 
     public function getRouteKeyName(): string
@@ -199,6 +201,28 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
+    }
+
+    protected static function booted(): void
+    {
+        static::updated(function (MasterProductCategory $masterProductCategory) {
+            $data = [];
+
+            if ($masterProductCategory->wasChanged('name')) {
+                $data['name_updated_at'] = now();
+            }
+            if ($masterProductCategory->wasChanged('description')) {
+                $data['description_updated_at'] = now();
+            }
+            if ($masterProductCategory->wasChanged('description_title')) {
+                $data['description_title_updated_at'] = now();
+            }
+            if ($masterProductCategory->wasChanged('description_extra')) {
+                $data['description_extra_updated_at'] = now();
+            }
+
+            $masterProductCategory->updateQuietly($data);
+        });
     }
 
 

@@ -13,7 +13,8 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerTimeSeries;
-use Carbon\Carbon;
+use App\Traits\BuildsInvoiceTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
+    use BuildsInvoiceTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -32,16 +35,15 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $customerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
-        $customer = Customer::find($customerId);
+        $customer = Customer::on('aiku_no_sticky')->find($customerId);
 
         if (!$customer) {
             return;
         }
 
-        $timeSeries = CustomerTimeSeries::where('customer_id', $customer->id)->where('frequency', $frequency->value)->first();
+        $timeSeries = CustomerTimeSeries::on('aiku_no_sticky')->where('customer_id', $customer->id)->where('frequency', $frequency->value)->first();
 
         if (!$timeSeries) {
             $timeSeries = $customer->timeSeries()->create(['frequency' => $frequency]);
@@ -56,6 +58,8 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
+        $metricsByPeriod = $this->getCustomerMetricsByPeriod($timeSeries->customer_id, $timeSeries->frequency, $from, $to);
+
         $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.customer_id', $timeSeries->customer_id)
             ->where('invoices.in_process', false)
@@ -63,46 +67,50 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
             ->where('invoices.date', '<=', $to)
             ->whereNull('invoices.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, customSelects: $this->customerInvoiceSelects())->get();
+
+        $rows = [];
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $metrics = $this->getCustomerPeriodMetrics($timeSeries->customer_id, $periodFrom, $periodTo);
+            $metrics = [...$this->zeroMetrics(), ...($metricsByPeriod[$period]['metrics'] ?? [])];
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'customer_time_series_id' => $timeSeries->id,
-                    'period'                  => $period,
-                    'frequency'               => $timeSeries->frequency->singleLetter(),
-                ],
-                [
-                    'from'                      => $periodFrom,
-                    'to'                        => $periodTo,
-                    'sales'                     => $result->sales,
-                    'sales_org_currency'        => $result->sales_org_currency,
-                    'sales_grp_currency'        => $result->sales_grp_currency,
-                    'lost_revenue'              => $result->lost_revenue,
-                    'lost_revenue_org_currency' => $result->lost_revenue_org_currency,
-                    'lost_revenue_grp_currency' => $result->lost_revenue_grp_currency,
-                    'invoices'                  => $result->invoices,
-                    'refunds'                   => $result->refunds,
-                    ...$metrics,
-                ]
-            );
+            $rows[] = [
+                'customer_time_series_id'   => $timeSeries->id,
+                'period'                    => $period,
+                'frequency'                 => $timeSeries->frequency->singleLetter(),
+                'from'                      => $periodFrom,
+                'to'                        => $periodTo,
+                'sales'                     => $result->sales,
+                'sales_org_currency'        => $result->sales_org_currency,
+                'sales_grp_currency'        => $result->sales_grp_currency,
+                'lost_revenue'              => $result->lost_revenue,
+                'lost_revenue_org_currency' => $result->lost_revenue_org_currency,
+                'lost_revenue_grp_currency' => $result->lost_revenue_grp_currency,
+                'invoices'                  => $result->invoices,
+                'refunds'                   => $result->refunds,
+                ...$metrics,
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $metricsByPeriod, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['customer_time_series_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(CustomerTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(CustomerTimeSeries $timeSeries, array $metricsByPeriod, array $processedPeriods): array
     {
-        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+        $rows = [];
 
-        foreach ($nonInvoicePeriods as $periodData) {
-            $metrics = $this->getCustomerPeriodMetrics($timeSeries->customer_id, $periodData['from'], $periodData['to']);
+        foreach ($metricsByPeriod as $period => $periodData) {
+            if (in_array($period, $processedPeriods)) {
+                continue;
+            }
+
+            $metrics = [...$this->zeroMetrics(), ...$periodData['metrics']];
 
             $hasActivity = collect($metrics)->some(fn ($value) => $value != 0 && $value !== null);
 
@@ -110,120 +118,80 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
                 continue;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'customer_time_series_id' => $timeSeries->id,
-                    'period'                  => $periodData['period'],
-                    'frequency'               => $timeSeries->frequency->singleLetter(),
-                ],
-                [
-                    'from'                      => $periodData['from'],
-                    'to'                        => $periodData['to'],
-                    'sales'                     => 0,
-                    'sales_org_currency'        => 0,
-                    'sales_grp_currency'        => 0,
-                    'lost_revenue'              => 0,
-                    'lost_revenue_org_currency' => 0,
-                    'lost_revenue_grp_currency' => 0,
-                    'invoices'                  => 0,
-                    'refunds'                   => 0,
-                    ...$metrics,
-                ]
-            );
+            $rows[] = [
+                'customer_time_series_id'   => $timeSeries->id,
+                'period'                    => $period,
+                'frequency'                 => $timeSeries->frequency->singleLetter(),
+                'from'                      => $periodData['from'],
+                'to'                        => $periodData['to'],
+                'sales'                     => 0,
+                'sales_org_currency'        => 0,
+                'sales_grp_currency'        => 0,
+                'lost_revenue'              => 0,
+                'lost_revenue_org_currency' => 0,
+                'lost_revenue_grp_currency' => 0,
+                'invoices'                  => 0,
+                'refunds'                   => 0,
+                ...$metrics,
+            ];
         }
+
+        return $rows;
     }
 
-    protected function getCustomerPeriodMetrics(int $customerId, Carbon $periodFrom, Carbon $periodTo): array
+    protected function getCustomerMetricsByPeriod(int $customerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): array
     {
-        $basketsCreated = DB::connection('aiku_no_sticky')->table('orders')
+        $baskets = fn (string $dateColumn): Builder => DB::connection('aiku_no_sticky')->table('orders')
             ->where('customer_id', $customerId)
             ->where('state', OrderStateEnum::CREATING)
-            ->where('created_at', '>=', $periodFrom)
-            ->where('created_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
-            ->first();
+            ->where($dateColumn, '>=', $from)
+            ->where($dateColumn, '<=', $to)
+            ->whereNull('deleted_at');
 
-        $basketsUpdated = DB::connection('aiku_no_sticky')->table('orders')
-            ->where('customer_id', $customerId)
-            ->where('state', OrderStateEnum::CREATING)
-            ->where('updated_at', '>=', $periodFrom)
-            ->where('updated_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
-            ->first();
+        $byPeriod = $this->mergeMetricsByPeriod([], $baskets('created_at'), $frequency, 'created_at', [
+            DB::raw('coalesce(sum(net_amount),0) as baskets_created'),
+            DB::raw('coalesce(sum(org_net_amount),0) as baskets_created_org_currency'),
+            DB::raw('coalesce(sum(grp_net_amount),0) as baskets_created_grp_currency'),
+        ]);
+
+        $byPeriod = $this->mergeMetricsByPeriod($byPeriod, $baskets('updated_at'), $frequency, 'updated_at', [
+            DB::raw('coalesce(sum(net_amount),0) as baskets_updated'),
+            DB::raw('coalesce(sum(org_net_amount),0) as baskets_updated_org_currency'),
+            DB::raw('coalesce(sum(grp_net_amount),0) as baskets_updated_grp_currency'),
+        ]);
 
         $orders = DB::connection('aiku_no_sticky')->table('orders')
             ->where('customer_id', $customerId)
-            ->where('date', '>=', $periodFrom)
-            ->where('date', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->count();
+            ->where('date', '>=', $from)
+            ->where('date', '<=', $to)
+            ->whereNull('deleted_at');
+
+        $byPeriod = $this->mergeMetricsByPeriod($byPeriod, $orders, $frequency, 'date', [
+            DB::raw('count(*) as orders'),
+        ]);
 
         $deliveryNotes = DB::connection('aiku_no_sticky')->table('delivery_notes')
             ->where('customer_id', $customerId)
-            ->where('date', '>=', $periodFrom)
-            ->where('date', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->count();
+            ->where('date', '>=', $from)
+            ->where('date', '<=', $to)
+            ->whereNull('deleted_at');
 
-        return [
-            'baskets_created'              => $basketsCreated->net_amount ?? 0,
-            'baskets_created_org_currency' => $basketsCreated->org_net_amount ?? 0,
-            'baskets_created_grp_currency' => $basketsCreated->grp_net_amount ?? 0,
-            'baskets_updated'              => $basketsUpdated->net_amount ?? 0,
-            'baskets_updated_org_currency' => $basketsUpdated->org_net_amount ?? 0,
-            'baskets_updated_grp_currency' => $basketsUpdated->grp_net_amount ?? 0,
-            'orders'                       => $orders,
-            'delivery_notes'               => $deliveryNotes,
-        ];
+        return $this->mergeMetricsByPeriod($byPeriod, $deliveryNotes, $frequency, 'date', [
+            DB::raw('count(*) as delivery_notes'),
+        ]);
     }
 
-    protected function applyFrequencyGrouping(Builder $query, TimeSeriesFrequencyEnum $frequency): Builder
+    protected function zeroMetrics(): array
     {
-        $selects = [
-            DB::raw('SUM(CASE WHEN type = \'invoice\' THEN net_amount ELSE 0 END) as sales'),
-            DB::raw('SUM(CASE WHEN type = \'invoice\' THEN org_net_amount ELSE 0 END) as sales_org_currency'),
-            DB::raw('SUM(CASE WHEN type = \'invoice\' THEN grp_net_amount ELSE 0 END) as sales_grp_currency'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
+        return [
+            'baskets_created'              => 0,
+            'baskets_created_org_currency' => 0,
+            'baskets_created_grp_currency' => 0,
+            'baskets_updated'              => 0,
+            'baskets_updated_org_currency' => 0,
+            'baskets_updated_grp_currency' => 0,
+            'orders'                       => 0,
+            'delivery_notes'               => 0,
         ];
-
-        return match ($frequency) {
-            TimeSeriesFrequencyEnum::YEARLY => $query
-                ->select([DB::raw('EXTRACT(YEAR FROM invoices.date) as year'), ...$selects])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)')),
-
-            TimeSeriesFrequencyEnum::QUARTERLY => $query
-                ->select([
-                    DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                    DB::raw('EXTRACT(QUARTER FROM invoices.date) as quarter'),
-                    ...$selects,
-                ])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(QUARTER FROM invoices.date)')),
-
-            TimeSeriesFrequencyEnum::MONTHLY => $query
-                ->select([
-                    DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                    DB::raw('EXTRACT(MONTH FROM invoices.date) as month'),
-                    ...$selects,
-                ])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(MONTH FROM invoices.date)')),
-
-            TimeSeriesFrequencyEnum::WEEKLY => $query
-                ->select([
-                    DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                    DB::raw('EXTRACT(WEEK FROM invoices.date) as week'),
-                    ...$selects,
-                ])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(WEEK FROM invoices.date)')),
-
-            TimeSeriesFrequencyEnum::DAILY => $query
-                ->select([DB::raw('CAST(invoices.date AS DATE) as date'), ...$selects])
-                ->groupBy(DB::raw('CAST(invoices.date AS DATE)')),
-        };
     }
 }

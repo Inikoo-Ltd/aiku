@@ -16,6 +16,8 @@ use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Http\Resources\Goods\StockFamilyResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockFamilyTimeSeriesResource;
+use App\Actions\Traits\UI\WithBucketNavigation;
+use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -26,6 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgStockFamily extends OrgAction
 {
+    use WithBucketNavigation;
+
     use WithInventoryAuthorisation;
 
     public function handle(OrgStockFamily $orgStockFamily): OrgStockFamily
@@ -75,6 +79,17 @@ class ShowOrgStockFamily extends OrgAction
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-box'],
                     'tooltip' => __('SKOs'),
+                ],
+            ],
+            [
+                'label'    => __('Invoices'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.invoices',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-file-invoice-dollar'],
+                    'tooltip' => __('Invoices'),
                 ],
             ],
         ];
@@ -169,14 +184,44 @@ class ShowOrgStockFamily extends OrgAction
 
     public function getPrevious(OrgStockFamily $orgStockFamily, ActionRequest $request): ?array
     {
-        $previous = OrgStockFamily::where('code', '<', $orgStockFamily->code)->orderBy('code', 'desc')->first();
+        $previous = $this->getOrgStockFamilyNeighbour($orgStockFamily, $request, forward: false);
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
+    private function getOrgStockFamilyNeighbour(OrgStockFamily $orgStockFamily, ActionRequest $request, bool $forward): ?OrgStockFamily
+    {
+        $query = OrgStockFamily::query()
+            ->where('org_stock_families.organisation_id', $orgStockFamily->organisation_id);
+
+        $state = match ($request->input('bucket')) {
+            'active'        => OrgStockFamilyStateEnum::ACTIVE,
+            'discontinuing' => OrgStockFamilyStateEnum::DISCONTINUING,
+            'discontinued'  => OrgStockFamilyStateEnum::DISCONTINUED,
+            'in_process'    => OrgStockFamilyStateEnum::IN_PROCESS,
+            default         => null,
+        };
+
+        if ($state) {
+            $query->where('org_stock_families.state', $state);
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $orgStockFamily,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'code' => 'org_stock_families.code',
+                'name' => 'org_stock_families.name',
+            ],
+            defaultSort: ['org_stock_families.code', false],
+            forward: $forward
+        );
+    }
+
     public function getNext(OrgStockFamily $orgStockFamily, ActionRequest $request): ?array
     {
-        $next = OrgStockFamily::where('code', '>', $orgStockFamily->code)->orderBy('code')->first();
+        $next = $this->getOrgStockFamilyNeighbour($orgStockFamily, $request, forward: true);
 
         return $this->getNavigation($next, $request->route()->getName());
     }

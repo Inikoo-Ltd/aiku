@@ -43,6 +43,9 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
+import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStockHandlingNotes.vue"
+
+const screenType = inject('screenType', ref('desktop'))
 
 library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox)
 
@@ -414,6 +417,7 @@ onUnmounted(() => {
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
             <div class="mb-2">
                 <!-- Helper to make the row's height consistent -->
             </div>
@@ -938,7 +942,7 @@ onUnmounted(() => {
         v-model:visible="isModalLocation"
         modal
         :draggable="false"
-        dismissableMask
+        :dismissableMask="screenType === 'desktop'"
         :style="{ width: '42rem' }"
         :breakpoints="{ '1280px': '65vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"

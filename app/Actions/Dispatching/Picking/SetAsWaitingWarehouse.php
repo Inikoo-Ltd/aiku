@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\Picking;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -27,6 +28,17 @@ class SetAsWaitingWarehouse extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
+        /*
+         * Faire owns its orders: we cannot alter what was bought, only follow what Faire sends.
+         * Holding an item for the office to negotiate has no meaning there — the customer
+         * changes the order in the Faire portal and the next sync brings it across — and it
+         * left orders blocked with no way out. The allow_waiting setting is per organisation,
+         * so it cannot tell a Faire shop from the b2b shop beside it.
+         */
+        if ($deliveryNoteItem->deliveryNote->shop->type == ShopTypeEnum::EXTERNAL) {
+            abort(403, 'Waiting is not available on external shop orders, the order has to be changed in the marketplace');
+        }
+
         // Disable waiting if setting is off
         if (!data_get($this->organisation->settings, 'orders.allow_waiting', false)) {
             abort(403, 'Waiting is not enabled for this organisation');

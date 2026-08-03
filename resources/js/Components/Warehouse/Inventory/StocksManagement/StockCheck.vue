@@ -6,7 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faSave } from "@fal"
 import { faArrowRight, faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, ref, watch, nextTick, onBeforeUnmount } from 'vue'
+import { inject, ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -46,6 +47,10 @@ const inputRefs = ref<Record<number, any>>({})
 const focusInterval = ref<number | null>(null)
 const listLoadingLocations = ref<number[]>([])
 const markAsChecked = (locationOrgStock: StockLocation) => {
+    if (listLoadingLocations.value.includes(locationOrgStock?.id)) {
+        return
+    }
+
     router[props.auditRoute?.method || 'patch'](
         route(props.auditRoute?.name, {
             locationOrgStock: locationOrgStock?.id
@@ -165,6 +170,78 @@ watch(
     { immediate: true }
 )
 
+const roundQuantity = (value: number) => Math.round(Number(value) * 1e6) / 1e6
+
+// packed_in is uniform across all locations of the same org stock: a stock packed in 6 is
+// stored in sixths, so 0.166… means 1/6 of a unit.
+const packedIn = computed(() => {
+    const value = Number(props.locations?.[0]?.packed_in ?? 1)
+    return value > 1 ? value : 1
+})
+
+const isPackedStock = computed(() => packedIn.value > 1)
+
+// Fraction data shape expected by FractionDisplay: [whole, [numerator, denominator]]
+const toFractionData = (value: number): [number, [number, number]] => {
+    const rounded = roundQuantity(Number(value ?? 0))
+
+    if (!isPackedStock.value) {
+        return [Math.round(rounded), [0, 1]]
+    }
+
+    const sign = rounded < 0 ? -1 : 1
+    const units = Math.round(Math.abs(rounded) * packedIn.value)
+    const whole = Math.trunc(units / packedIn.value)
+
+    return [sign * whole, [sign * (units - whole * packedIn.value), packedIn.value]]
+}
+
+const splitQuantity = (value: number) => {
+    const quantity = roundQuantity(Number(value ?? 0))
+    const units = Math.round(quantity * packedIn.value)
+    const whole = Math.trunc(units / packedIn.value)
+
+    return {
+        whole,
+        numerator: units - whole * packedIn.value,
+        remainder: roundQuantity(quantity - whole)
+    }
+}
+
+// A packed stock is audited with two inputs: whole units and how many 1/packed_in on top.
+const quantityInputs = ref<Record<number, { whole: number, numerator: number }>>(
+    Object.fromEntries(cloneLocations.value.map(location => {
+        const { whole, numerator } = splitQuantity(Number(location.quantity))
+
+        return [location.id, { whole, numerator }]
+    }))
+)
+
+// Stock is stored rounded (1/6 as 0.1666), so an untouched fraction keeps its stored value
+// instead of drifting to 0.166667 and flagging the row as modified.
+const applyQuantityInputs = (location: StockLocation) => {
+    const inputs = quantityInputs.value[location.id]
+    const original = splitQuantity(Number(props.locations.find(l => l.id === location.id)?.quantity ?? 0))
+    const fraction = inputs.numerator === original.numerator
+        ? original.remainder
+        : roundQuantity(inputs.numerator / packedIn.value)
+
+    location.quantity = roundQuantity(inputs.whole + fraction)
+    hydrateModifiedLocationsQuantity(location)
+}
+
+const updateWholeQuantity = (location: StockLocation, value: number) => {
+    quantityInputs.value[location.id].whole = Math.max(0, Math.floor(Number(value || 0)))
+    applyQuantityInputs(location)
+}
+
+const updateFractionQuantity = (location: StockLocation, value: number) => {
+    const numerator = Math.round(Number(value || 0))
+
+    quantityInputs.value[location.id].numerator = Math.min(Math.max(numerator, 0), packedIn.value - 1)
+    applyQuantityInputs(location)
+}
+
 interface ModifiedLocationOrgStock {
     id: number,
     code: string
@@ -197,47 +274,55 @@ const currentPage = ref(1);
 </script>
 
 <template>
-    <div class="space-y-2">
+    <div class="flex flex-col min-h-0 max-h-[65vh]">
         <!-- list -->
+        <div :key="currentPage" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-2 pr-4 pb-3">
         <template v-if="cloneLocations.length > 0">
             <div v-if="currentPage == 1">
-                <div class="grid grid-cols-7 gap-2 border-b pb-2 font-semibold">
-                    <div class="col-span-2 md:col-span-3  flex items-center gap-x-2">
+                <div class="grid grid-cols-8 gap-2 border-b pb-2 pt-1 font-semibold sticky top-0 z-10 bg-white">
+                    <div class="col-span-2 md:col-span-3 flex items-center gap-x-2">
                         {{ ctrans('Location') }}
                     </div>
                     <div class="col-span-2 md:col-span-2 text-right">
                         {{ ctrans('Last audited at') }}
                     </div>
-                    <div class="col-span-3 md:col-span-2 text-right flex items-center justify-end gap-x-1">
+                    <div class="col-span-4 md:col-span-3 text-right flex items-center justify-end gap-x-1">
                         {{ ctrans('New Quantity') }}
                     </div>
                 </div>
-                <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-7 gap-2 border-b pb-2">
-                    <div class="col-span-2 md:col-span-3  flex items-center gap-x-2">
+                <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-8 gap-2 border-b pb-2 space-y-2 md:space-y-0 pt-2 md:pt-1 items-center">
+                    <div class="col-span-2 md:col-span-3 flex items-center gap-x-2">
                         {{ location.code }}
                     </div>
-    
+
                     <div v-if="location.audited_at" v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 md:col-span-2 text-right">
                         {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
                         <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                     </div>
-    
+
                     <div v-else class="col-span-2 md:col-span-2 text-right text-sm italic opacity-60 whitespace-nowrap">
                         {{ trans("Never audited") }}
                     </div>
-    
-                    <div class="col-span-3 md:col-span-2 text-right flex items-center justify-end gap-x-1">
-                        <div v-if="location.quantity != props.locations.find(l => l.id === location.id)?.quantity">
-                            <span v-if="location.quantity > props.locations.find(l => l.id === location.id)?.quantity" class="text-green-600">
-                                +{{ location.quantity - (props.locations.find(l => l.id === location.id)?.quantity ?? 0) }}
+
+                    <div class="col-span-4 md:col-span-3 text-right flex items-center justify-end gap-x-1">
+                        <div v-if="location.quantity != props.locations.find(l => l.id === location.id)?.quantity" class="tabular-nums">
+                            <span v-if="location.quantity > props.locations.find(l => l.id === location.id)?.quantity" class="text-green-600 flex items-center">
+                                +<FractionDisplay :fractionData="toFractionData(Number(location.quantity) - Number(props.locations.find(l => l.id === location.id)?.quantity ?? 0))" />
                             </span>
-                            <span v-else class="text-red-500">
-                                -{{ (props.locations.find(l => l.id === location.id)?.quantity ?? 0) - location.quantity }}
+                            <span v-else class="text-red-500 flex items-center">
+                                −<FractionDisplay :fractionData="toFractionData(Number(props.locations.find(l => l.id === location.id)?.quantity ?? 0) - Number(location.quantity))" />
                             </span>
                         </div>
-                        
+
+                        <div v-else-if="listLoadingLocations.includes(location.id)"
+                            v-tooltip="ctrans('Setting as audited')"
+                            class="text-gray-400"
+                        >
+                            <LoadingIcon />
+                        </div>
+
                         <div v-else
-                            v-tooltip="trans('Set as audited with same stock (:xstock stocks)', { xstock: Number(location.quantity)})"
+                            v-tooltip="ctrans('Set as audited with same stock (:xstock stocks)', { xstock: Number(location.quantity)})"
                             @click="() => markAsChecked(location)"
                             class="cursor-pointer text-gray-400 hover:text-green-500"
                         >
@@ -247,11 +332,39 @@ const currentPage = ref(1);
                                 aria-hidden="true"
                             />
                         </div>
-                        <div class="w-14">
+                        <template v-if="isPackedStock">
+                            <div class="w-20">
+                                <InputNumber
+                                    :ref="el => setInputRef(el, location.id)"
+                                    v-tooltip="ctrans('Whole units')"
+                                    :modelValue="quantityInputs[location.id].whole"
+                                    @input="(event: { value: any }) => updateWholeQuantity(location, event.value)"
+                                    :min="0"
+                                    :step="1"
+                                    size="small"
+                                    fluid
+                                    inputClass="!py-0"
+                                />
+                            </div>
+                            <div class="w-24">
+                                <InputNumber
+                                    v-tooltip="ctrans('Fraction of a unit (:packedIn per unit)', { packedIn: packedIn })"
+                                    :modelValue="quantityInputs[location.id].numerator"
+                                    @input="(event: { value: any }) => updateFractionQuantity(location, event.value)"
+                                    :min="0"
+                                    :max="packedIn - 1"
+                                    :step="1"
+                                    :suffix="'/' + packedIn"
+                                    size="small"
+                                    fluid
+                                    inputClass="!py-0"
+                                />
+                            </div>
+                        </template>
+                        <div v-else class="w-24">
                             <InputNumber
                                 :ref="el => setInputRef(el, location.id)"
                                 :modelValue="location.quantity"
-                                @keydown.enter.prevent="submitCheckStock(location, Number(location.quantity))"
                                 @input="(event: { value: any }) => {
                                     location.quantity = event.value
                                     hydrateModifiedLocationsQuantity(location);
@@ -267,7 +380,7 @@ const currentPage = ref(1);
                 </div>
             </div>
             <div v-else> 
-                <div class="hidden md:grid grid-cols-6 gap-3 border-b pb-2 font-semibold">
+                <div class="hidden md:grid grid-cols-6 gap-3 border-b pb-2 pt-1 font-semibold sticky top-0 z-10 bg-white">
                     <div class="col-span-1">
                         {{ ctrans('Location Code') }}
                     </div>
@@ -290,12 +403,12 @@ const currentPage = ref(1);
                         <span class="truncate">{{ location.code }}</span>
                     </div>
                     <div class="min-w-0 flex items-center justify-end md:justify-start gap-x-2 md:h-10 tabular-nums">
-                        {{ location.quantity }}
+                        <FractionDisplay :fractionData="toFractionData(location.quantity)" />
                         <span
-                            class="border rounded px-1.5 py-0.5 text-xs font-semibold"
+                            class="border rounded px-1.5 py-0.5 text-xs font-semibold flex items-center"
                             :class="location.delta > 0 ? 'text-green-700 border-green-300 bg-green-50' : 'text-red-700 border-red-300 bg-red-50'"
                         >
-                            {{ location.delta > 0 ? '+' : '' }}{{ location.delta }}
+                            {{ location.delta > 0 ? '+' : '−' }}<FractionDisplay :fractionData="toFractionData(Math.abs(location.delta))" />
                         </span>
                     </div>
                     <div class="col-span-2 min-w-0">
@@ -314,6 +427,8 @@ const currentPage = ref(1);
                             :hideSelected="false"
                             :searchable="true"
                             :filter-results="false"
+                            appendToBody
+                            :classes="{ dropdown: 'multiselect-dropdown !z-[1400]' }"
                         />
                     </div>
                     <div class="col-span-2 min-w-0">
@@ -341,8 +456,9 @@ const currentPage = ref(1);
                 {{ trans("You haven't added any locations yet") }}
             </div>
         </div>
+        </div>
         <!-- Section: buttons -->
-         <div class="flex xjustify-end gap-2 pt-3">
+         <div class="shrink-0 flex xjustify-end gap-2 pt-3 mt-2 border-t bg-white">
             <Button 
                 :label="currentPage == 1 ? ctrans('Close') : ctrans('Back')" 
                 type="tertiary" 
@@ -358,7 +474,8 @@ const currentPage = ref(1);
             <Button 
                 :label="currentPage == 1 ? ctrans('Next') : ctrans('Save')" 
                 :type="'primary'"                 
-                :icon="currentPage == 1 ? faArrowRight : faFloppyDisk" 
+                :icon="currentPage == 1 ? undefined : faFloppyDisk" 
+                :iconRight="currentPage == 1 ? faArrowRight : undefined"
                 class="ml-auto" @click="() => {
                     if (currentPage == 1) {
                         currentPage = 2

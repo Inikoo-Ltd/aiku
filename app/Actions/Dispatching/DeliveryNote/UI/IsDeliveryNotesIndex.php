@@ -218,7 +218,7 @@ trait IsDeliveryNotesIndex
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
             'delivery_notes.customer_notes',
-            'delivery_notes.internal_notes',
+            'delivery_notes.private_warehouse_note as internal_notes',
             'delivery_notes.public_notes',
             'delivery_notes.shipping_notes',
             'delivery_notes.shipping_data',
@@ -279,8 +279,13 @@ trait IsDeliveryNotesIndex
             ])
             ->allowedFilters($allowedFilters)
             ->withBetweenDates(['date'])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, $this->getRecordsPerPage(), tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function getRecordsPerPage(): ?int
+    {
+        return null;
     }
 
     public function tableStructure(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): Closure

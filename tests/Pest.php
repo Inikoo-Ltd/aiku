@@ -118,10 +118,11 @@ function createOrganisation(): Organisation
 
 function createAdminGuest(Group $group): Guest
 {
-    $guest = Guest::first();
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $guest = Guest::all()->first(fn (Guest $candidate) => $candidate->getUser()?->hasRole('group-admin'));
     if (!$guest) {
-        app()->instance('group', $group);
-        setPermissionsTeamId($group->id);
         try {
             $guest = StoreGuest::make()
                 ->action(

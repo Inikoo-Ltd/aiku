@@ -55,10 +55,10 @@ class GetPackers extends OrgAction
             ->withQueryString();
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-    }
+    // public function authorize(ActionRequest $request): bool
+    // {
+    //     return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
+    // }
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {

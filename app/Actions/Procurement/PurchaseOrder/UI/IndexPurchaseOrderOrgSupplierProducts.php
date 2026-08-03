@@ -28,7 +28,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 {
-    private OrgSupplier|OrgAgent|Organisation $parent;
+    public function authorize(ActionRequest $request): bool
+    {
+        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+
+        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
+    }
 
     public function handle(Organisation|OrgAgent|OrgSupplier $parent, PurchaseOrder $purchaseOrder, $prefix = null): LengthAwarePaginator
     {
@@ -51,13 +56,10 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 and os.organisation_id = {$orgId}
             limit 1)";
 
-        $stockSub = "(select shsp.stock_id from stock_has_supplier_products shsp
-            where shsp.supplier_product_id = supplier_products.id
-            limit 1)";
-
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')
             ->leftJoin('suppliers', 'supplier_products.supplier_id', 'suppliers.id')
+            ->leftJoin('org_suppliers', 'org_suppliers.id', 'org_supplier_products.org_supplier_id')
             ->leftJoin('currencies as supplier_currency', 'supplier_currency.id', 'supplier_products.currency_id')
             ->leftJoin('organisations', 'organisations.id', 'org_supplier_products.organisation_id')
             ->leftJoin('currencies as org_currency', 'org_currency.id', 'organisations.currency_id');
@@ -100,9 +102,9 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 'purchase_order_transactions.org_exchange as org_exchange',
                 'purchase_order_transactions.id as purchase_order_transaction_id',
                 'suppliers.name as supplier_name',
+                'org_suppliers.slug as supplier_slug',
             ])
             ->selectRaw("{$orgStockSub} as org_stock_id")
-            ->selectRaw("{$stockSub} as stock_id")
             ->selectRaw("{$purchaseOrder->id} as purchase_order_id")
             ->selectRaw(($purchaseOrder->org_exchange ?: 1).' as po_org_exchange')
             ->allowedSorts(['code', 'name'])
@@ -115,29 +117,25 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         return $paginator;
     }
 
-    private function attachImages(LengthAwarePaginator $paginator): void
+    public function tableStructure($prefix = null): Closure
     {
-        $orgStockIds = $paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values();
-
-        if ($orgStockIds->isEmpty()) {
-            return;
-        }
-
-        $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
-
-        $paginator->getCollection()->transform(function ($row) use ($orgStocks) {
-            $tradeUnit = $orgStocks->get($row->org_stock_id)?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
-            $row->image_sources = $tradeUnit?->imageSources(64, 64);
-
-            return $row;
-        });
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table
+                    ->name($prefix)
+                    ->pageName($prefix.'Page');
+            }
+            $table
+                ->withGlobalSearch()
+                ->withModelOperations()
+                ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'image_thumbnail', label: __('Image'), canBeHidden: false)
+                ->column(key: 'description', label: __('Description'), canBeHidden: false)
+                ->column(key: 'subtotals', label: __('Subtotals'), canBeHidden: false)
+                ->column(key: 'quantity', label: __('Units'), canBeHidden: false, align: 'right')
+                ->column(key: 'actions', label: 'Actions', canBeHidden: false, align: 'right')
+                ->defaultSort('code');
+        };
     }
 
     public function inOrgAgent(OrgAgent $orgAgent, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
@@ -159,23 +157,21 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         return PurchaseOrderOrgSupplierProductsResource::collection($orgSupplierProducts);
     }
 
-    public function tableStructure(PurchaseOrder $purchaseOrder, $prefix = null): Closure
+    private function attachImages(LengthAwarePaginator $paginator): void
     {
-        return function (InertiaTable $table) use ($prefix) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
-            $table
-                ->withGlobalSearch()
-                ->withModelOperations()
-                ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'image_thumbnail', label: __('Image'), canBeHidden: false)
-                ->column(key: 'description', label: __('Description'), canBeHidden: false)
-                ->column(key: 'subtotals', label: __('Subtotals'), canBeHidden: false)
-                ->column(key: 'quantity', label: __('Units'), canBeHidden: false, align: 'right')
-                ->defaultSort('code');
-        };
+        $orgStockIds = $paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values();
+
+        if ($orgStockIds->isEmpty()) {
+            return;
+        }
+
+        $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
+
+        $paginator->getCollection()->transform(function ($row) use ($orgStocks) {
+            $tradeUnit = $orgStocks->get($row->org_stock_id)?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+            $row->image_sources = $tradeUnit?->imageSources(64, 64);
+
+            return $row;
+        });
     }
 }

@@ -11,7 +11,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DeleteCollection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Console\Command;
@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class DeleteMasterCollection extends GrpAction
+class DeleteMasterCollection extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -43,7 +43,6 @@ class DeleteMasterCollection extends GrpAction
             if ($forceDelete) {
                 DB::table('model_has_master_collections')->where('master_collection_id', $masterCollection->id)->delete();
                 DB::table('master_collection_has_models')->where('master_collection_id', $masterCollection->id)->delete();
-                DB::table('master_collection_sales_intervals')->where('master_collection_id', $masterCollection->id)->delete();
 
                 if ($masterCollection->stats) {
                     $masterCollection->stats->delete();
@@ -78,7 +77,7 @@ class DeleteMasterCollection extends GrpAction
     public function asController(MasterCollection $masterCollection, ActionRequest $request): void
     {
         $this->masterCollection = $masterCollection;
-        $this->initialisation($masterCollection->group, $request);
+        $this->initialisationFromGroup($masterCollection->group, $request);
 
         $forceDelete = $request->boolean('force_delete');
 

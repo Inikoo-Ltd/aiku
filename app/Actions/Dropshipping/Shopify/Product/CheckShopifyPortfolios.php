@@ -95,7 +95,7 @@ class CheckShopifyPortfolios extends OrgAction
 
         $command->info("\nPortfolio Shopify Status:");
         $command->table(
-            ['Portfolio', 'SKU', 'Status', 'Has Valid Product ID', 'Exists in Platform', 'Platform Status', 'Possible Matches'],
+            ['Portfolio', 'SKO', 'Status', 'Has Valid Product ID', 'Exists in Platform', 'Platform Status', 'Possible Matches'],
             $this->tableData
         );
     }

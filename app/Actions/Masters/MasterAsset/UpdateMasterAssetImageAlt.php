@@ -8,12 +8,12 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterAssetImageAlt extends GrpAction
+class UpdateMasterAssetImageAlt extends OrgAction
 {
     public function handle(MasterAsset $masterAsset, Media $media, array $modelData): MasterAsset
     {
@@ -33,7 +33,7 @@ class UpdateMasterAssetImageAlt extends GrpAction
 
     public function asController(MasterAsset $masterAsset, Media $media, ActionRequest $request): void
     {
-        $this->initialisation($masterAsset->group, $request);
+        $this->initialisationFromGroup($masterAsset->group, $request);
 
         $this->handle($masterAsset, $media, $this->validatedData);
     }

@@ -7,6 +7,7 @@
 
 namespace App\Actions\Comms\Outbox;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -71,10 +72,12 @@ class RedoOutboxTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessOutboxTimeSeriesRecords::dispatch($outbox->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessOutboxTimeSeriesRecords::dispatch($outbox->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessOutboxTimeSeriesRecords::run($outbox->id, $frequency, $from, $to);
+                ProcessOutboxTimeSeriesRecords::run($outbox->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

@@ -102,6 +102,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_review_reminder
  * @property int $number_outboxes_type_new_review
  * @property int $number_outboxes_type_invoice_paid
+ * @property int $number_outboxes_type_gold_reward_reminder_1
+ * @property int $number_outboxes_type_gold_reward_reminder_2
+ * @property int $number_outboxes_type_gold_reward_reminder_3
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static Builder<static>|ShopCommsStats newModelQuery()
  * @method static Builder<static>|ShopCommsStats newQuery()

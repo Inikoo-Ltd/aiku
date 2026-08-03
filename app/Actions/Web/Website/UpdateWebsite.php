@@ -119,6 +119,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.luigisbox.last_reindex_at", Arr::pull($modelData, "last_reindex_at"));
         }
 
+        if (Arr::has($modelData, "iris_search_model")) {
+            data_set($modelData, "settings.iris_search_model", Arr::pull($modelData, "iris_search_model"));
+        }
+
         if (Arr::has($modelData, "return_policy")) {
             data_set($modelData, "settings.return_policy", Arr::pull($modelData, "return_policy"));
         }
@@ -159,6 +163,9 @@ class UpdateWebsite extends OrgAction
 
         if (Arr::has($modelData, 'webpage_title_suffix')) {
             data_set($modelData, 'settings.webpage.title_suffix', Arr::pull($modelData, 'webpage_title_suffix', null));
+        }
+        if (Arr::has($modelData, 'show_price')) {
+            data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
         }
 
         // Handle LLMs.txt file upload
@@ -246,6 +253,7 @@ class UpdateWebsite extends OrgAction
             'luigisbox_lbx_code'                         => ['sometimes', 'nullable', 'string', 'regex:/^LBX-\d{6,8}$/'],
             'luigisbox_private_key'                      => ['sometimes', 'nullable', 'string'],
             'last_reindex_at'                            => ['sometimes', 'nullable', 'string'],
+            'iris_search_model'                          => ['sometimes', 'string', Rule::in(['internal', 'luigi'])],
             'jira_help_desk_widget'                      => ['sometimes', 'nullable', 'string'],
             'return_policy'                              => ['sometimes', 'string'],
             'image'                                      => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
@@ -268,6 +276,7 @@ class UpdateWebsite extends OrgAction
             'max_amt_shown_recommender_product_category' => ['sometimes', 'numeric', 'min:1'],
             'webpage_title_prefix'                       => ['sometimes', 'nullable', 'string'],
             'webpage_title_suffix'                       => ['sometimes', 'nullable', 'string'],
+            'show_price'                                 => ['sometimes', 'nullable', 'boolean']
         ];
 
         if (!$this->strict) {

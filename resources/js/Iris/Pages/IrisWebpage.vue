@@ -18,6 +18,7 @@ library.add(faCheck, faPlus, faMinus)
 const props = defineProps<{
     webpage_data: {  // ShowIrisWebpage
         seo_data: {}
+        seo_image_alt?: string | null
         title: string
         description: string
         canonical_url: string
@@ -29,7 +30,6 @@ const props = defineProps<{
     webpage_img: any,
     index_page: boolean,
     follow_link: boolean
-    reviews : any
     allow_review_reaction : boolean
     allow_review_reply_reaction : boolean
     minimum_reviews_to_show : number
@@ -62,11 +62,13 @@ provide('minimum_reviews_to_show', props.minimum_reviews_to_show)
 provide('webpage_reviews_count', props.webpage_reviews_count ?? null)
 provide('allow_review_reaction', props.allow_review_reaction)
 provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
-provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
+provide('show_staff_who_reply', props.show_staff_who_reply)
 
 const checkScreenType = () => {
     screenType.value = getScreenType()
 }
+
+const shareImageAlt = computed(() => props.webpage_data.seo_image_alt || props.webpage_data.title || '')
 
 const robotsContent = computed(() => {
     const index = props.index_page ? "index" : "noindex"
@@ -99,8 +101,6 @@ onBeforeUnmount(() => {
     removeStructuredDataScript(structuredDataScript.value)
     window.removeEventListener("resize", checkScreenType)
 })
-
-console.log('props',props)
 </script>
 
 <template>
@@ -114,13 +114,14 @@ console.log('props',props)
         <meta property="og:description" :content="webpage_data.description || ''" />
         <meta property="og:url" :content="webpage_data.canonical_url || currentUrl" />
         <meta property="og:image" :content="webpage_img?.png || webpage_img?.url || ''" />
-        <meta property="og:image:alt" :content="webpage_data.title || ''" />
+        <meta property="og:image:alt" :content="shareImageAlt" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" :content="usePage().props?.iris?.website?.name || webpage_data.title" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" :content="webpage_data.title || ''" />
         <meta name="twitter:description" :content="webpage_data.description || ''" />
         <meta name="twitter:image" :content="webpage_img?.png || webpage_img?.url || ''" />
+        <meta name="twitter:image:alt" :content="shareImageAlt" />
     </Head>
 
     <div class="bg-white">
@@ -134,6 +135,7 @@ console.log('props',props)
                 <IrisBlockRenderer
                     :type="web_block_data.type"
                     :shopType="layout.retina.type"
+                    :searchModel="layout?.iris?.iris_search_model"
                     :screenType="screenType"
                     :code="web_block_data.type"
                     :fieldValue="web_block_data?.web_block?.layout?.data?.fieldValue || web_block_data.structure"

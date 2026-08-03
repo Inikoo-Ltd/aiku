@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Iris\CRM\StoreIrisProductLastSeen;
 use App\Actions\Retina\Dropshipping\Bundle\UI\RedirectIrisToRetinaBundle;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use Illuminate\Support\Facades\Route;
@@ -72,7 +73,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::middleware(Sample::always())->prefix("models")
         ->name("models.")
         ->group(__DIR__."/models.php");
-
 
     Route::get('attachment/{media:ulid}/download', DownloadRetinaAttachment::class)->name('attach.download')->withoutScopedBindings();
 

@@ -14,7 +14,6 @@ use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Traits\HasBucketImages;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagsResource;
-use App\Http\Resources\Goods\IngredientsResource;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -119,7 +118,7 @@ class GetTradeUnitShowcase
 
         $properties = [
             'countries_of_origin' => $countriesOrigin,
-            'ingredients'       => IngredientsResource::collection($tradeUnit->ingredients)->resolve(),
+            'ingredients'       => $tradeUnit->ingredients->pluck('name')->all(),
             'tariff_code'       => $tradeUnit->tariff_code,
             'duty_rate'         => $tradeUnit->duty_rate,
             'hts_us'            => $tradeUnit->hts_us,
@@ -131,7 +130,7 @@ class GetTradeUnitShowcase
             'warnings' => $tradeUnit->gpsr_warnings,
             'how_to_use' => $tradeUnit->gpsr_manual,
             'gpsr_class_category_danger' => $tradeUnit->gpsr_class_category_danger,
-            'tradeUnit_languages' => $tradeUnit->gpsr_class_languages,
+            'product_languages' => $tradeUnit->gpsr_class_languages,
             'acute_toxicity' => $tradeUnit->pictogram_toxic,
             'corrosive' => $tradeUnit->pictogram_corrosive,
             'explosive' => $tradeUnit->pictogram_explosive,

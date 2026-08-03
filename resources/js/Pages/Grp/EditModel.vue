@@ -67,7 +67,10 @@ import {
     faDollyFlatbedAlt,
     faMapMarkedAlt,
     faMedal,
-    faBullseyePointer
+    faBullseyePointer,
+    faClock,
+    faCalendarCheck,
+    faPercent
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -136,7 +139,10 @@ library.add(
     faMedal,
     faBrowserSolid,
     faTh,
-    faFolderTree
+    faFolderTree,
+    faClock,
+    faCalendarCheck,
+    faPercent
 )
 
 const props = defineProps<{

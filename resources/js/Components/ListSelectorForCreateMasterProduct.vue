@@ -12,7 +12,7 @@ import Pagination from '@/Components/Table/Pagination.vue'
 import Image from "@common/Components/Image.vue";
 import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheckCircle } from "@fas"
+import { faCheckCircle, faExclamationTriangle } from "@fas"
 import { faPlus, faTimes, faBoxUp } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
@@ -218,6 +218,59 @@ const updateProduct = (updated: Portfolio) => {
     console.log("📤 Emitted updated modelValue:", [...committedProducts.value]);
 };
 
+// Section: per-organisation packed_in — the OS-TU leg of the triangle, editable in place
+type OrgPackedIn = { org_stock_id: number; org_code: string; packed_in: number }
+const packedInDialogItem = ref<any>(null)
+const packedInEdits = ref<OrgPackedIn[]>([])
+const isSavingPackedIn = ref(false)
+
+const orgPackedInSummary = (item: any): { label: string; diverges: boolean } | null => {
+    const orgs: OrgPackedIn[] = item.packed_in_by_org || []
+    if (!orgs.length) {
+        return null
+    }
+    const distinct = [...new Set(orgs.map(org => Number(org.packed_in)))]
+    if (distinct.length === 1) {
+        return { label: trans('(SKO packed in :packs)', { packs: distinct[0] + 's' }), diverges: false }
+    }
+    return {
+        label: '(' + orgs.map(org => `${org.org_code} ${Number(org.packed_in)}s`).join(' · ') + ')',
+        diverges: true,
+    }
+}
+
+const openPackedInDialog = (item: any) => {
+    if (!item.packed_in_by_org?.length) return
+    packedInDialogItem.value = item
+    packedInEdits.value = item.packed_in_by_org.map((org: OrgPackedIn) => ({ ...org, packed_in: Number(org.packed_in) }))
+}
+
+const savePackedIn = async () => {
+    const item = packedInDialogItem.value
+    if (!item) return
+    isSavingPackedIn.value = true
+    try {
+        for (const [index, edit] of packedInEdits.value.entries()) {
+            const original = item.packed_in_by_org[index]
+            if (Number(edit.packed_in) === Number(original.packed_in)) continue
+            await axios.patch(route('grp.models.org_stock.trade_units.update', { orgStock: edit.org_stock_id }), {
+                trade_units: [{ id: item.id, quantity: Number(edit.packed_in) }],
+            })
+            original.packed_in = Number(edit.packed_in)
+        }
+        notify({ title: trans('Success'), text: trans('Warehouse packing updated'), type: 'success' })
+        packedInDialogItem.value = null
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong.'),
+            text: error.response?.data?.message || trans('Could not update warehouse packing'),
+            type: 'error',
+        })
+    } finally {
+        isSavingPackedIn.value = false
+    }
+}
+
 const listData = computed(() => {
     if (hideStockUnavailable.value) {
         return list.value.filter(item => item.stock_available)
@@ -295,6 +348,15 @@ defineExpose({
                             </div>
                         </slot>
 
+                        <!-- Warning: partial pack, the classic sign one side of the composition is wrong -->
+                        <div v-if="item.packed_in > 1 && (Number(item[props.key_quantity]) || 1) % Number(item.packed_in) !== 0"
+                            v-tooltip="trans('This quantity is not a whole number of warehouse packs of :packed_in. Either this quantity or the SKU packing is wrong, check both before saving.', { packed_in: item.packed_in })"
+                            class="text-xs text-amber-600 whitespace-nowrap"
+                        >
+                            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500 mr-1" fixed-width aria-hidden="true" />
+                            {{ trans('Partial pack') }}: {{ item[props.key_quantity] || 1 }} / {{ item.packed_in }}
+                        </div>
+
                         <!-- Quantity + Delete -->
                         <div class="flex items-center gap-2">
                             <NumberWithButtonSave v-if="withQuantity"
@@ -306,13 +368,23 @@ defineExpose({
                                    <div class="text-sm text-gray-700 px-3 font-bold">{{ item.type }}</div>
                                 </template>
                                  <template #prefix>
-                                <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap w-full">
-                                    <span class=""> &#8623; SKU </span>
+                                <div v-tooltip="trans('The warehouse stores this as packs of :packed_in (SKO). Selling :quantity means the picker takes :quantity of a :packed_in-pack.', { packed_in: Number(item.packed_in) || 1, quantity: item[props.key_quantity] || 1 })"
+                                    class="text-sm px-3 text-teal-600 whitespace-nowrap w-full flex items-baseline gap-1">
+                                    <span>{{ trans('Picks') }}</span>
                                     <span class="font-bold">
                                         <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
                                     </span>
+                                    <span>{{ trans('SKO') }}</span>
+                                    <span v-if="orgPackedInSummary(item)"
+                                        @click.stop.prevent="openPackedInDialog(item)"
+                                        v-tooltip="trans('Click to edit how each warehouse packs this SKU')"
+                                        class="cursor-pointer underline decoration-dotted underline-offset-2"
+                                        :class="orgPackedInSummary(item)!.diverges ? 'text-amber-600' : 'text-teal-600/60'">
+                                        {{ orgPackedInSummary(item)!.label }}
+                                    </span>
+                                    <span v-else class="text-teal-600/60">{{ trans('(SKO packed in :packs)', { packs: (Number(item.packed_in) || 1) + 's' }) }}</span>
                                 </div>
-                                  
+
                                 </template>
                             </NumberWithButtonSave>
                             <button class="text-red-500 hover:text-red-700 px-4"
@@ -476,6 +548,28 @@ defineExpose({
             <template #footer>
                 <Button type="secondary" @click="showDialog = false" label="Cancel"></Button>
                 <Button type="create" @click="confirmSelection" label="Select"></Button>
+            </template>
+        </Dialog>
+
+        <!-- Dialog: per-organisation warehouse packing (OS-TU) -->
+        <Dialog :visible="!!packedInDialogItem" @update:visible="(open: boolean) => { if (!open) packedInDialogItem = null }"
+            modal :style="{ width: '26rem' }" :header="trans('Warehouse packing') + (packedInDialogItem ? ` — ${packedInDialogItem.code}` : '')">
+            <div class="text-xs text-gray-500 mb-3">
+                {{ trans('How each warehouse physically packs this SKU. This is the picking reality: changing it re-syncs product picking and open delivery notes for that organisation only.') }}
+            </div>
+            <div class="flex flex-col gap-2">
+                <div v-for="edit in packedInEdits" :key="edit.org_stock_id" class="flex items-center gap-3">
+                    <span class="w-16 font-medium text-gray-700 uppercase">{{ edit.org_code }}</span>
+                    <NumberWithButtonSave
+                        :modelValue="edit.packed_in" :bindToTarget="{ min: 1 }"
+                        @update:modelValue="(val: number) => edit.packed_in = val"
+                        noUndoButton noSaveButton parentClass="w-min" />
+                    <span class="text-xs text-gray-400">{{ trans('per pack') }}</span>
+                </div>
+            </div>
+            <template #footer>
+                <Button type="secondary" :disabled="isSavingPackedIn" @click="packedInDialogItem = null" label="Cancel" />
+                <Button type="save" :loading="isSavingPackedIn" @click="savePackedIn" label="Save" />
             </template>
         </Dialog>
     </div>

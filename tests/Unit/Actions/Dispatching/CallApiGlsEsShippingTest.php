@@ -2,6 +2,108 @@
 
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsEsShipping;
 
+it('splits every international multi parcel shipment regardless of weight', function (?string $country, int $parcels, bool $expected) {
+    expect((new CallApiGlsEsShipping())->requiresPerParcelShipments($country, $parcels))->toBe($expected);
+})->with([
+    'FR 2 light parcels'  => ['FR', 2, true],
+    'DE 3 parcels'        => ['DE', 3, true],
+    'FR single parcel'    => ['FR', 1, false],
+    'ES multi parcel'     => ['ES', 3, false],
+    'PT multi parcel'     => ['PT', 2, false],
+    'missing country'     => [null, 2, true],
+]);
+
+function glsEsLabelResponse(array $base64Labels): string
+{
+    $etiquetas = implode('', array_map(fn ($label) => '<Etiqueta tipo="PDF">'.$label.'</Etiqueta>', $base64Labels));
+
+    return '<?xml version="1.0" encoding="utf-8"?>'
+        .'<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+        .'<soap:Body><EtiquetaEnvioV2Response xmlns="http://www.asmred.com/"><EtiquetaEnvioV2Result>'
+        .'<Etiquetas xmlns="">'.$etiquetas.'</Etiquetas>'
+        .'</EtiquetaEnvioV2Result></EtiquetaEnvioV2Response></soap:Body></soap:Envelope>';
+}
+
+function parseGlsEsLabelResponse(string $response): array
+{
+    $reflection = new ReflectionMethod(CallApiGlsEsShipping::class, 'parseLabelResponse');
+    $reflection->setAccessible(true);
+
+    return $reflection->invoke(new CallApiGlsEsShipping(), $response, ['data' => ['codbarras' => 'X']]);
+}
+
+function tinyPdfBase64(string $text): string
+{
+    $pdf = new \Mpdf\Mpdf();
+    $pdf->WriteHTML('<h1>'.$text.'</h1>');
+
+    return base64_encode($pdf->Output('', 'S'));
+}
+
+it('merges every returned label instead of keeping only the last one', function () {
+    $result = parseGlsEsLabelResponse(glsEsLabelResponse([tinyPdfBase64('Parcel 1'), tinyPdfBase64('Parcel 2'), tinyPdfBase64('Parcel 3')]));
+
+    expect($result['status'])->toBe('success')
+        ->and($result['modelData']['number_parcels'])->toBe(3);
+
+    $tempFile = tempnam(sys_get_temp_dir(), 'gls_labels_');
+    file_put_contents($tempFile, base64_decode($result['modelData']['label']));
+
+    try {
+        $inspector = new \Mpdf\Mpdf();
+        expect($inspector->setSourceFile($tempFile))->toBe(3);
+    } finally {
+        @unlink($tempFile);
+    }
+});
+
+it('stores a single returned label untouched', function () {
+    $label  = tinyPdfBase64('Only parcel');
+    $result = parseGlsEsLabelResponse(glsEsLabelResponse([$label]));
+
+    expect($result['status'])->toBe('success')
+        ->and($result['modelData']['number_parcels'])->toBe(1)
+        ->and($result['modelData']['label'])->toBe($label);
+});
+
+it('fails cleanly when the response holds no labels', function () {
+    $result = parseGlsEsLabelResponse(glsEsLabelResponse([]));
+
+    expect($result['status'])->toBe('fail')
+        ->and($result['errorData']['message'])->toBe('No se encontraron etiquetas');
+});
+
+it('keeps RefC within 15 characters without ever cutting the parcel suffix', function (string $reference, ?int $suffix, string $expected) {
+    expect((new CallApiGlsEsShipping())->buildRefC($reference, $suffix))->toBe($expected);
+})->with([
+    'short ref, no suffix'          => ['AWS38309', null, 'AWS38309 V2'],
+    'short ref, parcel 8'           => ['AWS38309', 7, 'AWS38309 V2-b-8'],
+    'short ref, parcel 10 drops V2' => ['AWS38309', 9, 'AWS38309-b-10'],
+    'long ref trims base not tail'  => ['REFERENCE12345', 9, 'REFERENCE1-b-10'],
+    'long ref, no suffix'           => ['REFERENCE12345678', null, 'REFERENCE123456'],
+]);
+
+it('escapes customer data so the SOAP body stays valid XML', function () {
+    $action     = new CallApiGlsEsShipping();
+    $reflection = new ReflectionMethod(CallApiGlsEsShipping::class, 'xmlEscape');
+    $reflection->setAccessible(true);
+
+    $escaped = $reflection->invoke($action, [
+        'to_name'    => 'Boulangerie & Fils <SARL>',
+        'to_address' => "12 Rue de l'Église",
+        'to_city'    => 'Besançon',
+        'weight'     => 8.5,
+    ]);
+
+    $xml = simplexml_load_string('<Envio><Nombre>'.$escaped['to_name'].'</Nombre><Direccion>'.$escaped['to_address'].'</Direccion><Poblacion>'.$escaped['to_city'].'</Poblacion><Peso>'.$escaped['weight'].'</Peso></Envio>');
+
+    expect($xml)->not->toBeFalse()
+        ->and((string)$xml->Nombre)->toBe('Boulangerie & Fils <SARL>')
+        ->and((string)$xml->Direccion)->toBe("12 Rue de l'Église")
+        ->and((string)$xml->Poblacion)->toBe('Besançon')
+        ->and((string)$xml->Peso)->toBe('8.5');
+});
+
 it('merges PDF strings preserving orientation and template size', function () {
     $pdf1 = new \Mpdf\Mpdf();
     $pdf1->WriteHTML('<h1>Page 1</h1>');

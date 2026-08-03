@@ -10,6 +10,9 @@
 import { Language } from '@/types/Locale'
 import { usePage } from '@inertiajs/vue3'
 
+// ponytail: mirrors WHOLE_NUMBER_PRACTICE_CURRENCIES in Stores/locale.ts, keep in sync
+const WHOLE_NUMBER_PRACTICE_CURRENCIES = ["CZK", "HUF", "UAH", "SEK"]
+
 export const irisLocaleStructure = {
     locale_iso: 'en-GB',
     language: {
@@ -36,21 +39,33 @@ export const irisLocaleStructure = {
 			currencyDisplay: 'symbol'
 		}).formatToParts(123).find(part => part.type === 'currency')?.value ?? '';
 	},
-    currencyFormat: (currencyCode: string | null, amount: number): string | number => {
+    currencyFormat: (currencyCode: string | null, amount: number | string): string | number => {
 		const getAmount = amount ?? 0
 
 		if (!currencyCode) {
 			return getAmount || 0
 		}
 
+        const num = Number(getAmount) || 0
+        const wholeNumberPractice = WHOLE_NUMBER_PRACTICE_CURRENCIES.includes(currencyCode) && Number.isInteger(num)
+
         try {
             return new Intl.NumberFormat(usePage()?.props?.iris?.website_i18n?.current_language?.code ||irisLocaleStructure.language.code, {
                 style: "currency",
                 currency: currencyCode,
                 currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.
-            }).format(getAmount || 0)
+                ...(wholeNumberPractice ? { minimumFractionDigits: 0 } : {}),
+            }).format(num)
         } catch (e) {
             return getAmount || 0
         }
+    },
+    currencyFormatRrp: (currencyCode: string | null, amount: number | string): string | number => {
+        const num = Number(amount ?? 0) || 0
+
+        return irisLocaleStructure.currencyFormat(
+            currencyCode,
+            currencyCode && WHOLE_NUMBER_PRACTICE_CURRENCIES.includes(currencyCode) ? Math.ceil(num) : num
+        )
     }
 }

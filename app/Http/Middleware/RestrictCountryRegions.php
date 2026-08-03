@@ -16,11 +16,6 @@ class RestrictCountryRegions
 {
     public function handle(Request $request, Closure $next)
     {
-
-        if ($request->expectsJson()) {
-            return $next($request);
-        }
-
         $isBlocked = CheckIfCountryRegionsIsBlocked::run($request);
         if ($isBlocked) {
             abort(403);

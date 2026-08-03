@@ -9,13 +9,12 @@
 namespace App\Actions\Search;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Http\Client\PendingRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SetupTypesenseSearchAnalytics
 {
     use AsAction;
+    use WithTypesenseApi;
 
     public string $commandSignature = 'search:setup-analytics';
 
@@ -25,13 +24,13 @@ class SetupTypesenseSearchAnalytics
 
     public function handle(): array
     {
-        $base = $this->baseUrl();
+        $base = $this->typesenseUrl();
 
         $results = [];
         foreach ([self::POPULAR_QUERIES_COLLECTION, self::NO_HIT_QUERIES_COLLECTION] as $collection) {
-            $exists = $this->client()->get($base.'/collections/'.$collection)->successful();
+            $exists = $this->typesenseClient()->get($base.'/collections/'.$collection)->successful();
             if (!$exists) {
-                $response = $this->client()->post($base.'/collections', [
+                $response = $this->typesenseClient()->post($base.'/collections', [
                     'name'   => $collection,
                     'fields' => [
                         ['name' => 'q', 'type' => 'string'],
@@ -44,7 +43,7 @@ class SetupTypesenseSearchAnalytics
             }
         }
 
-        $sourceCollections = collect($this->client()->get($base.'/collections')->json())
+        $sourceCollections = collect($this->typesenseClient()->get($base.'/collections')->json())
             ->pluck('name')
             ->reject(fn (string $name) => in_array($name, [self::POPULAR_QUERIES_COLLECTION, self::NO_HIT_QUERIES_COLLECTION], true))
             ->values()
@@ -91,7 +90,7 @@ class SetupTypesenseSearchAnalytics
         }
 
         foreach ($rules as $name => $rule) {
-            $response = $this->client()->put($base.'/analytics/rules/'.$name, $rule);
+            $response = $this->typesenseClient()->put($base.'/analytics/rules/'.$name, $rule);
             $results["rule $name"] = $response->successful() ? 'ok' : $response->status().' '.$response->body();
         }
 
@@ -107,17 +106,4 @@ class SetupTypesenseSearchAnalytics
         return 0;
     }
 
-    protected function baseUrl(): string
-    {
-        $node = config('scout.typesense.client-settings.nodes.0');
-
-        return $node['protocol'].'://'.$node['host'].':'.$node['port'];
-    }
-
-    protected function client(): PendingRequest
-    {
-        return Http::withHeaders([
-            'X-TYPESENSE-API-KEY' => config('scout.typesense.client-settings.api_key'),
-        ])->timeout(5);
-    }
 }

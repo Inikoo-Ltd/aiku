@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
@@ -55,6 +55,15 @@ interface Gpsr {
     warnings: string | null
 }
 
+interface Attachment {
+    label?: string
+    attachment?: {
+        name: string
+        type?: string
+    }
+    download_route: routeType
+}
+
 interface PropsData {
     stockImagesRoute: routeType
     uploadImageRoute: routeType
@@ -86,13 +95,15 @@ const props = withDefaults(
         hide?: string[]
         // publicAttachment: array<any>
         attachments: {
-            public: {}[]
-            private: {}[]
+            public: Attachment[]
+            private: Attachment[]
         }
         properties?: {
             countries_of_origin?: { code: string; name: string }[]
+            ingredients?: (string | { name: string })[]
             tariff_code?: string
             duty_rate?: string
+            hts_us?: string
         }
     }>(),
     {
@@ -120,6 +131,16 @@ library.add(
 
 const showFullWarnings = ref(false)
 const showFullInstructions = ref(false)
+
+const countriesOfOrigin = computed(() =>
+    (props.properties?.countries_of_origin || []).filter(country => country?.code)
+)
+
+const materials = computed(() =>
+    (props.properties?.ingredients || [])
+        .map(ingredient => (typeof ingredient === "string" ? ingredient : ingredient?.name))
+        .filter(name => !!name?.trim())
+)
 
 
 const hazardDefinitions = ref([
@@ -183,7 +204,7 @@ const getIcon = (type?: string) => {
             <AccordionPanel value="2">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="font-medium text-base">{{ trans("Brands & Tags") }}</span>
+                        <span class="text-sm font-semibold text-gray-700">{{ trans("Brands & Tags") }}</span>
                         <FontAwesomeIcon :icon="faTag" class="text-orange-500" />
                     </div>
                 </AccordionHeader>
@@ -227,7 +248,7 @@ const getIcon = (type?: string) => {
             <AccordionPanel v-if="!hide?.includes('properties')" value="4">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="font-medium text-base">{{ trans("Properties") }}</span>
+                        <span class="text-sm font-semibold text-gray-700">{{ trans("Properties") }}</span>
                         <FontAwesomeIcon icon="fal fa-puzzle-piece" class="text-indigo-500" />
                     </div>
                 </AccordionHeader>
@@ -235,18 +256,21 @@ const getIcon = (type?: string) => {
                     <div class="space-y-3 py-2">
                         <div>
                             <dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
-                            <ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-                                <li v-for="ingredient in data?.specifications?.ingredients" :key="ingredient.id">
-                                    {{ ingredient }}
+                            <ul v-if="materials.length" class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+                                <li v-for="material in materials" :key="material">
+                                    {{ material }}
                                 </li>
                             </ul>
+                            <div v-else class="opacity-40 font-normal italic text-xs mt-1">
+                                {{ trans("No materials") }}
+                            </div>
                         </div>
 
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ ctrans("Countries of origin") }} <span v-if="properties?.countries_of_origin?.length > 0">({{ properties?.countries_of_origin?.length }})</span></dt>
+                            <dt class="text-gray-500">{{ ctrans("Countries of origin") }} <span v-if="countriesOfOrigin.length > 0">({{ countriesOfOrigin.length }})</span></dt>
                             <dd class="font-medium">
-                                <template v-if="properties?.countries_of_origin?.length">
-                                    <div v-for="country in properties?.countries_of_origin" :key="country.code" class="text-right">
+                                <template v-if="countriesOfOrigin.length">
+                                    <div v-for="country in countriesOfOrigin" :key="country.code" class="text-right">
                                         <img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
                                             :src="'/flags/' + country.code.toLowerCase() + '.png'"
                                             loading="lazy" />
@@ -261,7 +285,7 @@ const getIcon = (type?: string) => {
                         </div>
                         <div v-if="!hide?.includes('cpnp')" class="flex justify-between flex-wrap gap-1">
                             <dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
-                            <dd class="font-medium">{{ data?.cpnp_number }}</dd>
+                            <dd class="font-medium">{{ data?.cpnp_number || '-' }}</dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-gray-500">{{ trans("Tariff code") }}</dt>
@@ -272,7 +296,7 @@ const getIcon = (type?: string) => {
                         <div class="flex justify-between">
                             <dt class="text-gray-500">{{ trans("Duty rate") }}</dt>
                             <dd class="font-medium">
-                                {{ data?.duty_rate }}
+                                {{ properties?.duty_rate || '-' }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
@@ -283,18 +307,18 @@ const getIcon = (type?: string) => {
                                     :src="'/flags/' + 'us' + '.png'" :alt="`Flag ${'us'}`" loading="lazy" />
                             </dt>
                             <dd class="font-medium">
-                                {{ data?.duty_rate }}
+                                {{ properties?.hts_us || '-' }}
                             </dd>
                         </div>
 
 
                         <div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
                             <dt class="text-gray-500">{{ trans("UFI Number") }}</dt>
-                            <dd class="font-medium">{{ data?.ufi_number }}</dd>
+                            <dd class="font-medium">{{ data?.ufi_number || '-' }}</dd>
                         </div>
                         <div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
                             <dt class="text-gray-500">{{ trans("SCPN Number") }}</dt>
-                            <dd class="font-medium">{{ data?.scpn_number }}</dd>
+                            <dd class="font-medium">{{ data?.scpn_number || '-' }}</dd>
                         </div>
 
                     </div>
@@ -303,7 +327,7 @@ const getIcon = (type?: string) => {
             <AccordionPanel v-if="!hide?.includes('health')" value="5">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="font-medium text-base">{{ trans("Health & Safety") }}</span>
+                        <span class="text-sm font-semibold text-gray-700">{{ trans("Health & Safety") }}</span>
                         <FontAwesomeIcon icon="fal fa-shield-alt" class="text-red-500" />
                     </div>
                 </AccordionHeader>
@@ -312,31 +336,31 @@ const getIcon = (type?: string) => {
                         <div class="flex justify-between">
                             <dt class="text-gray-500">{{ trans("UN number") }}</dt>
                             <dd class="font-medium">
-                                {{ data?.un_number }}
+                                {{ data?.un_number || '-' }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-gray-500">{{ trans("UN class") }}</dt>
                             <dd class="font-medium">
-                                {{ data?.un_class }}
+                                {{ data?.un_class || '-' }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-gray-500">{{ trans("Packing group") }}</dt>
                             <dd class="font-medium">
-                                {{ data?.packing_group }}
+                                {{ data?.packing_group || '-' }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-gray-500">{{ trans("Proper shipping name") }}</dt>
                             <dd class="font-medium">
-                                {{ data?.proper_shipping_name }}
+                                {{ data?.proper_shipping_name || '-' }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-gray-500">{{ trans("Hazard identification number") }}</dt>
                             <dd class="font-medium">
-                                {{ data?.hazard_identification_number }}
+                                {{ data?.hazard_identification_number || '-' }}
                             </dd>
                         </div>
                     </div>
@@ -345,7 +369,7 @@ const getIcon = (type?: string) => {
             <AccordionPanel v-if="gpsr" value="6">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="font-medium text-base">GPSR</span>
+                        <span class="text-sm font-semibold text-gray-700">GPSR</span>
                         <FontAwesomeIcon icon="fal fa-shield-alt" class="text-blue-500" />
                     </div>
                 </AccordionHeader>
@@ -357,14 +381,14 @@ const getIcon = (type?: string) => {
                                 <div class="flex justify-between items-start">
                                     <dt class="text-gray-500 text-sm">{{ trans("Manufacturer") }}</dt>
                                     <dd class="font-medium text-sm text-right flex-1 ml-2">
-                                        <span>{{ gpsr.manufacturer }}</span>
+                                        <span>{{ gpsr.manufacturer || '-' }}</span>
                                     </dd>
                                 </div>
 
                                 <div class="flex justify-between items-start">
                                     <dt class="text-gray-500 text-sm">{{ trans("EU responsible") }}</dt>
                                     <dd class="font-medium text-sm text-right flex-1 ml-2">
-                                        <span>{{ gpsr.eu_responsible }}</span>
+                                        <span>{{ gpsr.eu_responsible || '-' }}</span>
                                     </dd>
                                 </div>
 
@@ -372,7 +396,7 @@ const getIcon = (type?: string) => {
                                     <dt class="text-gray-500 text-sm">{{ trans("Class & category of danger")
                                         }}</dt>
                                     <dd class="font-medium text-sm text-right flex-1 ml-2">
-                                        <span>{{ gpsr.gpsr_class_category_danger }}</span>
+                                        <span>{{ gpsr.gpsr_class_category_danger || '-' }}</span>
 
                                     </dd>
                                 </div>
@@ -381,7 +405,7 @@ const getIcon = (type?: string) => {
                                     <dt class="text-gray-500 text-sm">{{ trans("Product GPSR Languages")
                                         }}</dt>
                                     <dd class="font-medium text-sm text-right flex-1 ml-2">
-                                        <span>{{ gpsr.tradeUnit_languages }}</span>
+                                        <span>{{ gpsr.product_languages || '-' }}</span>
 
                                     </dd>
                                 </div>
@@ -483,7 +507,7 @@ const getIcon = (type?: string) => {
             <AccordionPanel value="7">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="font-medium text-base">Attachments (Private) ({{ props.attachments?.private?.filter(i => i.attachment)?.length ?? 0}})</span>
+                        <span class="text-sm font-semibold text-gray-700">Attachments (Private) ({{ props.attachments?.private?.filter(i => i.attachment)?.length ?? 0}})</span>
                         <FontAwesomeIcon icon="fal fa-lock" class="text-red-500" />
                     </div>
                 </AccordionHeader>
@@ -532,17 +556,17 @@ const getIcon = (type?: string) => {
             <AccordionPanel value="8">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="font-medium text-base">Attachments (Public) ({{ props.attachments?.public?.filter(i => i.attachment)?.length ?? 0 }})</span>
+                        <span class="text-sm font-semibold text-gray-700">Attachments (Public) ({{ props.attachments?.public?.filter(i => i.attachment)?.length ?? 0 }})</span>
                         <FontAwesomeIcon icon="fal fa-lock" class="text-blue-500" />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
                     <div class="space-y-4 pt-2">
-                        <ul v-if="props?.attachments?.private?.filter(i => i.attachment)?.length" class="divide-y divide-gray-100">
+                        <ul v-if="props?.attachments?.public?.filter(i => i.attachment)?.length" class="divide-y divide-gray-100">
                             <li
-                            v-for="(item, index) in props.attachments.private.filter(i => i.attachment)"
-                            :key="'private-' + index"
-                            class="flex items-center justify-between px-4 py-3 text-sm hover:bg-red-50 transition"
+                            v-for="(item, index) in props.attachments.public.filter(i => i.attachment)"
+                            :key="'public-' + index"
+                            class="flex items-center justify-between px-4 py-3 text-sm hover:bg-blue-50 transition"
                             >
                             <div class="flex items-center gap-2">
                                 <!-- Dynamic icon color -->
@@ -572,7 +596,7 @@ const getIcon = (type?: string) => {
                             </li>
                         </ul>
 
-                        <p v-else class="text-xs text-gray-400 italic px-4 py-3">No private attachments available</p>
+                        <p v-else class="text-xs text-gray-400 italic px-4 py-3">No public attachments available</p>
                     </div>
                 </AccordionContent>
             </AccordionPanel>

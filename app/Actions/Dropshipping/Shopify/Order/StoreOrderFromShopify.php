@@ -126,8 +126,7 @@ class StoreOrderFromShopify extends OrgAction
     {
         $receiverDetail = Arr::get($shopifyOrderData, 'shipping_address');
 
-        $reference = trim(Arr::get($receiverDetail, 'firstName') . ' ' . Arr::get($receiverDetail, 'lastName') . ' ' . $shopifyUser->customer_sales_channel_id);
-
+        $reference = preg_replace('/\s+/', '', trim(Arr::get($receiverDetail, 'firstName') . Arr::get($receiverDetail, 'lastName') . $shopifyUser->customer_sales_channel_id));
         $customerClientID = DB::table('customer_clients')
             ->select('id')
             ->where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)

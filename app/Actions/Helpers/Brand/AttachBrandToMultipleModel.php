@@ -2,14 +2,14 @@
 
 namespace App\Actions\Helpers\Brand;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Brand\Hydrators\BrandHydrateProducts;
 use App\Actions\Helpers\Brand\Hydrators\BrandHydrateTradeUnits;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
 use Lorisleiva\Actions\ActionRequest;
 
-class AttachBrandToMultipleModel extends GrpAction
+class AttachBrandToMultipleModel extends OrgAction
 {
     public function handle(Brand $brand, array $modelData): void
     {
@@ -44,7 +44,7 @@ class AttachBrandToMultipleModel extends GrpAction
 
     public function asController(Brand $brand, ActionRequest $request): void
     {
-        $this->initialisation($brand->group, $request);
+        $this->initialisationFromGroup($brand->group, $request);
 
         $this->handle($brand, $this->validatedData);
     }

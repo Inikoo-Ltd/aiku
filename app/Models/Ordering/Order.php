@@ -30,6 +30,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Reviews\OrderReviewStat;
 use App\Models\SysAdmin\Group;
@@ -210,6 +211,7 @@ use App\Audits\Transformer\RelationTransformer;
  */
 class Order extends Model implements HasMedia, Auditable
 {
+    use WithLineTaxCategories;
     use HasSlug;
     use SoftDeletes;
     use HasFactory;
@@ -367,6 +369,7 @@ class Order extends Model implements HasMedia, Auditable
         'public_notes',
         'internal_notes',
         'shipping_notes',
+        'private_warehouse_note',
 
         // Totals & Quantities
         'number_item_transactions',
@@ -480,6 +483,14 @@ class Order extends Model implements HasMedia, Auditable
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
+    }
+
+    /**
+     * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
+     */
+    public function taxBreakdown(): array
+    {
+        return $this->getOrderTaxBreakdown($this);
     }
 
     public function dispatchedEmails(): MorphToMany

@@ -198,26 +198,26 @@
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
-        @if($order->address)
+        @if($order->billingAddress)
             <td width="45%" style="border: 0.1mm solid #888888;"><span
                         style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
                 <div>
-                    {{ $order->address->address_line_1 }}
+                    {{ $order->billingAddress->address_line_1 }}
                 </div>
                 <div>
-                    {{ $order->address->address_line_2 }}
+                    {{ $order->billingAddress->address_line_2 }}
                 </div>
                 <div>
-                    {{ $order->address->administrative_area }}
+                    {{ $order->billingAddress->administrative_area }}
                 </div>
                 <div>
-                    {{ $order->address->locality }}
+                    {{ $order->billingAddress->locality }}
                 </div>
                 <div>
-                    {{ $order->address->postal_code }}
+                    {{ $order->billingAddress->postal_code }}
                 </div>
                 <div>
-                    {{ $order->address->country->name }}
+                    {{ $order->billingAddress->country->name }}
                 </div>
             </td>
             <td width="10%">&nbsp;</td>
@@ -238,8 +238,8 @@
             <td style="text-align:right;width:20% ">{{ __('Unit Price') }}</td>
             <td style="text-align:right;width:20% ">{{ __('Units') }}</td>
         @else
-            <td></td>
-            <td style="text-align:left">{{ __('Qty')  }}.</td>
+            <td style="text-align:right">{{ __('Discount') }}</td>
+            <td style="text-align:left">{{ __('Qty') }}.</td>
         @endif
 
         <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
@@ -262,6 +262,8 @@
         @endif
 
         @foreach($transactions as $transaction)
+            @php($netAmount = (float) $transaction->net_amount)
+            @php($discountFactor = max(0, 1 - (float) ($transaction->current_discount_factor ?? 1)))   
             <tr class="@if($loop->last) last @endif">
                 <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
 
@@ -272,7 +274,11 @@
                         @if($transaction->historicAsset?->units > 1)
                             {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
                         @endif
-                        {{ $transaction->historicAsset?->name . ' (' . $order->currency->symbol . $transaction->net_amount . ')' }}
+                        {{ $transaction->historicAsset?->name }}
+
+                        @if($transaction->historicAsset)
+                            ({{ $order->currency->symbol }}{{ number_format((float) $transaction->historicAsset->price, 2) }})
+                        @endif
                         <br>
                         @if($rrp)
                             RRP: {{ $transaction->model->rrp }} <br>
@@ -300,19 +306,19 @@
 
                 @if($pro_mode)
                     <td style="text-align:right">
-                        @if($transaction->quantity==0 || $transaction->quantity==null)
-                            {{ $order->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                        @if(!$transaction->quantity_ordered || $transaction->quantity_ordered == 0)
+                            {{ $order->currency->symbol }} {{ number_format((float) optional($transaction->historicAsset)->price, 2) }}
                         @elseif($transaction->historicAsset)
-                            {{ $order->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
+                            {{ $order->currency->symbol . ' ' . number_format((float) $transaction->net_amount / $transaction->quantity_ordered, 2) }}
                         @endif
                     </td>
-                    <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
+                    <td style="text-align:right">{{  trimDecimalZeros($transaction->quantity_ordered) }}</td>
                 @else
-                    <td></td>
-                    <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
+                    <td style="text-align:right">{{ $discountFactor > 0 ? percentage($discountFactor, 1) : '-' }}</td>
+                    <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity_ordered)  }}</td>
                 @endif
 
-                <td style="text-align:right">{{ $order->currency->symbol . $transaction->net_amount }}</td>
+                <td style="text-align:right">{{ $order->currency->symbol }}{{ number_format($netAmount, 2) }}</td>
             </tr>
         @endforeach
     @endforeach
@@ -336,17 +342,7 @@
         <td>{{ $order->currency->symbol . $order->net_amount }}</td>
     </tr>
 
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
-            {{ __('Tax') }}
-
-            <br><small>{{$order->taxCategory->name}}
-                ({{__('rate')}}:{{percentage($order->taxCategory->rate,1)}})
-            </small>
-        </td>
-        <td class="totals">{{ $order->currency->symbol . $order->tax_amount }}</td>
-    </tr>
+    @include('invoices.templates.pdf.tax-rows', ['document' => $order])
 
     <tr class="total">
         <td style="border:none" colspan="4"></td>

@@ -149,6 +149,8 @@ class UpdateEmployee extends OrgAction
                 data_forget($credentials, 'user_model_status');
             }
 
+            $credentials['contact_name'] = $employee->contact_name;
+
             UpdateUser::run($user, $credentials);
         }
 

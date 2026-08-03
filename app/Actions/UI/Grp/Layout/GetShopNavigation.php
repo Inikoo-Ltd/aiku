@@ -587,6 +587,17 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    ...($user->chatAgent ? [
+                        [
+                            "label" => __("Inbox"),
+                            "icon"  => ["fal", "fa-inbox"],
+                            "root"  => "grp.org.shops.show.chat.inbox",
+                            "route" => [
+                                "name"       => "grp.org.shops.show.chat.inbox",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                    ] : []),
                 ],
             ],
         ];

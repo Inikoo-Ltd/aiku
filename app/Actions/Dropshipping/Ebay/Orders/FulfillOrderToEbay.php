@@ -14,8 +14,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -25,7 +25,7 @@ class FulfillOrderToEbay extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(Order $order): void
+    public function handle(Order $order): array|null
     {
         $fulfillOrderId = Arr::get($order->data, 'ebay_order.orderId');
 
@@ -34,7 +34,7 @@ class FulfillOrderToEbay extends OrgAction
         }
 
         if (! $order->customerSalesChannel->platform_status) {
-            return;
+            return [];
         }
 
         /** @var EbayUser $ebayUser */
@@ -55,12 +55,24 @@ class FulfillOrderToEbay extends OrgAction
             }
         }
 
-        $ebayUser->fulfillOrder($fulfillOrderId, [
+        return $ebayUser->fulfillOrder($fulfillOrderId, [
             'line_items' => $lineItems,
             'tracking_number' => $shipment->tracking,
             'carrier_code' => $shipment->shipper->name
         ]);
+    }
 
-        Log::info('Order Fulfilled to Ebay:' . $fulfillOrderId);
+    public string $commandSignature = 'ebay-order-fulfill {order}';
+
+    public function asCommand(Command $command): void
+    {
+        $order = Order::where('slug', $command->argument('order'))->first();
+
+        $result = $this->handle($order);
+
+        $command->table(['Field', 'Value'], [
+            ['Order ID', $order->id],
+            ['Status', Arr::get($result, 'error', 'Success')],
+        ]);
     }
 }

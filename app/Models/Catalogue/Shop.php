@@ -49,7 +49,6 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\GoodsIn\ReturnDeliveryNote;
@@ -151,9 +150,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property bool $registration_needs_approval
  * @property array<array-key, mixed>|null $extra_languages
  * @property bool $is_aiku
- * @property numeric $cost_price_ratio
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
- * @property numeric $price_rrp_ratio
  * @property bool $is_migrating_to_aiku
  * @property array<array-key, mixed>|null $offers_data
  * @property ShopEngineEnum $engine
@@ -203,7 +200,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Invoice> $invoices
  * @property-read Language $language
  * @property-read LaravelCollection<int, Mailshot> $mailshots
- * @property-read \App\Models\Catalogue\ShopMailshotsIntervals|null $mailshotsIntervals
  * @property-read MasterShop|null $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read LaravelCollection<int, OfferAllowance> $offerAllowances
@@ -215,18 +211,11 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read OrgPaymentServiceProviderShop|null $pivot
  * @property-read LaravelCollection<int, OrgPaymentServiceProvider> $orgPaymentServiceProviders
  * @property-read Organisation $organisation
- * @property-read \App\Models\Catalogue\ShopOutboxColdEmailsIntervals|null $outboxColdEmailsIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxCustomerNotificationIntervals|null $outboxCustomerNotificationIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxMarketingIntervals|null $outboxMarketingIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxMarketingNotificationIntervals|null $outboxMarketingNotificationIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxNewsletterIntervals|null $outboxNewsletterIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxPushIntervals|null $outboxPushIntervals
  * @property-read LaravelCollection<int, Outbox> $outboxes
  * @property-read LaravelCollection<int, Packing> $packings
  * @property-read LaravelCollection<int, PaymentAccountShop> $paymentAccountShops
  * @property-read LaravelCollection<int, Payment> $payments
  * @property-read LaravelCollection<int, Picking> $pickings
- * @property-read LaravelCollection<int, PlatformShopSalesIntervals> $platformSalesIntervals
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopPlatformStats> $platformStats
  * @property-read LaravelCollection<int, Poll> $polls
  * @property-read LaravelCollection<int, Portfolio> $portfolios
@@ -381,8 +370,8 @@ class Shop extends Model implements HasMedia, Auditable
     public function getCustomReviewCategoryLabel(): array
     {
         return collect(ReviewContextEnum::shortLabels())->mapWithKeys(fn ($item, $key) => [
-                $key => data_get($this->settings, "reviews.rating_labels.$key.label_tab") ?? $item
-            ])->toArray();
+            $key => data_get($this->settings, "reviews.rating_labels.$key.label_tab") ?? $item
+        ])->toArray();
     }
 
     public function crmStats(): HasOne
@@ -398,11 +387,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function orderHandlingStats(): HasOne
     {
         return $this->hasOne(ShopOrderHandlingStats::class);
-    }
-
-    public function mailshotsIntervals(): HasOne
-    {
-        return $this->hasOne(ShopMailshotsIntervals::class);
     }
 
     public function stats(): HasOne
@@ -766,37 +750,6 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(ShopTimeSeries::class);
     }
 
-    public function outboxNewsletterIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxNewsletterIntervals::class);
-    }
-
-
-    public function outboxMarketingIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxMarketingIntervals::class);
-    }
-
-    public function outboxMarketingNotificationIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxMarketingNotificationIntervals::class);
-    }
-
-    public function outboxCustomerNotificationIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxCustomerNotificationIntervals::class);
-    }
-
-    public function outboxColdEmailsIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxColdEmailsIntervals::class);
-    }
-
-    public function outboxPushIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxPushIntervals::class);
-    }
-
     public function webUsers(): HasMany
     {
         return $this->hasMany(WebUser::class);
@@ -831,11 +784,6 @@ class Shop extends Model implements HasMedia, Auditable
             Brand::class,
             'model_has_brands'
         );
-    }
-
-    public function platformSalesIntervals(): HasMany
-    {
-        return $this->hasMany(PlatformShopSalesIntervals::class);
     }
 
     public function productsInStock(): HasMany

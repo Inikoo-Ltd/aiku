@@ -57,7 +57,7 @@ import CollectionDescription from '@/Components/CMS/Webpage/CollectionDescriptio
 import DepartmentDescription from "@/Components/CMS/Webpage/DepartmentDescription/Blueprint"
 import DepartmentDescription2 from "@/Components/CMS/Webpage/DepartmentDescription2/Blueprint"
 import SubDepartmentDesciption from "../Components/CMS/Webpage/SubDepartmentDescription/Blueprint"
-import { Mainbluprint } from '@/Components/CMS/Webpage/Product1/BlueprintWebpages'
+import { Mainbluprint } from '@/Components/CMS/Webpage/Products1/BlueprintWebpages'
 import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
 import Product1DSBlueprint from '@/Components/CMS/Webpage/Product1/Dropshipping/Blueprint'
 

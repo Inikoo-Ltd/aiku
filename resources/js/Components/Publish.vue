@@ -3,15 +3,11 @@
 import { trans } from 'laravel-vue-i18n'
 import Popover from "@/Components/Utils/Popover.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { computed, ref } from 'vue'
-// import { v4 as uuidv4 } from 'uuid'
 
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSpinnerThird } from '@fad'
-import { faAsterisk } from '@fas'
-import { faRocketLaunch } from '@far'
+import { faRocketLaunch, faCommentAltLines } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faSpinnerThird, faAsterisk, faRocketLaunch)
+library.add(faSpinnerThird, faRocketLaunch, faCommentAltLines)
 
 const props = defineProps<{
     modelValue: string
@@ -19,45 +15,50 @@ const props = defineProps<{
     isLoading: boolean
 }>()
 
-// const compRandomKey = computed(() => {
-//     return uuidv4()
-// })
-
 const emits = defineEmits<{
     (e: 'update:modelValue', value: string): void
-    (e: 'onPublish', value: {close: Function, open: boolean}): void
+    (e: 'onPublish', value: { close: Function, open: boolean }): void
 }>()
 
-
+const onPublishWithoutComment = () => {
+    emits('update:modelValue', '')
+    emits('onPublish', { close: () => {}, open: false })
+}
 </script>
 
 <template>
-    <div class="flex items-center gap-2 relative" tabindex="-1">
+    <div class="flex items-center relative" tabindex="-1">
+        <slot name="button" :onPublishWithoutComment>
+            <Button
+                :label="trans('Publish')"
+                :style="!is_dirty ? 'tertiary' : 'primary'"
+                :key="is_dirty.toString()"
+                icon="far fa-rocket-launch"
+                :loading="isLoading"
+                class="rounded-r-none"
+                @click="onPublishWithoutComment"
+            />
+        </slot>
 
-
-        <!-- Popover (comment section) is appear if it 2nd publishing or more -->
+        <!-- Popover (comment section): only needed when publishing with a comment -->
         <Popover>
-            <template #button="{ open }">
-                <!-- Style: Compare the hash from current data with hash from empty data -->
-                 <slot name="button" :open>
-                    <Button
-                        :label="'Publish'"
-                        :style="!is_dirty
-                            ? 'tertiary'
-                            :  'primary'"
-                    :disabled="open"
-                        :key="is_dirty.toString()"
-                        :icon="'far fa-rocket-launch'"
-                    />
-                    </slot>
+            <template #button>
+                <Button
+                    :style="!is_dirty ? 'tertiary' : 'primary'"
+                    :key="is_dirty.toString()"
+                    icon="far fa-comment-alt-lines"
+                    :disabled="isLoading"
+                    :tooltip="trans('Publish with comment')"
+                    class="rounded-l-none -ml-px"
+                />
             </template>
 
             <!-- Section: Popover -->
             <template #content="{ open, close }">
                 <div>
                     <div class="inline-flex items-start leading-none">
-                        <FontAwesomeIcon :icon="'fas fa-asterisk'" class="font-light text-[12px] text-red-400 mr-1" />
-                        <span class="">{{ trans('Comment') }}</span>
+                        <span>{{ trans('Comment') }}</span>
+                        <span class="ml-1 text-gray-400 text-xs">({{ trans('optional') }})</span>
                     </div>
                     <div class="py-2.5">
                         <textarea
@@ -73,10 +74,9 @@ const emits = defineEmits<{
                             size="s"
                             full
                             icon="far fa-rocket-launch"
-                            label="Publish"
-                            @click="() => emits('onPublish', {open, close})"
-                            :key="(modelValue.length > 0 ).toString()"
-                            :style="modelValue.length ? 'primary' : 'disabled'"
+                            :label="trans('Publish')"
+                            @click="() => emits('onPublish', { open, close })"
+                            :style="'primary'"
                             :loading="isLoading"
                         />
                     </div>

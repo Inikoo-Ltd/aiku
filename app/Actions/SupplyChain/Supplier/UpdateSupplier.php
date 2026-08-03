@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Supplier;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -20,8 +21,9 @@ use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateSupplier extends GrpAction
+class UpdateSupplier extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 
@@ -55,15 +57,6 @@ class UpdateSupplier extends GrpAction
         }
 
         return $supplier;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->action = true) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.".$this->group->id.".edit");
     }
 
     public function rules(): array
@@ -110,10 +103,10 @@ class UpdateSupplier extends GrpAction
             Supplier::disableAuditing();
         }
         $this->supplier       = $supplier;
-        $this->action         = true;
+        $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($supplier->group, $modelData);
+        $this->initialisationFromGroup($supplier->group, $modelData);
 
         return $this->handle($supplier, $this->validatedData);
     }
@@ -121,7 +114,7 @@ class UpdateSupplier extends GrpAction
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
         $this->supplier = $supplier;
-        $this->initialisation($supplier->group, $request);
+        $this->initialisationFromGroup($supplier->group, $request);
 
         return $this->handle($supplier, $this->validatedData);
     }

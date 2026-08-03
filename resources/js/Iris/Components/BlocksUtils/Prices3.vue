@@ -147,7 +147,7 @@ const _popoverProfit = ref(null)
                     {{ trans("RRP") }}:
                 </span>
                 <span class="text-xs font-medium relative top-[1px]">
-                    {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
+                    {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit) }}
                 </span>
             </div>
 

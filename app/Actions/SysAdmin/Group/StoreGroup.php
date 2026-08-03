@@ -60,22 +60,11 @@ class StoreGroup
         $group->fulfilmentStats()->create();
         $group->orderingStats()->create();
         $group->orderHandlingStats()->create();
-        $group->mailshotsIntervals()->create();
         $group->manufactureStats()->create();
         $group->webStats()->create();
         $group->dropshippingStats()->create();
         $group->commsStats()->create();
         $group->discountsStats()->create();
-        $group->sysadminIntervals()->create();
-
-        $group->outboxNewsletterIntervals()->create();
-        $group->outboxMarketingIntervals()->create();
-        $group->outboxMarketingNotificationIntervals()->create();
-        $group->outboxCustomerNotificationIntervals()->create();
-        $group->outboxColdEmailsIntervals()->create();
-        $group->outboxUserNotificationIntervals()->create();
-        $group->outboxPushIntervals()->create();
-        $group->outboxTestIntervals()->create();
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             $group->timeSeries()->create(['frequency' => $frequency]);

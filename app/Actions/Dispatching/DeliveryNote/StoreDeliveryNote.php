@@ -61,7 +61,7 @@ class StoreDeliveryNote extends OrgAction
 
 
         data_set($modelData, 'customer_notes', $order->customer_notes);
-        data_set($modelData, 'internal_notes', $order->internal_notes);
+        data_set($modelData, 'private_warehouse_note', $order->private_warehouse_note);
         data_set($modelData, 'public_notes', $order->public_notes);
         data_set($modelData, 'shipping_notes', $order->shipping_notes);
         data_set($modelData, 'has_insurance', $order->has_insurance);

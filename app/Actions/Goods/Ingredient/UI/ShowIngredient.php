@@ -10,7 +10,7 @@
 namespace App\Actions\Goods\Ingredient\UI;
 
 use App\Actions\Goods\UI\ShowGoodsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\IngredientTabsEnum;
 use App\Models\Goods\Ingredient;
@@ -18,7 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowIngredient extends GrpAction
+class ShowIngredient extends OrgAction
 {
     use WithGoodsAuthorisation;
 
@@ -31,7 +31,7 @@ class ShowIngredient extends GrpAction
     public function asController(Ingredient $ingredient, ActionRequest $request): Ingredient
     {
         $group = group();
-        $this->initialisation($group, $request)->withTab(IngredientTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(IngredientTabsEnum::values());
 
         return $this->handle($ingredient);
     }
@@ -53,7 +53,7 @@ class ShowIngredient extends GrpAction
                 ],
                 'pageHead'    => [
                     'icon'  => [
-                        'title' => __('SKUs'),
+                        'title' => __('SKOs'),
                         'icon'  => 'fal fa-apple-crate'
                     ],
                     'title' => $ingredient->name,

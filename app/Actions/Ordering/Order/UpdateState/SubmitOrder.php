@@ -20,7 +20,9 @@ use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithGiftOptOut;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Events\RetinaOrderSubmittedEvent;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -51,6 +53,7 @@ class SubmitOrder extends OrgAction
     use WithActionUpdate;
     use HasOrderHydrators;
     use WithOrderingEditAuthorisation;
+    use WithGiftOptOut;
 
 
     private Order $order;
@@ -65,7 +68,7 @@ class SubmitOrder extends OrgAction
         $modelData = [
             'state'          => OrderStateEnum::SUBMITTED,
             'status'         => OrderStatusEnum::PROCESSING,
-            'internal_notes' => $order->customer->warehouse_internal_notes,
+            'private_warehouse_note' => $order->customer->warehouse_internal_notes,
         ];
 
         $date = now();
@@ -147,6 +150,10 @@ class SubmitOrder extends OrgAction
 
         CustomerHydrateTrafficSource::dispatch($order->customer_id);
 
+        /** Tells any other browser tab still showing this order's checkout to redirect away,
+         * so a stale card widget cannot take a second payment */
+        RetinaOrderSubmittedEvent::dispatch($order->customer_id, $order->id);
+
         return $order;
     }
 
@@ -196,6 +203,10 @@ class SubmitOrder extends OrgAction
 
     public function processGiftOffers(Order $order): Order
     {
+        if ($this->isGiftOptedOut($order)) {
+            return $order;
+        }
+
         foreach (
             DB::table('offers')
                 ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id', 'offer_campaign_id'])
@@ -279,7 +290,7 @@ class SubmitOrder extends OrgAction
 
     public function processVoucherGiftOffers(Order $order): Order
     {
-        if (!$order->offer_voucher_id) {
+        if (!$order->offer_voucher_id || $this->isGiftOptedOut($order)) {
             return $order;
         }
 
@@ -372,7 +383,7 @@ class SubmitOrder extends OrgAction
             if ($order->gross_amount >= $minAmount && ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30))) {
                 $eligible = true;
             }
-            $isGiftOptedOut = (bool)Arr::get($order->customer->settings, 'is_gift_opted_out', false);
+            $isGiftOptedOut = $this->isGiftOptedOut($order);
         }
 
 

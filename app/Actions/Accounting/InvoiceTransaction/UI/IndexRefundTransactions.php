@@ -24,7 +24,7 @@ class IndexRefundTransactions extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('historic_assets.code', $value)
-                    ->orWhereWith('historic_assets.name', $value);
+                    ->orWhereStartWith('historic_assets.name', $value);
             });
         });
 

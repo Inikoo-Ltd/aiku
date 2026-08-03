@@ -13,13 +13,13 @@ import axios from 'axios'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Field form list
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSave as fadSave, } from '@fad'
-import { faSave as falSave, faInfoCircle } from '@fal'
+import { faSave as falSave, faInfoCircle, faRobot } from '@fal'
 import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Modal from '../Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '../Elements/Buttons/Button.vue'
-library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk)
+library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faRobot)
 
 const props = defineProps<{
     field: string
@@ -27,6 +27,7 @@ const props = defineProps<{
     fieldData: {
         type: string
         label: string
+        icon?: string
         verification?: {
             route: routeType
             state: string
@@ -46,6 +47,7 @@ const props = defineProps<{
             title?: string
             description?: string
             yesLabel?: string
+            whenValueIs?: any  // Confirm only for this value, leave out to confirm every save
         }
     }
     args: {
@@ -67,7 +69,16 @@ formFields['_method'] = 'patch'
 const form = useForm(formFields)
 form['fieldType'] = 'edit'
 
+// Gated here, not on the save button, so fields with their own save (trade units) cannot bypass it
 const submit = () => {
+    if (needsSaveConfirmation.value) {
+        isModalConfirmation.value = true
+        return
+    }
+    save()
+}
+
+const save = () => {
     form.post(
         route(updateRoute.name, updateRoute.parameters),
         {
@@ -132,6 +143,22 @@ defineExpose({
 })
 
 const isModalConfirmation = ref(false)
+
+/*
+ * A confirmation can be limited to one value so that ordinary edits are not interrupted:
+ * pricing a product at zero gives it away and is worth stopping for, changing 12.50 to 11.00
+ * is not, and a dialog on every price save would be dismissed without being read.
+ */
+const needsSaveConfirmation = computed(() => {
+    const confirmation = props.fieldData.saveConfirmation
+    if (!confirmation) {
+        return false
+    }
+    if (confirmation.whenValueIs === undefined) {
+        return true
+    }
+    return Number(form[props.field]) === Number(confirmation.whenValueIs)
+})
 </script>
 
 <template>
@@ -140,6 +167,7 @@ const isModalConfirmation = ref(false)
             <!-- Title -->
             <dt v-if="!fieldData.noTitle && fieldData.label" class="qwezxctext-sm font-medium text-gray-400">
                 <div class="inline-flex items-start leading-none">
+                    <FontAwesomeIcon v-if="fieldData.icon" :icon="fieldData.icon" class="mr-1" fixed-width aria-hidden="true" />
                     {{ fieldData.label }}
                     <FontAwesomeIcon v-if="fieldData.required" icon="fas fa-asterisk" class="font-light text-[12px] text-red-400 mr-1"/>
                     <div v-if="fieldData.information" v-tooltip="fieldData.information" class="opacity-50 hover:opacity-100 cursor-pointer ml-1">
@@ -194,19 +222,7 @@ const isModalConfirmation = ref(false)
 
                 </span>
                 <span v-else class="ml-2 flex-shrink-0">
-                    <div v-if="fieldData.saveConfirmation"
-                        @click="() => isModalConfirmation = true"
-                        class="h-9 align-bottom text-center cursor-pointer"
-                        :disabled="form.processing || !form.isDirty"
-                    >
-                        <template v-if="form.isDirty">
-                            <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
-                            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
-                        </template>
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
-                    </div>
-
-                    <button v-else-if="!fieldData.verification" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="submit">
+                    <button v-if="!fieldData.verification" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="submit">
                         <template v-if="form.isDirty">
                             <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
                             <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
@@ -228,7 +244,7 @@ const isModalConfirmation = ref(false)
         </dl>
 
         <!-- Modal: Save confirmation -->
-        <Modal v-if="fieldData.saveConfirmation" :isOpen="isModalConfirmation" @onClose="() => isModalConfirmation = false" width="w-full max-w-lg">
+        <Modal v-if="needsSaveConfirmation" :isOpen="isModalConfirmation" @onClose="() => isModalConfirmation = false" width="w-full max-w-lg">
             <div class="relative text-left sm:w-full sm:max-w-lg py-2 flex">
 
                 <div
@@ -261,7 +277,7 @@ const isModalConfirmation = ref(false)
                         />
                         <div class="xw-full sm:w-fit">
                             <Button
-                                @click="() => submit()"
+                                @click="() => save()"
                                 type="secondary"
                                 key="3"
                                 :loading="form.processing"

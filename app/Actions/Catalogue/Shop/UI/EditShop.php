@@ -299,35 +299,13 @@ class EditShop extends OrgAction
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => [
-                        'cost_price_ratio'                => [
-                            'type'        => 'input_number',
-                            'bind'        => [
-                                'maxFractionDigits' => 3
-                            ],
-                            'label'       => __('Pricing ratio'),
-                            'placeholder' => __('Cost price ratio'),
-                            'required'    => true,
-                            'value'       => $shop->cost_price_ratio,
-                            'min'         => 0
-                        ],
-                        'price_rrp_ratio'                 => [
-                            'type'        => 'input_number',
-                            'bind'        => [
-                                'maxFractionDigits' => 3
-                            ],
-                            'label'       => __('RRP ratio'),
-                            'placeholder' => __('price rrp ratio'),
-                            'required'    => true,
-                            'value'       => $shop->price_rrp_ratio,
-                            'min'         => 0
-                        ],
                         'follow_master_pricing'           => [
                             'label'       => __('Follow Master Pricing'),
                             'type'        => 'toggle',
-                            'value'       => data_get($shop->settings, 'catalog.follow_master_pricing', false),
-                            'information' => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio'),
-                            'warningText' => __('Enabling this would force all of this shop prices to follow master shop prices using the set exchange ratio').
-                                '. '.__(':__amountProducts Products would be updated', ['__amountProducts' => $shop->products()->count()]).'. '.__('Are you sure you want to do this?'),
+                            'value'       => data_get($shop->settings, 'catalog.follow_master_pricing', true),
+                            'information' => __('All products under this shop would follow price sets up on Master'),
+                            'warningText' => __('Modifying this setting would cause products to either diverge/follow master').
+                                '. '.__(':__amountProducts Products would be affected', ['__amountProducts' => $shop->products()->count()]).'. '.__('Are you sure you want to do this?'),
                         ],
                         'product_price_currency_exchange' => [
                             'type'             => 'input_number',

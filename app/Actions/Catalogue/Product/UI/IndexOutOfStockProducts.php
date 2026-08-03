@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -49,14 +50,27 @@ class IndexOutOfStockProducts extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
 
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
         $queryBuilder->where('products.status', ProductStatusEnum::OUT_OF_STOCK);
         $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
 
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
+
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'asset_time_series',
+            timeSeriesRecordsTable: 'asset_time_series_records',
+            foreignKey: 'asset_id',
+            aggregateColumns: [
+                'invoices'           => 'invoices_all',
+                'sales_external'     => 'sales_all',
+                'customers_invoiced' => 'customers_invoiced_all',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+            localKey: 'asset_id',
+        );
 
         $queryBuilder
             ->defaultSort('products.code')
@@ -70,9 +84,9 @@ class IndexOutOfStockProducts extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
-                'invoices_all',
-                'sales_all',
-                'customers_invoiced_all',
+                $timeSeriesData['selectRaw']['invoices_all'],
+                $timeSeriesData['selectRaw']['sales_all'],
+                $timeSeriesData['selectRaw']['customers_invoiced_all'],
             ]);
 
         return $queryBuilder->allowedSorts(['code', 'name', 'state', 'price'])

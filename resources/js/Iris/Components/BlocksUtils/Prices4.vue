@@ -155,7 +155,7 @@ const bestOfferClass = computed(() => {
 watch(
     () => props.hasInBasket?.quantity_ordered,
     (newValue) => {
-        console.log('quantity changed', newValue)
+        // console.log('quantity changed', newValue)
     },
     { immediate: true }
 )
@@ -191,10 +191,10 @@ const _popoverProfit = ref(null)
                     <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
                 </span>
 
-                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-[#E87928] border-[#E87928]">
+                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-[#E87928] border-[#E87928] font-bold">
                     {{ trans('RRP') }}:
-                    <span class="font-medium">
-                        {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
+                    <span class="font-bold">
+                        {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit) }}
                     </span>
                 </span>
             </div>
@@ -296,11 +296,15 @@ const _popoverProfit = ref(null)
                         <div class="min-w-0 flex-1 truncate text-[#E87928] border-[#E87928]">
                             <span class="font-bold" v-if="product.units == 1">{{ locale.currencyFormat(currency?.code, product.discounted_price) }} /{{ product.unit }}</span>
                             <span v-else>
-                                <span class=" text-[8px] sm:text-[9px] md:text-[10px]">{{ locale.currencyFormat(currency?.code, product.discounted_price) }}</span><span
-                                    class="font-bold">({{
+                                <span class=" text-[8px] sm:text-[9px] md:text-[10px] mr-1 font-bold">
+                                    {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
+                                </span>
+                                <span class="font-bold">({{
                                         locale.currencyFormat(currency?.code,
                                             product.discounted_price_per_unit) }}
-                                    /{{ product.unit }})</span></span>
+                                    /{{ product.unit }})
+                                </span>
+                            </span>
                         </div>
 
                     </div>

@@ -62,7 +62,7 @@ use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunMailshotTrackingUpdates;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Mailshot\SendMailShot;
-use App\Actions\Comms\Mailshot\SendScheduledMailshots;
+use Illuminate\Validation\ValidationException;
 use App\Actions\Comms\Mailshot\SetMailshotAsReady;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\Mailshot\SetMailshotSecondWaveStatus;
@@ -391,7 +391,7 @@ test('test send email reset password', function () {
 
 test('send reorder reminder email', function () {
 
-    $outbox = $this->shop->outboxes()->where('code', OutboxCodeEnum::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCodeEnum::REORDER_REMINDER);
 
     $outbox = UpdateOutbox::make()->action($outbox, [
         'days_after' => 14
@@ -418,13 +418,7 @@ test('send reorder reminder email', function () {
     );
     $this->customer->refresh();
 
-    expect($outbox->intervals->runs_all)->toBe(0);
-
-
     RunReorderRemainderEmailBulkRuns::run();
-    $outbox->refresh();
-
-    expect($outbox->intervals->runs_all)->toBe(1);
 
 
 });
@@ -1561,21 +1555,6 @@ test('send mailshot returns unchanged when not ready', function (Mailshot $mails
     expect($result->state)->toBe(MailshotStateEnum::IN_PROCESS);
 })->depends('create mailshot with recipe for filters');
 
-test('send scheduled mailshots dispatches send action for due mailshots', function (Shop $shop) {
-    Queue::fake();
-    $shop->update(['is_aiku' => true]);
-
-    $outbox   = $shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
-    $mailshot = StoreMailshot::make()->action($outbox, array_merge(
-        Mailshot::factory()->definition(),
-        ['type' => MailshotTypeEnum::MARKETING, 'state' => MailshotStateEnum::SCHEDULED, 'scheduled_at' => now()->subMinute()]
-    ), strict: false);
-
-    SendScheduledMailshots::run();
-
-    Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === SendMailShot::class);
-})->depends('outbox seeded when shop created');
-
 test('run mailshot scheduled dispatches recipients preparation', function (Shop $shop) {
     Queue::fake();
 
@@ -1727,6 +1706,18 @@ test('set mailshot as scheduled', function (Mailshot $mailshot) {
 
     expect($mailshot->state)->toBe(MailshotStateEnum::SCHEDULED)
         ->and($mailshot->ready_at)->not->toBeNull();
+})->depends('create mailshot with recipe for filters');
+
+test('set mailshot as scheduled rejects a date that is not in the future', function (Mailshot $mailshot) {
+    $mailshot->update(['state' => MailshotStateEnum::READY, 'is_second_wave' => false, 'scheduled_at' => null]);
+
+    foreach ([now(), now()->subMinute()] as $notInTheFuture) {
+        expect(fn () => SetMailshotAsScheduled::make()->action($mailshot, ['scheduled_at' => $notInTheFuture]))
+            ->toThrow(ValidationException::class);
+    }
+
+    expect($mailshot->refresh()->state)->toBe(MailshotStateEnum::READY)
+        ->and($mailshot->scheduled_at)->toBeNull();
 })->depends('create mailshot with recipe for filters');
 
 test('set mailshot as scheduled throws for second wave', function (Mailshot $mailshot) {
@@ -2036,7 +2027,7 @@ test('index mailshot recipients', function (Mailshot $mailshot) {
 })->depends('create mailshot with recipe for filters');
 
 test('process outbox time series records', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     ProcessOutboxTimeSeriesRecords::run(
         $outbox->id,
@@ -2060,7 +2051,7 @@ test('process outbox time series records with bogus outbox id returns early', fu
 });
 
 test('outbox hydrate time series number records', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     $timeSeries = $outbox->timeSeries()->firstOrCreate(
         ['frequency' => TimeSeriesFrequencyEnum::DAILY],
@@ -2092,7 +2083,7 @@ test('redo outbox time series with bogus outbox id returns early', function () {
 });
 
 test('redo outbox time series with no dispatched emails returns early', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     RedoOutboxTimeSeries::make()->handle($outbox->id);
 
@@ -2100,7 +2091,7 @@ test('redo outbox time series with no dispatched emails returns early', function
 });
 
 test('redo outbox time series with explicit range dispatches synchronously', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     RedoOutboxTimeSeries::make()->handle(
         $outbox->id,
@@ -2112,7 +2103,7 @@ test('redo outbox time series with explicit range dispatches synchronously', fun
 });
 
 test('store workshop outbox template', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     $modelData = [
         'name'   => 'Test Template',
@@ -2127,7 +2118,7 @@ test('store workshop outbox template', function () {
 });
 
 test('update workshop outbox creates then updates unpublished snapshot', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     $outbox = UpdateWorkshopOutbox::make()->handle($outbox, ['layout' => '{"test":1}']);
 
@@ -2156,7 +2147,7 @@ test('get outbox merge tag by outbox for review reminder', function () {
 });
 
 test('get outbox merge tag by outbox default branch', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     $tags = GetOutboxMergeTagByOutbox::run($outbox);
 
@@ -2184,7 +2175,7 @@ test('get outbox showcase for user notification outbox', function () {
 });
 
 test('UI outbox workshop', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
     $outbox = UpdateOutbox::make()->action($outbox, ['days_after' => 7]);
     $outbox = PublishOutbox::make()->action($outbox, [
         'layout'          => '{}',
@@ -2203,7 +2194,7 @@ test('UI outbox workshop', function () {
 });
 
 test('UI edit outbox in shop for reorder reminder', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     $response = $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.edit', [
         $this->organisation->slug,
@@ -2218,7 +2209,7 @@ test('UI edit outbox in shop for reorder reminder', function () {
 });
 
 test('UI edit outbox in shop for basket low stock', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::BASKET_LOW_STOCK->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::BASKET_LOW_STOCK);
 
     $response = $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.edit', [
         $this->organisation->slug,
@@ -2233,7 +2224,7 @@ test('UI edit outbox in shop for basket low stock', function () {
 });
 
 test('get outbox users', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     $users = GetOutboxUsers::make()->handle($outbox);
 
@@ -2241,7 +2232,7 @@ test('get outbox users', function () {
 });
 
 test('store many outbox has subscriber', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     $subscribers = StoreManyOutboxHasSubscriber::make()->handle($outbox, [
         'external_emails' => ['many-subscriber-1@example.com', 'many-subscriber-2@example.com'],
@@ -2251,7 +2242,7 @@ test('store many outbox has subscriber', function () {
 });
 
 test('index reorder email bulk runs', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     $fakeRoute = new \Illuminate\Routing\Route('GET', '/fake-reorder-email-bulk-runs', []);
     $fakeRoute->name('grp.json.outbox.reorder-email-bulk-runs');
@@ -2263,7 +2254,7 @@ test('index reorder email bulk runs', function () {
 });
 
 test('UI show outbox email runs tab', function () {
-    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REORDER_REMINDER->value)->first();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
     $response = $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.show', [
         $this->organisation->slug,

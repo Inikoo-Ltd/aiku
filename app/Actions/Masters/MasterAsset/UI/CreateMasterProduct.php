@@ -8,14 +8,14 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
-class CreateMasterProduct extends GrpAction
+class CreateMasterProduct extends OrgAction
 {
     private MasterProductCategory $parent;
 
@@ -104,7 +104,7 @@ class CreateMasterProduct extends GrpAction
         $group        = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterFamily, $request);
     }
@@ -115,7 +115,7 @@ class CreateMasterProduct extends GrpAction
         $group        = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterFamily, $request);
     }
@@ -126,7 +126,7 @@ class CreateMasterProduct extends GrpAction
         $group        = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterFamily, $request);
     }
@@ -137,7 +137,7 @@ class CreateMasterProduct extends GrpAction
         $group        = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterFamily, $request);
     }

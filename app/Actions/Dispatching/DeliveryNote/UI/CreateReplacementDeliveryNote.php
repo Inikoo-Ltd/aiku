@@ -304,11 +304,14 @@ class CreateReplacementDeliveryNote extends OrgAction
 
     public function getItems(DeliveryNote $deliveryNote): array
     {
-        return [
-            DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
-                : Inertia::optional(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
+        $items = fn () => DeliveryNoteItemsResource::collection(
+            IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value)
+        );
 
+        return [
+            DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value
+                ? $items
+                : Inertia::optional($items),
         ];
     }
 

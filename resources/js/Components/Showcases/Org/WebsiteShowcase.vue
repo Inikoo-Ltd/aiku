@@ -6,10 +6,11 @@
 
 <script setup lang="ts">
 import { faFragile, faGlobe, faLink, faSearch, faPencil, faPlaneArrival, faUser, faChartLine } from "@fal"
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, watch } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import PureRadio from "@/Components/Pure/PureRadio.vue"
 import { trans } from "laravel-vue-i18n"
 import { StatsBoxTS } from "@/types/Components/StatsBox"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
@@ -23,8 +24,49 @@ import { faDoorOpen } from "@far"
 
 library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChartLine)
 
+import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
+import SearchMerchandising from "@/Components/DataDisplay/Dashboard/Widget/SearchMerchandising.vue"
+
+// Deep link to the website's search analytics page; null (hidden) when the route
+// doesn't apply, e.g. fulfilment websites
+const showSearchInsights = computed(() => savedSearchModel.value === "internal" || props.data.search_insights?.total_searches)
+
+const searchAnalyticsUrl = (() => {
+    try {
+        return route("grp.org.shops.show.web.analytics.search", route().params)
+    } catch {
+        return null
+    }
+})()
+
+const searchQueryUrl = (query: string) => {
+    try {
+        return route("grp.org.shops.show.web.analytics.search.query", { ...route().params, q: query })
+    } catch {
+        return ""
+    }
+}
+
+const searchCustomerUrl = (row: { customer_slug?: string }) => {
+    if (!row.customer_slug) return null
+    try {
+        return route("grp.org.shops.show.web.analytics.search.customer", { ...route().params, customer: row.customer_slug })
+    } catch {
+        return null
+    }
+}
+
+const searchPageUrl = (clickedUrl: string) => {
+    try {
+        return route("grp.org.shops.show.web.analytics.search.page", { ...route().params, url: clickedUrl })
+    } catch {
+        return clickedUrl
+    }
+}
+
 const props = defineProps<{
     data: {
+        id: number
         slug: string
         url: string
         domain: string
@@ -38,6 +80,9 @@ const props = defineProps<{
         website_stats: StatsBoxTS[]
         website_type: string
         route_restricted_country?: routeType
+        iris_search_model?: "luigi" | "internal"
+        search_insights?: any
+        search_merchandising?: any
     }
     route_storefront: routeType
     route_landing_page?: routeType
@@ -51,6 +96,47 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+
+// Section: Search engine model (internal / luigi)
+const searchModelOptions = [
+    { value: "luigi", name: trans("Luigi") },
+    { value: "internal", name: trans("Internal") },
+]
+const savedSearchModel = ref<"luigi" | "internal">(props.data.iris_search_model ?? "luigi")
+const searchModel = ref<"luigi" | "internal">(savedSearchModel.value)
+const isSavingSearchModel = ref(false)
+
+const saveSearchModel = async (value: "luigi" | "internal") => {
+    isSavingSearchModel.value = true
+    try {
+        await axios.patch(
+            route("grp.models.website.update", { website: props.data.id }),
+            { iris_search_model: value }
+        )
+        savedSearchModel.value = value
+        notify({
+            title: trans("Success"),
+            text: trans("Search engine updated"),
+            type: "success",
+        })
+    } catch (error) {
+        searchModel.value = savedSearchModel.value
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to update the search engine"),
+            type: "error",
+        })
+    } finally {
+        isSavingSearchModel.value = false
+    }
+}
+
+watch(searchModel, (value) => {
+    if (value === savedSearchModel.value) {
+        return
+    }
+    saveSearchModel(value)
+})
 
 const links = computed(() => {
     const baseLinks = [
@@ -90,40 +176,67 @@ const links = computed(() => {
 <template>
     <!-- Box: Url and Buttons in a single row -->
     <div class="px-6 py-12 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- URL Box -->
+        <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_20rem] gap-6">
+            <!-- URL Box + compact visitor stats -->
             <div class="">
-                <div class="bg-white w-fit h-fit flex items-center gap-x-3 md:w-96">
-                    <a :href="props.data.url" target="_blank" v-tooltip="trans('Go To Website')"
-                        class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
-                        <div class="bg-gray-200 py-2 px-2">
-                            <FontAwesomeIcon :icon="faGlobe" class="px-1" aria-hidden="true" />
-                        </div>
-                        <div class="flex items-center px-4">
-                            {{ props.data.url }}
-                        </div>
-                    </a>
+                <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+                    <div class="bg-white w-fit h-fit flex items-center gap-x-3">
+                        <a :href="props.data.url" target="_blank" v-tooltip="trans('Go To Website')"
+                            class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
+                            <div class="bg-gray-200 py-2 px-2">
+                                <FontAwesomeIcon :icon="faGlobe" class="px-1" aria-hidden="true" />
+                            </div>
+                            <div class="flex items-center px-4">
+                                {{ props.data.url }}
+                            </div>
+                        </a>
+                    </div>
+
+                    <div v-for="stat in props.data.website_stats" :key="stat.label" class="flex items-baseline gap-2">
+                        <FontAwesomeIcon v-if="typeof stat.icon === 'string'" :icon="stat.icon" :style="{ color: stat.color }" fixed-width aria-hidden="true" />
+                        <span class="text-2xl font-semibold tabular-nums">{{ (stat.value ?? 0).toLocaleString() }}</span>
+                        <span class="text-sm text-gray-400">{{ stat.label }}</span>
+                    </div>
                 </div>
 
                 <div class="border-t border-gray-300 mt-6 pt-4">
-                    <div class="font-semibold w-fit text-lg mb-2">
-                        {{ trans('Product Catalogue') }}
-                    </div>
+                    <div class="flex flex-col xl:flex-row gap-6">
+                        <div v-if="showSearchInsights" class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                                <div class="font-semibold w-fit text-lg">
+                                    {{ trans('Website Search') }}
+                                </div>
+                                <SearchMerchandising
+                                    v-if="props.data.search_merchandising"
+                                    :merchandising="props.data.search_merchandising"
+                                    :top-zero-queries="props.data.search_insights?.top_zero_queries"
+                                />
+                            </div>
+                            <SearchAnalyticsDisplay
+                                :widget="props.data.search_insights"
+                                :logs-url="searchAnalyticsUrl"
+                                :logs-label="trans('Search analytics')"
+                                :query-url="searchAnalyticsUrl ? searchQueryUrl : undefined"
+                                :customer-url="searchAnalyticsUrl ? searchCustomerUrl : undefined"
+                                :page-url="searchAnalyticsUrl ? searchPageUrl : undefined"
+                            />
+                        </div>
 
-                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
-                        <StatsBox v-for="stat in props.data.stats" :stat />
-                    </div>
-                    <div class="mt-6 font-semibold w-fit text-lg mb-2">
-                        {{ trans('Content & Blog') }}
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
-                        <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
-                    </div>
-                    <div class="mt-6 font-semibold w-fit text-lg mb-2">
-                        {{ trans('Stats') }}
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
-                        <StatsBox v-for="stat in props.data.website_stats" :stat />
+                        <div :class="showSearchInsights ? 'w-full xl:w-56 shrink-0' : ''">
+                            <div class="font-semibold w-fit text-lg mb-2">
+                                {{ trans('Product Catalogue') }}
+                            </div>
+                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
+                                <StatsBox v-for="stat in props.data.stats" :stat />
+                            </div>
+
+                            <div class="mt-6 font-semibold w-fit text-lg mb-2">
+                                {{ trans('Content & Blog') }}
+                            </div>
+                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
+                                <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -196,7 +309,7 @@ const links = computed(() => {
                             </template>
                         </ModalConfirmationDelete>
 
-                        <ButtonWithLink v-if="luigi_data?.luigisbox_tracker_id"
+                        <ButtonWithLink v-if="luigi_data?.luigisbox_tracker_id && savedSearchModel !== 'internal'"
                             :routeTarget="{
                                 name: 'grp.models.website_luigi.reindex',
                                 parameters: {
@@ -233,6 +346,24 @@ const links = computed(() => {
                         }) }}
                         <br>
                         {{ props.luigi_data.last_reindexed }} -->
+                    </div>
+
+                    <!-- Section: Search Engine radio -->
+                    <div class="p-2 mt-1 border-t border-gray-200">
+                        <div class="flex items-center gap-x-1.5 text-sm font-medium text-gray-600 mb-2">
+                            <FontAwesomeIcon :icon="faSearch" class="text-gray-400" fixed-width aria-hidden="true" />
+                            {{ ctrans('Search Engine') }}
+                            <FontAwesomeIcon icon="fal fa-info-circle" fixed-width aria-hidden="true"
+                                class="text-gray-400 hover:text-gray-700"
+                                v-tooltip="ctrans('Choose which engine powers the website search.')" />
+                        </div>
+                        <PureRadio
+                            v-model="searchModel"
+                            mode="compact"
+                            by="value"
+                            label="name"
+                            :options="searchModelOptions"
+                            :class="{ 'opacity-50 pointer-events-none': isSavingSearchModel }" />
                     </div>
                 </div>
             </div>

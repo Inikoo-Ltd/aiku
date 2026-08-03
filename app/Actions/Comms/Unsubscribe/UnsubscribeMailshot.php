@@ -99,6 +99,10 @@ class UnsubscribeMailshot
                         OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD => [
                             'is_subscribed_to_reorder_reminder' => false,
                         ],
+                        OutboxCodeEnum::GOLD_REWARD_REMINDER_1, OutboxCodeEnum::GOLD_REWARD_REMINDER_2, OutboxCodeEnum::GOLD_REWARD_REMINDER_3 => [
+                            'is_subscribed_to_gold_reward_reminder' => false,
+                        ],
+
                         default => []
                     };
 

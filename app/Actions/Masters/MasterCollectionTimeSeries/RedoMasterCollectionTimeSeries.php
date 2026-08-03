@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollectionTimeSeries;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -56,10 +57,12 @@ class RedoMasterCollectionTimeSeries
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessMasterCollectionTimeSeriesRecords::dispatch($masterCollection->id, $frequency, $from, $to);
+                ProcessMasterCollectionTimeSeriesRecords::dispatch($masterCollection->id, $frequency, $periodFrom, $periodTo);
             } else {
-                ProcessMasterCollectionTimeSeriesRecords::run($masterCollection->id, $frequency, $from, $to);
+                ProcessMasterCollectionTimeSeriesRecords::run($masterCollection->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

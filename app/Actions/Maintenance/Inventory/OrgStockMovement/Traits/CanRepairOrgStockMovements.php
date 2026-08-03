@@ -8,17 +8,20 @@
 
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement\Traits;
 
+use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
+use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 trait CanRepairOrgStockMovements
 {
-    public function fixForAuditsInPairs(Location $location, OrgStock $orgStock, ?Command $command = null): ?array
+    public function fixForAuditsInPairs(Location $location, OrgStock $orgStock, ?Command $command = null, bool $dryRun = false): ?array
     {
         $movements = DB::table('org_stock_movements')
             ->select('id', 'date', 'type', 'audited_quantity')
@@ -67,13 +70,15 @@ trait CanRepairOrgStockMovements
 
         if (count($pairs) > 0) {
             foreach ($pairs as $pair) {
-                DB::table('org_stock_movements')->where('id', $pair['audit_id'])
-                    ->update(
-                        [
-                            'class' => OrgStockMovementClassEnum::GARBAGE->value,
-                            'fixed' => true
-                        ]
-                    );
+                if (!$dryRun) {
+                    DB::table('org_stock_movements')->where('id', $pair['audit_id'])
+                        ->update(
+                            [
+                                'class' => OrgStockMovementClassEnum::GARBAGE->value,
+                                'fixed' => true
+                            ]
+                        );
+                }
                 $command?->warn("Garbage audit paired with purchase {$pair['audit_id']} ");
             }
 
@@ -85,7 +90,7 @@ trait CanRepairOrgStockMovements
         return null;
     }
 
-    public function fixForPurchaseAndAssociatePairs(Location $location, OrgStock $orgStock, ?Command $command = null): ?array
+    public function fixForPurchaseAndAssociatePairs(Location $location, OrgStock $orgStock, ?Command $command = null, bool $dryRun = false): ?array
     {
         $movements = DB::table('org_stock_movements')
             ->select('id', 'date', 'type')
@@ -107,10 +112,10 @@ trait CanRepairOrgStockMovements
 
         $pairs = [];
         foreach ($movementsByDate as $date => $dateMovements) {
-            $hasPurchase    = false;
-            $hasAssociate   = false;
-            $purchaseId     = null;
-            $associateId    = null;
+            $hasPurchase  = false;
+            $hasAssociate = false;
+            $purchaseId   = null;
+            $associateId  = null;
 
             foreach ($dateMovements as $movement) {
                 if ($movement->type == OrgStockMovementTypeEnum::PURCHASE->value) {
@@ -135,13 +140,15 @@ trait CanRepairOrgStockMovements
         if (count($pairs) > 0) {
             foreach ($pairs as $pair) {
                 $newDate = \Illuminate\Support\Carbon::parse($pair['date'])->subMilliseconds(100);
-                DB::table('org_stock_movements')->where('id', $pair['associate_id'])
-                    ->update(
-                        [
-                            'date'  => $newDate->format('Y-m-d H:i:s.u'),
-                            'fixed' => true
-                        ]
-                    );
+                if (!$dryRun) {
+                    DB::table('org_stock_movements')->where('id', $pair['associate_id'])
+                        ->update(
+                            [
+                                'date'  => $newDate->format('Y-m-d H:i:s.u'),
+                                'fixed' => true
+                            ]
+                        );
+                }
                 $command?->warn("Associate movement {$pair['associate_id']} moved 100ms before purchase {$pair['purchase_id']} ");
             }
 
@@ -154,7 +161,88 @@ trait CanRepairOrgStockMovements
     }
 
 
-    public function fixForPostPurchaseAssociates(Location $location, OrgStock $orgStock, ?Command $command = null): void
+    public function fixForPrePurchaseAssociates(OrgStock $orgStock, ?Command $command = null, bool $dryRun = false): void
+    {
+        $purchases = OrgStockMovement::where('org_stock_id', $orgStock->id)
+            ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+            ->where('date', '>', '2026-07-10 03:00:00')
+            ->orderBy('date')
+            ->get();
+
+        /** @var OrgStockMovement $purchase */
+        foreach ($purchases as $purchase) {
+            $this->processPrePurchaseAssociate($purchase, $orgStock, $command, $dryRun);
+        }
+    }
+
+    public function processPrePurchaseAssociate(OrgStockMovement $purchase, OrgStock $orgStock, ?Command $command = null, bool $dryRun = false): void
+    {
+        $location                = $purchase->location;
+        $lastAssociationMovement = DB::table('org_stock_movements')
+            ->select('type')
+            ->where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+            ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE->value, OrgStockMovementTypeEnum::DISASSOCIATE->value])
+            ->where('date', '<', $purchase->date->format('Y-m-d H:i:s.u'))
+            ->orderByDesc('date')
+            ->orderByDesc('source_id')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($lastAssociationMovement?->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
+            return;
+        }
+
+        $latestFutureAssociationMovement = DB::table('org_stock_movements')
+            ->select('type')
+            ->where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+            ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE->value, OrgStockMovementTypeEnum::DISASSOCIATE->value])
+            ->where('date', '>', $purchase->date->format('Y-m-d H:i:s.u'))
+            ->orderByDesc('date')
+            ->orderByDesc('source_id')
+            ->orderByDesc('id')
+            ->first();
+
+        $locationOrgStockExists = DB::table('location_org_stocks')
+            ->where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)
+            ->exists();
+
+        if ($latestFutureAssociationMovement?->type != OrgStockMovementTypeEnum::DISASSOCIATE->value && !$locationOrgStockExists) {
+            if (!$dryRun) {
+                StoreLocationOrgStock::make()->action($orgStock, $location, [
+                    'date' => Carbon::parse($purchase->date)->subMilliseconds(50)->format('Y-m-d H:i:s.u'),
+                ]);
+            }
+            $command?->warn("Added missing location stock for purchase {$purchase->id}");
+
+            return;
+        }
+
+        if (!$dryRun) {
+            StoreOrgStockMovement::make()->action(
+                $orgStock,
+                $location,
+                [
+                    'quantity'         => 0,
+                    'audited_quantity' => 0,
+                    'org_amount'       => 0,
+                    'date'             => Carbon::parse($purchase->date)->subMilliseconds(50)->format('Y-m-d H:i:s.u'),
+                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
+                    'fixed'            => true,
+                ]
+            );
+        }
+
+        $command?->warn("Added missing associate 50ms before purchase {$purchase->id}");
+    }
+
+
+    public function fixForPostPurchaseAssociates(Location $location, OrgStock $orgStock, ?Command $command = null, bool $dryRun = false): void
     {
         $purchases = OrgStockMovement::where('location_id', $location->id)
             ->where('org_stock_id', $orgStock->id)
@@ -164,11 +252,11 @@ trait CanRepairOrgStockMovements
             ->get();
 
         foreach ($purchases as $purchase) {
-            $this->removePostAssociatesAfterPurchase($purchase, $command);
+            $this->removePostAssociatesAfterPurchase($purchase, $command, $dryRun);
         }
     }
 
-    public function removePostAssociatesAfterPurchase(OrgStockMovement $orgStockMovement, ?Command $command = null): void
+    public function removePostAssociatesAfterPurchase(OrgStockMovement $orgStockMovement, ?Command $command = null, bool $dryRun = false): void
     {
         $command?->warn("Fix associate post transactions $orgStockMovement->id ".$orgStockMovement->date->format('Y-m-d H:i:s.u'));
 
@@ -180,26 +268,46 @@ trait CanRepairOrgStockMovements
             ->orderByRaw('date,source_id,id')
             ->get();
 
+        $associateWasRemoved = false;
+
         foreach ($nextMovements as $movement) {
             if ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+                if ($associateWasRemoved) {
+                    if (!$dryRun) {
+                        DB::table('org_stock_movements')->where('id', $movement->id)
+                            ->update(
+                                [
+                                    'class'            => OrgStockMovementClassEnum::GARBAGE->value,
+                                    'fixed'            => true,
+                                    'audited_quantity' => 0,
+                                    'quantity'         => 0,
+                                ]
+                            );
+                    }
+                    $command?->warn("Transform disassociate to garbage   $movement->id ");
+                }
+
                 break;
             }
 
             if ($movement->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
-                DB::table('org_stock_movements')->where('id', $movement->id)
-                    ->update(
-                        [
-                            'class'            => OrgStockMovementClassEnum::GARBAGE->value,
-                            'fixed'            => true,
-                            'audited_quantity' => 0,
-                            'quantity'         => 0,
-                        ]
-                    );
+                if (!$dryRun) {
+                    DB::table('org_stock_movements')->where('id', $movement->id)
+                        ->update(
+                            [
+                                'class'            => OrgStockMovementClassEnum::GARBAGE->value,
+                                'fixed'            => true,
+                                'audited_quantity' => 0,
+                                'quantity'         => 0,
+                            ]
+                        );
+                }
+                $associateWasRemoved = true;
                 $command?->warn("Transform associate to garbage   $movement->id ");
             }
         }
 
-        if (!$orgStockMovement->fixed_internal_helper) {
+        if (!$dryRun && !$orgStockMovement->fixed_internal_helper) {
             $orgStockMovement->update([
                 'fixed_internal_helper' => true,
             ]);

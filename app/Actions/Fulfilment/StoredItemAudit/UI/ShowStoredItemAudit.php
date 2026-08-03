@@ -52,7 +52,7 @@ class ShowStoredItemAudit extends OrgAction
     {
         $subNavigation = [];
 
-        $title      = __("Customer's SKUs audit");
+        $title      = __("Customer's SKOs audit");
         $icon       = ['fal', 'fa-pallet'];
         $afterTitle = null;
         $iconRight  = null;
@@ -100,7 +100,7 @@ class ShowStoredItemAudit extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("Customer's SKUs audits"),
+                'title'       => __("Customer's SKOs audits"),
                 'pageHead'    => [
                     'title'         => $title,
                     'afterTitle'    => $afterTitle,

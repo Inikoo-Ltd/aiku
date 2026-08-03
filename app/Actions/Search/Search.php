@@ -56,7 +56,7 @@ class Search extends OrgAction
         }
 
         if (mb_strlen($query) <= 2) {
-            $cacheKey = 'search:'.$scope.':'.implode(':', $options).':'.mb_strtolower($query);
+            $cacheKey = 'search:'.$scope.':'.md5(json_encode($options)).':'.mb_strtolower($query);
 
             return cache()->remember($cacheKey, 30, $actions[$scope]);
         }
@@ -101,7 +101,7 @@ class Search extends OrgAction
         } elseif (in_array($scope, self::SHOP_SCOPES, true)) {
             $shop = Shop::where('slug', $request->query('shop'))->firstOrFail();
             $this->initialisationFromShop($shop, $request);
-            $options = ['shop_id' => $shop->id];
+            $options = ['shop_id' => $shop->id, 'language' => $shop->language->code];
         } else {
             return [];
         }

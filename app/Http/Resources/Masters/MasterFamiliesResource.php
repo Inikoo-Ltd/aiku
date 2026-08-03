@@ -34,6 +34,7 @@ use Illuminate\Support\Arr;
  * @property mixed $master_sub_department_name
  * @property mixed $currency_code
  * @property mixed $health_rank
+ * @property mixed $last_offers
  * @property mixed $gr_vol_discount_percentage
  * @property mixed $gr_vol_discount_quantity
  * @property mixed $number_following_master_gr
@@ -43,6 +44,8 @@ class MasterFamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $lastOffers = $this->last_offers ? json_decode($this->last_offers, true) : [];
+
         return [
             'id'                         => $this->id,
             'slug'                       => $this->slug,
@@ -89,6 +92,7 @@ class MasterFamiliesResource extends JsonResource
             'dropshippers'               => $this->dropshippers ?? 0,
             'listings'                   => $this->listings ?? 0,
             'sold'                       => $this->sold ?? 0,
+            'last_offers'                => $lastOffers,
             'mismatch_detected'          => $this->mismatch_detected,
             'health_rank'           => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];

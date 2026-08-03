@@ -17,6 +17,8 @@ use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\InertiaTable\InertiaTable;
@@ -42,6 +44,7 @@ class IndexPurchaseOrders extends OrgAction
     use WithOrgAgentSubNavigation;
     use WithOrgPartnerSubNavigation;
     use WithOrgSupplierSubNavigation;
+    use WithAgentOrganisation;
 
     private Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct $parent;
 
@@ -58,7 +61,7 @@ class IndexPurchaseOrders extends OrgAction
     protected function getElementGroups(): array
     {
         return [
-            'state' => [
+            'state'          => [
                 'label'    => __('State'),
                 'elements' => array_map(
                     fn ($label) => [$label, null],
@@ -66,6 +69,16 @@ class IndexPurchaseOrders extends OrgAction
                 ),
                 'engine'   => function ($query, $elements) {
                     $query->whereIn('purchase_orders.state', $elements);
+                },
+            ],
+            'delivery_state' => [
+                'label'    => __('Delivery State'),
+                'elements' => array_map(
+                    fn ($label) => [$label, null],
+                    PurchaseOrderDeliveryStateEnum::labels(),
+                ),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('purchase_orders.delivery_state', $elements);
                 },
             ],
         ];
@@ -91,6 +104,8 @@ class IndexPurchaseOrders extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $organisationAgent = $this->getParentOrganisationAgent($parent);
+
         $query = QueryBuilder::for(PurchaseOrder::class);
 
         if (class_basename($parent) == 'OrgAgent') {
@@ -101,7 +116,8 @@ class IndexPurchaseOrders extends OrgAction
             $query->where('purchase_orders.parent_type', 'OrgPartner')->where('purchase_orders.parent_id', $parent->id);
         } elseif (class_basename($parent) == 'Group') {
             $query->where('purchase_orders.group_id', $parent->id);
-            $query->leftjoin('organisations', 'purchase_orders.organisation_id', 'organisations.id');
+        } elseif ($organisationAgent) {
+            $query->where('purchase_orders.agent_id', $organisationAgent->id);
         } elseif ($parent instanceof OrgStock) {
             $query->whereIn('purchase_orders.id', function ($query) use ($parent) {
                 $query->select('purchase_order_id')
@@ -127,13 +143,24 @@ class IndexPurchaseOrders extends OrgAction
             );
         }
 
+        $query
+            ->select(['purchase_orders.*'])
+            ->selectRaw('purchase_orders.org_exchange * purchase_orders.cost_total as org_total_cost');
+
+        if ($parent instanceof Group || $organisationAgent) {
+            $query
+                ->leftJoin('organisations', 'purchase_orders.organisation_id', 'organisations.id')
+                ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
+                ->addSelect([
+                    'organisations.name as organisation_name',
+                    'currencies.code as org_currency_code',
+                ]);
+        } else {
+            $query->selectRaw('\''.$organisation->currency->code.'\' as org_currency_code');
+        }
+
         return $query
             ->defaultSort('-purchase_orders.date')
-            ->select([
-                'purchase_orders.*',
-            ])
-            ->selectRaw('purchase_orders.org_exchange * purchase_orders.cost_total as org_total_cost')
-            ->selectRaw('\''.$organisation->currency->code.'\' as org_currency_code')
             ->with([
                 'parent' => function ($morphTo) {
                     $morphTo->morphWith([
@@ -178,7 +205,7 @@ class IndexPurchaseOrders extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'parent_name', label: __('Supplier/Agents'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($parent instanceof Group) {
+            if ($parent instanceof Group || $this->getParentOrganisationAgent($parent)) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
             }
 
@@ -379,7 +406,7 @@ class IndexPurchaseOrders extends OrgAction
                 ]
             ),
             'grp.org.procurement.org_agents.show.purchase-orders.index' => array_merge(
-                ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
+                ShowOrgAgent::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

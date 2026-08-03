@@ -8,12 +8,15 @@
 
 namespace App\Actions\UI\Grp;
 
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Dispatching\WaitingItems\GetCrmReturnedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Masters\MasterAsset\GetMasterUpdatedBadgeData;
 use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Http\Resources\SysAdmin\NotificationsResource;
+use App\Models\DevOps\AppDeployment;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\App;
@@ -53,18 +56,51 @@ class GetFirstLoadProps
             $props = $compute();
         }
 
+        $lastDeployment = AppDeployment::latest()->first();
 
         data_set($props, 'notifications', $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null);
         data_set($props, 'dispatching_waiting_count', $user ? GetDispatchingWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_waiting_count', $user ? GetCrmWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_return_count', $user ? GetCrmReturnedBadgeData::make()->totalCount($user) : 0);
+        data_set($props, 'master_updated_count', $user ? GetMasterUpdatedBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'ziggy', new Ziggy('grp')->toArray());
+        data_set($props, 'last_deployment_at', $lastDeployment?->created_at);
+        data_set($props, 'last_deployment_hash', $lastDeployment?->commit_hash);
+        data_set($props, 'last_deployment_version', $lastDeployment?->semantic_version);
+
+        // Set outside the cached props so changing the group's clocks does not need a recache of every user
+        if ($user) {
+            data_set($props, 'layout.group.timezones', collect($user->group->world_clock_timezones)
+                ->map(fn (string $timezone) => [
+                    'timezone' => $timezone,
+                    'place'    => IndexTimeZones::make()->clockNameFor($timezone),
+                ])
+                ->all());
+        }
 
 
         return $props;
     }
 
+    /**
+     * These props are cached per language, so they must be built in that language rather than
+     * in whatever locale the request that happens to warm the cache is running under. Recaches
+     * triggered from the console, from queues, or by another user would otherwise store one
+     * user's language under another's cache key.
+     */
     public function getUserUiProps(?User $user, Language $language): array
+    {
+        $localeOfCaller = App::getLocale();
+        App::setLocale($language->code);
+
+        try {
+            return $this->buildUserUiProps($user, $language);
+        } finally {
+            App::setLocale($localeOfCaller);
+        }
+    }
+
+    private function buildUserUiProps(?User $user, Language $language): array
     {
         $availableLanguages = Language::where('status', true)->pluck('id')->toArray();
 
@@ -75,7 +111,7 @@ class GetFirstLoadProps
 
         return [
             'localeData' => [
-                'locale_iso'            => getIsoLocale(App::getLocale()),
+                'locale_iso'            => getIsoLocale($language->code),
                 'language'              => [
                     'id'          => $language->id,
                     'code'        => $language->code,

@@ -221,12 +221,12 @@ trait WithEbayApiRequest
                 case 'Item Width':
                     $width = Arr::get($product->marketing_dimensions, 'w');
                     $w = in_array($width, [null, 0]) ? 0.5 : $width;
-                    $attributes['Item Height'] = [$w * 100 . 'cm'];
+                    $attributes['Item Width'] = [$w * 100 . 'cm'];
                     break;
                 case 'Item Length':
                     $length = Arr::get($product->marketing_dimensions, 'l');
                     $l = in_array($length, [null, 0]) ? 0.5 : $length;
-                    $attributes['Item Height'] = [$l * 100 . 'cm'];
+                    $attributes['Item Length'] = [$l * 100 . 'cm'];
                     break;
                 default:
                     // Use generic mapping or default value
@@ -1244,7 +1244,6 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
             $errMsg = 'Fulfill eBay Order Error: '.$e->getMessage();
-            Log::error($errMsg);
             \Sentry::captureMessage($errMsg);
 
             return ['error' => $e->getMessage()];

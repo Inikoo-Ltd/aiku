@@ -13,14 +13,18 @@ import { trans } from "laravel-vue-i18n"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
-import PurchaseOrderData from "@/Components/Procurement/PurchaseOrderData.vue"
+import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
+import { notify } from "@kyvg/vue3-notification"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
+import type { OrderingLevel } from "@/Composables/useOrderingLevel"
 import { capitalize } from "@/Composables/capitalize"
 
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -29,8 +33,8 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox } from "@fal"
-import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare } from "@fas"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows } from "@fal"
+import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
 library.add(
@@ -42,6 +46,8 @@ library.add(
 	faShip,
 	faBox,
 	faHandHoldingBox,
+	faPaperPlane,
+	faExclamationTriangle,
     faShare,
     faArrowCircleDown,
 	faArrowCircleRight,
@@ -50,7 +56,10 @@ library.add(
 	faPencil,
     faPlus,
     faInventory,
-    faBars
+    faBars,
+	faTruck,
+	faClipboardList,
+	faPeopleArrows,
 )
 
 const props = defineProps < {
@@ -65,6 +74,14 @@ const props = defineProps < {
    	timelines: {
 		[key: string]: TSTimeline
 	}
+	stock_delivery_timelines: {
+		reference: string
+		state: string
+		route: routeType
+		timeline: {
+			[key: string]: TSTimeline
+		}
+	}[]
     tabs: {
         current: string
         navigation: {}
@@ -90,25 +107,40 @@ const props = defineProps < {
         }
         second_block: {
             state: string
+            delivery_state: {
+                tooltip: string
+                icon: string
+                class: string
+                color: string
+            }
             total_items: number
+            total_delivery_items: number | null
+            total_placed_items: number | null
+            is_delivery_items_active: boolean
+            is_placed_items_active: boolean
             weight: number | null
             volume: number | null
             is_weight_partial: boolean
             is_volume_partial: boolean
+            production_time: string | null
+            delivery_time: string | null
 		}
         third_block: {
             currency: string | null
             org_currency: string | null
             org_exchange: number | string | null
-            items: number | string
-            extra: number | string
+            items: number | string | null
+            extra: number | string | null
+            shipping: number | string | null
+            duties: number | string | null
+            tax: number | string | null
             total: number | string
             org_items: number | string
         }
 	}
-	showcase?: {}
 	items?: {}
 	products?: {}
+	showcase?: {}
 	history?: {}
 }>()
 
@@ -147,8 +179,20 @@ const orgPerOrder = computed(() => {
 	return Number(org_exchange) || null
 })
 
+const costRows = computed(() => {
+	const { items, extra, shipping, duties, tax } = props.box_stats.third_block
+
+	return [
+		{ key: "items", label: trans("Items"), amount: Number(items) || 0, alwaysShown: true },
+		{ key: "extra", label: trans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
+		{ key: "shipping", label: trans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
+		{ key: "duties", label: trans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
+		{ key: "tax", label: trans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
+	].filter(row => row.alwaysShown || row.amount !== 0)
+})
+
 const costBlocks = computed(() => {
-	const { currency, org_currency, items, extra, total, org_items } = props.box_stats.third_block
+	const { currency, org_currency, total, org_items } = props.box_stats.third_block
 
 	const money = (code: string | null, amount: number) => locale.currencyFormat(code ?? "", amount)
 
@@ -156,8 +200,7 @@ const costBlocks = computed(() => {
 		key: "supplier",
 		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
 		rows: [
-			{ label: trans("Items"), value: money(currency, Number(items)) },
-			{ label: trans("Extra costs"), value: money(currency, Number(extra)) },
+			...costRows.value.map(row => ({ label: row.label, value: money(currency, row.amount) })),
 			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
 		],
 	}
@@ -165,8 +208,11 @@ const costBlocks = computed(() => {
 	const sameCurrency = !org_currency || org_currency === currency
 	const orgCurrency = org_currency || currency
 	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
-	const orgItems = sameCurrency ? Number(items) : Number(org_items)
-	const orgExtra = Number(extra) * rate
+
+	const orgAmount = (row: { key: string; amount: number }) =>
+		row.key === "items" && !sameCurrency ? Number(org_items) : row.amount * rate
+
+	const orgTotal = costRows.value.reduce((sum, row) => sum + orgAmount(row), 0)
 
 	const orderPerOrg = rate ? 1 / rate : null
 	const rateLabel = sameCurrency
@@ -181,15 +227,18 @@ const costBlocks = computed(() => {
 			key: "org",
 			title: rateLabel,
 			rows: [
-				{ label: trans("Items"), value: money(orgCurrency, orgItems) },
-				{ label: trans("Extra costs"), value: money(orgCurrency, orgExtra) },
-				{ label: trans("Total"), value: money(orgCurrency, orgItems + orgExtra), isTotal: true },
+				...costRows.value.map(row => ({ label: row.label, value: money(orgCurrency, orgAmount(row)) })),
+				{ label: trans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
 			],
 		},
 	]
 })
 
 const currentTab = ref(props.tabs.current)
+
+const currentLevel = ref<OrderingLevel>("cartons")
+
+const isOrderingLevelTab = computed(() => ["items", "products"].includes(currentTab.value))
 
 const isModalProductListOpen = ref(false)
 const currentAction = ref<any>(null)
@@ -205,16 +254,188 @@ watch(isModalProductListOpen, (isOpen, wasOpen) => {
 	}
 })
 
+const confirm = useConfirm()
+const deleteLoading = ref(false)
+const submitLoading = ref(false)
+const cancelLoading = ref(false)
+const undoSubmitLoading = ref(false)
+const confirmLoading = ref(false)
+const undoConfirmLoading = ref(false)
+const newStockDeliveryLoading = ref(false)
+
+const confirmSubmitPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to submit this purchase order?"),
+		header: trans("Submit Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Submit"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { submitLoading.value = true },
+				onFinish: () => { submitLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to submit purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmDeletePurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to delete this purchase order? This action cannot be undone."),
+		header: trans("Delete Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Delete"), severity: "danger" },
+		accept: () => {
+			router.delete(route(action.route.name, action.route.parameters), {
+				onStart: () => { deleteLoading.value = true },
+				onFinish: () => { deleteLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to delete purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmCancelPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to cancel this purchase order? All item amounts will be set to zero."),
+		header: trans("Cancel Purchase Order"),
+		rejectProps: { label: trans("Keep"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Cancel order"), severity: "danger" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { cancelLoading.value = true },
+				onFinish: () => { cancelLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to cancel purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmUndoSubmitPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to undo the submission? This purchase order will go back to in process."),
+		header: trans("Undo Submit Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Undo submit"), severity: "danger" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { undoSubmitLoading.value = true },
+				onFinish: () => { undoSubmitLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to undo submit purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmConfirmPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to confirm this purchase order?"),
+		header: trans("Confirm Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Confirm") },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { confirmLoading.value = true },
+				onFinish: () => { confirmLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to confirm purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmUndoConfirmPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to undo the confirmation? This purchase order will go back to submitted."),
+		header: trans("Undo Confirm Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Undo confirm"), severity: "danger" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { undoConfirmLoading.value = true },
+				onFinish: () => { undoConfirmLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to undo confirm purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmNewStockDelivery = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to create a new delivery from this purchase order?"),
+		header: trans("New Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Create delivery") },
+		accept: () => {
+			router.post(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { newStockDeliveryLoading.value = true },
+				onFinish: () => { newStockDeliveryLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to create delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
 const component = computed(() => {
 	const components: Component = {
-		showcase: PurchaseOrderData,
 		items: TablePurchaseOrderTransactions,
 		products: TablePurchaseOrderTransactions,
+		showcase: ProcurementOrderData,
 		history: TableHistories,
 	}
 
 	return components[currentTab.value]
 })
+
+const isOrgAgent = computed(() => props.box_stats.first_block.orderer.type === "Agent")
 
 const ordererRoute = computed<string>(() => {
 	const orderer = props.box_stats.first_block.orderer
@@ -250,6 +471,83 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				@click="() => openProductListModal(action)"
 			/>
 		</template>
+
+		<template #button-submit-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="submitLoading"
+				@click="() => confirmSubmitPurchaseOrder(action)"
+			/>
+		</template>
+
+		<template #button-delete-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="deleteLoading"
+				@click="() => confirmDeletePurchaseOrder(action)"
+			/>
+		</template>
+
+		<template #button-confirm-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="confirmLoading"
+				@click="() => confirmConfirmPurchaseOrder(action)"
+			/>
+		</template>
+
+		<template #button-undo-submit-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="undoSubmitLoading"
+				@click="() => confirmUndoSubmitPurchaseOrder(action)"
+			/>
+		</template>
+
+		<template #button-new-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="newStockDeliveryLoading"
+				@click="() => confirmNewStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-undo-confirm-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="undoConfirmLoading"
+				@click="() => confirmUndoConfirmPurchaseOrder(action)"
+			/>
+		</template>
+
+		<template #button-cancel-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="cancelLoading"
+				@click="() => confirmCancelPurchaseOrder(action)"
+			/>
+		</template>
 	</PageHeading>
 
 	<!-- Purchase Order Timeline -->
@@ -262,7 +560,24 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		/>
 	</div>
 
-	<!-- Todo: Add Stock Delivery Timeline -->
+	<!-- Stock Delivery Timelines -->
+	<div
+		v-for="stockDelivery in stock_delivery_timelines"
+		:key="stockDelivery.reference"
+		class="flex items-center gap-x-4 py-2 pl-4 border-b border-gray-300"
+	>
+		<Link :href="route(stockDelivery.route.name, stockDelivery.route.parameters)" class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap">
+			<FontAwesomeIcon icon="fas fa-truck" fixed-width aria-hidden="true" />
+			{{ stockDelivery.reference }}
+		</Link>
+		<Timeline
+			class="flex-1 min-w-0"
+			:options="stockDelivery.timeline"
+			:state="stockDelivery.state"
+			:slidesPerView="6"
+			:format-time="'MMMM d yyyy, HH:mm'"
+		/>
+	</div>
 
 	<div class="grid grid-cols-2 lg:grid-cols-4 text-gray-500 divide-x divide-gray-300 border-b border-gray-300">
 	    <!-- First Block -->
@@ -367,14 +682,59 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 		<!-- Second Block -->
 		<BoxStatPallet class="p-4">
-            <div class="flex justify-center">
-                {{ box_stats.second_block.state }}
+            <div class="flex justify-center items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <FontAwesomeIcon
+                        v-tooltip="trans('Purchase Order')"
+                        icon="fal fa-clipboard-list"
+                        class="text-gray-400"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                    <span>{{ box_stats.second_block.state }}</span>
+                </div>
+
+                <div v-if="stock_delivery_timelines.length" class="h-4 w-px bg-gray-300" />
+
+                <div v-if="stock_delivery_timelines.length" class="flex items-center gap-2">
+                    <FontAwesomeIcon
+                        v-tooltip="trans('Stock Delivery')"
+                        icon="fal fa-people-arrows"
+                        class="text-gray-400"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                    <span v-tooltip="box_stats.second_block.delivery_state.tooltip">
+                        {{ box_stats.second_block.delivery_state.tooltip }}
+                    </span>
+                </div>
             </div>
 
             <hr class="my-1 border-t border-gray-300" />
 
+            <template v-if="data.data.state === 'cancelled'">
+                <div class="space-y-1 text-sm">
+                    <div class="flex items-center justify-between gap-4">
+                        <span>{{ trans("Production time") }}</span>
+                        <span :class="box_stats.second_block.production_time ? '' : 'italic text-gray-400'">
+                            {{ box_stats.second_block.production_time ?? trans("Unknown") }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between gap-4">
+                        <span>{{ trans("Delivery time") }}</span>
+                        <span :class="box_stats.second_block.delivery_time ? '' : 'italic text-gray-400'">
+                            {{ box_stats.second_block.delivery_time ?? trans("Unknown") }}
+                        </span>
+                    </div>
+                </div>
+
+                <hr class="my-1 border-t border-gray-300" />
+            </template>
+
+            <!-- Todo: Create Purchase Order Export as PDF -->
+
             <div class="flex justify-center gap-4">
-                <div class="flex items-center">
+                <div class="flex items-center gap-1">
                     <FontAwesomeIcon
                         v-tooltip="trans('Items')"
         				icon="fas fa-bars"
@@ -384,22 +744,30 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                     <span>{{ box_stats.second_block.total_items }}</span>
                 </div>
 
-                <div class="flex items-center text-gray-300">
+                <div
+                    class="flex items-center gap-1"
+                    :class="box_stats.second_block.is_delivery_items_active ? '' : 'text-gray-300'"
+                >
                     <FontAwesomeIcon
+                        v-tooltip="trans('Delivery items')"
         				icon="fas fa-arrow-circle-down"
         				aria-hidden="true"
         				fixed-width
     				/>
-                    <span>-</span>
+                    <span>{{ box_stats.second_block.total_delivery_items ?? '-' }}</span>
                 </div>
 
-                <div class="flex items-center text-gray-300">
+                <div
+                    class="flex items-center gap-1"
+                    :class="box_stats.second_block.is_placed_items_active ? '' : 'text-gray-300'"
+                >
                     <FontAwesomeIcon
+                        v-tooltip="trans('Placed items')"
         				icon="fas fa-inventory"
         				aria-hidden="true"
         				fixed-width
     				/>
-                    <span>-</span>
+                    <span>{{ box_stats.second_block.total_placed_items ?? '-' }}</span>
                 </div>
             </div>
 
@@ -451,10 +819,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	<div class="pb-12">
 		<component
 			:is="component"
+			:key="currentTab"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:state="data.data.state"
+			:isOrgAgent="isOrgAgent"
+			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
+			v-bind="isOrderingLevelTab ? {
+				level: currentLevel,
+				'onUpdate:level': (value: OrderingLevel) => currentLevel = value,
+			} : {}"
 			@update:tab="handleTabUpdate"
 		/>
 	</div>
@@ -467,5 +842,12 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:current="currentTab"
 		v-model:currentTab="currentTab"
 		:typeModel="'purchase_order'"
+		v-model:level="currentLevel"
 	/>
+
+	<ConfirmDialog group="purchase-order">
+		<template #icon>
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+		</template>
+	</ConfirmDialog>
 </template>

@@ -70,7 +70,11 @@ class ChatSessionListResource extends JsonResource
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
             'priority' => $this->priority,
-            'contact_name' => $webUser?->customer?->contact_name,
+            'contact_name' => $webUser?->customer?->contact_name
+                ?? $webUser?->username
+                ?? Arr::get($guestProfile ?? [], 'name')
+                ?? $this->guest_identifier
+                ?? 'Guest',
             'last_message' => $lastMessage ? [
                 'message' => $this->truncateMessage($lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,

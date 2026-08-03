@@ -35,6 +35,7 @@ class PickingPalletReturn extends OrgAction
 {
     use WithActionUpdate;
 
+    private PalletReturn $palletReturn;
 
     public function handle(PalletReturn $palletReturn, array $modelData, ?User $user = null): PalletReturn
     {
@@ -87,7 +88,14 @@ class PickingPalletReturn extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
+        $warehouseId = $this->palletReturn->warehouse_id;
+
+        return $request->user()->authTo([
+            "fulfilment-shop.{$this->fulfilment->id}.edit",
+            "fulfilment.$warehouseId.edit",
+            "supervisor-incoming.$warehouseId",
+            "supervisor-fulfilment.$warehouseId",
+        ]);
     }
 
     public function jsonResponse(PalletReturn $palletReturn): JsonResource
@@ -97,6 +105,7 @@ class PickingPalletReturn extends OrgAction
 
     public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 
         $user = $request->user();

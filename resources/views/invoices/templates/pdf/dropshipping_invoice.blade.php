@@ -404,17 +404,7 @@
         <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
     </tr>
 
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
-            {{ __('Tax') }}
-
-            <br><small>{{$invoice->taxCategory->name}}
-                ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
-            </small>
-        </td>
-        <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
-    </tr>
+    @include('invoices.templates.pdf.tax-rows', ['document' => $invoice])
 
     <tr class="total">
         <td style="border:none" colspan="4"></td>

@@ -2,17 +2,17 @@
 
 namespace App\Actions\Helpers\Brand\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Helpers\Brand;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditBrand extends GrpAction
+class EditBrand extends OrgAction
 {
     public function asController(Brand $brand, ActionRequest $request): Response
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($brand, $request);
     }

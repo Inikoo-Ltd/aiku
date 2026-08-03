@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, inject, computed, watch, onMounted, onUnmounted, nextTick, watchEffect } from "vue"
+import { router } from "@inertiajs/vue3"
 import { watchDebounced } from "@vueuse/core"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
-import { Contact, SessionAPI, ChatMessage } from "@/types/Chat/chat"
+import { Contact, SessionAPI, ChatMessage, ChatInboxGroup } from "@/types/Chat/chat"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
 import { routeType } from "@/types/route"
 import ChatSidePanel from "@/Components/Chat/ChatSidePanel.vue"
@@ -83,7 +84,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     id: s.id,
     ulid: s.ulid,
     name: s.contact_name || s.guest_identifier || "",
-    avatar: s.image,
+    avatar: s.image ?? "",
     lastMessage: s.last_message?.message ?? "",
     lastMessageTime: s.last_message?.created_at
         ? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
@@ -154,43 +155,56 @@ const myAgentId = layout.user?.id
 const myAgentShop = layout.user?.agent_shops ?? []
 const processedUnreadIds = new Set<number>()
 
+const joinedChatListChannels: string[] = []
+
+const handleChatListEvent = async (e: any) => {
+    const msg = e.message
+    if (!msg) return
+    if (msg.sender_type === "agent") return
+    if (msg.shop_id && Array.isArray(myAgentShop) && !myAgentShop.includes(msg.shop_id)) {
+        return
+    }
+    if (msg.assigned_user_id && myAgentId && msg.assigned_user_id !== myAgentId) return
+
+    const senderDisplay =
+        msg.sender_name?.trim() ||
+        (msg.sender_type === "guest" ? "Guest" : "User")
+
+    const duplicate = `${msg.sender_name}-${msg.text}`
+
+    if (notifiedMessages.has(duplicate)) return
+
+    playNotificationSoundFile(soundUrl)
+    await fetchUnreadCount(baseUrl, activeTab.value, myAgentId)
+
+    if (Notification.permission === "granted") {
+        new Notification(senderDisplay, {
+            body: msg.text ?? "New message",
+            tag: duplicate
+        })
+
+        // notifiedMessages.add(duplicate)
+    }
+    reloadContacts()
+}
+
 onMounted(async () => {
     waitEchoReady(() => {
-        window.Echo.join("chat-list").listen(".chatlist", async (e: any) => {
-            const msg = e.message
-            if (!msg) return
-            if (msg.sender_type === "agent") return
-            if (msg.shop_id && Array.isArray(myAgentShop) && !myAgentShop.includes(msg.shop_id)) {
-                return
-            }
-            if (msg.assigned_user_id && myAgentId && msg.assigned_user_id !== myAgentId) return
-
-            const senderDisplay =
-                msg.sender_name?.trim() ||
-                (msg.sender_type === "guest" ? "Guest" : "User")
-
-            const duplicate = `${msg.sender_name}-${msg.text}`
-
-            if (notifiedMessages.has(duplicate)) return
-
-            playNotificationSoundFile(soundUrl)
-            await fetchUnreadCount(baseUrl, activeTab.value, myAgentId)
-
-            if (Notification.permission === "granted") {
-                new Notification(senderDisplay, {
-                    body: msg.text ?? "New message",
-                    tag: duplicate
-                })
-
-                // notifiedMessages.add(duplicate)
-            }
-            reloadContacts()
+        const shopIds = Array.isArray(myAgentShop) ? myAgentShop : []
+        shopIds.forEach((shopId) => {
+            const channel = `chat-list.${shopId}`
+            joinedChatListChannels.push(channel)
+            window.Echo.join(channel).listen(".chatlist", handleChatListEvent)
         })
     })
 })
 
 onUnmounted(() => {
-    window.Echo.leave("chat-list")
+    // Only detach this widget's listener; do NOT Echo.leave() the shared
+    // chat-list channel — the footer notification hub relies on it.
+    joinedChatListChannels.forEach((channel) =>
+        window.Echo?.join(channel).stopListening(".chatlist", handleChatListEvent)
+    )
     scrollObserver?.disconnect()
 })
 
@@ -252,6 +266,43 @@ watch(activeTab, () => {
 })
 
 const filteredContacts = computed(() => contacts.value.filter((c) => c.status === activeTab.value))
+
+const groupedContacts = computed<ChatInboxGroup[]>(() => {
+    const groups = new Map<number | string, ChatInboxGroup>()
+
+    for (const c of filteredContacts.value) {
+        const key = c.shop?.id ?? "other"
+
+        if (!groups.has(key)) {
+            groups.set(key, {
+                key,
+                shopName: c.shop?.name ?? trans("Other"),
+                organisationName: c.organisation?.name ?? "",
+                unread: 0,
+                contacts: [],
+            })
+        }
+
+        const group = groups.get(key)!
+        group.contacts.push(c)
+
+        if (activeTab.value !== "closed") {
+            group.unread += c.unread ?? 0
+        }
+    }
+
+    return Array.from(groups.values())
+})
+
+const collapsedInboxes = ref<Set<number | string>>(new Set())
+
+const toggleInbox = (key: number | string) => {
+    const next = new Set(collapsedInboxes.value)
+    next.has(key) ? next.delete(key) : next.add(key)
+    collapsedInboxes.value = next
+}
+
+const isInboxCollapsed = (key: number | string) => collapsedInboxes.value.has(key)
 
 const openChat = (c: Contact) => {
     selectedSession.value = {
@@ -345,6 +396,8 @@ const assignToSelf = async (ulid: string) => {
 const handleClickContact = async (c: Contact) => {
     errorPerContact.value[c.ulid] = ""
 
+    const orgSlug = c.organisation?.slug ?? (route().params as Record<string, any>)?.organisation
+
     if (activeTab.value === "waiting" && viewMode.value === "my") {
         const result = await assignToSelf(String(c.ulid))
 
@@ -352,13 +405,14 @@ const handleClickContact = async (c: Contact) => {
             errorPerContact.value[c.ulid] = result.error
             return
         }
-
-        openChat(c)
-        await nextTick()
-        reloadContacts()
-    } else {
-        openChat(c)
     }
+
+    if (orgSlug) {
+        router.visit(route("grp.org.chat.inbox.conversation", [orgSlug, c.ulid]))
+        return
+    }
+
+    openChat(c)
 }
 
 const onSyncSuccess = async () => {
@@ -488,11 +542,36 @@ onMounted(async () => {
                     </div>
                 </div>
 
-                <!-- LIST -->
+                <!-- LIST grouped by inbox (shop) -->
                 <div v-else>
-                    <div v-for="c in filteredContacts" :key="c.ulid">
-                        <div class="relative flex items-center gap-3 px-3 py-2 border-b hover:bg-gray-50 cursor-pointer"
-                            @click="handleClickContact(c)">
+                    <div v-for="group in groupedContacts" :key="group.key">
+                        <!-- Inbox header -->
+                        <button type="button"
+                            class="w-full flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 border-b sticky top-0 z-[1]"
+                            @click="toggleInbox(group.key)">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <FontAwesomeIcon
+                                    :icon="isInboxCollapsed(group.key) ? faChevronDown : faChevronUp"
+                                    class="text-[10px] text-gray-400 shrink-0" />
+                                <span class="text-xs font-semibold text-gray-700 truncate">{{ group.shopName }}</span>
+                                <span v-if="group.organisationName"
+                                    class="text-[10px] text-gray-400 truncate">{{ group.organisationName }}</span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span v-if="group.unread"
+                                    class="min-w-[16px] px-1.5 text-[10px] leading-4 text-white rounded-full text-center"
+                                    :style="{ backgroundColor: 'var(--theme-color-4)' }">
+                                    {{ group.unread }}
+                                </span>
+                                <span class="text-[10px] text-gray-400">{{ group.contacts.length }}</span>
+                            </div>
+                        </button>
+
+                        <!-- Contacts within this inbox -->
+                        <div v-show="!isInboxCollapsed(group.key)">
+                            <div v-for="c in group.contacts" :key="c.ulid">
+                                <div class="relative flex items-center gap-3 px-3 py-2 border-b hover:bg-gray-50 cursor-pointer"
+                                    @click="handleClickContact(c)">
                             <!-- Loading overlay -->
                             <div v-if="isAssigning[c.ulid]"
                                 class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
@@ -566,9 +645,12 @@ onMounted(async () => {
                             </div>
                         </div>
 
-                        <!-- Error -->
-                        <div v-if="errorPerContact[c.ulid]" class="px-3 py-1 text-xs text-red-600 bg-red-50 border-b">
-                            {{ errorPerContact[c.ulid] }}
+                                <!-- Error -->
+                                <div v-if="errorPerContact[c.ulid]"
+                                    class="px-3 py-1 text-xs text-red-600 bg-red-50 border-b">
+                                    {{ errorPerContact[c.ulid] }}
+                                </div>
+                            </div>
                         </div>
                     </div>
 

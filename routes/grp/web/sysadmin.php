@@ -13,6 +13,7 @@ use App\Actions\SysAdmin\Guest\UI\CreateGuest;
 use App\Actions\SysAdmin\Guest\UI\EditGuest;
 use App\Actions\SysAdmin\Guest\UI\IndexGuests;
 use App\Actions\SysAdmin\Guest\UI\ShowGuest;
+use App\Actions\SysAdmin\UI\IndexMcpRequests;
 use App\Actions\SysAdmin\UI\IndexSysAdminScheduledTasks;
 use App\Actions\SysAdmin\UI\ShowSysAdminAnalyticsDashboard;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
@@ -32,6 +33,8 @@ Route::get('/changelogs', IndexHistoryInGroupSetting::class)->name('changelogs.i
 Route::prefix('analytics')->as('analytics.')->group(function () {
     Route::get('', ShowSysAdminAnalyticsDashboard::class)->name('dashboard');
 });
+
+Route::get('mcp', IndexMcpRequests::class)->name('mcp.index');
 
 Route::prefix('users')->as('users.')->group(function () {
     Route::get('active', [IndexUsers::class,'inActive'])->name('index');

@@ -72,11 +72,22 @@ function findUnresolvedStaticCalls(string $dir): array
         $namespace = '';
         $uses      = [];
         $count     = count($tokens);
+        $depth     = 0;
 
         for ($i = 0; $i < $count; $i++) {
             $token = $tokens[$i];
             if (!is_array($token)) {
+                if ($token === '{') {
+                    $depth++;
+                } elseif ($token === '}') {
+                    $depth--;
+                }
+
                 continue;
+            }
+
+            if (in_array($token[0], [T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES])) {
+                $depth++;
             }
 
             if ($token[0] === T_NAMESPACE) {
@@ -91,7 +102,11 @@ function findUnresolvedStaticCalls(string $dir): array
                 }
             }
 
-            if ($token[0] === T_USE) {
+            // Only a top-level `use` is an import. Inside a class body it pulls in a
+            // trait, and a trait named without a backslash lives in this file's own
+            // namespace — registering it as an import would strip that namespace and
+            // report every `Trait::method()` alias as unresolved.
+            if ($token[0] === T_USE && $depth === 0) {
                 $imported = '';
                 $alias    = null;
                 for ($j = $i + 1; $j < $count; $j++) {

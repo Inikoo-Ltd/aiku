@@ -125,8 +125,8 @@ class IndexRetinaStoredItems extends RetinaAction
         $actions[] = [
             'type' => 'button',
             'style' => 'edit',
-            'tooltip' => __("Bulk Edit SKU"),
-            'label' => __("Bulk Edit SKU"),
+            'tooltip' => __("Bulk Edit SKO"),
+            'label' => __("Bulk Edit SKO"),
             'key' => 'edit_sku',
             'route' => [
                 'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.create',
@@ -156,14 +156,14 @@ class IndexRetinaStoredItems extends RetinaAction
             'Storage/RetinaStoredItems',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __("SKUs"),
+                'title'       => __("SKOs"),
                 'pageHead'    => [
-                    'title'   => __("SKUs"),
+                    'title'   => __("SKOs"),
                     'actions' => $actions
                 ],
                 'bulk_edit_upload' => [
                     'title' => [
-                        'label' => __("Bulk Edit Customer's SKU"),
+                        'label' => __("Bulk Edit Customer's SKO"),
                         'information' => __('The list of column file: stored_items')
                     ],
                     'progressDescription'   => __('Editing stored item'),
@@ -192,7 +192,7 @@ class IndexRetinaStoredItems extends RetinaAction
                         'route' => [
                             'name' => 'retina.fulfilment.storage.stored-items.index'
                         ],
-                        'label' => __("SKUs"),
+                        'label' => __("SKOs"),
                         'icon'  => 'fal fa-bars',
                     ],
 

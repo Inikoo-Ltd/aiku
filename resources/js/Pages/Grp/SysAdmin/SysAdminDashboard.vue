@@ -7,14 +7,20 @@
 <script setup>
 import { Head } from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import Stats from '@/Components/DataDisplay/Stats.vue';
+import SearchAnalyticsDisplay from '@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue';
+import McpAnalyticsDisplay from '@/Components/DataDisplay/Dashboard/Widget/McpAnalyticsDisplay.vue';
+import UsersInsightsDisplay from '@/Components/DataDisplay/Dashboard/Widget/UsersInsightsDisplay.vue';
 import { capitalize } from "@/Composables/capitalize"
 
-defineProps(['title', 'pageHead', 'stats']);
+defineProps(['title', 'pageHead', 'users_insights', 'search_insights', 'ai_insights']);
 </script>
 
 <template>
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead"></PageHeading>
-    <stats :stats="stats" class="m-4"/>
+    <div class="m-4 grid gap-4 xl:grid-cols-2 items-start">
+        <UsersInsightsDisplay :widget="users_insights"/>
+        <SearchAnalyticsDisplay :widget="search_insights"/>
+        <McpAnalyticsDisplay :widget="ai_insights"/>
+    </div>
 </template>

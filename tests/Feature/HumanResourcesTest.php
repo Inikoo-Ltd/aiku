@@ -8,6 +8,9 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\SysAdmin\User\StoreUserFromEmployee;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\HumanResources\Employee\DeleteEmployee;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
@@ -28,6 +31,8 @@ use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
 use App\Actions\HumanResources\Clocking\StoreClocking;
+use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\StoreClockingMachineQRCode;
 use App\Actions\HumanResources\Clocking\UpdateClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
@@ -80,6 +85,8 @@ use App\Models\HumanResources\LeaveType;
 use App\Models\HumanResources\HolidayYear;
 use App\Models\HumanResources\EmployeeContract;
 use App\Models\HumanResources\Clocking;
+use App\Models\HumanResources\ClockingMachine;
+use App\Models\HumanResources\ClockingMachineQRCode;
 use App\Models\HumanResources\OvertimeRequest;
 use App\Models\HumanResources\OvertimeType;
 use App\Models\HumanResources\AttendanceAdjustment;
@@ -97,6 +104,21 @@ use Illuminate\Support\Facades\Storage;
 use App\Actions\Helpers\Avatars\GetDiceBearAvatar;
 
 use function Pest\Laravel\actingAs;
+
+class CollidingStoreClockingMachineQRCode extends StoreClockingMachineQRCode
+{
+    protected static array $hashes = [];
+
+    public static function useHashes(string ...$hashes): void
+    {
+        self::$hashes = $hashes;
+    }
+
+    protected static function generateHash(): string
+    {
+        return array_shift(self::$hashes);
+    }
+}
 
 beforeAll(function () {
     loadDB();
@@ -397,6 +419,80 @@ test('can store clocking', function () {
     expect($clocking)->toBeInstanceOf(Clocking::class)
         ->and($clocking->subject_id)->toBe($employee->id);
 });
+
+test('clocking is bucketed into the day of the workplace timezone not the organisation one', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $aucklandTimezone = \App\Models\Helpers\Timezone::where('name', 'Pacific/Auckland')->firstOrFail();
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name'        => 'Auckland Workplace',
+        'type'        => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+        'timezone_id' => $aucklandTimezone->id,
+    ]);
+
+    $clockedAt = \Illuminate\Support\Carbon::parse('2026-08-03 22:00:00', 'UTC');
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type'       => 'in',
+        'clocked_at' => $clockedAt,
+    ], 0, true);
+
+    $expectedDate = $clockedAt->copy()->setTimezone('Pacific/Auckland')->toDateString();
+
+    expect($expectedDate)->toBe('2026-08-04')
+        ->and($clocking->timesheet->date->toDateString())->toBe($expectedDate);
+});
+
+test('can store clocking machine QR code', function () {
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'QR Workplace',
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'QR Clocking Machine',
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Main entrance',
+    ]);
+
+    expect($qrCode)->toBeInstanceOf(ClockingMachineQRCode::class)
+        ->and($qrCode->exists)->toBeTrue()
+        ->and($qrCode->clocking_machine_id)->toBe($clockingMachine->id)
+        ->and($qrCode->clockingMachine->id)->toBe($clockingMachine->id)
+        ->and($qrCode->label)->toBe('Main entrance')
+        ->and($qrCode->active)->toBeTrue()
+        ->and($qrCode->hash)->toMatch('/^[a-f0-9]{8}$/');
+
+    return $clockingMachine;
+});
+
+test('clocking machine QR code gets a generated label when none is provided', function (ClockingMachine $clockingMachine) {
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, []);
+
+    expect($qrCode->label)->toMatch('/^[a-z]+-[a-z]+$/');
+})->depends('can store clocking machine QR code');
+
+test('clocking machine QR code hash is regenerated on collision', function (ClockingMachine $clockingMachine) {
+    $clockingMachine->clockingMachineQrCodes()->create([
+        'label' => 'Existing QR code',
+        'hash'  => 'aaaaaaaa',
+    ]);
+
+    CollidingStoreClockingMachineQRCode::useHashes('aaaaaaaa', 'bbbbbbbb');
+
+    $qrCode = CollidingStoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'New QR code',
+    ]);
+
+    expect($qrCode->hash)->toBe('bbbbbbbb');
+})->depends('can store clocking machine QR code');
 
 test('can store attendance adjustment', function () {
     $employee = Employee::factory()->create([
@@ -1144,3 +1240,34 @@ test('StoreLeave handle creates a leave with pending approval records', function
 
     expect(\App\Models\HumanResources\LeaveApprovalRecord::where('leave_id', $leave->id)->count())->toBeGreaterThanOrEqual(1);
 });
+
+test('StoreUserFromEmployee authorisation comes from the human resources trait', function () {
+    expect(class_uses_recursive(StoreUserFromEmployee::class))
+        ->toContain(WithHumanResourcesEditAuthorisation::class)
+        ->and(method_exists(StoreUserFromEmployee::class, 'authorize'))->toBeTrue();
+});
+
+test('can create a user from an employee', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'employee-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    expect($user)->toBeInstanceOf(User::class)
+        ->and($user->status)->toBeTrue()
+        ->and($employee->refresh()->user_id)->toBe($user->id);
+
+    return $employee;
+});
+
+test('an employee that already has a user can not get a second one', function (Employee $employee) {
+    expect(fn () => StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'employee-dup-' . $employee->id,
+        'password' => 'secret123',
+    ]))->toThrow(HttpException::class);
+})->depends('can create a user from an employee');

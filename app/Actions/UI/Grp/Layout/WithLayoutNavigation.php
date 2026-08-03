@@ -155,11 +155,42 @@ trait WithLayoutNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
+                            'label'   => __('Dashboard'),
                             'tooltip' => __('Dashboard'),
                             'icon'    => ['fal', 'fa-chart-network'],
                             'root'    => 'grp.org.hr.dashboard',
                             'route'   => [
                                 'name'       => 'grp.org.hr.dashboard',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        [
+                            'label'   => __('Employees'),
+                            'tooltip' => __('Employees'),
+                            'icon'    => ['fal', 'fa-users'],
+                            'root'    => 'grp.org.hr.employees.',
+                            'route'   => [
+                                'name'       => 'grp.org.hr.employees.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        [
+                            'label'   => __('Timesheets'),
+                            'tooltip' => __('Timesheets'),
+                            'icon'    => ['fal', 'fa-stopwatch'],
+                            'root'    => 'grp.org.hr.timesheets.',
+                            'route'   => [
+                                'name'       => 'grp.org.hr.timesheets.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        [
+                            'label'   => __('Clocking machines'),
+                            'tooltip' => __('Clocking machines'),
+                            'icon'    => ['fal', 'fa-chess-clock'],
+                            'root'    => 'grp.org.hr.clocking_machines.',
+                            'route'   => [
+                                'name'       => 'grp.org.hr.clocking_machines.index',
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
@@ -174,93 +205,63 @@ trait WithLayoutNavigation
                         ],
                         [
                             'tooltip' => __('Responsibilities'),
-                            'icon'    => ['fal', 'fa-clipboard-list-check'],
+                            'icon'    => ['fal', 'fa-sitemap'],
                             'root'    => 'grp.org.hr.job_positions.',
                             'route'   => [
                                 'name'       => 'grp.org.hr.job_positions.index',
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
-
                         [
-                            // 'label' => __('Holidays'),
-                            'icon'  => ['fal', 'fa-umbrella'],
-                            'root'  => 'grp.org.hr.holidays.',
-                            'route' => [
+                            'tooltip' => __('Holidays'),
+                            'icon'    => ['fal', 'fa-umbrella'],
+                            'root'    => 'grp.org.hr.holidays.',
+                            'route'   => [
                                 'name'       => 'grp.org.hr.holidays.index',
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
-
                         [
-                            // 'label' => __('Employees'),
-                            'icon'  => ['fal', 'fa-user-hard-hat'],
-                            'root'  => 'grp.org.hr.employees.',
-                            'route' => [
-                                'name'       => 'grp.org.hr.employees.index',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-
-                        [
-                            'label' => __('Clocking machines'),
-                            'icon'  => ['fal', 'fa-chess-clock'],
-                            'root'  => 'grp.org.hr.clocking_machines.',
-                            'route' => [
-                                'name'       => 'grp.org.hr.clocking_machines.index',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        [
-                            'label' => __('Timesheets'),
-                            'icon'  => ['fal', 'fa-stopwatch'],
-                            'root'  => 'grp.org.hr.timesheets.',
-                            'route' => [
-                                'name'       => 'grp.org.hr.timesheets.index',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        [
-                            'label' => __('Overtime'),
-                            'icon'  => ['fal', 'fa-stopwatch'],
-                            'root'  => 'grp.org.hr.overtime.',
-                            'route' => [
+                            'tooltip' => __('Overtime'),
+                            'icon'    => ['fal', 'fa-stopwatch'],
+                            'root'    => 'grp.org.hr.overtime.',
+                            'route'   => [
                                 'name'       => 'grp.org.hr.overtime.index',
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
                         [
-                            'label' => __('Leave Requests'),
-                            'icon'  => ['fas', 'fa-house-leave'],
-                            'root'  => 'grp.org.hr.leaves.',
-                            'route' => [
+                            'tooltip' => __('Leave Requests'),
+                            'icon'    => ['fas', 'fa-house-leave'],
+                            'root'    => 'grp.org.hr.leaves.',
+                            'route'   => [
                                 'name'       => 'grp.org.hr.leaves.index',
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
                         [
-                            'label' => __('Adjustments'),
-                            'icon'  => ['fal', 'fa-clock'],
-                            'root'  => 'grp.org.hr.adjustments.',
-                            'route' => [
+                            'tooltip' => __('Adjustments'),
+                            'icon'    => ['fal', 'fa-clock'],
+                            'root'    => 'grp.org.hr.adjustments.',
+                            'route'   => [
                                 'name'       => 'grp.org.hr.adjustments.index',
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
                         [
-                            // 'label' => __('Analytics'),
-                            'icon'  => ['fal', 'fa-chart-line'],
-                            'root'  => 'grp.org.hr.analytics.',
-                            'route' => [
+                            'tooltip' => __('Analytics'),
+                            'icon'    => ['fal', 'fa-chart-line'],
+                            'root'    => 'grp.org.hr.analytics.',
+                            'route'   => [
                                 'name'       => 'grp.org.hr.analytics.index',
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
                         [
-                            'label' => __('Shift Schedules'),
-                            'icon'  => ['fal', 'fa-calendar-check'],
-                            'root'  => 'grp.org.hr.shift_schedules.',
-                            'route' => [
+                            'tooltip' => __('Shift Schedules'),
+                            'icon'    => ['fal', 'fa-calendar-check'],
+                            'root'    => 'grp.org.hr.shift_schedules.',
+                            'route'   => [
                                 'name'       => 'grp.org.hr.shift_schedules.index',
                                 'parameters' => [$organisation->slug],
                             ],

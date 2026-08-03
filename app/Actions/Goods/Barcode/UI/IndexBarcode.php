@@ -10,7 +10,7 @@
 namespace App\Actions\Goods\Barcode\UI;
 
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Enums\UI\Goods\BarcodesTabsEnum;
 use App\Http\Resources\Goods\BarcodesResource;
@@ -26,7 +26,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexBarcode extends GrpAction
+class IndexBarcode extends OrgAction
 {
     private Group $parent;
 
@@ -115,7 +115,7 @@ class IndexBarcode extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request)->withTab(BarcodesTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(BarcodesTabsEnum::values());
         $this->parent = $this->group;
 
         return $this->handle($this->parent);

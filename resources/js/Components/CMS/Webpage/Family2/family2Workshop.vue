@@ -330,7 +330,7 @@ const contentClass = computed(() =>
             <EditorV2 
               :model-value="props.modelValue?.family?.description" 
               @update:model-value="(e) => saveDescription('description', e)"
-              :toogle="['bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear']"
+              :toggle="['bold', 'italic', 'underline', 'fontSize', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear']"
             />
 
             <!-- Fade overlay -->

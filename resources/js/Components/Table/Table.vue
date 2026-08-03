@@ -31,7 +31,8 @@ import TableFrequencyFilter from '@/Components/Table/TableFrequencyFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
 import TableRows from './TableRows.vue'
-library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator,faYinYang)
+import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
+library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -544,11 +545,11 @@ function generateNewQueryString() {
 
     const externalFilters = queryStringData[prefix + 'filter'] || {}
     const managedKeys = [
-        ...map(queryBuilderProps.value.searchInputs, 'key'), 
+        ...map(queryBuilderProps.value.searchInputs, 'key'),
         ...map(queryBuilderProps.value.filters, 'key'),
     ]
 
-    forEach(managedKeys, (k : any) => { delete externalFilters[k] }) 
+    forEach(managedKeys, (k : any) => { delete externalFilters[k] })
     // To exclude 'filter', 'columns', 'cursor', and 'sort' that received from the URL
     forEach(['columns', 'cursor', 'sort'], (key) => {
         delete queryStringData[prefix + key];
@@ -620,11 +621,11 @@ const visit = (url?: string) => {
                 if ('queryBuilderProps' in usePage().props) {
                     const newCursor = queryBuilderProps.value.cursor;
                     const newPage   = queryBuilderProps.value.page;
-            
+
                     if (queryBuilderData.value.cursor !== newCursor || queryBuilderData.value.page !== newPage) {
                         skipNextDebouncedVisit = true;
                     }
-                
+
                     queryBuilderData.value.cursor = newCursor;
                     queryBuilderData.value.page   = newPage;
                 }
@@ -662,13 +663,14 @@ let isMounted = false;
 let skipNextDebouncedVisit = false;
 
 watch(queryBuilderData, async () => {
-        if (!isMounted) return;
-        if (skipNextDebouncedVisit) {
-            skipNextDebouncedVisit = false;
-            return;
-        }
-        debouncedFilter();
-    },
+    const skipThisVisit = skipNextDebouncedVisit;
+    skipNextDebouncedVisit = false;
+
+    if (!isMounted) return;
+    if (skipThisVisit) return;
+
+    debouncedFilter();
+},
     {deep: true},
 );
 
@@ -677,6 +679,17 @@ const immediateVisit = () => {
     skipNextDebouncedVisit = true;
     debouncedFilter.cancel();
     visit(location.pathname + '?' + generateNewQueryString());
+};
+
+// TableElements reports the selection it read from the URL right after mount. The server already
+// rendered that selection, so the state is stored without letting the watcher fire off a visit for
+// a query string identical to the current one.
+const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false) => {
+    if (isInitial) {
+        skipNextDebouncedVisit = true;
+    }
+
+    queryBuilderData.value[key] = data;
 };
 
 const inertiaListener = () => {
@@ -967,25 +980,25 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                     'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
                 }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
-                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                        :tableName="props.name" 
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('elementFilter', data, isInitial)"
+                        :tableName="props.name"
                     />
                 </div>
 
                 <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
                     <TableElements :elements="queryBuilderProps.additionalElementGroups"
-                        @checkboxChanged="(data) => queryBuilderData.additionalElementFilter = data"
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('additionalElementFilter', data, isInitial)"
                         :tableName="props.name"
-                        :isAdditional="true" 
+                        :isAdditional="true"
                     />
                 </div>
 
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4 table-query-builder">
 
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
-                    <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
+                    <div v-if="!useTopPagination" class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
                         <!-- Result Number -->
-                        <div v-if="!useTopPagination" class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
+                        <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
                             <div class="grid justify-end items-center text-base font-normal text-gray-700">
                                 <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
                                     <span class="font-semibold tabular-nums">
@@ -1082,6 +1095,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
+                                :appliedValue="queryBuilderProps?.betweenDatesValue"
                                 :tableName="props.name" />
                         </div>
 
@@ -1134,9 +1148,84 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                         <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
                             :exportLinks="queryBuilderProps.exportLinks"
                             :per-page-options="queryBuilderProps.perPageOptions"
-                            :on-per-page-change="onPerPageChange" 
-                            :custom-wrapper-class="'sticky top-[39px] z-[10] border-b !border-gray-300'"
-                        />
+                            :on-per-page-change="onPerPageChange"
+                            :custom-wrapper-class="'sticky top-[33px] z-[10] border-b !border-gray-300'"
+                        >
+                            <template #topRow="{ data }">
+                                <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center mt-0.5 px-2" :class="data.paginated ? 'mb-2' : ''">
+                                    <!-- Result Number -->
+                                    <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
+                                        <div class="grid justify-end items-center text-base font-normal text-gray-700">
+                                            <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
+                                                <span class="font-semibold tabular-nums">
+                                                    <CountUp :endVal="compResourceMeta?.total || 0" :duration="1.2"
+                                                        :scrollSpyOnce="true" :options="{
+                                                        formattingFn: (number) => locale.number(number)
+                                                    }" />
+                                                </span>
+
+                                                <span class="font-light">
+                                                    {{
+                                                    compResourceMeta.total > 1
+                                                    ? queryBuilderProps.labelRecord?.[1] || queryBuilderProps.labelRecord?.[0] ||
+                                                    trans('records')
+                                                    : queryBuilderProps.labelRecord?.[0] || trans('record')
+                                                    }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Button: Model Operations Bulk -->
+                                        <div v-if="queryBuilderProps.modelOperations?.bulk" class="flex">
+                                            <slot v-for="(linkButton, btnIndex) in queryBuilderProps.modelOperations?.bulk"
+                                                :name="`button${linkButton.label}`" :linkButton="linkButton">
+                                                <Link v-if="linkButton?.route?.name" as="div"
+                                                    :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                                    :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
+                                                    :data="selectRow"
+                                                    :class="[queryBuilderProps.modelOperations?.bulk.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
+                                                <Button
+                                                    :style="Object.values(selectRow).some(value => value) ? linkButton.style : 'disabled'"
+                                                    :icon="linkButton.icon" :label="linkButton.label" size="l"
+                                                    class="h-full border-none rounded-none"
+                                                    :class="{'rounded-l-md': btnIndex === 0, 'rounded-r-md ': btnIndex === queryBuilderProps.modelOperations?.bulk.length - 1}" />
+                                                </Link>
+                                            </slot>
+                                        </div>
+                                    </div>
+
+                                    <!-- Button: Model Operations -->
+                                    <div v-if="queryBuilderProps.modelOperations?.createLink" class="flex">
+                                        <slot v-for="(linkButton, btnIndex) in queryBuilderProps.modelOperations?.createLink"
+                                            :name="`button-${kebabCase(linkButton.label)}`"
+                                            :linkButton="{...linkButton, btnIndex: btnIndex }">
+                                            <!-- {{ linkButton?.route?.name }} -->
+                                            <component v-if="linkButton?.route?.name" :is="linkButton.target ? 'a' : Link" as="div"
+                                                :target="linkButton.target || undefined"
+                                                :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                                :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
+                                                :class="[queryBuilderProps.modelOperations?.createLink.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
+                                                <Button :style="linkButton.style" :type="linkButton.type" :icon="linkButton.icon"
+                                                    :label="linkButton.label" size="xs" key="1" class="h-full" />
+                                            </component>
+                                        </slot>
+                                    </div>
+
+                                    <!-- Search Input Button -->
+                                    <div v-if="queryBuilderProps.globalSearch" class="flex flex-row">
+                                        <slot name="tableFilterSearch" :has-global-search="queryBuilderProps.globalSearch"
+                                            :label="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.label : null"
+                                            :value="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.value : null"
+                                            :on-change="changeGlobalSearchValue">
+                                            <TableFilterSearch v-if="queryBuilderProps.globalSearch" class=""
+                                                @resetSearch="() => resetQuery()" :label="queryBuilderProps.globalSearch.label"
+                                                :value="queryBuilderProps.globalSearch.value" :on-change="changeGlobalSearchValue"
+                                                :on-enter="immediateSearch" :on-start-typing="cancelVisitIfInProgress" :isVisiting />
+                                        </slot>
+                                    </div>
+                                </div>
+                            </template>
+                        </Pagination>
                     </slot>
 
                     <slot name="table">
@@ -1145,7 +1234,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                             :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
                         <table class="divide-y divide-gray-200 bg-white w-full">
                             <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
-                                <tr 
+                                <tr
                                     class="border-t border-gray-200 divide-x divide-gray-200"
                                     :class="{
                                         'border-t': !useTopPagination

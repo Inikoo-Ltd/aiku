@@ -10,6 +10,8 @@ import { usePage } from "@inertiajs/vue3"
 import Table from "../Tables/Table.vue";
 import { Link } from "@inertiajs/vue3";
 import Image from "@common/Components/Image.vue";
+import Icon from "@/Components/Icon.vue";
+import Tag from "@/Components/Tag.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 import { GridProducts } from "@/Components/Product"

@@ -50,6 +50,7 @@ class GetMasterProductCategoryShowcase
             default => [
                 'family' => MasterProductCategoryResource::make($productCategory),
                 'tags' => $productCategory->tradeUnitFamily?->tags,
+                'bestSellers' => GetMasterFamilyBestSellers::run($productCategory),
                 'save_route' => [
                     'method' => 'patch',
                     'name'       => 'grp.models.master_product_categories.translations.update',

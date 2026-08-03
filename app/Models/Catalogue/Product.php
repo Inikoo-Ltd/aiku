@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
@@ -151,7 +152,6 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $master_product_id
  * @property Carbon|null $mark_for_discontinued_at
  * @property Carbon|null $discontinued_at
- * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property int|null $art1_image_id
@@ -179,6 +179,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_variant_leader
  * @property bool $is_minion_variant
  * @property bool $has_live_webpage
+ * @property bool $is_in_website live webpage + sellable, mirrored into the search index
  * @property string|null $marketplace_id
  * @property numeric|null $margin
  * @property string|null $marketplace_second_id
@@ -187,6 +188,8 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $not_follow_master_trade_units
  * @property int|null $index_under_family
  * @property bool $is_on_demand
+ * @property bool $not_follow_master_prices
+ * @property string|null $units_review
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -265,6 +268,14 @@ class Product extends Model implements Auditable, HasMedia
     use HasTranslations;
     use HasAttachments;
     use HasSearch;
+    protected static function booted(): void
+    {
+        static::saved(function (Product $product) {
+            if ($product->wasChanged(['is_for_sale', 'is_variant_leader', 'is_minion_variant', 'webpage_id'])) {
+                HydrateIsInWebsite::run($product);
+            }
+        });
+    }
 
     protected $guarded = [];
 
@@ -299,7 +310,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_for_sale_from_master'      => 'boolean',
         'mismatch_with_master_detected' => 'boolean',
         'is_on_demand'                  => 'boolean',
-
+        'not_follow_master_prices'      => 'boolean',
     ];
 
     protected $attributes = [
@@ -337,6 +348,8 @@ class Product extends Model implements Auditable, HasMedia
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
             'is_for_sale'       => $this->is_for_sale,
+            'is_in_website'     => (bool) $this->is_in_website,
+            'barcode'           => (string) $this->barcode,
             'is_on_demand'      => $this->is_on_demand,
             'image'             => json_encode(Arr::get($this->web_images, 'main.gallery')),
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
@@ -369,6 +382,7 @@ class Product extends Model implements Auditable, HasMedia
         'auto_assign_status',
         'is_main',
         'is_on_demand',
+        'not_follow_master_prices',
     ];
 
     public function getRouteKeyName(): string

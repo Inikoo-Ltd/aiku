@@ -122,7 +122,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(9)
+        ->and($group->roles()->count())->toBe(10)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -130,14 +130,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(8)
+    expect($group->jobPositions()->count())->toBe(9)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(8)
+    expect($group->jobPositions()->count())->toBe(9)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -190,7 +190,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(8)
-        ->and($group->roles()->count())->toBe(17)
+        ->and($group->roles()->count())->toBe(18)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -340,6 +340,63 @@ test('set user employed in organisation', function (User $user) {
 
     return $user;
 })->depends('SetUserAuthorisedModels command');
+
+test('picking the language the account already uses still rebuilds the cached ui props', function (User $user) {
+    $isolatedUser = User::find($user->id);
+    setPermissionsTeamId($isolatedUser->group_id);
+    \Illuminate\Support\Facades\Session::forget('reloadLayout');
+
+    \App\Actions\UI\Profile\UpdateProfile::make()->handle($isolatedUser, ['language_id' => $isolatedUser->language_id]);
+
+    expect(\Illuminate\Support\Facades\Session::get('reloadLayout'))->toBe('1');
+
+    \Illuminate\Support\Facades\Session::forget('reloadLayout');
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+})->depends('SetUserAuthorisedModels command');
+
+test('locale follows the users saved language, not a stale session value', function (User $user) {
+    $spanish = \App\Models\Helpers\Language::where('code', 'es')->firstOrFail();
+    $english = \App\Models\Helpers\Language::where('code', 'en')->firstOrFail();
+
+    $user->update(['language_id' => $spanish->id]);
+    session(['aiku_language' => 'en']);
+
+    $this->actingAs($user);
+
+    expect(new \App\Http\Middleware\SetLocale()->getLocale())->toBe('es');
+
+    $user->update(['language_id' => $english->id]);
+})->depends('SetUserAuthorisedModels command');
+
+test('user timezone falls back to the organisation they work for', function (User $user) {
+    $organisation = $user->authorisedOrganisations()->first();
+    $employee     = Employee::factory()->create([
+        'user_id'         => $user->id,
+        'organisation_id' => $organisation->id,
+        'group_id'        => $user->group_id,
+        'state'           => 'working',
+    ]);
+    $user->employees()->syncWithoutDetaching([$employee->id => ['group_id' => $user->group_id]]);
+
+    // StoreUser gives every user a timezone; clearing it exercises the fallback behind it
+    expect($user->refresh()->timezone_id)->not->toBeNull();
+
+    $user->update(['timezone_id' => null]);
+
+    expect($user->refresh()->timezone_name)->toBe($organisation->timezone->name);
+
+    return $user;
+})->depends('set user employed in organisation');
+
+test('user timezone prefers their own choice over the organisation one', function (User $user) {
+    $auckland = \App\Models\Helpers\Timezone::where('name', 'Pacific/Auckland')->firstOrFail();
+
+    $user->update(['timezone_id' => $auckland->id]);
+
+    expect($user->refresh()->timezone_name)->toBe('Pacific/Auckland');
+
+    $user->update(['timezone_id' => null]);
+})->depends('user timezone falls back to the organisation they work for');
 
 test('set user employed in organisation command', function (User $user) {
     $this->artisan('user:set-employed-organisation', [
@@ -1065,6 +1122,9 @@ test('can show hr dashboard', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('SysAdmin/SysAdminDashboard')
+            ->has('users_insights')
+            ->has('search_insights')
+            ->has('ai_insights')
             ->has('breadcrumbs', 2);
     });
 });
@@ -1470,6 +1530,19 @@ test('update group settings action', function (Group $group) {
         ->and(Arr::get($group->settings, 'printnode.print_by_printnode'))->toBeTrue();
 })->depends('create group');
 
+test('group world clocks default until the group sets its own', function (Group $group) {
+    expect($group->world_clock_timezones)->toBe(Group::DEFAULT_WORLD_CLOCK_TIMEZONES);
+
+    $chosen = ['Europe/Madrid', 'Asia/Kuala_Lumpur'];
+    $group  = UpdateGroupSettings::make()->action($group, ['timezones' => $chosen]);
+
+    expect($group->refresh()->world_clock_timezones)->toBe($chosen);
+
+    $group->update(['settings' => Arr::except($group->settings, 'timezones')]);
+
+    expect($group->refresh()->world_clock_timezones)->toBe(Group::DEFAULT_WORLD_CLOCK_TIMEZONES);
+})->depends('create group');
+
 test('update user password action', function (User $user) {
     UpdateUserPassword::make()->action($user, ['password' => 'a-new-password']);
     expect(Hash::check('a-new-password', $user->fresh()->password))->toBeTrue();
@@ -1528,6 +1601,32 @@ test('UI sysadmin search analytics index', function (User $user) {
             ->has('users.data', 1)
             ->where('users.data.0.username', $user->username)
             ->where('users.data.0.searches', 1);
+    });
+})->depends('SetUserAuthorisedModels command');
+
+test('UI sysadmin ai analytics index', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    \App\Models\SysAdmin\McpRequest::create([
+        'group_id'    => group()->id,
+        'user_id'     => $user->id,
+        'tool'        => 'shop-sales-tool',
+        'arguments'   => ['shop' => 'eu'],
+        'is_error'    => false,
+        'duration_ms' => 120,
+    ]);
+
+    $response = get(route('grp.sysadmin.mcp.index'));
+    $response->assertInertia(function (AssertableInertia $page) use ($user) {
+        $page
+            ->component('SysAdmin/McpAnalytics')
+            ->has('insights')
+            ->where('insights.calls', 1)
+            ->has('data.data', 1)
+            ->has('users.data', 1)
+            ->where('users.data.0.username', $user->username)
+            ->where('users.data.0.calls', 1);
     });
 })->depends('SetUserAuthorisedModels command');
 
@@ -1866,3 +1965,34 @@ test('process user request stores a request', function (User $user) {
     );
     expect($search)->toBeNull();
 })->depends('SetUserAuthorisedModels command');
+
+test('user time series records aggregate requests and logins', function (User $user) {
+    app()->instance('group', $user->group);
+    setPermissionsTeamId($user->group->id);
+
+    \Illuminate\Support\Facades\DB::table('user_logins')->insert([
+        'user_id' => $user->id,
+        'date'    => now(),
+    ]);
+
+    \App\Actions\SysAdmin\User\ProcessUserTimeSeriesRecords::run(
+        \App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum::DAILY,
+        now()->toDateString(),
+        now()->toDateString()
+    );
+
+    $timeSeries = $user->timeSeries()->where('frequency', 'daily')->first();
+    expect($timeSeries)->not->toBeNull()
+        ->and($timeSeries->number_records)->toBeGreaterThan(0);
+
+    $record = $timeSeries->records()->where('period', now()->format('Y-m-d'))->first();
+    expect($record)->not->toBeNull()
+        ->and($record->number_requests)->toBeGreaterThan(0)
+        ->and($record->number_logins)->toBeGreaterThanOrEqual(1)
+        ->and($record->number_active_days)->toBe(1);
+
+    \Illuminate\Support\Facades\Cache::forget("sysadmin-users-insights-{$user->group->id}-30");
+    $insights = \App\Actions\SysAdmin\GetUsersInsights::run($user->group);
+    expect($insights['logins'])->toBeGreaterThanOrEqual(1)
+        ->and(collect($insights['top_users'])->pluck('username'))->toContain($user->username);
+})->depends('SetUserAuthorisedModels command', 'process user request stores a request');

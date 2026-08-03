@@ -8,7 +8,7 @@ import { InputNumber, RadioButton, DatePicker } from 'primevue'
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
-import { faPlus, faTrash, faLayerGroup } from "@fas"
+import { faPlus, faTrash, faLayerGroup, faFire } from "@fas"
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
 import Image from '../../Common/Components/Image.vue'
@@ -16,7 +16,7 @@ import axios from 'axios'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faPlus, faTrash, faLayerGroup)
+library.add(faPlus, faTrash, faLayerGroup, faFire)
 
 const props = defineProps<{
     shop_data: {
@@ -31,6 +31,8 @@ const props = defineProps<{
         }
     }
     product_id?: number
+    product_units?: number
+    product_unit?: string
 }>()
 
 interface DiscountStep {
@@ -50,6 +52,29 @@ const endDate = ref<Date | null>(null)
 
 const quickIntervalDays = ref<number | null>(null)
 const quickIntervalPresets = [1, 2, 3, 7]
+
+const popularStepIndex = ref(0)
+
+const middleStepIndex = (total: number): number => (total > 0 ? Math.floor(total / 2) : 0)
+
+const productUnits = computed<number>(() =>
+    Number(selectedProduct.value?.units ?? props.product_units ?? 1) || 1
+)
+const productUnitLabel = computed<string>(() =>
+    selectedProduct.value?.unit ?? props.product_unit ?? ''
+)
+const isPackedProduct = computed<boolean>(() => productUnits.value > 1)
+
+const outerLabel = (quantity: number): string =>
+    quantity > 1 ? trans('Outers') : trans('Outer')
+
+const innerQuantityLabel = (quantity: number | null): string | null => {
+    if (!isPackedProduct.value || quantity == null) {
+        return null
+    }
+
+    return `${quantity * productUnits.value} ${productUnitLabel.value}`.trim()
+}
 
 const isLoadingSubmit = ref(false)
 
@@ -123,6 +148,12 @@ const removeStep = (index: number) => {
     }
 
     steps.value.splice(index, 1)
+
+    if (popularStepIndex.value >= steps.value.length || popularStepIndex.value === index) {
+        popularStepIndex.value = middleStepIndex(steps.value.length)
+    } else if (popularStepIndex.value > index) {
+        popularStepIndex.value -= 1
+    }
 }
 
 const rangeLabel = (index: number): string => {
@@ -175,6 +206,7 @@ const resetForm = () => {
     productId.value = props.product_id || null
     selectedProduct.value = null
     steps.value = buildDefaultSteps()
+    popularStepIndex.value = middleStepIndex(steps.value.length)
     dateType.value = 'permanent'
     startDate.value = today
     endDate.value = null
@@ -211,9 +243,10 @@ const submitStepDiscount = () => {
     const payload = {
         name: offerLabel.value,
         product_id: productId.value || props.product_id,
-        steps: steps.value.map((step) => ({
+        steps: steps.value.map((step, index) => ({
             min_quantity: step.min_quantity,
             percentage_off: step.percentage != null ? step.percentage / 100 : null,
+            is_popular: index === popularStepIndex.value,
         })),
         duration: dateType.value,
         start_at: formatDate(startDate.value),
@@ -321,22 +354,28 @@ resetForm()
                         <div class="font-medium flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
                             {{ trans('Discount steps') }}
-                            <InformationIcon :information="trans('The more quantity a customer buys, the bigger the discount they get')" />:
+                            <InformationIcon :information="isPackedProduct
+                                ? trans('Quantity is counted in Outers (1 Outer = :units :unit). The more a customer buys, the bigger the discount they get', { units: String(productUnits), unit: productUnitLabel })
+                                : trans('The more quantity a customer buys, the bigger the discount they get')" />:
                         </div>
                     </div>
 
                     <div class="space-y-2">
                         <div v-for="(step, index) in steps" :key="index"
-                            class="rounded-lg border border-gray-200 p-3 space-y-2">
+                            class="rounded-lg border p-3 space-y-2 transition-colors"
+                            :class="index === popularStepIndex ? 'border-green-500 bg-green-50/40' : 'border-gray-200'">
                             <div class="flex items-start gap-x-3">
                                 <div class="space-y-1 flex-1">
                                     <label class="text-sm text-gray-500">{{ trans('Minimum quantity') }}</label>
                                     <InputNumber v-model="step.min_quantity" :min="1" class="w-full" inputClass="w-full"
                                         :placeholder="trans('Enter minimum quantity')"
-                                        :suffix="' ' + ((step.min_quantity ?? 0) > 1 ? trans('items') : trans('item'))"
+                                        :suffix="' ' + (isPackedProduct ? outerLabel(step.min_quantity ?? 0) : ((step.min_quantity ?? 0) > 1 ? trans('items') : trans('item')))"
                                         :invalid="!!stepErrors[index]?.min_quantity" />
                                     <p v-if="stepErrors[index]?.min_quantity" class="text-xs text-red-500">
                                         {{ stepErrors[index]?.min_quantity }}
+                                    </p>
+                                    <p v-else-if="innerQuantityLabel(step.min_quantity)" class="text-xs text-gray-400">
+                                        = {{ innerQuantityLabel(step.min_quantity) }}
                                     </p>
                                 </div>
 
@@ -356,9 +395,20 @@ resetForm()
                                 </button>
                             </div>
 
-                            <div class="text-xs text-gray-500">
-                                {{ trans('Applies to quantity') }}:
-                                <span class="font-medium text-gray-700">{{ rangeLabel(index) }}</span>
+                            <div class="flex items-center justify-between gap-x-3 flex-wrap">
+                                <div class="text-xs text-gray-500">
+                                    {{ trans('Applies to quantity') }}:
+                                    <span class="font-medium text-gray-700">{{ rangeLabel(index) }}</span>
+                                </div>
+
+                                <button type="button" @click="popularStepIndex = index"
+                                    class="inline-flex items-center gap-x-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors"
+                                    :class="index === popularStepIndex
+                                        ? 'border-green-500 bg-green-500 text-white font-semibold'
+                                        : 'border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-600'">
+                                    <FontAwesomeIcon icon="fas fa-fire" />
+                                    {{ index === popularStepIndex ? trans('Popular') : trans('Mark as popular') }}
+                                </button>
                             </div>
                         </div>
                     </div>

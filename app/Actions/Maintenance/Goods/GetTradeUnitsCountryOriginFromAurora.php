@@ -19,7 +19,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Symfony\Component\Console\Helper\ProgressBar;
 use App\Actions\Traits\WithOrganisationSource;
 
 class GetTradeUnitsCountryOriginFromAurora
@@ -69,7 +68,7 @@ class GetTradeUnitsCountryOriginFromAurora
                 continue;
             }
 
-            $countryOrigins[$organisation->id] = $countryCode;
+            $countryOrigins[$organisation->code] = $countryCode;
         }
 
 
@@ -79,10 +78,14 @@ class GetTradeUnitsCountryOriginFromAurora
 
 
         if (count($cleanCountryOrigins) > 1) {
+            $command->info($tradeUnit->code);
+            $command->line(rtrim(config('app.url'), '/')."/trade-units/units/$tradeUnit->slug/edit?section=6");
 
-            $command->info('Multiple country origins found for trade unit. '.$tradeUnit->slug);
-            print_r($cleanCountryOrigins);
-            $command->info('------');
+            foreach ($cleanCountryOrigins as $organisationName => $countryCode) {
+                $command->line("$organisationName: $countryCode");
+            }
+
+            $command->newLine();
             return;
         } elseif (empty($cleanCountryOrigins)) {
             // $command->info("$tradeUnit->slug No country origins found for trade unit.");
@@ -106,7 +109,6 @@ class GetTradeUnitsCountryOriginFromAurora
 
 
         if ($tradeUnit->origin_country_id !== $country->id) {
-            $command->line("$tradeUnit->slug updating country of origin  ".$tradeUnit->countryOrigin?->iso3."  ($tradeUnit->country_of_origin)  ->  $countryCode");
             if (!$dryRun) {
                 UpdateTradeUnit::make()->action(
                     $tradeUnit,
@@ -114,8 +116,6 @@ class GetTradeUnitsCountryOriginFromAurora
                         'origin_country_id' => $country->id,
                     ]
                 );
-            } else {
-                $command->info("[DRY RUN] Would update $tradeUnit->slug origin country to $countryCode");
             }
         }
     }
@@ -163,38 +163,20 @@ class GetTradeUnitsCountryOriginFromAurora
             return 0;
         }
 
-        $total = DB::table('trade_units')->count();
-
-
-        $command->info("Set country origin for $total trade units...");
-        $start     = microtime(true);
-        $processed = 0;
-
-        $bar = new ProgressBar($command->getOutput(), $total);
-        $bar->setFormat('debug');
-        $bar->start();
-
         $query = DB::table('trade_units')
             ->select('id');
 
 
         $query
             ->orderBy('id')
-            ->chunkById(1000, function ($tradeUnitRows) use (&$processed, $bar, $command) {
+            ->chunkById(1000, function ($tradeUnitRows) use ($command) {
                 foreach ($tradeUnitRows as $row) {
                     $tradeUnit = TradeUnit::find($row->id);
                     if ($tradeUnit) {
                         $this->handle($tradeUnit, $command, $command->option('dry-run'));
                     }
-                    $processed++;
-                    //  $bar->advance();
                 }
             }, 'id');
-
-        $bar->finish();
-        $command->newLine(2);
-        $duration = microtime(true) - $start;
-        $command->info("Done. Processed $processed/$total trade units in ".gmdate('H:i:s', (int)$duration).".");
 
         return 0;
     }

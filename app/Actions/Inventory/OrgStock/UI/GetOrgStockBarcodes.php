@@ -15,25 +15,22 @@ class GetOrgStockBarcodes
 {
     use AsObject;
 
+    /**
+     * The unit card is always returned, with a null number when the org stock has no barcode yet,
+     * so the page can offer the placeholder that lets warehouse staff type or scan one in.
+     */
     public function handle(OrgStock $orgStock): array
     {
         $tradeUnit = $orgStock->tradeUnits->first();
-        $baseNumber = $tradeUnit?->barcode;
-        $unitWeight = $tradeUnit?->marketing_weight;
-        $unitDimensions = $tradeUnit?->marketing_dimensions;
-
-        if (blank($baseNumber)) {
-            return [];
-        }
 
         return [
             [
                 'level'      => 'unit',
                 'label'      => 'Unit',
-                'number'     => $baseNumber,
+                'number'     => $orgStock->barcode,
                 'quantity'   => 1,
-                'weight'     => $unitWeight,
-                'dimensions' => $unitDimensions,
+                'weight'     => $tradeUnit?->marketing_weight,
+                'dimensions' => $tradeUnit?->marketing_dimensions,
                 'packs'      => null,
             ],
         ];

@@ -9,7 +9,7 @@
 namespace App\Actions\SysAdmin\Group;
 
 use App\Actions\Audits\DispatchSimpleAudit;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Ses\SesRegionEnum;
@@ -22,7 +22,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateGroupSettings extends GrpAction
+class UpdateGroupSettings extends OrgAction
 {
     use WithActionUpdate;
 
@@ -82,6 +82,11 @@ class UpdateGroupSettings extends GrpAction
             data_set($groupSettings, 'printnode.print_by_printnode', Arr::get($modelData, 'print_by_printnode'));
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'print_by_printnode');
+        }
+        if (Arr::has($modelData, 'timezones')) {
+            data_set($groupSettings, 'timezones', array_values(Arr::get($modelData, 'timezones') ?? []));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'timezones');
         }
         if (Arr::has($modelData, 'jira_base_url')) {
             data_set($groupSettings, 'jira.base_url', Arr::get($modelData, 'jira_base_url'));
@@ -185,6 +190,8 @@ class UpdateGroupSettings extends GrpAction
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
+            'timezones'          => ['sometimes', 'array'],
+            'timezones.*'        => ['string', 'timezone'],
             'jira_base_url'      => ['sometimes', 'nullable', 'url'],
             'jira_email'         => ['sometimes', 'nullable', 'email'],
             'jira_api_token'     => ['sometimes', 'nullable', 'string'],
@@ -204,7 +211,7 @@ class UpdateGroupSettings extends GrpAction
     public function action(Group $group, array $modelData): Group
     {
         $this->asAction = true;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
 
         return $this->handle($group, $this->validatedData);
@@ -212,7 +219,7 @@ class UpdateGroupSettings extends GrpAction
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group, $this->validatedData);
     }

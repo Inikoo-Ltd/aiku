@@ -117,13 +117,13 @@ async function copyStoredItemValue(item: { name?: string; reference?: string; qu
         await navigator.clipboard.writeText(copiedValue)
         notify({
             title: "Copied",
-            text: `Copied item SKU value: ${copiedValue}`,
+            text: `Copied item SKO value: ${copiedValue}`,
             type: "success",
         })
     } catch {
         notify({
             title: "Copy failed",
-            text: "Unable to copy item SKU value",
+            text: "Unable to copy item SKO value",
             type: "error",
         })
     }

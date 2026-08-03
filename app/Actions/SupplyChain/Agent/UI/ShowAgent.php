@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
@@ -26,16 +27,10 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowAgent extends GrpAction
+class ShowAgent extends OrgAction
 {
+    use WithSupplyChainAuthorisation;
     use WithAgentSubNavigation;
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('supply-chain.edit');
-
-        return $request->user()->authTo('supply-chain.view');
-    }
-
     public function handle(Agent $agent): Agent
     {
         return $agent;
@@ -44,7 +39,7 @@ class ShowAgent extends GrpAction
 
     public function asController(Agent $agent, ActionRequest $request): Agent
     {
-        $this->initialisation(app('group'), $request)->withTab(AgentTabsEnum::values());
+        $this->initialisationFromGroup(app('group'), $request)->withTab(AgentTabsEnum::values());
 
         return $this->handle($agent);
     }
@@ -59,6 +54,7 @@ class ShowAgent extends GrpAction
                 'title'                        => __("Agent") . " " . $agent->name,
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $agent,
+                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'                   => [
@@ -150,34 +146,55 @@ class ShowAgent extends GrpAction
         return new AgentsResource($agent);
     }
 
-    public function getBreadcrumbs(Agent $agent, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(Agent $agent, string $routeName, array $routeParameters, $suffix = null): array
     {
-
-        return array_merge(
-            ShowSupplyChainDashboard::make()->getBreadcrumbs(),
-            [
+        $headCrumb = function (Agent $agent, array $routeParameters, $suffix) {
+            return [
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'route' => [
-                                'name' => 'grp.supply-chain.agents.index',
-                            ],
-                            'label' => __("Agents"),
+                            'route' => $routeParameters['index'],
+                            'label' => __('Agents'),
                         ],
                         'model' => [
-                            'route' => [
-                                'name'       => 'grp.supply-chain.agents.show',
-                                'parameters' => $routeParameters
-                            ],
+                            'route' => $routeParameters['model'],
                             'label' => $agent->organisation->code,
                         ],
                     ],
                     'suffix' => $suffix,
-
                 ],
-            ]
-        );
+            ];
+        };
+
+        return match ($routeName) {
+            'grp.supply-chain.agents.show',
+            'grp.supply-chain.agents.edit',
+            'grp.supply-chain.agents.show.supplier_products.index',
+            'grp.supply-chain.agents.show.supplier_products.show',
+            'grp.supply-chain.agents.show.suppliers.index',
+            'grp.supply-chain.agents.show.suppliers.show',
+            'grp.supply-chain.agents.show.suppliers.supplier_products.index',
+            'grp.supply-chain.agents.show.suppliers.supplier_products.show' =>
+            array_merge(
+                ShowSupplyChainDashboard::make()->getBreadcrumbs(),
+                $headCrumb(
+                    $agent,
+                    [
+                        'index' => [
+                            'name'       => 'grp.supply-chain.agents.index',
+                            'parameters' => []
+                        ],
+                        'model' => [
+                            'name'       => 'grp.supply-chain.agents.show',
+                            'parameters' => ['agent' => $agent->slug]
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            default => []
+        };
     }
 
     public function getPrevious(Agent $agent, ActionRequest $request): ?array

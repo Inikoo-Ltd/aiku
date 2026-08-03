@@ -22,7 +22,7 @@ import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
-
+import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
@@ -116,7 +116,7 @@ const props = withDefaults(
     }>(),
     {}
 )
-console.log('product',props.fieldValue)
+
 const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
@@ -129,7 +129,10 @@ const emits = defineEmits<{
 
 const product = ref(props.product)
 const layout = inject("layout", {})
-const webpage_id = inject("webpage_id", {})
+const webpage_id = inject<number | null>("webpage_id", null)
+const isPriceVisible = computed(() =>
+    Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price)
+)
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 
@@ -152,20 +155,45 @@ watch(
 
 
 const _popoverProfit = ref(null)
-
-// console.log('fdsfds', props.fieldValue.product)
-/* const getBestOffer = (offerId: string) => {
-    if (!offerId) {
-        return
-    }
-
-    return product.value?.offers_data?.offers?.[offerId] 
-} */
-
 const bestOffer = computed(() => {
   return getBestOffer(props.product?.offers_data)
 })
 
+const _desktopAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
+const _mobileAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
+
+const orderedQuantity = computed<number>(() =>
+    Number(props.customerData?.quantity_ordered_new ?? props.customerData?.quantity_ordered ?? 0)
+)
+
+const isDesktopStepSyncing = ref(false)
+const isMobileStepSyncing = ref(false)
+
+const onSelectStepQuantityDesktop = async (quantity: number) => {
+    if (isDesktopStepSyncing.value) {
+        return
+    }
+
+    isDesktopStepSyncing.value = true
+    try {
+        await _desktopAddToBasket.value?.setQuantity(quantity)
+    } finally {
+        isDesktopStepSyncing.value = false
+    }
+}
+
+const onSelectStepQuantityMobile = async (quantity: number) => {
+    if (isMobileStepSyncing.value) {
+        return
+    }
+
+    isMobileStepSyncing.value = true
+    try {
+        await _mobileAddToBasket.value?.setQuantity(quantity)
+    } finally {
+        isMobileStepSyncing.value = false
+    }
+}
 
 const variantPrevEl = ref<HTMLElement | null>(null)
 const variantNextEl = ref<HTMLElement | null>(null)
@@ -182,11 +210,6 @@ const showDiscount = computed(() => {
         !(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) &&
         bestOffer.value?.type === 'Category Quantity Ordered Order Interval'
     )
-})
-
-const showIntervalOffer = computed(() => {
-    return getBestOfferfromComposable(props.product?.product_offers_data)?.type
-        === 'Category Quantity Ordered Order Interval'
 })
 
 
@@ -269,7 +292,7 @@ onMounted(async () => {
                                 </div>
 
                                 <!-- <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
-                                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
+                                    RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
                                 </span> -->
 
                             </div>
@@ -321,9 +344,8 @@ onMounted(async () => {
                 </div>       
 
                 <!-- PRICE -->
-
                 <ProductPrices2
-                    v-if="layout?.iris?.is_logged_in"
+                    v-if="isPriceVisible"
                     :field-value="fieldValue"
                     :product="product"
                     :key="product.code"
@@ -388,12 +410,24 @@ onMounted(async () => {
 
                 </div>
 
-                
+                <!-- Section: Step discount (buy more, save more) -->
+                <StepDiscountOffer
+                    v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+                    class="mt-3"
+                    :stepDiscount="product.step_discount"
+                    :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+                    :originalPrice="product.price"
+                    :unit="product.unit"
+                    :quantity="orderedQuantity"
+                    :isSubmitting="isDesktopStepSyncing"
+                    @selectQuantity="onSelectStepQuantityDesktop"
+                />
+
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="product.status !== 'coming-soon' && layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock" v-model:product="product" :customerData="customerData"
+                        <EcomAddToBasketv2 v-if="product.stock" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
@@ -501,10 +535,12 @@ onMounted(async () => {
     <div class="block sm:hidden px-4 py-6 text-gray-800">
 
         <!-- TITLE -->
-        <p class="text-xl font-bold mb-3">
-            <span v-if="product.units > 1">{{ product.units }}x</span>
-            {{ product.name }}
-        </p>
+        <div class="mb-3">
+            <p class="text-xl font-bold">
+                <span v-if="product.units > 1">{{ product.units }}x</span>
+                {{ product.name }}
+            </p>
+        </div>
 
         <!-- MEDIA -->
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
@@ -551,15 +587,16 @@ onMounted(async () => {
         </div>
 
         <!-- PRICE / OFFERS / PROFIT -->
-        <div v-if="layout?.iris?.is_logged_in" class="mt-3 space-y-2">
+        <div class="mt-3 space-y-2">
 
-            <ProductPrices2
+            <ProductPrices2   
+                v-if="isPriceVisible"             
                 :field-value="fieldValue"
                 :product="product"
                 :key="product.code"
             />
 
-            <div class="flex justify-between items-start">
+            <div v-if="layout?.iris?.is_logged_in"  class="flex justify-between items-start">
 
                 <!-- OFFERS -->
                 <div v-if="product.offers_data?.number_offers > 0" class="flex flex-col gap-1 offers">
@@ -639,7 +676,7 @@ onMounted(async () => {
                 </span>
 
                 <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
-                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
+                    RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
                     product.unit }}
                 </span>
 
@@ -667,10 +704,24 @@ onMounted(async () => {
             </span>
         </button>
 
+        <!-- Section: Step discount (buy more, save more) -->
+        <StepDiscountOffer
+            v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+            class="mt-4"
+            :stepDiscount="product.step_discount"
+            :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+            :originalPrice="product.price"
+            :unit="product.unit"
+            :quantity="orderedQuantity"
+            :isSubmitting="isMobileStepSyncing"
+            @selectQuantity="onSelectStepQuantityMobile"
+        />
+        
         <!-- ADD TO CART -->
         <div class="mt-5 space-y-2">
             <EcomAddToBasketv2
                 v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
+                ref="_mobileAddToBasket"
                 v-model:product="product"
                 :customerData="customerData"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
