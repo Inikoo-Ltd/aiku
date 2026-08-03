@@ -53,7 +53,11 @@ class TimeTrackersResource extends JsonResource
             },
             'clock_out_route' => $this->status === TimeTrackerStatusEnum::OPEN
                 ? route('grp.models.time-tracker.clock-out', ['timeTracker' => $this->id])
-                : null
+                : null,
+            'delete_route' => [
+                'name'       => 'grp.models.time-tracker.delete',
+                'parameters' => ['timeTracker' => $this->id],
+            ],
         ];
     }
 }

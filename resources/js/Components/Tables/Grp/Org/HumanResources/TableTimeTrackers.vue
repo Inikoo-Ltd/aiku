@@ -11,9 +11,10 @@ import { Clocking } from "@/types/clocking"
 import Icon from "@/Components/Icon.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
+import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import DatePicker from 'primevue/datepicker'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faClock, faDoorClosed, faDoorOpen } from "@fal"
+import { faClock, faDoorClosed, faDoorOpen, faTrash } from "@fal"
 import { faEdit, faPlus } from "@fas"
 import { format } from 'date-fns'
 import axios from 'axios'
@@ -27,7 +28,7 @@ const props = defineProps<{
     tab?: string
 }>()
 
-library.add(faClock, faDoorOpen, faDoorClosed, faEdit, faPlus)
+library.add(faClock, faDoorOpen, faDoorClosed, faEdit, faPlus, faTrash)
 
 const isClockOutModalOpen = ref(false)
 const selectedTimeTracker = ref<any | null>(null)
@@ -182,6 +183,23 @@ const submitClockOut = async (): Promise<void> => {
                         class="whitespace-nowrap"
                         @click="openClockOutModal(clocking)"
                     />
+
+                    <ModalConfirmationDelete
+                        v-if="clocking.delete_route"
+                        :routeDelete="clocking.delete_route"
+                        :title="trans('Delete this time tracker?')"
+                        :description="trans('This will also permanently delete the clock in and clock out records for this working period. This action cannot be undone.')"
+                    >
+                        <template #default="{ changeModel }">
+                            <Button
+                                type="cancel"
+                                size="xs"
+                                :icon="faTrash"
+                                :tooltip="trans('Delete')"
+                                @click="changeModel(true)"
+                            />
+                        </template>
+                    </ModalConfirmationDelete>
                 </div>
             </template>
         </Table>

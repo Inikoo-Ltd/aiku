@@ -2,16 +2,18 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 24 Jun 2023 13:12:05 Malaysia Time, Pantai Lembeng, Bali, Id
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Created: Fri, 31 Jul 2026 09:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\HumanResources\Clocking;
+namespace App\Actions\HumanResources\TimeTracker;
 
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateClockings;
+use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateTimeTracker;
 use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
+use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateTimeTracker;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
@@ -24,44 +26,55 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteClocking extends OrgAction
+class DeleteTimeTracker extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
 
-    public function handle(Clocking $clocking): Clocking
+    /**
+     * Clockings and time trackers reference each other (clockings.time_tracker_id,
+     * time_trackers.start/end_clocking_id), both NO ACTION, so clockings.time_tracker_id
+     * is nulled first to break that cycle before either row is force-deleted.
+     */
+    public function handle(TimeTracker $timeTracker): TimeTracker
     {
-        DB::transaction(function () use ($clocking) {
-            $timesheet = $clocking->timesheet;
-            $subject   = $clocking->subject;
+        DB::transaction(function () use ($timeTracker) {
+            $timesheet = $timeTracker->timesheet;
+            $subject   = $timeTracker->subject;
 
-            // A time tracker session that loses its start or end clocking is no longer
-            // meaningful data (its duration/status can't be trusted), so it goes with the
-            // clocking that anchored it rather than being left dangling. Clockings still
-            // pointing at that tracker are unlinked first to avoid a foreign key violation
-            // when the tracker row is permanently removed.
-            TimeTracker::withTrashed()
-                ->where('start_clocking_id', $clocking->id)
-                ->orWhere('end_clocking_id', $clocking->id)
+            $anchorIds = array_filter([$timeTracker->start_clocking_id, $timeTracker->end_clocking_id]);
+
+            $clockingIds = Clocking::withTrashed()
+                ->where(function ($query) use ($timeTracker, $anchorIds) {
+                    $query->where('time_tracker_id', $timeTracker->id);
+                    if ($anchorIds) {
+                        $query->orWhereIn('id', $anchorIds);
+                    }
+                })
+                ->pluck('id');
+
+            Clocking::withTrashed()->whereIn('id', $clockingIds)->update(['time_tracker_id' => null]);
+
+            $timeTracker->forceDelete();
+
+            Clocking::withTrashed()
+                ->whereIn('id', $clockingIds)
                 ->get()
-                ->each(function (TimeTracker $timeTracker) {
-                    Clocking::where('time_tracker_id', $timeTracker->id)->update(['time_tracker_id' => null]);
-                    $timeTracker->forceDelete();
-                });
-
-            $clocking->forceDelete();
+                ->each(fn (Clocking $clocking) => $clocking->forceDelete());
 
             if ($timesheet) {
                 $this->rehydrateTimesheet($timesheet->fresh());
             }
 
             if ($subject instanceof Employee) {
+                EmployeeHydrateTimeTracker::dispatch($subject);
                 EmployeeHydrateClockings::dispatch($subject);
             } elseif ($subject instanceof Guest) {
+                GuestHydrateTimeTracker::dispatch($subject);
                 GuestHydrateClockings::dispatch($subject);
             }
         });
 
-        return $clocking;
+        return $timeTracker;
     }
 
     /**
@@ -82,11 +95,12 @@ class DeleteClocking extends OrgAction
         TimesheetHydrateTimeTrackers::run($timesheet);
     }
 
-    public function asController(Clocking $clocking, ActionRequest $request): Clocking
+    public function asController(TimeTracker $timeTracker, ActionRequest $request): TimeTracker
     {
-        $this->initialisation($clocking->organisation, $request);
+        $timeTracker->loadMissing('timesheet');
+        $this->initialisation($timeTracker->timesheet->organisation, $request);
 
-        return $this->handle($clocking);
+        return $this->handle($timeTracker);
     }
 
     public function jsonResponse(): JsonResponse

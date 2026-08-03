@@ -14,20 +14,24 @@ import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
+import type { routeType } from "@/types/route"
 import TableTimeTrackers from "@/Components/Tables/Grp/Org/HumanResources/TableTimeTrackers.vue"
 import TableClockings from "@/Components/Tables/Grp/Org/HumanResources/TableClockings.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVoteYea, faArrowsH } from '@fal'
+import { faVoteYea, faArrowsH, faTrash } from '@fal'
 import { format, parseISO } from 'date-fns'
 import { useSecondsToMS, useHMAP } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
 
-library.add( faVoteYea, faArrowsH )
+library.add( faVoteYea, faArrowsH, faTrash )
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
+    delete_route?: routeType | false
     tabs: {
         current: string
         navigation: Navigation
@@ -36,7 +40,7 @@ const props = defineProps<{
     time_trackers?: {}
     clockings?: {}
     timesheet: {
-        work_start_at?: string    
+        work_start_at?: string
         work_end_at?: string
         work_duration?: string
         breaks_duration?: string
@@ -65,7 +69,21 @@ const component = computed(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <div class="flex items-start justify-between">
+        <PageHeading :data="pageHead" class="grow" />
+
+        <ModalConfirmationDelete
+            v-if="delete_route"
+            :routeDelete="delete_route"
+            :title="trans('Delete this timesheet?')"
+            :description="trans('This will permanently delete all clockings and time tracker sessions recorded for this day. This action cannot be undone.')"
+            class="mt-4 mr-4 shrink-0"
+        >
+            <template #default="{ changeModel }">
+                <Button type="cancel" :label="trans('Delete Timesheet')" size="xs" :icon="faTrash" @click="changeModel(true)" />
+            </template>
+        </ModalConfirmationDelete>
+    </div>
 
     <div class="grid grid-cols-2 divide-x divide-gray-200 px-3 py-5">
         <div>

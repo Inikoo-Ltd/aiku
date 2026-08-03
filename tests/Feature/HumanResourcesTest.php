@@ -62,9 +62,11 @@ use App\Actions\HumanResources\WorkSchedule\StoreWorkSchedule;
 use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
 use App\Actions\HumanResources\WorkSchedule\DeleteWorkSchedule;
 use App\Actions\HumanResources\TimeTracker\StoreTimeTracker;
+use App\Actions\HumanResources\TimeTracker\DeleteTimeTracker;
 use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
 use App\Actions\HumanResources\TimeTracker\CloseTimeTracker;
 use App\Actions\HumanResources\Timesheet\StoreTimesheet;
+use App\Actions\HumanResources\Timesheet\DeleteTimesheet;
 use App\Actions\HumanResources\Leave\StoreLeave;
 use App\Actions\HumanResources\Leave\UpdateLeave;
 use App\Actions\HumanResources\Leave\DeleteLeave;
@@ -672,7 +674,7 @@ test('can delete clocking', function () {
     ]);
 
     $workplace = StoreWorkplace::make()->action($this->organisation, [
-        'name' => 'Delete Clocking Workplace',
+        'name' => 'Delete Clocking Workplace ' . rand(100000, 999999),
         'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
     ]);
 
@@ -683,7 +685,39 @@ test('can delete clocking', function () {
 
     DeleteClocking::make()->handle($clocking);
 
-    $this->assertSoftDeleted('clockings', ['id' => $clocking->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clocking->id]);
+});
+
+test('can delete timesheet and its clockings and time trackers', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Delete Timesheet Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $clockOut = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'out',
+        'at' => now()->addHours(8)->toDateTimeString(),
+    ], 0, true);
+
+    $timesheet = $clockIn->timesheet;
+    $timeTracker = $timesheet->timeTrackers()->first();
+
+    DeleteTimesheet::make()->handle($timesheet);
+
+    $this->assertDatabaseMissing('timesheets', ['id' => $timesheet->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clockIn->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clockOut->id]);
+    $this->assertDatabaseMissing('time_trackers', ['id' => $timeTracker->id]);
 });
 
 
@@ -1273,6 +1307,36 @@ test('can close a time tracker', function () {
 
     expect($closed->status)->toBe(\App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::CLOSED)
         ->and($closed->duration)->toBeGreaterThan(0);
+});
+
+test('can delete time tracker and its related clockings', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Delete Time Tracker Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $clockOut = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'out',
+        'at' => now()->addHours(8)->toDateTimeString(),
+    ], 0, true);
+
+    $timeTracker = $clockIn->timesheet->timeTrackers()->first();
+
+    DeleteTimeTracker::make()->handle($timeTracker);
+
+    $this->assertDatabaseMissing('time_trackers', ['id' => $timeTracker->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clockIn->id]);
+    $this->assertDatabaseMissing('clockings', ['id' => $clockOut->id]);
 });
 
 test('AddClockingToTimeTracker opens a tracker then closes it on the next clocking', function () {

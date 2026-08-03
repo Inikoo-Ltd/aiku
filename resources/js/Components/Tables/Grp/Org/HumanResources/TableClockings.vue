@@ -12,14 +12,15 @@ import Table from "@/Components/Table/Table.vue";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import DatePicker from "primevue/datepicker";
 import axios from "axios";
 import { trans } from "laravel-vue-i18n";
 import { notify } from "@kyvg/vue3-notification";
-import { faEdit } from "@fal";
+import { faEdit, faTrash } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
-library.add(faEdit);
+library.add(faEdit, faTrash);
 
 const props = defineProps<{
     data: any,
@@ -144,7 +145,7 @@ const submitNotes = async () => {
             </template>
 
             <template v-if="canEdit" #cell(actions)="{ item }">
-                <div class="flex">
+                <div class="flex items-center gap-x-1">
                     <Button
                         type="transparent"
                         size="xs"
@@ -152,6 +153,22 @@ const submitNotes = async () => {
                         :label="trans('Edit')"
                         @click="openEditModal(item)"
                     />
+                    <ModalConfirmationDelete
+                        v-if="item.delete_route"
+                        :routeDelete="item.delete_route"
+                        :title="trans('Delete this clocking?')"
+                        :description="trans('This will also remove any time tracker session anchored on this clocking. This action cannot be undone.')"
+                    >
+                        <template #default="{ changeModel }">
+                            <Button
+                                type="cancel"
+                                size="xs"
+                                :icon="faTrash"
+                                :tooltip="trans('Delete')"
+                                @click="changeModel(true)"
+                            />
+                        </template>
+                    </ModalConfirmationDelete>
                 </div>
             </template>
         </Table>
