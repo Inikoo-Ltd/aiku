@@ -277,9 +277,6 @@ const visitSearchPage = () => {
             class="ml-1 xw-14 xh-14 rounded-full flex items-center justify-center touch-none"
             xstyle="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
             @click="onTopBarClick"
-            @touchstart.passive="onFabTouchStart"
-            @touchmove.prevent="onFabTouchMove"
-            @touchend="onFabTouchEnd"
         >
             <FontAwesomeIcon icon="far fa-search" class="text-3xl" fixed-width aria-hidden="true" />
         </button>
