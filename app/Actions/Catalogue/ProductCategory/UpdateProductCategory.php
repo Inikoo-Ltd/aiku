@@ -141,9 +141,11 @@ class UpdateProductCategory extends OrgAction
         if (Arr::has($changes, 'name')) {
             UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
                 'translations' => [
-                    'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')]
+                    'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')],
                 ]
             ]);
+
+            data_set($modelData, 'is_name_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description_title')) {
@@ -152,6 +154,7 @@ class UpdateProductCategory extends OrgAction
                     'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title')]
                 ]
             ]);
+            data_set($modelData, 'is_description_title_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description')) {
@@ -160,6 +163,7 @@ class UpdateProductCategory extends OrgAction
                     'description' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description')]
                 ]
             ]);
+            data_set($modelData, 'is_description_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description_extra')) {
@@ -168,6 +172,7 @@ class UpdateProductCategory extends OrgAction
                     'description_extra' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_extra')]
                 ]
             ]);
+            data_set($modelData, 'is_description_extra_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'not_follow_master_prices') && !$productCategory->not_follow_master_prices) {

@@ -31,6 +31,11 @@ class IndexDeliveryNotes extends OrgAction
 
     private string $shopType;
 
+    protected function getRecordsPerPage(): ?int
+    {
+        return request()->has('perPage') ? null : 150;
+    }
+
     public function htmlResponse(LengthAwarePaginator $deliveryNotes, ActionRequest $request): Response
     {
         $navigation = DeliveryNotesTabsEnum::navigation();
