@@ -107,7 +107,7 @@ class EditOutboxInShop extends OrgAction
                     'fields' => [
                         'days_after' => [
                             'type' => 'select',
-                            'label' => __('Follow-up After subcribe (In Days)'),
+                            'label' => __('Follow-up After Subcribe (In Days)'),
                             'placeholder' => __('Days after last contact'),
                             'information' => __('Number of days to wait after the prospect was register as subscriber'),
                             'required' => false,
