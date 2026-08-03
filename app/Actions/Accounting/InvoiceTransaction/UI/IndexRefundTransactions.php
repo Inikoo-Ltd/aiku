@@ -45,8 +45,9 @@ class IndexRefundTransactions extends OrgAction
                 'invoice_transactions.in_process',
                 'invoice_transactions.historic_asset_id',
                 'invoice_transactions.tax_amount',
+                'invoice_transactions.model_type',
+                'invoice_transactions.model_id',
                 'currencies.code as currency_code',
-                'invoice_transactions.is_tax_only',
                 'invoice_transactions.is_tax_only',
                 'historic_assets.asset_id',
                 'historic_assets.code',
@@ -57,6 +58,8 @@ class IndexRefundTransactions extends OrgAction
                 'invoice_transactions.gross_amount',
             ]
         );
+
+        $queryBuilder->with('model');
 
         $queryBuilder->defaultSort('code');
 

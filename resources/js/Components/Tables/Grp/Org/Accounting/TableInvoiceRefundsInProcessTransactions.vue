@@ -157,7 +157,15 @@ const productRoute = (item) => {
 
             <template #cell(description)="{ item }">
                 <div class="whitespace-normal">
-                    {{item.name}}
+                    <span>{{item.name}}</span>
+                    <span v-if="item.packed_in_message" class="italic opacity-80 pl-1">{{item.packed_in_message}}</span>
+                </div>
+            </template>
+            
+            <template #cell(name)="{ item }">
+                <div class="whitespace-normal">
+                    <span>{{item.name}}</span>
+                    <span v-if="item.packed_in_message" class="italic opacity-80 pl-1">{{item.packed_in_message}}</span>
                 </div>
             </template>
 
