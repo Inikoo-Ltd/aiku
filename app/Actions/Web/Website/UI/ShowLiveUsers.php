@@ -28,9 +28,17 @@ class ShowLiveUsers extends OrgAction
     use WithWebAuthorisation;
     use WithWebsiteAnalyticsSubNavigation;
 
+    private bool $isPaused = false;
+
     public function handle(Website $website): array
     {
-        $visitors = TrackWebsiteVisitorActivity::make()->getActiveVisitors($website);
+        $tracker = TrackWebsiteVisitorActivity::make();
+
+        $tracker->markWatched($website);
+
+        $this->isPaused = $tracker->isPaused($website);
+
+        $visitors = $tracker->getActiveVisitors($website);
 
         if (empty($visitors)) {
             return [];
@@ -44,9 +52,12 @@ class ShowLiveUsers extends OrgAction
 
         $chatSessions = ChatSession::query()
             ->whereIn('website_visitor_id', $visitorIdsMap->values())
-            ->with(['assignments' => function ($q) {
-                $q->where('status', ChatAssignmentStatusEnum::ACTIVE);
-            }, 'assignments.chatAgent.user'])
+            ->with([
+                'assignments' => function ($q) {
+                    $q->where('status', ChatAssignmentStatusEnum::ACTIVE);
+                },
+                'assignments.chatAgent.user'
+            ])
             ->get()
             ->keyBy('website_visitor_id');
 
@@ -77,6 +88,7 @@ class ShowLiveUsers extends OrgAction
         return $this->handle($website);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): array
     {
         $this->initialisationFromFulfilment($fulfilment, $request);
@@ -88,7 +100,7 @@ class ShowLiveUsers extends OrgAction
     {
         /** @var Website $website */
         $website = $request->route()->parameter('website');
-        $title = __('Live Visitors');
+        $title   = __('Live Visitors');
 
         return Inertia::render(
             'Org/Web/ShowLiveUsers',
@@ -107,6 +119,8 @@ class ShowLiveUsers extends OrgAction
                     'subNavigation' => $this->getWebsiteAnalyticsNavigation($website),
                 ],
                 'website'     => $website,
+                'currency'    => $website->shop?->currency?->code,
+                'paused'      => $this->isPaused,
                 'visitors'    => $visitors,
             ]
         );
@@ -114,9 +128,6 @@ class ShowLiveUsers extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        /** @var Website $website */
-        $website = request()->route()->parameter('website');
-
         $baseRoute = str_contains($routeName, '.shops.')
             ? 'grp.org.shops.show.web.analytics.dashboard'
             : 'grp.org.fulfilments.show.web.analytics.dashboard';

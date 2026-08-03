@@ -5,8 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { faFragile, faGlobe, faLink, faSearch, faPencil, faPlaneArrival, faUser, faChartLine, faUserCheck, faUserSecret } from "@fal"
-import { computed, ref, inject, watch, onMounted, onUnmounted } from "vue"
+import { faFragile, faGlobe, faLink, faSearch, faPencil, faUser, faChartLine, faUserCheck, faUserSecret } from "@fal"
+import { computed, ref, inject, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -18,19 +18,23 @@ import StatsBox from "@/Components/Stats/StatsBox.vue"
 import { routeType } from "@/types/route"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
-import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import LiveVisitorsPanel from "@/Components/Web/LiveVisitorsPanel.vue"
+import { useLiveVisitors } from "@/Composables/useLiveVisitors"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { faDoorOpen } from "@far"
 
-library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChartLine, faUserCheck, faUserSecret)
+library.add(faGlobe, faLink, faSearch, faFragile, faUser, faChartLine, faUserCheck, faUserSecret)
 
 import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
 import SearchMerchandising from "@/Components/DataDisplay/Dashboard/Widget/SearchMerchandising.vue"
 
 // Deep link to the website's search analytics page; null (hidden) when the route
 // doesn't apply, e.g. fulfilment websites
-const showSearchInsights = computed(() => savedSearchModel.value === "internal" || props.data.search_insights?.total_searches)
+// Migrated websites are internal search only, so the engine is no longer a choice.
+const canChooseSearchEngine = computed(() => !props.data.migrated)
+
+const showSearchInsights = computed(() => props.data.migrated || savedSearchModel.value === "internal" || props.data.search_insights?.total_searches)
 
 const searchAnalyticsUrl = (() => {
     try {
@@ -65,15 +69,18 @@ const searchPageUrl = (clickedUrl: string) => {
     }
 }
 
-const liveUsersUrl = (() => {
+// Stat cards deep link through the route the server attached to them, so shop and fulfilment
+// websites each get the right target without guessing from the current route name.
+const statUrl = (stat?: StatsBoxTS) => {
+    if (!stat?.route?.name) {
+        return null
+    }
     try {
-        const currentRoute = route().current()
-        const base = currentRoute.includes(".shops.") ? "grp.org.shops.show.web.analytics.live_users" : "grp.org.fulfilments.show.web.analytics.live_users"
-        return route(base, route().params)
+        return route(stat.route.name, stat.route.parameters)
     } catch {
         return null
     }
-})()
+}
 
 const props = defineProps<{
     data: {
@@ -89,14 +96,22 @@ const props = defineProps<{
         stats: StatsBoxTS[]
         content_blog_stats: StatsBoxTS[]
         website_stats: StatsBoxTS[]
+        live_visitors?: any[]
+        live_visitors_enabled?: boolean
+        currency_code?: string | null
+        route_live_users?: routeType
         website_type: string
+        migrated?: boolean
+        pic?: {
+            webmaster?: { name: string }[]
+            seo?: { name: string }[]
+        } | null
         route_restricted_country?: routeType
         iris_search_model?: "luigi" | "internal"
         search_insights?: any
         search_merchandising?: any
     }
     route_storefront: routeType
-    route_landing_page?: routeType
     route_welcome?:routeType
     luigi_data: {
         last_reindexed: string
@@ -110,23 +125,15 @@ const layout = inject('layout', layoutStructure)
 
 const websiteStats = ref([...props.data.website_stats])
 
-onMounted(() => {
-    window.Echo.channel(`website.${props.data.id}.analytics`)
-        .listen('.App\\Events\\Web\\WebsiteVisitorCountUpdated', (e) => {
-            const loggedInStat = websiteStats.value.find(s => s.label === trans('Live (logged in)'))
-            if (loggedInStat) {
-                loggedInStat.value = e.logged_in_count
-            }
-            const loggedOutStat = websiteStats.value.find(s => s.label === trans('Live (guest)'))
-            if (loggedOutStat) {
-                loggedOutStat.value = e.logged_out_count
-            }
-        })
-})
+const { visitors: liveVisitors, counts: liveCounts, syncFromServer } = useLiveVisitors(
+    props.data.id,
+    props.data.currency_code ?? null,
+    props.data.live_visitors_enabled ?? false
+)
 
-onUnmounted(() => {
-    window.Echo.leaveChannel(`website.${props.data.id}.analytics`)
-})
+syncFromServer(props.data.live_visitors ?? [])
+
+const liveUsersUrl = computed(() => statUrl({ route: props.data.route_live_users } as StatsBoxTS))
 
 watch(() => props.data.website_stats, (newStats) => {
     websiteStats.value = [...newStats]
@@ -174,7 +181,7 @@ watch(searchModel, (value) => {
 })
 
 const links = computed(() => {
-    const baseLinks = [
+    const baseLinks: { label: string; route_target: any; icon: any; disabled?: boolean }[] = [
         { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
         { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
         { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
@@ -227,18 +234,27 @@ const links = computed(() => {
                         </a>
                     </div>
 
-                    <div v-for="stat in websiteStats" :key="stat.label" class="flex items-baseline gap-2">
-                        <Link v-if="stat.label.includes('Live') && liveUsersUrl" :href="liveUsersUrl" class="flex items-baseline gap-2 hover:opacity-80 transition-opacity">
-                            <FontAwesomeIcon v-if="typeof stat.icon === 'string'" :icon="stat.icon" :style="{ color: stat.color }" fixed-width aria-hidden="true" />
-                            <span class="text-2xl font-semibold tabular-nums">{{ (stat.value ?? 0).toLocaleString() }}</span>
-                            <span class="text-sm text-gray-400">{{ stat.label }}</span>
-                        </Link>
-                        <div v-else class="flex items-baseline gap-2">
-                            <FontAwesomeIcon v-if="typeof stat.icon === 'string'" :icon="stat.icon" :style="{ color: stat.color }" fixed-width aria-hidden="true" />
-                            <span class="text-2xl font-semibold tabular-nums">{{ (stat.value ?? 0).toLocaleString() }}</span>
-                            <span class="text-sm text-gray-400">{{ stat.label }}</span>
-                        </div>
-                    </div>
+                    <component
+                        :is="statUrl(stat) ? Link : 'div'"
+                        v-for="stat in websiteStats"
+                        :key="stat.label"
+                        :href="statUrl(stat)"
+                        class="flex items-baseline gap-2"
+                        :class="statUrl(stat) ? 'hover:opacity-80 transition-opacity' : ''"
+                    >
+                        <FontAwesomeIcon v-if="typeof stat.icon === 'string'" :icon="stat.icon" :style="{ color: stat.color }" fixed-width aria-hidden="true" />
+                        <span class="text-2xl font-semibold tabular-nums">{{ (stat.value ?? 0).toLocaleString() }}</span>
+                        <span class="text-sm text-gray-400">{{ stat.label }}</span>
+                    </component>
+                </div>
+
+                <div v-if="props.data.live_visitors_enabled" class="border-t border-gray-300 mt-6 pt-4">
+                    <LiveVisitorsPanel
+                        :visitors="liveVisitors"
+                        :counts="liveCounts"
+                        :currency="props.data.currency_code ?? null"
+                        :live-users-url="liveUsersUrl"
+                    />
                 </div>
 
                 <div class="border-t border-gray-300 mt-6 pt-4">
@@ -312,14 +328,9 @@ const links = computed(() => {
                             :label="trans('Storefront')" full />
                     </div>
 
-                     <div class="p-2">
+                    <div class="p-2" v-if="route_welcome?.name">
                         <ButtonWithLink :routeTarget="route_welcome" :icon="faDoorOpen" type="tertiary"
                             :label="trans('Welcome Page')" full />
-                    </div>
-                    
-                    <div class="p-2" v-if="route_landing_page.length">
-                        <ButtonWithLink :routeTarget="route_landing_page" icon="fal fa-plane-arrival" type="tertiary"
-                            :label="trans('Landing Page')" full />
                     </div>
 
                     <div v-for="(item, index) in links" :key="index" class="px-2 py-1">
@@ -390,8 +401,8 @@ const links = computed(() => {
                         {{ props.luigi_data.last_reindexed }} -->
                     </div>
 
-                    <!-- Section: Search Engine radio -->
-                    <div class="p-2 mt-1 border-t border-gray-200">
+                    <!-- Section: Search Engine radio, only while the website still has a choice -->
+                    <div v-if="canChooseSearchEngine" class="p-2 mt-1 border-t border-gray-200">
                         <div class="flex items-center gap-x-1.5 text-sm font-medium text-gray-600 mb-2">
                             <FontAwesomeIcon :icon="faSearch" class="text-gray-400" fixed-width aria-hidden="true" />
                             {{ ctrans('Search Engine') }}

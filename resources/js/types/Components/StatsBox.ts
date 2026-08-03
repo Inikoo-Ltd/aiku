@@ -10,6 +10,7 @@ import { Icon } from "../Utils/Icon"
 
 export interface StatsBoxTS {
     id: number
+    key?: string
     label: string
     value: number
     subtitle?: string
@@ -38,7 +39,5 @@ export interface StatsBoxTS {
         icon: Icon
         route?: routeType
         tooltip: string
-        hide : boolean
-        logo_icon : Object
     }[]
 }

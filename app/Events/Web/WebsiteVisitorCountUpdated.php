@@ -3,7 +3,7 @@
 namespace App\Events\Web;
 
 use App\Models\Web\Website;
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -33,7 +33,7 @@ class WebsiteVisitorCountUpdated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new Channel("website.{$this->website->id}.analytics"),
+            new PrivateChannel("website.{$this->website->id}.analytics"),
         ];
     }
 }
