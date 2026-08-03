@@ -22,9 +22,10 @@ class OrgStockFamilyTimeSeriesResource extends JsonResource
         return [
             'id'                          => $this->id,
             'period'                      => $this->formatPeriod($this->from, $this->to, $frequencyEnum),
+            'filter_date'                 => $this->formatFilterDate($this->from, $this->to),
+            'currency_code'               => $this->currency_code,
             'from'                        => $this->from,
             'to'                          => $this->to,
-            'sales_external'              => (float) $this->sales_external,
             'sales_org_currency_external' => (float) $this->sales_org_currency_external,
             'sales_grp_currency_external' => (float) $this->sales_grp_currency_external,
             'invoices'                    => (int) $this->invoices,
@@ -32,6 +33,15 @@ class OrgStockFamilyTimeSeriesResource extends JsonResource
             'orders'                      => (int) $this->orders,
             'customers_invoiced'          => (int) $this->customers_invoiced,
         ];
+    }
+
+    protected function formatFilterDate(?Carbon $from, ?Carbon $to): ?string
+    {
+        if (!$from || !$to) {
+            return null;
+        }
+
+        return $from->format('Ymd') . '-' . $to->format('Ymd');
     }
 
     protected function formatPeriod(?Carbon $from, ?Carbon $to, TimeSeriesFrequencyEnum $frequency): string

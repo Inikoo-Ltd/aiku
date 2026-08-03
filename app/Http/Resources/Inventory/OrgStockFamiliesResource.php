@@ -60,7 +60,7 @@ class OrgStockFamiliesResource extends JsonResource
             'invoices_ly'                       => $this->invoices_ly ?? 0,
             'invoices_delta'                    => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
             'invoices_route'                    => $this->warehouse_slug ? [
-                'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.invoices.index',
+                'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.invoices',
                 'parameters' => [
                     'organisation'   => $this->organisation_slug,
                     'warehouse'      => $this->warehouse_slug,

@@ -37,10 +37,10 @@ trait BuildsInvoiceTransactionTimeSeriesQuery
     protected function pivotBasedSelects(string $pivot = 'pivot'): array
     {
         return [
-            DB::raw("SUM({$pivot}.net_amount) as sales_external"),
+            DB::raw('0 as sales_external'),
             DB::raw("SUM({$pivot}.org_net_amount) as sales_org_currency_external"),
             DB::raw("SUM({$pivot}.grp_net_amount) as sales_grp_currency_external"),
-            DB::raw("SUM(CASE WHEN invoice_transactions.is_refund = true THEN {$pivot}.net_amount ELSE 0 END) as lost_revenue"),
+            DB::raw('0 as lost_revenue'),
             DB::raw("SUM(CASE WHEN invoice_transactions.is_refund = true THEN {$pivot}.org_net_amount ELSE 0 END) as lost_revenue_org_currency"),
             DB::raw("SUM(CASE WHEN invoice_transactions.is_refund = true THEN {$pivot}.grp_net_amount ELSE 0 END) as lost_revenue_grp_currency"),
             DB::raw('COUNT(DISTINCT invoice_transactions.customer_id) as customers_invoiced'),

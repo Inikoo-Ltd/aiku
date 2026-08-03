@@ -411,6 +411,17 @@ class IndexOrgStocks extends OrgAction
                     'tooltip' => __('SKOs'),
                 ],
             ],
+            [
+                'label'    => __('Invoices'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.invoices',
+                    'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-file-invoice-dollar'],
+                    'tooltip' => __('Invoices'),
+                ],
+            ],
         ];
     }
 
