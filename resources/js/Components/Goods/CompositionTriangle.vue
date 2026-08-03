@@ -106,7 +106,7 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
 
 <template>
     <div class="select-none">
-        <svg ref="svgEl" viewBox="0 0 300 270" class="w-full max-w-xs mx-auto" aria-hidden="true">
+        <svg ref="svgEl" viewBox="0 0 300 285" class="w-full max-w-xs mx-auto" aria-hidden="true">
             <!-- Edges -->
             <g v-for="edge in edges" :key="edge.key"
                 @mouseenter="hoveredEdge = edge.key" @mouseleave="hoveredEdge = null"
@@ -114,15 +114,15 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
                 <line :x1="edge.from.x" :y1="edge.from.y" :x2="edge.to.x" :y2="edge.to.y"
                     stroke="transparent" stroke-width="22" />
                 <line :x1="edge.from.x" :y1="edge.from.y" :x2="edge.to.x" :y2="edge.to.y"
-                    :stroke="edge.partial ? '#d97706' : (hoveredEdge === edge.key ? '#0d9488' : '#94a3b8')"
+                    :stroke="edge.partial ? '#d97706' : (hoveredEdge === edge.key ? '#0d9488' : '#e2e8f0')"
                     :stroke-width="hoveredEdge === edge.key ? 3 : 2"
                     class="transition-all duration-150" />
 
                 <!-- Quantity, always visible -->
                 <g :transform="`translate(${midpoint(edge).x}, ${midpoint(edge).y})`">
-                    <circle r="13" fill="white" :stroke="edge.partial ? '#d97706' : '#cbd5e1'" stroke-width="1" />
+                    <circle r="13" fill="white" :stroke="edge.partial ? '#d97706' : '#e2e8f0'" stroke-width="1" />
                     <text text-anchor="middle" dominant-baseline="central" class="text-[11px] font-bold"
-                        :fill="edge.partial ? '#d97706' : '#334155'">{{ edge.value }}</text>
+                        :fill="edge.partial ? '#d97706' : '#64748b'">{{ edge.value }}</text>
                 </g>
 
                 <!-- Handwritten label, on hover -->
@@ -136,14 +136,14 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
 
             <!-- Corners -->
             <g v-for="corner in [
-                { at: TU, label: 'TU', title: trans('Trade unit'), dy: -18 },
-                { at: SKO, label: 'SKO', title: trans('Org stock'), dy: 26 },
-                { at: P, label: 'P', title: trans('Product'), dy: 26 },
+                { at: TU, label: 'TU', title: trans('Trade unit'), dy: -26 },
+                { at: SKO, label: 'SKO', title: trans('Org stock'), dy: 36 },
+                { at: P, label: 'P', title: trans('Product'), dy: 36 },
             ]" :key="corner.label">
-                <circle :cx="corner.at.x" :cy="corner.at.y" r="14" fill="#f8fafc" stroke="#475569" stroke-width="2" />
-                <circle :cx="corner.at.x" :cy="corner.at.y" r="3" fill="#475569" />
+                <circle :cx="corner.at.x" :cy="corner.at.y" r="14" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" />
+                <circle :cx="corner.at.x" :cy="corner.at.y" r="3" fill="#94a3b8" />
                 <text :x="corner.at.x" :y="corner.at.y + corner.dy" text-anchor="middle"
-                    fill="#334155" class="text-[13px] font-semibold">
+                    fill="#64748b" class="text-[13px] font-medium">
                     {{ corner.label }}
                     <title>{{ corner.title }}</title>
                 </text>
@@ -159,13 +159,13 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
                 </g>
                 <!-- eyelids -->
                 <g :transform="isBlinking ? 'scale(1, 0.08)' : 'scale(1, 1)'" class="transition-transform duration-100">
-                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="white" stroke="#475569" stroke-width="2" />
+                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="white" stroke="#64748b" stroke-width="1.5" />
                     <circle :cx="pupil.x * 0.6" :cy="pupil.y * 0.35" r="6.5" fill="#0d9488" />
                     <circle :cx="pupil.x * 0.6" :cy="pupil.y * 0.35" r="2.8" fill="#1e293b" />
                     <circle :cx="pupil.x * 0.6 - 1.5" :cy="pupil.y * 0.35 - 1.5" r="1" fill="white" />
                 </g>
                 <!-- lashes when blinking -->
-                <path v-if="isBlinking" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#475569" stroke-width="2" />
+                <path v-if="isBlinking" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#64748b" stroke-width="1.5" />
             </g>
         </svg>
 
