@@ -10,6 +10,7 @@ import { faSearch } from "@far"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
+import { useIrisSearchMobile } from "@/Iris/Composables/useIrisSearchMobile"
 library.add(faSearch, faTimes)
 
 const SearchResultCatalogueMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogueMobile.vue"))
@@ -29,7 +30,8 @@ onBeforeMount(() => {
 const internalResults = ref<any>(null)
 const searchLogUlid = ref<string | null>(null)
 const isInternalLoading = ref(false)
-const isOverlayOpen = ref(false)
+// Shared so other components (the sidebar search field) open the very same overlay
+const { isIrisSearchMobileOpen: isOverlayOpen } = useIrisSearchMobile()
 const showDropdown = ref(true)
 const inputRef = ref<HTMLInputElement | null>(null)
 let internalAbort: AbortController | null = null
@@ -59,6 +61,7 @@ const getCachedResponse = (query: string): any | null => {
 }
 
 onBeforeUnmount(() => {
+    isOverlayOpen.value = false
     document.body.style.overflow = ''
 })
 
@@ -111,22 +114,29 @@ const onFabClick = () => {
 
 const openOverlay = () => {
     isOverlayOpen.value = true
-    showDropdown.value = true
-    document.body.style.overflow = 'hidden'
-    nextTick(() => inputRef.value?.focus())
-    if (inputValue.value.trim() && !internalResults.value) {
-        isInternalLoading.value = true
-        fetchResults(inputValue.value)
-    }
 }
 
 const closeOverlay = () => {
     isOverlayOpen.value = false
+}
+
+watch(isOverlayOpen, (open) => {
+    if (open) {
+        showDropdown.value = true
+        document.body.style.overflow = 'hidden'
+        nextTick(() => inputRef.value?.focus())
+        if (inputValue.value.trim() && !internalResults.value) {
+            isInternalLoading.value = true
+            fetchResults(inputValue.value)
+        }
+        return
+    }
+
     document.body.style.overflow = ''
     fetchResults.cancel()
     internalAbort?.abort()
     isInternalLoading.value = false
-}
+})
 
 const fetchResults = debounce(async (query: string) => {
     const requestId = ++internalRequestId

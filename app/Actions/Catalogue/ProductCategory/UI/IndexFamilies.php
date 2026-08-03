@@ -222,6 +222,23 @@ class IndexFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
             $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
+            $selects[] = DB::raw(
+                "(
+                    SELECT json_build_object(
+                        'slug', o.slug,
+                        'name', o.name,
+                        'state', o.state,
+                        'start_at', o.start_at,
+                        'end_at', o.end_at
+                    )
+                    FROM offers o
+                    WHERE o.trigger_type = 'ProductCategory'
+                        AND o.trigger_id = product_categories.id
+                        AND o.deleted_at IS NULL
+                    ORDER BY o.start_at DESC NULLS LAST, o.id DESC
+                    LIMIT 1
+                )::text as last_offer"
+            );
         }
 
         $queryBuilder->select($selects);
@@ -246,6 +263,29 @@ class IndexFamilies extends OrgAction
                 'listings',
                 'sold',
                 'health_rank',
+                AllowedSort::custom(
+                    'last_offer',
+                    new class () implements Sort {
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderBy(
+                                DB::raw(
+                                    "(
+                                SELECT o.start_at
+                                FROM offers o
+                                WHERE o.trigger_type = 'ProductCategory'
+                                AND o.trigger_id = product_categories.id
+                                AND o.deleted_at IS NULL
+                                ORDER BY o.start_at DESC NULLS LAST, o.id DESC
+                                LIMIT 1
+                            )"
+                                ),
+                                $direction
+                            );
+                        }
+                    }
+                ),
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -334,6 +374,7 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'last_offer', label: __('Last Offer'), canBeHidden: true, sortable: true)
                     ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

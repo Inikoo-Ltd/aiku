@@ -22,6 +22,7 @@ use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
+use App\Actions\Comms\Outbox\ProspectConversion\RunProspectConvertionEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChange\RunPriceChangeEmailBulkRunsToSubscribers;
 use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
 use App\Actions\CRM\Customer\HydrateCustomersClv;
@@ -549,6 +550,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunReviewReminderEmailBulkRuns',
                 ),
                 name: 'RunReviewReminderEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunProspectConvertionEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunProspectConvertionEmailBulkRuns',
+                ),
+                name: 'RunProspectConvertionEmailBulkRuns',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

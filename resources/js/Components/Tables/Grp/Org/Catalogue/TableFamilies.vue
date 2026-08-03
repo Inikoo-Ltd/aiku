@@ -19,6 +19,7 @@ import { faCheck, faTimesCircle, faCheckCircle, faBroadcastTower, faSkull } from
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 
@@ -221,6 +222,20 @@ function masterFamilyRoute(family: Family) {
         "grp.majordomo.redirect_master_product_category",
         [family.master_product_category_id]);
 }
+
+function offerRoute(family: Family) {
+    if (!family.organisation_slug || !family.shop_slug || !family.last_offer?.slug) {
+        return undefined
+    }
+
+    return route(
+        "grp.org.shops.show.discounts.offers.show",
+        [family.organisation_slug, family.shop_slug, family.last_offer.slug])
+}
+
+const offerDate = (date?: string | null) => date
+    ? useFormatTime(date, { localeCode: locale.language.code, formatTime: 'dd MMM yy' })
+    : trans('No date')
 
 const isLoadingDetach = ref<string[]>([])
 
@@ -425,6 +440,23 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     dotClass(item.is_description_extra_reviewed),
                 ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="trans('Description Extra needs a review')" />
             </div>
+        </template>
+
+        <template #cell(last_offer)="{ item: family }">
+            <div v-if="family.last_offer" class="whitespace-nowrap text-xs">
+                <Link v-if="offerRoute(family)" :href="(offerRoute(family) as string)" class="secondaryLink"
+                    v-tooltip="family.last_offer.name">
+                {{ family.last_offer.slug }}
+                </Link>
+                <span v-else v-tooltip="family.last_offer.name">{{ family.last_offer.slug }}</span>
+                <span class="text-gray-400 mx-1">·</span>
+                <span v-tooltip="trans('Offer date')">{{ offerDate(family.last_offer.start_at) }}</span>
+                <span class="text-gray-400 mx-1">→</span>
+                <span v-tooltip="trans('Expiration date')">
+                    {{ family.last_offer.end_at ? offerDate(family.last_offer.end_at) : trans('No expiration') }}
+                </span>
+            </div>
+            <span v-else class="text-gray-400 italic">-</span>
         </template>
 
         <template #cell(sold)="{ item }">

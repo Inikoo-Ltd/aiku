@@ -521,7 +521,10 @@
       "invoice_paid",
       "gold_reward_reminder_1",
       "gold_reward_reminder_2",
-      "gold_reward_reminder_3"
+      "gold_reward_reminder_3",
+      "prospect_convertion_1",
+      "prospect_convertion_2",
+      "prospect_convertion_3"
     ],
     "name": "Beefree blank email template",
     "content": "beefree_blank_email_template.json",

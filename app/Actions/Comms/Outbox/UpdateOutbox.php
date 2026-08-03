@@ -66,18 +66,22 @@ class UpdateOutbox extends OrgAction
         $daysAfterRules = ['sometimes', 'required', 'integer', 'gt:0'];
         $intervalRules = ['sometimes', 'required', 'integer', 'gt:0'];
 
-        if (in_array($this->outbox->code, [
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
-        ])) {
-            $daysAfterRules[] = 'max:30';
-        }
-
-        if (in_array($this->outbox->code, [
-            OutboxCodeEnum::PRICE_CHANGE
-        ])) {
-            $intervalRules = ['sometimes', 'required', 'integer', 'min:0'];
+        switch ($this->outbox->code) {
+            case OutboxCodeEnum::GOLD_REWARD_REMINDER_1:
+            case OutboxCodeEnum::GOLD_REWARD_REMINDER_2:
+            case OutboxCodeEnum::GOLD_REWARD_REMINDER_3:
+                $daysAfterRules[] = 'max:30';
+                break;
+            case OutboxCodeEnum::PROSPECT_CONVERTION_1:
+            case OutboxCodeEnum::PROSPECT_CONVERTION_2:
+            case OutboxCodeEnum::PROSPECT_CONVERTION_3:
+                $daysAfterRules = ['sometimes', 'required', 'integer', 'min:0'];
+                break;
+            case OutboxCodeEnum::PRICE_CHANGE:
+                $intervalRules = ['sometimes', 'required', 'integer', 'min:0'];
+                break;
+            default:
+                break;
         }
 
 
