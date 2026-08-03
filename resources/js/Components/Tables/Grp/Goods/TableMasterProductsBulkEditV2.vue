@@ -10,7 +10,6 @@ import { trans } from "laravel-vue-i18n"
 import Table from "@/Components/Table/Table.vue"
 import Image from "@common/Components/Image.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import PureInputNumber from "@/Components/Pure/PureInputNumber.vue"
 import TaxPresetEditModal from "@/Components/Utils/TaxPresetEditModal.vue"
 import TaxSweepProgressModal from "@/Components/Utils/TaxSweepProgressModal.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -21,9 +20,9 @@ import { taxPresetIcon } from "@/Composables/taxPresets"
 
 library.add(faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight, faUndoAlt)
 
-// The bulk edit tab: fields that make sense across many rows, tax first. Text and units are
-// edited straight in the cell like a spreadsheet; tax opens the same card picker the product
-// edit page uses, for one row or for the whole selection.
+// The bulk edit tab: fields that make sense across many rows, tax first. Texts and the unit
+// label are edited straight in the cell like a spreadsheet; tax opens the same card picker the
+// product edit page uses, for one row or for the whole selection.
 const props = defineProps<{
     data: any
     tab?: string
@@ -49,17 +48,13 @@ const presetMeta = (value: string) => PRESET_META[value] ?? PRESET_META.standard
 // Every editable cell is an input from the start, spreadsheet style. Nothing is sent until the
 // page-head save button fires; until then a touched field stays amber and keeps its old value
 // one undo away, keyed by product id so edits survive paging away and back.
-type EditableField = 'name' | 'description' | 'description_extra' | 'units' | 'unit'
+type EditableField = 'name' | 'description' | 'description_extra' | 'unit'
 
 const pendingEdits = ref<Record<number, { code: string; fields: Partial<Record<EditableField, any>> }>>({})
 const isSavingEdits = ref(false)
 
-/** units is numeric(,3) in the database, so it arrives as "1.000" and shows as 1, or 0.5. */
-const fieldValue = (item: any, field: EditableField): any => {
-    const value = pendingEdits.value[item.id]?.fields[field] ?? item[field] ?? ''
-
-    return field === 'units' && value !== '' ? Number(value) : value
-}
+const fieldValue = (item: any, field: EditableField): string =>
+    pendingEdits.value[item.id]?.fields[field] ?? item[field] ?? ''
 
 const isFieldDirty = (item: any, field: EditableField): boolean =>
     pendingEdits.value[item.id]?.fields[field] !== undefined
@@ -72,12 +67,7 @@ const setFieldValue = (item: any, field: EditableField, value: any) => {
     const original = item[field] ?? ''
     const edit = pendingEdits.value[item.id] ?? { code: item.code, fields: {} }
 
-    /** "1" typed over a stored "1.000" is not a change, so units compare as numbers. */
-    const isUnchanged = field === 'units'
-        ? Number(value) === Number(original)
-        : String(value ?? '') === String(original)
-
-    if (isUnchanged) {
+    if (String(value ?? '') === String(original)) {
         delete edit.fields[field]
     } else {
         edit.fields[field] = value
@@ -102,6 +92,15 @@ const activeEditorCell = ref<string | null>(null)
 const activeEditor = ref<any>(null)
 
 const cellKey = (item: any, field: EditableField): string => `${item.id}:${field}`
+
+/** The editor stores "<p></p>" for an empty text, which renders to nothing: show the hint instead. */
+const previewHtml = (item: any, field: EditableField): string => {
+    const html = fieldValue(item, field)
+
+    return /<(img|iframe|table|hr)\b/i.test(html) || html.replace(/<[^>]*>|&nbsp;|\s/g, '')
+        ? html
+        : ''
+}
 
 const openEditor = (item: any, field: EditableField) => {
     if (!isSavingEdits.value) {
@@ -346,13 +345,13 @@ const onSave = async (presetValue: string) => {
                         :modelValue="fieldValue(item, field)"
                         :toggle="RICH_TEXT_TOOLBAR"
                         :placeholder="trans('Click to write')"
-                        class="max-h-40 overflow-y-auto"
+                        class="min-h-[1.5rem] max-h-40 overflow-y-auto"
                         @update:modelValue="(value: string) => setFieldValue(item, field, value)" />
                     <div
                         v-else
                         @click="openEditor(item, field)"
-                        class="rich-preview max-h-24 cursor-text overflow-y-auto text-sm text-gray-700">
-                        <div v-if="fieldValue(item, field)" v-html="fieldValue(item, field)" />
+                        class="rich-preview min-h-[1.5rem] max-h-24 cursor-text overflow-y-auto text-sm text-gray-700">
+                        <div v-if="previewHtml(item, field)" v-html="previewHtml(item, field)" />
                         <span v-else class="text-gray-300">{{ trans('Click to write') }}</span>
                     </div>
                 </div>
@@ -370,14 +369,11 @@ const onSave = async (presetValue: string) => {
 
         <template #cell(units)="{ item }">
             <div class="flex items-start gap-x-2">
-                <PureInputNumber
-                    class="cell-input !w-24"
-                    :class="dirtyField(isFieldDirty(item, 'units'))"
-                    :modelValue="fieldValue(item, 'units')"
-                    :minValue="0"
-                    :disabled="isSavingEdits"
-                    v-tooltip="trans('Units per outer, also applied to the shop products')"
-                    @update:modelValue="(value: number) => Number.isFinite(value) && setFieldValue(item, 'units', value)" />
+                <span
+                    class="mt-1.5 w-10 shrink-0 text-right text-sm tabular-nums text-gray-500"
+                    v-tooltip="trans('Units per outer, edited on the product page')">
+                    {{ Number(item.units) }}
+                </span>
                 <PureInput
                     class="cell-input !w-24"
                     :class="dirtyField(isFieldDirty(item, 'unit'))"
@@ -387,10 +383,10 @@ const onSave = async (presetValue: string) => {
                     v-tooltip="trans('Unit label, for example piece or ball')"
                     @update:modelValue="(value: any) => setFieldValue(item, 'unit', value)" />
                 <button
-                    v-if="isFieldDirty(item, 'units') || isFieldDirty(item, 'unit')"
+                    v-if="isFieldDirty(item, 'unit')"
                     type="button"
                     :disabled="isSavingEdits"
-                    @click="revertFields(item, ['units', 'unit'])"
+                    @click="revertFields(item, ['unit'])"
                     v-tooltip="trans('Undo')"
                     class="mt-1.5 text-amber-600 hover:text-amber-800">
                     <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
