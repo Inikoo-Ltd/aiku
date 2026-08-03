@@ -4,7 +4,8 @@
   - Copyright (c) 2023, Raul A Perusquia Flores
   -->
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, usePage } from '@inertiajs/vue3'
+import { trans } from 'laravel-vue-i18n'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TabsBox from "@/Components/Navigation/TabsBox.vue"
@@ -67,6 +68,8 @@ const component = computed(() => {
 
     return components[currentTab.value]
 })
+
+const hasDateFilter = computed(() => /between(%5B|\[)/.test(usePage().url))
 </script>
 
 <template>
@@ -74,6 +77,9 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
 
+    <div v-if="hasDateFilter" class="px-4 pt-2 text-xs text-gray-500">
+        {{ trans("Current backlog") }}
+    </div>
     <KeepAlive>
       <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
     </KeepAlive>

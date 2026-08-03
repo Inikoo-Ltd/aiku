@@ -226,10 +226,23 @@ class IndexOrders extends OrgAction
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column
-            ->withBetweenDates(['date'])
+            ->withBetweenDates([$this->getBucketDateColumn($this->bucket ?? null)])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function getBucketDateColumn(?string $bucket): string
+    {
+        if (in_array($bucket, ['dispatched', 'dispatched_today'])) {
+            return 'dispatched_at';
+        }
+
+        if (in_array($bucket, ['in_basket', 'creating', 'all', null])) {
+            return 'date';
+        }
+
+        return 'submitted_at';
     }
 
     public function tableStructure(Group|Organisation|Shop|Customer|CustomerClient|Offer $parent, $prefix = null, $bucket = null): Closure
@@ -266,7 +279,7 @@ class IndexOrders extends OrgAction
                 $stats = $parent->orderingStats;
             }
 
-            $table->betweenDates(['date']);
+            $table->betweenDates([$this->getBucketDateColumn($bucket)]);
 
             $table
                 ->withGlobalSearch()

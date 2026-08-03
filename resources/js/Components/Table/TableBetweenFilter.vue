@@ -36,7 +36,7 @@ const formattedDateRange = (date: string[] | Date[]) => {
 const isLoadingReload = ref(false)
 
 // Watch the datepicker
-const dateFilterValue = ref([new Date(), new Date()])
+const dateFilterValue = ref<Date[] | null>(null)
 const hasBetweenQuery = ref(false)
 watch(dateFilterValue, (newValue) => {
     if (isInitialising) {
@@ -45,7 +45,7 @@ watch(dateFilterValue, (newValue) => {
 
     router.reload(
         {
-            data: { [`between[${selectedPeriodType.value}]`]: formattedDateRange(newValue) },  // Sent to url parameter (?tab=showcase, ?tab=menu)
+            data: { [`between[${selectedPeriodType.value}]`]: newValue?.[0] && newValue?.[1] ? formattedDateRange(newValue) : null },  // Sent to url parameter (?tab=showcase, ?tab=menu)
             onStart: () => {
                 isLoadingReload.value = true
             },
@@ -272,9 +272,13 @@ watch(selectedInterval, (newValue) => {
 
 const resetFilter = () => {
     selectedInterval.value = null
-    dateFilterValue.value = [new Date(), new Date()]
+    isInitialising = true
+    dateFilterValue.value = null
     hasBetweenQuery.value = false
-    
+    nextTick(() => {
+        isInitialising = false
+    })
+
     router.reload({
         data: { [`between[${selectedPeriodType.value}]`]: null },
         onStart: () => {
@@ -336,7 +340,7 @@ watch(() => props.appliedValue, (newValue) => {
     if (newValue?.range) {
         assignInitValue(newValue.column, newValue.range)
     } else {
-        dateFilterValue.value = [new Date(), new Date()]
+        dateFilterValue.value = null
         hasBetweenQuery.value = false
     }
 
@@ -354,24 +358,21 @@ const toggle = (event) => {
 
 <template>
     <div class="flex items-center gap-2 rounded-md">
-        <!-- Display selected date range when custom interval is active -->
-        <transition name="slide-fade">
-            <div v-if="hasBetweenQuery && dateFilterValue[0] && dateFilterValue[1]"
-                 class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded text-xs text-indigo-700 whitespace-nowrap">
-                <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
-                <span class="text-indigo-400">-</span>
-                <span class="font-medium">{{ useFormatTime(dateFilterValue[1], { formatTime: 'mdy' }) }}</span>
-            </div>
-        </transition>
 
         <div
             @click="toggle"
             v-tooltip="trans('Filter by dates')"
             class="cursor-pointer group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
         >
-            <div class="h-9 w-9 rounded flex justify-center items-center"
-                :class="true ? 'border border-gray-300 hover:bg-gray-300 text-gray-600 hover:text-xgray-200' : 'bg-gray-600 hover:bg-gray-700 text-white'"
+            <div class="h-9 rounded flex justify-center items-center gap-2 border"
+                :class="hasBetweenQuery ? 'px-2 border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700' : 'w-9 border-gray-300 hover:bg-gray-200 text-gray-600'"
             >
+                <span v-if="hasBetweenQuery && dateFilterValue?.[0] && dateFilterValue?.[1]"
+                    class="flex items-center gap-1.5 text-xs whitespace-nowrap">
+                    <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
+                    <span class="text-amber-400">-</span>
+                    <span class="font-medium">{{ useFormatTime(dateFilterValue[1], { formatTime: 'mdy' }) }}</span>
+                </span>
                 <FontAwesomeIcon v-if="!isLoadingReload" icon='fal fa-calendar-alt' class='cursor-pointer'
                     fixed-width aria-hidden='true' />
                 <LoadingIcon v-else />
@@ -421,14 +422,14 @@ const toggle = (event) => {
                 <div class="text-left px-1.5">
                     <div class="text-gray-400">{{ trans("Since") }}</div>
                     <div class="">
-                        {{ useFormatTime(dateFilterValue[0])}}
+                        {{ dateFilterValue?.[0] ? useFormatTime(dateFilterValue[0]) : '-' }}
                     </div>
                 </div>
 
                 <div class="justify-self-end text-right px-1.5">
                     <div class="text-gray-400">{{ trans("Until") }}</div>
                     <div class="">
-                        {{ useFormatTime(dateFilterValue[1])}}
+                        {{ dateFilterValue?.[1] ? useFormatTime(dateFilterValue[1]) : '-' }}
                     </div>
                 </div>
             </div>
