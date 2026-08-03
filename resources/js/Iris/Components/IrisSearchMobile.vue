@@ -288,7 +288,7 @@ const visitSearchPage = () => {
         <!-- Always-present floating search button in the thumb zone; drag it up or down -->
         <div
             v-if="!isOverlayOpen"
-            class="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-40 w-14 h-14"
+            class="fixed right-6 bottom-[calc(env(safe-area-inset-bottom)+13rem)] z-40 w-14 h-14"
             :style="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
         >
             <Transition
