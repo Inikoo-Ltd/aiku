@@ -18,6 +18,7 @@ use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
 use App\Actions\Traits\WithBase64FileConverter;
 use App\Actions\Traits\WithUpdateModelImage;
 use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Events\BroadcastEmployeeClockingUpdated;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Http\Resources\HumanResources\ClockingHanResource;
@@ -121,9 +122,14 @@ class StoreClocking extends OrgAction
             return $clocking;
         });
 
+        $isSelfScannedQrCode = $parent instanceof ClockingMachine && $parent->type === ClockingMachineTypeEnum::QR_CODE->value;
+
         if ($subject instanceof Employee) {
             EmployeeHydrateClockings::dispatch($subject)->delay($this->hydratorsDelay);
-            BroadcastEmployeeClockingUpdated::dispatch($subject);
+
+            if (!$isSelfScannedQrCode) {
+                BroadcastEmployeeClockingUpdated::dispatch($subject);
+            }
         } else {
             GuestHydrateClockings::dispatch($subject)->delay($this->hydratorsDelay);
         }

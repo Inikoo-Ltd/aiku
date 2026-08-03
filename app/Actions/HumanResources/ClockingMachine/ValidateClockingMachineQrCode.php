@@ -156,11 +156,13 @@ class ValidateClockingMachineQrCode
 
     private function updateQrCodeUsage(ClockingMachineQRCode $clockingMachineQRCode, Carbon $clockedInAt): void
     {
+        $counts = Clocking::where('clocking_machine_qr_code_id', $clockingMachineQRCode->id)
+            ->selectRaw('count(*) as number_clockings, count(distinct concat(subject_type, subject_id)) as number_different_staff')
+            ->first();
+
         $clockingMachineQRCode->update([
-            'number_clockings'       => Clocking::where('clocking_machine_qr_code_id', $clockingMachineQRCode->id)->count(),
-            'number_different_staff' => Clocking::where('clocking_machine_qr_code_id', $clockingMachineQRCode->id)
-                ->distinct()
-                ->count(DB::raw('concat(subject_type, subject_id)')),
+            'number_clockings'       => $counts->number_clockings,
+            'number_different_staff' => $counts->number_different_staff,
             'last_used_at'           => $clockedInAt,
         ]);
     }
@@ -216,7 +218,7 @@ class ValidateClockingMachineQrCode
 
     private function resolveEffectivePolicyMode(ClockingMachine $clockingMachine, ?int $employeeId, Carbon $now): string
     {
-        $baseQuery = ClockingMachineCoordinatePolicy::query()
+        $candidates = ClockingMachineCoordinatePolicy::query()
             ->where('organisation_id', $clockingMachine->organisation_id)
             ->where('is_active', true)
             ->where(function ($query) use ($clockingMachine) {
@@ -229,26 +231,30 @@ class ValidateClockingMachineQrCode
             ->where(function ($query) use ($now) {
                 $query->whereNull('end_at')->orWhere('end_at', '>=', $now);
             })
-            ->with('rules');
+            ->where(function ($query) use ($employeeId, $clockingMachine) {
+                $query->where(function ($q) use ($clockingMachine) {
+                    $q->where('scope_type', 'organisation')->where('scope_id', $clockingMachine->organisation_id);
+                });
+
+                if ($employeeId) {
+                    $query->orWhere(function ($q) use ($employeeId) {
+                        $q->where('scope_type', 'employee')->where('scope_id', $employeeId);
+                    });
+                }
+            })
+            ->with('rules')
+            ->orderByDesc('start_at')
+            ->orderByDesc('id')
+            ->get();
 
         $policy = null;
 
         if ($employeeId) {
-            $policy = (clone $baseQuery)
-                ->where('scope_type', 'employee')
-                ->where('scope_id', $employeeId)
-                ->orderByDesc('start_at')
-                ->orderByDesc('id')
-                ->first();
+            $policy = $candidates->first(fn (ClockingMachineCoordinatePolicy $p) => $p->scope_type === 'employee');
         }
 
         if (!$policy) {
-            $policy = (clone $baseQuery)
-                ->where('scope_type', 'organisation')
-                ->where('scope_id', $clockingMachine->organisation_id)
-                ->orderByDesc('start_at')
-                ->orderByDesc('id')
-                ->first();
+            $policy = $candidates->first(fn (ClockingMachineCoordinatePolicy $p) => $p->scope_type === 'organisation');
         }
 
         if (!$policy) {
