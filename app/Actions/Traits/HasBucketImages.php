@@ -14,12 +14,15 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
+use Illuminate\Support\Collection;
 
 trait HasBucketImages
 {
-    public function getImagesData(MasterAsset|Product|TradeUnit|MasterCollection $model): array
+    public function getImagesData(MasterAsset|Product|TradeUnit|MasterCollection $model, bool $withCaptions = false, int $maxWidth = 0): array
     {
-        return [
+        $captions = $withCaptions ? $this->getBucketImageCaptions($model) : new Collection();
+
+        $imagesData = [
             [
                 'label'        => __('Main'),
                 'type'         => 'image',
@@ -43,7 +46,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'front_image_id',
                 'id'           => $model->front_image_id,
-                'images'       => $model->imageSources(getImage: 'frontImage'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'frontImage'),
                 'dimensions'   => [
                     'width'  => $model->frontImage->width ?? 0,
                     'height' => $model->frontImage->height ?? 0
@@ -54,7 +57,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'left_image_id',
                 'id'           => $model->left_image_id,
-                'images'       => $model->imageSources(getImage: 'leftImage'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'leftImage'),
                 'dimensions'   => [
                     'width'  => $model->leftImage->width ?? 0,
                     'height' => $model->leftImage->height ?? 0
@@ -65,7 +68,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => '34_image_id',
                 'id'           => $model->{'34_image_id'},
-                'images'       => $model->imageSources(getImage: 'threeQuarterImage'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'threeQuarterImage'),
                 'dimensions'   => [
                     'width'  => $model->threeQuarterImage->width ?? 0,
                     'height' => $model->threeQuarterImage->height ?? 0
@@ -76,7 +79,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'right_image_id',
                 'id'           => $model->right_image_id,
-                'images'       => $model->imageSources(getImage: 'rightImage'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'rightImage'),
                 'dimensions'   => [
                     'width'  => $model->rightImage->width ?? 0,
                     'height' => $model->rightImage->height ?? 0
@@ -87,7 +90,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'back_image_id',
                 'id'           => $model->back_image_id,
-                'images'       => $model->imageSources(getImage: 'backImage'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'backImage'),
                 'dimensions'   => [
                     'width'  => $model->backImage->width ?? 0,
                     'height' => $model->backImage->height ?? 0
@@ -98,7 +101,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'top_image_id',
                 'id'           => $model->top_image_id,
-                'images'       => $model->imageSources(getImage: 'topImage'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'topImage'),
                 'dimensions'   => [
                     'width'  => $model->topImage->width ?? 0,
                     'height' => $model->topImage->height ?? 0
@@ -109,7 +112,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'bottom_image_id',
                 'id'           => $model->bottom_image_id,
-                'images'       => $model->imageSources(getImage: 'bottomImage'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'bottomImage'),
                 'dimensions'   => [
                     'width'  => $model->bottomImage->width ?? 0,
                     'height' => $model->bottomImage->height ?? 0
@@ -120,7 +123,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'size_comparison_image_id',
                 'id'           => $model->size_comparison_image_id,
-                'images'       => $model->imageSources(getImage: 'sizeComparisonImage'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'sizeComparisonImage'),
                 'dimensions'   => [
                     'width'  => $model->sizeComparisonImage->width ?? 0,
                     'height' => $model->sizeComparisonImage->height ?? 0
@@ -131,7 +134,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'lifestyle_image_id',
                 'id'           => $model->lifestyle_image_id,
-                'images'       => $model->imageSources(getImage: 'lifestyleImage'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'lifestyleImage'),
                 'dimensions'   => [
                     'width'  => $model->lifestyleImage->width ?? 0,
                     'height' => $model->lifestyleImage->height ?? 0
@@ -142,7 +145,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'art1_image_id',
                 'id'           => $model->art1_image_id,
-                'images'       => $model->imageSources(getImage: 'art1Image'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art1Image'),
                 'dimensions'   => [
                     'width'  => $model->art1Image->width ?? 0,
                     'height' => $model->art1Image->height ?? 0
@@ -153,7 +156,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'art2_image_id',
                 'id'           => $model->art2_image_id,
-                'images'       => $model->imageSources(getImage: 'art2Image'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art2Image'),
                 'dimensions'   => [
                     'width'  => $model->art2Image->width ?? 0,
                     'height' => $model->art2Image->height ?? 0
@@ -164,7 +167,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'art3_image_id',
                 'id'           => $model->art3_image_id,
-                'images'       => $model->imageSources(getImage: 'art3Image'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art3Image'),
                 'dimensions'   => [
                     'width'  => $model->art3Image->width ?? 0,
                     'height' => $model->art3Image->height ?? 0
@@ -175,7 +178,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'art4_image_id',
                 'id'           => $model->art4_image_id,
-                'images'       => $model->imageSources(getImage: 'art4Image'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art4Image'),
                 'dimensions'   => [
                     'width'  => $model->art4Image->width ?? 0,
                     'height' => $model->art4Image->height ?? 0
@@ -186,13 +189,48 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'art5_image_id',
                 'id'           => $model->art5_image_id,
-                'images'       => $model->imageSources(getImage: 'art5Image'),
+                'images'       => $model->imageSources($maxWidth, $maxWidth, 'art5Image'),
                 'dimensions'   => [
                     'width'  => $model->art5Image->width ?? 0,
                     'height' => $model->art5Image->height ?? 0
                 ]
             ],
         ];
+
+        if (!$withCaptions) {
+            return $imagesData;
+        }
+
+        return array_map(function (array $imageBox) use ($captions): array {
+            if (($imageBox['type'] ?? null) === 'image') {
+                $imageBox['alt'] = $captions->get($imageBox['id']);
+            }
+
+            return $imageBox;
+        }, $imagesData);
+    }
+
+    protected function getBucketImageCaptions(MasterAsset|Product|TradeUnit|MasterCollection $model): Collection
+    {
+        $captions = new Collection();
+
+        if ($model instanceof Product || $model instanceof MasterAsset) {
+            foreach ($model->tradeUnits as $tradeUnit) {
+                foreach ($tradeUnit->images as $media) {
+                    if (filled($media->pivot->caption)) {
+                        $captions->put($media->id, $media->pivot->caption);
+                    }
+                }
+            }
+        }
+
+        foreach ($model->images as $media) {
+            if (filled($media->pivot->caption)) {
+                $captions->put($media->id, $media->pivot->caption);
+            }
+        }
+
+        return $captions;
     }
 
     public function getSingleImageData(MasterProductCategory|ProductCategory|MasterCollection $model): array
@@ -207,6 +245,23 @@ trait HasBucketImages
                 'dimensions'   => [
                     'width'  => $model->image->width ?? 0,
                     'height' => $model->image->height ?? 0
+                ]
+            ],
+        ];
+    }
+
+    public function getShowcaseImageData(MasterProductCategory|ProductCategory $model): array
+    {
+        return [
+            [
+                'label'        => __('Showcase'),
+                'type'         => 'image',
+                'column_in_db' => 'showcase_image_id',
+                'id'           => $model->showcase_image_id,
+                'images'       => $model->imageSources(0, 0, 'showcaseImage'),
+                'dimensions'   => [
+                    'width'  => $model->showcaseImage->width ?? 0,
+                    'height' => $model->showcaseImage->height ?? 0
                 ]
             ],
         ];

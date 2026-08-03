@@ -142,7 +142,7 @@ const cleanedDescription = computed(() => {
               }">
               <SwiperSlide v-for="(img, i) in images" :key="i">
                 <div class="relative w-full aspect-square overflow-hidden rounded-2xl bg-gray-100">
-                  <Image :src="img.original" :imageCover="true" :alt="`image-description-${i}`"
+                  <Image :src="img.original" :srcset="img.srcset" sizes="(min-width: 1024px) 30vw, 90vw" :imageCover="true" :alt="`image-description-${i}`"
                     class="absolute inset-0 w-full h-full object-cover transition duration-300 hover:scale-105" />
                 </div>
               </SwiperSlide>

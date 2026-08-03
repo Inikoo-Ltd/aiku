@@ -24,7 +24,7 @@ class CreateNextRecurringBillPostConsolidation extends OrgAction
     use WithActionUpdate;
 
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'long-running';
 
 
     /**

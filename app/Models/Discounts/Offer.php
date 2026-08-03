@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -62,6 +63,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $trigger_sub_type
  * @property \Illuminate\Support\Carbon|null $last_suspended_at
  * @property string|null $label
+ * @property string|null $voucher
+ * @property int|null $customer_id exclusive customer offer
+ * @property string|null $allowance_type Used for performance, to avoid load offer_allowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
@@ -84,6 +88,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Offer extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use HasSlug;
     use HasFactory;
@@ -126,6 +131,10 @@ class Offer extends Model implements Auditable
         'type',
         'status',
         'state',
+        'voucher',
+        'customer_id',
+        'start_at',
+        'end_at'
     ];
 
 
@@ -158,6 +167,9 @@ class Offer extends Model implements Auditable
         return $this->belongsTo(OfferCampaign::class);
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Discounts\OfferAllowance>|\Illuminate\Database\Eloquent\Builder
+     */
     public function offerAllowances(): HasMany
     {
         return $this->hasMany(OfferAllowance::class);
@@ -176,6 +188,20 @@ class Offer extends Model implements Auditable
     public function trigger(): MorphTo
     {
         return $this->morphTo();
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'shop_id'    => $this->shop_id,
+            'code'       => $this->code,
+            'name'       => (string)$this->name,
+            'state'      => $this->state->value,
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }

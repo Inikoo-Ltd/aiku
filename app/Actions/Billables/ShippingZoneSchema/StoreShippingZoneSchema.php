@@ -8,7 +8,10 @@
 
 namespace App\Actions\Billables\ShippingZoneSchema;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingZoneSchemas;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShippingZoneSchemas;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShippingZoneSchemas;
 use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
@@ -28,13 +31,19 @@ class StoreShippingZoneSchema extends OrgAction
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
 
-        return DB::transaction(function () use ($shop, $modelData) {
+        $shippingZoneSchema = DB::transaction(function () use ($shop, $modelData) {
             /** @var $shippingZoneSchema ShippingZoneSchema */
             $shippingZoneSchema = $shop->shippingZoneSchemas()->create($modelData);
             $shippingZoneSchema->stats()->create();
 
             return $shippingZoneSchema;
         });
+
+        ShopHydrateShippingZoneSchemas::dispatch($shop)->delay($this->hydratorsDelay);
+        OrganisationHydrateShippingZoneSchemas::dispatch($shop->organisation)->delay($this->hydratorsDelay);
+        GroupHydrateShippingZoneSchemas::dispatch($shop->group)->delay($this->hydratorsDelay);
+
+        return $shippingZoneSchema;
     }
 
     public function rules(): array
@@ -83,7 +92,7 @@ class StoreShippingZoneSchema extends OrgAction
 
     public function htmlResponse(ShippingZoneSchema $shippingZoneSchema): RedirectResponse
     {
-        return Redirect::route('grp.org.shops.show.billables.shipping.show', [
+        return Redirect::route($shippingZoneSchema->is_current ? 'grp.org.shops.show.billables.shipping.current.show' : 'grp.org.shops.show.billables.shipping.discount.show', [
             'organisation'       => $shippingZoneSchema->organisation->slug,
             'shop'               => $shippingZoneSchema->shop->slug,
             'shippingZoneSchema' => $shippingZoneSchema->slug

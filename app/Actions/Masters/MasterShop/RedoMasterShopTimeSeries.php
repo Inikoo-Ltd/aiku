@@ -7,6 +7,7 @@
 
 namespace App\Actions\Masters\MasterShop;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -22,7 +23,7 @@ class RedoMasterShopTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long-slave';
+    public string $jobQueue = 'long-low-priority';
     public string $commandSignature = 'master-shops:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -67,10 +68,12 @@ class RedoMasterShopTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessMasterShopTimeSeriesRecords::dispatch($masterShop->id, $frequency, $from, $to)->onQueue('sales_slave');
+                ProcessMasterShopTimeSeriesRecords::dispatch($masterShop->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave');
             } else {
-                ProcessMasterShopTimeSeriesRecords::run($masterShop->id, $frequency, $from, $to);
+                ProcessMasterShopTimeSeriesRecords::run($masterShop->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

@@ -34,6 +34,8 @@ use Illuminate\Support\Arr;
  * @property mixed $effective_weight
  * @property mixed $picking_sessions_count
  * @property mixed $picking_session_ids
+ * @property mixed $waiting_warehouse_count
+ * @property mixed $waiting_crm_count
  * @property mixed $is_premium_dispatch
  * @property mixed $has_extra_packing
  * @property mixed $customer_notes
@@ -50,7 +52,7 @@ use Illuminate\Support\Arr;
  * @property mixed $batch_code_sku
  * @property mixed $org_stock_slug
  * @property mixed $batch_code_expiry_date
- *
+ * @property mixed $is_customer_vip
  */
 class DeliveryNotesResource extends JsonResource
 {
@@ -78,6 +80,9 @@ class DeliveryNotesResource extends JsonResource
         } else {
             $weight = round($this->estimated_weight / 1000).' Kg';
         }
+
+        $totalParcels = is_array($this->parcels) ? count($this->parcels) : 0;
+
         return [
             'id'                          => $this->id,
             'slug'                        => $this->slug,
@@ -94,6 +99,7 @@ class DeliveryNotesResource extends JsonResource
                 ],
             ] : null,
             'skus'                        => $this->skus,
+            'parcels'                     => $totalParcels,
             'batch_code_expiry_date'      => $this->batch_code_expiry_date,
             'date'                        => $this->date,
             'state'                       => $this->state,
@@ -113,9 +119,12 @@ class DeliveryNotesResource extends JsonResource
             'organisation_slug'           => $this->organisation_slug,
             'shop_name'                   => $this->shop_name,
             'is_premium_dispatch'         => $this->is_premium_dispatch,
+            'is_customer_vip'             => $this->is_customer_vip,
             'has_extra_packing'           => $this->has_extra_packing,
             'picking_sessions_count'      => $this->picking_sessions_count,
             'picking_session_ids'         => $this->picking_session_ids,
+            'waiting_warehouse_count'     => (int) $this->waiting_warehouse_count,
+            'waiting_crm_count'           => (int) $this->waiting_crm_count,
             'customer_notes'              => $this->customer_notes,
             'internal_notes'              => $this->internal_notes,
             'public_notes'                => $this->public_notes,
@@ -141,7 +150,8 @@ class DeliveryNotesResource extends JsonResource
                     'deliveryNote' => $this->id
                 ],
                 'method'     => 'patch'
-            ]
+            ],
+            'is_collection'               => (bool) $this->collection_address_id,
         ];
     }
 }

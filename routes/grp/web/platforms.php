@@ -5,8 +5,8 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-use App\Actions\CRM\Platform\UI\IndexPlatforms;
-use App\Actions\CRM\Platform\UI\ShowPlatform;
+use App\Actions\Dropshipping\UI\IndexPlatforms;
+use App\Actions\Dropshipping\UI\ShowPlatform;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [IndexPlatforms::class, 'inGroup'])->name('index');

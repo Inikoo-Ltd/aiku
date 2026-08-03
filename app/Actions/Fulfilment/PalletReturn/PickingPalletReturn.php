@@ -9,6 +9,7 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -34,6 +35,7 @@ class PickingPalletReturn extends OrgAction
 {
     use WithActionUpdate;
 
+    private PalletReturn $palletReturn;
 
     public function handle(PalletReturn $palletReturn, array $modelData, ?User $user = null): PalletReturn
     {
@@ -71,6 +73,10 @@ class PickingPalletReturn extends OrgAction
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
 
+        if ($palletReturn->customerSalesChannel) {
+            CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+        }
+
         SendPalletReturnNotification::run($palletReturn);
 
         return $palletReturn;
@@ -82,7 +88,14 @@ class PickingPalletReturn extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
+        $warehouseId = $this->palletReturn->warehouse_id;
+
+        return $request->user()->authTo([
+            "fulfilment-shop.{$this->fulfilment->id}.edit",
+            "fulfilment.$warehouseId.edit",
+            "supervisor-incoming.$warehouseId",
+            "supervisor-fulfilment.$warehouseId",
+        ]);
     }
 
     public function jsonResponse(PalletReturn $palletReturn): JsonResource
@@ -92,6 +105,7 @@ class PickingPalletReturn extends OrgAction
 
     public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 
         $user = $request->user();

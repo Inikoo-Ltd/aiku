@@ -10,29 +10,36 @@ namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Events\BroadcastStockMovement;
+use App\Models\Dispatching\Picking;
+use App\Models\GoodsIn\Sowing;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrgStockMovement extends OrgAction
 {
     use CalculatesOrgStockHistories;
+    use WithOrgStockMovementHydrator;
 
-    public function handle(OrgStock $orgStock, Location $location, array $modelData): OrgStockMovement
+    public int $jobTries = 1;
+
+    public string $jobQueue = 'stock-control';
+
+    public function handle(OrgStock $orgStock, Location $location, array $modelData, null|Picking|Sowing $process = null): OrgStockMovement
     {
         data_set($modelData, 'group_id', $location->group_id);
         data_set($modelData, 'organisation_id', $location->organisation_id);
@@ -43,7 +50,7 @@ class StoreOrgStockMovement extends OrgAction
         data_set($modelData, 'date', now(), overwrite: false);
 
 
-        if (!Arr::has($modelData, 'org_amount')) {
+        if (!Arr::has($modelData, 'org_amount') && Arr::has($modelData, 'quantity')) {
             $orgAmount = $modelData['quantity'] * $orgStock->value_in_locations;
             data_set($modelData, 'org_amount', $orgAmount);
         }
@@ -74,8 +81,22 @@ class StoreOrgStockMovement extends OrgAction
             $flow = OrgStockMovementFlowEnum::IN;
         }
 
-
         data_set($modelData, 'flow', $flow);
+
+        if ($process) {
+            $parent = null;
+
+            if ($process instanceof Picking) {
+                $parent = $process->deliveryNote;
+            } elseif ($process instanceof Sowing) {
+                $parent = $process->return ?? $process->stockDelivery;
+            }
+
+            if ($parent) {
+                data_set($modelData, 'parent_type', class_basename($parent));
+                data_set($modelData, 'parent_id', class_basename($parent->id));
+            }
+        }
 
         /** @var OrgStockMovement $orgStockMovement */
         $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
@@ -85,14 +106,29 @@ class StoreOrgStockMovement extends OrgAction
 
         if ($locationOrgStock) {
             if ($this->strict) {
+                $runningQuantity = $locationOrgStock->quantity + $orgStockMovement->quantity;
+
                 UpdateLocationOrgStock::run(
                     $locationOrgStock,
                     [
-                        'quantity' => $locationOrgStock->quantity + $orgStockMovement->quantity,
+                        'quantity' => $runningQuantity,
                     ]
                 );
+                //here we need to do this:
+
+                $runningQuantityOrg = DB::table('location_org_stocks')
+                    ->where('org_stock_id', $orgStock->id)->sum('quantity');
+
+
+                $orgStockMovement->update([
+                    'running_quantity'           => $runningQuantity,
+                    'running_quantity_org_stock' => $runningQuantityOrg,
+                ]);
+
+
+                BroadcastStockMovement::dispatch($locationOrgStock);
             } else {
-                $stock = $this->getStockQuantity($orgStock, $location);
+                $stock = GetLocationOrgStockQuantity::run($orgStock, $location);
                 UpdateLocationOrgStock::run(
                     $locationOrgStock,
                     [
@@ -103,15 +139,13 @@ class StoreOrgStockMovement extends OrgAction
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
         }
 
-        if ($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE) {
-            OrgStockHydrateStockValue::dispatch($orgStock);//todo do we need to delete this??? mybe yes
-            OrgStockHydrateSkuValue::dispatch($orgStock);
-        }
+        $this->hydrateOrgStockMovement($orgStockMovement);
 
-        OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
-        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
-        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay(now()->addMinutes(15));
-
+        $process?->update(
+            [
+                'org_stock_movement_id' => $orgStockMovement->id,
+            ]
+        );
 
         return $orgStockMovement;
     }
@@ -128,23 +162,19 @@ class StoreOrgStockMovement extends OrgAction
             'is_delivered'     => ['sometimes', 'boolean'],
             'is_received'      => ['sometimes', 'boolean'],
             'fixed'            => ['sometimes', 'boolean'],
-            'user_id'          => ['sometimes', 'nullable', 'numeric']
+            'user_id'          => ['sometimes', 'nullable', 'numeric'],
+            'reason'           => ['sometimes', 'nullable', Rule::enum(OrgStockMovementReasonEnum::class)],
+            'note'             => ['sometimes', 'nullable', 'string'],
         ];
+
         if (!$this->strict) {
-            $rules['note']       = ['sometimes', 'nullable', 'string', 'max:1024'];
-            $rules['fetched_at'] = ['sometimes', 'date'];
-            $rules['source_id']  = ['sometimes', 'string'];
+            $rules['note']               = ['sometimes', 'nullable', 'string', 'max:1024'];
+            $rules['fetched_at']         = ['sometimes', 'date'];
+            $rules['source_id']          = ['sometimes', 'string'];
+            $rules['is_migration_point'] = ['sometimes', 'boolean'];
         }
 
         return $rules;
-    }
-
-
-    public function asController(OrgStock $orgStock, Location $location, ActionRequest $request, int $hydratorsDelay = 0, bool $strict = true): OrgStockMovement
-    {
-        $this->initialisation($orgStock->organisation, $request);
-
-        return $this->handle($orgStock, $location, $this->validatedData);
     }
 
     public function action(OrgStock $orgStock, Location $location, array $modelData, int $hydratorsDelay = 0, bool $strict = true): OrgStockMovement
@@ -157,6 +187,5 @@ class StoreOrgStockMovement extends OrgAction
 
         return $this->handle($orgStock, $location, $this->validatedData);
     }
-
 
 }

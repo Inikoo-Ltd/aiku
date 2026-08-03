@@ -40,16 +40,6 @@ trait OfferCampaignVoucherOffersTrait
                     'title'     => $offerCampaign->name,
                     'model'     => __('Offer Campaign'),
                     'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
-                    'actions' => app()->environment('local') ? [
-                        [
-                            'type'  => 'button',
-                            'key'   => 'voucher_create_discount',
-                            // 'route' => [
-                            //     'name'       => preg_replace('/show$/', 'create_family_offer', request()->route()->getName()),
-                            //     'parameters' => array_values(request()->route()->originalParameters())
-                            // ]
-                        ]
-                    ] : [],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -70,15 +60,16 @@ trait OfferCampaignVoucherOffersTrait
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)
-                    : Inertia::lazy(fn () => GetOfferCampaignOverview::run($offerCampaign)),
+                    : Inertia::optional(fn () => GetOfferCampaignOverview::run($offerCampaign)),
                 OfferCampaignTabsEnum::OFFERS->value => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
                     fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))
-                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))),
+                    : Inertia::optional(fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))),
                 OfferCampaignTabsEnum::HISTORY->value => $this->tab == OfferCampaignTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
+        )
+        ->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value, showActions: $offerCampaign->shop->is_aiku))
+        ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
     }
 }

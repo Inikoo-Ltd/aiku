@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Ses;
 
 use App\Actions\Comms\DispatchedEmail\UpdateDispatchedEmail;
+use App\Actions\Comms\EmailAddress\ProcessGetSesClient;
 use App\Actions\Comms\EmailAddress\Traits\AwsClient;
 use App\Actions\Comms\EmailCopy\StoreEmailCopy;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails;
@@ -16,7 +17,6 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use Aws\Exception\AwsException;
-use Aws\Result;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,9 +29,33 @@ class SendSesEmail
     use AsAction;
     use AwsClient;
 
+    private const THROTTLE_BACKOFF_BASE_MICROSECONDS = 50000;
+
+    private const THROTTLE_BACKOFF_CAP_MICROSECONDS = 2000000;
+
+    private const THROTTLE_BACKOFF_JITTER_MICROSECONDS = 50000;
+
     public mixed $message;
 
-    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false, bool $debug = false): DispatchedEmail
+    // reference: AWS SES error codes
+    // https://docs.aws.amazon.com/ses/latest/APIReference/CommonErrors.html
+    // https://docs.aws.amazon.com/ses/latest/dg/troubleshoot-error-messages.html
+    // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-troubleshooting.html
+    private const array CREDENTIAL_ERROR_CODES = [
+        'IncompleteSignature',
+        'InvalidClientTokenId',
+        'MessageRejected',
+        'SignatureDoesNotMatch',
+        'ExpiredTokenException',
+        'AccessDeniedException',
+        'NotAuthorized',
+        'UnrecognizedClientException'
+    ];
+
+    /**
+     * @param array<int, array{content: string, filename: string}> $attachments
+     */
+    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false, bool $debug = false, array $attachments = []): DispatchedEmail
     {
         if ($dispatchedEmail->state != DispatchedEmailStateEnum::READY) {
             return $dispatchedEmail;
@@ -82,105 +106,127 @@ class SendSesEmail
             $emailTo,
             $emailHtmlBody,
             $unsubscribeUrl,
-            $senderName
+            $senderName,
+            $attachments
         );
 
 
         $numberAttempts = 12;
-        $attempt        = 0;
 
         if ($debug) {
             print "Start try to send  process to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
         }
 
-        do {
-            try {
-                if ($debug) {
-                    print "Start try to send   attempt $attempt  Start  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
-                }
+        $credentialCandidates = ProcessGetSesClient::run($dispatchedEmail->outbox_id);
+        $sent                 = false;
 
-                $result = $this->sendEmail($emailData);
+        foreach ($credentialCandidates as $candidateIndex => $credentials) {
+            $sesClient = $this->buildSesClient($credentials);
+            $attempt   = 0;
 
-                if ($debug) {
-                    print "Start try to send  attempt $attempt  End  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
-                }
+            do {
+                try {
+                    if ($debug) {
+                        print "Start try to send   attempt $attempt  Start  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
+                    }
 
-                $dispatchedEmail = UpdateDispatchedEmail::run(
-                    $dispatchedEmail,
-                    [
-                        'state'   => DispatchedEmailStateEnum::SENT,
-                        'sent_at' => now(),
-                    ]
-                );
+                    $result = $sesClient->sendRawEmail($this->getRawEmail($emailData));
 
-                if (!$isTest && Arr::get($result, 'MessageId')) {
-                    DB::table('ses_dispatched_emails')->insert([
-                        'dispatched_email_id' => $dispatchedEmail->id,
-                        'ses_id'              => Arr::get($result, 'MessageId'),
-                        'send_at'             => now()
-                    ]);
-                }
+                    if ($debug) {
+                        print "Start try to send  attempt $attempt  End  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
+                    }
+
+                    $dispatchedEmail = UpdateDispatchedEmail::run(
+                        $dispatchedEmail,
+                        [
+                            'state'   => DispatchedEmailStateEnum::SENT,
+                            'sent_at' => now(),
+                        ]
+                    );
+
+                    if (!$isTest && Arr::get($result, 'MessageId')) {
+                        DB::table('ses_dispatched_emails')->insert([
+                            'dispatched_email_id' => $dispatchedEmail->id,
+                            'ses_id'              => Arr::get($result, 'MessageId'),
+                            'send_at'             => now()
+                        ]);
+                    }
 
 
-                if (!$isTest && $dispatchedEmail->outbox
-                    && in_array($dispatchedEmail->outbox->code, [
-                        OutboxCodeEnum::DELIVERY_CONFIRMATION,
-                        OutboxCodeEnum::ORDER_CONFIRMATION,
-                        OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
-                        OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-                        OutboxCodeEnum::RENTAL_AGREEMENT,
-                    ])) {
-                    StoreEmailCopy::make()->action($dispatchedEmail, [
-                        'subject' => $subject,
-                        'body'    => $emailHtmlBody
-                    ]);
-                }
+                    if (!$isTest && $dispatchedEmail->outbox
+                        && in_array($dispatchedEmail->outbox->code, [
+                            OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                            OutboxCodeEnum::ORDER_CONFIRMATION,
+                            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
+                            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+                            OutboxCodeEnum::RENTAL_AGREEMENT,
+                        ])) {
+                        StoreEmailCopy::make()->action($dispatchedEmail, [
+                            'subject' => $subject,
+                            'body'    => $emailHtmlBody
+                        ]);
+                    }
 
-                if ($debug) {
-                    print "Post  attempt $attempt    to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
-                }
-            } catch (AwsException $e) {
-                Sentry::captureException($e);
-                if ($e->getAwsErrorCode() == 'Throttling' && $attempt < $numberAttempts - 1) {
-                    $attempt++;
-                    usleep(rand(200, 300) + pow(2, $attempt));
-                    continue;
-                } else {
+                    if ($debug) {
+                        print "Post  attempt $attempt    to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
+                    }
+
+                    $sent = true;
+                } catch (AwsException $e) {
+                    if ($e->getAwsErrorCode() == 'Throttling' && $attempt < $numberAttempts - 1) {
+                        $attempt++;
+                        usleep($this->throttleBackoffMicroseconds($attempt));
+                        continue;
+                    }
+
+                    Sentry::captureException($e);
+
+                    $isCredentialError = in_array($e->getAwsErrorCode(), self::CREDENTIAL_ERROR_CODES, true);
+                    if ($isCredentialError && $candidateIndex < count($credentialCandidates) - 1) {
+                        break;
+                    }
+
                     UpdateDispatchedEmail::run(
                         $dispatchedEmail,
                         [
                             'state'       => DispatchedEmailStateEnum::ERROR,
                             'data->error' =>
                                 [
-                                    'code'    => $e->getAwsErrorCode(),
-                                    'msg'     => $e->getAwsErrorMessage(),
-                                    'attempt' => $attempt
-
+                                    'code'             => $e->getAwsErrorCode(),
+                                    'msg'              => $e->getAwsErrorMessage(),
+                                    'attempt'          => $attempt,
+                                    'credential_level' => $credentials['level'],
                                 ],
                         ]
                     );
 
+                    $sent = null;
+                    break;
+                } catch (Exception $e) {
+                    UpdateDispatchedEmail::run(
+                        $dispatchedEmail,
+                        [
+                            'state'       => DispatchedEmailStateEnum::ERROR,
+                            'is_error'    => true,
+                            'date'        => now(),
+                            'data->error' =>
+                                [
+                                    'msg' => $e->getMessage(),
+                                ],
+                        ]
+                    );
+
+                    $sent = null;
                     break;
                 }
-            } catch (Exception $e) {
-                UpdateDispatchedEmail::run(
-                    $dispatchedEmail,
-                    [
-                        'state'       => DispatchedEmailStateEnum::ERROR,
-                        'is_error'    => true,
-                        'date'        => now(),
-                        'data->error' =>
-                            [
-                                'msg' => $e->getMessage(),
-                            ],
-                    ]
-                );
 
                 break;
-            }
+            } while ($attempt < $numberAttempts);
 
-            break;
-        } while ($attempt < $numberAttempts);
+            if ($sent === true || $sent === null) {
+                break;
+            }
+        }
 
 
         if ($debug) {
@@ -192,15 +238,14 @@ class SendSesEmail
         return $dispatchedEmail;
     }
 
-    /**
-     * @throws \PHPMailer\PHPMailer\Exception
-     */
-    public function sendEmail($emailData): Result
+    /** Exponential backoff with jitter, capped so the whole retry run stays well under the queue retry_after. */
+    public function throttleBackoffMicroseconds(int $attempt): int
     {
-        return $this->getSesClient()->sendRawEmail($this->getRawEmail($emailData));
+        return (int)min(pow(2, $attempt) * self::THROTTLE_BACKOFF_BASE_MICROSECONDS, self::THROTTLE_BACKOFF_CAP_MICROSECONDS)
+            + rand(0, self::THROTTLE_BACKOFF_JITTER_MICROSECONDS);
     }
 
-    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null): array
+    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null, array $attachments = []): array
     {
         $message = [
             'Message' => [
@@ -231,7 +276,8 @@ class SendSesEmail
                 ]
             ],
             'Message'     => $message['Message'],
-            'Headers'     => $headers
+            'Headers'     => $headers,
+            'Attachments' => $attachments,
         ];
     }
 
@@ -248,6 +294,11 @@ class SendSesEmail
         foreach (Arr::get($emailData, 'Headers', []) as $key => $header) {
             $mail->addCustomHeader($key, $header);
         }
+
+        foreach (Arr::get($emailData, 'Attachments', []) as $attachment) {
+            $mail->addStringAttachment($attachment['content'], $attachment['filename']);
+        }
+
         $mail->isHTML();
         $mail->Subject = $emailData['Message']['Subject']['Data'];
         $mail->CharSet = 'UTF-8';

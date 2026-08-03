@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 12-06-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -11,15 +11,16 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DeleteCollection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Models\Masters\MasterCollection;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class DeleteMasterCollection extends GrpAction
+class DeleteMasterCollection extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -29,17 +30,14 @@ class DeleteMasterCollection extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function handle(MasterCollection $masterCollection, bool $forceDelete = false): void
+    public function handle(MasterCollection $masterCollection, bool $forceDelete = false, ?Command $command = null): void
     {
-        DB::transaction(function () use ($masterCollection, $forceDelete) {
-            // No need to detach, will delete children collections
-            // DB::table('collections')->where('master_collection_id', $masterCollection->id)
-            //     ->update(['master_collection_id' => null]);
-
+        DB::transaction(function () use ($masterCollection, $forceDelete, $command) {
             $masterCollection
                 ->childrenCollections
-                ->each(function ($collection) {
-                    DeleteCollection::make()->action($collection);
+                ->each(function ($collection) use ($forceDelete, $command) {
+                    $command?->line('Deleting collection '.$collection->name);
+                    DeleteCollection::make()->action($collection, $forceDelete, $command);
                 });
 
             if ($forceDelete) {
@@ -79,10 +77,26 @@ class DeleteMasterCollection extends GrpAction
     public function asController(MasterCollection $masterCollection, ActionRequest $request): void
     {
         $this->masterCollection = $masterCollection;
-        $this->initialisation($masterCollection->group, $request);
+        $this->initialisationFromGroup($masterCollection->group, $request);
 
         $forceDelete = $request->boolean('force_delete');
 
         $this->handle($masterCollection, $forceDelete);
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'master-collection:delete {masterCollectionId} {--force_delete : Force delete the master collection}';
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): void
+    {
+        $masterCollection = MasterCollection::where('slug', $command->argument('masterCollectionId'))->firstOrFail();
+        $command->line('Deleting master collection '.$masterCollection->name);
+        $this->handle($masterCollection, $command->option('force_delete'), $command);
+    }
+
 }

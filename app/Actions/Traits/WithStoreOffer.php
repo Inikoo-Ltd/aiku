@@ -31,7 +31,16 @@ trait WithStoreOffer
             $status = true;
         }
 
+        $modelData = $this->prepareOfferDate($parent, $modelData);
 
+        data_set($modelData, 'status', $status);
+
+
+        return $modelData;
+    }
+
+    protected function prepareOfferDate(OfferCampaign|Offer $parent, array $modelData): array
+    {
         if (Arr::has($modelData, 'start_at') && Arr::get($modelData, 'start_at') != '' && is_string(Arr::get($modelData, 'start_at'))) {
             $startAt = Carbon::parse(Arr::get($modelData, 'start_at'))->startOfDay();
             data_set($modelData, 'start_at', $startAt);
@@ -40,10 +49,6 @@ trait WithStoreOffer
             $endAt = Carbon::parse(Arr::get($modelData, 'end_at'))->endOfDay();
             data_set($modelData, 'end_at', $endAt);
         }
-
-
-        data_set($modelData, 'status', $status);
-
 
         return $modelData;
     }

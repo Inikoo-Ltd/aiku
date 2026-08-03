@@ -14,8 +14,8 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\Packing\DeletePacking;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
+use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
-use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\Ordering\Order\UpdateState\RollbackOrderAfterDeliveryNoteCancellation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -84,17 +84,8 @@ class CancelDeliveryNote extends OrgAction
                     $locationPickingStock = LocationOrgStock::where('org_stock_id', $picking->org_stock_id)->first();
                 }
 
-                if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK) {
-                    StoreSowing::make()->action(
-                        $deliveryNoteItem,
-                        $user,
-                        [
-                            'location_org_stock_id' => $locationPickingStock->id,
-                            'quantity'              => $picking->quantity,
-                            'sower_user_id'         => $picking->picker_user_id,
-                            'original_picking_id'   => $picking->id,
-                        ],
-                    );
+                if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK && $picking->quantity > 0) {
+                    DeletePicking::make()->action($picking, $user);
                 }
 
                 if ($toPick > 0) {
@@ -155,6 +146,20 @@ class CancelDeliveryNote extends OrgAction
         return $deliveryNote;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $deliveryNote = $request->route('deliveryNote');
+
+        return $request->user()->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ]);
+    }
+
     /**
      * @throws \Throwable
      */
@@ -168,11 +173,11 @@ class CancelDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, ?User $user, $modifyOrder = true): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote, $modifyOrder);
+        return $this->handle($deliveryNote, $user, $modifyOrder);
     }
 
     public function getCommandSignature(): string

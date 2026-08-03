@@ -27,6 +27,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexPolls extends OrgAction
 {
@@ -70,8 +71,8 @@ class IndexPolls extends OrgAction
         }
 
         $queryBuilder
-            ->defaultSort('polls.id')
             ->select([
+                'polls.created_at',
                 'polls.id',
                 'polls.slug',
                 'polls.name',
@@ -85,7 +86,15 @@ class IndexPolls extends OrgAction
             ->groupBy('polls.id', 'poll_stats.id');
 
         return $queryBuilder
-            ->allowedSorts(['name', 'type', 'number_customers', 'in_registration', 'label'])
+            ->defaultSort('polls.created_at')
+            ->allowedSorts([
+                AllowedSort::field('created_at', 'polls.created_at'),
+                AllowedSort::field('name', 'polls.name'),
+                AllowedSort::field('type', 'polls.type'),
+                AllowedSort::field('in_registration', 'polls.in_registration'),
+                AllowedSort::field('label', 'polls.label'),
+                'number_customers',
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -114,9 +123,10 @@ class IndexPolls extends OrgAction
                 );
 
             $table
+                ->column(key: 'created_at', label: __('Created at'), type: 'date', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'label', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'in_registration', label: __('In Registration'), canBeHidden: false, sortable: true)
+                ->column(key: 'in_registration', label: __('Show in Registration?'), canBeHidden: false, sortable: false)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'percentage', label: __('Response %'), canBeHidden: false);

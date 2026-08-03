@@ -48,6 +48,10 @@
 import { computed } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
+import { faBoxOpen } from '@fal'
+import { library, Library } from '@fortawesome/fontawesome-svg-core'
+
+library.add(faBoxOpen)
 
 // Props definition
 interface Props {

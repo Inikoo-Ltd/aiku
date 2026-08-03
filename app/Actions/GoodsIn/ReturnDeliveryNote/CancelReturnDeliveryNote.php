@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 05-05-2026-13h-35m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -11,6 +11,7 @@ namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
+use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithReturnDeliveryNoteController;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpdateReturnDeliveryNoteItem;
 use App\Actions\GoodsIn\Sowing\DeleteSowing;
 use App\Actions\OrgAction;
@@ -20,13 +21,17 @@ use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Lorisleiva\Actions\ActionRequest;
 
 class CancelReturnDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use WithHydrateReturnDeliveryNotes;
+    use WithReturnDeliveryNoteController;
 
+    /**
+     * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(ReturnDeliveryNote $returnDeliveryNote): ReturnDeliveryNote
     {
         $oldState = $returnDeliveryNote->state;
@@ -78,10 +83,4 @@ class CancelReturnDeliveryNote extends OrgAction
         return $returnDeliveryNote;
     }
 
-    public function asController(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): ReturnDeliveryNote
-    {
-        $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $request);
-
-        return $this->handle($returnDeliveryNote, $this->validatedData);
-    }
 }

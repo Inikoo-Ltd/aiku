@@ -2,7 +2,6 @@
 import { ref, Ref } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from "@/Components/Elements/Buttons/Button.vue"
-
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faPhotoVideo } from '@fal'
@@ -25,7 +24,6 @@ const emits = defineEmits<{
 const fileInput: Ref<any> = ref(null)
 
 const onChange = () => {
-    // props.addedFiles = fileInput.value?.files
     emits('addedFiles', fileInput.value?.files)
     emits('onChangeInput')
 }

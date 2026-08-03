@@ -14,11 +14,16 @@ use Checkout\CheckoutApiException;
 use Checkout\CheckoutSdk;
 use Checkout\Environment;
 use Checkout\Payments\BillingInformation;
+use Checkout\Payments\PaymentsQueryFilter;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Sentry;
 
 trait WithCheckoutCom
 {
+    public const array CHECKOUT_COM_PENDING_STATUSES = ['Pending', 'Retry Scheduled'];
+    public const array CHECKOUT_COM_FAILURE_STATUSES = ['Voided', 'Declined', 'Cancelled', 'Canceled', 'Expired'];
+    public const array CHECKOUT_COM_CAPTURED_STATUSES = ['Captured', 'Paid'];
+
     public function getCheckoutApi($publicKey, $secretKey): ?\Checkout\CheckoutApi
     {
         $checkoutApi = null;
@@ -51,6 +56,32 @@ trait WithCheckoutCom
         $paymentSessionRequest->billing->address = $address;
 
         return $paymentSessionRequest;
+    }
+
+    public function getCheckOutPaymentsByReference(PaymentAccountShop $paymentAccountShop, string $reference): array
+    {
+        list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
+
+        $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+
+        try {
+            $queryFilter            = new PaymentsQueryFilter();
+            $queryFilter->reference = $reference;
+
+            return $checkoutApi->getPaymentsClient()->getPaymentsList($queryFilter);
+        } catch (CheckoutApiException $e) {
+            $httpStatusCode = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
+            if ($httpStatusCode == 404) {
+                return ['data' => []];
+            }
+
+            \Sentry\captureException($e);
+
+            return [
+                'error'             => true,
+                'http_status_code'  => $httpStatusCode,
+            ];
+        }
     }
 
     private function getCheckOutPayment(PaymentAccountShop $paymentAccountShop, string $paymentID): array

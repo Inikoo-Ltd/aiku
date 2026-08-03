@@ -12,6 +12,7 @@ import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
   form: any

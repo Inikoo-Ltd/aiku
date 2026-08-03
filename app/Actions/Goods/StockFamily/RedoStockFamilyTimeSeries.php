@@ -7,6 +7,7 @@
 
 namespace App\Actions\Goods\StockFamily;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -22,7 +23,7 @@ class RedoStockFamilyTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long-slave';
+    public string $jobQueue = 'long-low-priority';
     public string $commandSignature = 'stock-families:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -64,10 +65,12 @@ class RedoStockFamilyTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessStockFamilyTimeSeriesRecords::dispatch($stockFamily->id, $frequency, $from, $to)->delay(300)->onQueue('sales_slave_historic');
+                ProcessStockFamilyTimeSeriesRecords::dispatch($stockFamily->id, $frequency, $periodFrom, $periodTo)->delay(300)->onQueue('sales_slave_historic');
             } else {
-                ProcessStockFamilyTimeSeriesRecords::run($stockFamily->id, $frequency, $from, $to);
+                ProcessStockFamilyTimeSeriesRecords::run($stockFamily->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

@@ -11,13 +11,7 @@
 	"data": {
 		"fieldValue": {
 			"button": {
-				"link": {
-					"id": null,
-					"url": "#family-extra-description",
-					"href": "#family-extra-description",
-					"type": "external"
-				},
-				"text": "Learn more about this product range",
+				"text": "Learn more",
 				"container": {
 					"properties": null
 				}

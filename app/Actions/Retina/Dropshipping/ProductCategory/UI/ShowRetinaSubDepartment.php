@@ -105,7 +105,7 @@ class ShowRetinaSubDepartment extends RetinaAction
 
                 RetinaSubDepartmentTabsEnum::SHOWCASE->value => $this->tab == RetinaSubDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($subDepartment)
-                    : Inertia::lazy(fn () => GetProductCategoryShowcase::run($subDepartment)),
+                    : Inertia::optional(fn () => GetProductCategoryShowcase::run($subDepartment)),
 
                 RetinaSubDepartmentTabsEnum::FAMILIES->value => $this->tab == RetinaSubDepartmentTabsEnum::FAMILIES->value
                     ?
@@ -115,7 +115,7 @@ class ShowRetinaSubDepartment extends RetinaAction
                             prefix: RetinaSubDepartmentTabsEnum::FAMILIES->value
                         )
                     )
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         IndexRetinaSubDepartments::run(
                             parent: $subDepartment,
                             prefix: RetinaSubDepartmentTabsEnum::FAMILIES->value
@@ -130,7 +130,7 @@ class ShowRetinaSubDepartment extends RetinaAction
                             prefix: RetinaSubDepartmentTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => ProductsResource::collection(
+                    : Inertia::optional(fn () => ProductsResource::collection(
                         IndexRetinaProductsInCatalogue::run(
                             parent: $subDepartment,
                             prefix: RetinaSubDepartmentTabsEnum::PRODUCTS->value
@@ -145,7 +145,7 @@ class ShowRetinaSubDepartment extends RetinaAction
                             prefix: RetinaSubDepartmentTabsEnum::COLLECTIONS->value
                         )
                     )
-                    : Inertia::lazy(fn () => CollectionsResource::collection(
+                    : Inertia::optional(fn () => CollectionsResource::collection(
                         IndexRetinaCollections::run(
                             parent: $subDepartment,
                             prefix: RetinaSubDepartmentTabsEnum::COLLECTIONS->value

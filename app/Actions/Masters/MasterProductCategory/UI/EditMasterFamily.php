@@ -3,24 +3,26 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Goods\TradeUnitFamily\GetTradeUnitFamilyForFamilies;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterFamily extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithMasterFamilyNavigation;
 
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): Response
@@ -81,7 +83,6 @@ class EditMasterFamily extends OrgAction
                 'warning'     => $masterProductCategory->productCategories ? [
                     'type'  => 'warning',
                     'title' => __('Important'),
-                    // 'text'  => __('Changing name or description may affect multiple families in various shops.'), // Turned off this one, obsolete warning
                     'text'  => __('Changes to this master name or descriptions will overwrite child product names and descriptions where “Follow Master” is enabled.'),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
@@ -144,10 +145,8 @@ class EditMasterFamily extends OrgAction
                                     'options' => [
                                         'counter' => true,
                                     ],
-                                    'toogle'  => [
-                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
-                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                    'toggle'  => [
+                                        'bold', 'italic','fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description
                                 ],
@@ -157,73 +156,11 @@ class EditMasterFamily extends OrgAction
                                     'options' => [
                                         'counter' => true,
                                     ],
-                                    'toogle'  => [
-                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
-                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                    'toggle'  => [
+                                        'bold', 'italic','fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description_extra
                                 ],
-                            ]
-                        ],
-                        // [
-                        //     'label'  => __('Translations'),
-                        //     'icon'   => 'fa-light fa-language',
-                        //     'fields' => [
-                        //         'name_i8n' => [
-                        //             'type'  => 'input_translation',
-                        //             'label' => __('translate name'),
-                        //             'language_from' => 'en',
-                        //             'full' => true,
-                        //             'main' => $masterProductCategory->name,
-                        //             'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                        //             'value' => $masterProductCategory->getTranslations('name_i8n')
-                        //         ],
-                        //                                'description_title_i8n' => [
-                        //                                    'type'  => 'input_translation',
-                        //                                    'label' => __('translate description title'),
-                        //                                    'language_from' => 'en',
-                        //                                    'full' => true,
-                        //                                    'main' => $masterProductCategory->description_title,
-                        //                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                        //                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
-                        //                                ],
-                        //         'description_i8n' => [
-                        //             'type'  => 'textEditor_translation',
-                        //             'label' => __('translate description'),
-                        //             'language_from' => 'en',
-                        //             'full' => true,
-                        //             'main' => $masterProductCategory->description,
-                        //             'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                        //             'value' => $masterProductCategory->getTranslations('description_i8n')
-                        //         ],
-                        //         'description_extra_i8n' => [
-                        //             'type'  => 'textEditor_translation',
-                        //             'label' => __('translate description extra'),
-                        //             'language_from' => 'en',
-                        //             'full' => true,
-                        //             'main' => $masterProductCategory->description_extra,
-                        //             'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                        //             'value' => $masterProductCategory->getTranslations('description_extra_i8n')
-                        //         ],
-                        //     ]
-                        // ],
-                        [
-                            'label'  => __('Pricing'),
-                            'title'  => __('id'),
-                            'icon'   => 'fa-light fa-money-bill',
-                            'fields' => [
-                                'cost_price_ratio' => [
-                                    'type'        => 'input_number',
-                                    'bind'        => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'       => __('Pricing ratio'),
-                                    'placeholder' => __('Cost price ratio'),
-                                    'required'    => true,
-                                    'value'       => $masterProductCategory->cost_price_ratio,
-                                    'min'         => 0
-                                ]
                             ]
                         ],
                         [
@@ -257,21 +194,50 @@ class EditMasterFamily extends OrgAction
                             ],
 
                         ],
-                        app()->environment('local') ? [
+                        [
+                            'label'  => __('Trade Unit Family'),
+                            'icon'   => 'fa-light fa-folder-tree',
+                            'fields' => [
+                                'trade_unit_family_id' => [
+                                    'label'         => 'Trade Unit Family',
+                                    'placeholder'   => __('Select a Trade Unit Family'),
+                                    'information'   => __('Would link this family to the selected trade unit family'),
+                                    'type'          => 'select',
+                                    'options'       => GetTradeUnitFamilyForFamilies::run($masterProductCategory),
+                                    'required'      => true,
+                                    'searchable'    => true,
+                                    'mode'          => 'single',
+                                    'value'         => $masterProductCategory->trade_unit_family_id
+                                ],
+                            ]
+                        ],
+                        $masterProductCategory->masterShop->gold_reward_eligible ? [
                             'label'  => __('Vol / GR'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
                                 'vol_gr_offer' => [
-                                    'label'  => 'Vol / GR',
-                                    'information' => __('Any changes will affect the offer in all shops.'),
-                                    'type'   => 'vol_discount',
+                                    'label'         => 'Vol / GR',
+                                    'information'   => __('Any changes will affect the offer in all shops.'),
+                                    'type'          => 'vol_discount',
                                     'initial_value' => [
-                                        'item_quantity' => $masterProductCategory->gr_vol_discount_quantity,
-                                        'percentage_off' => $masterProductCategory->gr_vol_discount_percentage,
+                                        'item_quantity'  => $masterProductCategory->gr_vol_discount_quantity,
+                                        'percentage_off' => trimDecimalZeros($masterProductCategory->gr_vol_discount_percentage),
                                     ],
                                 ],
                             ],
                         ] : [],
+                        [
+                            'label'  => __('FAQ'),
+                            'icon'   => 'fa-light fa-question-circle',
+                            'fields' => [
+                                'faq' => [
+                                    'type'                       => 'faq-master',
+                                    'label'                      => __('FAQ'),
+                                    'value'                      => $masterProductCategory->faq,
+                                    'master_product_category_id' => $masterProductCategory->id,
+                                ],
+                            ]
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

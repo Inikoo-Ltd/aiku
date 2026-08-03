@@ -8,27 +8,36 @@
 
 namespace App\Actions\GoodsIn\Sowing;
 
+use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\Sowing;
+use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpdateSowing extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     private Sowing $sowing;
+    private ?User $user = null;
 
     public function handle(Sowing $sowing, array $modelData): Sowing|bool
     {
+        $oldQuantity = $sowing->quantity;
+
         if (isset($modelData['quantity']) && $modelData['quantity'] == 0) {
-            return DeleteSowing::make()->action($sowing);
+            return DeleteSowing::make()->action($sowing, $this->user);
+        }
+
+        if ($sowing->orgStockMovement) {
+            if ($oldQuantity != $sowing->quantity) {
+                UpdateOrgStockMovement::make()->action($sowing->orgStockMovement, [
+                    'quantity' => $sowing->quantity,
+                ]);
+            }
         }
 
         return $this->update($sowing, $modelData);
@@ -44,6 +53,7 @@ class UpdateSowing extends OrgAction
 
     public function asController(Sowing $sowing, ActionRequest $request): void
     {
+        $this->user = $request->user();
         $this->sowing = $sowing;
         $this->initialisationFromShop($sowing->shop, $request);
 

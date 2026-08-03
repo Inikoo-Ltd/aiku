@@ -22,7 +22,7 @@ class CustomerHydrateClv implements ShouldBeUnique
     use WithHydrateInvoices;
     use WithHydrateCommand;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'sales_slave';
 
     public string $commandSignature = 'hydrate:customers-clv {organisations?*} {--S|shop= shop slug} {--s|slug=}';
 
@@ -44,6 +44,7 @@ class CustomerHydrateClv implements ShouldBeUnique
             return;
         }
 
+        // Do not do Customer::on('aiku_no_sticky') because somehow test stuck
         $customer = Customer::find($customerId);
         if (!$customer) {
             return;

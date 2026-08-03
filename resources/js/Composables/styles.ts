@@ -67,6 +67,9 @@ export const resolveResponsiveValue = (
 			return v == undefined || v == null ? null : v
 		}
 
+		const withUnit = (v: any, u: any) =>
+			typeof v === "string" && v.startsWith("var(") ? v : `${v}${u}`
+
 		const isValid = (v: any) => {
 			if (!useValidation) {
 				// ❌ when validation is OFF, 0 should be ignored
@@ -111,69 +114,49 @@ export const resolveResponsiveValue = (
 			paddingTop:
 				isValid(getVal(properties?.padding, ["top", "value"])) &&
 				isValid(getVal(properties.padding, ["unit"]))
-					? `${getVal(properties.padding, ["top", "value"])}${getVal(properties.padding, [
-							"unit",
-					  ])}`
+					? withUnit(getVal(properties.padding, ["top", "value"]), getVal(properties.padding, ["unit"]))
 					: null,
 
 			paddingBottom:
 				isValid(getVal(properties?.padding, ["bottom", "value"])) &&
 				isValid(getVal(properties.padding, ["unit"]))
-					? `${getVal(properties.padding, ["bottom", "value"])}${getVal(
-							properties.padding,
-							["unit"]
-					  )}`
+					? withUnit(getVal(properties.padding, ["bottom", "value"]), getVal(properties.padding, ["unit"]))
 					: null,
 
 			paddingLeft:
 				isValid(getVal(properties?.padding, ["left", "value"])) &&
 				isValid(getVal(properties.padding, ["unit"]))
-					? `${getVal(properties.padding, ["left", "value"])}${getVal(
-							properties.padding,
-							["unit"]
-					  )}`
+					? withUnit(getVal(properties.padding, ["left", "value"]), getVal(properties.padding, ["unit"]))
 					: null,
 
 			paddingRight:
 				isValid(getVal(properties?.padding, ["right", "value"])) &&
 				isValid(getVal(properties.padding, ["unit"]))
-					? `${getVal(properties.padding, ["right", "value"])}${getVal(
-							properties.padding,
-							["unit"]
-					  )}`
+					? withUnit(getVal(properties.padding, ["right", "value"]), getVal(properties.padding, ["unit"]))
 					: null,
 
 			marginTop:
 				isValid(getVal(properties?.margin, ["top", "value"])) &&
 				isValid(getVal(properties.margin, ["unit"]))
-					? `${getVal(properties.margin, ["top", "value"])}${getVal(properties.margin, [
-							"unit",
-					  ])}`
+					? withUnit(getVal(properties.margin, ["top", "value"]), getVal(properties.margin, ["unit"]))
 					: null,
 
 			marginBottom:
 				isValid(getVal(properties?.margin, ["bottom", "value"])) &&
 				isValid(getVal(properties.margin, ["unit"]))
-					? `${getVal(properties.margin, ["bottom", "value"])}${getVal(
-							properties.margin,
-							["unit"]
-					  )}`
+					? withUnit(getVal(properties.margin, ["bottom", "value"]), getVal(properties.margin, ["unit"]))
 					: null,
 
 			marginLeft:
 				isValid(getVal(properties?.margin, ["left", "value"])) &&
 				isValid(getVal(properties.margin, ["unit"]))
-					? `${getVal(properties.margin, ["left", "value"])}${getVal(properties.margin, [
-							"unit",
-					  ])}`
+					? withUnit(getVal(properties.margin, ["left", "value"]), getVal(properties.margin, ["unit"]))
 					: null,
 
 			marginRight:
 				isValid(getVal(properties?.margin, ["right", "value"])) &&
 				isValid(getVal(properties.margin, ["unit"]))
-					? `${getVal(properties.margin, ["right", "value"])}${getVal(properties.margin, [
-							"unit",
-					  ])}`
+					? withUnit(getVal(properties.margin, ["right", "value"]), getVal(properties.margin, ["unit"]))
 					: null,
 
 			// ✅ FIXED RESPONSIVE BACKGROUND

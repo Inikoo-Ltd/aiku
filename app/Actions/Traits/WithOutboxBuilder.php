@@ -78,7 +78,8 @@ trait WithOutboxBuilder
                     if ($emailOngoingRun->email->liveSnapshot->layout != $emailTemplate->layout) {
                         $this->createSnapshot($emailOngoingRun, $emailTemplate);
                     }
-                    $outbox->update(
+                    UpdateOutbox::make()->action(
+                        $outbox,
                         [
                             'state' => OutboxStateEnum::ACTIVE
                         ]
@@ -165,7 +166,7 @@ trait WithOutboxBuilder
         UpdateOutbox::make()->action(
             $outbox,
             [
-                'state'    => OutboxStateEnum::ACTIVE,
+                // 'state'    => OutboxStateEnum::ACTIVE,
                 'model_id' => $emailOngoingRun->id
             ]
         );

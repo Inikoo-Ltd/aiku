@@ -22,7 +22,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
+ * @property int|null $language_id
+ * @property array<array-key, mixed> $translations
  * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\Helpers\Language|null $language
  * @property-read \App\Models\CRM\Poll|null $poll
  * @property-read \App\Models\CRM\PollOption|null $pollOption
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollReply newModelQuery()
@@ -37,9 +40,11 @@ class PollReply extends Model
     protected $casts = [
         'fetched_at'         => 'datetime',
         'last_fetched_at'    => 'datetime',
+        'translations'       => 'array',
     ];
 
     protected $attributes = [
+        'translations'       => '{}',
     ];
 
     protected $guarded = [];
@@ -60,5 +65,10 @@ class PollReply extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function language(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Helpers\Language::class);
     }
 }

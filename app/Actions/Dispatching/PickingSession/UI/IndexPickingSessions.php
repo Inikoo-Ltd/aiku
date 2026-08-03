@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 04-04-2025-11h-52m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
  */
 
@@ -36,6 +36,10 @@ class IndexPickingSessions extends OrgAction
     protected ?string $tab = PickingSessionTypeEnum::DROPSHIPPING->value;
     protected array $typeCounts = [];
 
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function handle(Warehouse $warehouse, $prefix = null): LengthAwarePaginator
     {
         if (request()->has('tab')) {
@@ -67,7 +71,7 @@ class IndexPickingSessions extends OrgAction
                 ->where('type', PickingSessionTypeEnum::FULFILMENT->value)
                 ->count(),
         ];
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+        $globalSearch     = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('picking_Sessions.reference', $value);
             });
@@ -95,44 +99,45 @@ class IndexPickingSessions extends OrgAction
         }
 
         return $query->defaultSort('-picking_sessions.id')
-                ->select([
-                    'picking_sessions.id',
-                    'picking_sessions.reference',
-                    'picking_sessions.slug',
-                    'picking_sessions.state',
-                    'picking_sessions.type',
-                    'picking_sessions.start_at',
-                    'picking_sessions.end_at',
-                    'picking_sessions.number_delivery_notes',
-                    'picking_sessions.number_pallet_returns',
-                    'picking_sessions.number_items',
-                    'picking_sessions.quantity_picked',
-                    'picking_sessions.quantity_packed',
-                    'picking_sessions.picking_percentage',
-                    'picking_sessions.packing_percentage',
-                    'users.id as user_id',
-                    'users.username as user_username',
-                    'users.contact_name as user_name',
-                ])
-                ->defaultSort('picking_sessions.id')
-                ->allowedSorts([
-                    'reference',
-                    'number_delivery_notes',
-                    'number_picking_session_items',
-                    'number_items', 'picking_percentage',
-                    'packing_percentage',
-                    'user_name',
-                    'start_at',
-                    'end_at'
-                ])
-                ->allowedFilters([$globalSearch])
-                ->withPaginator($prefix, tableName: request()->route()->getName())
-                ->withQueryString();
+            ->select([
+                'picking_sessions.id',
+                'picking_sessions.reference',
+                'picking_sessions.slug',
+                'picking_sessions.state',
+                'picking_sessions.type',
+                'picking_sessions.start_at',
+                'picking_sessions.end_at',
+                'picking_sessions.number_delivery_notes',
+                'picking_sessions.number_pallet_returns',
+                'picking_sessions.number_items',
+                'picking_sessions.quantity_picked',
+                'picking_sessions.quantity_packed',
+                'picking_sessions.picking_percentage',
+                'picking_sessions.packing_percentage',
+                'users.id as user_id',
+                'users.username as user_username',
+                'users.contact_name as user_name',
+            ])
+            ->defaultSort('picking_sessions.id')
+            ->allowedSorts([
+                'reference',
+                'number_delivery_notes',
+                'number_picking_session_items',
+                'number_items',
+                'picking_percentage',
+                'packing_percentage',
+                'user_name',
+                'start_at',
+                'end_at'
+            ])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
     public function htmlResponse(LengthAwarePaginator $pickingSessions, ActionRequest $request): Response
     {
-        $navigation = PickingSessionTypeEnum::navigation();
+        $navigation                                                        = PickingSessionTypeEnum::navigation();
         $navigation[PickingSessionTypeEnum::DROPSHIPPING->value]['number'] = $this->typeCounts[PickingSessionTypeEnum::DROPSHIPPING->value] ?? 0;
         $navigation[PickingSessionTypeEnum::FULFILMENT->value]['number']   = $this->typeCounts[PickingSessionTypeEnum::FULFILMENT->value] ?? 0;
 
@@ -184,13 +189,17 @@ class IndexPickingSessions extends OrgAction
             $table->column(key: 'picking_percentage', label: __('Picking'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'packing_percentage', label: __('Packing'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'user_name', label: __('User'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'start_at', label: __('Start'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'date');
-            $table->column(key: 'end_at', label: __('End'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'date');
+            $table->column(key: 'start_at', label: __('Start'), canBeHidden: false, sortable: true, searchable: true, type: 'date', align: 'right');
+            $table->column(key: 'end_at', label: __('End'), canBeHidden: false, sortable: true, searchable: true, type: 'date', align: 'right');
             $table->withGlobalSearch();
             $table->defaultSort('reference');
         };
     }
 
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromWarehouse($warehouse, $request);
@@ -198,6 +207,11 @@ class IndexPickingSessions extends OrgAction
         return $this->handle($warehouse);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function InProcess(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->restriction = PickingSessionStateEnum::IN_PROCESS;
@@ -206,6 +220,11 @@ class IndexPickingSessions extends OrgAction
         return $this->handle($warehouse);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function Picking(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->restriction = PickingSessionStateEnum::HANDLING;
@@ -214,6 +233,11 @@ class IndexPickingSessions extends OrgAction
         return $this->handle($warehouse);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function Waiting(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->restriction = PickingSessionStateEnum::HANDLING_BLOCKED;
@@ -222,6 +246,11 @@ class IndexPickingSessions extends OrgAction
         return $this->handle($warehouse);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function Picked(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->restriction = PickingSessionStateEnum::PICKING_FINISHED;
@@ -230,6 +259,11 @@ class IndexPickingSessions extends OrgAction
         return $this->handle($warehouse);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function Packed(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->restriction = PickingSessionStateEnum::PACKING_FINISHED;

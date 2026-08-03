@@ -14,6 +14,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PlatformHydrateOrders implements ShouldBeUnique
@@ -21,16 +22,32 @@ class PlatformHydrateOrders implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Platform $platform): string
+    public string $jobQueue = 'hydrators-slave';
+
+    public function getJobUniqueId(?int $platformId): string
     {
-        return $platform->id;
+        if (!$platformId) {
+            $platformId = 'empty';
+        }
+
+        return $platformId;
     }
 
-    public function handle(Platform $platform): void
+    public function handle(?int $platformId): void
     {
-        $stats = [
-            'number_orders'    => $platform->orders()->count(),
+        if (!$platformId) {
+            return;
+        }
 
+        $platform = Platform::find($platformId);
+        if (!$platform) {
+            return;
+        }
+
+        $stats = [
+            'number_orders' => DB::connection('aiku_no_sticky')->table('orders')
+                ->where('platform_id', $platformId)
+                ->count(),
         ];
 
 
@@ -40,7 +57,8 @@ class PlatformHydrateOrders implements ShouldBeUnique
                 model: 'orders',
                 field: 'state',
                 enum: OrderStateEnum::class,
-                models: Order::class
+                models: Order::class,
+                connection: 'aiku_no_sticky'
             )
         );
 
@@ -50,7 +68,8 @@ class PlatformHydrateOrders implements ShouldBeUnique
                 model: 'orders',
                 field: 'handing_type',
                 enum: OrderHandingTypeEnum::class,
-                models: Order::class
+                models: Order::class,
+                connection: 'aiku_no_sticky'
             )
         );
 

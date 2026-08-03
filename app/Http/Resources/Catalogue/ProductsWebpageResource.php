@@ -68,7 +68,10 @@ class ProductsWebpageResource extends JsonResource
             'rrp'                           => $this->rrp,
             'rrp_per_unit'                  => $rrpPerUnit,
             'margin'                        => $margin,
-            'web_images'                    => $this->web_images,
+            'web_images'                    => [
+                'main'      => Arr::get($webImages, 'main'),
+                'secondary' => Arr::get($webImages, 'secondary'),
+            ],
             'url'                           => $this->url,
             'unit'                          => $this->unit,
             'units'                         => $units,

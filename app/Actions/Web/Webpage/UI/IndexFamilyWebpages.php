@@ -89,8 +89,9 @@ class IndexFamilyWebpages extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('webpages.code', $value)
-                    ->orWhereStartWith('webpages.url', $value);
+                $value = strip_tags($value);
+                $query->whereAnyWordStartWith('webpages.code', $value)
+                    ->orWhereAnyWordStartWith('webpages.url', $value);
             });
         });
 
@@ -208,6 +209,21 @@ class IndexFamilyWebpages extends OrgAction
 
         $routeCreate = '';
 
+        $actions = [];
+
+        $website = $this->website;
+
+        $allowBulkOffline = $this->canEdit;
+
+        if ($allowBulkOffline) {
+            $actions[] = [
+                'key'   => 'bulk-offline',
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('Bulk Offline'),
+            ];
+        }
+
         return Inertia::render(
             'Org/Web/Webpages',
             [
@@ -215,28 +231,35 @@ class IndexFamilyWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
+                'title'       => __('Webpage') . ' ' . __('Families'),
                 'pageHead'    => [
                     'model'         => __('Webpage'),
                     'title'         => __('Families'),
+                    'color'         => '#4338ca',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('webpage'),
-                            'route' => [
-                                'name'       => $routeCreate,
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                        ]
-                    ]
+                    'actions'       => $actions,
                 ],
                 'data'        => ProductCategoryWebpagesResource::collection($webpages),
+                'routes_list' => [
+                    'bulk_offline'        => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.webpage.set_offline_bulk',
+                        'parameters' => [
+                            'website'   => $website?->id
+                        ]
+                    ],
+                    'fetch_live_webpages' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.json.active_webpages.with_exclusion.index',
+                        'parameters' => [
+                            'shop' => $this->shop->slug,
+                        ]
+                    ],
+                ]
 
             ]
         )->table($this->tableStructure(parent: $this->website));

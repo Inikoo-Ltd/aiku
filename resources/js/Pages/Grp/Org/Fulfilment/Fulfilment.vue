@@ -30,7 +30,7 @@ const props = defineProps<{
     dashboard?: object
     pallets?: object
     history?:object,
-    note:object
+    note?:object
 
 }>()
 

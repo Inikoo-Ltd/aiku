@@ -3,26 +3,30 @@
 /*
  * author Louis Perez
  * created on 15-05-2026-11h-13m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
 use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes;
+use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithReturnDeliveryNoteController;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use Illuminate\Validation\ValidationException;
-use Lorisleiva\Actions\ActionRequest;
 
 class UnassignReturnDeliveryNoteHandler extends OrgAction
 {
     use WithActionUpdate;
     use WithHydrateReturnDeliveryNotes;
+    use WithReturnDeliveryNoteController;
 
-    public function handle(ReturnDeliveryNote $returnDeliveryNote, array $modelData): ReturnDeliveryNote
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function handle(ReturnDeliveryNote $returnDeliveryNote): ReturnDeliveryNote
     {
         if (!$returnDeliveryNote->handler_user_id) {
             throw ValidationException::withMessages([
@@ -41,9 +45,9 @@ class UnassignReturnDeliveryNoteHandler extends OrgAction
         }
 
         $returnDeliveryNote = UpdateReturnDeliveryNote::make()->action($returnDeliveryNote, [
-            'state'             => ReturnDeliveryNoteStateEnum::RECEIVED,
-            'returning_at'      => null,
-            'handler_user_id'   => null,
+            'state'           => ReturnDeliveryNoteStateEnum::RECEIVED,
+            'returning_at'    => null,
+            'handler_user_id' => null,
         ]);
 
         $this->hydrateReturnDeliveryNotes($returnDeliveryNote);
@@ -51,15 +55,4 @@ class UnassignReturnDeliveryNoteHandler extends OrgAction
         return $returnDeliveryNote;
     }
 
-    public function rules(): array
-    {
-        return ['handler_id'    => ['sometimes']];
-    }
-
-    public function asController(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): ReturnDeliveryNote
-    {
-        $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $request);
-
-        return $this->handle($returnDeliveryNote, $this->validatedData);
-    }
 }

@@ -167,6 +167,28 @@
   },
   {
     "outboxes": [
+      "new_offer"
+    ],
+    "name": "New offer",
+    "content": "new_offer.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "offer"
+    ]
+  },
+  {
+    "outboxes": [
+      "finish_offer"
+    ],
+    "name": "Finish offer",
+    "content": "finish_offer.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "offer"
+    ]
+  },
+  {
+    "outboxes": [
       "invoice_deleted"
     ],
     "name": "Invoice deleted",
@@ -185,6 +207,17 @@
     "builder": "blade",
     "arguments": [
       "invoice"
+    ]
+  },
+  {
+    "outboxes": [
+      "new_review"
+    ],
+    "name": "New review",
+    "content": "new_review.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "review"
     ]
   },
   {
@@ -469,10 +502,29 @@
   },
    {
     "outboxes": [
+      "price_change"
+    ],
+    "name": "Price change",
+    "content": "price_change.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "products"
+    ]
+  },
+   {
+    "outboxes": [
       "chat_notification_to_customer",
       "price_change_notification",
       "web_user_registration",
-      "oos_in_order_notification"
+      "oos_in_order_notification",
+      "review_reminder",
+      "invoice_paid",
+      "gold_reward_reminder_1",
+      "gold_reward_reminder_2",
+      "gold_reward_reminder_3",
+      "prospect_convertion_1",
+      "prospect_convertion_2",
+      "prospect_convertion_3"
     ],
     "name": "Beefree blank email template",
     "content": "beefree_blank_email_template.json",

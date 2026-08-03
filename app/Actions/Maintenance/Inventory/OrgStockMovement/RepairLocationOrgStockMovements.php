@@ -8,6 +8,7 @@
 
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
+use App\Actions\Maintenance\Inventory\OrgStockMovement\Traits\CanRepairOrgStockMovements;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class RepairLocationOrgStockMovements
 {
     use AsAction;
+    use CanRepairOrgStockMovements;
 
 
     public function handle(?int $locationId, ?int $orgStockId, ?Command $command = null): void
@@ -80,6 +82,10 @@ class RepairLocationOrgStockMovements
         if ($totalMovements == 0) {
             return;
         }
+
+        $this->fixForAuditsInPairs($location, $orgStock, $command);
+        $this->fixForPurchaseAndAssociatePairs($location, $orgStock, $command);
+        $this->fixForPostPurchaseAssociates($location, $orgStock, $command);
 
         if ($errorData = $this->checkFirstAssociate($location, $orgStock, $totalMovements)) {
             $command?->error('error_first_associate');
@@ -157,6 +163,8 @@ class RepairLocationOrgStockMovements
             $this->fixHelpersContinuity($location, $orgStock, $errorData, $command);
         }
     }
+
+
 
     public function checkForInternalAssociates(Location $location, OrgStock $orgStock): ?array
     {

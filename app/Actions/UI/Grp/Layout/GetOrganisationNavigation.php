@@ -183,7 +183,19 @@ class GetOrganisationNavigation
                 'parameters' => [$organisation->slug],
             ],
 
-            'topMenu' => []
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Top Customers'),
+                        'icon'    => ['fal', 'fa-trophy'],
+                        'root'    => 'grp.org.overview.customers.top_customers',
+                        'route'   => [
+                            'name'       => 'grp.org.overview.customers.top_customers',
+                            'parameters' => [$organisation->slug]
+                        ]
+                    ],
+                ]
+            ]
         ];
 
         $navigation = $this->getReportsNavs($user, $organisation, $navigation);
@@ -217,6 +229,26 @@ class GetOrganisationNavigation
                             'parameters' => [$organisation->slug],
                         ],
                     ],
+                    [
+                        'label'   => __('Conversations'),
+                        'icon'    => ['fal', 'fa-comments'],
+                        'root'    => 'grp.org.chat.conversations.show',
+                        'route'   => [
+                            'name'       => 'grp.org.chat.conversations.show',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    ...($user->chatAgent ? [
+                        [
+                            'label'   => __('Inbox'),
+                            'icon'    => ['fal', 'fa-inbox'],
+                            'root'    => 'grp.org.chat.inbox',
+                            'route'   => [
+                                'name'       => 'grp.org.chat.inbox',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                    ] : []),
                 ],
             ],
         ];
@@ -234,6 +266,20 @@ class GetOrganisationNavigation
             'topMenu' => [],
         ];
 
-        return $this->getSettingsNavs($user, $organisation, $navigation);
+        $navigation = $this->getSettingsNavs($user, $organisation, $navigation);
+
+        if (isset($navigation['setting'])) {
+            $navigation['setting']['topMenu']['subSections'][] = [
+                'label'   => __('Changelogs'),
+                'icon'    => ['fal', 'fa-history'],
+                'root'    => 'grp.org.settings.changelogs',
+                'route'   => [
+                    'name'       => 'grp.org.settings.changelogs',
+                    'parameters' => [$organisation->slug],
+                ],
+            ];
+        }
+
+        return $navigation;
     }
 }

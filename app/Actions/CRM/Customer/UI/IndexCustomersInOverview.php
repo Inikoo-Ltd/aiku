@@ -195,7 +195,7 @@ class IndexCustomersInOverview extends OrgAction
                 ],
                 CustomersTabsEnum::CUSTOMERS->value => $this->tab == CustomersTabsEnum::CUSTOMERS->value ?
                     fn () => CustomersResource::collection($customers)
-                    : Inertia::lazy(fn () => CustomersResource::collection($customers)),
+                    : Inertia::optional(fn () => CustomersResource::collection($customers)),
             ]
         )->table($this->tableStructure($this->parent, CustomersTabsEnum::CUSTOMERS->value));
     }

@@ -52,8 +52,18 @@ class GetProductCategorySearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name'     => 'is_in_website',
+                        'type'     => 'bool',
+                        'optional' => true,
+                    ],
+                    [
                         'name' => 'created_at',
                         'type' => 'int64',
+                    ],
+                    [
+                        'name'     => 'image',
+                        'type'     => 'string',
+                        'optional' => true,
                     ],
                     [
                         'name'     => '__soft_deleted',

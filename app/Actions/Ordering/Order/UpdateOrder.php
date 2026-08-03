@@ -77,10 +77,10 @@ class UpdateOrder extends OrgAction
 
         if ($oldPlatform != $order->platform) {
             if ($order->platform) {
-                PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
+                PlatformHydrateOrders::dispatch($order->platform_id)->delay($this->hydratorsDelay);
             }
             if ($oldPlatform) {
-                PlatformHydrateOrders::dispatch($oldPlatform)->delay($this->hydratorsDelay);
+                PlatformHydrateOrders::dispatch($oldPlatform->id)->delay($this->hydratorsDelay);
             }
         }
 
@@ -111,10 +111,10 @@ class UpdateOrder extends OrgAction
                         ]
                     );
                     UpdateOrderNotesEvent::dispatch($deliveryNote);
-                } elseif (Arr::has($changes, 'internal_notes')) {
+                } elseif (Arr::has($changes, 'private_warehouse_note')) {
                     $deliveryNote->update(
                         [
-                            'internal_notes' => $order->internal_notes,
+                            'private_warehouse_note' => $order->private_warehouse_note,
                         ]
                     );
                     UpdateOrderNotesEvent::dispatch($deliveryNote);
@@ -153,9 +153,9 @@ class UpdateOrder extends OrgAction
                 UpdateDeliveryNote::run($deliveryNote, ['is_shipping_by_external' => $order->is_shipping_by_external]);
             }
 
-            if (Arr::has($changedFields, 'internal_notes')) {
+            if (Arr::has($changedFields, 'private_warehouse_note')) {
                 foreach ($order->deliveryNotes()->whereNotIn('delivery_notes.state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])->get() as $deliveryNote) {
-                    UpdateDeliveryNote::run($deliveryNote, ['internal_notes' => $order->internal_notes]);
+                    UpdateDeliveryNote::run($deliveryNote, ['private_warehouse_note' => $order->private_warehouse_note]);
                 }
             }
         }
@@ -187,6 +187,7 @@ class UpdateOrder extends OrgAction
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'private_warehouse_note'  => ['sometimes', 'nullable', 'string', 'max:4000'],
             'state'                   => ['sometimes', Rule::enum(OrderStateEnum::class)],
             'shipping_engine'         => ['sometimes', Rule::enum(OrderShippingEngineEnum::class)],
             'sales_channel_id'        => [

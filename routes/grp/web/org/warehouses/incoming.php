@@ -6,14 +6,14 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Fulfilment\UI\GoodsIn\UI\IndexWarehousePalletDeliveries;
+use App\Actions\Fulfilment\UI\GoodsIn\UI\ShowWarehousePalletDelivery;
 use App\Actions\GoodsIn\Return\UI\IndexReturns;
 use App\Actions\GoodsIn\Return\UI\ShowReturn;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
-use App\Actions\Inventory\GoodsIn\UI\IndexWarehousePalletDeliveries;
-use App\Actions\Inventory\GoodsIn\UI\ShowWarehousePalletDelivery;
 use App\Actions\UI\Incoming\ShowIncomingHub;
 use Illuminate\Support\Facades\Route;
 

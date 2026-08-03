@@ -7,13 +7,13 @@
  */
 
 use App\Actions\Accounting\Invoice\OmegaManyInvoice;
-use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
+use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
-use App\Actions\Accounting\MontanaInvoices\UI\IndexMontanaInvoicesReport;
-use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
+use App\Actions\Accounting\Reports\MontanaInvoices\UI\IndexMontanaInvoicesReport;
+use App\Actions\Accounting\Reports\SageInvoices\UI\IndexSageInvoicesReport;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [IndexInvoices::class, 'inShop'])->name('index');

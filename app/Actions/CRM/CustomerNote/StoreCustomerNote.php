@@ -8,11 +8,13 @@
 
 namespace App\Actions\CRM\CustomerNote;
 
+use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerNote;
 use App\Models\SysAdmin\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,6 +34,8 @@ class StoreCustomerNote extends OrgAction
         /** @var User $user */
         $user = UserResolver::resolve();
 
+        $images = Arr::pull($modelData, 'images', []);
+
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'shop_id', $customer->shop_id);
@@ -49,6 +53,12 @@ class StoreCustomerNote extends OrgAction
 
         $modelData = $this->processNotes($modelData);
 
+        if (!empty($images)) {
+            $newValues = Arr::get($modelData, 'new_values', []);
+            data_set($newValues, 'details.images', $this->saveNoteImages($customer, $images));
+            data_set($modelData, 'new_values', $newValues);
+        }
+
         data_set($modelData, 'url', UrlResolver::resolve($customer));
         data_set($modelData, 'ip_address', IpAddressResolver::resolve($customer));
         data_set($modelData, 'user_agent', UserAgentResolver::resolve($customer));
@@ -59,6 +69,32 @@ class StoreCustomerNote extends OrgAction
 
         /** @var CustomerNote $CustomerNote */
         return $customer->customerNotes()->create($modelData);
+    }
+
+    /**
+     * @param  array<int, UploadedFile>  $images
+     * @return array<int, int>
+     */
+    private function saveNoteImages(Customer $customer, array $images): array
+    {
+        $mediaIds = [];
+
+        foreach ($images as $image) {
+            $media = SaveModelAttachment::make()->action(
+                $customer,
+                [
+                    'path'         => $image->getPathName(),
+                    'originalName' => $image->getClientOriginalName(),
+                    'extension'    => $image->getClientOriginalExtension(),
+                    'scope'        => 'CustomerNote',
+                    'caption'      => pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME),
+                ]
+            );
+
+            $mediaIds[] = $media->id;
+        }
+
+        return $mediaIds;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -73,7 +109,9 @@ class StoreCustomerNote extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'note' => ['required', 'string', 'max:1024'],
+            'note'     => ['required', 'string', 'max:1024'],
+            'images'   => ['sometimes', 'array'],
+            'images.*' => ['file', 'image', 'max:50000'],
         ];
 
         if (!$this->strict) {

@@ -12,6 +12,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Http\RedirectResponse;
@@ -21,15 +22,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditAgent extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     public function handle(Agent $agent): Agent
     {
         return $agent;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-
-        return $request->user()->authTo('supply-chain.edit');
     }
 
     public function asController(Agent $agent, ActionRequest $request): RedirectResponse|Agent
@@ -157,6 +153,7 @@ class EditAgent extends OrgAction
     {
         return ShowAgent::make()->getBreadcrumbs(
             $agent,
+            routeName: 'grp.supply-chain.agents.edit',
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'
         );

@@ -2,6 +2,8 @@
 import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue';
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { faMedal } from '@fas';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
 
@@ -32,11 +34,11 @@ const locale = inject('locale', aikuLocaleStructure)
               {{ trans("Retail") }}:
             </td>
             <td class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pr-2.5 sm:pr-6 font-semibold">
-              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp) }}
+              {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product.rrp) }}
               <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
             </td>
             <td v-if="product.units > 1" class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pr-2.5 sm:pr-6 font-semibold">
-              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp_per_unit) }}
+              {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product.rrp_per_unit) }}
               <span class="font-normal text-slate-500">/{{ product.unit }}</span>
             </td>
             <td class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pr-1.5 sm:pr-3"></td>
@@ -75,7 +77,7 @@ const locale = inject('locale', aikuLocaleStructure)
             <td class="pt-0.5 sm:pt-1 pb-1.5 sm:pb-3 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
               <div class="flex items-center gap-0.5 sm:gap-1 text-slate-800">
                 {{ trans("Profit") }}
-                <span class="text-emerald-600 font-semibold text-[0.95em]">[{{ product.margin }}]:</span>
+                <span class="text-emerald-600 font-semibold text-[0.95em]">({{ product.margin }}):</span>
               </div>
             </td>
             <td class="pt-0.5 sm:pt-1 pb-1.5 sm:pb-3 pr-2.5 sm:pr-6 font-semibold text-emerald-600">
@@ -95,36 +97,27 @@ const locale = inject('locale', aikuLocaleStructure)
         </tbody>
 
         <!-- Discounted Profit -->
-        <tbody v-if="layout.iris.website.slug != 'acar'" class="bg-white">
+        <tbody v-if="layout.iris.website.slug != 'acar' && product.discounted_price < product.price" class="bg-white">
           <tr>
             <td class="pt-1.5 sm:pt-3 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
               <div class="flex items-center gap-0.5 sm:gap-1 text-slate-800">
                 {{ trans("Profit") }}
-                <span class="text-primary font-semibold text-[0.95em]">[{{ product.discounted_margin }}]:</span>
+                <span class="text-[#E87928] font-semibold text-[0.95em]">({{ product.discounted_margin }}):</span>
               </div>
             </td>
-            <td class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-primary">
-              {{
-                locale.currencyFormat(
-                  layout?.iris?.currency?.code,
-                  product.rrp - product.discounted_price
-                )
-              }}
+            <td class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-[#E87928]">
+              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_profit) }}
               <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
             </td>
-            <td v-if="product.units > 1" class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-primary">
-              {{
-                locale.currencyFormat(
-                  layout?.iris?.currency?.code,
-                  product.discounted_price_per_unit
-                )
-              }}
+            <td v-if="product.units > 1" class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-[#E87928]">
+              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_profit_per_unit) }}
               <span class="font-normal text-slate-500">/{{ product.unit }}</span>
             </td>
             <td class="pt-1.5 sm:pt-3 pr-1.5 sm:pr-3 text-right align-middle">
               <div class="flex items-center justify-end gap-1">
-                <img :src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo" class="h-[1.2em] sm:h-[1.5em]" />
-                <span class="text-[0.65em] sm:text-[0.75em] leading-[1em] sm:leading-[1.1em] text-primary whitespace-normal text-left">
+               <!--  <img :src="`/assets/promo/gr-aw.png`" alt="Gold Reward Logo" class="h-[1.2em] sm:h-[1.5em]" /> -->
+                <FontAwesomeIcon :icon="faMedal" v-tooltip="ctrans('Gold Reward')" class="text-xl w-auto shrink-0 text-[#E87928]"/>
+                <span class="text-[0.65em] sm:text-[0.75em] leading-[1em] sm:leading-[1.1em] text-[#E87928] whitespace-normal text-left">
                   {{ trans("Members") }} <br />
                   & {{ trans("Volume") }}
                 </span>

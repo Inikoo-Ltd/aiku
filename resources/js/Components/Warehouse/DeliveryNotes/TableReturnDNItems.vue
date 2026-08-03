@@ -15,15 +15,14 @@ import { cloneDeep, debounce, get, set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
-import { ref, onMounted, reactive, inject, computed, watch, proxyRefs } from "vue"
+import { ref, onMounted, reactive, inject, computed, watch, proxyRefs, onUnmounted } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faCheckCircle, faMinus, faPlus } from "@fal"
 import { faFragile, faGhost, faSkull, faWandMagic } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import Modal from "@/Components/Utils/Modal.vue"
-import { InputNumber, RadioButton } from "primevue"
+import { InputNumber, RadioButton, Dialog } from "primevue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -32,7 +31,7 @@ import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import axios from "axios"
-import Image from "@/Components/Image.vue"
+import Image from "@/Common/Components/Image.vue"
 import LabelItemsWaitingForWarehouse from "./LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
 import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
@@ -70,15 +69,72 @@ function orgStockRoute(deliveryNoteItem: any) {
     }
 
     return route(
-        "grp.helpers.redirect_org_stock",
+        "grp.majordomo.redirect_org_stock",
         [deliveryNoteItem.org_stock_id])
 
 }
 
 
 const isMounted = ref(false)
+let socketChannel: any = null
+
+console.log(props.data.data);
+
+const initSocketListener = () => {
+    const socketEvent = `grp.${route().params['organisation']}.stock_movement`;
+
+    if (['returned', 'done', 'cancelled'].includes(props.state)) return;
+
+    socketChannel = window.Echo.private(socketEvent).listen(".stock_update", async (eventData: any) => {
+        const affectedData = eventData.affected_data;
+
+        let itemToSet = props.data.data.find(
+            item => item.org_stock_id === affectedData.org_stock_id
+        );
+
+        if (!itemToSet) {
+            return;
+        }
+
+        let locationOrgStock = itemToSet.locations.find(
+            item => item.location_id === affectedData.location_id
+        )
+
+        const remainingItem =
+            parseFloat(itemToSet.quantity_required) -
+            (parseFloat(itemToSet.quantity_not_picked ?? 0) +
+            parseFloat(itemToSet.quantity_picked ?? 0));
+
+        const shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
+
+        if (shouldRefetch) {
+            const response = await axios.get(
+                route('grp.json.delivery_note_item_row', {
+                    deliveryNoteItem: itemToSet.id,
+                })
+            );
+            Object.assign(itemToSet, response.data.data);
+        }
+    })
+
+    // console.log('Subscribed to channel for Stock Movement. Channel:', socketEvent, socketChannel);
+}
+
+const stopSocketListener = () => {
+    if (socketChannel) {
+        socketChannel.stopListening(".stock_update");
+        window.Echo.leave(`private-grp.${route().params['organisation']}.stock_movement`);
+        socketChannel = null;
+    }
+}
+
 onMounted(() => {
-    isMounted.value = true
+    isMounted.value = true;
+    initSocketListener();
+});
+
+onUnmounted(() => {
+    stopSocketListener();
 })
 
 const generateLocationRoute = (location: any, rdnItem?: any ) => {
@@ -180,7 +236,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop :useTopPagination="true">
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
                 <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
@@ -457,7 +513,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         max: Math.min(itemValue.quantity, itemValue.quantity_required)
                     }"
                     :additionalData="{
-                        location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id,
+                        location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))?.id,
                         // picking_id: itemValue.pickings.find(picking => picking.location_id == findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_id)?.id,
                     }"
                     autoSave
@@ -467,7 +523,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                         <div class="flex gap-x-8 w-fit">
                             <ButtonWithLink
-                                v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
+                                v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))?.location_code || '-' })"
                                 icon="fal fa-check"
                                 :size="screenType != 'mobile' ? 'xs' : 'md'"
                                 type="positive"
@@ -475,7 +531,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                                 class="py-0"
                                 :routeTarget="itemValue.set_all_returned_route"
                                 :body="{
-                                    location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id
+                                    location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))?.id
                                 }"
                                 :bind-to-link="{
                                     preserveScroll: true,
@@ -510,50 +566,119 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         </template>
 
         <template #cell(action)="{ item, proxyItem}">
-            <div v-if="item.to_refund.max_refundable_amount > 0" class="flex flex-col items-start gap-3 w-fit">
-                <InputNumber
-                    :modelValue="proxyItem.to_refund.net_amount"
-                    @input="(e) => (set(proxyItem.to_refund, 'net_amount', e.value))"
-                    @update:model-value="(e) => {
-                        set(proxyItem.to_refund, 'refund_amount', e);
-                        emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
-                    }"
-                    buttonLayout="horizontal"
-                    :showButtons="true"
-                    :min="0"
-                    :max="proxyItem.to_refund.max_refundable_amount"
-                    :currency="proxyItem.to_refund.currency_code"
-                    :maxFractionDigits="2"
-                    mode="currency"
-                    :input-style="{ width : '100px'}"
-                    :step="proxyItem.to_refund.original_item_net_price"
-                >
-                    <template #decrementicon>
-                        <FontAwesomeIcon :icon="faMinus" aria-hidden="true" />
-                    </template>
-                    <template #incrementicon>
-                        <FontAwesomeIcon :icon="faPlus" aria-hidden="true" />
-                    </template>
-                </InputNumber>
-                <button
-                    @click="()=> {
-                        proxyItem.to_refund.net_amount = item.to_refund.max_refundable_amount;
-                        set(proxyItem.to_refund, 'refund_amount', item.to_refund.max_refundable_amount);
-                        emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
-                    }"
-                    class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
-                    {{ trans("Refundable") }}: {{ locale.currencyFormat(item.to_refund.currency_code, item.to_refund.max_refundable_amount)}}
-                </button>
+            <div class="flex flex-row fit-content gap-3">
+                <div v-if="item.to_refund.quantity > 0" class="flex flex-col items-start gap-2 w-fit">
+                    <span class="text-xs italic">
+                        {{ trans("Refundable") }}
+                    </span>
+                    <InputNumber
+                        :modelValue="proxyItem.to_refund.net_amount"
+                        @input="(e) => {
+                            let maxReplacableAmount = Math.round((proxyItem.to_refund.original_max_refundable_amount - Number(e.value)) / proxyItem.to_refund.original_item_net_price);
+                            set(proxyItem.to_refund, 'net_amount', e.value)
+                            set(proxyItem.to_refund, 'max_replace_amount', maxReplacableAmount);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        @update:model-value="(e) => {
+                            set(proxyItem.to_refund, 'refund_amount', e);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        buttonLayout="horizontal"
+                        :showButtons="true"
+                        :min="0"
+                        :max="proxyItem.to_refund.max_refundable_amount"
+                        :currency="proxyItem.to_refund.currency_code"
+                        :maxFractionDigits="2"
+                        mode="currency"
+                        :input-style="{ width : '100px'}"
+                        :step="proxyItem.to_refund.original_item_net_price"
+                    >
+                        <template #decrementicon>
+                            <FontAwesomeIcon :icon="faMinus" aria-hidden="true" />
+                        </template>
+                        <template #incrementicon>
+                            <FontAwesomeIcon :icon="faPlus" aria-hidden="true" />
+                        </template>
+                    </InputNumber>
+                    <button
+                        @click="()=> {
+                            proxyItem.to_refund.net_amount = item.to_refund.max_refundable_amount;
+                            set(proxyItem.to_refund, 'refund_amount', item.to_refund.max_refundable_amount);
+                            let maxReplacableAmount = Math.round((proxyItem.to_refund.original_max_refundable_amount - proxyItem.to_refund.net_amount) / proxyItem.to_refund.original_item_net_price);
+                            set(proxyItem.to_refund, 'max_replace_amount', maxReplacableAmount);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
+                        {{ trans("Refundable") }}: {{ locale.currencyFormat(item.to_refund.currency_code, item.to_refund.max_refundable_amount)}}
+                    </button>
+                </div>
+                <div v-if="item.to_refund.quantity > 0" class="flex flex-col items-start gap-2 w-fit">
+                    <span class="text-xs italic">
+                        {{ trans("Replacable") }}
+                    </span>
+                    <InputNumber
+                        :modelValue="proxyItem.to_refund.replaced_quantity"
+                        @input="(e) => {
+                            let maxRefundableAmount = proxyItem.to_refund.original_item_net_price * (proxyItem.to_refund.quantity - Number(e.value));
+                            set(proxyItem.to_refund, 'replaced_quantity', e.value);
+                            set(proxyItem.to_refund, 'max_refundable_amount', maxRefundableAmount);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        @update:model-value="(e) => {
+                            set(proxyItem.to_refund, 'replaced_quantity', e);
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        buttonLayout="horizontal"
+                        :showButtons="true"
+                        :min="0"
+                        :max="proxyItem.to_refund.max_replace_amount"
+                        :maxFractionDigits="2"
+                        :input-style="{ width : '100px'}"
+                        :step="1"
+                    >
+                        <template #decrementicon>
+                            <FontAwesomeIcon :icon="faMinus" aria-hidden="true" />
+                        </template>
+                        <template #incrementicon>
+                            <FontAwesomeIcon :icon="faPlus" aria-hidden="true" />
+                        </template>
+                    </InputNumber>
+                    <button
+                        @click="()=> {
+                            proxyItem.to_refund.replaced_quantity = item.to_refund.max_replace_amount;
+                            let maxRefundableAmount = proxyItem.to_refund.original_item_net_price * (proxyItem.to_refund.quantity - proxyItem.to_refund.replaced_quantity);
+                            set(proxyItem.to_refund, 'replaced_quantity', item.to_refund.max_replace_amount);
+                            set(proxyItem.to_refund, 'max_refundable_amount', maxRefundableAmount);
+                            if (proxyItem.to_refund.refund_amount > maxRefundableAmount) {
+                                let newRefundValue = proxyItem.to_refund.refund_amount - (proxyItem.to_refund.replaced_quantity * proxyItem.to_refund.original_item_net_price);
+                                set(proxyItem.to_refund, 'net_amount', newRefundValue);
+                            }
+                            emits('onChangeRefund', proxyItem.to_refund, proxyItem.to_refund.original_transaction_id)
+                        }"
+                        class="px-2 py-1 my-auto bg-gray-300 rounded disabled:bg-gray-300 hover:text-blue-500 disabled:hover:bg-gray-300 transition">
+                        {{ trans("Replacable") }}: {{ proxyItem.to_refund.max_replace_amount }}
+                    </button>
+                </div>
             </div>
         </template>
     </Table>
 
-    <Modal :isOpen="isModalLocation" @onClose="isModalLocation = false" width="w-full max-w-3xl" xdialogStyle="{ background: '#ffffff' }">
+    <!-- Modal: Location picker (PrimeVue Dialog so the nested Stock Management dialog doesn't fight a Headless UI focus trap) -->
+    <Dialog
+        v-model:visible="isModalLocation"
+        modal
+        :draggable="false"
+        :dismissableMask="screenType === 'desktop'"
+        :style="{ width: '48rem' }"
+        :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
+        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+        :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
+    >
         <SelectPickingLocation
             :item="selectedItemValue"
             :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
             @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
             :ignoreNoQty="true"
         />
-    </Modal>
+    </Dialog>
 </template>

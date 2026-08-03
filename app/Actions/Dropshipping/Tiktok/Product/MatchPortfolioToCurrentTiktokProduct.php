@@ -8,13 +8,13 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Product;
 
-use App\Actions\RetinaAction;
+use App\Actions\OrgAction;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MatchPortfolioToCurrentTiktokProduct extends RetinaAction
+class MatchPortfolioToCurrentTiktokProduct extends OrgAction
 {
     use AsAction;
 
@@ -41,7 +41,7 @@ class MatchPortfolioToCurrentTiktokProduct extends RetinaAction
 
     public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
-        $this->initialisation($request);
+        $this->initialisation($portfolio->customerSalesChannel->organisation, $request);
 
         $this->handle($portfolio, $this->validatedData);
     }

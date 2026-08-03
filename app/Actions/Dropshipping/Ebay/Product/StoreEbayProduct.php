@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\Ebay\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
@@ -28,6 +29,7 @@ class StoreEbayProduct extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
+    use WithPortfolioErrorResponse;
 
     /**
      * @throws \Exception
@@ -69,19 +71,17 @@ class StoreEbayProduct extends RetinaAction
                         }
                     }
 
-                    $displayError = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
+                    $displayError  = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
+                    $errorResponse = $this->portfolioErrorResponse($displayError) ?? [];
 
-                    UpdatePlatformPortfolioLog::run($logs, [
+                    UpdatePlatformPortfolioLog::dispatch($logs, [
                         'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                         'response' => $displayError
                     ]);
 
                     UpdatePortfolio::make()->action($portfolio, [
-                        'upload_warning' => $displayError,
-                        'errors_response' => [
-                            'params' => $params,
-                            'message' => $displayError
-                        ]
+                        'upload_warning' => Arr::get($errorResponse, 'message'),
+                        'errors_response' => ['params' => $params] + $errorResponse
                     ]);
 
                     if (!blank($params)) {
@@ -109,10 +109,11 @@ class StoreEbayProduct extends RetinaAction
 
             $descriptions = mb_substr($portfolio->customer_description, 0, 4000);
 
-
             if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
             }
+
+            // $descriptions = $ebayUser->getFormattedDescriptions($descriptions);
 
             $family = $product->family?->name;
 
@@ -125,6 +126,14 @@ class StoreEbayProduct extends RetinaAction
             $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
             $categoryName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
 
+            if ($categoryName === 'Other') {
+                $family = $product->subDepartment?->name;
+
+                $categories = $ebayUser->getCategorySuggestions($family);
+                $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
+                $categoryName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
+            }
+
             if (!$categoryId) {
                 $categories = $ebayUser->searchAvailableProducts($family);
 
@@ -136,7 +145,13 @@ class StoreEbayProduct extends RetinaAction
                 $categoryName = Arr::get($categories, 'itemSummaries.0.categories.0.categoryName');
             }
 
-            if ($categoryId == '261186') {
+            $categoryBodySoap = '180924';
+            $includedCategories = ['261186', '116113'];
+            if (!$product->barcode && $categoryId === $categoryBodySoap) {
+                $includedCategories[] = $categoryBodySoap;
+            }
+
+            if (in_array($categoryId, $includedCategories)) {
                 // This force not to use book category
                 $categoryId = '29511';
             }
@@ -171,12 +186,21 @@ class StoreEbayProduct extends RetinaAction
 
             $availableQuantity = $product->available_quantity;
 
+            if ($availableQuantity < 1) {
+                $availableQuantity = 1;
+            }
+
             if ($customerSalesChannel->max_quantity_advertise > 0) {
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
+            $sku = $portfolio->sku;
+            if ($product->is_bundle) {
+                $sku = $product->code;
+            }
+
             $inventoryItem = [
-                'sku' => $portfolio->sku,
+                'sku' => $sku,
                 'availability' => [
                     'shipToLocationAvailability' => [
                         'availabilityDistributions' => [
@@ -238,7 +262,7 @@ class StoreEbayProduct extends RetinaAction
                     [
                         'sku' => Arr::get($inventoryItem, 'sku'),
                         'description' => Arr::get($inventoryItem, 'product.description'),
-                        'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
+                        'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity', 1),
                         'price' => $customerPrice,
                         'currency' => $portfolio->shop->currency->code,
                         'category_id' => $categoryId
@@ -248,7 +272,7 @@ class StoreEbayProduct extends RetinaAction
                 $offer = $ebayUser->storeOffer([
                     'sku' => Arr::get($inventoryItem, 'sku'),
                     'description' => Arr::get($inventoryItem, 'product.description'),
-                    'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
+                    'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity', 1),
                     'price' => $customerPrice,
                     'currency' => $portfolio->shop->currency->code,
                     'category_id' => $categoryId
@@ -269,7 +293,7 @@ class StoreEbayProduct extends RetinaAction
                 'platform_product_id' => Arr::get($offer, 'offerId'),
                 'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
                 'upload_warning' => null,
-                'errors_response' => []
+                'errors_response' => null
             ]);
 
             CheckEbayPortfolio::run($portfolio);
@@ -277,13 +301,22 @@ class StoreEbayProduct extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             }
 
             return $portfolio;
-        } catch (\Exception) {
+        } catch (\Exception $e) {
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
+            ]);
+
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
+            ]);
+
             return $portfolio;
 
         }

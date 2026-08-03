@@ -9,18 +9,25 @@
 
 use App\Actions\Catalogue\Shop\UI\GetShopDashboardTabData;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Catalogue\Shop\UI\IndexHistoryInShop;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowShop::class)->name('show');
 Route::get('/tab-data', GetShopDashboardTabData::class)->name('tab-data');
 
 Route::name("comms.")->prefix('comms')
-    ->group(__DIR__."/comms.php");
+    ->group(__DIR__ . "/comms.php");
 
 Route::prefix("payments")
     ->name("payments.")
-    ->group(__DIR__."/payments.php");
+    ->group(__DIR__ . "/payments.php");
 
 Route::prefix("statements")
     ->name("invoices.")
-    ->group(__DIR__."/invoices.php");
+    ->group(__DIR__ . "/invoices.php");
+
+Route::prefix("changelog")
+    ->name("changelogs.")
+    ->group(function () {
+        Route::get('', IndexHistoryInShop::class)->name('index');
+    });

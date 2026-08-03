@@ -18,6 +18,8 @@ use App\Http\Resources\HumanResources\LeaveBalanceResource;
 use App\Http\Resources\HumanResources\AttendanceAdjustmentResource;
 use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\QrScanLog;
+use App\Models\HumanResources\TimeTracker;
+use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
@@ -82,6 +84,7 @@ class IndexClockingEmployees extends OrgAction
         $medicalRequestCount = null;
         $unpaidRequestCount = null;
         $leaveTypeOptions = [];
+        $holidayDates = collect();
         $adjustmentsData = collect();
         $overtimeData = collect();
         $todayTimesheet = null;
@@ -89,6 +92,7 @@ class IndexClockingEmployees extends OrgAction
         $activeTimeTracker = null;
         $lastClockIn = null;
         $lastClockOut = null;
+        $clockingSessions = [];
         $timezone = null;
 
         if ($this->employee && $tab == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value) {
@@ -130,6 +134,8 @@ class IndexClockingEmployees extends OrgAction
                         $lastClockOut->clocked_at = $lastClockOut->clocked_at->timezone($timezone)->toIso8601String();
                     }
                 }
+
+                $clockingSessions = $this->getClockingSessions($todayTimesheet, $timezone);
             }
         }
 
@@ -183,20 +189,41 @@ class IndexClockingEmployees extends OrgAction
 
             $organisation = $this->employee->organisation;
             $leaveTypeOptions = LeaveTypeResolver::optionsForOrganisation($organisation->id, true, $organisation->country?->code);
-            $leaveRequestsThisYear = Leave::query()
-                ->where('employee_id', $this->employee->id)
-                ->whereYear('start_date', now()->year)
-                ->with('leaveType')
-                ->get();
+            $today = now()->toDateString();
 
-            $leaveRequestsThisMonth = $leaveRequestsThisYear->filter(function (Leave $leave) {
-                return $leave->start_date->month === now()->month;
+            $balance = EmployeeLeaveBalance::where('employee_id', $this->employee->id)
+                ->where(function ($q) use ($today) {
+                    $q->where('period_start', '<=', $today)
+                      ->where(function ($q2) use ($today) {
+                          $q2->whereNull('period_end')
+                             ->orWhere('period_end', '>=', $today);
+                      });
+                })
+                ->whereNotNull('employee_contract_id')
+                ->first();
+
+            $leavesQuery = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->with('leaveType');
+
+            if ($balance?->period_start) {
+                $leavesQuery->where('start_date', '>=', $balance->period_start->toDateString());
+            }
+            if ($balance?->period_end) {
+                $leavesQuery->where('start_date', '<=', $balance->period_end->toDateString());
+            }
+
+            $leaveRequestsInPeriod = $leavesQuery->get();
+
+            $leaveRequestsThisMonth = $leaveRequestsInPeriod->filter(function (Leave $leave) {
+                return $leave->start_date->month === now()->month
+                    && $leave->start_date->year === now()->year;
             });
 
-            $submittedLeaves = $leaveRequestsThisYear->filter(function (Leave $leave) {
+            $submittedLeaves = $leaveRequestsInPeriod->filter(function (Leave $leave) {
                 return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
             });
-            $approvedLeaves = $leaveRequestsThisYear->filter(function (Leave $leave) {
+            $approvedLeaves = $leaveRequestsInPeriod->filter(function (Leave $leave) {
                 return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
             });
             $submittedLeavesThisMonth = $leaveRequestsThisMonth->filter(function (Leave $leave) {
@@ -208,33 +235,21 @@ class IndexClockingEmployees extends OrgAction
 
             $medicalRequestCount = $this->sumLeaveDaysByBucket($submittedLeavesThisMonth, 'medical');
             $unpaidRequestCount = $this->sumLeaveDaysByBucket($submittedLeavesThisMonth, 'unpaid');
-            $balance = EmployeeLeaveBalance::firstOrCreate(
-                [
-                    'employee_id' => $this->employee->id,
-                    'year'        => now()->year,
-                ],
-                [
-                    'annual_days'   => $organisation->getDefaultAnnualLeaveDays(),
-                    'annual_used'   => 0,
-                    'medical_days'  => 0,
-                    'medical_used'  => 0,
-                    'unpaid_days'   => 0,
-                    'unpaid_used'   => 0,
-                ]
-            );
 
             $annualSubmittedDays = $this->sumLeaveDaysByBucket($submittedLeaves, 'annual');
 
-            $annualRemainingAfterSubmission = max(0, (float) $balance->annual_days - (float) $annualSubmittedDays);
+            $annualDays = (float) ($balance?->contract?->annual_leave_days ?? 0);
+            $annualRemainingAfterSubmission = max(0, $annualDays - (float) $annualSubmittedDays);
 
             $approvedAnnualDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'annual');
             $approvedMedicalDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'medical');
             $approvedUnpaidDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'unpaid');
 
-            if ((float) $balance->annual_used !== $approvedAnnualDays
+            if ($balance && (
+                (float) $balance->annual_used !== $approvedAnnualDays
                 || (float) $balance->medical_used !== $approvedMedicalDays
                 || (float) $balance->unpaid_used !== $approvedUnpaidDays
-            ) {
+            )) {
                 $balance->updateQuietly([
                     'annual_used' => $approvedAnnualDays,
                     'medical_used' => $approvedMedicalDays,
@@ -242,6 +257,24 @@ class IndexClockingEmployees extends OrgAction
                 ]);
                 $balance->refresh();
             }
+
+            $upcomingHolidays = Holiday::where('organisation_id', $this->employee->organisation_id)
+                ->where('to', '>=', now()->toDateString())
+                ->get();
+
+            foreach ($upcomingHolidays as $holiday) {
+                $current = Carbon::parse($holiday->from);
+                $end = Carbon::parse($holiday->to);
+                while ($current->lte($end)) {
+                    $holidayDates->push([
+                        'date'  => $current->toDateString(),
+                        'label' => $holiday->label ?? '',
+                    ]);
+                    $current->addDay();
+                }
+            }
+
+            $holidayDates = $holidayDates->unique('date')->values();
         }
 
         if ($this->tab == ClockingEmployeesTabsEnum::ADJUSTMENTS->value && $this->employee) {
@@ -334,6 +367,7 @@ class IndexClockingEmployees extends OrgAction
             'medical_request_count' => $medicalRequestCount,
             'unpaid_request_count' => $unpaidRequestCount,
             'leave_type_options' => $leaveTypeOptions,
+            'holiday_dates' => $holidayDates,
             'adjustments' => $adjustmentsData,
             'overtime' => $overtimeData,
             'organisation' => $this->employee?->organisation?->slug,
@@ -342,7 +376,73 @@ class IndexClockingEmployees extends OrgAction
             'today_timesheet' => $todayTimesheet,
             'last_clock_in' => $lastClockIn,
             'last_clock_out' => $lastClockOut,
+            'clocking_sessions' => $clockingSessions,
             'timezone' => $timezone,
+        ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     id: int,
+     *     sequence: int,
+     *     status: string|null,
+     *     is_open: bool,
+     *     duration: int|null,
+     *     clock_in: array{id: int, clocked_at: string|null, type: string|null, is_late: bool, notes: string|null}|null,
+     *     clock_out: array{id: int, clocked_at: string|null, type: string|null, is_late: bool, notes: string|null}|null
+     * }>
+     */
+    protected function getClockingSessions(Timesheet $timesheet, string $timezone): array
+    {
+        $timeTrackers = TimeTracker::where('timesheet_id', $timesheet->id)
+            ->orderBy('starts_at')
+            ->get();
+
+        if ($timeTrackers->isEmpty()) {
+            return [];
+        }
+
+        $clockingIds = $timeTrackers
+            ->flatMap(fn (TimeTracker $timeTracker) => [$timeTracker->start_clocking_id, $timeTracker->end_clocking_id])
+            ->filter()
+            ->unique()
+            ->all();
+
+        $clockings = Clocking::whereIn('id', $clockingIds)->get()->keyBy('id');
+
+        return $timeTrackers->values()->map(function (TimeTracker $timeTracker, int $index) use ($clockings, $timezone) {
+            $clockIn = $timeTracker->start_clocking_id ? $clockings->get($timeTracker->start_clocking_id) : null;
+            $clockOut = $timeTracker->end_clocking_id ? $clockings->get($timeTracker->end_clocking_id) : null;
+
+            $startsAt = $timeTracker->starts_at;
+            $endsAt = $timeTracker->ends_at;
+
+            return [
+                'id'         => $timeTracker->id,
+                'sequence'   => $index + 1,
+                'status'     => $timeTracker->status?->value,
+                'is_open'    => $endsAt === null,
+                'starts_at'  => $startsAt?->timezone($timezone)->toIso8601String(),
+                'ends_at'    => $endsAt?->timezone($timezone)->toIso8601String(),
+                'duration'   => $timeTracker->duration ?? ($startsAt && $endsAt ? $startsAt->diffInSeconds($endsAt) : null),
+                'clock_in'   => $this->transformClocking($clockIn, $timezone),
+                'clock_out'  => $this->transformClocking($clockOut, $timezone),
+            ];
+        })->all();
+    }
+
+    protected function transformClocking(?Clocking $clocking, string $timezone): ?array
+    {
+        if (!$clocking) {
+            return null;
+        }
+
+        return [
+            'id'         => $clocking->id,
+            'clocked_at' => $clocking->clocked_at?->timezone($timezone)->toIso8601String(),
+            'type'       => $clocking->type?->value,
+            'is_late'    => (bool) $clocking->is_late,
+            'notes'      => $clocking->notes,
         ];
     }
 
@@ -560,9 +660,10 @@ class IndexClockingEmployees extends OrgAction
                         'today_timesheet' => $data['today_timesheet'],
                         'last_clock_in' => $data['last_clock_in'],
                         'last_clock_out' => $data['last_clock_out'],
+                        'clocking_sessions' => $data['clocking_sessions'],
                         'timezone' => $data['timezone'],
                     ]
-                    : Inertia::lazy(fn () => ['status' => 'loaded_lazy']),
+                    : Inertia::optional(fn () => ['status' => 'loaded_lazy']),
 
                 ClockingEmployeesTabsEnum::TIMESHEETS->value =>
                 $data['tab'] === ClockingEmployeesTabsEnum::TIMESHEETS->value
@@ -570,7 +671,7 @@ class IndexClockingEmployees extends OrgAction
                         'data' => TimesheetsResource::collection($data['timesheets']),
                         'statistics' => $data['statistics'],
                     ]
-                    : Inertia::lazy(fn () => [
+                    : Inertia::optional(fn () => [
                         'data' => TimesheetsResource::collection($data['timesheets']),
                         'statistics' => $data['statistics'],
                     ]),
@@ -586,8 +687,9 @@ class IndexClockingEmployees extends OrgAction
                         'medical_request_count' => $data['medical_request_count'],
                         'unpaid_request_count' => $data['unpaid_request_count'],
                         'organisation' => $data['organisation'],
+                        'holidays' => $data['holiday_dates'],
                     ]
-                    : Inertia::lazy(fn () => [
+                    : Inertia::optional(fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
                         'type_options' => $data['leave_type_options'],
@@ -596,6 +698,7 @@ class IndexClockingEmployees extends OrgAction
                         'medical_request_count' => $data['medical_request_count'],
                         'unpaid_request_count' => $data['unpaid_request_count'],
                         'organisation' => $data['organisation'],
+                        'holidays' => $data['holiday_dates'],
                     ]),
 
                 ClockingEmployeesTabsEnum::ADJUSTMENTS->value =>
@@ -604,7 +707,7 @@ class IndexClockingEmployees extends OrgAction
                         'data' => AttendanceAdjustmentResource::collection($data['adjustments']),
                         'organisation' => $data['organisation'],
                     ]
-                    : Inertia::lazy(fn () => [
+                    : Inertia::optional(fn () => [
                         'data' => AttendanceAdjustmentResource::collection($data['adjustments']),
                         'organisation' => $data['organisation'],
                     ]),
@@ -627,7 +730,7 @@ class IndexClockingEmployees extends OrgAction
                             ])
                             ->values(),
                     ]
-                    : Inertia::lazy(fn () => [
+                    : Inertia::optional(fn () => [
                         'data' => $data['overtime'],
                         'organisation' => $data['organisation'],
                         'overtimeTypeOptions' => OvertimeType::query()
@@ -646,7 +749,7 @@ class IndexClockingEmployees extends OrgAction
                 ClockingEmployeesTabsEnum::CALENDAR->value =>
                 $data['tab'] === ClockingEmployeesTabsEnum::CALENDAR->value
                     ? fn () => $this->getCalendarData($request)
-                    : Inertia::lazy(fn () => $this->getCalendarData($request)),
+                    : Inertia::optional(fn () => $this->getCalendarData($request)),
             ]
         )
             ->table(

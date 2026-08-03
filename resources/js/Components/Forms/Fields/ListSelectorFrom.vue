@@ -14,6 +14,7 @@ import ListSelector from "@/Components/ListSelector.vue"
 import { routeType } from "@/types/route"
 import { watch, ref } from "vue"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

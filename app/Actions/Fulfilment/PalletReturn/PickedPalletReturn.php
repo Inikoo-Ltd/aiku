@@ -12,6 +12,7 @@ use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSess
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\Pallet\PickWholePalletInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -35,6 +36,8 @@ use Lorisleiva\Actions\ActionRequest;
 class PickedPalletReturn extends OrgAction
 {
     use WithActionUpdate;
+
+    private PalletReturn $palletReturn;
 
 
     /**
@@ -74,6 +77,9 @@ class PickedPalletReturn extends OrgAction
         WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+        if ($palletReturn->customerSalesChannel) {
+            CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+        }
         SendPalletReturnNotification::run($palletReturn);
 
         return $palletReturn;
@@ -84,7 +90,15 @@ class PickedPalletReturn extends OrgAction
         if ($this->asAction) {
             return true;
         }
-        return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
+
+        $warehouseId = $this->palletReturn->warehouse_id;
+
+        return $request->user()->authTo([
+            "fulfilment-shop.{$this->fulfilment->id}.edit",
+            "fulfilment.$warehouseId.edit",
+            "supervisor-incoming.$warehouseId",
+            "supervisor-fulfilment.$warehouseId",
+        ]);
     }
 
     public function jsonResponse(PalletReturn $palletReturn): JsonResource
@@ -97,6 +111,7 @@ class PickedPalletReturn extends OrgAction
      */
     public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 
         $user = $request->user();
@@ -109,6 +124,7 @@ class PickedPalletReturn extends OrgAction
      */
     public function maya(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
         $user = $request->user();

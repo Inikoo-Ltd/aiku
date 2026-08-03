@@ -349,11 +349,11 @@ class IndexPalletDeliveries extends OrgAction
 
                 PalletDeliveriesTabsEnum::DELIVERIES->value => $this->tab == PalletDeliveriesTabsEnum::DELIVERIES->value ?
                     fn () => PalletDeliveriesResource::collection($deliveries)
-                    : Inertia::lazy(fn () => PalletDeliveriesResource::collection($deliveries)),
+                    : Inertia::optional(fn () => PalletDeliveriesResource::collection($deliveries)),
 
                 PalletDeliveriesTabsEnum::UPLOADS->value => $this->tab == PalletDeliveriesTabsEnum::UPLOADS->value ?
                     fn () => PalletUploadsResource::collection(IndexPalletUploads::run($this->parent, PalletDeliveriesTabsEnum::UPLOADS->value))
-                    : Inertia::lazy(fn () => PalletUploadsResource::collection(IndexPalletUploads::run($this->parent, PalletDeliveriesTabsEnum::UPLOADS->value))),
+                    : Inertia::optional(fn () => PalletUploadsResource::collection(IndexPalletUploads::run($this->parent, PalletDeliveriesTabsEnum::UPLOADS->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: PalletDeliveriesTabsEnum::DELIVERIES->value))
             ->table(IndexPalletUploads::make()->tableStructure(prefix: PalletDeliveriesTabsEnum::UPLOADS->value));

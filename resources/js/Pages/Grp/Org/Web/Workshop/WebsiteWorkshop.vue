@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, ref, provide, inject, onMounted, onUnmounted } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -27,18 +27,20 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
+import DepartmentDescriptionBlockWorkshop from '@/Components/CMS/Website/DepartmentBlockWorkshop/DepartmentDescriptionBlockWorkshop.vue'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPageBreak, faSpinnerThird)
 
 const TAB_COMPONENT_MAP = {
   website_layout: LayoutWorkshop,
+  department_description: DepartmentDescriptionBlockWorkshop,
   sub_department: SubDepartmentWorkshop,
   families: FamiliesBlockWorkshop,
   families_overview: FamiliesOverviewBlockWorkshop,
   families_description: FamiliesDescriptionBlockWorkshop,
   products: ProductsBlockWorkshop,
   product: ProductBlockWorkshop,
-  history: TableHistories
+  history: TableHistories,
 }
 
 const props = defineProps<{
@@ -48,19 +50,20 @@ const props = defineProps<{
   currency: Record<string, any>
   category?: Record<string, any>
   product?: Record<string, any>
-  website_layout: Record<string, any>
+  website_layout?: Record<string, any>
   families?: Record<string, any>
   families_overview?: Record<string, any>
   products?: Record<string, any>
   settings: Record<string, any>
   department: Record<string, any>
-  sub_department: Record<string, any>
-  families_description: Record<string, any>
+  department_description?: Record<string, any>
+  sub_department?: Record<string, any>
+  families_description?: Record<string, any>
   collection: Record<string, any>
   publishRoute: Record<string, routeType>
   website_slug: string
   layout_theme: Array<any>
-  history: {}
+  history?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -75,9 +78,32 @@ const component = computed(() => TAB_COMPONENT_MAP[currentTab.value])
 
 provide('reload', () => router.reload())
 
+const setPayloadData = () => {
+  const data = props[currentTab.value]?.layout
+
+  if (currentTab.value === "department_description") {
+    const payloadData: Record<string, any> = {}
+
+    for (const key in data) {
+      const item = data[key]
+
+      payloadData[item.code] = {
+        icon: item.data.icon,
+        fieldValue: item.data.fieldValue
+      }
+
+      return payloadData
+    }
+
+  }
+  
+  return data
+}
+
 const onPublish = () => {
   const action = props.publishRoute[currentTab.value]
-  const payload = props[currentTab.value]?.layout
+  const payload = setPayloadData()
+  console.log(payload)
 
   if (!action || !payload) return
 
@@ -129,7 +155,8 @@ onUnmounted(() => stopSocketListener())
 </script>
 
 <template>
-  <PageHeading :data="pageHead">
+  <Head :title="title" />
+  <PageHeading :data="pageHead" ignoreIsolate>
     <template #button-publish="{ action }">
       <Button v-if="currentTab !== 'history'" v-bind="action" @click="onPublish">
         <template #loading v-if="loadingPublish">

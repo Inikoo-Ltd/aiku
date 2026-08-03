@@ -20,12 +20,15 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 
+const routeCurrent = route().current()
+const routeParams = route().params
+
 function warehouseRoute(warehouse: Warehouse) {
-    switch (route().current()) {
+    switch (routeCurrent) {
         case 'grp.org.warehouses.index':
             return route(
                 'grp.org.warehouses.show.infrastructure.dashboard',
-                [route().params['organisation'], warehouse.slug])
+                [routeParams['organisation'], warehouse.slug])
         default:
             return route(
                 'grp.org.warehouses.show.infrastructure.dashboard',
@@ -34,11 +37,11 @@ function warehouseRoute(warehouse: Warehouse) {
 }
 
 function warehouseAreasRoute(warehouse: Warehouse) {
-    switch (route().current()) {
+    switch (routeCurrent) {
         case 'grp.org.warehouses.index':
             return route(
                 'grp.org.warehouses.show.infrastructure.warehouse_areas.index',
-                [route().params['organisation'], warehouse.slug])
+                [routeParams['organisation'], warehouse.slug])
         default:
             return route(
                 'grp.org.warehouses.show.infrastructure.warehouse_areas.index',
@@ -47,11 +50,11 @@ function warehouseAreasRoute(warehouse: Warehouse) {
 }
 
 function locationsRoute(warehouse: Warehouse) {
-    switch (route().current()) {
+    switch (routeCurrent) {
         case 'grp.org.warehouses.index':
             return route(
                 'grp.org.warehouses.show.infrastructure.locations.index',
-                [route().params['organisation'], warehouse.slug])
+                [routeParams['organisation'], warehouse.slug])
         default:
             return route(
                 'grp.org.warehouses.show.infrastructure.locations.index',

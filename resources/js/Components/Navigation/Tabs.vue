@@ -36,7 +36,9 @@ import {
 	faLayerGroup,
 	faSortShapesUpAlt,
 	faLightbulb,
-	faRepeat
+	faRepeat,
+	faListUl,
+	faThList,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -45,6 +47,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from "@headlessui/vue"
 import { trans } from 'laravel-vue-i18n'
 library.add(
+	faListUl,
 	faShapes,
 	faRepeat,
 	faLightbulb,
@@ -72,7 +75,8 @@ library.add(
 	faUndo,
 	faPenAlt,
 	faLayerGroup,
-	faSortShapesUpAlt
+	faSortShapesUpAlt,
+	faThList,
 )
 
 const layoutStore = inject("layout", layoutStructure)
@@ -234,7 +238,7 @@ const tabIconClass = function (
 								{{ tab.title }}
 								<span
 									v-if="tabSlug === 'bundles'"
-									class="absolute -top-4 -right-12 text-[8px] px-1.5 py-[1px] rounded 
+									class="absolute -top-4 -right-12 text-[8px] px-1.5 py-[1px] rounded
 										bg-red-500 text-white font-semibold tracking-wide
 										whitespace-nowrap scale-90 origin-left impulse"
 								>

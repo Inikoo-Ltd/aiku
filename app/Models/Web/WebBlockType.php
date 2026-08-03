@@ -38,6 +38,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $website_type
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property bool $is_in_test
+ * @property array<array-key, mixed> $shop_availability
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -61,15 +62,17 @@ class WebBlockType extends Model implements HasMedia
     use HasImage;
 
     protected $casts = [
-        'blueprint' => 'array',
-        'data'      => 'array',
-        'scope'     => WebBlockTypeScopeEnum::class,
-        'website_type' => 'array',
+        'blueprint'         => 'array',
+        'data'              => 'array',
+        'scope'             => WebBlockTypeScopeEnum::class,
+        'website_type'      => 'array',
+        'shop_availability' => 'array',
     ];
 
     protected $attributes = [
-        'blueprint' => '{}',
-        'data'      => '{}',
+        'blueprint'         => '{}',
+        'data'              => '{}',
+        'shop_availability' => '{}',
     ];
 
     protected $guarded = [];

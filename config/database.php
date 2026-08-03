@@ -88,6 +88,26 @@ return [
             'search_path'    => env('DB_SEARCH_PATH', 'public'),
             'sslmode'        => 'prefer',
         ],
+        'aiku_read_only' => [
+            'driver'         => 'pgsql',
+            'read'           => [
+                'host' => explode(',', env('DB_READ_ONLY_HOSTS', env('DB_READ_HOSTS', env('DB_HOST', '127.0.0.1')))),
+            ],
+            'write'          => [
+                'host' => explode(',', env('DB_READ_ONLY_HOSTS', env('DB_READ_HOSTS', env('DB_HOST', '127.0.0.1')))),
+            ],
+            'sticky'         => false,
+            'host'           => env('DB_HOST', '127.0.0.1'),
+            'port'           => env('DB_PORT', '5432'),
+            'database'       => env('DB_DATABASE'),
+            'username'       => env('DB_READ_ONLY_USERNAME', env('DB_USERNAME')),
+            'password'       => env('DB_READ_ONLY_PASSWORD', env('DB_PASSWORD')),
+            'charset'        => 'utf8',
+            'prefix'         => '',
+            'prefix_indexes' => true,
+            'search_path'    => env('DB_SEARCH_PATH', 'public'),
+            'sslmode'        => 'prefer',
+        ],
         'aurora'         => [
             'driver'         => 'mysql',
             'host'           => env('AURORA_DB_HOST', '127.0.0.1'),
@@ -187,7 +207,20 @@ return [
                     PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
                 ]) : [],
         ],
-
+        'nightowl' => [
+            'driver'         => 'pgsql',
+            'url'            => null,
+            'host'           => env('NIGHTOWL_DB_HOST', '127.0.0.1'),
+            'port'           => env('NIGHTOWL_DB_PORT', '5432'),
+            'database'       => env('NIGHTOWL_DB_DATABASE'),
+            'username'       => env('NIGHTOWL_DB_USERNAME'),
+            'password'       => env('NIGHTOWL_DB_PASSWORD'),
+            'charset'        => 'utf8',
+            'prefix'         => '',
+            'prefix_indexes' => true,
+            'search_path'    => env('NIGHTOWL_DB_SEARCH_PATH', 'public'),
+            'sslmode'        => 'prefer',
+        ],
 
         'wowsbar' => [
             'driver'         => 'pgsql',
@@ -255,14 +288,21 @@ return [
             'port'     => env('REDIS_HORIZON_PORT', '6379'),
             'database' => env('REDIS_HORIZON_DB', '0'),
         ],
-
-        'cache' => [
+        'cache'   => [
             'url'      => env('REDIS_CACHE_URL'),
             'host'     => env('REDIS_CACHE_HOST', '127.0.0.1'),
             'username' => env('REDIS_CACHE_USERNAME'),
             'password' => env('REDIS_CACHE_PASSWORD'),
             'port'     => env('REDIS_CACHE_PORT', '6379'),
             'database' => env('REDIS_CACHE_DB', '1'),
+        ],
+        'sessions' => [
+            'url'      => env('REDIS_SESSIONS_URL'),
+            'host'     => env('REDIS_SESSIONS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_SESSIONS_USERNAME'),
+            'password' => env('REDIS_SESSIONS_PASSWORD'),
+            'port'     => env('REDIS_SESSONS_PORT', '6379'),
+            'database' => env('REDIS_SESSIONS_DB', '2'),
         ],
 
     ],

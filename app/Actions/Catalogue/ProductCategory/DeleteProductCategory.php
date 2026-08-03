@@ -45,8 +45,6 @@ class DeleteProductCategory extends OrgAction
             DB::table('product_category_stats')->where('product_category_id', $productCategory->id)->delete();
             DB::table('product_category_time_series')->where('product_category_id', $productCategory->id)->delete();
             DB::table('product_category_ordering_stats')->where('product_category_id', $productCategory->id)->delete();
-            DB::table('product_category_sales_intervals')->where('product_category_id', $productCategory->id)->delete();
-            DB::table('product_category_ordering_intervals')->where('product_category_id', $productCategory->id)->delete();
 
 
             $productCategory->forceDelete();

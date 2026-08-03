@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle } from "@fas";
 import { getStyles } from "@/Composables/styles"
-import { computed, ref, inject } from "vue";
+import { computed, ref, inject, onMounted, onBeforeUnmount } from "vue";
 import {
   faBaby, faCactus, faObjectGroup, faUser, faHouse,
   faTruck, faTag, faPhone, faInfoCircle
@@ -17,6 +17,7 @@ import {
 import { faLambda } from "@fad";
 import LinkIris from "@/Iris/Components/LinkIris.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { useDepartmentStructuredData } from "@/Iris/Composables/useDepartmentStructuredData"
 
 library.add(
   faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda,
@@ -29,6 +30,8 @@ library.add(
 
 const props = defineProps<{
   fieldValue: {
+    id: string
+    name: string
     collections: Array<Object>
     sub_departments: Array<Object>
     container: {
@@ -38,8 +41,11 @@ const props = defineProps<{
   webpageData?: any
   blockData?: object
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock?: number | string
 }>();
 const layout = inject("layout",{})
+const injectedWebpageData = inject<any>("webpage_data", null)
+
 const fallbackPerRow = {
   desktop: 4,
   tablet: 3,
@@ -85,6 +91,25 @@ const mergedItems = computed(() => {
 })
 
 const idxSlideLoading = ref<number | null>(null)
+
+// Section: Department structured data (SEO)
+// Mounted independently here instead of inside the page structured data (useStructuredData),
+// so the sub-departments + collections ItemList lives in its own <script> and is easier to maintain.
+const { mountDepartmentStructuredData, removeStructuredDataScript } = useDepartmentStructuredData()
+const departmentStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
+onMounted(() => {
+  departmentStructuredDataScript.value = mountDepartmentStructuredData({
+    subDepartments: props.fieldValue.sub_departments,
+    collections: props.fieldValue.collections,
+    webpageData: (props.webpageData ?? injectedWebpageData) as any,
+    listId: props.fieldValue.id ?? props.indexBlock,
+  })
+})
+
+onBeforeUnmount(() => {
+  removeStructuredDataScript(departmentStructuredDataScript.value)
+})
 </script>
 
 <template>
@@ -92,7 +117,7 @@ const idxSlideLoading = ref<number | null>(null)
     v-if="mergedItems.length"
     class="mx-auto"
     :class="screenClass"
-    :id="fieldValue?.id ? fieldValue?.id  : 'sub-department-2'"  component="sub-department-2"
+    :id="'sub-department-iris-2-' + (props.indexBlock ?? '')"  component="sub-department-2"
     :style="getStyles(fieldValue?.container?.properties, screenType)"
   >
     <div class="grid gap-4 auto-rows-fr" :class="gridColsClass">

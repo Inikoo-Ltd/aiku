@@ -65,6 +65,9 @@ class GroupHydrateTradeUnits implements ShouldBeUnique
                         ->whereColumn('model_has_brands.model_id', 'trade_units.id')
                         ->where('model_has_brands.model_type', 'TradeUnit');
                 })->count(),
+            'number_trade_units_without_barcode'              => $group->tradeUnits()->where(function ($q) {
+                $q->whereNull('barcode')->orWhere('barcode', '');
+            })->whereIn('status', [TradeUnitStatusEnum::ACTIVE, TradeUnitStatusEnum::IN_PROCESS])->count(),
         ];
 
         $stats = array_merge(

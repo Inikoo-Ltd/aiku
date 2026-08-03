@@ -101,15 +101,15 @@ class ShowManufactureTask extends OrgAction
 
                 ManufactureTaskTabsEnum::SHOWCASE->value => $this->tab == ManufactureTaskTabsEnum::SHOWCASE->value ?
                     fn () => GetManufactureTaskShowcase::run($manufactureTask)
-                    : Inertia::lazy(fn () => GetManufactureTaskShowcase::run($manufactureTask)),
+                    : Inertia::optional(fn () => GetManufactureTaskShowcase::run($manufactureTask)),
 
                 ManufactureTaskTabsEnum::ARTEFACT->value => $this->tab == ManufactureTaskTabsEnum::ARTEFACT->value
                     ? fn () => ArtefactsResource::collection(GetManufactureTaskArtefacts::run($manufactureTask, $request))
-                    : Inertia::lazy(fn () => ArtefactsResource::collection(GetManufactureTaskArtefacts::run($manufactureTask, $request))),
+                    : Inertia::optional(fn () => ArtefactsResource::collection(GetManufactureTaskArtefacts::run($manufactureTask, $request))),
 
                 ManufactureTaskTabsEnum::HISTORY->value => $this->tab == ManufactureTaskTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($manufactureTask))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($manufactureTask)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($manufactureTask)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ManufactureTaskTabsEnum::HISTORY->value));

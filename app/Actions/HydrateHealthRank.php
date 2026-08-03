@@ -26,7 +26,7 @@ class HydrateHealthRank implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'sales';
+    public string $jobQueue = 'sales_slave';
     public string $commandSignature = 'hydrate:health-rank';
 
     public function asCommand(Command $command): void

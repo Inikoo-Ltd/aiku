@@ -7,6 +7,8 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Catalogue\Product\UI\ShowProduct;
+use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\OrgAction;
 use App\Http\Resources\CRM\InvoicesResource;
 use App\InertiaTable\InertiaTable;
@@ -27,6 +29,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoicesInProduct extends OrgAction
 {
+    private MasterAsset|Product $parent;
+
     public function handle(MasterAsset|Asset $parent, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -54,6 +58,7 @@ class IndexInvoicesInProduct extends OrgAction
 
         return $query
             ->select([
+                'invoices.id',
                 'invoices.reference',
                 'invoices.customer_name',
                 'invoices.date',
@@ -95,6 +100,7 @@ class IndexInvoicesInProduct extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Product $product, ActionRequest $request): LengthAwarePaginator
     {
+        $this->parent = $product;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($product->asset);
@@ -102,22 +108,107 @@ class IndexInvoicesInProduct extends OrgAction
 
     public function inMaster(MasterShop $masterShop, MasterAsset $masterProduct, ActionRequest $request): LengthAwarePaginator
     {
+        $this->parent = $masterProduct;
         $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }
 
-    public function htmlResponse(LengthAwarePaginator $invoices): Response
+    public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
+        $label = ($this->parent instanceof Product) ? __('Product') : __('Master Product');
+
         return Inertia::render(
             'InvoicesInProduct',
             [
                 'title'    => __('Invoices'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $this->parent,
+                    request()->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead' => [
                     'title' => __('Invoices'),
+                    'model'      => $this->parent->code,
+                    'icon'       =>
+                        [
+                            'icon'  => ['fal', 'fa-cube'],
+                            'title' => __('Product')
+                        ],
+                    'actions'    => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'label' => __('Back to :__parentInvoice', ['__parentInvoice' => $label]),
+                            'route' => [
+                                'name'       => preg_replace('/invoices$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ]
+                    ]
                 ],
                 'data'     => InvoicesResource::collection($invoices),
             ]
         )->table($this->tableStructure());
+    }
+
+    public function getBreadcrumbs(Product|MasterAsset $parent, string $routeName, array $routeParameters): array
+    {
+        $headCrumb = function (Product|MasterAsset $parent, string $routeName, array $routeParameters) {
+            return [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name'       => $routeName,
+                            'parameters' => $routeParameters
+                        ],
+                        'label' => __('Invoices'),
+                    ]
+                ]
+            ];
+        };
+
+
+        return match ($routeName) {
+            'grp.masters.master_shops.show.master_products.invoices' =>
+            array_merge(
+                ShowMasterProduct::make()->getBreadcrumbs(
+                    $parent,
+                    preg_replace('/invoices$/', 'show', $routeName),
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.discontinued_products.invoices',
+            'grp.org.shops.show.catalogue.products.in_process_products.invoices',
+            'grp.org.shops.show.catalogue.products.current_products.invoices',
+            'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.invoices',
+            'grp.org.shops.show.catalogue.products.rrp_violation_products.invoices',
+            'grp.org.shops.show.catalogue.products.out_of_stock_products.invoices',
+            'grp.org.shops.show.catalogue.products.orphan_products.invoices',
+            'grp.org.shops.show.catalogue.products.independent_products.discontinued.invoices',
+            'grp.org.shops.show.catalogue.products.independent_products.in_process.invoices',
+            'grp.org.shops.show.catalogue.products.independent_products.current.invoices',
+            'grp.org.shops.show.catalogue.products.independent_products.all.invoices',
+            'grp.org.shops.show.catalogue.products.all_products.invoices'  =>
+            array_merge(
+                ShowProduct::make()->getBreadcrumbs(
+                    $parent->shop,
+                    $parent,
+                    preg_replace('/invoices$/', 'show', $routeName),
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                )
+            ),
+        };
     }
 }

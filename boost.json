@@ -2,14 +2,26 @@
     "agents": [
         "claude_code",
         "copilot",
-        "gemini",
-        "phpstorm"
+        "junie"
     ],
-    "editors": [
-        "claude_code",
-        "gemini",
-        "phpstorm",
-        "vscode"
+    "cloud": false,
+    "guidelines": true,
+    "mcp": true,
+    "nightwatch": false,
+    "packages": [
+        "lorisleiva/laravel-actions"
     ],
-    "guidelines": []
+    "sail": false,
+    "skills": [
+        "laravel-best-practices",
+        "configuring-horizon",
+        "configure-nightwatch",
+        "octane-development",
+        "pennant-development",
+        "scout-development",
+        "pest-testing",
+        "inertia-vue-development",
+        "tailwindcss-development",
+        "laravel-actions"
+    ]
 }

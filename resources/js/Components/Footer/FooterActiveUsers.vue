@@ -8,13 +8,16 @@
 import { trans } from 'laravel-vue-i18n'
 import { useLayoutStore } from "@/Stores/layout"
 import FooterTab from '@/Components/Footer/FooterTab.vue'
-import { faBriefcase } from '@fal'
-import { library } from "@fortawesome/fontawesome-svg-core"
 import { useLiveUsers } from '@/Stores/active-users'
 import { useTruncate } from '../../Composables/useTruncate'
 import Image from '../../Common/Components/Image.vue'
 import { Link } from '@inertiajs/vue3'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
+
+
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faBriefcase } from '@fal'
+import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faBriefcase)
 
 const layout = useLayoutStore()
@@ -43,9 +46,13 @@ const layout = useLayoutStore()
                                     class="flex items-center py-1 px-2 gap-x-1.5 hover:bg-gray-300/10"
                                     :class="dataUser.id == layout.user.id ? 'text-[#FDD835]' : ''"
                                 >
-                                    <Image :src="dataUser.avatar_thumbnail" :alt="dataUser.username" class="h-5 rounded-full shadow overflow-hidden" />
+                                    <div class="h-5 w-5 rounded-full border border-gray-300/20 shadow text-xxs flex items-center justify-center overflow-hidden">
+                                        <Image v-if="dataUser.avatar_thumbnail" :src="dataUser.avatar_thumbnail" :alt="dataUser.username" />
+                                        <FontAwesomeIcon v-else icon='fas fa-user' class='text-xxs opacity-70' fixed-width aria-hidden='true' />
+                                    </div>
+
                                     <div class="flex flex-col items-start">
-                                        <span class="text-xs">{{ dataUser?.contact_name || dataUser?.username }}</span>
+                                        <span class="text-xs text-left">{{ dataUser?.contact_name || dataUser?.username }}</span>
                                         <div class="relative">
                                             <Transition name="spin-to-down">
                                                 <div v-if="dataUser.current_page?.label" :key="dataUser.current_page?.label" class="text-xxs opacity-70 text-left">

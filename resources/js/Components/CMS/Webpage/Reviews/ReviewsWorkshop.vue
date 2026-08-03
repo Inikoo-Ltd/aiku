@@ -1,43 +1,157 @@
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Wed, 07 Jun 2023 02:45:27 Malaysia Time, Kuala Lumpur, Malaysia
-  - Copyright (c) 2023, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
-import { getStyles } from "@/Composables/styles";
-import { faCube, faStar } from "@fas"
-import { library } from "@fortawesome/fontawesome-svg-core"
+import { ref, computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import {
+  faStar,
+  faChevronLeft,
+  faChevronRight,
+} from "@fortawesome/free-solid-svg-icons"
 
+const reviews = [
+  {
+    id: 1,
+    name: "I**",
+    rating: 5,
+    message:
+      "Lovely choice of products, great prices and wonderful service ❤️ couldn't ask for more. Thank you 😊",
+    date: "Posted 1 week ago",
+  },
+  {
+    id: 2,
+    name: "Jessica Ma****",
+    rating: 5,
+    message: "Amazing product, Excellent service, 100% recommend",
+    date: "Posted 1 week ago",
+  },
+  {
+    id: 3,
+    name: "Luna M***",
+    rating: 5,
+    message: "Loved how easy it was to order and pick up",
+    date: "Posted 1 week ago",
+  },
+  {
+    id: 4,
+    name: "David P***",
+    rating: 5,
+    message: "Very fast delivery and customer support was fantastic.",
+    date: "Posted 2 weeks ago",
+  },
+  {
+    id: 5,
+    name: "Sarah J***",
+    rating: 5,
+    message: "Will definitely buy again. Great quality!",
+    date: "Posted 2 weeks ago",
+  },
+]
 
-library.add(faCube, faStar)
+const current = ref(0)
 
-const props = defineProps<{
-    modelValue: any
-    properties: {}
-}>()
+const visibleReviews = computed(() =>
+  reviews.slice(current.value, current.value + 3)
+)
 
+function next() {
+  if (current.value < reviews.length - 3) current.value++
+}
 
+function prev() {
+  if (current.value > 0) current.value--
+}
 </script>
 
+
 <template>
-    <div class="w-full py-12 px-8 flex gap-x-10" :style="getStyles(properties)">
-        <h2 class=" text-2xl font-bold">Reviews:</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-x-10">
-            <div v-for="index in 3" class="">
-                <h3 class="font-bold text-lg">Johnn Smith <span class="ml-6 font-normal">
-                        <FontAwesomeIcon icon="fas fa-star"></FontAwesomeIcon>
-                        <FontAwesomeIcon icon="fas fa-star"></FontAwesomeIcon>
-                        <FontAwesomeIcon icon="fas fa-star"></FontAwesomeIcon>
-                        <FontAwesomeIcon icon="fas fa-star"></FontAwesomeIcon>
-                        <FontAwesomeIcon icon="fas fa-star"></FontAwesomeIcon> 41
-                    </span></h3>
-                <p class="mt-2 text-sm text-justify">Thank you so much for taking the time to give Ancient Wisdom
-                    Wholesale a fantastic 5-star rating! We truly appreciate your support and are thrilled to hear that
-                    you love our products.</p>
-                <p class="mt-2 text-sm">From the moment you place your order to the prompt</p>
-            </div>
+  <div class="relative rounded-lg border bg-white p-6 shadow-sm">
+
+    <!-- Left Arrow -->
+    <button
+      @click="prev"
+      class="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow transition hover:bg-gray-100"
+    >
+      <FontAwesomeIcon :icon="faChevronLeft" />
+    </button>
+
+    <!-- Right Arrow -->
+    <button
+      @click="next"
+      class="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow transition hover:bg-gray-100"
+    >
+      <FontAwesomeIcon :icon="faChevronRight" />
+    </button>
+
+    <div class="flex flex-col gap-8 lg:flex-row">
+
+      <!-- Summary -->
+      <div class="w-full border-b pb-6 lg:w-64 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-8">
+        <h2 class="text-4xl font-light">
+          EXCELLENT
+        </h2>
+
+        <div class="mt-3 flex gap-1 text-orange-500">
+          <FontAwesomeIcon
+            v-for="i in 5"
+            :key="i"
+            :icon="faStar"
+            class="text-3xl"
+          />
         </div>
+
+        <div class="mt-4 text-3xl font-semibold">
+          4.72
+          <span class="text-base font-normal text-gray-500">
+            Average
+          </span>
+        </div>
+
+        <div class="text-gray-500">
+          2915 Reviews
+        </div>
+
+        <div
+          class="mt-5 inline-flex items-center gap-2 rounded-md border px-3 py-1 font-semibold"
+        >
+          <FontAwesomeIcon
+            :icon="faStar"
+            class="text-yellow-500"
+          />
+          REVIEWS.io
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="grid flex-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
+        <div
+          v-for="review in visibleReviews"
+          :key="review.id"
+          class="flex flex-col"
+        >
+          <div class="flex items-center gap-2">
+            <span class="font-semibold">
+              {{ review.name }}
+            </span>
+
+            <div class="flex gap-1 text-orange-500">
+              <FontAwesomeIcon
+                v-for="i in review.rating"
+                :key="i"
+                :icon="faStar"
+                class="text-sm"
+              />
+            </div>
+          </div>
+
+          <p class="mt-3 flex-1 text-sm leading-6 text-gray-700">
+            {{ review.message }}
+          </p>
+
+          <span class="mt-8 text-sm text-gray-400">
+            {{ review.date }}
+          </span>
+        </div>
+      </div>
+
     </div>
+  </div>
 </template>

@@ -182,11 +182,11 @@ class IndexRetinaPalletDeliveries extends RetinaAction
 
                 PalletDeliveriesTabsEnum::DELIVERIES->value => $this->tab == PalletDeliveriesTabsEnum::DELIVERIES->value ?
                     fn () => PalletDeliveriesResource::collection($deliveries)
-                    : Inertia::lazy(fn () => PalletDeliveriesResource::collection($deliveries)),
+                    : Inertia::optional(fn () => PalletDeliveriesResource::collection($deliveries)),
 
                 PalletDeliveriesTabsEnum::UPLOADS->value => $this->tab == PalletDeliveriesTabsEnum::UPLOADS->value ?
                     fn () => PalletUploadsResource::collection(IndexRetinaPalletUploads::run($this->webUser, PalletDeliveriesTabsEnum::UPLOADS->value))
-                    : Inertia::lazy(fn () => PalletUploadsResource::collection(IndexRetinaPalletUploads::run($this->webUser, PalletDeliveriesTabsEnum::UPLOADS->value))),
+                    : Inertia::optional(fn () => PalletUploadsResource::collection(IndexRetinaPalletUploads::run($this->webUser, PalletDeliveriesTabsEnum::UPLOADS->value))),
             ]
         )->table($this->tableStructure(fulfilmentCustomer: $this->customer->fulfilmentCustomer, prefix: PalletDeliveriesTabsEnum::DELIVERIES->value))
         ->table(IndexRetinaPalletUploads::make()->tableStructure(prefix:PalletDeliveriesTabsEnum::UPLOADS->value));

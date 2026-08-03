@@ -21,6 +21,7 @@ enum InvoiceTabsEnum: string
     case PAYMENTS = 'payments';
     case EMAIL = 'email';
     case REFUNDS = 'refunds';
+    case ATTACHMENTS = 'attachments';
 
     public function blueprint(): array
     {
@@ -43,6 +44,13 @@ enum InvoiceTabsEnum: string
                 'title' => __('Email'),
                 'icon'  => 'fal fa-envelope',
                 'type'  => 'icon'
+            ],
+
+            InvoiceTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
 
             InvoiceTabsEnum::HISTORY => [

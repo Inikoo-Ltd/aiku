@@ -8,8 +8,8 @@
 
 namespace App\Actions\SysAdmin\Group\Seeders;
 
-use App\Actions\Analytics\AikuSection\StoreAikuSection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\SysAdmin\AikuSection\StoreAikuSection;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Models\Analytics\AikuSection;
@@ -17,7 +17,7 @@ use App\Models\SysAdmin\Group;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SeedAikuSections extends GrpAction
+class SeedAikuSections extends OrgAction
 {
     use AsAction;
     use WithAttachMediaToModel;

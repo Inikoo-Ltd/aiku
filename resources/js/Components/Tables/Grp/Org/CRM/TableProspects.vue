@@ -9,6 +9,7 @@ import {Link, router} from '@inertiajs/vue3';
 import Table from '@/Components/Table/Table.vue';
 import { Prospect } from "@/types/prospect";
 import Multiselect from '@vueform/multiselect'
+import "@vueform/multiselect/themes/default.css"
 import Tag from '@/Components/Tag.vue';
 import { ref } from 'vue'
 import Icon from '@/Components/Icon.vue';

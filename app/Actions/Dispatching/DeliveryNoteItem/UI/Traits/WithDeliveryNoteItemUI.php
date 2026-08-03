@@ -1,0 +1,154 @@
+<?php
+
+namespace App\Actions\Dispatching\DeliveryNoteItem\UI\Traits;
+
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
+use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\InertiaTable\InertiaTable;
+use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
+use Spatie\QueryBuilder\AllowedFilter;
+
+trait WithDeliveryNoteItemUI
+{
+    use WithDeliveryNoteHandler;
+
+    protected function getGlobalSearchFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereStartWith('org_stocks.code', $value)
+                    ->orWhereStartWith('org_stocks.name', $value);
+            });
+        });
+    }
+
+    protected function getUnNumbersSubquery(): Builder
+    {
+        return DB::table('trade_units')
+            ->join('model_has_trade_units', function ($join) {
+                $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
+                    ->where('model_has_trade_units.model_type', 'OrgStock');
+            })
+            ->whereColumn('model_has_trade_units.model_id', 'org_stocks.id')
+            ->whereNotNull('trade_units.un_number')
+            ->where('trade_units.un_number', '<>', 'None')
+            ->selectRaw("jsonb_object_agg(
+                trade_units.id,
+                jsonb_build_object(
+                    'number', trade_units.un_number,
+                    'shipping_name', trade_units.proper_shipping_name
+                )
+            )");
+    }
+
+    protected function getPickingsSubquery(): Builder
+    {
+        return DB::table('pickings')
+            ->leftJoin('locations', 'locations.id', '=', 'pickings.location_id')
+            ->leftJoin('batch_codes', 'pickings.batch_code_id', '=', 'batch_codes.id')
+            ->whereColumn('pickings.delivery_note_item_id', 'delivery_note_items.id')
+            ->where('pickings.type', '<>', PickingTypeEnum::NOT_PICK)
+            ->where('pickings.quantity', '<>', 0)
+            ->selectRaw("
+                        jsonb_object_agg(
+                            pickings.id,
+                            jsonb_build_object(
+                                'quantity', pickings.quantity,
+                                'location_slug', locations.slug,
+                                'location_code', locations.code,
+                                'batch_code_id', pickings.batch_code_id,
+                                'batch_code', batch_codes.code
+                            )
+                        )
+                    ");
+    }
+
+    protected function hasPickingsWithBatchCodes(DeliveryNote $deliveryNote): bool
+    {
+        return DB::table('pickings')
+            ->join('delivery_note_items', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+            ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
+            ->whereNotNull('pickings.batch_code_id')
+            ->exists();
+    }
+
+    protected function addDeliveryNoteItemBaseTableColumns(InertiaTable $table): void
+    {
+        $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+        $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+        $table->column(key: 'barcode', label: __('Barcode'), align: 'center');
+    }
+
+    protected function applyDeliveryNoteItemPickingJoins($query): void
+    {
+        $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
+        $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
+    }
+
+    protected function applyDeliveryNoteItemBaseWiths($query): void
+    {
+        $query->with(['pickings.location.warehouse', 'pickings.batchCode', 'pickings.orgStock.mainBatchCode']);
+        $query->with('orgStock.tradeUnits');
+    }
+
+    protected function applyDeliveryNoteItemBaseJoins($query): void
+    {
+        $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
+        $query->leftJoin('batch_codes', 'delivery_note_items.batch_code_id', '=', 'batch_codes.id');
+    }
+
+    protected function getDeliveryNoteItemBaseSelect(): array
+    {
+        return [
+            'delivery_note_items.id',
+            'delivery_note_items.state',
+            'delivery_note_items.quantity_required',
+            'delivery_note_items.quantity_picked',
+            'delivery_note_items.quantity_packed',
+            'delivery_note_items.quantity_dispatched',
+            'delivery_note_items.quantity_not_picked',
+            'delivery_note_items.is_handled',
+            'delivery_note_items.batch_code_id',
+            'delivery_note_items.organisation_id',
+            DB::raw('COALESCE(batch_codes.code, delivery_note_items.batch_code) as batch_code'),
+            DB::raw('COALESCE(batch_codes.expiry_date, delivery_note_items.expiry_date) as expiry_date'),
+            'org_stocks.id as org_stock_id',
+            'org_stocks.code as org_stock_code',
+            'org_stocks.name as org_stock_name',
+            'org_stocks.slug as org_stock_slug',
+            'org_stocks.packed_in as packed_in',
+            'org_stocks.barcode',
+            'org_stocks.note_to_pickers as org_stock_note_to_pickers',
+            'org_stocks.note_to_packers as org_stock_note_to_packers',
+            'delivery_note_items.quantity_waiting_crm',
+            'delivery_note_items.quantity_waiting_warehouse',
+        ];
+    }
+
+    protected function getDeliveryNoteItemPickingSelect(): array
+    {
+        return [
+            'locations.sort_code as picking_position',
+            'warehouse_areas.code as warehouse_area_code',
+            'warehouse_areas.picking_position as warehouse_area_picking_position',
+        ];
+    }
+
+    protected function getDeliveryNoteItemBaseSorts(): array
+    {
+        return ['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'];
+    }
+
+    protected function addDeliveryNoteItemQuantityTableColumns(InertiaTable $table, bool $allowAction, bool $includePacked = true): void
+    {
+        $suffix = $allowAction ? '' : '_readonly';
+
+        $table->column(key: 'quantity_required'.$suffix, label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+        $table->column(key: 'quantity_picked'.$suffix, label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+        if ($includePacked) {
+            $table->column(key: 'quantity_packed'.$suffix, label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+        }
+    }
+}

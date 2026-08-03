@@ -339,7 +339,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 ],
                 'upload_stored_item' => [
                     'title' => [
-                        'label' => __("Upload Customer's SKU"),
+                        'label' => __("Upload Customer's SKO"),
                         'information' => __('The list of column file: customer_reference, notes, stored_items')
                     ],
                     'progressDescription'   => __('Adding stored item'),
@@ -523,19 +523,19 @@ class ShowRetinaPalletDelivery extends RetinaAction
 
                 RetinaPalletDeliveryTabsEnum::GOODS->value => $this->tab == RetinaPalletDeliveryTabsEnum::GOODS->value ?
                     fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::GOODS->value))
-                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::GOODS->value))),
+                    : Inertia::optional(fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::GOODS->value))),
 
                 RetinaPalletDeliveryTabsEnum::SERVICES->value => $this->tab == RetinaPalletDeliveryTabsEnum::SERVICES->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::SERVICES->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::SERVICES->value))),
+                    : Inertia::optional(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::SERVICES->value))),
 
                 RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value => $this->tab == RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value))),
+                    : Inertia::optional(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, RetinaPalletDeliveryTabsEnum::PHYSICAL_GOODS->value))),
 
                 RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value))),
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, RetinaPalletDeliveryTabsEnum::ATTACHMENTS->value))),
 
             ]
         )->table(

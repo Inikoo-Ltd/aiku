@@ -10,6 +10,8 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
+use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexIndexTransactionsInBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
@@ -37,12 +39,15 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingBasket extends RetinaAction
 {
+    use \App\Actions\Traits\WithLineTaxCategories;
     use HasBasketDetails;
     use GetPlatformLogo;
+    use WithOrderForbiddenCountryCheck;
 
     public function handle(Order $order): Order
     {
-        return $order;
+        return FixMiscalculatedTransactionAmounts::run($order, true);
+
     }
 
     public function authorize(ActionRequest $request): bool
@@ -73,6 +78,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         $insurance       = $charges['insurance'];
 
         \Sentry\traceMetrics()->count('visit.basket.ds', 1, ['shop' => $this->shop->slug]);
+
+        $orderBanStatus = $this->isForbiddenDetailed($order);
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingBasket',
@@ -195,7 +202,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
                 ],
 
-                'is_unable_dispatch' => in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
+                'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
+                'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
 
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
@@ -207,7 +215,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
                     fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
+                    : Inertia::optional(fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
 
 
             ]
@@ -301,11 +309,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'information' => '',
                         'price_total' => $order->net_amount
                     ],
-                    [
-                        'label'       => $taxCategory->getLocalizedName(),
-                        'information' => '',
-                        'price_total' => $order->tax_amount
-                    ]
+                    ...$this->getOrderTaxRows($order),
                 ],
                 [
                     [

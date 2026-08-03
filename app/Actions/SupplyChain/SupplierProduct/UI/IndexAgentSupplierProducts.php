@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
 use App\Actions\Inventory\UI\ShowAgentInventoryDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Http\Resources\SupplyChain\SupplierProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -29,6 +30,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexAgentSupplierProducts extends OrgAction
 {
+    use WithSupplyChainAuthorisation;
     protected function getElementGroups(Agent $agent): array
     {
         return [
@@ -141,7 +143,7 @@ class IndexAgentSupplierProducts extends OrgAction
         $actions = null;
 
 
-        $title      = 'SKUs';
+        $title      = 'SKOs';
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-people-arrows'],
@@ -163,7 +165,7 @@ class IndexAgentSupplierProducts extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'              => __('SKUs'),
+                'title'              => __('SKOs'),
                 'pageHead'           => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -188,7 +190,7 @@ class IndexAgentSupplierProducts extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('SKUs'),
+                        'label' => __('SKOs'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],

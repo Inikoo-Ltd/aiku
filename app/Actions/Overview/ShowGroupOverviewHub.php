@@ -8,20 +8,20 @@
 
 namespace App\Actions\Overview;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowGroupOverviewHub extends GrpAction
+class ShowGroupOverviewHub extends OrgAction
 {
     use WithGroupOverviewAuthorisation;
 
     public function asController(ActionRequest $request): ActionRequest
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
         return $request;
     }
 
@@ -56,13 +56,8 @@ class ShowGroupOverviewHub extends GrpAction
                                 ],
                                 [
                                     'col_span' => 1,
-                                    'type' => 'operation_display',
-
-                                ],
-                                [
-                                    'col_span' => 1,
-                                    'type' => 'operation_display',
-
+                                    'type' => 'typesense_display',
+                                    'data' => GetTypesenseMetrics::run()
                                 ]
                             ],
                     ]

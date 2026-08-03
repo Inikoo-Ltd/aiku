@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 
@@ -58,6 +59,11 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
             'is_handled'              => $isCompleted,
             'estimated_picked_weight' => $pickedWeight
         ];
+
+        /** Handle waiting routes only clear the quantities but don't update the state. This will help. */
+        if ($deliveryNoteItem->state == DeliveryNoteItemStateEnum::HANDLING_BLOCKED && $totalWaiting == 0) {
+            $dataToUpdate['state'] = DeliveryNoteItemStateEnum::HANDLING;
+        }
 
         $deliveryNoteItem = $this->update($deliveryNoteItem, $dataToUpdate);
         $deliveryNoteItem->refresh();

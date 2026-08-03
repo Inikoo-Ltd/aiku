@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Dispatching\Packing\DeletePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandlingBlocked;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -19,6 +20,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
@@ -37,12 +39,12 @@ class UndoPackingDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         $oldState = $deliveryNote->state;
-        data_set($modelData, 'state', DeliveryNoteStateEnum::PICKED->value);
-
 
         foreach ($deliveryNote->deliveryNoteItems as $item) {
             $item->update([
-                'state'           => DeliveryNoteItemStateEnum::PICKED->value,
+                'state'         => $this->isWaiting($item)
+                    ? DeliveryNoteItemStateEnum::HANDLING_BLOCKED->value
+                    : DeliveryNoteItemStateEnum::PICKED->value,
             ]);
 
             foreach ($item->packings as $packing) {
@@ -52,10 +54,23 @@ class UndoPackingDeliveryNote extends OrgAction
             CalculateDeliveryNoteItemTotalPicked::run($item);
         }
 
+        $hasWaiting = $deliveryNote->deliveryNoteItems->contains(fn ($item) => $this->isWaiting($item));
+
+        if ($hasWaiting) {
+            data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
+            data_set($modelData, 'handling_blocked_at', now());
+        } else {
+            data_set($modelData, 'state', DeliveryNoteStateEnum::PICKED->value);
+        }
+
         if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
             $order = $deliveryNote->orders->first();
 
-            UpdateOrderStateToPicked::make()->action($order, $deliveryNote);
+            if ($hasWaiting) {
+                UpdateOrderStateToHandlingBlocked::make()->action($order, $deliveryNote);
+            } else {
+                UpdateOrderStateToPicked::make()->action($order, $deliveryNote);
+            }
         }
 
         $deliveryNote = $this->update($deliveryNote, $modelData);
@@ -67,9 +82,14 @@ class UndoPackingDeliveryNote extends OrgAction
         }
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKING);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 
         return $deliveryNote;
+    }
+
+    private function isWaiting(DeliveryNoteItem $deliveryNoteItem): bool
+    {
+        return $deliveryNoteItem->has_waiting_warehouse || $deliveryNoteItem->has_waiting_crm;
     }
 
 

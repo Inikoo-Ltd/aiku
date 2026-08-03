@@ -61,7 +61,7 @@ const rootRef = ref<HTMLElement | null>(null)
 
 const localLayout = reactive(cloneDeep(parentLayout))
 
-localLayout.app.theme = props.layout_theme.color
+localLayout.app.theme = props?.layout_theme?.color
 localLayout.iris = {
   ...localLayout.iris,
   is_logged_in: true,

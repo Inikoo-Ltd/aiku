@@ -12,7 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Bundle\UI;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\CRM\BundleResource;
-use App\Models\Bundle;
+use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 

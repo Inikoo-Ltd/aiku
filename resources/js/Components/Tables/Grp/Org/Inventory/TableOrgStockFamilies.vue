@@ -36,12 +36,14 @@ const getIntervalStateColor = (isPositive: boolean) => {
     return isPositive ? "text-green-500" : "text-red-500"
 }
 
+const routeParams = route().params as RouteParams
+
 function stockFamilyRoute(stockFamily: StockFamily) {
   return route(
     "grp.org.warehouses.show.inventory.org_stock_families.show",
     [
-      (route().params as RouteParams).organisation,
-      (route().params as RouteParams).warehouse,
+      routeParams.organisation,
+      routeParams.warehouse,
       stockFamily.slug]);
 
 }
@@ -50,8 +52,8 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
   return route(
     "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index",
     [
-      (route().params as RouteParams).organisation,
-      (route().params as RouteParams).warehouse,
+      routeParams.organisation,
+      routeParams.warehouse,
       stockFamily.slug]);
 }
 

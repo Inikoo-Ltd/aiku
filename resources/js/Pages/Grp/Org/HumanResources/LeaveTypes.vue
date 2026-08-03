@@ -140,6 +140,26 @@ const modalTitle = computed(() =>
 			<span v-else class="text-gray-400 text-sm italic">{{ trans("No color") }}</span>
 		</template>
 
+		<template #cell(requires_approval)="{ item }">
+			<span
+				:class="item.requires_approval
+					? 'bg-green-100 text-green-700'
+					: 'bg-red-100 text-red-700'"
+				class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium">
+				{{ item.requires_approval ? trans('Yes') : trans('No') }}
+			</span>
+		</template>
+
+		<template #cell(is_active)="{ item }">
+			<span
+				:class="item.is_active
+					? 'bg-green-100 text-green-700'
+					: 'bg-red-100 text-red-700'"
+				class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium">
+				{{ item.is_active ? trans('Active') : trans('No Active') }}
+			</span>
+		</template>
+
 		<template #cell(action)="{ item }">
 			<div class="flex justify-end gap-2">
 				<Button

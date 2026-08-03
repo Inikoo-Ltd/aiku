@@ -19,10 +19,13 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Helpers\TaxNumber;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Actions\Traits\WithLineTaxCategories;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
 use Eloquent;
@@ -39,7 +42,9 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -128,7 +133,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $amount_off
  * @property string|null $email
  * @property string|null $phone
+ * @property string|null $identity_document_number_alt
+ * @property bool $is_pastpay
+ * @property string|null $fiscal_name
  * @property-read Address|null $address
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
  * @property-read Currency $currency
@@ -140,6 +149,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group|null $group
  * @property-read \App\Models\Accounting\InvoiceCategory|null $invoiceCategory
  * @property-read Collection<int, \App\Models\Accounting\InvoiceTransaction> $invoiceTransactions
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Order|null $order
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation
@@ -151,6 +161,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Shop|null $shop
  * @property-read \App\Models\Accounting\InvoiceStats|null $stats
  * @property-read TaxCategory $taxCategory
+ * @property-read TaxNumber|null $taxNumber
  * @method static \Database\Factories\Accounting\InvoiceFactory factory($count = null, $state = [])
  * @method static Builder<static>|Invoice newModelQuery()
  * @method static Builder<static>|Invoice newQuery()
@@ -160,14 +171,16 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Invoice withoutTrashed()
  * @mixin Eloquent
  */
-class Invoice extends Model implements Auditable
+class Invoice extends Model implements Auditable, HasMedia
 {
+    use WithLineTaxCategories;
     use SoftDeletes;
     use HasSlug;
     use HasFactory;
     use InCustomer;
     use HasHistory;
     use HasSearch;
+    use HasAttachments;
 
     protected $casts = [
         'type'                => InvoiceTypeEnum::class,
@@ -204,6 +217,7 @@ class Invoice extends Model implements Auditable
                 'reference',
                 'customer_reference',
                 'customer_name',
+                'fiscal_name',
                 'customer_contact_name',
                 'email',
                 'phone',
@@ -221,6 +235,7 @@ class Invoice extends Model implements Auditable
             'type'                  => $this->type->value,
             'reference'             => $this->reference,
             'customer_name'         => (string)$this->customer_name,
+            'fiscal_name'          => (string)$this->fiscal_name,
             'customer_contact_name' => (string)$this->customer_contact_name,
             'email'                 => (string)$this->email,
             'phone'                 => (string)$this->phone,
@@ -236,6 +251,7 @@ class Invoice extends Model implements Auditable
     protected array $auditInclude = [
         'reference',
         'type',
+        'fiscal_name',
         'state',
         'status',
         'email',
@@ -354,9 +370,21 @@ class Invoice extends Model implements Auditable
         return $this->belongsTo(TaxCategory::class);
     }
 
+    /**
+     * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
+     */
+    public function taxBreakdown(): array
+    {
+        return $this->getInvoiceTaxBreakdown($this);
+    }
+
     public function customerClient(): BelongsTo
     {
         return $this->belongsTo(CustomerClient::class);
     }
 
+    public function taxNumber(): MorphOne
+    {
+        return $this->morphOne(TaxNumber::class, 'owner');
+    }
 }

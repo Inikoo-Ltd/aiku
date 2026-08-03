@@ -8,6 +8,8 @@
 
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Comms\Notifications\GetSnsNotification;
+use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
+use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductChanged;
@@ -21,12 +23,15 @@ use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
+use App\Actions\Helpers\Jira\Webhook\HandleJiraWebhook;
+use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::name('webhooks.')->group(function () {
-    Route::post('sns', GetSnsNotification::class)->name('sns');
+    Route::post('sns', GetSnsNotification::class)->name('sns')->middleware(Sample::never());
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
 });
 
+Route::get('google-ads/callback', CallbackShopGoogleAds::class)->name('google_ads.callback');
 
 Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::any('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
@@ -34,9 +39,7 @@ Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(func
     Route::post('app-uninstalled', WebhookUninstalledShopifyUser::class)->name('app_uninstalled');
     Route::any('products-deleted', CallbackProductDelete::class)->name('products_deleted');
     Route::any('products-updated', CallbackProductChanged::class)->name('products_updated');
-
 });
-
 
 
 Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
@@ -67,4 +70,12 @@ Route::middleware('verify.shopify.webhook')->group(function () {
 Route::prefix('tiktok')->as('webhooks.tiktok.')->group(function () {
     Route::post('orders', HandleOrderIncomingTiktok::class)->name('orders.create');
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
+});
+
+Route::prefix('allegro')->as('allegro.')->group(function () {
+    Route::get('callback', AuthenticateAllegroAccount::class)->name('callback');
+});
+
+Route::prefix('jira/{group:id}')->as('webhooks.jira.')->group(function () {
+    Route::post('updated', HandleJiraWebhook::class)->name('updated');
 });

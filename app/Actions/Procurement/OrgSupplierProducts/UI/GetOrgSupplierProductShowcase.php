@@ -10,37 +10,32 @@
 
 namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 
+use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductShowcase;
 use App\Models\Procurement\OrgSupplierProduct;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetOrgSupplierProductShowcase
 {
     use AsObject;
+    use WithSupplierProductShowcase;
 
     public function handle(OrgSupplierProduct $orgSupplierProduct): array
     {
-        $data = [
-            'contactCard' => [
-                'company'  => $orgSupplierProduct->organisation->name,
-                'contact'  => $orgSupplierProduct->organisation->contact_name ?? '',
-                'email'    => $orgSupplierProduct->organisation->email ?? '',
-                'phone'    => $orgSupplierProduct->organisation->phone ?? '',
-                'location' => $orgSupplierProduct->organisation->location ?? '',
-                // 'address'  => AddressResource::make($agent->organisation->address)->getArray(),
-                'photo'    => $orgSupplierProduct->organisation->imageSources()
-            ],
-            'stats'       => [
-                [
-                    'label' => __('purchase orders'),
-                    'count' => $orgSupplierProduct->stats->number_purchase_orders,
-                    'full'  => true
+        return array_merge(
+            $this->getSupplierProductShowcase($orgSupplierProduct->supplierProduct),
+            [
+                'organisation' => [
+                    'name'         => $orgSupplierProduct->organisation->name,
+                    'code'         => $orgSupplierProduct->organisation->code,
+                    'state'        => $orgSupplierProduct->state,
+                    'is_available' => $orgSupplierProduct->is_available,
                 ],
-                [
-                    'label' => __('deliveries'),
-                    'count' => $orgSupplierProduct->stats->number_stock_deliveries
-                ],
+                'parties'      => array_values(array_filter([
+                    $this->getOrgSupplierParty($orgSupplierProduct->orgSupplier),
+                    $this->getOrgAgentParty($orgSupplierProduct->orgAgent),
+                ])),
+                'stats'        => $this->getProcurementStatsBoxes($orgSupplierProduct->stats),
             ]
-        ];
-        return $data;
+        );
     }
 }

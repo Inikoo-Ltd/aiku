@@ -7,6 +7,7 @@ import { ref } from "vue"
 import Popover from '@/Components/Popover.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Multiselect from "@vueform/multiselect"
+import "@vueform/multiselect/themes/default.css"
 
 import '@/Composables/Icon/PalletStateEnum'
 import '@/Composables/Icon/PalletStatusEnum'

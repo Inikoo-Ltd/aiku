@@ -6,6 +6,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+// Todo: Duplicated IndexMasterFamiliesGR
+
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;

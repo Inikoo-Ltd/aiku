@@ -23,7 +23,7 @@ import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import { capitalize } from "@/Composables/capitalize"
-import FamilyShowcase from "@/Components/Showcases/Grp/FamilyShowcase.vue"
+import MasterFamilyShowcase from "@/Components/Showcases/Grp/MasterFamilyShowcase.vue"
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
@@ -40,6 +40,7 @@ import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVarian
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
+import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 
 library.add(
     faFolder,
@@ -64,10 +65,10 @@ const props = defineProps<{
         navigation: object
     }
     storeProductRoute : routeType
-    customers: object
-    mailshots: object
-    showcase: object
-    details: object
+    customers?: object
+    mailshots?: object
+    showcase?: object
+    details?: object
     history?: object;
     families?: object
     is_orphan?: boolean
@@ -81,13 +82,14 @@ const props = defineProps<{
     mini_breadcrumbs?: any[]
     variants?:object
     isPerfectFamily: boolean
-    price_rrp_warning_ratio : number
     mismatch_detected?: boolean
-    related_products : object
+    related_products? : object
+    related_product_category? : object
     vol_gr_reward?: {
         show_gr_vol: boolean
         gr_vol_discount_quantity?: number
         gr_vol_discount_percentage?: number
+        missing_gr_children_count?: number
     }
 }>()
 const layout = inject("layout")
@@ -100,7 +102,7 @@ const handleTabUpdate = (tabSlug: string) => {
 
 const component = computed(() => {
     const components = {
-        showcase: FamilyShowcase,
+        showcase: MasterFamilyShowcase,
         mailshots: TableMailshots,
         families: TableFamilies,
         customers: TableCustomers,
@@ -109,13 +111,13 @@ const component = computed(() => {
         images : ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
         variants: TableMasterVariants,
-        related_products: ProductCategoryRecomendation
+        related_products: ProductCategoryRecomendation,
+        related_product_category: RelatedProductCategory,
     }
     return components[currentTab.value] ?? ModelDetails
 })
 
 const showDialog = ref(false);
-
 
 </script>
 
@@ -188,9 +190,9 @@ const showDialog = ref(false);
             </template>
         </Breadcrumb>
         <Message v-if="mismatch_detected" :severity="'error'">
-            <FontAwesomeIcon 
-                :icon="faWarning" 
-                class="text-red-500 mr-1" 
+            <FontAwesomeIcon
+                :icon="faWarning"
+                class="text-red-500 mr-1"
             />
             {{ trans("One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units.") }}
         </Message>
@@ -206,7 +208,6 @@ const showDialog = ref(false);
         :shopsData="shopsData"
         :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
-        :price_rrp_warning_ratio="price_rrp_warning_ratio"
     />
 
 

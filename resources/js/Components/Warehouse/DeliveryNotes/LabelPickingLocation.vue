@@ -67,18 +67,18 @@ const locationHref = computed(() => {
 
             <span
                 v-tooltip="ctrans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(currentLocation?.quantity || 0), stockLocation: currentLocation?.location_code || '' })"
-                class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
+                class="text-sm align-middle whitespace-nowrap py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
             >
-                (<span class="text-lg font-bold">
+                (<span class="xtext-sm xml-1">{{ ctrans("avbl. stocks") }}:</span>
+                <span class="ml-1 xtext-lg xfont-bold">
                     <FractionDisplay
                         v-if="currentLocation?.quantity_fractional"
                         :fractionData="currentLocation?.quantity_fractional"
                     />
                     <template v-else>
                         {{ locale.number(currentLocation?.quantity ?? 0) }}
-                    </template>
+                    </template>)
                 </span>
-                <span class="text-sm ml-1">{{ ctrans("stocks") }}</span>)
             </span>
         </div>
     </Transition>

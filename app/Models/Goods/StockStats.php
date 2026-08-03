@@ -100,6 +100,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $total_image_size
  * @property float $average_image_size
  * @property float|null $max_image_size
+ * @property int $number_stock_deliveries_state_booking_in
+ * @property int $number_stock_deliveries_state_booked_in
  * @property-read \App\Models\Goods\Stock|null $stock
  * @method static Builder<static>|StockStats newModelQuery()
  * @method static Builder<static>|StockStats newQuery()

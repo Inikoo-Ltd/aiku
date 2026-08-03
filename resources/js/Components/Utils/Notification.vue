@@ -50,7 +50,7 @@ const props = defineProps<{
             <p v-if="props.notification.item.text" class="text-sm  mb-0 max-w-full">
                 {{ props.notification.item.text }}
             </p>
-            <div @click.stop="(e) => (props.notification.item.data?.function())" v-html="props.notification.item.data?.html">
+            <div @click.stop="(e) => (props.notification.item.data?.function ? props.notification.item.data?.function() : false)" v-html="props.notification.item.data?.html">
                 
             </div>
         </div>

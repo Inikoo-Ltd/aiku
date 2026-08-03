@@ -15,7 +15,7 @@ use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
+use Sentry;
 
 class SaveShopDataAllegroChannel
 {
@@ -26,13 +26,11 @@ class SaveShopDataAllegroChannel
         try {
             /** @var Shop $shop */
             $shop = $allegroUser->customerSalesChannel->shop;
-            // Get user info from Allegro API
             $userInfo = $allegroUser->getUserInfo();
 
             if ($userInfo) {
                 $data = $allegroUser->data ?? [];
 
-                // Save user/seller information
                 data_set($data, 'user_id', Arr::get($userInfo, 'id'));
                 data_set($data, 'login', Arr::get($userInfo, 'login'));
                 data_set($data, 'email', Arr::get($userInfo, 'email'));
@@ -41,34 +39,20 @@ class SaveShopDataAllegroChannel
                 data_set($data, 'marketplace_id', Arr::get($userInfo, 'baseMarketplace.id'));
 
                 if (! Arr::get($allegroUser->settings, 'shipping.id')) {
-                    try {
-                        $deliveryMethods = $allegroUser->getDeliveryMethods();
-                        $deliveryMethod = collect(Arr::get($deliveryMethods, 'deliveryMethods'))->firstWhere('destinationCountry', $shop->country->code);
+                    $shippingRates = $allegroUser->getShippingRates();
 
-                        $shipping = $allegroUser->createShippingRates([
-                            'name' => 'Shipping-rates-'.$allegroUser->customerSalesChannel->slug,
-                            'rates' => [
-                                [
-                                    'deliveryMethod' => [
-                                        'id' => Arr::get($deliveryMethod ?? [], 'id'),
-                                    ],
-                                    'maxQuantityPerPackage' => 5,
-                                    'firstItemRate' => [
-                                        'currency' => Arr::get($deliveryMethod ?? [], 'shippingRatesConstraints.firstItemRate.currency'),
-                                        'amount' => '2.00'
-                                    ],
-                                    'nextItemRate' => [
-                                        'currency' => Arr::get($deliveryMethod ?? [], 'shippingRatesConstraints.nextItemRate.currency'),
-                                        'amount' => '0.00'
-                                    ],
-                                ]
-                            ]
-                        ]);
-                    } catch (\Exception $e) {
-                        $shipping = [];
+                    if (Arr::get($shippingRates, 'shippingRates.0.id')) {
+                        $shipping = Arr::get($shippingRates, 'shippingRates.0');
+                    } else {
+                        $shipping = ProcessShippingRates::run($allegroUser);
                     }
 
-                    data_set($data, 'shipping_id', Arr::get($shipping, 'id'));
+                    $shippingId = Arr::get($shipping, 'id');
+                    if (blank($shippingId)) {
+                        Sentry::captureMessage('Shipping rates not found');
+                    }
+
+                    data_set($data, 'shipping_id', $shippingId);
                 }
 
                 if (! Arr::get($allegroUser->settings, 'policy.return_id')) {
@@ -79,15 +63,65 @@ class SaveShopDataAllegroChannel
                                 'street'        => $shop->address->address_line_1,
                                 'city'        => $shop->address->locality,
                                 'country_code' => $shop->country->code,
-                                'post_code'    => $shop->address->postal_code,
-                                'province'    => $shop->address->administrative_area
+                                'post_code'    => $shop->address->postal_code
                             ]
                         ]);
+
+                        data_set($data, 'return_id', Arr::get($return, 'id'));
                     } catch (\Exception $e) {
-                        $return = [];
+                        Sentry::captureException($e);
+                    }
+                }
+
+                if (Arr::get($data, 'responsible_producer_id') === null) {
+                    try {
+                        $responsibleProducer = $allegroUser->createResponsibleProducer([
+                            'name' => trim($shop->name . '-' . rand(1000, 9999)),
+                            'producerData' => [
+                                'tradeName' => $shop->name,
+                                'address' => [
+                                    'street' => $shop->address->address_line_1,
+                                    'city' => $shop->address->locality,
+                                    'countryCode' => $shop->country->code,
+                                    'postalCode' => $shop->address->postal_code,
+                                ],
+                                'contact' => [
+                                    'email' => $shop->email,
+                                    'phoneNumber' => '441142729165'
+                                ]
+                            ]
+                        ]);
+
+                        data_set($data, 'responsible_producer_id', Arr::get($responsibleProducer, 'id'));
+                    } catch (\Exception $e) {
+                        Sentry::captureException($e);
+                    }
+                }
+
+                if (Arr::get($data, 'responsible_person_id') === null) {
+                    try {
+                        $responsiblePerson = $allegroUser->createResponsiblePerson([
+                            'name' => trim($shop->name . '-' . rand(1000, 9999)),
+                            'personalData' => [
+                                'name' => $shop->name,
+                                'address' => [
+                                    'street' => 'CTPark Trnava',
+                                    'city' => 'Zavar',
+                                    'countryCode' => 'SK',
+                                    'postalCode' => '919 26',
+                                ],
+                                'contact' => [
+                                    'email' => $shop->email,
+                                    'phoneNumber' => '441142729165'
+                                ]
+                            ]
+                        ]);
+
+                        data_set($data, 'responsible_person_id', Arr::get($responsiblePerson, 'id'));
+                    } catch (\Exception $e) {
+                        Sentry::captureException($e);
                     }
 
-                    data_set($data, 'return_id', Arr::get($return, 'id'));
                 }
 
                 $allegroUser = $this->update($allegroUser, [
@@ -109,11 +143,13 @@ class SaveShopDataAllegroChannel
                 UpdateCustomerSalesChannel::run($allegroUser->customerSalesChannel, [
                     'name' => Arr::get($data, 'company_name')
                 ]);
+            } else {
+                Sentry::captureMessage('User info not found');
             }
 
             return $allegroUser->refresh();
         } catch (\Exception $e) {
-            Log::error('Failed to save Allegro shop data: ' . $e->getMessage());
+            \Sentry::captureException($e);
             return $allegroUser;
         }
     }

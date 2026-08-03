@@ -6,6 +6,7 @@
 	"component": "header",
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"is_in_test" : false,
+	"shop_availability": [],
 	"data": {
 		"fieldValue": {
 			"container": {

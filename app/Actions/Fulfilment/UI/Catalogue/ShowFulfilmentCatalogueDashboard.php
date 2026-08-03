@@ -143,7 +143,7 @@ class ShowFulfilmentCatalogueDashboard extends OrgAction
 
                 FulfilmentAssetsTabsEnum::ASSETS->value => $this->tab == FulfilmentAssetsTabsEnum::ASSETS->value ?
                     fn () => FulfilmentProductsResource::collection($assets)
-                    : Inertia::lazy(fn () => FulfilmentProductsResource::collection($assets)),
+                    : Inertia::optional(fn () => FulfilmentProductsResource::collection($assets)),
 
 
             ]

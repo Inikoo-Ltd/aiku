@@ -52,6 +52,14 @@ class GetMasterProductImages
                     'media'       => ''
                 ],
             ],
+            'update_image_alt_route' => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.master_asset.update_image_alt',
+                'parameters' => [
+                    'masterAsset' => $masterAsset->id,
+                    'media'       => ''
+                ],
+            ],
             'images'              => ImagesResource::collection(IndexMasterProductImages::run($masterAsset))->resolve(),
 
         ];

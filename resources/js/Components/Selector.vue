@@ -101,7 +101,7 @@ defineExpose({ open })
       <PureInput 
         v-model="query" 
         @update:modelValue="debounceFetch"
-        placeholder="Search..." 
+        :placeholder="trans('Search...')" 
       />
     </div>
 

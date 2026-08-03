@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
@@ -52,11 +53,22 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
-            foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
-                StorePacking::make()->action($item, $this->user, []);
+            $notFullyPacked = $deliveryNote->deliveryNoteItems->reject(
+                fn ($item) => UpdateDeliveryNoteItemPacking::isFullyPacked($item)
+            );
+
+            foreach ($notFullyPacked as $item) {
+                StorePacking::make()->action($item, $this->user, [
+                    'quantity' => UpdateDeliveryNoteItemPacking::quantityLeftToPack($item),
+                ]);
             }
 
-            if (count($deliveryNote->parcels) == 0) {
+            // Lock only the 'parcels' (handle concurrency)
+            $currentParcels = DeliveryNote::whereKey($deliveryNote->id)
+                ->lockForUpdate()
+                ->value('parcels') ?? [];
+
+            if (count($currentParcels) == 0) {
                 $defaultParcel = [
                     [
                         'weight'     => $deliveryNote->effective_weight / 1000,

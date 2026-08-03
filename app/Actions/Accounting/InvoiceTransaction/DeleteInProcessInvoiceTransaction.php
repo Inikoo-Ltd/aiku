@@ -9,6 +9,7 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\OrgAction;
 use App\Models\Accounting\InvoiceTransaction;
 
@@ -19,6 +20,7 @@ class DeleteInProcessInvoiceTransaction extends OrgAction
     public function handle(InvoiceTransaction $invoiceTransaction): void
     {
         $invoiceTransaction->delete();
+        CalculateInvoiceTotals::run($invoiceTransaction->invoice);
     }
 
 

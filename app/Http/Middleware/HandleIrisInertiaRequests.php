@@ -47,21 +47,23 @@ class HandleIrisInertiaRequests extends Middleware
         if (!$request->inertia() || Session::get('reloadLayout')) {
             $websiteTheme = Arr::get($website->published_layout, 'theme');
 
+
+
+
             $firstLoadOnlyProps = [
                 'currency'    => $request->input('currency_data'),
                 'environment' => app()->environment(),
                 'ziggy'       => function () use ($request) {
-                    return array_merge(new Ziggy('iris')->toArray(), [
-                        'location' => $request->url()
+                    return array_merge((new Ziggy('iris'))->toArray(), [
+                        'location' => $request->url(),
                     ]);
                 },
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,
                 'iris'     => $this->getIrisData($website),
-
-                "retina"   => [
-                    "type"         => $request->input('shop_type'),
-                    "organisation" => $website->organisation->slug,
+                'retina'        => [
+                    'type'         => $request->input('shop_type'),
+                    'organisation' => $website?->organisation?->slug,
                 ],
                 "layout"   => [
                     "app_theme" => Arr::get($websiteTheme, 'color'),
@@ -79,18 +81,23 @@ class HandleIrisInertiaRequests extends Middleware
         }
 
 
+        $alwaysProps = [
+            'flash'         => [
+                'notification' => fn () => $request->session()->get('notification'),
+                'modal'        => fn () => $request->session()->get('modal')
+            ],
+            'announcements' => $website ? $this->getAnnouncements($website) : [],
+        ];
+
+        if (!array_key_exists('ziggy', $firstLoadOnlyProps)) {
+            $alwaysProps['ziggy'] = [
+                'location' => $request->url(),
+            ];
+        }
+
         return array_merge(
             $firstLoadOnlyProps,
-            [
-                'flash'         => [
-                    'notification' => fn () => $request->session()->get('notification'),
-                    'modal'        => fn () => $request->session()->get('modal')
-                ],
-                'ziggy'         => [
-                    'location' => $request->url(),
-                ],
-                'announcements' => $website ? $this->getAnnouncements($website) : [],
-            ],
+            $alwaysProps,
             parent::share($request),
         );
     }

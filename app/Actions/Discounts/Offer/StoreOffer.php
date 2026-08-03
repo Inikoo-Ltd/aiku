@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
+use App\Actions\Comms\Email\SendNewOfferEmailToSubscribers;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\OrgAction;
@@ -72,6 +73,7 @@ class StoreOffer extends OrgAction
         ShopHydrateOffers::dispatch($offerCampaign->shop)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffers::dispatch($offerCampaign)->delay($this->hydratorsDelay);
 
+        SendNewOfferEmailToSubscribers::dispatch($offer->id)->delay($this->hydratorsDelay);
         return $offer;
     }
 
@@ -98,6 +100,14 @@ class StoreOffer extends OrgAction
                     table: 'offers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
+                        [
+                            'column' => 'state',
+                            'value' => [
+                                OfferStateEnum::ACTIVE->value,
+                                OfferStateEnum::IN_PROCESS->value,
+                                OfferStateEnum::SUSPENDED->value,
+                            ],
+                        ],
                     ]
                 ),
 

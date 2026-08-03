@@ -112,7 +112,7 @@ class ShowFulfilment extends OrgAction
                                 ]
                             ],
                             visual: [
-                                'label' => __('Bills'),
+                                'label' => __('Recurring Bills'),
                                 'type'  => 'number_with_label',
                                 'value' => $fulfilment->stats->number_recurring_bills_status_current,
                                 'route' => [
@@ -241,7 +241,7 @@ class ShowFulfilment extends OrgAction
                         ],
                     ],
                     [
-                        'name'  => __("Customer's SKUs"),
+                        'name'  => __("Customer's SKOs"),
                         'icon'  => ['fal', 'fa-narwhal'],
                         'route' => [
                             'name'       => 'grp.org.fulfilments.show.operations.pallets.current.index',
@@ -344,7 +344,7 @@ class ShowFulfilment extends OrgAction
                 FulfilmentTabsEnum::DASHBOARD->value => $this->tab == FulfilmentTabsEnum::DASHBOARD->value
                     ?
                     fn () => $this->getDashboard($fulfilment)
-                    : Inertia::lazy(fn () => $this->getDashboard($fulfilment)),
+                    : Inertia::optional(fn () => $this->getDashboard($fulfilment)),
 
 
             ]

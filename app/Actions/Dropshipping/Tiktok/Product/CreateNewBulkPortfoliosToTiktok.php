@@ -17,6 +17,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateNewBulkPortfoliosToTiktok extends OrgAction implements ShouldBeUnique
@@ -33,6 +34,10 @@ class CreateNewBulkPortfoliosToTiktok extends OrgAction implements ShouldBeUniqu
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
+        if (!$customerSalesChannel->user) {
+            throw ValidationException::withMessages(['message' => __('No authenticated TikTok channel found.')]);
+        }
+
         $portfoliosIds = DB::table('portfolios')
             ->select('id')
             ->where('customer_sales_channel_id', $customerSalesChannel->id)

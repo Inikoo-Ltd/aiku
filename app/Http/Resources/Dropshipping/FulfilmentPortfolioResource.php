@@ -30,6 +30,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $family_code
  * @property mixed $family_name
  * @property StoredItem|Product $item
+ * @property mixed $platform
+ * @property string|null $sku
  *
  */
 class FulfilmentPortfolioResource extends JsonResource
@@ -114,14 +116,15 @@ class FulfilmentPortfolioResource extends JsonResource
             'weight'                    => $weight,
             'price'                     => $price,
             'selling_price'             => $this->selling_price,
-            'customer_price'             => $this->customer_price,
+            'customer_price'            => $this->customer_price,
             'image'                     => $image,
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
             'platform_product_id' => $this->platform_product_id,
             'category' => $category,
-            'platform' => $this->platform->type,
+            'platform'     => $this->platform->type,
+            'platform_sku' => $this->sku,
             'delete_portfolio' => [
                 'method' => 'delete',
                 'name'       => 'retina.models.portfolio.delete',

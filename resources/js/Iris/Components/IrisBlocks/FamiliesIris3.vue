@@ -16,6 +16,7 @@ import Family3Render from '@/Iris/Components/Families3Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
 import LinkIris from "@/Iris/Components/LinkIris.vue"
+import { useSubDepartmentStructuredData } from "@/Iris/Composables/useSubDepartmentStructuredData"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -28,6 +29,7 @@ type FamilyOrCollectionType = {
 
 const props = defineProps<{
   fieldValue: {
+    id?: string
     families: FamilyOrCollectionType[]
     collections: FamilyOrCollectionType[]
     settings?: { per_row?: { desktop?: number, tablet?: number, mobile?: number } }
@@ -45,12 +47,12 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject('layout', {})
+const injectedWebpageData = inject<any>('webpage_data', null)
 
 const prevEl = ref<HTMLElement | null>(null)
 const nextEl = ref<HTMLElement | null>(null)
 const swiperInstance = ref<any>(null)
 
-const refreshTrigger = ref(0)
 const containerRef = ref<HTMLElement | null>(null)
 const maxHeight = ref(0)
 
@@ -66,24 +68,29 @@ const allItems = computed(() => [
   ...(props.fieldValue?.families || []),
 ])
 
-const perRow = computed(() => {
+const perRowCfg = computed(() => {
   const cfg = props.fieldValue?.settings?.per_row
-
-  if (props.screenType === 'mobile') {
-    return cfg?.mobile ?? 2.2
+  return {
+    mobile: cfg?.mobile ?? 2.2,
+    tablet: cfg?.tablet ?? 4,
+    desktop: cfg?.desktop ?? 6.5,
   }
-
-  if (props.screenType === 'tablet') {
-    return cfg?.tablet ?? 4
-  }
-
-  return cfg?.desktop ?? 6.5
 })
 
-const spaceBetween = computed(() => {
-  if (props.screenType === 'mobile') return 12
-  if (props.screenType === 'tablet') return 16
-  return 24
+const swiperBreakpoints = computed(() => ({
+  640: { slidesPerView: perRowCfg.value.tablet, spaceBetween: 16 },
+  1024: { slidesPerView: perRowCfg.value.desktop, spaceBetween: 24 },
+}))
+
+const blockDomId = computed(() => props.fieldValue?.id ? props.fieldValue.id : 'families-3' + props.indexBlock)
+
+const preInitSlideCss = computed(() => {
+  const rule = (n: number, gap: number) =>
+    `#${blockDomId.value} .swiper-inner:not(.swiper-initialized) .swiper-slide{width:calc((100% - ${(n - 1) * gap}px)/${n});margin-right:${gap}px}`
+  const { mobile, tablet, desktop } = perRowCfg.value
+  return rule(mobile, 12)
+    + `@media(min-width:640px){${rule(tablet, 16)}}`
+    + `@media(min-width:1024px){${rule(desktop, 24)}}`
 })
 
 
@@ -99,17 +106,6 @@ function activateBlock() {
   if (typeof props.indexBlock !== 'undefined') {
     sendMessageToParent('activeBlock', props.indexBlock)
   }
-}
-
-watch(() => props.screenType, async () => {
-  await refreshCarousel(200)
-})
-
-const refreshCarousel = async (delay = 120) => {
-  await new Promise(r => setTimeout(r, delay))
-  refreshTrigger.value++
-  await nextTick()
-  swiperInstance.value?.update?.()
 }
 
 const tryInitNavigation = async () => {
@@ -162,28 +158,41 @@ let resizeHandler = () => {
     ; (resizeHandler as any)._t = setTimeout(() => computeMaxHeight(), 120)
 }
 
+// Section: Sub Department structured data (SEO)
+// Mounted independently here in its own <script> ld+json, listing the families and
+// collections (if any) shown on the sub-department page as an ItemList.
+const { mountSubDepartmentStructuredData, removeStructuredDataScript } = useSubDepartmentStructuredData()
+const subDepartmentStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
 onMounted(async () => {
   await nextTick()
   swiperInstance.value?.update?.()
   await tryInitNavigation()
   await computeMaxHeight()
   window.addEventListener('resize', resizeHandler)
+
+  subDepartmentStructuredDataScript.value = mountSubDepartmentStructuredData({
+    families: props.fieldValue?.families,
+    collections: props.fieldValue?.collections,
+    webpageData: (props.webpageData ?? injectedWebpageData) as any,
+    listId: props.fieldValue?.id ?? props.indexBlock,
+  })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeHandler)
+  removeStructuredDataScript(subDepartmentStructuredDataScript.value)
 })
 
-watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container, refreshTrigger], async () => {
+watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container], async () => {
   await nextTick()
   await computeMaxHeight()
 }, { deep: true })
-console.log('families',props)
 </script>
 
 <template>
-  <div :id="fieldValue?.id ? fieldValue?.id : 'families-3'+indexBlock" component="families-3" :key="refreshTrigger"
-    ref="containerRef">
+  <div :id="blockDomId" component="families-3" ref="containerRef">
+    <component :is="'style'">{{ preInitSlideCss }}</component>
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.fieldValue.container?.properties, props.screenType)
@@ -199,8 +208,8 @@ console.log('families',props)
         <div class="swiper-mask px-8">
           <Swiper @swiper="(s: any) => { swiperInstance = s; updateEdges(s) }" @slideChange="updateEdges"
             @reachBeginning="updateEdges" @reachEnd="updateEdges"
-            :modules="[Autoplay, Thumbs, FreeMode, Navigation, Mousewheel]" :loop="false" :slides-per-view="perRow"
-            :space-between="spaceBetween" :freeMode="true" :grabCursor="true" :touchRatio="1.2" navigation
+            :modules="[Autoplay, Thumbs, FreeMode, Navigation, Mousewheel]" :loop="false" :slides-per-view="perRowCfg.mobile"
+            :space-between="12" :breakpoints="swiperBreakpoints" :freeMode="true" :grabCursor="true" :touchRatio="1.2" navigation
             class="w-full swiper-inner" :mousewheel="{
               forceToAxis: true,
               releaseOnEdges: true,

@@ -9,9 +9,12 @@
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Ordering\Order\CalculateOrderShipping;
+use App\Actions\Ordering\Order\GetVoucherData;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
@@ -27,6 +30,8 @@ use Illuminate\Support\Facades\DB;
 
 trait IsOrder
 {
+    use WithLineTaxCategories;
+
     use GetPlatformLogo;
 
     public function getOrderBoxStats(Order $order): array
@@ -232,16 +237,21 @@ trait IsOrder
         $orderSummary[] = [
             [
                 'label'       => __('Charges'),
-                'information' => '',
+                'information_icon' => __('A small administration, picking and packing charge of £5 +VAT applies to orders under £50 +VAT'),
+                'information_icon_button' => 'fal fa-info-circle',
                 'price_total' => $order->charges_amount,
                 'slot_name'   => 'charges',
             ],
             [
                 'label'       => __('Shipping'),
                 'information' => '',
+                'price_total_old'   => $order->discounted_shipping_offer_id
+                    ? null  //  TODO: check CalculateOrderShipping::make()->getUndiscountedShippingAmount($order)
+                    : null,
                 'price_total' => $order->shipping_amount,
                 'slot_name'   => 'shipping',
                 'data'        => [
+                    'discounted_shipping_offer_id'          => $order->discounted_shipping_offer_id,
                     'shipping_amount'     => $order->shipping_amount,
                     'new_shipping_amount' => $order->shipping_amount,  // FE Helper
                     'engine'              => $order->shipping_engine,
@@ -268,19 +278,14 @@ trait IsOrder
             ];
         }
 
-        $orderSummary[] =
+        $orderSummary[] = [
             [
-                [
-                    'label'       => __('Net'),
-                    'information' => '',
-                    'price_total' => $order->net_amount,
-                ],
-                [
-                    'label'       => __('Tax').' ('.$taxCategory->getLocalizedName().')',
-                    'information' => '',
-                    'price_total' => $order->tax_amount
-                ]
-            ];
+                'label'       => __('Net'),
+                'information' => '',
+                'price_total' => $order->net_amount,
+            ],
+            ...$this->getOrderTaxRows($order),
+        ];
 
         $orderSummary[] = [
             [
@@ -371,7 +376,8 @@ trait IsOrder
                 ],
                 'estimated_weight' => $estWeight,
             ],
-
+            'cart_gross_amount'  => $order?->gross_amount ?? 0,
+            'voucher' => GetVoucherData::run($order->offer_voucher_id),
             'order_summary' => $orderSummary,
             'currency'      => CurrencyResource::make($order->currency),
             'external_shop' => $order->shop->type == ShopTypeEnum::EXTERNAL ? [

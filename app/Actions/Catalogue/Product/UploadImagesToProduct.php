@@ -24,6 +24,13 @@ class UploadImagesToProduct extends OrgAction
     public function handle(Product $model, string $scope, array $modelData, bool $updateDependants = false): array
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
+
+        foreach ($medias as $media) {
+            $model->images()->updateExistingPivot($media->id, [
+                'caption' => $model->name,
+            ]);
+        }
+
         if ($updateDependants && $model->is_single_trade_unit) {
             $this->updateDependants($model, $medias, $scope);
         }

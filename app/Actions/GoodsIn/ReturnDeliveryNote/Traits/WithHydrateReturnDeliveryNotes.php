@@ -13,6 +13,7 @@ use App\Actions\GoodsIn\ReturnDeliveryNote\Hydrators\ShopHydrateReturnDeliveryNo
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateReturnDeliveryNotes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateReturnDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateReturnDeliveryNotes;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateReturnDeliveryNotes;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 
 trait WithHydrateReturnDeliveryNotes
@@ -23,5 +24,6 @@ trait WithHydrateReturnDeliveryNotes
         OrganisationHydrateReturnDeliveryNotes::dispatch($returnDeliveryNote->organisation);
         WarehouseHydrateReturnDeliveryNotes::dispatch($returnDeliveryNote->warehouse);
         ShopHydrateReturnDeliveryNotes::dispatch($returnDeliveryNote->shop);
+        CustomerHydrateReturnDeliveryNotes::dispatch($returnDeliveryNote->customer);
     }
 }

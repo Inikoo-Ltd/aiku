@@ -2,7 +2,7 @@
 import { onMounted, ref, inject } from "vue"
 import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
 import { useCopyText } from "@/Composables/useCopyText"
-import { router } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCopy, faSpinner } from "@fal"
@@ -13,6 +13,7 @@ import { trans } from "laravel-vue-i18n"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { CheckoutTranslations } from "@/Composables/Unique/CheckoutFlowTranslation"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 library.add(faCopy)
 
 const props = defineProps<{
@@ -21,6 +22,7 @@ const props = defineProps<{
         environment: 'sandbox' | 'production'
         locale: string
         data: {
+            id: string
             payment_session_token: string
             payment_method: string
             payment_method_type: string
@@ -47,8 +49,9 @@ const currencyCode = props.currency_code || layout.iris?.currency?.code
 
 const isLoading = ref(true)
 const isLoadingAfterSuccess = ref(false)
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 12;
 const retryCount = ref(0);
+const fromPendingRedirect = ref(false)
 
 
 const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
@@ -83,6 +86,9 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
               type: 'error',
           });
 
+      if (fromPendingRedirect.value) {
+          setTimeout(() => window.location.reload(), 2500)
+      }
 
     } else {
       console.log("Payment still processing:", status);
@@ -93,12 +99,12 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
         setTimeout(() => hitWebhookAfterSuccess(paymentResponseId), 5000);
       } else {
         retryCount.value = 0
-        // ⛔ Final error after max retries
-          notify({
-              title: trans('Something went wrong'),
-              text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
-              type: 'error',
-          });
+        notify({
+            title: trans('Payment still processing'),
+            text: trans('Your order will be submitted automatically once the payment is confirmed.'),
+            type: 'warn',
+            duration: 10000,
+        });
       }
   }
   } catch (error) {
@@ -116,6 +122,15 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
 
 const paymentResponseId = ref<string | null>(null)
 onMounted(async () => {
+    const pendingPaymentId = usePage().props?.flash?.pending_cko_payment_id
+    if (pendingPaymentId) {
+        fromPendingRedirect.value = true
+        paymentResponseId.value = pendingPaymentId
+        isLoading.value = false
+        hitWebhookAfterSuccess(pendingPaymentId)
+        return
+    }
+
     console.log('fff', layout?.iris?.website_i18n?.current_language?.code)
     // isLoading.value = true
     const checkout = await loadCheckoutWebComponents({
@@ -202,6 +217,13 @@ const onClickCopy = (textToCopy: string) => {
                 {{ trans("Retrying payment... Attempt :retryCount of :max_entries", { retryCount: retryCount, max_entries: MAX_RETRIES }) }}
             </div>
         </Transition>
+        
+        <!-- Section: payment session id -->
+        <div v-if="props.data?.data?.id" class="italic opacity-50 text-[10px] mt-5">
+           <span @click="useCopyText(props.data.data.id)" class="cursor-pointer">
+                {{ props.data.data.id }}
+            </span>
+        </div>
     </div>
 </template>
 

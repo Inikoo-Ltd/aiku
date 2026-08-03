@@ -26,7 +26,7 @@ class RepairMissingSubDepartmentInProduct
         if ($product->family && $product->family->subDepartment && !$product->subDepartment) {
             $product = $this->update($product, ['sub_department_id' => $product->family->subDepartment->id]);
             $product->refresh();
-            SubDepartmentHydrateProducts::run($product->subDepartment);
+            SubDepartmentHydrateProducts::run($product->sub_department_id)->delay(2);
         }
     }
 

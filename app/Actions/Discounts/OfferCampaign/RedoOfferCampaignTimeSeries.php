@@ -7,6 +7,7 @@
 
 namespace App\Actions\Discounts\OfferCampaign;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -22,8 +23,8 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long-slave';
-    public string $commandSignature = 'offer-campaigns:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
+    public string $jobQueue = 'long-low-priority';
+    public string $commandSignature = 'offer-campaigns:redo_time_series {--S|shop= : Shop slug} {--O|organisation= : Organisation slug} {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
@@ -85,10 +86,12 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessOfferCampaignTimeSeriesRecords::dispatch($offerCampaign->id, $frequency, $from, $to);
+                ProcessOfferCampaignTimeSeriesRecords::dispatch($offerCampaign->id, $frequency, $periodFrom, $periodTo);
             } else {
-                ProcessOfferCampaignTimeSeriesRecords::run($offerCampaign->id, $frequency, $from, $to);
+                ProcessOfferCampaignTimeSeriesRecords::run($offerCampaign->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

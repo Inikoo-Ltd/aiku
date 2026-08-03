@@ -41,7 +41,7 @@ class DetachFamilyToSubDepartment extends OrgAction
         ]);
 
         ProductCategoryHydrateFamilies::dispatch($currentSubDepartment);
-        SubDepartmentHydrateProducts::dispatch($currentSubDepartment);
+        SubDepartmentHydrateProducts::dispatch($currentSubDepartment->id)->delay(2);
 
         return $family;
     }

@@ -47,7 +47,6 @@ class ApproveLeave extends OrgAction
         $nextLevel = $leave->nextApprovalLevelAfter($approvalLevel);
 
         if ($isHighestLevelApproval || $nextLevel === null) {
-            $balanceYear = $leave->start_date?->year ?? now()->year;
             $leave->loadMissing(['leaveType', 'employee.organisation']);
 
             $leave->update([
@@ -56,20 +55,29 @@ class ApproveLeave extends OrgAction
                 'approved_at' => now(),
             ]);
 
-            $balance = EmployeeLeaveBalance::firstOrCreate(
-                [
-                    'employee_id' => $leave->employee_id,
-                    'year'        => $balanceYear,
-                ],
-                [
-                    'annual_days'   => $leave->employee->organisation->getDefaultAnnualLeaveDays(),
-                    'annual_used'   => 0,
-                    'medical_days'  => 0,
-                    'medical_used'  => 0,
-                    'unpaid_days'   => 0,
-                    'unpaid_used'   => 0,
-                ]
-            );
+            $startDate = $leave->start_date ?? now();
+
+            $balance = EmployeeLeaveBalance::where('employee_id', $leave->employee_id)
+                ->where(function ($q) use ($startDate) {
+                    $q->where('period_start', '<=', $startDate->toDateString())
+                      ->where(function ($q2) use ($startDate) {
+                          $q2->whereNull('period_end')
+                             ->orWhere('period_end', '>=', $startDate->toDateString());
+                      });
+                })
+                ->whereNotNull('employee_contract_id')
+                ->first();
+
+            if (!$balance) {
+                $balance = EmployeeLeaveBalance::firstOrCreate(
+                    ['employee_id' => $leave->employee_id, 'employee_contract_id' => null],
+                    [
+                        'annual_used'  => 0,
+                        'medical_used' => 0,
+                        'unpaid_used'  => 0,
+                    ]
+                );
+            }
 
             $field = match (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type)) {
                 'annual' => 'annual_used',

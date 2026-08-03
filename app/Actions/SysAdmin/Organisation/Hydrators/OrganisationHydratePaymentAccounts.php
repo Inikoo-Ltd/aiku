@@ -10,6 +10,7 @@ namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -29,7 +30,10 @@ class OrganisationHydratePaymentAccounts implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
-            'number_payment_accounts'          => $organisation->paymentAccounts()->count(),
+            'number_payment_accounts'         => $organisation->paymentAccounts()->count(),
+            'number_current_payment_accounts' => $organisation->paymentAccounts()->whereHas('paymentAccountShops', function ($q) {
+                $q->where('state', PaymentAccountShopStateEnum::ACTIVE);
+            })->count(),
         ];
 
         $stats = array_merge(

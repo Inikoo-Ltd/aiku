@@ -15,6 +15,7 @@ use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class OrganisationHydratePayments implements ShouldBeUnique
@@ -23,17 +24,29 @@ class OrganisationHydratePayments implements ShouldBeUnique
     use WithEnumStats;
     use WithPaymentAggregators;
 
-    public function getJobUniqueId(Organisation $organisation): string
+    public string $jobQueue = 'hydrators-slave';
+
+
+    public function getJobUniqueId(?int $organisationId): string
     {
-        return $organisation->id;
+        return $organisationId ?? 'empty';
     }
 
-
-    public function handle(Organisation $organisation): void
+    public function handle(?int $organisationId): void
     {
+        if (!$organisationId) {
+            return;
+        }
+
+        $organisation = Organisation::on('aiku_no_sticky')->find($organisationId);
+        if (!$organisation) {
+            return;
+        }
+
         $stats = array_merge(
             [
-                'number_payments' => $organisation->payments()->count()
+                'number_payments' => DB::connection('aiku_no_sticky')->table('payments')->whereNull('deleted_at')->where('organisation_id', $organisation->id)->count()
+
             ],
             $this->paidAmounts($organisation, 'org_amount'),
             $this->paidAmounts($organisation, 'grp_amount'),
@@ -47,7 +60,8 @@ class OrganisationHydratePayments implements ShouldBeUnique
                 models: Payment::class,
                 where: function ($q) use ($organisation) {
                     $q->where('organisation_id', $organisation->id);
-                }
+                },
+                connection: 'aiku_no_sticky'
             )
         );
 
@@ -61,7 +75,8 @@ class OrganisationHydratePayments implements ShouldBeUnique
                 models: Payment::class,
                 where: function ($q) use ($organisation) {
                     $q->where('organisation_id', $organisation->id);
-                }
+                },
+                connection: 'aiku_no_sticky'
             )
         );
 
@@ -76,7 +91,8 @@ class OrganisationHydratePayments implements ShouldBeUnique
                     models: Payment::class,
                     where: function ($q) use ($organisation, $type) {
                         $q->where('organisation_id', $organisation->id)->where('type', $type->value);
-                    }
+                    },
+                    connection: 'aiku_no_sticky'
                 )
             );
         }

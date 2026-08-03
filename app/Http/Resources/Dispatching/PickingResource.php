@@ -29,6 +29,7 @@ class PickingResource extends JsonResource
 {
     public function toArray($request): array
     {
+        //=== PERFORMANCE
         //todo: do this in a left join better
         $pickerName = __('Unknown');
         if ($this->picker) {
@@ -69,6 +70,13 @@ class PickingResource extends JsonResource
                     'picking' => $this->id
                 ],
                 'method'     => 'patch'
+            ],
+            'split_route'        => [
+                'name'       => 'grp.models.picking.split',
+                'parameters' => [
+                    'picking' => $this->id
+                ],
+                'method'     => 'post'
             ],
             'undo_picking_route' => [
                 'name'       => 'grp.models.picking.delete',

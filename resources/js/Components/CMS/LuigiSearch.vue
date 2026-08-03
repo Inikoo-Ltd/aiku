@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import { inject, onMounted, ref, onBeforeMount } from "vue"
+import { inject, onMounted, ref, computed, watch, onBeforeMount, defineAsyncComponent, nextTick } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
+import axios from "axios"
+import { debounce } from "lodash-es"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { LuigiTranslation } from "@/Composables/Unique/LuigiTranslation"
+import { loadLuigiAutocomplete, onFirstInteractionOrIdle } from "@/Composables/useLuigiAutocomplete"
+import Popover from "primevue/popover"
+import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 // import { AutoComplete } from "primevue"   /// No need to import AutoComplete
 library.add(faSearch)
+
+const SearchResultCatalogue = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogue.vue"))
 
 
 
@@ -30,13 +38,111 @@ onBeforeMount(() => {
 })
 
 
-const layout = inject('layout', {})
+const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
+
+// Section: Internal catalogue search (used when website search model is 'internal')
+const isInternalSearch = computed(() => layout.iris?.iris_search_model === 'internal')
+const internalResults = ref<any>(null)
+const isInternalLoading = ref(false)
+const showDropdown = ref(false)
+const inputRef = ref<HTMLInputElement | null>(null)
+const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const isPopoverVisible = ref(false)
+let internalAbort: AbortController | null = null
+let internalRequestId = 0
+
+const openInternalPopover = () => {
+    if (isPopoverVisible.value || !inputRef.value) {
+        return
+    }
+    popoverRef.value?.show({ currentTarget: inputRef.value } as any)
+}
+
+const closeInternalPopover = () => {
+    popoverRef.value?.hide()
+}
+
+// Point the popover caret at the horizontal center of the input, even though the
+// panel itself spans the full viewport width (PrimeVue can no longer shift it to align)
+const updateCaretPosition = () => {
+    if (!inputRef.value) {
+        return
+    }
+    const rect = inputRef.value.getBoundingClientRect()
+    const panel = document.querySelector('.luigi-internal-search-popover') as HTMLElement | null
+    panel?.style.setProperty('--caret-left', `${rect.left + rect.width / 2}px`)
+}
+
+const onPopoverShow = () => {
+    isPopoverVisible.value = true
+    showDropdown.value = true
+    nextTick(updateCaretPosition)
+    window.addEventListener('resize', updateCaretPosition)
+    window.addEventListener('scroll', updateCaretPosition, true)
+}
+
+const onPopoverHide = () => {
+    isPopoverVisible.value = false
+    showDropdown.value = false
+    window.removeEventListener('resize', updateCaretPosition)
+    window.removeEventListener('scroll', updateCaretPosition, true)
+}
+
+const fetchInternalResults = debounce(async (query: string) => {
+    const requestId = ++internalRequestId
+    internalAbort?.abort()
+    internalAbort = new AbortController()
+    isInternalLoading.value = true
+    try {
+        const { data } = await axios.get(
+            route(searchRoute('catalogue'), { q: query }),
+            { signal: internalAbort.signal }
+        )
+        if (requestId !== internalRequestId) {
+            return
+        }
+        internalResults.value = data.results ?? null
+    } catch (error) {
+        if (axios.isCancel(error) || requestId !== internalRequestId) {
+            return
+        }
+        internalResults.value = null
+    } finally {
+        if (requestId === internalRequestId) {
+            isInternalLoading.value = false
+        }
+    }
+}, 250)
+
+const onInternalInput = () => {
+    if (!inputValue.value.trim()) {
+        fetchInternalResults.cancel()
+        internalResults.value = null
+        closeInternalPopover()
+        return
+    }
+    openInternalPopover()
+    isInternalLoading.value = true
+    fetchInternalResults(inputValue.value)
+}
+
+// SearchResultCatalogue sets open=false when a result is clicked
+watch(showDropdown, (open) => {
+    if (!open) {
+        closeInternalPopover()
+    }
+})
+
+const onSearchInput = (event: Event) => {
+    inputValue.value = (event.target as HTMLInputElement)?.value ?? ''
+    if (isInternalSearch.value) {
+        onInternalInput()
+    }
+}
 
 
 const LBInitAutocompleteNew = async () => {
-    // console.log('layout.iris.luigisbox_tracker_id:', layout.iris?.luigisbox_tracker_id)
-
     if (!layout.iris?.luigisbox_tracker_id) {
         console.error("Luigi tracker id didn't provided")
         return
@@ -45,9 +151,7 @@ const LBInitAutocompleteNew = async () => {
     const xxx = await AutoComplete(
         {
             Layout: "heromobile",
-            // TrackerId: '483878-588294',
             TrackerId: layout.iris?.luigisbox_tracker_id,
-            // Locale: layout.iris?.website_i18n?.current_language?.code || 'en',
             PriceFilter: {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -127,55 +231,34 @@ const LBInitAutocompleteNew = async () => {
                             row.type === 'item'
                         )
                     },
-                    // iconUrl: 'https://cdn-icons-png.freepik.com/256/275/275790.png',
                     iconText: '➔',
-                    // title: "Visit product's page",
                     action: function(e, result) {
-                        // console.log('zzzzzzzzz', e, result)
                         window.location.href = result?.attributes?.web_url?.[0]
-                        // router.visit(result.attributes.web_url[0])
-
                     }
                 }
             ]
         },
         `#${props.id || 'inputLuigi'}`
     )
-
-    console.log(`Init autocomplete: ${props.id}`)
 }
 
 
-// Import Luigi CSS style
-const importStyleCSS = () => {
-    const link = document.createElement("link")
-    link.rel = "stylesheet"
-    link.href = "https://cdn.luigisbox.tech/autocomplete.css"
-    document.head.appendChild(link)
-    document.documentElement.style.setProperty('--luigiColor1', layout.iris?.theme?.color?.[0]);
-    document.documentElement.style.setProperty('--luigiColor2', layout.iris?.theme?.color?.[1]);
-    document.documentElement.style.setProperty('--luigiColor3', layout.iris?.theme?.color?.[2]);
-    document.documentElement.style.setProperty('--luigiColor4', layout.iris?.theme?.color?.[3]);
-}
 
 
 
 onMounted(() => {
-    importStyleCSS()
-    const script = document.createElement('script');
-    script.src = "https://cdn.luigisbox.tech/autocomplete.js";
-    script.async = true;
-    document.head.appendChild(script);
-    script.onload = () => {
-        LBInitAutocompleteNew();
-    };
-    script.onerror = () => {
-        console.error('Failed to load Luigi autocomplete script');
+    if (isInternalSearch.value) {
+        return
     }
+
+    onFirstInteractionOrIdle(() => {
+        loadLuigiAutocomplete()
+            .then(() => LBInitAutocompleteNew())
+            .catch(() => console.error('Failed to load Luigi autocomplete script'))
+    })
 })
 
 const visitSearchPage = () => {
-    console.log('vzzzisit', inputValue.value)
     if (inputValue.value) {
         if (route().current()?.startsWith('iris.')) {
             router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
@@ -195,8 +278,10 @@ const visitSearchPage = () => {
 <template>
     <div class="w-full relative group">
         <input
+            ref="inputRef"
             :value="inputValue"
-            @input="(q) => (inputValue = q?.target?.value)"
+            @input="onSearchInput"
+            @focus="() => { if (isInternalSearch && inputValue.trim()) openInternalPopover() }"
             afocus="(q) => getTopItemsSuggestions()"
             xdisabled
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
@@ -206,10 +291,65 @@ const visitSearchPage = () => {
             @keydown.enter="() => visitSearchPage()"
         />
         <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+
+        <!-- Internal search: catalogue results in a centered popover with an arrow to the input -->
+        <Popover
+            v-if="isInternalSearch"
+            ref="popoverRef"
+            appendTo="body"
+            :dismissable="true"
+            class="luigi-internal-search-popover !w-[90vw] -translate-x-1/2"
+            style="left: 50%"
+            @show="onPopoverShow"
+            @hide="onPopoverHide"
+        >
+            <div class="h-[70vh] max-h-[550px]  overflow-hidden">
+                <SearchResultCatalogue
+                    v-model:open="showDropdown"
+                    :results="internalResults"
+                    :is-loading="isInternalLoading"
+                    :query="inputValue"
+                />
+            </div>
+        </Popover>
     </div>
 </template>
 
 <style lang="scss">
+
+/* Internal search popover: full-width panel pinned to the viewport */
+.luigi-internal-search-popover.p-popover {
+    // left: 0 !important;
+    // right: 0 !important;
+    // width: auto !important;
+    max-width: none !important;
+}
+
+/* Caret: an accent diamond aimed at the input center (--caret-left is set in JS on show) */
+.luigi-internal-search-popover.p-popover::before {
+    display: none !important;
+}
+
+.luigi-internal-search-popover.p-popover::after {
+    content: "" !important;
+    position: absolute !important;
+    top: -5px !important;
+    left: var(--caret-left, 50%) !important;
+    width: 12px !important;
+    height: 12px !important;
+    margin-left: -6px !important;
+    background: var(--theme-color-0) !important;
+    border: none !important;
+    border-radius: 2px 0 0 0 !important;
+    box-shadow: none !important;
+    transform: rotate(45deg) !important;
+}
+
+.luigi-internal-search-popover .p-popover-content {
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: inherit;
+}
 
 .luigi-ac-heromobile-input { // Input on mobile
     @apply border border-[var(--theme-color-0)] focus:border-[var(--theme-color-0)] focus:ring-[var(--theme-color-0)] rounded-sm !important;
@@ -217,14 +357,14 @@ const visitSearchPage = () => {
 
 .luigi-ac-ribbon {
     /* Border top of the Autocomplete */
-    background: var(--luigiColor1) !important;
+    background: var(--theme-color-0) !important;
 }
 
 
 /* Styling for Layout: Hero */
 .luigi-ac-hero-color {
-    background: var(--luigiColor1) !important;
-    color: var(--luigiColor2) !important;
+    background: var(--theme-color-0) !important;
+    color: var(--theme-color-1) !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
@@ -243,14 +383,14 @@ const visitSearchPage = () => {
     overflow-y: auto !important;
 }
 .luigi-ac-header {
-    color: var(--luigiColor1) !important;
+    color: var(--theme-color-0) !important;
     font-size: 1.2rem !important;
     font-weight: bold !important;
 }
 .luigi-ac-highlight {
-    background: color-mix(in srgb, var(--luigiColor1) 90%, transparent) !important;
+    background: color-mix(in srgb, var(--theme-color-0) 90%, transparent) !important;
     border-radius: 2px !important;
-    color: var(--luigiColor2) !important;
+    color: var(--theme-color-1) !important;
     font-weight: normal !important;
     padding-left: 2px !important;
     padding-right: 2px !important;
@@ -265,19 +405,25 @@ const visitSearchPage = () => {
     background: #F3F7FA !important;
 }
 
-.luigi-ac-item:hover, .luigi-ac-other:hover {
-    background: color-mix(in srgb, var(--luigiColor1) 10%, transparent) !important;
+// Main slots
+.luigi-ac-item:hover {
+    background: color-mix(in srgb, var(--theme-color-0) 20%, var(--theme-color-1)) !important;
+}
+
+// Side slot (queries, etc)
+.luigi-ac-other:hover {
+    background: color-mix(in srgb, var(--theme-color-0) 80%, var(--theme-color-1)) !important;
 }
 /* End of styling for Layout: Hero */
 
 
 .luigi-ac-button-buy {
-    background: var(--luigiColor1) !important;
+    background: var(--theme-color-0) !important;
     border-radius: 5px;
 }
 
 .luigi-ac-button-buy:hover {
-    background: color-mix(in srgb, var(--luigiColor1) 75%, black) !important;
+    background: color-mix(in srgb, var(--theme-color-0) 75%, var(--theme-color-1)) !important;
 }
 
 
@@ -285,12 +431,12 @@ const visitSearchPage = () => {
     background: transparent !important;
     transition: background 0.05s !important;
     border-radius: 5px !important;
-    border: 1px solid var(--luigiColor1) !important;
-    color: var(--luigiColor1) !important;
+    border: 1px solid var(--theme-color-0) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .luigi-ac-button:hover {
-    background: color-mix(in srgb, var(--luigiColor1) 10%, transparent) !important;
+    background: color-mix(in srgb, var(--theme-color-0) 10%, transparent) !important;
 }
 
 .luigi-ac-heromobile .luigi-ac-first-main .luigi-ac-text {
@@ -312,24 +458,15 @@ const visitSearchPage = () => {
 }
 
 .luigi-ac-no-result {
-    color: var(--luigiColor3) !important;
+    color: var(--theme-color-0) !important;
 }
-
-.luigi-ac-queries {
-    line-height: 0px !important;
-}
-
-.luigi-ac-query .luigi-ac-other-content {
-    color: #fff !important;
-}
-
 
 /* Top Product styling (luigi-ac-first-main) */
 .luigi-ac-first-main .luigi-ac-attr--formatted_price {
     margin-top: 5px;
     font-size: 1.05rem !important;
     display: block !important;
-    color: var(--luigiColor1) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .luigi-ac-first-main .luigi-ac-attr--description {
@@ -373,7 +510,7 @@ const visitSearchPage = () => {
 
 .luigi-ac-rest-main .luigi-ac-attr--formatted_price {
     display: block !important;
-    color: var(--luigiColor1) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .luigi-ac-heromobile-action-for-mobile  {

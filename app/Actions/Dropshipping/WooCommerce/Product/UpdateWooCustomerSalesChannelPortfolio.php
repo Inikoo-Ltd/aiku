@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
@@ -32,8 +33,24 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
 
-        if (!$wooCommerceUser) {
+        if (!$wooCommerceUser || $customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
             return;
+        }
+
+        $wooCommerceUser->setTimeout(30);
+
+        if (!$wooCommerceUser->checkConnection()) {
+            $customerSalesChannel->update([
+                'ban_stock_update_util' => now()->addSeconds(10)
+            ]);
+
+            return;
+        }
+
+        if ($customerSalesChannel->ban_stock_update_util !== null) {
+            $customerSalesChannel->update([
+                'ban_stock_update_util' => null
+            ]);
         }
 
         Portfolio::query()
@@ -44,6 +61,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
                 'platform_product_id',
                 'platform_status',
                 'stock_last_updated_at',
+                'stock_last_fail_updated_at',
             ])
             ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->whereNotNull('platform_product_id')
@@ -58,11 +76,8 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
                         continue;
                     }
 
+                    /** @var Product $product */
                     $product = $portfolio->item;
-
-                    if (!$product instanceof Product || $portfolio->platform_product_id === null || !$portfolio->platform_status) {
-                        continue;
-                    }
 
                     $availableQuantity = $product->available_quantity ?? 0;
 
@@ -76,17 +91,14 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
 
                     $updates[] = [
                         'id'             => $portfolio->platform_product_id,
+                        'manage_stock'   => true,
                         'stock_quantity' => $availableQuantity,
                     ];
                 }
 
-                foreach (collect($updates)->chunk(20) as $updateChunk) {
-                    if ($updateChunk->isEmpty()) {
-                        continue;
-                    }
-
+                foreach (array_chunk($updates, 20) as $updateChunk) {
                     UpdateBatchWooCustomerSalesChannelPortfolio::dispatch($wooCommerceUser, [
-                        'update' => $updateChunk->values()->all(),
+                        'update' => $updateChunk,
                     ]);
                 }
             });
@@ -94,23 +106,31 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
 
     public function checkIfApplicable(Portfolio $portfolio): bool
     {
-        $applicable = false;
+        $product = $portfolio->item;
 
-
-        if (!$portfolio->stock_last_updated_at) {
-            $applicable = true;
-        } else {
-            $product = $portfolio->item;
-
-            if (!$product instanceof Product) {
-                return false;
-            }
-
-            if (!$product->available_quantity_updated_at || !$portfolio->stock_last_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
-                $applicable = true;
-            }
+        if (!$product instanceof Product) {
+            return false;
         }
 
-        return $applicable;
+        $lastSuccessAt = $portfolio->stock_last_updated_at;
+        $lastFailAt = $portfolio->stock_last_fail_updated_at;
+
+        $lastAttemptAt = $lastSuccessAt;
+        $lastAttemptFailed = false;
+
+        if ($lastFailAt && (!$lastAttemptAt || $lastFailAt->gt($lastAttemptAt))) {
+            $lastAttemptAt = $lastFailAt;
+            $lastAttemptFailed = true;
+        }
+
+        if (!$lastAttemptAt) {
+            return true;
+        }
+
+        if ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastAttemptAt)) {
+            return true;
+        }
+
+        return $lastAttemptFailed && $lastAttemptAt->lt(now()->subDay());
     }
 }

@@ -29,7 +29,7 @@ class GetWarehouseNavigation
         ])) {
 
             $navigation['skus_families'] = [
-                'label'   => __('SKUs Families'),
+                'label'   => __('SKOs Families'),
                 'icon'    => ['fal', 'fa-boxes-alt'],
                 'route'   => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
@@ -65,8 +65,8 @@ class GetWarehouseNavigation
                             "stocks.$warehouse->id.view",
                         ])
                             ? [
-                            "label"   => __("SKUs Families"),
-                            "tooltip" => __("SKUs families"),
+                            "label"   => __("SKOs Families"),
+                            "tooltip" => __("SKOs families"),
                             "icon"    => ["fal", "fa-boxes-alt"],
                             'root'    => 'grp.org.warehouses.show.inventory.org_stock_families.',
                             "route"   => [
@@ -79,7 +79,7 @@ class GetWarehouseNavigation
                             "stocks.$warehouse->id.view",
                         ])
                             ? [
-                            "label" => __("SKUs"),
+                            "label" => __("SKOs"),
                             "icon"  => ["fal", "fa-box"],
                             'root'  => 'grp.org.warehouses.show.inventory.org_stocks.',
                             "route" => [

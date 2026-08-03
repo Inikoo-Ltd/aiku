@@ -24,6 +24,32 @@ class IndexTimeZones
     use AsAction;
 
     /**
+     * Named the way people here refer to a place rather than by the city the IANA zone
+     * happens to be named after: nobody says "Europe/Bratislava", they say Slovakia. The
+     * IANA name stays in the option value, which the search also matches.
+     */
+    private const ZONE_NICKNAMES = [
+        'Europe/London'     => 'UK',
+        'Europe/Dublin'     => 'Ireland',
+        'Europe/Lisbon'     => 'Portugal',
+        'Europe/Madrid'     => 'Spain',
+        'Europe/Paris'      => 'France',
+        'Europe/Brussels'   => 'Belgium',
+        'Europe/Amsterdam'  => 'Netherlands',
+        'Europe/Berlin'     => 'Germany',
+        'Europe/Rome'       => 'Italy',
+        'Europe/Prague'     => 'Czechia',
+        'Europe/Bratislava' => 'Slovakia',
+        'Europe/Warsaw'     => 'Poland',
+        'Europe/Bucharest'  => 'Romania',
+        'Europe/Athens'     => 'Greece',
+        'Europe/Helsinki'   => 'Finland',
+        'Europe/Istanbul'   => 'Türkiye',
+        'Asia/Makassar'     => 'Bali',
+        'Asia/Kuala_Lumpur' => 'Malaysia',
+    ];
+
+    /**
      * Return a curated, searchable list of common timezones.
      *
      * Query params:
@@ -83,6 +109,23 @@ class IndexTimeZones
         return $data;
     }
 
+    /**
+     * The option rows for already chosen timezones, so a preselected value reads the same as
+     * it does once the list has been fetched rather than showing its raw IANA name.
+     *
+     * @param  array<int, string>  $timezones
+     * @return array<int, array{value: string, label: string, offset: int, offset_label: string}>
+     */
+    public function optionsFor(array $timezones): array
+    {
+        $known = collect($this->handle())->keyBy('value');
+
+        return collect($timezones)
+            ->map(fn (string $timezone) => $known->get($timezone, ['value' => $timezone, 'label' => $timezone]))
+            ->values()
+            ->all();
+    }
+
     public function asController(): JsonResponse
     {
         // $q = request()->string('q')->toString();
@@ -91,18 +134,70 @@ class IndexTimeZones
         return response()->json($this->handle($q));
     }
 
+    /**
+     * Names used on the footer clocks, which are coarser than the picker's on purpose: the
+     * offices in Spain and Slovakia keep the same clock, so one "Europe" covers both.
+     */
+    private const CLOCK_NAMES = [
+        'Europe/London' => 'UK',
+        'Asia/Makassar' => 'Bali',
+    ];
+
+    /**
+     * The short name for a timezone, "UK" rather than "Europe/London". The single source of
+     * truth for how a zone is named, so the footer clocks and the picker cannot drift apart.
+     */
+    public function placeFor(string $timezone): string
+    {
+        return self::ZONE_NICKNAMES[$timezone] ?? str_replace('_', ' ', Str::afterLast($timezone, '/'));
+    }
+
+    /**
+     * The name for a clock in the footer. Continental Europe reads as "Europe" rather than
+     * naming whichever one of several countries on that offset the zone happens to be.
+     */
+    public function clockNameFor(string $timezone): string
+    {
+        if (isset(self::CLOCK_NAMES[$timezone])) {
+            return self::CLOCK_NAMES[$timezone];
+        }
+
+        if (Str::startsWith($timezone, 'Europe/')) {
+            return 'Europe';
+        }
+
+        return $this->placeFor($timezone);
+    }
+
+    /**
+     * Leads with the place, which is what people recognise: "UK · Europe · GMT+1" rather
+     * than "GMT+01:00 Europe / London".
+     */
     private function formatLabel(string $tz, int $offsetSeconds): string
     {
-        $prettyTz = str_replace(['_', '/'], [' ', ' / '], $tz);
-        return $this->formatGmtOffset($offsetSeconds).' '.$prettyTz;
+        $place  = $this->placeFor($tz);
+        $offset = $this->formatGmtOffset($offsetSeconds);
+
+        if (!Str::contains($tz, '/')) {
+            return $place.' · '.$offset;
+        }
+
+        return $place.' · '.str_replace('_', ' ', Str::before($tz, '/')).' · '.$offset;
     }
 
     private function formatGmtOffset(int $offsetSeconds): string
     {
-        $sign   = $offsetSeconds >= 0 ? '+' : '-';
-        $abs    = abs($offsetSeconds);
-        $hours  = intdiv($abs, 3600);
+        if ($offsetSeconds === 0) {
+            return 'GMT';
+        }
+
+        $sign    = $offsetSeconds >= 0 ? '+' : '-';
+        $abs     = abs($offsetSeconds);
+        $hours   = intdiv($abs, 3600);
         $minutes = intdiv($abs % 3600, 60);
-        return sprintf('GMT%s%02d:%02d', $sign, $hours, $minutes);
+
+        return $minutes
+            ? sprintf('GMT%s%d:%02d', $sign, $hours, $minutes)
+            : sprintf('GMT%s%d', $sign, $hours);
     }
 }

@@ -10,13 +10,13 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\CloneProductImagesFromMasterProduct;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithImageUpdate;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterProductImages extends GrpAction
+class UpdateMasterProductImages extends OrgAction
 {
     use WithActionUpdate;
     use WithImageUpdate;
@@ -65,7 +65,7 @@ class UpdateMasterProductImages extends GrpAction
 
     public function asController(MasterAsset $masterAsset, ActionRequest $request): void
     {
-        $this->initialisation($masterAsset->group, $request);
+        $this->initialisationFromGroup($masterAsset->group, $request);
 
         $this->handle($masterAsset, $this->validatedData, true);
     }

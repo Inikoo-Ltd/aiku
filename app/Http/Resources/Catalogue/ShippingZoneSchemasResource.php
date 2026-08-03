@@ -27,11 +27,12 @@ class ShippingZoneSchemasResource extends JsonResource
             'amount'                   => $this->amount,
             'first_used'               => $this->first_used_at,
             'last_used'                => $this->last_used_at,
-            'organisation_name'     => $this->organisation_name,
-            'currency_code'             => $this->currency_code,
-            'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
-            'shop_slug'         => $this->shop_slug,
+            'organisation_name'        => $this->organisation_name,
+            'currency_code'            => $this->currency_code,
+            'organisation_slug'        => $this->organisation_slug,
+            'shop_name'                => $this->shop_name,
+            'shop_slug'                => $this->shop_slug,
+            'is_current'               => $this->is_current
         ];
     }
 }

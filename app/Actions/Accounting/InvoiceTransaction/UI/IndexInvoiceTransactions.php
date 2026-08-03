@@ -16,11 +16,19 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoiceTransactions extends OrgAction
 {
     public function handle(Invoice $invoice, $prefix = null): LengthAwarePaginator
     {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereStartWith('historic_assets.code', $value)
+                    ->orWhereStartWith('historic_assets.name', $value);
+            });
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -54,6 +62,7 @@ class IndexInvoiceTransactions extends OrgAction
 
 
         return $queryBuilder
+            ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'description', 'quantity', 'net_amount'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

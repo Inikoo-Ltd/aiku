@@ -45,7 +45,7 @@ class CreateShippingZone extends OrgAction
                             'style' => 'exitEdit',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.billables.shipping.show',
+                                'name'       => $shippingZoneSchema->is_current ? 'grp.org.shops.show.billables.shipping.current.show' : 'grp.org.shops.show.billables.shipping.discount.show',
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
@@ -134,7 +134,7 @@ class CreateShippingZone extends OrgAction
         return array_merge(
             ShowShippingZoneSchema::make()->getBreadcrumbs(
                 shippingZoneSchema: $shippingZoneSchema,
-                routeName: 'grp.org.shops.show.billables.shipping.show',
+                routeName: $shippingZoneSchema->is_current ? 'grp.org.shops.show.billables.shipping.current.show' : 'grp.org.shops.show.billables.shipping.discount.show',
                 routeParameters: $routeParameters,
             ),
             [

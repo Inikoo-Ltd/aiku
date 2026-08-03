@@ -31,7 +31,7 @@ class HydratePlatforms
     public function handle(Platform $platform): void
     {
         PlatformHydrateCustomerSalesChannel::run($platform);
-        PlatformHydrateOrders::run($platform);
+        PlatformHydrateOrders::run($platform->id);
         PlatformHydrateCustomers::run($platform);
         PlatformHydratePortfolios::run($platform);
     }

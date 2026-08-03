@@ -51,12 +51,12 @@ class CreateAnnouncement extends OrgAction
         return Inertia::render(
             'CreateModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
                 'title'       => __('new announcement'),
                 'pageHead'    => [
+                    'breadcrumbs' => $this->getBreadcrumbs(
+                        $request->route()->getName(),
+                        $request->route()->originalParameters()
+                    ),
                     'model'   => __('Announcement'),
                     'icon'    => ['fal', 'fa-megaphone'],
                     'title'   => __('Create'),

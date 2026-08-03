@@ -24,7 +24,7 @@ return [
     |
     */
 
-    'functions' => ['__','t','trans','wtrans','ctrans'],
+    'functions' => ['__','t','trans','trans_choice','wtrans','ctrans'],
 
     /*
     |--------------------------------------------------------------------------

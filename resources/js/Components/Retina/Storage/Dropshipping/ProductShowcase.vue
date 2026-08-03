@@ -145,7 +145,7 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
                     <ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images">
                         <template #image-thumbnail="{ image, index }">
                             <div class="aspect-square w-full overflow-hidden group relative">
-                                <Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
+                                <Image :src="image.thumbnail" :alt="image.alt || `Thumbnail ${index + 1}`"
                                     class="block w-full h-full object-cover rounded-md border" />
                             </div>
                         </template>

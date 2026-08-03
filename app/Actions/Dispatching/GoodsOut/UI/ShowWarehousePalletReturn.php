@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\GoodsOut\UI;
 
+use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\PalletReturn\IndexPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnActions;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnAddressManagement;
@@ -36,6 +37,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWarehousePalletReturn extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
+    use WithPalletReturnBucketNavigation;
 
     private bool $requireShipping = true;
 
@@ -199,6 +201,22 @@ class ShowWarehousePalletReturn extends OrgAction
                     ]
                 ],
 
+                'attachmentRoutes' => [
+                    'attachRoute' => [
+                        'name'       => 'grp.models.pallet-return.attachment.attach',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'post'
+                    ],
+                    'detachRoute' => [
+                        'name'       => 'grp.models.pallet-return.attachment.detach',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'delete'
+                    ]
+                ],
 
                 'warning' => $warning,
 
@@ -225,6 +243,23 @@ class ShowWarehousePalletReturn extends OrgAction
                     'name'       => 'grp.models.pallet-return.stored_item.store',
                     'parameters' => [
                         $palletReturn->id
+                    ]
+                ],
+
+                'notes_data' => GetNotesData::run(model: $palletReturn),
+
+                'service_list_route'       => [
+                    'name'       => 'grp.json.fulfilment.return.services.index',
+                    'parameters' => [
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
+                    ]
+                ],
+                'physical_good_list_route' => [
+                    'name'       => 'grp.json.fulfilment.return.physical-goods.index',
+                    'parameters' => [
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
                     ]
                 ],
 
@@ -256,20 +291,20 @@ class ShowWarehousePalletReturn extends OrgAction
 
                 PalletReturnTabsEnum::PALLETS->value => $this->tab == PalletReturnTabsEnum::PALLETS->value ?
                     fn () => PalletReturnItemsUIResource::collection(IndexPalletsInReturnPalletWholePallets::run($palletReturn, PalletReturnTabsEnum::PALLETS->value))
-                    : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexPalletsInReturnPalletWholePallets::run($palletReturn, PalletReturnTabsEnum::PALLETS->value))),
+                    : Inertia::optional(fn () => PalletReturnItemsUIResource::collection(IndexPalletsInReturnPalletWholePallets::run($palletReturn, PalletReturnTabsEnum::PALLETS->value))),
 
 
                 PalletReturnTabsEnum::SERVICES->value => $this->tab == PalletReturnTabsEnum::SERVICES->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn))),
+                    : Inertia::optional(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn))),
 
                 PalletReturnTabsEnum::PHYSICAL_GOODS->value => $this->tab == PalletReturnTabsEnum::PHYSICAL_GOODS->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn))),
+                    : Inertia::optional(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn))),
 
                 PalletReturnTabsEnum::ATTACHMENTS->value => $this->tab == PalletReturnTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, PalletReturnTabsEnum::ATTACHMENTS->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, PalletReturnTabsEnum::ATTACHMENTS->value))),
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, PalletReturnTabsEnum::ATTACHMENTS->value))),
             ]
         )->table(
             IndexPalletsInReturnPalletWholePallets::make()->tableStructure(
@@ -355,18 +390,22 @@ class ShowWarehousePalletReturn extends OrgAction
 
     public function getPrevious(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-
-        $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
-
+        if ($bucket = $this->getPalletReturnBucket($request)) {
+            $previous = $this->getPalletReturnBucketNeighbour($palletReturn, $request, $bucket, forward: false);
+        } else {
+            $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
+        }
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-
-        $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
-
+        if ($bucket = $this->getPalletReturnBucket($request)) {
+            $next = $this->getPalletReturnBucketNeighbour($palletReturn, $request, $bucket, forward: true);
+        } else {
+            $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
+        }
 
         return $this->getNavigation($next, $request->route()->getName());
     }

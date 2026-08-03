@@ -12,10 +12,12 @@ export interface StatsBoxTS {
     id: number
     label: string
     value: number
+    subtitle?: string
     change: number
     changeType: string
     icon: string
     color: string
+    currency_code?: string
     backgroundColor?: string
     is_negative?: boolean
     route: {

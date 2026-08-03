@@ -21,10 +21,11 @@ use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
@@ -32,6 +33,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Barcode;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Stubs\Migrations\HasProductInformation;
@@ -39,7 +41,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateTradeUnit extends GrpAction
+class UpdateTradeUnit extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -71,6 +73,11 @@ class UpdateTradeUnit extends GrpAction
                     'name' => Arr::pull($modelData, 'name_i8n')
                 ]
             ]);
+        }
+
+        if (Arr::has($modelData, 'barcode_id')) {
+            $barcode = Barcode::find(data_get($modelData, 'barcode_id'));
+            data_set($modelData, 'barcode', $barcode?->number);
         }
 
         if (Arr::has($modelData, 'description_title_i8n')) {
@@ -109,6 +116,12 @@ class UpdateTradeUnit extends GrpAction
             ]);
         }
 
+        if (Arr::has($modelData, 'ingredients')) {
+            SyncIngredientsToTradeUnit::make()->action($tradeUnit, [
+                'ingredients' => Arr::pull($modelData, 'ingredients') ?? []
+            ]);
+        }
+
         $oldTradeUnitFamily = null;
         if (Arr::has($modelData, 'trade_unit_family_id')) {
             $oldTradeUnitFamily = $tradeUnit->tradeUnitFamily;
@@ -121,6 +134,9 @@ class UpdateTradeUnit extends GrpAction
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
         $tradeUnit->refresh();
 
+        if (Arr::has($modelData, 'description')) {
+            GroupHydrateTradeUnits::dispatch($tradeUnit->group)->delay(10);
+        }
 
         if ($tradeUnit->wasChanged('type')) {
             foreach ($tradeUnit->masterAssets as $masterAsset) {
@@ -178,7 +194,11 @@ class UpdateTradeUnit extends GrpAction
 
         if ($tradeUnit->wasChanged('marketing_ingredients')) {
             foreach ($tradeUnit->products as $product) {
-                ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
+                ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
+            }
+
+            foreach ($tradeUnit->masterAssets as $masterAsset) {
+                ProductHydrateMarketingIngredientsFromTradeUnits::run($masterAsset);
             }
         }
 
@@ -253,7 +273,8 @@ class UpdateTradeUnit extends GrpAction
             ],
             'name'                         => ['sometimes', 'required', 'string', 'max:255'],
             'description'                  => ['sometimes', 'required', 'string', 'max:1024'],
-            'barcode'                      => ['sometimes', 'required'],
+            'barcode_id'                   => ['sometimes', 'nullable', 'exists:barcodes,id'],
+            'barcode'                      => ['sometimes', 'nullable'],
             'gross_weight'                 => ['sometimes', 'required', 'numeric'],
             'net_weight'                   => ['sometimes', 'required', 'numeric'],
             'marketing_weight'             => ['sometimes', 'required', 'numeric'],
@@ -294,6 +315,11 @@ class UpdateTradeUnit extends GrpAction
             'duty_rate'             => ['sometimes', 'nullable', 'string'],
             'hts_us'                => ['sometimes', 'nullable', 'string'],
             'marketing_ingredients' => ['sometimes', 'nullable', 'string'],
+            'ingredients'           => ['sometimes', 'nullable', 'array'],
+            'ingredients.*'         => [
+                'string',
+                Rule::exists('ingredients', 'slug')->where('group_id', $this->group->id)
+            ],
             'name_i8n'              => ['sometimes', 'array'],
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n'       => ['sometimes', 'array'],
@@ -328,9 +354,10 @@ class UpdateTradeUnit extends GrpAction
     {
         if ($this->has('origin_country_id')) {
             if (is_string($this->get('origin_country_id'))) {
+
                 $countryId = (int)$this->get('origin_country_id');
                 $this->set('origin_country_id', value: $countryId);
-            } else {
+            } elseif (is_array($this->get('origin_country_id'))) {
                 $this->set('origin_country_id', Arr::get($this->get('origin_country_id'), 'id'));
             }
         }
@@ -347,15 +374,14 @@ class UpdateTradeUnit extends GrpAction
         $this->tradeUnit = $tradeUnit;
 
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($tradeUnit->group, $modelData);
-
+        $this->initialisationFromGroup($tradeUnit->group, $modelData);
         return $this->handle($tradeUnit, $this->validatedData);
     }
 
     public function asController(TradeUnit $tradeUnit, ActionRequest $request): TradeUnit
     {
         $this->tradeUnit = $tradeUnit;
-        $this->initialisation($tradeUnit->group, $request);
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
         return $this->handle($tradeUnit, $this->validatedData);
     }

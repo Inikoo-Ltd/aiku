@@ -4,12 +4,12 @@ import { FieldOrderSummary } from '@/types/Pallet'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faQuestionCircle } from '@fal'
+import { faQuestionCircle, faInfoCircle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faQuestionCircle)
 
 const props = defineProps<{
-    currency_code?: string
+    currency_code: string
     order_summary: FieldOrderSummary[][] | {
         [key: string]: FieldOrderSummary[]
     } | undefined
@@ -31,7 +31,7 @@ const locale = inject('locale', aikuLocaleStructure)
                         <dt class="col-span-3 flex flex-col">
                             <div class="flex items-center leading-none" :class="fieldSummary.label_class">
                                 <span>{{ fieldSummary.label }}</span>
-                                <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle' v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon v-if="fieldSummary.information_icon" :icon="fieldSummary.information_icon_button ?  fieldSummary.information_icon_button : 'fal fa-question-circle'" v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
                             </div>
                             <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
                         </dt>
@@ -42,9 +42,12 @@ const locale = inject('locale', aikuLocaleStructure)
                     </Transition>
 
                     <slot :name="'cell_' + fieldSummary?.slot_name + '_3'" :fieldSummary="fieldSummary">
-                        <div class="relative col-span-3 justify-self-end font-medium overflow-hidden">
+                        <div class="relative col-span-3 justify-self-end flex items-center gap-x-2 font-medium overflow-hidden">
+                            <span v-if="typeof fieldSummary.price_total_old === 'number'" class="text-gray-400 line-through">
+                                {{ locale.currencyFormat(currency_code, fieldSummary.price_total_old) }}
+                            </span>
                             <Transition name="spin-to-right">
-                                <dd :key="fieldSummary.price_total" class="" :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
+                                <dd :key="fieldSummary.price_total" class="" :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' || typeof fieldSummary.price_total_old === 'number' ? 'text-green-600' : '', fieldSummary.price_total === 'free' ? 'animate-pulse' : '']">
                                     {{ locale.currencyFormat(currency_code, fieldSummary.price_total || 0) }}
                                 </dd>
                             </Transition>

@@ -10,6 +10,17 @@ use App\Actions\Dropshipping\Tiktok\User\UI\OnboardingTiktokUser;
 use App\Actions\UI\AikuPublic\ShowHome;
 use Illuminate\Support\Facades\Route;
 
+Route::get('robots.txt', function () {
+    return response(
+        "User-agent: *\nTest: 1",
+        200,
+        [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Cache-Control' => 'public, max-age=3600',
+        ]
+    );
+})->name('aiku_robots');
+
 Route::get('/', ShowHome::class)->name('home');
 
 Route::get('tiktok/onboarding', OnboardingTiktokUser::class)->name('tiktok.onboarding');

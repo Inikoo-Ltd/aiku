@@ -58,7 +58,6 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
                 ),
                 $orgStockPackedIn
             ),
-
             'type'            => $this->type,
             'quantity_picked' => $quantityPicked,
             'picking_id'      => $pickingId,

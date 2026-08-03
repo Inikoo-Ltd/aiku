@@ -22,6 +22,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 
 class EditWebpage extends OrgAction
@@ -59,10 +60,18 @@ class EditWebpage extends OrgAction
 
         $fields = [
             "seo_image"        => [
-                "type"    => "image_crop_square",
-                "label"   => __("share image"),
-                "value"   => $webpage->imageSources(1200, 1200, 'seoImage'),
-                'options' => [
+                "type"        => "image_crop_square",
+                "label"       => __("Share image"),
+                "value"       => $webpage->imageSources(1200, 1200, 'seoImage'),
+                "information" => __("The preview image (og:image) shown when the page is shared on social media (i.e Whatsapp, Facebook). It is not shown on the page itself. Crop ratio from 1:1 to 3:1, served scaled down to fit 1200x1200 pixels."),
+                'hasOther'    => [
+                    'name'        => 'seo_image_alt',
+                    'value'       => Arr::get($webpage->seo_data, 'image_alt'),
+                    'label'       => __('Share image alt text'),
+                    'placeholder' => __('Describe the image'),
+                    'information' => __('Alternative text of the share image, used by screen readers and shown when the image cannot be loaded. Will use the Meta Title if missing.'),
+                ],
+                'options'     => [
                     "minAspectRatio" => 1,
                     "maxAspectRatio" => 12 / 4,
                 ]
@@ -113,6 +122,24 @@ class EditWebpage extends OrgAction
                 'value'       => $webpage->description,
                 "maxLength"   => 150,
                 "counter"     => true,
+            ],
+            'webpage_title_prefix'  => [
+                'type'          => 'input',
+                'information'   => __('Would add the set prefix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'label'         => __('Title Prefix'),
+                'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
+            ],
+            'webpage_title_suffix'  => [
+                'type'          => 'input',
+                'information'   => __('Would add the set suffix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'label'         => __('Title Suffix'),
+                'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
+            ],
+            'show_price'  => [
+                'type'          => 'toggle',
+                'information'   => __('Toggle whether or not the price is shown when logged out on the webpage. This would not override individual webpage setting (if exists)'),
+                'label'         => __('Show Price on Webpage'),
+                'value'         => data_get($webpage->settings, 'webpage.show_price', false),
             ],
             'index_page'      => [
                 'type'        => 'toggle',
@@ -184,10 +211,26 @@ class EditWebpage extends OrgAction
             ];
         }
 
+
+        $informationWarning = [];
+        if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY) {
+            $informationWarning = [
+                [
+                    'description' => "Structure @type 'ProductGroup' or @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
+                ]
+            ];
+        } elseif ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
+            $informationWarning = [
+                [
+                    'description' => "Structure @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.",
+                ]
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
-                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage's settings"),
+                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage :webpageCode settings", ['webpageCode' => $webpage->code]),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'warning'     => $warning,
                 'pageHead'    => [
@@ -199,7 +242,7 @@ class EditWebpage extends OrgAction
                     'model'      => $isBlog ? __('Blog') : __('Webpage'),
                     'iconRight'  => WebpageStateEnum::stateIcon()[$webpage->state->value],
                     'afterTitle' => [
-                        'label' => $webpage->getUrl(),
+                        'label' => $webpage->getCanonicalUrl(),
                     ],
                     'actions' => [
                         [
@@ -225,6 +268,7 @@ class EditWebpage extends OrgAction
                                     'type'     => 'structure_data_website',
                                     'value'    => Arr::get($webpage->seo_data, 'structured_data') ?? '',
                                     'required' => false,
+                                    'information_warning'   => $informationWarning,
                                 ],
                             ]
                         ] : null,

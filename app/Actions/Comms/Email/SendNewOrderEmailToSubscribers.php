@@ -44,7 +44,11 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
         $customer = $order->customer;
 
-        $transactions = $order->transactions()->where('model_type', 'Product')->get();
+        $transactions = $order->transactions()
+            ->where('model_type', 'Product')
+            ->get()
+            ->sortBy(fn ($transaction) => $transaction->historicAsset?->code)
+            ->values();
 
         $balance = 'Customer Balance: ' . $order->shop->currency->symbol . $order->customer->balance;
 
@@ -236,8 +240,8 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                         color: #15803d;
                         margin-top: 4px;
                         font-weight: bold;
-                        max-width: 300px; 
-                        white-space: normal; 
+                        max-width: 300px;
+                        white-space: normal;
                         word-break: break-word;
                     ">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block; margin-right: 2px; vertical-align: -2px;">

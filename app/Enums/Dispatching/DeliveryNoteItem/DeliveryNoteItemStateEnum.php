@@ -81,7 +81,7 @@ enum DeliveryNoteItemStateEnum: string
             ],
             'handling_blocked' => [
                 'tooltip' => __('Waiting'),
-                'icon'    => 'fal fa-hand-paper',
+                'icon'    => 'fal fa-hourglass-half',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',
                 'app'     => [

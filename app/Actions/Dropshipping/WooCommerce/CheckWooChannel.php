@@ -19,7 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class CheckWooChannel
 {
-    use asAction;
+    use AsAction;
     use WithActionUpdate;
 
     public function handle(WooCommerceUser $wooCommerceUser): CustomerSalesChannel
@@ -32,39 +32,41 @@ class CheckWooChannel
             $platformStatus       = true;
             $canConnectToPlatform = true;
             $existInPlatform      = true;
-        }
 
-        $webhooks = Arr::get($wooCommerceUser->settings, 'webhooks', []);
-        if (blank($webhooks)) {
-            $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
+            $webhooks = Arr::get($wooCommerceUser->settings, 'webhooks', []);
+            if (blank($webhooks)) {
+                $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
 
-            $this->update($wooCommerceUser, [
-                'settings' => array_merge($wooCommerceUser->settings, [
-                    'webhooks' => $webhooks
-                ])
-            ]);
-        }
+                $this->update($wooCommerceUser, [
+                    'settings' => array_merge($wooCommerceUser->settings, [
+                        'webhooks' => $webhooks
+                    ])
+                ]);
+            }
 
-        $weightOption = Arr::get($wooCommerceUser->settings, 'weight_option', []);
-        if (blank($weightOption)) {
-            $weightOption = $wooCommerceUser->getProductWeightSettings();
+            $weightOption = Arr::get($wooCommerceUser->settings, 'weight_option');
+            if (blank($weightOption)) {
+                $weightOption = $wooCommerceUser->getProductWeightSettings();
 
-            $this->update($wooCommerceUser, [
-                'settings' => array_merge($wooCommerceUser->settings, [
-                    'weight_option' => $weightOption
-                ])
-            ]);
+                $this->update($wooCommerceUser, [
+                    'settings' => array_merge($wooCommerceUser->settings, [
+                        'weight_option' => $weightOption
+                    ])
+                ]);
+            }
         }
 
         $data = [
-            'state'                   => CustomerSalesChannelStateEnum::AUTHENTICATED,
             'name'                    => $wooCommerceUser->name,
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform
         ];
         if ($platformStatus) {
+            $data['state']                 = CustomerSalesChannelStateEnum::AUTHENTICATED;
             $data['ban_stock_update_util'] = null;
+        } else {
+            $data['state'] = CustomerSalesChannelStateEnum::NOT_READY;
         }
 
         return UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, $data);
@@ -79,15 +81,14 @@ class CheckWooChannel
     public function asCommand(Command $command): void
     {
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
-        $customerSalesChannel = $this->handle($customerSalesChannel->user);
+        $updatedChannel       = $this->handle($customerSalesChannel->user);
 
-        // Display CustomerSalesChannel status information
         $statusData = [
-            ['Customer Sales Channel', $customerSalesChannel->slug],
-            ['Platform Status', $customerSalesChannel->platform_status ? 'Yes' : 'No'],
-            ['Can Connect to Platform', $customerSalesChannel->can_connect_to_platform ? 'Yes' : 'No'],
-            ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No'],
-            ['Ban', $customerSalesChannel->ban_stock_update_util ?? '-']
+            ['Customer Sales Channel', $updatedChannel->slug],
+            ['Platform Status', $updatedChannel->platform_status ? 'Yes' : 'No'],
+            ['Can Connect to Platform', $updatedChannel->can_connect_to_platform ? 'Yes' : 'No'],
+            ['Exist in Platform', $updatedChannel->exist_in_platform ? 'Yes' : 'No'],
+            ['Ban', $updatedChannel->ban_stock_update_util ?? '-']
         ];
 
 

@@ -81,8 +81,9 @@ class IndexSubDepartmentWebpages extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('webpages.code', $value)
-                    ->orWhereStartWith('webpages.url', $value);
+                $value = strip_tags($value);
+                $query->whereAnyWordStartWith('webpages.code', $value)
+                    ->orWhereAnyWordStartWith('webpages.url', $value);
             });
         });
 
@@ -196,6 +197,21 @@ class IndexSubDepartmentWebpages extends OrgAction
 
         $routeCreate = '';
 
+        $actions = [];
+
+        $website = $this->website;
+
+        $allowBulkOffline = $this->canEdit;
+
+        if ($allowBulkOffline) {
+            $actions[] = [
+                'key'   => 'bulk-offline',
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('Bulk Offline'),
+            ];
+        }
+
         return Inertia::render(
             'Org/Web/Webpages',
             [
@@ -203,27 +219,35 @@ class IndexSubDepartmentWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
+                'title'       => __('Webpages') . ' ' . __('Sub Department'),
                 'pageHead'    => [
-                    'title'         => __('sub department webpages'),
+                    'model'         => __('Webpages'),
+                    'title'         => __('Sub Department'),
+                    'color'         => '#f59e0b',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder-download'],
                         'title' => __('Webpage')
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('webpage'),
-                            'route' => [
-                                'name'       => $routeCreate,
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                        ]
-                    ]
+                    'actions'       => $actions,
                 ],
                 'data'        => ProductCategoryWebpagesResource::collection($webpages),
+                'routes_list' => [
+                    'bulk_offline'        => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.webpage.set_offline_bulk',
+                        'parameters' => [
+                            'website'   => $website?->id
+                        ]
+                    ],
+                    'fetch_live_webpages' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.json.active_webpages.with_exclusion.index',
+                        'parameters' => [
+                            'shop' => $this->shop->slug,
+                        ]
+                    ],
+                ]
 
             ]
         )->table($this->tableStructure(parent: $this->website));

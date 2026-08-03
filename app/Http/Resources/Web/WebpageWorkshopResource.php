@@ -47,6 +47,7 @@ class WebpageWorkshopResource extends JsonResource
             'id'                                     => $webpage->id,
             'slug'                                   => $webpage->slug,
             'level'                                  => $webpage->level,
+            'website_id'                             => $webpage->website_id,
             'website_layout'                         => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),
             'code'                                   => $webpage->code,
             'url'                                    => $webpage->url,

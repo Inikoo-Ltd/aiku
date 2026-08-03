@@ -6,18 +6,21 @@
 */
 
 import { usePage } from "@inertiajs/vue3"
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
+import { useLocaleStore } from "@/Stores/locale"
 
 
 // Method: format currency
+// Delegates to the locale store so all currency formatting lives in one place.
 const formatCurrency = (amount: number) => {
-    if (!usePage()?.props?.iris) {
+    const layout = useIrisLayoutStore()
+    const currencyCode = layout.iris?.currency?.code || usePage()?.props?.iris?.currency?.code
+
+    if (!currencyCode) {
         return amount
     }
 
-    return new Intl.NumberFormat(usePage()?.props?.iris?.website_i18n?.current_language?.code || 'en-US', {
-        style: "currency",
-        currency: usePage()?.props?.iris?.currency?.code || '',
-    }).format(amount || 0)
+    return useLocaleStore().currencyFormat(currencyCode, amount)
 }
 
 // Check if the user is logged in

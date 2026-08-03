@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted } from "vue"
+import { ref, computed, inject, onMounted, onBeforeUnmount } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
@@ -51,34 +51,55 @@ const slidesPerView = computed(() => {
 
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProducts = ref<LastOrderedProduct[] | null>()
+const listProducts = ref<LastOrderedProduct[]>([])
 const isLoadingFetch = ref(false)
+const isFinish = ref(false)
 
+const routeName = 'iris.json.product_category.last-ordered-products.index'
 
-const isFetched = ref(false)
+const isRouteAvailable = () => {
+    if (typeof window === 'undefined' || typeof route !== 'function') {
+        return false
+    }
+
+    try {
+        return route().has(routeName)
+    } catch {
+        return false
+    }
+}
+
 const fetchRecommenders = async () => {
-    if (route().has('iris.json.product_category.last-ordered-products.index')) {
-        try {
-            isLoadingFetch.value = true
-            const response = await axios.get(
-                route('iris.json.product_category.last-ordered-products.index', {  // GetLastOrderedProducts
-                    productCategory: props.fieldValue.family.id,
-                    ignoredProductId: props.fieldValue?.product?.id
-                })
-            )
+    if (!props.fieldValue?.family?.id || !isRouteAvailable()) {
+        return
+    }
 
-            listProducts.value = response.data.data
-        } catch (error: any) {
-            console.error('Error on fetching recommendations:', error)
-        } finally {
-            isFetched.value = true
-            isLoadingFetch.value = false
-        }
+    try {
+        isLoadingFetch.value = true
+        const response = await axios.get(
+            route(routeName, {
+                productCategory: props.fieldValue.family.id,
+                ignoredProductId: props.fieldValue?.product?.id
+            })
+        )
+        listProducts.value = response.data?.data || []
+    } catch (error: any) {
+        console.error('Error on fetching recommendations:', error)
+    } finally {
+        isLoadingFetch.value = false
+        isFinish.value = true
     }
 }
 
 onMounted(() => {
     fetchRecommenders()
+    window.crbFetchRecommenders = fetchRecommenders
+})
+
+onBeforeUnmount(() => {
+    if (window.crbFetchRecommenders === fetchRecommenders) {
+        delete window.crbFetchRecommenders
+    }
 })
 </script>
 
@@ -88,15 +109,23 @@ onMounted(() => {
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
     }">
-        <template v-if="!isFetched || listProducts?.length > 3">
-            <!-- Title -->
-            <div class="px-3 py-6 pb-2">
-                <div class="text-2xl md:text-3xl font-semibold">
-                    <!-- <div v-html="fieldValue.title"></div> -->
-                    <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
-                </div>
+        <!-- Title -->
+        <div v-if="!isFinish || (isFinish && listProducts.length > 3)" class="px-3 py-6 pb-2">
+            <div class="text-2xl md:text-3xl font-semibold">
+                <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
             </div>
-            
+        </div>
+
+        <div v-if="isLoadingFetch" class="py-4 px-3 md:px-12 grid gap-x-3" :style="{ gridTemplateColumns: `repeat(${slidesPerView ? slidesPerView : 4}, minmax(0, 1fr))` }">
+            <div v-for="xx in (slidesPerView ? slidesPerView : 4)" :key="xx" class="flex flex-col w-full md:px-4 md:py-3">
+                <div class="skeleton w-full max-w-[220px] aspect-square mx-auto rounded"></div>
+                <div class="skeleton mt-3 min-h-[2.3em] w-full rounded"></div>
+                <!-- <div class="skeleton mt-2 h-4 w-1/2 mx-auto rounded"></div> -->
+            </div>
+        </div>
+
+        <template v-else-if="listProducts && listProducts.length > 3">
+
             <div class="py-4 px-3 md:px-12" id="recommendation-crb-1-iris">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
@@ -107,22 +136,15 @@ onMounted(() => {
                     spaceBetween="12"
                     autoHeight
                 >
-                    <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                        <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
-                        </div>
-                    </div>
-
-                    <template v-else>
-                        <SwiperSlide
-                            v-for="(product, index) in listProducts"
-                            :key="index"
-                            class="p-[1px] w-full cursor-grab relative !grid h-full min-h-full"
-                        >
-                            <RecommendationCRBSlideIris
-                                :product
-                            />
-                        </SwiperSlide>
-                    </template>
+                    <SwiperSlide
+                        v-for="(product, index) in listProducts"
+                        :key="index"
+                        class="p-[1px] w-full cursor-grab relative !grid h-full min-h-full"
+                    >
+                        <RecommendationCRBSlideIris
+                            :product
+                        />
+                    </SwiperSlide>
                 </Swiper>
             </div>
         </template>

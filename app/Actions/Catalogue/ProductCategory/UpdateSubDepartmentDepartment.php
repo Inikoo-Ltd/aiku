@@ -62,11 +62,11 @@ class UpdateSubDepartmentDepartment extends OrgAction
                 UpdateWebpageCanonicalUrl::dispatch($subDepartment->webpage)->delay(2);
             }
 
-            DepartmentHydrateProducts::dispatch($subDepartment->department);
+            DepartmentHydrateProducts::dispatch($subDepartment->department_id)->delay(2);
             DepartmentHydrateSubDepartments::dispatch($subDepartment->department);
             ProductCategoryHydrateFamilies::dispatch($subDepartment->department);
             if ($oldDepartment) {
-                DepartmentHydrateProducts::dispatch($oldDepartment);
+                DepartmentHydrateProducts::dispatch($oldDepartment->id)->delay(2);
                 ProductCategoryHydrateFamilies::dispatch($oldDepartment);
                 DepartmentHydrateSubDepartments::dispatch($oldDepartment);
             } else {

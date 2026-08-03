@@ -30,6 +30,7 @@ defineProps<{
     tab?: string
     allowStockControllerSetNotPicked: boolean
     isStillPicking: boolean
+    waitingType?: string
 }>()
 
 const routeToDeliveryNote = (slug: string) => {

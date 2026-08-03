@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection PhpUnused */
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 15 Oct 2025 19:32:46 Central Indonesia Time, Kuala Lumpur, Malaysia
@@ -16,7 +18,7 @@ class BreakAllWebsitesCache extends OrgAction
 {
     public function handle(?Command $command = null): void
     {
-        foreach (Website::all() as $website) {
+        foreach (Website::orderBy('id', 'desc')->get() as $website) {
             BreakWebsiteCache::run($website, null, $command);
         }
     }

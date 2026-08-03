@@ -1,0 +1,1885 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 26 Nov 2024 21:36:24 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2024, Raul A Perusquia Flores
+ */
+
+/** @noinspection PhpUnhandledExceptionInspection */
+
+use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Accounting\Invoice\UpdateInvoice;
+use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
+use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Billables\ShippingZone\HydrateShippingZones;
+use App\Actions\Billables\ShippingZone\DeleteShippingZone;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Billables\ShippingZone\UpdateShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\DeleteShippingZoneSchema;
+use App\Actions\Billables\ShippingZoneSchema\HydrateShippingZoneSchemas;
+use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
+use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
+use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
+use App\Actions\Catalogue\Product\Json\GetOrderProducts;
+use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
+use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
+use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
+use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
+use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
+use App\Actions\Dispatching\Shipment\StoreShipment;
+use App\Actions\Dispatching\Shipper\StoreShipper;
+use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
+use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsGroups;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsOrganisations;
+use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
+use App\Actions\Helpers\Intervals\ResetDailyIntervals;
+use App\Actions\Ordering\Adjustment\StoreAdjustment;
+use App\Actions\Ordering\Adjustment\UpdateAdjustment;
+use App\Actions\Ordering\Order\HydrateOrders;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
+use App\Actions\Ordering\Order\PayOrder;
+use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
+use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
+use App\Actions\Ordering\Purge\HydratePurges;
+use App\Actions\Ordering\Purge\StorePurge;
+use App\Actions\Ordering\Purge\UpdatePurge;
+use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
+use App\Actions\Ordering\Transaction\DeleteTransaction;
+use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
+use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\StoreTransactionFromAdjustment;
+use App\Actions\Ordering\Transaction\StoreTransactionFromCharge;
+use App\Actions\Ordering\Transaction\StoreTransactionFromShipping;
+use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
+use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\UI\Grp\Layout\GetShopNavigation;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
+use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\Purge\PurgeTypeEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Http\Resources\Ordering\TransactionsResource;
+use App\Models\Ordering\UpcomingTransaction;
+use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Accounting\PaymentServiceProvider;
+use App\Models\Analytics\AikuScopedSection;
+use App\Models\Billables\Charge;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
+use App\Models\Catalogue\HistoricAsset;
+use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
+use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Shipment;
+use App\Models\Dispatching\Shipper;
+use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\Platform;
+use App\Models\Helpers\Address;
+use App\Models\Helpers\Country;
+use App\Models\Ordering\Adjustment;
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Imports\Ordering\TransactionImport;
+use App\Models\Helpers\Upload;
+use App\Models\Helpers\TaxCategory;
+use App\Models\Ordering\Order;
+use App\Models\Ordering\Purge;
+use App\Models\Ordering\PurgedOrder;
+use App\Models\Ordering\ShippingCountry;
+use App\Models\Ordering\Transaction;
+use App\Models\SysAdmin\Permission;
+use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Queue;
+use Inertia\Testing\AssertableInertia;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\deleteJson;
+use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
+use function Pest\Laravel\patchJson;
+use function Pest\Laravel\postJson;
+
+beforeAll(function () {
+    loadDB();
+});
+
+beforeEach(function () {
+    list(
+        $this->organisation,
+        $this->user,
+        $this->shop
+    ) = createShop();
+
+    $this->group = $this->organisation->group;
+
+    list(
+        $this->tradeUnit,
+        $this->product
+    ) = createProduct($this->shop);
+
+    $this->customer = createCustomer($this->shop);
+
+    $this->warehouse = createWarehouse();
+
+    Config::set(
+        'inertia.testing.page_paths',
+        [resource_path('js/Pages/Grp')]
+    );
+    actingAs($this->user);
+});
+
+test('store shipping country action', function () {
+    $countryId = Country::where('iso3', 'FRA')->first()->id;
+    // Ensure migration exists (in case snapshot DB was loaded)
+    $shippingCountry = StoreShippingCountry::make()->action($this->shop, [
+        'country_id' => $countryId
+    ]);
+    $this->shop->refresh();
+    expect($shippingCountry)->toBeInstanceOf(ShippingCountry::class)
+        ->and($this->shop->stats->number_shipping_countries)->toBe(1);
+});
+
+
+test('update shipping country action', function () {
+    $shippingCountry = StoreShippingCountry::make()->action($this->shop, [
+        'country_id' => 4,
+    ]);
+    expect($shippingCountry)->toBeInstanceOf(ShippingCountry::class);
+
+    $updated = UpdateShippingCountry::make()->action($shippingCountry, [
+        'territories' => ['A', 'B']
+    ]);
+
+    expect($updated->fresh()->territories)->toBe(['A', 'B']);
+});
+
+test('delete shipping country action dispatches hydrator and removes model', function () {
+    $shippingCountry = StoreShippingCountry::make()->action($this->shop, [
+        'country_id' => 6,
+    ]);
+    expect(ShippingCountry::query()->count())->toBeGreaterThanOrEqual(1);
+
+    DeleteShippingCountry::make()->action($shippingCountry);
+
+    expect(ShippingCountry::query()->whereKey($shippingCountry->id)->exists())->toBeFalse();
+});
+
+
+test('create order', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+    $this->customer->refresh();
+
+    expect($order)->toBeInstanceOf(Order::class)
+        ->and($order->state)->toBe(OrderStateEnum::CREATING)
+        ->and($order->customer)->toBeInstanceOf(Customer::class)
+        ->and($this->group->orderingStats->number_orders)->toBe(1)
+        ->and($this->group->orderingStats->number_orders_state_creating)->toBe(1)
+        ->and($this->group->orderingStats->number_orders_handing_type_shipping)->toBe(1)
+        ->and($this->organisation->orderingStats->number_orders)->toBe(1)
+        ->and($this->organisation->orderingStats->number_orders_state_creating)->toBe(1)
+        ->and($this->organisation->orderingStats->number_orders_handing_type_shipping)->toBe(1)
+        ->and($this->shop->orderingStats->number_orders)->toBe(1)
+        ->and($this->shop->orderingStats->number_orders_state_creating)->toBe(1)
+        ->and($this->shop->orderingStats->number_orders_handing_type_shipping)->toBe(1)
+        ->and($this->customer->stats->number_orders)->toBe(1)
+        ->and($this->customer->stats->number_orders_state_creating)->toBe(1)
+        ->and($this->customer->stats->number_orders_handing_type_shipping)->toBe(1)
+        ->and($order->stats->number_item_transactions_at_submission)->toBe(0);
+
+    return $order;
+});
+
+test('UI Edit Order', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    $response = get(
+        route(
+            'grp.org.shops.show.ordering.orders.edit',
+            [
+                'organisation' => $this->organisation->slug,
+                'shop'         => $this->shop->slug,
+                'order'        => $order->slug,
+            ]
+        )
+    );
+
+    $response->assertOk();
+    $response->assertInertia(function (AssertableInertia $page) use ($order) {
+        $page
+            ->component('EditModel')
+            ->has('breadcrumbs')
+            ->has('title')
+            ->has('pageHead', function (AssertableInertia $head) use ($order) {
+                $head->where('title', $order->slug)
+                    ->has('actions', 1)
+                    ->where('actions.0.style', 'exitEdit')
+                    ->etc();
+            })
+            ->has('formData', function (AssertableInertia $form) use ($order) {
+                $form->has('blueprint')
+                    ->where('args.updateRoute.name', 'grp.models.order.update')
+                    ->where('args.updateRoute.parameters.order', $order->id)
+                    ->etc();
+            });
+    });
+});
+
+test('get order products', function (Order $order) {
+    // Create a transaction if needed (may not be necessary if the order already has products)
+    $order->transactions->first()
+        ?: StoreTransaction::make()->action(
+            $order,
+            $this->product->historicAsset,
+            Transaction::factory()->definition()
+        );
+
+    $order->refresh();
+
+
+    // Test the GetOrderProducts action
+    $result = GetOrderProducts::make()->handle($order);
+
+
+    expect($result)->toBeInstanceOf(LengthAwarePaginator::class)
+        ->and($result->count())->toBeGreaterThanOrEqual(1);
+
+    // Test that the product data is correctly retrieved
+    $products = $result->items();
+    expect($products)->toBeArray()
+        ->and(count($products))->toBeGreaterThanOrEqual(1);
+
+    // Verify the first product data
+    $firstProduct = $products[0];
+    expect($firstProduct->id)->toBe(1)->and($firstProduct->transaction_id)->toBe(1);
+
+    // Test the JSON response
+    if (method_exists(GetOrderProducts::class, 'jsonResponse')) {
+        $jsonResponse = GetOrderProducts::make()->jsonResponse($result);
+        expect($jsonResponse)->toBeInstanceOf(\Illuminate\Http\Resources\Json\AnonymousResourceCollection::class);
+    }
+
+    return $order;
+})->depends('create order');
+
+
+test('delete previous transaction', function (Order $order) {
+    $transaction = $order->transactions()->first();
+    UpdateTransaction::make()->action(
+        $transaction,
+        ['quantity_ordered' => 0]
+    );
+    $order->refresh();
+    expect($order->transactions()->count())->toBe(0)
+        ->and($order->stats->number_item_transactions)->toBe(0)
+        ->and($order->stats->number_item_transactions_at_submission)->toBe(0);
+
+    return $order;
+})->depends('get order products');
+
+
+test('create transaction', function ($order) {
+    $transactionData = Transaction::factory()->definition();
+    $historicAsset   = $this->product->historicAsset;
+    expect($historicAsset)->toBeInstanceOf(HistoricAsset::class);
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, $transactionData);
+
+    $order->refresh();
+
+
+    expect($transaction)->toBeInstanceOf(Transaction::class)
+        ->and($transaction->order->stats->number_item_transactions_at_submission)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1);
+
+    return $transaction;
+})->depends('delete previous transaction');
+
+test('create transaction from adjustment', function (Order $order) {
+    $adjustment = StoreAdjustment::make()->action(
+        $order->shop,
+        [
+            'type'       => AdjustmentTypeEnum::CREDIT,
+            'net_amount' => 10,
+        ],
+        strict: false
+    );
+    expect($adjustment)->toBeInstanceOf(Adjustment::class);
+    $transaction = StoreTransactionFromAdjustment::make()->action($order, $adjustment, [
+        'date'             => Carbon::now(),
+        'quantity_ordered' => 1,
+    ]);
+
+    $order->refresh();
+
+    expect($transaction)->toBeInstanceOf(Transaction::class)
+        ->and($transaction->order->stats->number_item_transactions_at_submission)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1)
+        ->and($order->shop->stats->number_adjustments)->toBe(1)
+        ->and($order->shop->stats->number_adjustments_type_credit)->toBe(1)
+        ->and($order->organisation->catalogueStats->number_adjustments)->toBe(1)
+        ->and($order->group->catalogueStats->number_adjustments)->toBe(1);
+
+    return $transaction;
+})->depends('create order');
+
+test('update adjustment', function () {
+    $adjustment = StoreAdjustment::make()->action(
+        $this->shop,
+        [
+            'type'       => AdjustmentTypeEnum::CREDIT,
+            'net_amount' => 10,
+        ],
+        strict: false
+    );
+    expect($adjustment)->toBeInstanceOf(Adjustment::class);
+    $updatedAdjustment = UpdateAdjustment::make()->action($adjustment, [
+        'net_amount' => 20,
+    ], strict: false);
+
+    $updatedAdjustment->refresh();
+
+    expect($updatedAdjustment)->toBeInstanceOf(Adjustment::class)
+        ->and(intval($updatedAdjustment->net_amount))->toBe(20)
+        ->and($updatedAdjustment->shop->stats->number_adjustments)->toBe(2);
+
+    return $updatedAdjustment;
+});
+
+test('create transaction from charge', function (Order $order) {
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'charge-1',
+        'name'        => 'charge 1',
+        'description' => 'charge 1 description',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'trigger'     => ChargeTriggerEnum::ORDER,
+        'type'        => ChargeTypeEnum::TRACKING,
+    ]);
+
+    expect($charge)->toBeInstanceOf(Charge::class);
+    $transaction = StoreTransactionFromCharge::make()->action($order, $charge, [
+        'date'             => Carbon::now(),
+        'quantity_ordered' => 1,
+    ]);
+
+    $order->refresh();
+
+    expect($transaction)->toBeInstanceOf(Transaction::class)
+        ->and($transaction->order->stats->number_item_transactions_at_submission)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1);
+
+    return $transaction;
+})->depends('create order');
+
+test('create transaction from shipping', function (Order $order) {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($order->shop, [
+        'name' => 'schema 1',
+    ]);
+    $shipping           = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'SHIP-1',
+        'name'        => 'shipping 1',
+        'status'      => true,
+        'price'       => [
+            'type'  => "Step Order Items Net Amount",
+            "steps" => [
+                [
+                    "to"    => 175,
+                    "from"  => 0,
+                    "price" => 20
+                ],
+                [
+                    "to"    => 450,
+                    "from"  => 175,
+                    "price" => 40
+                ],
+                [
+                    "to"    => 975,
+                    "from"  => 450,
+                    "price" => 60
+                ],
+                [
+                    "to"    => "INF",
+                    "from"  => 975,
+                    "price" => 0
+                ]
+            ]
+        ],
+        'territories' => [
+            [
+                "country_code" => "FR"
+            ],
+            [
+                "country_code" => "BE"
+            ],
+            [
+                "country_code" => "LU"
+            ]
+        ],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+    expect($shipping)->toBeInstanceOf(ShippingZone::class);
+    $transaction = StoreTransactionFromShipping::make()->action($order, $shipping, [
+        'date'             => Carbon::now(),
+        'quantity_ordered' => 1,
+    ]);
+
+    $order->refresh();
+
+    expect($transaction)->toBeInstanceOf(Transaction::class)
+        ->and($transaction->order->stats->number_item_transactions_at_submission)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1);
+
+    return $transaction;
+})->depends('create order');
+
+test('update transaction', function ($transaction) {
+    $transaction = UpdateTransaction::make()->action(
+        $transaction,
+        [
+            'quantity_ordered' => $transaction->quantity_ordered + 1,
+        ]
+    );
+
+    expect($transaction)->toBeInstanceOf(Transaction::class);
+})->depends('create transaction');
+
+
+test('update order', function ($order) {
+    $order = UpdateOrder::make()->action($order, Order::factory()->definition());
+
+    $this->assertModelExists($order);
+})->depends('create order');
+
+test('update order state to submitted', function (Order $order) {
+    $order = SubmitOrder::make()->action($order);
+    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->shop->orderingStats->number_orders_state_submitted)->toBe(1)
+        ->and($order->organisation->orderingStats->number_orders_state_submitted)->toBe(1)
+        ->and($order->group->orderingStats->number_orders_state_submitted)->toBe(1)
+        ->and($order->stats->number_item_transactions)->toBe(1);
+
+    return $order;
+})->depends('create order');
+
+test('update order state to in warehouse', function (Order $order) {
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $order->refresh();
+    expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
+
+    return $order;
+})->depends('update order state to submitted');
+
+test('update order private warehouse note propagates to delivery note', function (Order $order) {
+    $order = UpdateOrder::make()->action($order, ['private_warehouse_note' => 'fragile, double box']);
+    /** @var DeliveryNote $deliveryNote */
+    $deliveryNote = $order->deliveryNotes()->first();
+    expect($order->private_warehouse_note)->toBe('fragile, double box')
+        ->and($deliveryNote->private_warehouse_note)->toBe('fragile, double box');
+
+    return $order;
+})->depends('update order state to in warehouse');
+
+test('update order state to Handling', function (Order $order) {
+    $order = UpdateOrderStateToHandling::make()->action($order);
+    $order->refresh();
+    expect($order)->toBeInstanceOf(Order::class)
+        ->and($order->state)->toEqual(OrderStateEnum::HANDLING);
+
+    return $order;
+})->depends('update order state to in warehouse');
+
+
+test('update order state to Finalised ', function (Order $order) {
+    $shipper = StoreShipper::make()->action($order->organisation, [
+        'code'     => 'hello',
+        'name'     => 'hello',
+        'trade_as' => 'hello',
+    ]);
+
+    /** @var DeliveryNote $deliveryNote */
+    $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+    StoreShipment::make()->action($deliveryNote, $shipper, [
+        'reference'          => 'abc',
+        'tracking'           => 'abc',
+        'combined_label_url' => 'https://www.google.com',
+    ]);
+
+    $order = FinaliseOrder::make()->action($order);
+    $order->refresh();
+    expect($order)->toBeInstanceOf(Order::class)
+        ->and($order->state)->toEqual(OrderStateEnum::FINALISED);
+
+    return $order;
+})->depends('update order state to Handling');
+
+test('create customer client', function () {
+    $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
+        'reference' => 'test_manual_reference'
+    ]);
+
+    StoreCustomerSalesChannel::make()->action($customer, $platform, []);
+    $customerClient = StoreCustomerClient::make()->action(
+        $customerSalesChannel,
+        array_merge(
+            CustomerClient::factory()->definition(),
+        )
+    );
+    $this->assertModelExists($customerClient);
+    expect($customerClient->shop->code)->toBe($shop->code)
+        ->and($customerClient->customer->reference)->toBe($customer->reference);
+
+    return $customerClient;
+});
+
+test('update customer client', function ($customerClient) {
+    $customerClient = UpdateCustomerClient::make()->action($customerClient, ['reference' => '001']);
+    expect($customerClient->reference)->toBe('001');
+})->depends('create customer client');
+
+test('create invoice from customer', function () {
+    $invoiceData = Invoice::factory()->definition();
+    data_set($invoiceData, 'billing_address', new Address(Address::factory()->definition()));
+    $invoice = StoreInvoice::make()->action($this->customer, $invoiceData);
+    expect($invoice)->toBeInstanceOf(Invoice::class)
+        ->and($invoice->customer)->toBeInstanceOf(Customer::class)
+        ->and($invoice->customer->stats->number_invoices)->toBe(2);
+
+    return $invoice;
+})->depends();
+
+test('update invoice from customer', function ($invoice) {
+    $invoice = UpdateInvoice::make()->action($invoice, [
+        'reference' => '00001a'
+
+    ]);
+    expect($invoice->reference)->toBe('00001a');
+})->depends('create invoice from customer');
+
+test('create invoice from order', function (Order $order) {
+    $transaction = $order->transactions->first();
+    $invoiceData = Invoice::factory()->definition();
+    data_set($invoiceData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($invoiceData, 'reference', '00002');
+    $invoice            = StoreInvoice::make()->action($order, $invoiceData);
+    $invoiceTransaction = StoreInvoiceTransaction::make()->action($invoice, $transaction, [
+        'date'            => now(),
+        'tax_category_id' => $transaction->tax_category_id,
+        'quantity'        => 10,
+        'gross_amount'    => 1000,
+        'net_amount'      => 1000,
+    ]);
+    $customer           = $invoice->customer;
+    $this->shop->refresh();
+    expect($invoice)->toBeInstanceOf(Invoice::class)
+        ->and($customer)->toBeInstanceOf(Customer::class)
+        ->and($invoice->customer->id)->toBe($order->customer_id)
+        ->and($invoice->reference)->toBe('00002')
+        ->and($customer->stats->number_invoices)->toBe(3)
+        ->and($this->shop->orderingStats->number_invoices)->toBe(3)
+        ->and($invoiceTransaction)->toBeInstanceOf(InvoiceTransaction::class);
+
+
+    return $invoice;
+})->depends('create order', 'update invoice from customer');
+
+test('update invoice transaction', function (Invoice $invoice) {
+    $transaction        = $invoice->invoiceTransactions->first();
+    $updatedTransaction = UpdateInvoiceTransaction::make()->action($transaction, [
+        'quantity' => 100
+    ]);
+    expect($updatedTransaction)->toBeInstanceOf(InvoiceTransaction::class)
+        ->and(intval($updatedTransaction->quantity))->toBe(100);
+
+    return $updatedTransaction;
+})->depends('create invoice from order');
+
+test('delete invoice transaction', function (InvoiceTransaction $invoiceTransaction) {
+    $invoice = $invoiceTransaction->invoice;
+    DeleteInProcessInvoiceTransaction::make()->action($invoiceTransaction);
+    $invoice->refresh();
+    expect($invoice)->toBeInstanceOf(Invoice::class)
+        ->and($invoice->stats->number_invoice_transactions)->toBe(0)
+        ->and((float) $invoice->net_amount)->toBe(0.0)
+        ->and((float) $invoice->tax_amount)->toBe(0.0)
+        ->and((float) $invoice->total_amount)->toBe(0.0);
+
+    return $invoice;
+})->depends('update invoice transaction');
+
+test('create old order', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action(parent: $this->customer, modelData: $modelData);
+
+
+    $transactionData = Transaction::factory()->definition();
+    $historicAsset   = $this->product->historicAsset;
+    expect($historicAsset)->toBeInstanceOf(HistoricAsset::class);
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, $transactionData);
+
+    $order->refresh();
+
+    expect($order)->toBeInstanceOf(Order::class)
+        ->and($order->state)->toBe(OrderStateEnum::CREATING)
+        ->and($order->stats->number_item_transactions)->toBe(1)
+        ->and($order->stats->number_item_transactions_at_submission)->toBe(1)
+        ->and($transaction)->toBeInstanceOf(Transaction::class);
+
+    $this->customer->refresh();
+    $shop = $order->shop;
+    $shop->refresh();
+    $order->update([
+        'updated_at' => Date::now()->subDays(40)->toDateString()
+    ]);
+
+    return $order;
+});
+
+test('create purge', function (Order $order) {
+    $shop  = $order->shop;
+    $purge = StorePurge::make()->action($shop, [
+        'type'          => PurgeTypeEnum::MANUAL,
+        'scheduled_at'  => now(),
+        'inactive_days' => 30,
+    ]);
+
+    expect($purge)->toBeInstanceOf(Purge::class)
+        ->and($purge->type)->toBe(PurgeTypeEnum::MANUAL)
+        ->and($purge->stats->estimated_number_orders)->toBe(1);
+
+    return $purge;
+})->depends('create old order');
+
+test('update purge', function (Purge $purge) {
+    $newSchedule = Date::now()->addDays(5);
+    $purge       = UpdatePurge::make()->action($purge, [
+        'scheduled_at' => $newSchedule
+    ]);
+
+    expect($purge)->toBeInstanceOf(Purge::class)
+        ->and(Carbon::parse($purge->scheduled_at)->toDateString())->toBe($newSchedule->toDateString());
+
+    return $purge;
+})->depends('create purge');
+
+test('update purge order', function (Purge $purge) {
+    $purgedOrder        = $purge->purgedOrders->first();
+    $updatedPurgedOrder = UpdatePurgedOrder::make()->action($purgedOrder, [
+        'error_message' => 'error test'
+    ]);
+
+    expect($updatedPurgedOrder)->toBeInstanceOf(PurgedOrder::class)
+        ->and($updatedPurgedOrder->error_message)->toBe('error test');
+
+    return $updatedPurgedOrder;
+})->depends('create purge');
+
+test('delete transaction', function (Order $order) {
+    $transaction = $order->transactions->first();
+
+    DeleteTransaction::make()->action($transaction);
+    $order->refresh();
+
+    expect($order->transactions()->count())->toBe(0);
+
+    return $order;
+})->depends('create old order');
+
+test('UI create asset shipping', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.billables.shipping.create', [$this->organisation->slug, $this->shop]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->where('title', 'New schema')
+            ->has('breadcrumbs', 4)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'New schema')
+                    ->etc()
+            )
+            ->has('formData');
+    });
+});
+
+test('UI show asset shipping', function () {
+    $shippingZoneSchema = ShippingZoneSchema::first();
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.billables.shipping.current.show', [$this->organisation->slug, $this->shop, $shippingZoneSchema]));
+    $response->assertInertia(function (AssertableInertia $page) use ($shippingZoneSchema) {
+        $page
+            ->component('Org/Catalogue/ShippingZoneSchema')
+            ->where('title', 'Shipping Zone Schema')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $shippingZoneSchema->name)
+                    ->etc()
+            )
+            ->has('navigation')
+            ->has('tabs');
+    });
+});
+
+test('UI edit asset shipping', function () {
+    $shippingZoneSchema = ShippingZoneSchema::first();
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.billables.shipping.current.edit', [$this->organisation->slug, $this->shop, $shippingZoneSchema]));
+    $response->assertInertia(function (AssertableInertia $page) use ($shippingZoneSchema) {
+        $page
+            ->component('EditModel')
+            ->where('title', 'Shipping Zone Schema')
+            ->has('breadcrumbs', 3)
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $shippingZoneSchema->name)
+                    ->etc()
+            )
+            ->has('navigation')
+            ->has('formData');
+    });
+});
+
+test('UI show ordering backlog', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.ordering.backlog', [$this->organisation->slug, $this->shop]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Ordering/OrdersBacklog')
+            ->where('title', 'Orders backlog')
+            ->has('breadcrumbs', 4)
+            ->has('tabs')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Orders backlog')
+                    ->etc()
+            );
+    });
+});
+
+test('UI show order navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeOrder = function (string $date, int $netAmount) {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        $order->update(['state' => OrderStateEnum::IN_WAREHOUSE, 'date' => $date, 'net_amount' => $netAmount, 'submitted_at' => null]);
+
+        return $order->refresh();
+    };
+
+    $newest = $makeOrder('2026-07-20 10:00:00', 300);
+    $middle = $makeOrder('2026-07-19 10:00:00', 200);
+    $oldest = $makeOrder('2026-07-18 10:00:00', 100);
+
+    $routeParameters = [$this->organisation->slug, $this->shop->slug, $middle->slug];
+
+    $response = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop');
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    $ascendingByAmount = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=net_amount');
+    $ascendingByAmount->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    $byJoinedColumn = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=-customer_name');
+    $byJoinedColumn->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    $byNullColumn = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=submitted_at');
+    $byNullColumn->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    $withoutBucket = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters));
+    $withoutBucket->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+
+});
+
+test('UI show ordering backlog waiting crm items', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $this->shop]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Ordering/WaitingCrmItems')
+            ->where('title', 'Waiting Items (CRM)')
+            ->has('breadcrumbs', 5)
+            ->has('waiting_crm_items')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Waiting Items')
+                    ->etc()
+            );
+    });
+});
+
+test('UI index ordering purges', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.ordering.purges.index', [$this->organisation->slug, $this->shop]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Ordering/Purges')
+            ->where('title', 'Purges')
+            ->has('breadcrumbs', 3)
+            ->has('data')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Purges')
+                    ->etc()
+            );
+    });
+});
+
+test('UI index ordering invoices by payment status', function () {
+    $this->withoutExceptionHandling();
+
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $this->user->givePermissionTo(
+        Permission::where('name', "orders.{$this->shop->id}.view")->firstOrFail()
+    );
+    Cache::tags('auth-user:'.$this->user->id)->flush();
+    actingAs($this->user->fresh());
+
+    $orderingNavigation = GetShopNavigation::run($this->shop, $this->user->fresh());
+    expect(collect(data_get($orderingNavigation, 'ordering.topMenu.subSections'))->pluck('route.name')->all())
+        ->toContain('grp.org.shops.show.ordering.invoices.index');
+
+    StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+    $paidInvoice = StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+    $paidInvoice->updateQuietly([
+        'pay_status' => InvoicePayStatusEnum::PAID,
+    ]);
+
+    $invoiceQuery = Invoice::query()
+        ->where('shop_id', $this->shop->id)
+        ->where('type', InvoiceTypeEnum::INVOICE)
+        ->whereNot('in_process', true);
+
+    $allInvoicesCount    = (clone $invoiceQuery)->count();
+    $paidInvoicesCount   = (clone $invoiceQuery)->where('pay_status', InvoicePayStatusEnum::PAID)->count();
+    $unpaidInvoicesCount = (clone $invoiceQuery)->where('pay_status', InvoicePayStatusEnum::UNPAID)->count();
+
+    $routeParameters = [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+    ];
+
+    get(route('grp.org.shops.show.ordering.invoices.index', $routeParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Ordering/Invoices')
+            ->where('title', 'Invoices')
+            ->where('tabs.current', 'all')
+            ->has('tabs.navigation', 3)
+            ->where('all.meta.total', $allInvoicesCount)
+            ->where('pageHead.subNavigation.1.route.name', 'grp.org.shops.show.ordering.invoices.index')
+            ->has('breadcrumbs', 3));
+
+    get(route('grp.org.shops.show.ordering.invoices.index', [
+        ...$routeParameters,
+        'tab' => 'paid',
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('tabs.current', 'paid')
+        ->where('paid.meta.total', $paidInvoicesCount));
+
+    get(route('grp.org.shops.show.ordering.invoices.index', [
+        ...$routeParameters,
+        'tab' => 'unpaid',
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('tabs.current', 'unpaid')
+        ->where('unpaid.meta.total', $unpaidInvoicesCount));
+});
+
+test('UI create ordering purge', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.ordering.purges.create', [$this->organisation->slug, $this->shop]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->where('title', 'New purge')
+            ->has('breadcrumbs', 4)
+            ->has('formData', fn ($page) => $page
+                ->where('route', [
+                    'name'       => 'grp.models.purge.store',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                    ]
+                ])
+                ->etc())
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'New purge')
+                    ->etc()
+            );
+    });
+});
+
+test('UI edit ordering purge', function () {
+    $purge = Purge::first();
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.ordering.purges.edit', [$this->organisation->slug, $this->shop, $purge]));
+    $response->assertInertia(function (AssertableInertia $page) use ($purge) {
+        $page
+            ->component('EditModel')
+            ->where('title', 'Purge')
+            ->has('breadcrumbs', 3)
+            ->has('formData', fn ($page) => $page
+                ->where('args', [
+                    'updateRoute' => [
+                        'name'       => 'grp.models.purge.update',
+                        'parameters' => $purge->id
+
+                    ],
+                ])
+                ->etc())
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $purge->scheduled_at->toISOString())
+                    ->etc()
+            );
+    });
+});
+
+test('UI get section route index', function () {
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.ordering.orders.index', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug
+    ]);
+    expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
+        ->and($sectionScope->organisation_id)->toBe($this->organisation->id)
+        ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_ORDERING->value)
+        ->and($sectionScope->model_slug)->toBe($this->shop->slug);
+});
+
+test('test reset intervals', function () {
+    $this->artisan('intervals:reset-day')->assertExitCode(0);
+    $this->artisan('intervals:reset-week')->assertExitCode(0);
+    $this->artisan('intervals:reset-month')->assertExitCode(0);
+    $this->artisan('intervals:reset-quarter')->assertExitCode(0);
+    $this->artisan('intervals:reset-year')->assertExitCode(0);
+});
+
+test('purge hydrators', function () {
+    $purge = Purge::first();
+    HydratePurges::run($purge);
+    $this->artisan('hydrate:purges')->assertExitCode(0);
+});
+
+test('order hydrators', function () {
+    $order = Order::first();
+    HydrateOrders::run($order);
+    $this->artisan('hydrate:orders ')->assertExitCode(0);
+});
+
+test('Ordering hydrators', function () {
+    $this->artisan('hydrate', [
+        '--sections' => 'ordering',
+    ])->assertExitCode(0);
+});
+
+test('Pay order creates payment and attaches to order', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Cash Account',
+        ]
+    );
+
+    $amount    = 50.25;
+    $reference = 'PAY-'.uniqid();
+
+    $payment = PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => $amount,
+        'reference' => $reference,
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $order->refresh();
+
+    expect($payment->amount)->toBe((string)$amount)
+        ->and($payment->reference)->toBe($reference)
+        ->and($order->payments()->where('payments.id', $payment->id)->exists())->toBeTrue();
+});
+
+test('Pay order with accounts payment account creates credit transaction', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Accounts Account',
+        ]
+    );
+
+    // Ensure this account behaves as an accounts ledger so PayOrder creates a credit transaction
+    $paymentAccount->is_accounts = true;
+    $paymentAccount->save();
+
+    $amount  = 75.00;
+    $payment = PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => $amount,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $payment->refresh();
+
+    expect($payment->creditTransaction)->not->toBeNull()
+        ->and((float)$payment->creditTransaction->amount)->toBe(-$amount)
+        ->and($payment->creditTransaction->payment_id)->toBe($payment->id);
+});
+
+test('Pay order attaches payment to invoice when invoice exists', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $invoice = StoreInvoice::make()->action($order, [
+        'type'         => InvoiceTypeEnum::INVOICE,
+        'currency_id'  => $this->shop->currency_id,
+        'net_amount'   => 0,
+        'total_amount' => 0,
+        'gross_amount' => 0,
+        'tax_amount'   => 0,
+    ]);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Cash Account 2',
+        ]
+    );
+
+    $payment = PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => 10.00,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $payment->refresh();
+    $invoice->refresh();
+
+    expect($payment->invoices()->where('invoices.id', $invoice->id)->exists())->toBeTrue();
+});
+
+test('create shipping zone schema', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    expect($shippingZoneSchema)->toBeInstanceOf(ShippingZoneSchema::class);
+
+    return $shippingZoneSchema;
+});
+
+test('update shipping zone schema', function ($shippingZoneSchema) {
+    $shippingZoneSchema = UpdateShippingZoneSchema::make()->action($shippingZoneSchema, ShippingZoneSchema::factory()->definition());
+    $this->assertModelExists($shippingZoneSchema);
+})->depends('create shipping zone schema');
+
+test('delete shipping zone schema action removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    DeleteShippingZoneSchema::make()->action($shippingZoneSchema);
+
+    expect(ShippingZoneSchema::query()->whereKey($shippingZoneSchema->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone schema command removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    $this->artisan('delete:shipping_zone_schema '.$shippingZoneSchema->slug)
+        ->expectsOutput('Shipping zone schema '.$shippingZoneSchema->name.' deleted')
+        ->assertSuccessful();
+
+    expect(ShippingZoneSchema::query()->whereKey($shippingZoneSchema->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone schema command reports a missing schema', function () {
+    $this->artisan('delete:shipping_zone_schema missing-shipping-zone-schema')
+        ->expectsOutput('Shipping zone schema not found')
+        ->assertFailed();
+});
+
+test('create shipping zone', function ($shippingZoneSchema) {
+    $shippingZone = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+    $this->assertModelExists($shippingZoneSchema);
+
+    return $shippingZone;
+})->depends('create shipping zone schema');
+
+test('update shipping zone', function ($shippingZone) {
+    $shippingZone = UpdateShippingZone::make()->action($shippingZone, ShippingZone::factory()->definition());
+    $this->assertModelExists($shippingZone);
+})->depends('create shipping zone');
+
+test('delete shipping zone action removes zone and dependants', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    DeleteShippingZone::make()->action($shippingZone);
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse()
+        ->and($shippingZone->stats()->exists())->toBeFalse()
+        ->and($shippingZone->asset?->trashed())->toBeTrue();
+});
+
+test('delete shipping zone command removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    $this->artisan('delete:shipping_zone '.$shippingZone->slug)
+        ->expectsOutput('Shipping zone '.$shippingZone->name.' deleted')
+        ->assertSuccessful();
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone command reports a missing zone', function () {
+    $this->artisan('delete:shipping_zone missing-shipping-zone')
+        ->expectsOutput('Shipping zone not found')
+        ->assertFailed();
+});
+
+
+test('shipping zone schemas hydrators', function () {
+    $shippingZoneSchema = ShippingZoneSchema::first();
+    HydrateShippingZoneSchemas::run($shippingZoneSchema);
+    $this->artisan('hydrate:shipping_zone_schemas')->assertExitCode(0);
+});
+
+test('shipping zone hydrators', function () {
+    $shippingZone = ShippingZone::first();
+    HydrateShippingZones::run($shippingZone);
+    $this->artisan('hydrate:shipping_zones')->assertExitCode(0);
+});
+
+test('order is_shipping_tbc becomes true when shipping zone price type is TBC', function () {
+    // Create an order
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    // Create a shipping zone schema and a zone with nested orders.price.type
+    $schema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    $zone = StoreShippingZone::make()->action(
+        $schema,
+        array_merge(
+            ShippingZone::factory()->definition(),
+            [
+                'price' => [
+                    'type' => 'TBC',
+                ],
+            ]
+        )
+    );
+
+    // Attach zone to order
+    $order->update(['shipping_zone_id' => $zone->id]);
+
+    // Run action
+    UpdateOrderIsShippingTBC::run($order);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeTrue();
+});
+
+test('order is_shipping_tbc becomes false when shipping zone price type is not TBC', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $schema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $zone   = StoreShippingZone::make()->action(
+        $schema,
+        array_merge(
+            ShippingZone::factory()->definition(),
+            [
+                'price' => [
+                    'orders' => [
+                        'price' => [
+                            'type' => 'FIXED',
+                        ],
+                    ],
+                ],
+            ]
+        )
+    );
+
+    $order->update(['shipping_zone_id' => $zone->id, 'is_shipping_tbc' => true]);
+
+    UpdateOrderIsShippingTBC::run($order);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeFalse();
+});
+
+test('command updates is_shipping_tbc to true for TBC zone', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $schema = StoreShippingZoneSchema::make()->action($this->shop, [
+        'name' => 'Schema A',
+    ]);
+    $zone   = StoreShippingZone::make()->action($schema, [
+        'code'        => 'TBC-ZONE',
+        'name'        => 'TBC Zone',
+        'status'      => true,
+        'price'       => ['type' => 'TBC'],
+        'territories' => [],
+        'position'    => 1,
+    ]);
+
+    $order->update([
+        'shipping_zone_id' => $zone->id,
+        'shipping_engine'  => \App\Enums\Ordering\Order\OrderShippingEngineEnum::AUTO,
+        'is_shipping_tbc'  => false,
+    ]);
+
+    \Artisan::call('order:is-shipping-tbc', ['--slug' => $order->slug]);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeTrue();
+});
+
+test('command updates is_shipping_tbc to false for non-TBC zone', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $schema = StoreShippingZoneSchema::make()->action($this->shop, [
+        'name' => 'Schema B',
+    ]);
+    $zone   = StoreShippingZone::make()->action($schema, [
+        'code'        => 'FLAT-ZONE',
+        'name'        => 'Flat Zone',
+        'status'      => true,
+        'price'       => ['type' => 'Flat'],
+        'territories' => [],
+        'position'    => 1,
+    ]);
+
+    $order->update([
+        'shipping_zone_id' => $zone->id,
+        'shipping_engine'  => \App\Enums\Ordering\Order\OrderShippingEngineEnum::AUTO,
+        'is_shipping_tbc'  => true,
+    ]);
+
+    \Artisan::call('order:is-shipping-tbc', ['--slug' => $order->slug]);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeFalse();
+});
+
+test('order is_shipping_tbc false when no shipping zone present', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    // Ensure no shipping zone is linked
+    $order->update(['shipping_zone_id' => null, 'is_shipping_tbc' => true]);
+
+    UpdateOrderIsShippingTBC::run($order);
+
+    expect($order->fresh()->is_shipping_tbc)->toBeFalse();
+});
+
+it('hydrates order tracking numbers from multiple delivery notes and shipments', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    // Create the first delivery note
+    $dn1 = StoreDeliveryNote::make()->action($order, [
+        'reference'        => 'DN1',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    // Create a second delivery note
+    $dn2 = StoreDeliveryNote::make()->action($order, [
+        'reference'        => 'DN2',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    /** @var Shipper $shipper */
+    $shipper = Shipper::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->organisation->group_id,
+        'code'            => 'SHIPPER1',
+    ]);
+
+    // Create shipments for DN1
+    $shipment1 = Shipment::factory()->create([
+        'tracking'        => 'TRACK1',
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shipper_id'      => $shipper->id,
+    ]);
+    $dn1->shipments()->attach($shipment1);
+
+    $shipment2 = Shipment::factory()->create([
+        'tracking'        => 'TRACK2',
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shipper_id'      => $shipper->id,
+    ]);
+    $dn1->shipments()->attach($shipment2);
+
+    // Create a shipment for DN2
+    $shipment3 = Shipment::factory()->create([
+        'tracking'        => 'TRACK3',
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shipper_id'      => $shipper->id,
+    ]);
+    $dn2->shipments()->attach($shipment3);
+
+    // Create a shipment with 'na' tracking for DN2 (should be ignored)
+    $shipmentNA = Shipment::factory()->create([
+        'tracking'        => 'na',
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+    ]);
+    $dn2->shipments()->attach($shipmentNA);
+
+    // Run hydrator
+    OrderHydrateShipments::run($order->id);
+
+    $order->refresh();
+
+    expect($order->tracking_number)->toBe('TRACK1, TRACK2, TRACK3')
+        ->and($order->shipping_data)->tobeArray()->toHaveCount(3);
+});
+
+it('nullifies order tracking number when no shipments exist', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $order->update(['tracking_number' => 'OLD_TRACKING']);
+    $order->deliveryNotes->each->delete();
+
+    OrderHydrateShipments::run($order->id);
+
+    $order->refresh();
+
+    expect($order->tracking_number)->toBeNull();
+});
+
+test('get iris basket transactions in collection action', function () {
+    $collection = StoreCollection::make()->action($this->shop, [
+        'code' => 'TEST_COLLECTION',
+        'name' => 'Test Collection',
+    ]);
+
+    $this->product->containedByCollections()->attach($collection, ['model_type' => 'Product', 'type' => 'Product']);
+
+
+    // Case 2: With basket, but no transactions for this product
+    $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $this->customer->update(['current_order_in_basket_id' => $basket->id]);
+
+    $result = GetIrisBasketTransactionsInCollection::run($this->customer->fresh(), $collection);
+    expect($result)->toBeArray()
+        ->and($result)->toHaveKey($this->product->id)
+        ->and($result[$this->product->id]['quantity_ordered'])->toBe(0);
+
+    // Case 3: With basket and transactions
+    $transactionData                     = Transaction::factory()->definition();
+    $transactionData['quantity_ordered'] = 5;
+    $transactionData['order_id']         = $basket->id;
+    StoreTransaction::make()->action($basket, $this->product->currentHistoricProduct, $transactionData);
+
+    $result = GetIrisBasketTransactionsInCollection::run($this->customer->fresh(), $collection);
+    expect($result)->toBeArray()
+        ->and($result)->toHaveKey($this->product->id)
+        ->and((float)$result[$this->product->id]['quantity_ordered'])->toBe(5.0);
+});
+
+test('reset daily intervals action dispatches expected jobs', function () {
+    Queue::fake();
+
+    ResetDailyIntervals::make()->handle();
+
+    ProcessResetIntervalsGroups::assertPushed(1);
+    ProcessResetIntervalsOrganisations::assertPushed(1);
+    ProcessResetIntervalsShops::assertPushed(1);
+});
+
+test('store upcoming transaction', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id'    => $this->product->id,
+        'quantity'      => 3,
+        'type'          => UpcomingTransactionTypeEnum::GIFT->value,
+        'public_notes'  => 'send it over',
+        'private_notes' => 'warehouse only',
+    ]);
+
+    $upcomingTransaction->refresh();
+
+    expect($upcomingTransaction)->toBeInstanceOf(UpcomingTransaction::class)
+        ->and($upcomingTransaction->customer_id)->toBe($this->customer->id)
+        ->and($upcomingTransaction->group_id)->toBe($this->customer->group_id)
+        ->and($upcomingTransaction->organisation_id)->toBe($this->customer->organisation_id)
+        ->and($upcomingTransaction->shop_id)->toBe($this->customer->shop_id)
+        ->and($upcomingTransaction->product_id)->toBe($this->product->id)
+        ->and((float)$upcomingTransaction->quantity)->toBe(3.0)
+        ->and($upcomingTransaction->type)->toBe(UpcomingTransactionTypeEnum::GIFT)
+        ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::READY);
+
+    return $upcomingTransaction;
+});
+
+test('update upcoming transaction', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    $updated = UpdateUpcomingTransaction::make()->action($upcomingTransaction, [
+        'quantity' => 5,
+        'type'     => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    expect((float)$updated->quantity)->toBe(5.0)
+        ->and($updated->type)->toBe(UpcomingTransactionTypeEnum::FOLLOW_ON);
+});
+
+test('delete upcoming transaction', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    DeleteUpcomingTransaction::make()->action($upcomingTransaction);
+
+    expect(UpcomingTransaction::find($upcomingTransaction->id))->toBeNull();
+});
+
+test('store upcoming transaction via controller', function () {
+    $response = postJson(route('grp.models.customer.upcoming_transactions.store', [$this->customer->id]), [
+        'product_id' => $this->product->id,
+        'quantity'   => 2,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $response->assertSuccessful();
+    expect(UpcomingTransaction::where('customer_id', $this->customer->id)
+        ->where('product_id', $this->product->id)
+        ->where('type', UpcomingTransactionTypeEnum::FOLLOW_ON)
+        ->exists())->toBeTrue();
+});
+
+test('update upcoming transaction via controller', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    $response = patchJson(route('grp.models.upcoming_transaction.update', [$upcomingTransaction->id]), [
+        'quantity' => 9,
+    ]);
+
+    $response->assertOk();
+    expect((float)$upcomingTransaction->refresh()->quantity)->toBe(9.0);
+});
+
+test('delete upcoming transaction via controller', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    deleteJson(route('grp.models.upcoming_transaction.delete', [$upcomingTransaction->id]))->assertOk();
+
+    expect(UpcomingTransaction::find($upcomingTransaction->id))->toBeNull();
+});
+
+test('index upcoming transactions json only returns ready', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+
+    $ready = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 2,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 2,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+        'state'      => UpcomingTransactionStateEnum::APPLIED->value,
+    ]);
+
+    $response = getJson(route('grp.org.shops.show.crm.customers.show.upcoming_transactions.index', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->customer->slug,
+    ]));
+
+    $response->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $ready->id)
+        ->assertJsonPath('data.0.product_code', $this->product->code)
+        ->assertJsonPath('data.0.update.name', 'grp.models.upcoming_transaction.update')
+        ->assertJsonPath('data.0.delete.name', 'grp.models.upcoming_transaction.delete');
+});
+
+test('UI index upcoming transactions', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+
+    StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    $response = get(route('grp.org.shops.show.crm.customers.show.upcoming_transactions.index', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->customer->slug,
+    ]));
+
+    $response->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Ordering/UpcomingTransactions')
+            ->has('data.data', 1));
+});
+
+test('submit order applies ready upcoming transactions as follow-on bonus', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $this->product->update(['status' => ProductStatusEnum::FOR_SALE]);
+
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 4,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $upcomingTransaction->refresh();
+
+    $transaction = $order->transactions()->where('is_follow_on', true)->first();
+
+    expect($transaction)->not->toBeNull()
+        ->and((float)$transaction->quantity_bonus)->toBe(4.0)
+        ->and((float)$transaction->quantity_ordered)->toBe(0.0)
+        ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::APPLIED)
+        ->and($upcomingTransaction->order_id)->toBe($order->id)
+        ->and($upcomingTransaction->transaction_id)->toBe($transaction->id)
+        ->and($upcomingTransaction->order->id)->toBe($order->id)
+        ->and($upcomingTransaction->transaction->id)->toBe($transaction->id)
+        ->and($upcomingTransaction->product->id)->toBe($this->product->id);
+});
+
+test('submit order skips upcoming transactions for out of stock products', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $this->product->update(['status' => ProductStatusEnum::OUT_OF_STOCK]);
+
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 4,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $upcomingTransaction->refresh();
+
+    expect($order->transactions()->where('is_follow_on', true)->count())->toBe(0)
+        ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::READY);
+});
+
+test('submit order skips upcoming transaction when product has no current historic asset', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $originalHistoricAssetId = $this->product->current_historic_asset_id;
+    $this->product->update(['status' => ProductStatusEnum::FOR_SALE, 'current_historic_asset_id' => null]);
+
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 3,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->transactions()->where('is_follow_on', true)->count())->toBe(0)
+        ->and($upcomingTransaction->refresh()->state)->toBe(UpcomingTransactionStateEnum::READY);
+
+    $this->product->update(['current_historic_asset_id' => $originalHistoricAssetId]);
+});
+
+test('transactions resource adds bonus to ordered quantity for follow-on', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $transaction = StoreTransaction::make()->action(
+        $order,
+        $this->product->currentHistoricProduct,
+        [
+            'quantity_ordered' => 0,
+            'quantity_bonus'   => 6,
+            'is_follow_on'     => true,
+        ]
+    );
+
+    $array = (new TransactionsResource($transaction->refresh()))->toArray(request());
+
+    expect((float)$array['quantity_ordered'])->toBe(6.0)
+        ->and((float)$array['quantity_bonus'])->toBe(6.0)
+        ->and($array['is_follow_on'])->toBeTrue();
+});
+
+test('transaction import marks rows with missing code or quantity as failed', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $upload = Upload::create([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'model'             => 'Transaction',
+        'parent_type'       => $order->getMorphClass(),
+        'parent_id'         => $order->id,
+        'original_filename' => 'test.xlsx',
+        'filename'          => 'test.xlsx',
+        'filesize'          => 0,
+        'number_rows'       => 0,
+        'number_success'    => 0,
+        'number_fails'      => 0,
+    ]);
+
+    $import = new TransactionImport($order, $upload);
+
+    $makeUploadRecord = fn () => $upload->records()->create([
+        'values' => [],
+        'status' => UploadRecordStatusEnum::PROCESSING,
+    ]);
+
+    $missingCodeRecord = $makeUploadRecord();
+    $import->storeModel(collect(['quantity' => 3]), $missingCodeRecord);
+    expect($missingCodeRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
+        ->and($missingCodeRecord->errors)->toContain('Missing product code.');
+
+    $missingQuantityRecord = $makeUploadRecord();
+    $import->storeModel(collect(['code' => $this->product->code]), $missingQuantityRecord);
+    expect($missingQuantityRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
+        ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
+});
+
+test('recalculating basket totals skips orders that are no longer baskets', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 111.11, 'total_amount' => 111.11]);
+
+    // A bulk run selects baskets when it queues the jobs, but drains for hours. An order submitted
+    // in the meantime must not be repriced from current prices after the fact.
+    \App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket::make()->handle($order->id);
+
+    expect((float) $order->refresh()->net_amount)->toBe(111.11)
+        ->and((float) $order->total_amount)->toBe(111.11)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('bulk basket recalculation skips orders submitted while the job was waiting', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 222.22, 'total_amount' => 222.22]);
+
+    // Offer activation lists baskets then queues one job each with a delay. An order submitted
+    // inside that window must be left alone by both halves of the recalculation.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()
+        ->handle($order, true, true, false, true, true);
+    \App\Actions\Ordering\Order\CalculateOrderDiscounts::make()->handle($order, true);
+
+    expect((float) $order->refresh()->net_amount)->toBe(222.22)
+        ->and((float) $order->total_amount)->toBe(222.22);
+
+    // Without the flag the same call still works on a submitted order, as other callers rely on.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()->handle($order);
+
+    expect((float) $order->refresh()->total_amount)->not->toBe(222.22);
+});
+
+test('invoice totals from a part picked order keep net plus tax equal to the total', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->update(['tax_category_id' => TaxCategory::where('rate', 0.2)->firstOrFail()->id]);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 100]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 3]
+    ));
+    $transaction->update(['gross_amount' => 300, 'net_amount' => 300, 'quantity_bonus' => 0]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    // A partial pick makes the net land on 266.622, where net, tax and total each round differently.
+    DB::table('delivery_note_items')->insert([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'shop_id'           => $order->shop_id,
+        'delivery_note_id'  => $deliveryNote->id,
+        'transaction_id'    => $transaction->id,
+        'state'             => 'picked',
+        'quantity_required' => 100000,
+        'quantity_picked'   => 88874,
+        'data'              => '{}',
+    ]);
+
+    $order->refresh();
+    $order->update(['shipping_amount' => 0, 'charges_amount' => 0, 'amount_off' => 0]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTotals($order, $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(266.62)
+        ->and($totals['tax_amount'])->toBe(53.32)
+        ->and($totals['total_amount'])->toBe(319.94)
+        ->and($totals['net_amount'] + $totals['tax_amount'])->toBe($totals['total_amount']);
+});

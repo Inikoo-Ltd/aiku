@@ -113,6 +113,14 @@ class FamiliesResource extends JsonResource
             'image_thumbnail'               => Arr::get($this->web_images, 'main.thumbnail'),
             'health_rank'                   => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
             'public_url'                    => $this->canonical_url,
+            'gr_detail'                     => $this->whenLoaded('getGROffer', function () {
+                $offer = $this->getGROffer;
+
+                return [
+                    'percentage' => $offer ? (float) data_get($offer->offerAllowances->first()?->data, 'percentage_off', 0) * 100 : 0,
+                    'quantity'   => $offer ? (int) data_get($offer->trigger_data, 'item_quantity', 0) : 0,
+                ];
+            }),
         ];
     }
 

@@ -208,7 +208,7 @@ class IndexProductsWithIndependentTradeUnit extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'product_org_stocks', label: __('SKU'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
+                ->column(key: 'product_org_stocks', label: __('SKO'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
 
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
@@ -349,11 +349,11 @@ class IndexProductsWithIndependentTradeUnit extends OrgAction
                 'hide_sku_in_name_column'      => true,
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))),
+                    : Inertia::optional(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))),
 
 
             ]

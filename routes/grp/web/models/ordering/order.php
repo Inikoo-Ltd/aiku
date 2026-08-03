@@ -10,17 +10,18 @@ use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
-use App\Actions\Dispatching\Picking\AssignPackerToPicking;
-use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
+use App\Actions\Dispatching\Picking\SplitPicking;
 use App\Actions\GoodsIn\Return\StoreReturn;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
+use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\PayOrder;
+use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
 use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -32,6 +33,7 @@ use App\Actions\Ordering\Order\UpdateOrderShippingTBCAmount;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
+use App\Actions\Ordering\Order\UpdateState\RemoveOrderDiscount;
 use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
@@ -46,12 +48,14 @@ use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderDiscretionaryDiscount;
+use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
 
 Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
     Route::delete('', DeleteTransaction::class)->name('delete');
     Route::patch('', UpdateTransaction::class)->name('update');
     Route::patch('units', UpdateTransactionUnits::class)->name('update_units');
     Route::patch('update-discretionary-discount', UpdateTransactionDiscretionaryDiscount::class)->name('update_discretionary_discount');
+    Route::patch('remove-discount', RemoveTransactionDiscount::class)->name('remove_discount');
     Route::patch('update-charge-amount', UpdateTransactionChargeAmount::class)->name('update_charge_amount');
 });
 
@@ -72,6 +76,9 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
     Route::patch('update-discount', UpdateOrderDiscretionaryDiscount::class)->name('discount.update');
+    Route::patch('remove-discount', RemoveOrderDiscount::class)->name('discount.removal');
+    Route::post('add-voucher', AddVoucherToOrder::class)->name('add_voucher');
+    Route::post('remove-voucher', RemoveVoucherFromOrder::class)->name('remove_voucher');
 
     Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
     Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');
@@ -108,9 +115,5 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
     Route::patch('update', UpdatePicking::class)->name('update');
     Route::delete('delete', DeletePicking::class)->name('delete');
-
-    Route::name('assign.')->prefix('assign')->group(function () {
-        Route::patch('picker', AssignPickerToPicking::class)->name('picker');
-        Route::patch('packer', AssignPackerToPicking::class)->name('packer');
-    });
+    Route::post('split', SplitPicking::class)->name('split');
 });

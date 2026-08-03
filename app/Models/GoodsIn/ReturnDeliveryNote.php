@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 30-04-2026-13h-16m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -54,6 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $handler_user_id
  * @property string|null $done_at
  * @property int|null $refund_id
+ * @property int|null $replacement_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read DeliveryNote|null $deliveryNote
@@ -63,6 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Invoice|null $refund
+ * @property-read DeliveryNote|null $replacement
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\ReturnDeliveryNoteItem> $returnDeliveryNoteItem
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Warehouse|null $warehouse
@@ -155,5 +157,10 @@ class ReturnDeliveryNote extends Model implements Auditable
     public function refund(): HasOne
     {
         return $this->hasOne(Invoice::class, 'id', 'refund_id');
+    }
+
+    public function replacement(): HasOne
+    {
+        return $this->hasOne(DeliveryNote::class, 'id', 'replacement_id');
     }
 }

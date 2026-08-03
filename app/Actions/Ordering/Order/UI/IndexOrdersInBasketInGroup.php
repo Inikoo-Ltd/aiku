@@ -75,7 +75,7 @@ class IndexOrdersInBasketInGroup extends OrgAction
                 'organisations.slug as organisation_slug',
             ])
             ->allowedSorts(['id', 'reference', 'date', 'organisation_code', 'shop_code', 'customer_name', 'net_amount'])
-            ->withBetweenDates(['-date'])
+            ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -131,7 +131,7 @@ class IndexOrdersInBasketInGroup extends OrgAction
 
                 OrdersInBasketTabsEnum::ORDERS->value => $this->tab == OrdersInBasketTabsEnum::ORDERS->value ?
                     fn () => OrdersResource::collection($orders)
-                    : Inertia::lazy(fn () => OrdersResource::collection($orders)),
+                    : Inertia::optional(fn () => OrdersResource::collection($orders)),
             ]
         )->table($this->tableStructure($this->group, OrdersInBasketTabsEnum::ORDERS->value));
     }

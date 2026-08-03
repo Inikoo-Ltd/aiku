@@ -3,6 +3,7 @@ import DashboardSettings from "./DashboardSettings.vue"
 import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
 import ShopIntervalStats from "./ShopIntervalStats.vue"
+import ChannelHealthBadges from "./ChannelHealthBadges.vue"
 import { ref, provide } from "vue"
 import {
     faBox,
@@ -37,14 +38,14 @@ provide("isLoadingOnTable", isLoadingOnTable)
 const currentTab = ref(props.dashboard?.super_blocks?.[0]?.tabs_box?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
+const fetchDashboardTabData = async (tabSlug: string, force: boolean = false): Promise<void> => {
     const block = props.dashboard?.super_blocks?.[0]?.blocks?.[0]
     const fetchRoute = block?.tab_fetch_route
     if (!block?.tables || !fetchRoute?.name) {
         return
     }
 
-    if (block.tables[tabSlug]) {
+    if (!force && block.tables[tabSlug]) {
         return
     }
 
@@ -55,7 +56,11 @@ const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
         })
 
         if (data?.tab && data?.table) {
-            set(props, `dashboard.super_blocks[0].blocks[0].tables.${data.tab}`, data.table)
+            const currentTables = props.dashboard?.super_blocks?.[0]?.blocks?.[0]?.tables ?? {}
+            set(props, 'dashboard.super_blocks[0].blocks[0].tables', {
+                ...currentTables,
+                [data.tab]: data.table,
+            })
         }
     } finally {
         isLoadingOnTable.value = false
@@ -75,6 +80,11 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
         </KeepAlive>
 
         <ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
+
+        <ChannelHealthBadges
+            v-if="props.dashboard?.super_blocks?.[0]?.channel_health?.length"
+            :channel-health="props.dashboard?.super_blocks?.[0]?.channel_health"
+        />
 
 		<DashboardSettings
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"

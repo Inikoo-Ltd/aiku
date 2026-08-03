@@ -53,17 +53,8 @@ class SetMailshotAsScheduled
     {
         return [
             // 'publisher_id'   => ['sometimes','exists:organisation_users,id'],
-            'scheduled_at'    => ['required', 'string', 'date_format:Y-m-d H:i:s']
+            'scheduled_at'    => ['required', 'date', 'after:now']
         ];
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        $request->merge(
-            [
-                'publisher_id'   => $request->user()->id,
-            ]
-        );
     }
 
     public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot, ActionRequest $request): Mailshot

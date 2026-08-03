@@ -52,7 +52,6 @@ class CloneCatalogueStructure
      */
     public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false, $skipProducts = false, $skipFamilies = false, $skipDepartments = false): void
     {
-
         if (!$skipDepartments) {
             $this->cloneDepartments($fromShop, $shop);
             $this->cloneSubDepartments($fromShop, $shop);
@@ -66,8 +65,6 @@ class CloneCatalogueStructure
                     CloneProductCategoryParentsFromMaster::run($family);
                 }
             }
-
-
         }
 
         if (!$skipProducts) {
@@ -83,8 +80,6 @@ class CloneCatalogueStructure
             $this->attachFamiliesToDepartments($fromShop, $shop);
             $this->attachFamiliesToSubDepartments($fromShop, $shop);
         }
-
-
     }
 
     public function attachFamiliesToSubDepartments(MasterShop|Shop $fromShop, MasterShop|Shop $shop): void
@@ -435,10 +430,10 @@ class CloneCatalogueStructure
 
         if (!$foundDepartmentData) {
             $descriptionFields = [
-                'name'                          => Translate::run($department->name, $fromLanguage, $toLanguage),
-                'description'                   => Translate::run($department->description, $fromLanguage, $toLanguage),
-                'description_title'             => Translate::run($department->description_title, $fromLanguage, $toLanguage),
-                'description_extra'             => Translate::run($department->description_extra, $fromLanguage, $toLanguage),
+                'name'                          => Translate::run($department->name, $fromLanguage, $toLanguage, 'gpt-5-nano'),
+                'description'                   => Translate::run($department->description, $fromLanguage, $toLanguage, 'gpt-5-nano'),
+                'description_title'             => Translate::run($department->description_title, $fromLanguage, $toLanguage, 'gpt-5-nano'),
+                'description_extra'             => Translate::run($department->description_extra, $fromLanguage, $toLanguage, 'gpt-5-nano'),
                 'is_name_reviewed'              => false,
                 'is_description_title_reviewed' => false,
                 'is_description_reviewed'       => false,
@@ -461,19 +456,19 @@ class CloneCatalogueStructure
             if ($foundDepartment) {
                 $descriptionFields = [];
                 if ($foundDepartment->name == '' && $department->name) {
-                    $descriptionFields['name']             = Translate::run($department->name, $fromLanguage, $toLanguage);
+                    $descriptionFields['name']             = Translate::run($department->name, $fromLanguage, $toLanguage, 'gpt-5-nano');
                     $descriptionFields['is_name_reviewed'] = false;
                 }
                 if ($foundDepartment->description == '' && $department->description) {
-                    $descriptionFields['description']             = Translate::run($department->description, $fromLanguage, $toLanguage);
+                    $descriptionFields['description']             = Translate::run($department->description, $fromLanguage, $toLanguage, 'gpt-5-nano');
                     $descriptionFields['is_description_reviewed'] = false;
                 }
                 if ($foundDepartment->description_title == '' && $department->description_title) {
-                    $descriptionFields['description_title']             = Translate::run($department->description_title, $fromLanguage, $toLanguage);
+                    $descriptionFields['description_title']             = Translate::run($department->description_title, $fromLanguage, $toLanguage, 'gpt-5-nano');
                     $descriptionFields['is_description_title_reviewed'] = false;
                 }
                 if ($foundDepartment->description_extra == '' && $department->description_extra) {
-                    $descriptionFields['description_extra']             = Translate::run($department->description_extra, $fromLanguage, $toLanguage);
+                    $descriptionFields['description_extra']             = Translate::run($department->description_extra, $fromLanguage, $toLanguage, 'gpt-5-nano');
                     $descriptionFields['is_description_extra_reviewed'] = false;
                 }
 
@@ -586,10 +581,10 @@ class CloneCatalogueStructure
             $department = $this->upsertDepartment($department->shop, $subDepartment->parent);
 
             $descriptionFields = [
-                'name'                          => Translate::run($subDepartment->name, $fromLanguage, $toLanguage),
-                'description'                   => Translate::run($subDepartment->description, $fromLanguage, $toLanguage),
-                'description_title'             => Translate::run($subDepartment->description_title, $fromLanguage, $toLanguage),
-                'description_extra'             => Translate::run($subDepartment->description_extra, $fromLanguage, $toLanguage),
+                'name'                          => Translate::run($subDepartment->name, $fromLanguage, $toLanguage, 'gpt-5-nano'),
+                'description'                   => Translate::run($subDepartment->description, $fromLanguage, $toLanguage, 'gpt-5-nano'),
+                'description_title'             => Translate::run($subDepartment->description_title, $fromLanguage, $toLanguage, 'gpt-5-nano'),
+                'description_extra'             => Translate::run($subDepartment->description_extra, $fromLanguage, $toLanguage, 'gpt-5-nano'),
                 'is_name_reviewed'              => false,
                 'is_description_title_reviewed' => false,
                 'is_description_reviewed'       => false,
@@ -611,19 +606,19 @@ class CloneCatalogueStructure
 
             $descriptionFields = [];
             if ($foundSubDepartment->name == '' && $subDepartment->name) {
-                $descriptionFields['name']             = Translate::run($subDepartment->name, $fromLanguage, $toLanguage);
+                $descriptionFields['name']             = Translate::run($subDepartment->name, $fromLanguage, $toLanguage, 'gpt-5-nano');
                 $descriptionFields['is_name_reviewed'] = false;
             }
             if ($foundSubDepartment->description == '' && $subDepartment->description) {
-                $descriptionFields['description']             = Translate::run($subDepartment->description, $fromLanguage, $toLanguage);
+                $descriptionFields['description']             = Translate::run($subDepartment->description, $fromLanguage, $toLanguage, 'gpt-5-nano');
                 $descriptionFields['is_description_reviewed'] = false;
             }
             if ($foundSubDepartment->description_title == '' && $subDepartment->description_title) {
-                $descriptionFields['description_title']             = Translate::run($subDepartment->description_title, $fromLanguage, $toLanguage);
+                $descriptionFields['description_title']             = Translate::run($subDepartment->description_title, $fromLanguage, $toLanguage, 'gpt-5-nano');
                 $descriptionFields['is_description_title_reviewed'] = false;
             }
             if ($foundSubDepartment->description_extra == '' && $subDepartment->description_extra) {
-                $descriptionFields['description_extra']             = Translate::run($subDepartment->description_extra, $fromLanguage, $toLanguage);
+                $descriptionFields['description_extra']             = Translate::run($subDepartment->description_extra, $fromLanguage, $toLanguage, 'gpt-5-nano');
                 $descriptionFields['is_description_extra_reviewed'] = false;
             }
 
@@ -738,8 +733,6 @@ class CloneCatalogueStructure
                 CloneProductCategoryParentsFromMaster::run($subDepartment);
             }
         }
-
-
     }
 
     public function attachFamily(MasterProductCategory|ProductCategory $parent, MasterProductCategory|ProductCategory $family): void

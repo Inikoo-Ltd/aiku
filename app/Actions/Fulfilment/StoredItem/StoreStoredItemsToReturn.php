@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\StoredItem;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydrateStoredItems;
 use App\Actions\OrgAction;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
@@ -20,6 +21,7 @@ use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsCommand;
 
@@ -56,6 +58,14 @@ class StoreStoredItemsToReturn extends OrgAction
                 ->where('stored_item_id', $storedItem->id)
                 ->exists();
 
+            if (!$existingPalletReturnItems && $storedItem->state === StoredItemStateEnum::DISCONTINUED) {
+                if ($this->asAction) {
+                    continue;
+                }
+
+                throw ValidationException::withMessages(['stored_items' => __('The SKO ":reference" is :state and cannot be added to a return.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
+            }
+
             if ($existingPalletReturnItems) {
                 $this->deleteItems($palletReturn, $storedItem);
             }
@@ -63,7 +73,7 @@ class StoreStoredItemsToReturn extends OrgAction
             foreach ($pallets as $pallet) {
                 $palletStoredItemQty = $pallet->storedItems
                     ->where('pivot.stored_item_id', $storedItem->id)
-                    ->first()->pivot->quantity ?? 0;
+                    ->first()?->pivot?->quantity ?? 0;
 
                 if ($allocatedQuantity < $requiredQuantity) {
                     $quantityToUse = min($palletStoredItemQty, $requiredQuantity - $allocatedQuantity);

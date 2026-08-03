@@ -13,9 +13,15 @@ use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
+use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
+use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
+use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
+use App\Models\Masters\MasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -39,6 +45,7 @@ use App\Stubs\Migrations\HasProductInformation;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -54,6 +61,10 @@ class UpdateProduct extends OrgAction
 
     private Product $product;
 
+    public bool $bulkPriceUpdate = false;
+
+    public bool $skipWebpageCacheBreak = false;
+
     public function handle(Product $product, array $modelData): Product
     {
         // Note laravel wasChanged do not work! for this action, no idea why need to use $oldData
@@ -66,7 +77,11 @@ class UpdateProduct extends OrgAction
         if (Arr::has($modelData, 'rrp_per_unit')) {
             $rrpPerUnit = Arr::pull($modelData, 'rrp_per_unit');
             $rrp        = $rrpPerUnit * trimDecimalZeros($product->units);
-            data_set($modelData, 'rrp', $rrp);
+            if ($rrp >= 1e9) {
+                Log::warning("Skip rrp update for product $product->code: computed rrp $rrp overflows, source data looks corrupt");
+            } else {
+                data_set($modelData, 'rrp', $rrp);
+            }
         }
 
         if (Arr::has($modelData, 'webpage_title')) {
@@ -186,7 +201,8 @@ class UpdateProduct extends OrgAction
                 MasterAssetHydrateAssets::run($product->master_product_id);
             }
 
-            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
+            // Only reopen if it's also not in_process/discontinued
+            if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED && !in_array($product->state, [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])) {
                 ReopenWebpage::run($product->webpage);
             }
 
@@ -194,7 +210,7 @@ class UpdateProduct extends OrgAction
                 CloseWebpage::make()->action(
                     $product->webpage,
                     [
-                        'redirect_type' => RedirectTypeEnum::TEMPORAL,
+                        'redirect_type' => RedirectTypeEnum::PERMANENT,
                         'to_webpage_id' => $product->webpage->website->storefront_id
                     ]
                 );
@@ -227,6 +243,12 @@ class UpdateProduct extends OrgAction
                     'description' => [$product->shop->language->code => Arr::pull($modelData, 'description')]
                 ]
             ]);
+
+            if ($product->master_product_id) {
+                MasterAssetHydrateMissingChildDescription::dispatch(
+                    MasterAsset::find($product->master_product_id)
+                )->delay($this->hydratorsDelay);
+            }
         }
 
         if (Arr::has($changed, 'description_extra')) {
@@ -246,7 +268,9 @@ class UpdateProduct extends OrgAction
                 ]
             );
 
-            UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+            if (!$this->bulkPriceUpdate) {
+                UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+            }
         }
 
 
@@ -274,7 +298,8 @@ class UpdateProduct extends OrgAction
             'price',
         ];
 
-        if ($product->webpage
+        if (!$this->bulkPriceUpdate
+            && $product->webpage
             && (Arr::hasAny(
                 $changed,
                 $fieldsUsedInLuigi
@@ -286,11 +311,14 @@ class UpdateProduct extends OrgAction
 
         $fieldsUsedInWebpages = array_merge(
             $fieldsUsedInLuigi,
+            ['rrp', 'units', 'unit'],
             $this->getDangerousGoodsFieldNames(),
             $this->getProductInformationFieldNames()
         );
 
-        if ($product->webpage
+        if (!$this->bulkPriceUpdate
+            && !$this->skipWebpageCacheBreak
+            && $product->webpage
             && (Arr::hasAny(
                 $changed,
                 $fieldsUsedInWebpages
@@ -324,14 +352,33 @@ class UpdateProduct extends OrgAction
             $product->updateQuietly([
                 'price_updated_at' => now()
             ]);
+
+            BreakShopPricesCache::run($product->shop_id);
         }
 
-        if ($oldHistoricProduct != $product->current_historic_asset_id) {
+        if (!$this->bulkPriceUpdate && $oldHistoricProduct != $product->current_historic_asset_id) {
             UpdateHistoricProductInBasketTransactions::dispatch($product);
+        }
+
+        if (Arr::has($changed, 'not_follow_master_prices') && !$product->not_follow_master_prices) {
+            MasterAssetHydrateMasterPricesRRPtoChild::run($product->masterProduct, $product->shop);
         }
 
         if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $oldState != $product->state) {
             $product = ProductHydrateAvailableQuantity::run($product);
+        }
+
+        if ($oldState != $product->state && $product->webpage) {
+
+            if ($product->state == ProductStateEnum::DISCONTINUED) {
+                CloseDiscontinuedWebpage::run($product->webpage);
+            }
+
+            if ($product->state == ProductStateEnum::ACTIVE && $oldState == ProductStateEnum::DISCONTINUED) {
+                ReopenDiscontinuedWebpage::run($product->webpage);
+            }
+
+
         }
 
         return $product;
@@ -360,7 +407,13 @@ class UpdateProduct extends OrgAction
         $rules = [
             'code'                      => $codeRule,
             'name'                      => ['sometimes', 'required', 'max:250', 'string'],
-            'price'                     => ['sometimes', 'required', 'numeric', 'min:0.01'],
+            /**
+             * Free of charge is a real price: the gold reward gifts, the bottle caps and the
+             * tea samples are all zero, 254 active products in all. StoreProduct, StoreProductVariant
+             * and UpdateMasterAsset all allow it, so a product could be created at zero and a
+             * master held at zero, but the product itself could never be edited back down to it.
+             */
+            'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
             'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'               => ['sometimes', 'required', 'max:1500'],
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
@@ -373,7 +426,6 @@ class UpdateProduct extends OrgAction
             'state'                     => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
             'trade_config'              => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
             'follow_master'             => ['sometimes', 'boolean'],
-            'cost_price_ratio'          => ['sometimes', 'numeric', 'min:0'],
             'family_id'                 => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
             'master_product_id'         => ['sometimes', 'nullable', 'integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
             'barcode'                   => [
@@ -448,7 +500,8 @@ class UpdateProduct extends OrgAction
             'not_for_sale_from_trade_unit'  => ['sometimes', 'boolean'],
             'has_live_webpage'              => ['sometimes', 'boolean'],
             'marketplace_id'                => ['sometimes'],
-            'not_follow_master_trade_units' => ['sometimes', 'boolean']
+            'not_follow_master_trade_units' => ['sometimes', 'boolean'],
+            'not_follow_master_prices'      => ['sometimes', 'boolean'],
         ];
 
 

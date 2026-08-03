@@ -75,7 +75,7 @@ enum StockTabsEnum: string
                 'icon'  => 'fal fa-atom',
             ],
             StockTabsEnum::ORG_STOCKS => [
-                'title' => __('Org SKUs'),
+                'title' => __('Org SKOs'),
                 'icon'  => 'fal fa-box',
             ],
         };

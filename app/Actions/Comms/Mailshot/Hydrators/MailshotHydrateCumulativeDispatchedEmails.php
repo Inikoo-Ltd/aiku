@@ -18,7 +18,7 @@ class MailshotHydrateCumulativeDispatchedEmails implements ShouldBeUnique
     use AsAction;
 
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(Mailshot $mailshot): string
     {
@@ -46,21 +46,17 @@ class MailshotHydrateCumulativeDispatchedEmails implements ShouldBeUnique
             $mailshotStats->number_dispatched_emails_state_soft_bounce;
         $stats['number_deliveries_success'] = $stats['number_try_send_success'] - $stats['number_deliveries_failure'];
 
-        $baseQuery = DB::table('dispatched_emails');
-        $baseQuery->leftJoin('mailshot_has_dispatched_emails', 'mailshot_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
-        $baseQuery->where('mailshot_id', $mailshot->id);
+        $engagement = DB::table('dispatched_emails')
+            ->join('mailshot_has_dispatched_emails', 'mailshot_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id')
+            ->where('mailshot_id', $mailshot->id)
+            ->selectRaw('count(*) filter (where number_reads > 0) as opened, count(*) filter (where number_clicks > 0) as clicked')
+            ->first();
 
-        $openedDispatchedEmails = $baseQuery
-            ->where('number_reads', '>', 0)->count();
+        $stats['number_delivered_open_success'] = $engagement->opened;
+        $stats['number_delivered_open_failure'] = $stats['number_deliveries_success'] - $engagement->opened;
 
-        $stats['number_delivered_open_success'] = $openedDispatchedEmails;
-        $stats['number_delivered_open_failure'] = $stats['number_deliveries_success'] - $openedDispatchedEmails;
-
-        $interactDispatchedEmails = $baseQuery
-            ->where('number_clicks', '>', 0)->count();
-
-        $stats['number_opened_interact_success'] = $interactDispatchedEmails;
-        $stats['number_opened_interact_failure'] = $stats['number_delivered_open_success'] - $interactDispatchedEmails;
+        $stats['number_opened_interact_success'] = $engagement->clicked;
+        $stats['number_opened_interact_failure'] = $stats['number_delivered_open_success'] - $engagement->clicked;
 
         $mailshot->stats->update($stats);
     }

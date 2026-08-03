@@ -39,7 +39,7 @@ trait WithAccountingSubNavigation
             ],
             [
                 "label"    => __("Accounts"),
-                'number'   => $shop->accountingStats->number_payment_accounts ?? 0,
+                'number'   => $shop->accountingStats->number_current_payment_accounts ?? 0,
                 "route"    => [
                     "name"       => "grp.org.fulfilments.show.operations.accounting.accounts.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
@@ -99,7 +99,7 @@ trait WithAccountingSubNavigation
             ],
             [
                 "label"    => __("Accounts"),
-                'number'   => $shop->accountingStats->number_payment_accounts ?? 0,
+                'number'   => $shop->accountingStats->number_current_payment_accounts ?? 0,
                 "route"    => [
                     "name"       => "grp.org.shops.show.dashboard.payments.accounting.accounts.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
@@ -134,7 +134,7 @@ trait WithAccountingSubNavigation
                 ],
             ],
             [
-                "label"    => __("Customers Balance"),
+                "label"    => __("Customers with Credit Balance"),
                 'number'   => $shop->accountingStats->number_customers_with_balances ?? 0,
                 "route"    => [
                     "name"       => "grp.org.shops.show.dashboard.payments.accounting.customer_balances.index",

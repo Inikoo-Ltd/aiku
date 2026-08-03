@@ -85,6 +85,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurchaseOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurges;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRedirects;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateServices;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShippingZoneSchemas;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSpaces;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockDeliveries;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStoredItemAudits;
@@ -93,7 +94,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSubDepartments;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSubscriptions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSupplierProducts;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSysadminIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTimesheets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTopUps;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
@@ -138,7 +138,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateTradeUnits::run($group);
         GroupHydrateUsers::run($group);
         GroupHydrateInvoices::run($group);
-        GroupHydratePayments::run($group);
+        GroupHydratePayments::run($group->id);
         GroupHydratePaymentAccounts::run($group);
         GroupHydratePaymentServiceProviders::run($group);
         GroupHydrateCollections::run($group);
@@ -153,6 +153,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateRentals::run($group);
         GroupHydrateServices::run($group);
         GroupHydrateCharges::run($group);
+        GroupHydrateShippingZoneSchemas::run($group);
         GroupHydrateCustomers::run($group);
         GroupHydrateProspects::run($group);
         GroupHydrateOrgStocks::run($group);
@@ -185,7 +186,6 @@ class HydrateGroup extends HydrateModel
         GroupHydrateEmailAddresses::run($group);
         GroupHydrateUserRequests::run($group);
         GroupHydrateCustomerBalances::run($group);
-        GroupHydrateSysadminIntervals::run($group);
         GroupHydrateInvoiceTransactions::run($group);
         GroupHydrateVariants::run($group);
 

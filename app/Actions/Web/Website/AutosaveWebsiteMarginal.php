@@ -232,6 +232,31 @@ class AutosaveWebsiteMarginal extends OrgAction
             $this->update($website->unpublishedFamilyDescriptionSnapshot, [
                 'layout' => $layout
             ]);
+        } elseif ($marginal == 'departments_description') {
+            if (!$website->unpublishedDepartmentDescriptionSnapshot) {
+                $departmentDescription = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::DEPARTMENT_DESCRIPTION,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
+                        'layout' => []
+                    ]
+                );
+
+                $website->update(
+                    [
+                        'unpublished_department_description_snapshot_id' => $departmentDescription->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedDepartmentDescriptionSnapshot->layout;
+
+            $this->update($website->unpublishedDepartmentDescriptionSnapshot, [
+                'layout' => $layout
+            ]);
         } elseif ($marginal == 'product') {
             if (!$website->unpublishedProductSnapshot) {
                 $productSnapshot = StoreWebsiteSnapshot::run(
@@ -368,6 +393,12 @@ class AutosaveWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'department', $this->validatedData);
+    }
+
+    public function departmentDescription(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'departments_description', $this->validatedData);
     }
 
     public function subDepartment(Website $website, ActionRequest $request): void

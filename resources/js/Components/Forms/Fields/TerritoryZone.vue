@@ -13,6 +13,7 @@ import { set, get } from 'lodash-es'
 import { ref, watch } from "vue"
 import PureTeritoryZone from '@/Components/Pure/PureTeritoryZone.vue'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

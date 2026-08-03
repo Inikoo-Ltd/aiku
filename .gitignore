@@ -2,6 +2,8 @@
 /bootstrap/ssr
 /node_modules
 /.qodo
+/.agents
+/.codex
 
 /public/build
 /public/hot
@@ -111,7 +113,6 @@ rgb.icc
 /storage/app/robots/*
 /slim_restore.sh
 /get_slim.sh
-/devops/haproxy/haproxy.cfg
 /devops/varnish/warm_up.sh
 /.output.txt
 laradumps.yaml
@@ -119,3 +120,16 @@ laradumps.yaml
 /restart_varnish.sh
 /storage/aiku_media.tar
 /.junie/*
+/nightowl/*
+/local_storage/*
+/lines_by_author_report.txt
+/lines_by_author_report.txt.formatted
+/lines_of_code_by_author.txt
+/actions_by_folder_report.txt.formatted
+/app_actions_dashboard.html
+
+/tests/Browser/Screenshots
+/devops/server.env
+storage/oauth-*.key
+/docs/gsl-es
+/devops/search

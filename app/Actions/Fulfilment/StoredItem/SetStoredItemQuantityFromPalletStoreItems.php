@@ -10,6 +10,7 @@
 namespace App\Actions\Fulfilment\StoredItem;
 
 use App\Actions\OrgAction;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\StoredItem;
 
 class SetStoredItemQuantityFromPalletStoreItems extends OrgAction
@@ -26,6 +27,10 @@ class SetStoredItemQuantityFromPalletStoreItems extends OrgAction
                 'total_quantity' => $quantity
             ]
         );
+
+        if ($storedItem->state == StoredItemStateEnum::DISCONTINUING && $quantity == 0) {
+            $storedItem = SetStoredItemAsDiscontinued::run($storedItem);
+        }
 
         return $storedItem;
     }

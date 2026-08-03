@@ -9,6 +9,7 @@
 namespace App\Actions\Iris\Json;
 
 use Throwable;
+use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Http\JsonResponse;
@@ -40,7 +41,7 @@ class GetIrisFooterData
             $isFooterActive = Arr::get($footerLayout, 'status');
 
             return [
-                'footer' => array_merge(
+                'footer' => RefreshGrpAssetUrls::run(
                     $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
                 ),
             ];
@@ -54,4 +55,5 @@ class GetIrisFooterData
 
         return response()->json($data);
     }
+
 }

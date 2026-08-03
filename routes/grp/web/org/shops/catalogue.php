@@ -15,6 +15,8 @@ use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Catalogue\Product\GetProductUploadedImages;
 use App\Actions\Catalogue\Product\UI\CreateProduct;
 use App\Actions\Catalogue\Product\UI\EditProduct;
+use App\Actions\Catalogue\Product\UI\EditProductComposition;
+use App\Actions\Catalogue\Product\UI\ExportProducts;
 use App\Actions\Catalogue\Product\UI\IndexOutOfStockProducts;
 use App\Actions\Catalogue\Product\UI\IndexPendingBackInStockRemindersProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
@@ -22,6 +24,8 @@ use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithIndependentTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
+use App\Actions\Catalogue\Product\UI\IndexMissingDescriptionProducts;
+use App\Actions\Catalogue\Product\UI\IndexProductsNotOnline;
 use App\Actions\Catalogue\Product\UI\IndexRRPViolationProducts;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
 use App\Actions\Catalogue\ProductCategory\UI\CreateDepartment;
@@ -32,6 +36,7 @@ use App\Actions\Catalogue\ProductCategory\UI\EditFamily;
 use App\Actions\Catalogue\ProductCategory\UI\EditSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesGR;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesWithNoDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
@@ -40,6 +45,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\Catalogue\Variant\EditVariant;
 use App\Actions\Catalogue\Variant\ShowVariant;
 use App\Actions\Discounts\Offer\UI\ShowOffer;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +54,8 @@ Route::get('', ShowCatalogue::class)->name('dashboard');
 
 Route::prefix('products')->as('products.')
     ->group(function () {
+        Route::get('export', [ExportProducts::class, 'inShop'])->name('export');
+
         Route::prefix('all')->as('all_products.')->group(function () {
             Route::get('', IndexProductsInCatalogue::class)->name('index');
             Route::get('create', CreateProduct::class)->name('create');
@@ -58,6 +66,7 @@ Route::prefix('products')->as('products.')
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('composition', [EditProductComposition::class, 'inShop'])->name('composition');
                 Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
         });
@@ -121,6 +130,27 @@ Route::prefix('products')->as('products.')
 
         Route::prefix('out-of-stock')->as('out_of_stock_products.')->group(function () {
             Route::get('', IndexOutOfStockProducts::class)->name('index');
+            Route::get('create', CreateProduct::class)->name('create');
+            Route::prefix('{product}')->group(function () {
+                Route::get('', ShowProduct::class)->name('show');
+                Route::get('images', GetProductUploadedImages::class)->name('images');
+                Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+            });
+        });
+
+        Route::prefix('missing-description')->as('missing_description_products.')->group(function () {
+            Route::get('', IndexMissingDescriptionProducts::class)->name('index');
+            Route::prefix('{product}')->group(function () {
+                Route::get('', ShowProduct::class)->name('show');
+                Route::get('images', GetProductUploadedImages::class)->name('images');
+                Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+            });
+        });
+
+        Route::prefix('not-online')->as('not_online_products.')->group(function () {
+            Route::get('', IndexProductsNotOnline::class)->name('index');
             Route::get('create', CreateProduct::class)->name('create');
             Route::prefix('{product}')->group(function () {
                 Route::get('', ShowProduct::class)->name('show');
@@ -217,6 +247,7 @@ Route::name("departments.")->prefix('departments')
                     Route::get('', ShowFamily::class)->name('show');
                     Route::prefix('variant')->as('variants.')->group(function () {
                         Route::get('/{variant}', [ShowVariant::class,'inDepartment'])->name('show');
+                        Route::get('/{variant}/edit', [EditVariant::class,'inDepartment'])->name('edit');
                     });
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {
@@ -257,6 +288,7 @@ Route::name("departments.")->prefix('departments')
                             Route::get('', [ShowFamily::class, 'inSubDepartment']);
                             Route::prefix('variant')->as('.variants.')->group(function () {
                                 Route::get('/{variant}', [ShowVariant::class,'inSubDepartment'])->name('show');
+                                Route::get('/{variant}/edit', [EditVariant::class,'inSubDepartment'])->name('edit');
                             });
                             Route::prefix('products')->name('.products.')->group(function () {
                                 Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInSubDepartmentInDepartment'])->name('index');
@@ -275,6 +307,7 @@ Route::name("departments.")->prefix('departments')
 Route::name("families.")->prefix('families')
     ->group(function () {
         Route::get('', IndexFamilies::class)->name('index');
+        Route::get('gr', IndexFamiliesGR::class)->name('gr.index');
         Route::get('no-department', IndexFamiliesWithNoDepartment::class)->name('no_department.index');
         Route::get('create', CreateFamily::class)->name('create');
 
@@ -284,6 +317,7 @@ Route::name("families.")->prefix('families')
             Route::get('', [ShowFamily::class, 'inShop']);
             Route::prefix('variant')->as('.variants.')->group(function () {
                 Route::get('/{variant}', [ShowVariant::class,'inShop'])->name('show');
+                Route::get('/{variant}/edit', [EditVariant::class,'inShop'])->name('edit');
             });
             Route::prefix('offers')->as('.offers.')->group(function () {
                 Route::get('/{offer}', [ShowOffer::class,'inFamily'])->name('show');
@@ -346,6 +380,7 @@ Route::name("sub_departments.")->prefix('sub-departments')
                     Route::get('', [ShowFamily::class, 'inSubDepartmentInShop'])->name('show');
                     Route::prefix('variant')->as('variants.')->group(function () {
                         Route::get('/{variant}', [ShowVariant::class,'inSubDepartmentInShop'])->name('show');
+                        Route::get('/{variant}/edit', [EditVariant::class,'inSubDepartmentInShop'])->name('edit');
                     });
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {

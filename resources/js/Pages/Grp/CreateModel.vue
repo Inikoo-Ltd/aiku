@@ -20,6 +20,7 @@ import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Fieldform list
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 
 library.add(faExclamationCircle, faAsterisk, faCheckCircle, faPhone, faChevronDown, faFileSignature, faAddressBook)
 
@@ -300,6 +301,7 @@ console.log("formdata create", props.formData)
                                             <!-- Icon: Required -->
                                             <FontAwesomeIcon v-if="fieldData.required" :icon="['fas', 'asterisk']"
                                                 class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
+                                            <InformationIcon v-if="fieldData.information" :information="fieldData.information" class="ml-1" />
                                         </div>
                                     </dt>
 

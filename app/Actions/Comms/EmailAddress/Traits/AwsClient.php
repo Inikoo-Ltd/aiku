@@ -8,18 +8,26 @@
 
 namespace App\Actions\Comms\EmailAddress\Traits;
 
+use App\Actions\Comms\EmailAddress\ProcessGetSesClient;
 use Aws\Ses\SesClient;
 
 trait AwsClient
 {
-    public function getSesClient(): SesClient
+    public function getSesClient(?int $outboxId = null): SesClient
+    {
+        $candidates = ProcessGetSesClient::run($outboxId);
+
+        return $this->buildSesClient($candidates[0]);
+    }
+
+    public function buildSesClient(array $credentials): SesClient
     {
         return new SesClient([
             'version'     => 'latest',
-            'region'      => config('services.ses.region'),
+            'region'      => $credentials['region'],
             'credentials' => [
-                'key'    => config('services.ses.key'),
-                'secret' => config('services.ses.secret'),
+                'key'    => $credentials['key'],
+                'secret' => $credentials['secret'],
             ],
         ]);
     }

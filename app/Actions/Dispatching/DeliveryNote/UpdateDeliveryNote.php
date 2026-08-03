@@ -8,8 +8,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Accounting\IntrastatExportTimeSeries\ProcessIntrastatExportTimeSeriesRecords;
-use App\Actions\Accounting\IntrastatImportTimeSeries\ProcessIntrastatImportTimeSeriesRecords;
+use App\Actions\Accounting\Reports\IntrastatExportTimeSeries\ProcessIntrastatExportTimeSeriesRecords;
+use App\Actions\Accounting\Reports\IntrastatImportTimeSeries\ProcessIntrastatImportTimeSeriesRecords;
+use App\Actions\Audits\DispatchedCustomAudit;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
@@ -28,13 +29,12 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Country;
+use App\Models\SysAdmin\User;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\SysAdmin\User;
-use App\Actions\Audits\DispatchedCustomAudit;
 
 class UpdateDeliveryNote extends OrgAction
 {
@@ -140,7 +140,7 @@ class UpdateDeliveryNote extends OrgAction
             }
 
 
-            if (Arr::hasAny($changes, ['customer_notes', 'public_notes', 'internal_notes', 'shipping_notes'])) {
+            if (Arr::hasAny($changes, ['customer_notes', 'public_notes', 'private_warehouse_note', 'shipping_notes'])) {
                 $order = $deliveryNote->orders()->first();
 
                 if (Arr::has($changes, 'customer_notes')) {
@@ -155,10 +155,10 @@ class UpdateDeliveryNote extends OrgAction
                             'public_notes' => $deliveryNote->public_notes,
                         ]
                     );
-                } elseif (Arr::has($changes, 'internal_notes')) {
+                } elseif (Arr::has($changes, 'private_warehouse_note')) {
                     $order->update(
                         [
-                            'internal_notes' => $deliveryNote->internal_notes,
+                            'private_warehouse_note' => $deliveryNote->private_warehouse_note,
                         ]
                     );
                 } elseif (Arr::has($changes, 'shipping_notes')) {
@@ -204,6 +204,7 @@ class UpdateDeliveryNote extends OrgAction
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'private_warehouse_note'  => ['sometimes', 'nullable', 'string', 'max:4000'],
             'shipping_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'dispatched_at'           => ['sometimes', 'nullable', 'date'],
             'finalised_at'            => ['sometimes', 'nullable', 'date'],

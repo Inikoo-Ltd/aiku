@@ -9,6 +9,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\BrandTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,6 +18,7 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -27,8 +29,7 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $brandId, int $shopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $brand = Brand::find($brandId);
         $shop  = Shop::find($shopId);
@@ -50,6 +51,9 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(BrandTimeSeries $timeSeries, Shop $shop, string $from, string $to): void
     {
+        $processedPeriods = [];
+        $rows             = [];
+
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where('invoice_transactions.brand_id', '=', $timeSeries->brand_id)
             ->where('invoice_transactions.shop_id', '=', $shop->id)
@@ -62,14 +66,12 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'brand_time_series_id' => $timeSeries->id,
-                    'shop_id'              => $shop->id,
-                    'period'               => $period,
-                    'frequency'            => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'brand_time_series_id' => $timeSeries->id,
+                'shop_id'              => $shop->id,
+                'period'               => $period,
+                'frequency'            => $timeSeries->frequency->singleLetter(),
+                ...[
                     'organisation_id'             => $shop->organisation_id,
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
@@ -87,7 +89,11 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
                 ]
-            );
+            ];
+
+            $processedPeriods[] = $period;
         }
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['brand_time_series_id', 'shop_id', 'period', 'frequency']);
     }
 }

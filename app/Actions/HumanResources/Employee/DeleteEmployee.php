@@ -26,6 +26,13 @@ class DeleteEmployee extends OrgAction
         return $employee;
     }
 
+    public function action(Employee $employee): Employee
+    {
+        $this->asAction = true;
+
+        return $this->handle($employee);
+    }
+
     public function asController(Employee $employee, ActionRequest $request): Employee
     {
         $this->initialisation($employee->organisation, $request);

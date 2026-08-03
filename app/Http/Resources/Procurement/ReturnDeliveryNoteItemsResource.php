@@ -89,18 +89,22 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
             && ($returnDeliveryNoteItem->total_item_damaged > 0 || $returnDeliveryNoteItem->total_item_returned > 0)
         ) {
             $transaction        = $returnDeliveryNoteItem->transaction;
-            $originalItemPrice  = (float) $transaction->net_amount > 0 ? (float) $transaction->net_amount / $transaction->quantity_dispatched : 0;
+            $originalItemPrice  = (float) $transaction->net_amount > 0 ? (float) $transaction->net_amount / $returnDeliveryNoteItem->dn_dispatched_qty : 0;
             $qtyAvailReturn     = $returnDeliveryNoteItem->total_item_damaged + $returnDeliveryNoteItem->total_item_returned;
             $maxAmtReturn       = ($qtyAvailReturn * $originalItemPrice);
 
             $toRefund = [
-                'original_transaction_id'   => $transaction->id,
-                'quantity'                  => $qtyAvailReturn,
-                'original_item_net_price'   => $originalItemPrice,
-                'net_amount'                => 0,
-                'refund_amount'             => 0,
-                'max_refundable_amount'     => $maxAmtReturn,
-                'currency_code'             => $returnDeliveryNoteItem->currency_code,
+                'original_transaction_id'           => $transaction->id,
+                'delivery_note_items_id'            => $returnDeliveryNoteItem->delivery_note_items_id,
+                'quantity'                          => $qtyAvailReturn,
+                'original_item_net_price'           => $originalItemPrice,
+                'net_amount'                        => 0,
+                'refund_amount'                     => 0,
+                'max_refundable_amount'             => $maxAmtReturn,
+                'original_max_refundable_amount'    => $maxAmtReturn,
+                'currency_code'                     => $returnDeliveryNoteItem->currency_code,
+                'replaced_quantity'                 => 0,
+                'max_replace_amount'                => $qtyAvailReturn,
             ];
         }
 

@@ -9,7 +9,7 @@
 namespace App\Actions\SysAdmin\Organisation;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
@@ -50,7 +50,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
-class StoreOrganisation extends GrpAction
+class StoreOrganisation extends OrgAction
 {
     use WithModelAddressActions;
 
@@ -123,24 +123,11 @@ class StoreOrganisation extends GrpAction
                 $organisation->timeSeries()->create(['frequency' => $frequency]);
             }
 
-            if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
-                $organisation->outboxNewsletterIntervals()->create();
-                $organisation->outboxMarketingIntervals()->create();
-                $organisation->outboxMarketingNotificationIntervals()->create();
-                $organisation->outboxCustomerNotificationIntervals()->create();
-                $organisation->outboxColdEmailsIntervals()->create();
-                $organisation->outboxPushIntervals()->create();
-            }
-
-            $organisation->outboxUserNotificationIntervals()->create();
-            $organisation->outboxTestIntervals()->create();
-
 
             if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
                 $organisation->crmStats()->create();
                 $organisation->catalogueStats()->create();
                 $organisation->discountsStats()->create();
-                $organisation->mailshotsIntervals()->create();
                 $organisation->orderingStats()->create();
 
                 $paymentServiceProvider = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::ACCOUNT)->first();
@@ -246,7 +233,7 @@ class StoreOrganisation extends GrpAction
      */
     public function action(Group $group, $modelData): Organisation
     {
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }
@@ -256,7 +243,7 @@ class StoreOrganisation extends GrpAction
      */
     public function asController(Group $group, ActionRequest $request): Organisation
     {
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->validatedData);
     }

@@ -6,9 +6,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
 import { trans } from "laravel-vue-i18n"
 import { computed } from "vue"
-import { useLocaleStore } from "@/Stores/locale"
 import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
+import ChatVisitorsBubble from "@/Components/Chat/ChatVisitorsBubble.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faStoreAlt,
@@ -32,19 +32,31 @@ library.add(
     faEnvelopeOpenText,
 )
 
+interface OrgStats {
+    chatEnabledShops: number
+    chatAgents: number
+    chatSessionsTotal: number
+    chatSessionsWaiting: number
+    chatSessionsActive: number
+    chatSessionsClosed: number
+    chatMessagesTotal: number
+    chatMessagesUnread: number
+}
+
+interface AgentDashboard {
+    organisation: { slug: string; name: string }
+    stats: OrgStats
+    chatEnabledShops: any[]
+    table: any
+    dashboardVisitorsRoute: string
+    activeSessionsRoute: string
+    visitorsByCountryRoute: string
+}
+
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    stats: {
-        chatEnabledShops: number
-        chatAgents: number
-        chatSessionsTotal: number
-        chatSessionsWaiting: number
-        chatSessionsActive: number
-        chatSessionsClosed: number
-        chatMessagesTotal: number
-        chatMessagesUnread: number
-    }
+    stats: OrgStats
     table: {
         idTable: string
         tableData: {
@@ -57,9 +69,8 @@ const props = defineProps<{
         intervals: Intervals
         settings: Settings
     }
+    agentDashboards?: AgentDashboard[]
 }>()
-
-const locale = useLocaleStore()
 
 const tabsBox = computed(() => [
     {
@@ -154,6 +165,15 @@ const tabsBox = computed(() => [
     <PageHeading :data="pageHead" />
 
     <div class="flex flex-col gap-6 px-4 pb-8 pt-8">
+        <!-- Agent live visitor panels (only shown when logged in as a chat agent) -->
+        <template v-if="agentDashboards?.length">
+            <ChatVisitorsBubble
+                v-for="dashboard in agentDashboards"
+                :key="dashboard.organisation.slug"
+                :route="dashboard.dashboardVisitorsRoute"
+            />
+        </template>
+
         <TabsBoxDisplay :tabs_box="tabsBox" />
 
         <div class="rounded-lg border border-gray-200 bg-white shadow-sm">

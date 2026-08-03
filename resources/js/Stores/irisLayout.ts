@@ -10,6 +10,7 @@ import { Image } from "@/types/Image"
 import { Colors } from "@/types/Color"
 import { ref } from "vue"
 import { useColorTheme } from "@/Composables/useStockList"
+import { useFamilyPageBasket } from "@/Composables/useFamilyPageBasket"
 
 
 interface User {
@@ -25,6 +26,20 @@ interface App {
 	theme: string[]
 	url: string | null
 	environment: string | null
+}
+
+interface RightBasketProduct {
+	family_id?: number | null
+	department_id?: number | null
+	sub_department_id?: number | null
+	quantity_ordered?: number | string | null
+	quantity_ordered_new?: number | string | null
+}
+
+interface CategoryQuantityOrdered {
+	family: Record<string, number>
+	department: Record<string, number>
+	sub_department: Record<string, number>
 }
 
 const getLocalStorage = () => {
@@ -61,6 +76,41 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 	const outboxes = ref(null)
 	const isSidebarLoaded = ref(false)
 
+	const { family_page, family_quantity_ordered } = useFamilyPageBasket()
+
+	const rightbasket = ref<{ show: boolean; products: RightBasketProduct[] }>({
+        show: false,
+        products: [],
+    })
+
+	// Quantity ordered totals grouped by family, department and sub_department,
+	// derived from the products currently in the right side basket.
+	// const category_quantity_ordered = computed<CategoryQuantityOrdered>(() => {
+	// 	const totals: CategoryQuantityOrdered = {
+	// 		family: {},
+	// 		department: {},
+	// 		sub_department: {},
+	// 	}
+
+	// 	for (const product of rightbasket.value?.products ?? []) {
+	// 		const quantity = Number(product?.quantity_ordered_new ?? product?.quantity_ordered ?? 0)
+
+	// 		if (product?.family_id != null) {
+	// 			totals.family[product.family_id] = (totals.family[product.family_id] ?? 0) + quantity
+	// 		}
+
+	// 		if (product?.department_id != null) {
+	// 			totals.department[product.department_id] = (totals.department[product.department_id] ?? 0) + quantity
+	// 		}
+
+	// 		if (product?.sub_department_id != null) {
+	// 			totals.sub_department[product.sub_department_id] = (totals.sub_department[product.sub_department_id] ?? 0) + quantity
+	// 		}
+	// 	}
+
+	// 	return totals
+	// })
+
 	return {
 		user,
 		app,
@@ -72,6 +122,10 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 		offer_meters,
 		iris,
 		isSidebarLoaded,
-		outboxes
+		outboxes,
+		rightbasket,
+		family_page,
+		family_quantity_ordered,
+		// category_quantity_ordered,
 	}
 })

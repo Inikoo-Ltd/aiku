@@ -131,7 +131,7 @@ class IndexShopServices extends OrgAction
                         'icon'  => ['fal', 'fa-concierge-bell'],
                         'title' => __('Services')
                     ],
-                    'model'   => __('Catalogue'),
+                    'model'   => $this->shop?->code,
                     'title'   => __('Services'),
                     'actions' => $actions
                 ],
@@ -142,7 +142,7 @@ class IndexShopServices extends OrgAction
 
                 ServicesTabsEnum::SERVICES->value => $this->tab == ServicesTabsEnum::SERVICES->value ?
                     fn () => ServicesResource::collection($services)
-                    : Inertia::lazy(fn () => ServicesResource::collection($services)),
+                    : Inertia::optional(fn () => ServicesResource::collection($services)),
 
             ]
         )->table(

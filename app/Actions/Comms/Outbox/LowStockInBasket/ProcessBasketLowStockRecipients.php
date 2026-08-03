@@ -14,6 +14,7 @@ use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunRecipientStoredAt;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
+use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\CRM\Customer;
@@ -46,7 +47,12 @@ class ProcessBasketLowStockRecipients
             return;
         }
 
-        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
+        $previousLocale = app()->getLocale();
+        app()->setLocale($outbox->shop->language->code);
+
+        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun, [
+            'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
+        ]);
 
         foreach ($customers as $customer) {
             $customerModel = Customer::find($customer['id']);
@@ -78,16 +84,19 @@ class ProcessBasketLowStockRecipients
             );
         }
 
+        app()->setLocale($previousLocale);
+
         // After processing the chunk, update and dispatch the delivery channel
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
-                'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count()
+                'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count(),
+                'state'         => EmailDeliveryChannelStateEnum::READY->value
             ]
         );
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(5);
     }
 
     public function generateProductLinks(string $productIds): string
@@ -182,7 +191,7 @@ class ProcessBasketLowStockRecipients
         // Add "and X more" text if there are remaining products
         if ($remainingCount > 0) {
             $html .= '<p style="font-family: Helvetica, Arial, sans-serif; font-size: 14px; color: #555; margin-top: 12px;">';
-            $html .= 'and ' . $remainingCount . ' more' . ($remainingCount > 1 ? 's' : '');
+            $html .= __('and ') . $remainingCount . ($remainingCount > 1 ? __(' mores') : __(' more'));
             $html .= '</p>';
         }
 

@@ -38,7 +38,7 @@ class IncreaseCreditTransactionCustomer extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if (blank($this->get('type'))) {
-            $type = match ($request->input('reason')) {
+            $type = match ($this->get('reason')) {
                 CreditTransactionReasonEnum::PAY_FOR_SHIPPING->value,
                 CreditTransactionReasonEnum::PAY_FOR_PRODUCT->value,
                 CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value => CreditTransactionTypeEnum::COMPENSATION,

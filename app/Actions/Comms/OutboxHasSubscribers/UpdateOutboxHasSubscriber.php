@@ -28,7 +28,9 @@ class UpdateOutboxHasSubscriber extends OrgAction
 
     public function rules(): array
     {
-        $rules = [];
+        $rules = [
+            'external_email' => ['sometimes', 'email'],
+        ];
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
         }

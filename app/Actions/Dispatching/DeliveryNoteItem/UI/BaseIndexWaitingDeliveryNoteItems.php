@@ -87,19 +87,20 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
             'allow_stock_controller_set_not_picked' => (data_get($this->organisation->settings, 'orders.allow_stock_controller_set_not_picked', false)),
             'is_still_picking'                      => $this->getDeliveryNoteState()->value === DeliveryNoteStateEnum::HANDLING->value,
             'is_read_only'                          => $this->readOnly,
+            'waiting_type'                          => $this->waitingType,
             'tabs'                                  => [
                 'current'    => $this->tab,
                 'navigation' => $this->getTabNavigation(),
             ],
             WaitingItemsTabsEnum::ITEMIZED->value                   => $this->tab == WaitingItemsTabsEnum::ITEMIZED->value
                 ? fn () => WaitingDNItemsTabsItemizedResource::collection($itemized)
-                : Inertia::lazy(fn () => WaitingDNItemsTabsItemizedResource::collection($itemized)),
+                : Inertia::optional(fn () => WaitingDNItemsTabsItemizedResource::collection($itemized)),
             WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value   => $this->tab == WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value
                 ? fn () => WaitingDNItemsGroupedByDeliveryNoteResource::collection($groupedByDeliveryNote)
-                : Inertia::lazy(fn () => WaitingDNItemsGroupedByDeliveryNoteResource::collection($groupedByDeliveryNote)),
+                : Inertia::optional(fn () => WaitingDNItemsGroupedByDeliveryNoteResource::collection($groupedByDeliveryNote)),
             WaitingItemsTabsEnum::GROUPED_BY_ITEM->value            => $this->tab == WaitingItemsTabsEnum::GROUPED_BY_ITEM->value
                 ? fn () => WaitingDeliveryNoteItemsGroupedByItemResource::collection($groupedByItem)
-                : Inertia::lazy(fn () => WaitingDeliveryNoteItemsGroupedByItemResource::collection($groupedByItem)),
+                : Inertia::optional(fn () => WaitingDeliveryNoteItemsGroupedByItemResource::collection($groupedByItem)),
         ];
 
         return Inertia::render('Org/Dispatching/WaitingDeliveryNoteItems', $props)

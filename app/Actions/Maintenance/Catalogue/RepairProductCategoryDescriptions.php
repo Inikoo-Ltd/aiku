@@ -47,7 +47,7 @@ class RepairProductCategoryDescriptions
             if ($masterProductCategory->description_title && !$productCategory->description_title) {
                 $command->line('Q: '.$productCategory->code."  [{$productCategory->shop->slug}]  ($shopLanguage->code)  ".$masterProductCategory->description_title);
 
-                $translation = Translate::run($masterProductCategory->description_title, $english, $shopLanguage);
+                $translation = Translate::run($masterProductCategory->description_title, $english, $shopLanguage, 'gpt-5-nano');
                 $productCategory->updateQuietly([
                     'description_title' => $translation,
                 ]);

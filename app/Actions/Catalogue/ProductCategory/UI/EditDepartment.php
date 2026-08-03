@@ -49,7 +49,7 @@ class EditDepartment extends OrgAction
         $urlMaster = null;
         if ($department->master_product_category_id) {
             $urlMaster = [
-                'name'       => 'grp.helpers.redirect_master_product_category',
+                'name'       => 'grp.majordomo.redirect_master_product_category',
                 'parameters' => [
                     $department->masterProductCategory->id
                 ]
@@ -130,6 +130,40 @@ class EditDepartment extends OrgAction
                                         ],
                                     ]
                                 ],
+                               [
+                                'label'  => __('FAQ'),
+                                'icon'   => 'fa-light fa-question-circle',
+                                'fields' => [
+                                    'faq' => $department->masterProductCategory
+                                        ? [
+                                            'type'          => 'faq-shop',
+                                            'label'         => __('FAQ'),
+                                            'language_from' => 'en',
+                                            'full'          => true,
+                                            'noSaveButton'  => true,
+                                            'main'          => $department->masterProductCategory->faq,
+                                            'languages'     => $languages,
+                                            'mode'          => 'single',
+                                            'value'         => $department->faq,
+                                            'routeGetInternalLink' => [
+                                                'name' => 'grp.org.shops.show.web.webpages.index',
+                                                'parameters' => [
+                                                    'shop' => $department->shop->slug,
+                                                    'organisation' => $department->organisation->slug,
+                                                    'website' => $department->shop->website?->slug
+                                                ]
+                                            ],
+                                            'toggle'        => [
+                                               'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
+                                        ]
+                                        : [
+                                            'type'  => 'faq-shop',
+                                            'label' => __('FAQ'),
+                                            'value' => $department->faq,
+                                        ],
+                                ]
+                            ],
                                 [
                                     'label'  => __('Name/Description'),
                                     'icon'   => 'fa-light fa-tag',
@@ -188,7 +222,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'        => [
+                                                'toggle'        => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -226,7 +260,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'  => [
+                                                'toggle'  => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -268,7 +302,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website->slug
                                                     ]
                                                 ],
-                                                'toogle'        => [
+                                                'toggle'        => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -306,7 +340,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'  => [
+                                                'toggle'  => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -329,23 +363,7 @@ class EditDepartment extends OrgAction
                                                     'clear'
                                                 ],
                                             ],
-                                    ]
-                                ],
-                                [
-                                    'label'  => __('Pricing'),
-                                    'icon'   => 'fa-light fa-money-bill',
-                                    'fields' => [
-                                        'cost_price_ratio' => [
-                                            'type'        => 'input_number',
-                                            'bind'        => [
-                                                'maxFractionDigits' => 3
-                                            ],
-                                            'label'       => __('Pricing ratio'),
-                                            'placeholder' => __('Cost price ratio'),
-                                            'required'    => true,
-                                            'value'       => $department->cost_price_ratio,
-                                            'min'         => 0
-                                        ],
+                                        ...$this->seoFields($department),
                                     ]
                                 ],
                                 [
@@ -396,6 +414,46 @@ class EditDepartment extends OrgAction
         );
     }
 
+
+    private function seoFields(ProductCategory $department): array
+    {
+        $webpage = $department->webpage;
+
+        if (!$webpage) {
+            return [];
+        }
+
+        return [
+            'webpage_title'       => [
+                'type'        => 'input',
+                'label'       => __('SEO title'),
+                'information' => __('Used as the browser title and as the meta title for search engines'),
+                'maxLength'   => 70,
+                'options'     => [
+                    'counter' => true,
+                ],
+                'value'       => $webpage->title,
+            ],
+            'webpage_description' => [
+                'type'        => 'textarea',
+                'label'       => __('Meta description'),
+                'information' => __('Used as the meta description for search engines'),
+                'maxLength'   => 160,
+                'counter'     => true,
+                'value'       => $webpage->description,
+            ],
+            'webpage_url'         => [
+                'type'        => 'inputWithAddOn',
+                'label'       => __('URL'),
+                'information' => __('Changing the URL will redirect the old one to the new one'),
+                'leftAddOn'   => [
+                    'label' => 'https://'.$webpage->website->domain.'/'
+                ],
+                'required'    => true,
+                'value'       => $webpage->url,
+            ],
+        ];
+    }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {

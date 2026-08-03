@@ -27,9 +27,12 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Reviews\OrderReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
@@ -55,7 +58,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Audits\Transformer\OrderSubmitSummaryTransformer;
 use App\Audits\Transformer\RelationTransformer;
-use App\Models\Dispatching\ReturnDeliveryNote;
 
 /**
  * @property int $id
@@ -165,6 +167,10 @@ use App\Models\Dispatching\ReturnDeliveryNote;
  * @property string|null $phone
  * @property string|null $contact_name
  * @property string|null $company_name
+ * @property int|null $offer_voucher_id
+ * @property int|null $discounted_shipping_offer_id
+ * @property bool $is_pastpay
+ * @property bool $is_bypass_platform_update
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -186,6 +192,8 @@ use App\Models\Dispatching\ReturnDeliveryNote;
  * @property-read Organisation $organisation
  * @property-read Collection<int, Payment> $payments
  * @property-read Platform|null $platform
+ * @property-read Collection<int, ReturnDeliveryNote> $returnedDeliveryNote
+ * @property-read OrderReviewStat|null $reviewStats
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read ShippingZone|null $shippingZone
  * @property-read Shop|null $shop
@@ -203,6 +211,7 @@ use App\Models\Dispatching\ReturnDeliveryNote;
  */
 class Order extends Model implements HasMedia, Auditable
 {
+    use WithLineTaxCategories;
     use HasSlug;
     use SoftDeletes;
     use HasFactory;
@@ -360,6 +369,7 @@ class Order extends Model implements HasMedia, Auditable
         'public_notes',
         'internal_notes',
         'shipping_notes',
+        'private_warehouse_note',
 
         // Totals & Quantities
         'number_item_transactions',
@@ -475,6 +485,14 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(TaxCategory::class);
     }
 
+    /**
+     * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
+     */
+    public function taxBreakdown(): array
+    {
+        return $this->getOrderTaxBreakdown($this);
+    }
+
     public function dispatchedEmails(): MorphToMany
     {
         return $this->morphToMany(DispatchedEmail::class, 'model', 'model_has_dispatched_emails')->withTimestamps();
@@ -508,6 +526,11 @@ class Order extends Model implements HasMedia, Auditable
     public function returnedDeliveryNote(): HasMany
     {
         return $this->hasMany(ReturnDeliveryNote::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(OrderReviewStat::class);
     }
 
 }

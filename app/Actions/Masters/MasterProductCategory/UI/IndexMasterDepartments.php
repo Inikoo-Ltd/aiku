@@ -12,6 +12,7 @@ use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\MasterProductCategoryTabsEnum;
@@ -31,6 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMasterDepartments extends OrgAction
 {
+    use WithMastersAuthorisation;
     use WithMasterCatalogueSubNavigation;
 
     private MasterShop|Group $parent;
@@ -256,7 +258,7 @@ class IndexMasterDepartments extends OrgAction
         }
 
         $actions = [];
-        if ($request->route()->getName() == 'grp.masters.master_shops.show.master_departments.index') {
+        if ($this->canEdit && $request->route()->getName() == 'grp.masters.master_shops.show.master_departments.index') {
             $actions = [
                 [
                     'type'    => 'button',
@@ -289,6 +291,7 @@ class IndexMasterDepartments extends OrgAction
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
+                    'color'         => '#65a30d',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
@@ -302,11 +305,11 @@ class IndexMasterDepartments extends OrgAction
                 ],
                 MasterProductCategoryTabsEnum::INDEX->value => $this->tab == MasterProductCategoryTabsEnum::INDEX->value ?
                     fn () => MasterDepartmentsResource::collection($masterDepartments)
-                    : Inertia::lazy(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))),
+                    : Inertia::optional(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))),
 
                 MasterProductCategoryTabsEnum::SALES->value => $this->tab == MasterProductCategoryTabsEnum::SALES->value ?
                     fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))
             ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value, sales: true));

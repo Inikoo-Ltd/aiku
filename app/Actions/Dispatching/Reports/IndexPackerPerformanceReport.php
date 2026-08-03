@@ -233,11 +233,11 @@ class IndexPackerPerformanceReport extends OrgAction
 
                 PerformanceReportTabsEnum::OVERVIEW->value => $this->tab == PerformanceReportTabsEnum::OVERVIEW->value
                     ? fn () => PerformanceReportResource::collection($data)
-                    : Inertia::lazy(fn () => PerformanceReportResource::collection($data)),
+                    : Inertia::optional(fn () => PerformanceReportResource::collection($data)),
 
                 PerformanceReportTabsEnum::BONUS->value => $this->tab == PerformanceReportTabsEnum::BONUS->value
                     ? fn () => PerformanceReportResource::collection($this->handle($this->organisation, PerformanceReportTabsEnum::BONUS->value, $dateFilter))
-                    : Inertia::lazy(fn () => PerformanceReportResource::collection($this->handle($this->organisation, PerformanceReportTabsEnum::BONUS->value, $dateFilter))),
+                    : Inertia::optional(fn () => PerformanceReportResource::collection($this->handle($this->organisation, PerformanceReportTabsEnum::BONUS->value, $dateFilter))),
             ]
         )->table($this->tableStructure(PerformanceReportTabsEnum::OVERVIEW->value))
             ->table($this->tableStructure(PerformanceReportTabsEnum::BONUS->value));

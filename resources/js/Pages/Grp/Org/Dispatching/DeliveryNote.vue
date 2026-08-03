@@ -41,6 +41,7 @@ import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
 import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
+import TableDeliveryNoteTariffCodes from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteTariffCodes.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
 import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -60,10 +61,9 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
-import ButtonSetAsWaiting from "@/Components/DeliveryNote/ButtonSetAsWaiting.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import ButtonSelectBaysAndWaiting from "@/Components/DeliveryNote/ButtonSelectBaysAndWaiting.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
@@ -75,6 +75,11 @@ const props = defineProps<{
     items?: {}
     pending_items?: {}
     done_items?: {}
+    tariff_codes?: {}
+    tariff_codes_export?: {
+        fields: { key: string; label: string }[]
+        download_route: { xlsx: routeType; csv: routeType }
+    }
     pickings?: {}
     warning?: {
         text: string
@@ -140,7 +145,7 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
-	history: {}
+	history?: {}
 	shop: {
 		type: string   // 'b2b', 'dropshipping'
 	}
@@ -148,6 +153,10 @@ const props = defineProps<{
 	is_faire_order : boolean
 	showChangePickerPacker: boolean
 	is_editable: boolean  // To distinguish DN in Shops and DN in Wwarehouse
+	consumables?: { code: string, quantity: number }[]
+	scan_to_pack?: {
+		scan_route: routeType
+	}
 }>();
 
 
@@ -160,6 +169,7 @@ const component = computed(() => {
         items: TableDeliveryNoteItems,
         pending_items: TableDeliveryNoteItems,
         done_items: TableDeliveryNoteItems,
+        tariff_codes: TableDeliveryNoteTariffCodes,
 		history: TableHistories,
         pickings: TablePickings
     };
@@ -366,6 +376,39 @@ const debReloadPage = debounce(() => {
     })
 }, 1200)
 
+// A scan packs one item, so only the scanned row and the counters change. Patching that row in
+// place keeps the packer on the same scroll position instead of re-rendering the whole page.
+const onItemPackedByScan = (outcome: {
+	status: string
+	item?: { id: number } | null
+	row?: Record<string, any> | null
+	delivery_note_state?: string
+}) => {
+	if (outcome.status !== 'packed' || !outcome.item?.id) {
+		return
+	}
+
+	const tableData = props[currentTab.value as keyof typeof props] as { data: any[], meta?: { total?: number } } | undefined
+	const rows = tableData?.data
+	const rowIndex = rows?.findIndex((row: any) => row.id === outcome.item?.id) ?? -1
+
+	if (rows && rowIndex > -1) {
+		if (outcome.row) {
+			Object.assign(rows[rowIndex], outcome.row)
+		} else {
+			rows.splice(rowIndex, 1)
+
+			if (tableData?.meta && typeof tableData.meta.total === 'number') {
+				tableData.meta.total = Math.max(0, tableData.meta.total - 1)
+			}
+		}
+	}
+
+	if (outcome.delivery_note_state === 'packed') {
+		debReloadPage()
+	}
+}
+
 const selectSocketBasedPlatform = (porto) => {
     return {
         event: `grp.dn.${porto.id}`,
@@ -389,27 +432,14 @@ onMounted(() => {
     console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
 
-const processReturn = () => {
-	// router.patch(route('grp.models.delivery_note.return.process', {
-	// 	deliveryNote: props.delivery_note.id
-	// }), {}, {
-	// 	onSuccess: () => {
-    //         notify({ 
-	// 			title: 'Updated', 
-	// 			text: 'Successfully created return', 
-	// 			type: 'success' 
-	// 		})
-	// 	},
-	// 	onError: (err) => {
-	// 		console.error(err)
-    //         notify({ 
-	// 			title: 'Error', 
-	// 			text: 'Failed to create return.', 
-	// 			type: 'error' 
-	// 		})
-	// 	}
-	// })
-}
+
+watch(
+	(item) => props.tabs,
+	(item: TSTabs) => {
+		if (item.current !== currentTab.value) currentTab.value = item.current;
+	},
+	{ immediate: true }
+);
 
 </script>
 
@@ -457,7 +487,6 @@ const processReturn = () => {
 
 		<template #wrapped-return="{ action }">
 			<ButtonWithLink
-				xclick="processReturn()"
 				type="red"
 				v-tooltip="ctrans('Process the return if the product is sent back to the warehouse due to failed delivery or other reasons')"
 				icon="fal fa-exchange"
@@ -472,7 +501,7 @@ const processReturn = () => {
 					console.log('eeee', e)
 					notify({
 						title: ctrans('Failed to set return'),
-						text: e.message || 'Please try again later or contact administrator.',
+						text: e.message || ctrans('Please try again later or contact administrator'),
 						type: 'error',
 					})
 				}"
@@ -516,7 +545,7 @@ const processReturn = () => {
 				</div>
 			</div>
 			<!-- Button: Download PDF -->
-			<div class="relative" v-if="route().params.deliveryNote">
+			<!-- <div class="relative" v-if="route().params.deliveryNote">
 				<a	v-if="route().params.deliveryNote"
 					:href="
 						route('grp.pdfs.delivery-notes', {
@@ -529,7 +558,7 @@ const processReturn = () => {
 					v-tooltip="trans('Download PDF of this Delivery Note')">
 					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
 				</a>
-			</div>
+			</div> -->
 		</template>
 
 		<template #button-to-queue="{ action }">
@@ -558,7 +587,7 @@ const processReturn = () => {
 				type="primary" />
 		</template>
 
-		<template #button-cancel="{ action }">
+		<template #wrapped-cancel="{ action }">
 			<ModalConfirmationDelete
 				:routeDelete="action.route"
 				:title="trans('Are you sure you want to cancel the delivery?')"
@@ -572,21 +601,14 @@ const processReturn = () => {
 				noIcon="x"
 				:cancelLabel="trans('No, keep delivery')">
 				<template #default="{ isOpenModal, changeModel }">
-					<Button @click="changeModel" :label="action.label" :type="action.style" />
+					<Button
+						@click="changeModel"
+						:label="action.label"
+						:type="action.style"
+						class="whitespace-nowrap" />
 				</template>
 			</ModalConfirmationDelete>
 		</template>
-
-		<!-- Button: Select trolley (only for Ecom) -->
-		<!-- <template
-			#button-set-for-waiting="{ action }"
-			v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"
-		>
-			<ButtonSelectBaysAndWaiting
-				:warehouse="warehouse"
-				:deliveryNote="delivery_note"
-			/>
-		</template> -->
 
 		<!-- Button: Select trolley (only for Ecom) -->
 		<template v-if="props.shop.type !== 'dropshipping'"  #button-start-picking="{ action }">
@@ -608,16 +630,22 @@ const processReturn = () => {
 			</ButtonSelectBays>
 		</template>
 
-		<!-- Button: Set as waiting (only for Ecom) -->
-		<!-- <template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-for-waiting="{ action }">
-			<ButtonSetAsWaiting
-				:warehouse="warehouse"
-				:deliveryNote="delivery_note"
-			>
-
-			</ButtonSetAsWaiting>
-		</template> -->
 	</PageHeading>
+
+	<!-- Section: Consumables the packer must add to the box -->
+	<div v-if="consumables?.length" class="p-2 pb-0">
+		<div class="inline-flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border-2 border-amber-500 bg-amber-300 px-4 py-3 shadow-sm">
+			<div class="flex items-center gap-2">
+				<FontAwesomeIcon :icon="faBoxOpen" class="text-xl text-amber-900" fixed-width aria-hidden="true" />
+				<span class="text-sm font-bold uppercase tracking-wider text-amber-900">{{ trans("Packer must add") }}</span>
+			</div>
+			<span v-for="consumable in consumables" :key="consumable.code"
+				class="flex items-center gap-2 rounded bg-amber-950 px-3 py-1 text-amber-50">
+				<span class="text-2xl font-bold leading-none tabular-nums">{{ consumable.quantity }}</span>
+				<span class="text-base font-semibold leading-none">&times; {{ consumable.code }}</span>
+			</span>
+		</div>
+	</div>
 
 	<!-- Section: Pallet Warning -->
 	<div v-if="alert?.status" class="p-2 pb-0">
@@ -675,11 +703,7 @@ const processReturn = () => {
 					:key="index + note.label"
 					:noteData="note"
 					:updateRoute="routes.update"
-					:fetchRoute="{
-						name: 'grp.models.delivery_note.copy_notes',
-						parameters: { deliveryNote: props.delivery_note.id },
-						method: 'patch',
-					}" />
+				/>
 			</div>
 		</Transition>
 	</div>
@@ -709,6 +733,14 @@ const processReturn = () => {
 		:isEditable="is_editable"
 	/>
 
+	<!-- Section: Scan a barcode to pack the matching item straight away -->
+	<ScanToPackDeliveryNote
+		v-if="scan_to_pack"
+		:scanRoute="scan_to_pack.scan_route"
+		:tab="currentTab"
+		@scanned="onItemPackedByScan"
+	/>
+
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
@@ -717,6 +749,7 @@ const processReturn = () => {
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:isEditable="is_editable"
+			:tariffCodesExport="tariff_codes_export"
 			:routes
 			:state="delivery_note.state"
 			:shop_type="shop_type"

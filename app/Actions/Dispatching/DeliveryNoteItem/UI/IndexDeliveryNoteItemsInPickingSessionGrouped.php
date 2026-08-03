@@ -20,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
 {
-    public function handle(PickingSession $parent, $prefix = null): LengthAwarePaginator
+    public function handle(PickingSession $parent, $prefix = null, ?int $deliveryNoteId = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -37,6 +37,10 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
         $query->leftjoin('picking_session_has_delivery_notes', 'picking_session_has_delivery_notes.delivery_note_id', '=', 'delivery_notes.id');
         $query->where('picking_session_has_delivery_notes.picking_session_id', $parent->id);
 
+        if ($deliveryNoteId) {
+            $query->where('delivery_notes.id', $deliveryNoteId);
+        }
+
         return $query
             ->select([
                 'delivery_notes.slug as delivery_note_slug',
@@ -45,7 +49,7 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
                 'delivery_notes.state as delivery_note_state',
                 'delivery_notes.customer_notes as delivery_note_customer_notes',
                 'delivery_notes.public_notes as delivery_note_public_notes',
-                'delivery_notes.internal_notes as delivery_note_internal_notes',
+                'delivery_notes.private_warehouse_note as delivery_note_internal_notes',
                 'delivery_notes.shipping_notes as delivery_note_shipping_notes',
                 'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',
                 'delivery_notes.has_extra_packing as delivery_note_has_extra_packing',

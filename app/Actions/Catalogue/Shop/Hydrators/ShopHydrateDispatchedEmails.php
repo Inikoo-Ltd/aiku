@@ -17,6 +17,8 @@ class ShopHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'ses-analytics';
+
     public function getJobUniqueId(?int $shopId): string
     {
         return $shopId ?? 'empty';
@@ -27,13 +29,13 @@ class ShopHydrateDispatchedEmails implements ShouldBeUnique
         if (!$shopID) {
             return;
         }
-        $shop = Shop::find($shopID);
+        $shop = Shop::on('aiku_no_sticky')->find($shopID);
         if (!$shop) {
             return;
         }
 
         $stats = [
-            'number_dispatched_emails' => DB::table('outboxes')->where('shop_id', $shop->id)
+            'number_dispatched_emails' => DB::connection('aiku_no_sticky')->table('outboxes')->where('shop_id', $shop->id)
                 ->leftJoin('outbox_stats', 'outboxes.id', '=', 'outbox_stats.outbox_id')
                 ->sum('number_dispatched_emails'),
         ];

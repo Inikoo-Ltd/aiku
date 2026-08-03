@@ -59,7 +59,7 @@ const findTagById = (id: number | string) => {
 </script>
 
 <template>
-    <div class="w-full max-w-md py-4">
+    <div class="w-full max-w-md xpy-4">
         <!-- Selected tags -->
         <div v-if="formSelectedTags.length" class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
             <Tag
@@ -90,6 +90,7 @@ const findTagById = (id: number | string) => {
                 :optionValue="fieldData?.valueProp || 'id'"
                 :placeholder="fieldData?.placeholder || trans('Select Tags')"
                 :maxSelectedLabels="3"
+                :selectedItemsLabel="trans('{0} items selected')"
                 filter
                 class="w-full md:w-80"
             >

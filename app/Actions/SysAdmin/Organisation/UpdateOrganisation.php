@@ -13,14 +13,17 @@ use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
+use App\Actions\Audits\DispatchSimpleAudit;
 
 class UpdateOrganisation extends OrgAction
 {
@@ -29,6 +32,8 @@ class UpdateOrganisation extends OrgAction
 
     public function handle(Organisation $organisation, array $modelData): Organisation
     {
+        $settingAudits = $this->customAudit($organisation, $modelData);
+
         if (Arr::has($modelData, 'ui_name')) {
             data_set($modelData, "settings.ui.name", Arr::pull($modelData, 'ui_name'));
         }
@@ -41,6 +46,27 @@ class UpdateOrganisation extends OrgAction
         if (Arr::has($modelData, 'google_drive_folder_key')) {
             data_set($modelData, "settings.google.drive.folder", Arr::pull($modelData, 'google_drive_folder_key'));
         }
+
+        if (Arr::has($modelData, 'access_id')) {
+            data_set($modelData, "settings.email.provider.failover.access_id", Arr::pull($modelData, 'access_id'));
+        }
+        if (Arr::has($modelData, 'access_key')) {
+            data_set($modelData, "settings.email.provider.failover.access_key", Arr::pull($modelData, 'access_key'));
+        }
+        if (Arr::has($modelData, 'region')) {
+            data_set($modelData, "settings.email.provider.failover.region", Arr::pull($modelData, 'region'));
+        }
+
+        if (Arr::has($modelData, 'customer_notification_access_id')) {
+            data_set($modelData, "settings.email.provider.customer_notification.access_id", Arr::pull($modelData, 'customer_notification_access_id'));
+        }
+        if (Arr::has($modelData, 'customer_notification_access_key')) {
+            data_set($modelData, "settings.email.provider.customer_notification.access_key", Arr::pull($modelData, 'customer_notification_access_key'));
+        }
+        if (Arr::has($modelData, 'customer_notification_region')) {
+            data_set($modelData, "settings.email.provider.customer_notification.region", Arr::pull($modelData, 'customer_notification_region'));
+        }
+
 
         if (Arr::has($modelData, 'show_omega')) {
             data_set($modelData, "settings.invoice_export.show_omega", Arr::pull($modelData, 'show_omega'));
@@ -64,6 +90,10 @@ class UpdateOrganisation extends OrgAction
 
         if (Arr::has($modelData, 'allow_stock_controller_set_not_picked')) {
             data_set($modelData, 'settings.orders.allow_stock_controller_set_not_picked', Arr::pull($modelData, 'allow_stock_controller_set_not_picked'));
+        }
+
+        if (Arr::has($modelData, 'allow_scan_to_pack')) {
+            data_set($modelData, 'settings.orders.allow_scan_to_pack', Arr::pull($modelData, 'allow_scan_to_pack'));
         }
 
 
@@ -110,12 +140,26 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.hr.probation_period_days", Arr::pull($modelData, 'hr_probation_period_days'));
         }
 
+        if (Arr::has($modelData, 'banned_countries')) {
+            $bannedCountries = Arr::pull($modelData, 'banned_countries');
+            data_set($modelData, 'banned_country_regions', Arr::get($bannedCountries, 'banned_list', []));
+        }
+
 
         $organisation = $this->update($organisation, $modelData, ['data', 'settings']);
 
+        foreach ($settingAudits as $audit) {
+            DispatchSimpleAudit::run(
+                auditableModel: $organisation,
+                logKey: $audit['key'],
+                oldValue: $audit['old'],
+                newValue: $audit['new'],
+                eventName: 'updated',
+            );
+        }
+
         $organisation->refresh();
 
-        $this->updateEmployeeLeaveBalances($organisation);
 
         return $organisation;
     }
@@ -146,13 +190,18 @@ class UpdateOrganisation extends OrgAction
             'attach_isdoc_to_pdf'                   => ['sometimes', 'boolean'],
             'show_tax_liability_date'               => ['sometimes', 'boolean'],
             'google_drive_folder_key'               => ['sometimes', 'string'],
+            'access_id'                             => ['sometimes', 'string', 'nullable'],
+            'access_key'                            => ['sometimes', 'string', 'nullable'],
+            'region'                                => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
+            'customer_notification_access_id'       => ['sometimes', 'string', 'nullable'],
+            'customer_notification_access_key'      => ['sometimes', 'string', 'nullable'],
+            'customer_notification_region'          => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'address'                               => ['sometimes', 'required', new ValidAddress()],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
             'currency_id'                           => ['sometimes', 'exists:currencies,id'],
             'email'                                 => ['sometimes', 'nullable', 'email'],
             'phone'                                 => ['sometimes', 'nullable', new Phone()],
-            'forbidden_dispatch_countries'          => ['sometimes', 'array', 'nullable'],
             'logo'                                  => [
                 'sometimes',
                 'nullable',
@@ -166,8 +215,13 @@ class UpdateOrganisation extends OrgAction
             'allow_waiting'                         => ['sometimes', 'boolean'],
             'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
-
-
+            'allow_scan_to_pack'                    => ['sometimes', 'boolean'],
+            'banned_countries'                      => ['sometimes', 'nullable', 'array'],
+            'banned_countries.banned_list'          => ['sometimes', 'nullable', 'array'],
+            'banned_countries.banned_list.*'        => ['required', 'array'],
+            'banned_countries.banned_list.*.postcode' => ['sometimes', 'string', 'nullable'],
+            'banned_countries.banned_list.*.billing'  => ['required', 'boolean'],
+            'banned_countries.banned_list.*.delivery' => ['required', 'boolean'],
         ];
 
         if (!$this->strict) {
@@ -176,22 +230,6 @@ class UpdateOrganisation extends OrgAction
         }
 
         return $rules;
-    }
-
-    protected function updateEmployeeLeaveBalances(Organisation $organisation): void
-    {
-        $newAnnualDays = $organisation->getDefaultAnnualLeaveDays();
-
-        $organisation->employees()->each(function ($employee) use ($newAnnualDays) {
-            $balance = \App\Models\HumanResources\EmployeeLeaveBalance::where('employee_id', $employee->id)
-                ->where('year', now()->year)
-                ->first();
-
-            if ($balance && $balance->annual_days != $newAnnualDays) {
-                $balance->annual_days = $newAnnualDays;
-                $balance->saveQuietly();
-            }
-        });
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
@@ -215,5 +253,40 @@ class UpdateOrganisation extends OrgAction
         $this->initialisation($organisation, $modelData);
 
         return $this->handle($organisation, $this->validatedData);
+    }
+
+    public function customAudit(Organisation $organisation, array $modelData)
+    {
+        $settingAudits = [];
+
+        foreach ([
+            'access_id'                         => ['email.provider.failover.access_id', true],
+            'access_key'                        => ['email.provider.failover.access_key', true],
+            'region'                            => ['email.provider.failover.region', true],
+            'customer_notification_access_id'   => ['email.provider.customer_notification.access_id', true],
+            'customer_notification_access_key'  => ['email.provider.customer_notification.access_key', true],
+            'customer_notification_region'      => ['email.provider.customer_notification.region', true],
+        ] as $field => [$path, $shouldAudit]) {
+            if (!Arr::has($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($organisation->settings, $path);
+            $newValue = Arr::pull($modelData, $field);
+
+            data_set($modelData, "settings.$path", $newValue);
+
+            if (!$shouldAudit || $oldValue === $newValue) {
+                continue;
+            }
+
+            $settingAudits[] = [
+                'key' => str_replace('.', '_', $path),
+                'old' => $oldValue,
+                'new' => $newValue,
+            ];
+        };
+
+        return $settingAudits;
     }
 }

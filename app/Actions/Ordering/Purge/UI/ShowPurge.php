@@ -78,11 +78,11 @@ class ShowPurge extends OrgAction
 
                 PurgeTabsEnum::SHOWCASE->value => $this->tab == PurgeTabsEnum::SHOWCASE->value ?
                     fn () => GetPurgeShowcase::run($purge)
-                    : Inertia::lazy(fn () => GetPurgeShowcase::run($purge)),
+                    : Inertia::optional(fn () => GetPurgeShowcase::run($purge)),
 
                 PurgeTabsEnum::PURGED_ORDERS->value => $this->tab == PurgeTabsEnum::PURGED_ORDERS->value ?
                     fn () => PurgedOrdersResource::collection(IndexPurgedOrders::run($purge))
-                    : Inertia::lazy(fn () => PurgedOrdersResource::collection(IndexPurgedOrders::run($purge))),
+                    : Inertia::optional(fn () => PurgedOrdersResource::collection(IndexPurgedOrders::run($purge))),
 
 
             ]

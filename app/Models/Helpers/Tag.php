@@ -24,6 +24,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\Attributes\Translatable;
 use Spatie\Translatable\HasTranslations;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -63,6 +64,7 @@ use Spatie\Translatable\HasTranslations;
 #[Translatable('label')]
 class Tag extends Model implements HasMedia
 {
+    use HasSearch;
     use HasSlug;
     use HasImage;
     use HasTranslations;
@@ -125,4 +127,15 @@ class Tag extends Model implements HasMedia
     {
         return $this->morphedByMany(Customer::class, 'model', 'model_has_tags');
     }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'name'       => (string)$this->name,
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
 }

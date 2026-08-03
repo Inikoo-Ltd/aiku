@@ -16,40 +16,31 @@ enum PurchaseOrderTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    // case SHOWCASE            = 'showcase';
-    case TRANSACTIONS        = 'transactions';
-    case HISTORY             = 'history';
-    case ATTACHMENTS         = 'attachments';
-    case PRODUCTS            = 'products';
-
+    case ITEMS        = 'items';
+    case PRODUCTS     = 'products';
+    case SHOWCASE     = 'showcase';
+    case HISTORY      = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
-
-            PurchaseOrderTabsEnum::TRANSACTIONS  => [
-                'title' => __('Transactions'),
+            PurchaseOrderTabsEnum::ITEMS    => [
+                'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
-            PurchaseOrderTabsEnum::PRODUCTS  => [
-                'title' => __('Products'),
-                'icon'  => 'fal fa-box-usd',
+            PurchaseOrderTabsEnum::PRODUCTS => [
+                'title' => __("All supplier's products"),
+                'icon'  => 'fal fa-th-list',
             ],
-            // PurchaseOrderTabsEnum::SHOWCASE => [
-            //     'title' => __('Purchase orders'),
-            //     'icon'  => 'fal fa-info-circle',
-            // ],
-            PurchaseOrderTabsEnum::HISTORY     => [
+            PurchaseOrderTabsEnum::SHOWCASE => [
+                'title' => __('Data'),
+                'icon'  => 'fal fa-database',
+            ],
+            PurchaseOrderTabsEnum::HISTORY  => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
+                'icon'  => 'fal fa-clock',
                 'align' => 'right',
-            ],
-            PurchaseOrderTabsEnum::ATTACHMENTS => [
-                'align' => 'right',
-                'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
-                'type'  => 'icon'
             ],
         };
     }

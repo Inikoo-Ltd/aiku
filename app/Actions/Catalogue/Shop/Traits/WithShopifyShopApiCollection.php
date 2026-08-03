@@ -109,6 +109,7 @@ trait WithShopifyShopApiCollection
                             id
                             name
                             createdAt
+                            processedAt
                             displayFinancialStatus
                             displayFulfillmentStatus
                             email

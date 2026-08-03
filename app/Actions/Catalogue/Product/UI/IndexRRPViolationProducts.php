@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 02-04-2026-15h-30m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -45,9 +45,6 @@ class IndexRRPViolationProducts extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
-
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
 
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
@@ -146,6 +143,7 @@ class IndexRRPViolationProducts extends OrgAction
                 'title'                        => $title,
                 'pageHead'                     => [
                     'title'         => $title,
+                    'is_negative'   => true,
                     'model'         => $model,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
@@ -159,7 +157,7 @@ class IndexRRPViolationProducts extends OrgAction
 
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
             ]
         )->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value));

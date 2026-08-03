@@ -56,15 +56,15 @@ class ShowCatalogueInGroup extends OrgAction
                 CatalogueTabsEnum::TOP_LISTED_FAMILIES->value =>
                     $this->tab == CatalogueTabsEnum::TOP_LISTED_FAMILIES->value
                         ? fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($group, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))
-                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($group, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))),
+                        : Inertia::optional(fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($group, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))),
                 CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value =>
                     $this->tab == CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value
                         ? fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($group, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))
-                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($group, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))),
+                        : Inertia::optional(fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($group, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))),
                 CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value =>
                     $this->tab == CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value
                         ? fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($group, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))
-                        : Inertia::lazy(fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($group, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))),
+                        : Inertia::optional(fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($group, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))),
             ]
         )->table(
             IndexTopListedFamilies::make()->tableStructure(

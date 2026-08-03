@@ -23,7 +23,7 @@ return new class () extends Migration {
             $table->foreign('stock_id')->references('id')->on('stocks')->onUpdate('cascade')->onDelete('cascade');
             $table->string('quantity_status_from')->nullable()->index();
             $table->string('quantity_status_upto')->nullable()->index();
-            $table->unsignedSmallInteger('number_org_stocks')->default(0);
+            $table->unsignedInteger('number_org_stocks')->default(0);
             foreach (OrgStockStateEnum::cases() as $case) {
                 $table->unsignedInteger('number_number_org_stocks_state_'.$case->snake())->default(0);
             }

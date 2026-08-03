@@ -91,7 +91,7 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
 
                 CustomerClientTabsEnum::SHOWCASE->value => $this->tab == CustomerClientTabsEnum::SHOWCASE->value ?
                     fn () => GetCustomerClientShowcase::run($customerClient)
-                    : Inertia::lazy(fn () => GetCustomerClientShowcase::run($customerClient)),
+                    : Inertia::optional(fn () => GetCustomerClientShowcase::run($customerClient)),
 
 
 

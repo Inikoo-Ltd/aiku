@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin\User;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Http\Resources\SysAdmin\User\UsersResource;
 use App\Models\SysAdmin\User;
@@ -43,6 +44,11 @@ class UpdateUser extends OrgAction
             data_set($modelData, 'is_two_factor_required', (bool) Arr::pull($modelData, 'is_two_factor_required'));
         }
 
+        $canUseMcp = Arr::exists($modelData, 'can_use_mcp') ? (bool) $modelData['can_use_mcp'] : $user->can_use_mcp;
+        if (!$canUseMcp) {
+            data_set($modelData, 'can_use_mcp_sql', false);
+        }
+
         $user = $this->update($user, $modelData, ['profile', 'settings']);
 
         if ($user->wasChanged('status')) {
@@ -53,6 +59,10 @@ class UpdateUser extends OrgAction
                 });
             }
 
+        }
+
+        if ($user->wasChanged('language_id')) {
+            BreakUserUiProps::run($user);
         }
 
         return $user;
@@ -70,6 +80,8 @@ class UpdateUser extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'can_use_mcp'     => ['sometimes', 'boolean'],
+            'can_use_mcp_sql' => ['sometimes', 'boolean'],
             'username'       => [
                 'sometimes',
                 'required',

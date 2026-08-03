@@ -42,8 +42,8 @@ const props = defineProps<{
     payment_accounts?: object
     payments?: object,
     invoices?: object,
-    history: object
-    showcase: {}
+    history?: object
+    showcase?: {}
 
 }>();
 

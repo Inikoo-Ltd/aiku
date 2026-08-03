@@ -15,7 +15,7 @@ use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterAsset\GetMasterProductImages;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
@@ -39,7 +39,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterProduct extends GrpAction
+class ShowMasterProduct extends OrgAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -50,6 +50,14 @@ class ShowMasterProduct extends GrpAction
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
+        if (!$this->parent instanceof Group) {
+            $masterShop =  $this->parent instanceof MasterShop ? $this->parent : $this->parent?->masterShop;
+
+            if ($masterShop->id != $masterAsset->master_shop_id) {
+                abort(404, 'Master Product not found under this shop');
+            }
+        }
+
         return $masterAsset;
     }
 
@@ -58,7 +66,7 @@ class ShowMasterProduct extends GrpAction
         $this->parent = $masterShop;
         $group        = group();
 
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -67,7 +75,7 @@ class ShowMasterProduct extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -76,7 +84,7 @@ class ShowMasterProduct extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -84,7 +92,7 @@ class ShowMasterProduct extends GrpAction
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $this->parent = $masterDepartment;
-        $this->initialisation($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -95,7 +103,7 @@ class ShowMasterProduct extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -235,14 +243,10 @@ class ShowMasterProduct extends GrpAction
                             ]
                         ] : false,
                         [
-                            'key'   => 'assign',
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Add to Other Shop'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
+                            'key'       => 'assign',
+                            'type'      => 'button',
+                            'style'     => 'create',
+                            'label'     => __('Add to Other Shop'),
                         ],
                     ],
                     'subNavigation'        => $this->getMasterProductsSubNavigation($masterAsset),
@@ -264,32 +268,32 @@ class ShowMasterProduct extends GrpAction
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductShowcase::run($masterAsset)
-                    : Inertia::lazy(fn () => GetMasterProductShowcase::run($masterAsset)),
+                    : Inertia::optional(fn () => GetMasterProductShowcase::run($masterAsset)),
 
                 'salesData' => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductTimeSeriesData::run($masterAsset)
-                    : Inertia::lazy(fn () => GetMasterProductTimeSeriesData::run($masterAsset)),
+                    : Inertia::optional(fn () => GetMasterProductTimeSeriesData::run($masterAsset)),
 
                 MasterAssetTabsEnum::TRADE_UNITS->value => $this->tab == MasterAssetTabsEnum::TRADE_UNITS->value ?
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
+                    : Inertia::optional(fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
 
                 MasterAssetTabsEnum::IMAGES->value => $this->tab == MasterAssetTabsEnum::IMAGES->value ?
                     fn () => GetMasterProductImages::run($masterAsset)
-                    : Inertia::lazy(fn () => GetMasterProductImages::run($masterAsset)),
+                    : Inertia::optional(fn () => GetMasterProductImages::run($masterAsset)),
 
                 MasterAssetTabsEnum::SALES->value => $this->tab == MasterAssetTabsEnum::SALES->value ?
                     fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
 
                 MasterAssetTabsEnum::HISTORY->value => $this->tab == MasterAssetTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))),
 
 
                 // MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
                 //     fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))
-                //     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))),
+                //     : Inertia::optional(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))),
 
             ]
         )

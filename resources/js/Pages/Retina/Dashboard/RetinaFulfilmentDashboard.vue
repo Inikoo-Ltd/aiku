@@ -209,7 +209,7 @@ const radioValue = ref<string[]>(
                         formattingFn: (value: number) => locale.currencyFormat(data.currency_code, value)
                     }" />
 						<div class="text-gray-700/60 text-sm leading-4 font-normal">
-							{{ data?.balance?.credit_transactions }} credit transactions
+							{{ data?.balance?.credit_transactions }} {{ ctrans("Credit transactions") }}
 						</div>
 					</div>
 				</div>
@@ -358,7 +358,7 @@ const radioValue = ref<string[]>(
 
 					<div v-else class="text-center py-16">
 						<div class="text-gray-500 text-xs mb-1">
-							The rental agreement is not created yet.
+							{{ ctrans("The rental agreement is not created yet.") }}
 						</div>
 					</div>
 				</div>

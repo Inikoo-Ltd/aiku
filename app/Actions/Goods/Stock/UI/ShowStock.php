@@ -62,7 +62,7 @@ class ShowStock extends OrgAction
         return Inertia::render(
             'Goods/Stock',
             [
-                'title'                        => __('Master SKU').' '.$stock->code,
+                'title'                        => __('Master SKO').' '.$stock->code,
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $stock,
                     $request->route()->getName(),
@@ -74,7 +74,7 @@ class ShowStock extends OrgAction
                 ],
                 'pageHead'                     => [
                     'icon'  => [
-                        'title' => __('Master SKU'),
+                        'title' => __('Master SKO'),
                         'icon'  => 'fal fa-cloud-rainbow'
                     ],
                     'title' => $stock->code,
@@ -86,6 +86,18 @@ class ShowStock extends OrgAction
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : false,
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Composition'),
+                            'icon'  => ['fal', 'fa-atom'],
+                            'route' => [
+                                'name'       => 'grp.goods.stocks.composition',
+                                'parameters' => [
+                                    'stock' => $stock->slug,
+                                ]
                             ]
                         ] : false,
                         $this->canDelete ? [
@@ -106,19 +118,19 @@ class ShowStock extends OrgAction
                 ],
                 StockTabsEnum::SHOWCASE->value => $this->tab == StockTabsEnum::SHOWCASE->value ?
                     fn () => GetStockShowcase::run($stock)
-                    : Inertia::lazy(fn () => GetStockShowcase::run($stock)),
+                    : Inertia::optional(fn () => GetStockShowcase::run($stock)),
 
                 StockTabsEnum::ORG_STOCKS->value => $this->tab == StockTabsEnum::ORG_STOCKS->value ?
                     fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))
-                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))),
+                    : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))),
 
                 StockTabsEnum::TRADE_UNITS->value => $this->tab == StockTabsEnum::TRADE_UNITS->value ?
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInStock::run($stock, StockTabsEnum::TRADE_UNITS->value))
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInStock::run($stock, StockTabsEnum::TRADE_UNITS->value))),
+                    : Inertia::optional(fn () => TradeUnitsResource::collection(IndexTradeUnitsInStock::run($stock, StockTabsEnum::TRADE_UNITS->value))),
 
                 StockTabsEnum::HISTORY->value => $this->tab == StockTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($stock, StockTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($stock, StockTabsEnum::HISTORY->value)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stock, StockTabsEnum::HISTORY->value)))
 
 
             ]
@@ -137,11 +149,11 @@ class ShowStock extends OrgAction
     {
         $headCrumb = function (Stock $stock, array $routeParameters, $suffix) {
             $label = match ($routeParameters['index']['name']) {
-                'grp.goods.stocks.active_stocks.index' => __('Active SKUs'),
-                'grp.goods.stocks.in_process_stocks.index' => __('In process SKUs'),
-                'grp.goods.stocks.discontinuing_stocks.index' => __('Discontinuing SKUs'),
-                'grp.goods.stocks.discontinued_stocks.index' => __('Discontinued SKUs'),
-                default => __('SKUs')
+                'grp.goods.stocks.active_stocks.index' => __('Active SKOs'),
+                'grp.goods.stocks.in_process_stocks.index' => __('In process SKOs'),
+                'grp.goods.stocks.discontinuing_stocks.index' => __('Discontinuing SKOs'),
+                'grp.goods.stocks.discontinued_stocks.index' => __('Discontinued SKOs'),
+                default => __('SKOs')
             };
 
             return [

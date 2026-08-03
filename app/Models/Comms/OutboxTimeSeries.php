@@ -34,15 +34,20 @@ class OutboxTimeSeries extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'data'      => 'array',
-        'frequency' => TimeSeriesFrequencyEnum::class,
+    protected function casts(): array
+    {
+        return [
+            'data'      => 'array',
+            'frequency' => TimeSeriesFrequencyEnum::class,
+        ];
+    }
 
-    ];
-
-    protected $attributes = [
-        'data' => '{}',
-    ];
+    protected function attributes(): array
+    {
+        return [
+            'data' => [],
+        ];
+    }
 
     public function records(): HasMany
     {

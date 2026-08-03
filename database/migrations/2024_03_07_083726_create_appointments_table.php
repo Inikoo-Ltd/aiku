@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use App\Stubs\Migrations\HasSoftDeletes;
 use Illuminate\Database\Migrations\Migration;
@@ -21,28 +20,6 @@ return new class () extends Migration {
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->increments('id');
-            $table = $this->groupOrgRelationship($table);
-            $table->string('slug')->unique()->collation('und_ns')->nullable();
-
-            $table->string('name');
-
-            $table->unsignedSmallInteger('shop_id')->index();
-            $table->foreign('shop_id')->references('id')->on('shops')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->unsignedInteger('customer_id');
-            $table->foreign('customer_id')->references('id')->on('customers')->onUpdate('cascade')->onDelete('cascade');
-
-            $table->dateTimeTz('schedule_at');
-            $table->text('description')->nullable();
-
-            $table->string('state')->default(AppointmentStateEnum::BOOKED->value);
-            $table->string('type');
-
-            $table->string('event');
-            $table->string('event_address');
-
-            $table = $this->softDeletes($table);
-            $table->timestampsTz();
         });
     }
 

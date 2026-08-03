@@ -13,8 +13,8 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import DatePicker from '@vuepic/vue-datepicker'
-import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt } from "@fal"
-import { faShieldAlt, faStar, faHighlighter, faPennant } from "@fas"
+import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle } from "@fal"
+import { faShieldAlt, faStar, faHighlighter, faPennant, faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { trans } from "laravel-vue-i18n"
@@ -24,9 +24,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import { computed, inject, ref } from "vue"
 
-library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle)
+library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faInfoCircle)
 
-defineProps<{
+const props = defineProps<{
     data: {
         data: {}[]
         links: Links
@@ -37,6 +37,30 @@ defineProps<{
 }>()
 
 const locale = useLocaleStore()
+
+function orderHref(order: Order) {
+    const url = orderRoute(order) as unknown as string
+
+    return url ? url + bucketQuery() : ''
+}
+
+function bucketQuery() {
+    if (!props.tab) return ''
+
+    const scope = {
+        "grp.overview.ordering.backlog": "group",
+        "grp.org.overview.ordering.backlog": "organisation",
+    }[route().current() as string] ?? "shop"
+
+    const query = new URLSearchParams({ bucket: props.tab, bucket_scope: scope })
+    const sort = new URLSearchParams(location.search).get(`${props.tab}_sort`)
+
+    if (sort) {
+        query.set('bucket_sort', sort)
+    }
+
+    return `?${query.toString()}`
+}
 
 function orderRoute(order: Order) {
     switch (route().current()) {
@@ -52,7 +76,16 @@ function orderRoute(order: Order) {
             return route(
                 "grp.org.shops.show.ordering.orders.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug])
-
+        case "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show":
+        case "grp.org.shops.show.catalogue.products.missing_description_products.show":
+        case "grp.org.shops.show.catalogue.products.independent_products.all.show":
+        case "grp.org.shops.show.catalogue.products.rrp_violation_products.show":
+        case "grp.org.shops.show.catalogue.products.discontinued_products.show":
+        case "grp.org.shops.show.catalogue.products.in_process_products.show":
+        case "grp.org.shops.show.catalogue.products.not_online_products.show":
+        case "grp.org.shops.show.catalogue.products.current_products.show":
+        case "grp.org.shops.show.catalogue.products.orphan_products.show":
+        case "grp.org.shops.show.catalogue.products.all_products.show":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
             return route(
@@ -126,7 +159,7 @@ function customerRoute(order: Order) {
 const generateRouteDeliveryNote = (id: string) => {
     if (!id) return ''
 
-    return route('grp.helpers.redirect_delivery_notes', {
+    return route('grp.majordomo.redirect_delivery_notes', {
         deliveryNote: id
     })
 }
@@ -215,10 +248,10 @@ const setNewMarkerDate = (newVal: Date) => {
       </span>
         </template>
 
-        <template #cell(reference)="{ item: order }">            
+        <template #cell(reference)="{ item: order }">
             <div class="flex gap-2 flex-wrap items-center">
-                <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
-                    <FontAwesomeIcon 
+                <Link :href="orderHref(order)" class="primaryLink">
+                    <FontAwesomeIcon
                         v-if="isValidMark && isBeforeMark(order['date'])"
                         v-tooltip="trans('Order created at :_dateCreated', {_dateCreated: getDateLocaleString(new Date(order['date']))})"
                         :icon="faPennant"
@@ -227,8 +260,17 @@ const setNewMarkerDate = (newVal: Date) => {
                     {{ order["reference"] }}
                 </Link>
 
+                <img v-if="order?.platform" :src="order?.platform" class="w-4" alt="platform" />
+
                 <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon
+         			v-if="order.is_customer_vip"
+         			v-tooltip="trans('VIP Customer')"
+         			:icon="faCertificate"
+                    color="#191970"
+         			fixed-width
+    			/>
                 <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />
                 <!-- <FontAwesomeIcon v-if="order.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt"
@@ -258,15 +300,29 @@ const setNewMarkerDate = (newVal: Date) => {
 
 
         <template #cell(date)="{ item: order }">
-            <div class="text-right">
-                {{ useFormatTime(order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
+            <div class="text-right flex items-center justify-end gap-1.5">
+                <span v-if="order.platform_milestones?.draft_created_at && order.platform_milestones?.placed_at && order.platform_milestones.draft_created_at !== order.platform_milestones.placed_at"
+                      v-tooltip="
+                          trans('Order Timeline:') + '<br>' +
+                          trans('Draft Initiated:') + ' ' + useFormatTime(order.platform_milestones.draft_created_at, { localeCode: locale.language.code, formatTime: 'aiku' }) + '<br>' +
+                          trans('Paid / Placed:') + ' ' + useFormatTime(order.platform_milestones.placed_at, { localeCode: locale.language.code, formatTime: 'aiku' }) +
+                          (order.submitted_at ? ('<br>' + trans('Warehouse Submitted:') + ' ' + useFormatTime(order.submitted_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '') +
+                          (order.dispatched_at ? ('<br>' + trans('Dispatched:') + ' ' + useFormatTime(order.dispatched_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '')
+                      "
+                      class="text-gray-400 cursor-help"
+                >
+                    <FontAwesomeIcon :icon="faInfoCircle" size="xs" />
+                </span>
+                <span>
+                    {{ useFormatTime(order.platform_milestones?.placed_at || order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
+                </span>
             </div>
         </template>
 
         <template #cell(delivery)="{ item: order }">
-            
+
             <div v-if="order.state === 'cancelled'">
-                
+
             </div>
             <div v-else-if="order.shipping_data?.is_collection && order.state === 'dispatched'" class="border rounded border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
                 {{ trans("Collected") }}
@@ -275,7 +331,7 @@ const setNewMarkerDate = (newVal: Date) => {
             <div v-else-if="order.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
                 {{ trans("For Collection") }}
             </div>
-            
+
             <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex gap-2 pr-2 py-1.5">
                 <div class="group w-fit whitespace-nowrap ">
                     <!-- Delivery Note -->
@@ -288,7 +344,7 @@ const setNewMarkerDate = (newVal: Date) => {
                             <FontAwesomeIcon icon="fal fa-truck" class="" fixed-width aria-hidden="true" />
                         </Link>
                     </template>
-                    
+
                     <template v-if="order.shipping_data?.[0].trackings?.[0]">
                         <span>
                             <span class="opacity-70">|</span>
@@ -315,7 +371,7 @@ const setNewMarkerDate = (newVal: Date) => {
                                 {{ order.shipping_data?.[0].trackings?.[0] }}
                                 <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
                             </a>
-                            
+
                             <span v-else>
                                 {{ order.shipping_data?.[0].trackings?.[0] }}
                             </span>

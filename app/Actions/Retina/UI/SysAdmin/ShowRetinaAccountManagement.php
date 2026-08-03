@@ -132,7 +132,22 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'label'  => 'Recargo de equivalencia',
                                         'value'  => $customer->is_re,
 
-                                    ]
+                                    ],
+                                    'fiscal_name'     => [
+                                        'type'  => 'input',
+                                        'label' => __('Fiscal name'),
+                                        'value' => $customer->fiscal_name
+                                    ],
+                                    'identity_document_number' => [
+                                        'type'          => 'input',
+                                        'label'         => data_get($customer->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),
+                                        'value'         => $customer->identity_document_number
+                                    ],
+                                    'identity_document_number_alt' => [
+                                        'type'          => 'input',
+                                        'label'         => data_get($customer->shop->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt').'/'.__('Registration number Alt'),
+                                        'value'         => $customer->identity_document_number_alt
+                                    ],
                                 ]
                             ],
                              ...($showInterests ? [[

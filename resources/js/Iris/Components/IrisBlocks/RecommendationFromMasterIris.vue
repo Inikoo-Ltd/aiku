@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { ctrans } from "@/Composables/useTrans"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
-import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
+import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 
@@ -51,7 +51,7 @@ const emits = defineEmits<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-
+const key = ref(1)
 
 const slidesPerView = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -72,11 +72,16 @@ const shouldShowNavigation = computed(() => products.value.length > slidesPerVie
 
 const componentId = computed(() => props.fieldValue?.id ?? `recommended-master${props.indexBlock ?? ''}`)
 
-const titleContent = computed(() => props.fieldValue?.recommendation_settings?.title ?? ctrans('Recommendations'))
+const titleContent = computed(() => props.fieldValue?.recommendation_settings?.title ?? ctrans('Related Products'))
 
 
 const prevEl = ref(null)
 const nextEl = ref(null)
+
+
+onMounted(()=>{
+  key.value ++
+})
 
 console.log('related product :', props)
 </script>
@@ -98,11 +103,11 @@ console.log('related product :', props)
     <div v-if="products.length" class="relative px-4 py-6">
       <!-- Navigation -->
       <button ref="prevEl" class="swiper-nav-button hidden lg:block left-12 top-1/2">
-        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg" />
+        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl" />
       </button>
 
       <button ref="nextEl" class="swiper-nav-button hidden lg:block right-12 top-1/2">
-        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg" />
+        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl" />
       </button>
 
       <!-- Swiper -->
@@ -112,11 +117,12 @@ console.log('related product :', props)
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">
             <div class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
               <div v-if="product" class="flex-1 flex flex-col product-card">
-                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'"
+                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'" :key="`ecom-${key}`" code="products-1"
                   :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
                   :buttonStyle="layout?.buttonBasket?.buttonStyle" :product="product" :hideLogin="true"
-                  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" />
-                <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+                  :screenType="screenType"
+                  :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], {})" />
+                <ProductRender v-else :product="product" :productHasPortfolio="[]"  :key="`ds-${key}`" :screenType="screenType" />
               </div>
             </div>
           </SwiperSlide>

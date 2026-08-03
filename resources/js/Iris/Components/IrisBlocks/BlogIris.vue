@@ -32,10 +32,12 @@ const props = defineProps<{
     }
     content: string
   }
+  screenType?: "mobile" | "tablet" | "desktop"
+  indexBlock?: number
+  code?: string
 }>()
 
 const layout: any = inject("layout", {})
-
 const primaryColor = computed(() => {
   return layout?.iris?.theme?.color?.[4] || "#3b82f6"
 })
@@ -90,10 +92,12 @@ const shareUrl = typeof window !== 'undefined'
   : ''
 
 const screenType = inject("screenType", "desktop")
+
+console.log(props)
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800"   :style="{fontFamily: 'Raleway, sans-serif'}">
+  <div v-if="fieldValue?.builderType != 'beefree'" class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800"   :style="{fontFamily: 'Raleway, sans-serif'}">
     <!-- Sidebar -->
     <aside class="lg:sticky lg:top-10 max-h-[80vh] overflow-y-auto hidden lg:block border-r border-gray-100 pr-6">
       <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
@@ -124,9 +128,10 @@ const screenType = inject("screenType", "desktop")
         <div class="space-y-3">
           <a v-for="post in fieldValue.latest_blogs" :href="post.url"
             class="flex items-center gap-3 group hover:bg-gray-50 p-2 rounded-md transition">
-               <Image :src="post.image_src"
+               <Image v-if="post.image_src" :src="post.image_src"
                         :alt="post.image_alt"
                         class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" :imageCover="true"/>
+            <img v-if="post.third_party_image_preview" :alt="post.image_alt ? post.image_alt : post.title"  :src="post.third_party_image_preview"  class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" />
             <div class="text-sm font-medium text-gray-700 group-hover:text-gray-900">
               {{ post.title }}
             </div>
@@ -147,10 +152,11 @@ const screenType = inject("screenType", "desktop")
         {{ displayDate }}
       </div>
 
-      <div
+      <div v-if="fieldValue.image?.source"
         class="w-full mb-8 rounded-xl overflow-hidden aspect-[2/1] bg-gray-100 flex items-center justify-center shadow-sm">
         <Image v-if="fieldValue.image?.source" :src="fieldValue.image.source" :alt="fieldValue.image.alt"
           :imageCover="true" class="w-full h-full object-cover" />
+       
         <FontAwesomeIcon v-else :icon="['fas', 'image']" class="text-gray-300 text-6xl" />
       </div>
 
@@ -198,6 +204,8 @@ const screenType = inject("screenType", "desktop")
       </div>
     </article>
   </div>
+
+  <div v-if="fieldValue?.builderType == 'beefree'" v-html="fieldValue?.beefree?.html"></div>
 </template>
 
 <style scoped>

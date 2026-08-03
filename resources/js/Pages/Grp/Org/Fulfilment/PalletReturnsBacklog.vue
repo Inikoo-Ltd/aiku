@@ -35,13 +35,13 @@ const props = defineProps<{
     tabs: TSTabs
     todo?: boolean
     picking_session_route?: routeType
-    in_process: {}
-    submitted: {}
-    confirmed: {}
-    picking: {}
-    waiting: {}
-    picked: {}
-    dispatched: {}
+    in_process?: {}
+    submitted?: {}
+    confirmed?: {}
+    picking?: {}
+    waiting?: {}
+    picked?: {}
+    dispatched?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)

@@ -17,7 +17,6 @@ class MailshotFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => fake()->lexify(),
             'name' => fake()->company(),
             'subject' => fake()->text(10),
             'type' => MailshotTypeEnum::NEWSLETTER,

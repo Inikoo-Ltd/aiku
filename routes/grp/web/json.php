@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
+use App\Actions\Catalogue\Product\Json\GetProductsIncludingNotForSaleInShop;
 use App\Actions\Dispatching\BatchCode\Json\GetBatchCodes;
 use App\Actions\Accounting\Payment\Json\GetRefundOriginalInvoicePayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
@@ -40,17 +41,18 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInDepartmentInWorkshop
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategories;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
+use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryForRelatedWebBlock;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
-use App\Actions\Comms\EmailTemplate\GetEmailTemplateCompiledLayout;
+use App\Actions\Comms\BeeFreeSDK\BeefreeConvertEmailJsonToPageJson;
+use App\Actions\Comms\EmailCopy\GetEmailCopy;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
-use App\Actions\Comms\EmailTemplate\GetOutboxEmailTemplates;
-use App\Actions\Comms\EmailTemplate\GetSeededEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\Mailshot\GetMailshotTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
@@ -62,6 +64,9 @@ use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSession;
 use App\Actions\Fulfilment\PickingSession\Json\GetPalletReturnsForPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemRow;
+use App\Actions\Dispatching\DeliveryNoteItem\PackDeliveryNoteItemByScan;
+use App\Actions\Dispatching\PickingSession\Json\FetchPickingSessionItemRow;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
@@ -75,7 +80,9 @@ use App\Actions\Dispatching\WaitingItems\Json\GetCrmReturnedBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetCrmWaitingBadge;
 use App\Actions\Dispatching\WaitingItems\Json\GetDispatchingWaitingBadge;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetAllegroProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetTiktokProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
 use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentPhysicalGoods;
@@ -83,6 +90,7 @@ use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentServices;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexRecentPalletDeliveryUploads;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
+use App\Actions\Goods\Ingredient\Json\ParseIngredientsList;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitsForTradeUnitFamily;
 use App\Actions\Helpers\Address\GetGeocode;
 use App\Actions\Helpers\Brand\Json\GetBrands;
@@ -90,12 +98,19 @@ use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
+use App\Actions\Inventory\OrgStock\Json\FetchOrgStockStocksManagement;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
+use App\Actions\CRM\Customer\Json\GetCustomersInShop;
+use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
+use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
+use App\Actions\Goods\Stock\JSON\ValidateStockTradeUnitChanges;
+use App\Actions\Masters\MasterAsset\Json\GetMasterUpdatedBadge;
+use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
@@ -105,7 +120,7 @@ use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCat
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
 use App\Actions\Ordering\Order\GetChargesInOrder;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
-use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\SysAdmin\Group\Json\GetAllTradeUnitsInGroup;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
 use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
@@ -113,6 +128,7 @@ use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
+use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use App\Actions\Web\Website\UI\Json\FetchFamilyDescriptionBlockLayout;
 use Illuminate\Support\Facades\Route;
@@ -142,14 +158,15 @@ Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWhole
 Route::get('fulfilment-customer/{fulfilmentCustomer}/storing-pallets', GetFulfilmentCustomerStoringPallets::class)->name('fulfilment-customer.storing-pallets.index');
 Route::get('fulfilment-customer/{fulfilmentCustomer}/audit/{storedItemAudit}/stored-items', GetPalletAuditStoredItems::class)->name('fulfilment-customer.audit.stored-items.index');
 
-Route::get('email/templates/seeded', GetSeededEmailTemplates::class)->name('email_templates.seeded');
-Route::get('email/templates/outboxes/{outbox:id}', GetOutboxEmailTemplates::class)->name('email_templates.outbox');
-Route::get('email/templates/{emailTemplate:id}/compiled_layout', GetEmailTemplateCompiledLayout::class)->name('email_templates.show.compiled_layout');
 Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->name('mailshot.merge-tags');
+Route::get('/mailshot/{mailshot:id}/convert-to-page', BeefreeConvertEmailJsonToPageJson::class)->name('mailshot.convert-to-page');
 
+Route::get('email/dispatched-email/{dispatchedEmail:id}/copy', GetEmailCopy::class)->name('email.dispatched-email.copy');
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
 Route::get('shop/{shop}/products-for-website-workshop', GetProductsInWorkshop::class)->name('shop.products_for_website_workshop');
 Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.products');
+Route::get('shop/{shop}/products-including-not-for-sale', GetProductsIncludingNotForSaleInShop::class)->name('shop.products_including_not_for_sale');
+
 Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
 
@@ -162,6 +179,10 @@ Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.d
 Route::get('shop/{shop:id}/sub-departments', GetSubDepartmentsInShop::class)->name('shop.sub_departments');
 Route::get('shop/{shop:id}/products-no-webpage', GetProductsWithNoWebpage::class)->name('shop.products.no-webpage');
 Route::get('shop/{shop}/product-categories', GetProductCategories::class)->name('shop.product_categories');
+
+Route::get('shop/{shop}/families-for-related-web-blocks', [GetProductCategoryForRelatedWebBlock::class, 'onlyFamily'])->name('shop.families.for_related_web_block');
+Route::get('shop/{shop}/departments-for-related-web-blocks', [GetProductCategoryForRelatedWebBlock::class, 'onlyDepartment'])->name('shop.departments.for_related_web_block');
+Route::get('shop/{shop}/sub-departments-for-related-web-blocks', [GetProductCategoryForRelatedWebBlock::class, 'onlySubDepartment'])->name('shop.sub_departments.for_related_web_block');
 
 Route::get('shop/{shop}/catalogue/{productCategory}/families', GetProductCategoryFamilies::class)->name('shop.catalogue.departments.families');
 Route::get('shop/{shop:id}/catalogue/collection/{collection:id}/products', GetProductsNotAttachedToACollection::class)->name('shop.products.not_attached_to_collection')->withoutScopedBindings();
@@ -178,8 +199,8 @@ Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers:
 
 Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
-Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
-Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
+Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
+Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 
@@ -192,6 +213,7 @@ Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModificati
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
 Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes', GetBatchCodes::class)->name('org_stock.batch_codes.index');
+Route::get('warehouse/{warehouse}/org-stock/{orgStock:id}/stocks-management', FetchOrgStockStocksManagement::class)->name('warehouse.org_stock.stocks_management')->withoutScopedBindings();
 
 Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('brands', GetBrands::class)->name('brands.index');
@@ -216,6 +238,8 @@ Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsIn
 
 Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])->name('webpages.index');
 Route::get('/shops/{shop}/webpages/active', [GetWebpagesInCollection::class, 'inShopActive'])->name('active_webpages.index');
+Route::post('/shops/{shop}/webpages/active-with-exclusion', [GetWebpagesInCollection::class, 'inShopActiveWithExclusion'])->name('active_webpages.with_exclusion.index');
+
 Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
 
 Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
@@ -232,15 +256,21 @@ Route::get('mini-delivery-note/{deliveryNote:id}', GetMiniDeliveryNote::class)->
 Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNoteShipments::class)->name('mini_delivery_note_shipments');
 
 Route::get('picking-session/{pickingSession:id}/delivery-notes', GetDeliveryNotesForPickingSession::class)->name('picking_session.delivery_notes.index');
+Route::get('picking-session/{pickingSession:id}/item-row', FetchPickingSessionItemRow::class)->name('picking_session_item_row');
 Route::get('picking-session/{pickingSession:id}/pallet-returns', GetPalletReturnsForPickingSession::class)->name('picking_session.pallet_returns.index');
 
 Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
+Route::get('delivery-note-item/{deliveryNoteItem:id}/row', FetchDeliveryNoteItemRow::class)->name('delivery_note_item_row');
+Route::get('delivery-note-item/{deliveryNoteItem:id}/image', FetchDeliveryNoteItemImage::class)->name('fetch_single_delivery_note_item.image');
+Route::post('delivery-note/{deliveryNote:id}/pack-by-scan', PackDeliveryNoteItemByScan::class)->name('delivery_note.pack_by_scan');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
-
+Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/tiktok-products', GetTiktokProducts::class)->name('dropshipping.customer_sales_channel.tiktok_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/allegro-products', GetAllegroProducts::class)->name('dropshipping.customer_sales_channel.allegro_products');
 
 Route::get('master-shop/{masterShop}/departments-and-sub-departments', GetMasterDepartmentAndMasterSubDepartments::class)->name('master_shop.master_departments_and_sub_departments');
 Route::get('master-shop/{masterShop}/scopes/{scope}/departments', GetMasterDepartments::class)->name('master_shop.master_departments');
@@ -269,6 +299,9 @@ Route::get('product/{product:id}/trade-units/recommended', [GetRecommendedTradeU
 Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::class)->name('master-family.all-master-family')->withoutScopedBindings();
 
 Route::get('get-pick-fractional', GetPickFractional::class)->name('product.get-pick-fractional')->withoutScopedBindings();
+
+Route::post('{masterAsset:id}/get-price-rebels', GetPriceRebelProducts::class)->name('master_products.get_price_rebels')->withoutScopedBindings();
+Route::post('master-product-category/{masterProductCategory:id}/pricing-sales', GetMasterProductsPricingSales::class)->name('master_product_category.pricing_sales')->withoutScopedBindings();
 
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
 
@@ -307,3 +340,13 @@ Route::get('{warehouse}/return/select-delivery-notes', GetDeliveryNoteValidForRe
 Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name('dispatching_waiting_badge');
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
+Route::get('shops/master-updated-badge', GetMasterUpdatedBadge::class)->name('master_updated_badge');
+
+Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
+
+// Families list under department page
+Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+
+Route::post('ingredients/parse', ParseIngredientsList::class)->name('ingredients.parse');
+
+Route::get('stock/{stock}/trade-unit-changes-impact', ValidateStockTradeUnitChanges::class)->name('stock.trade-unit-changes-impact');

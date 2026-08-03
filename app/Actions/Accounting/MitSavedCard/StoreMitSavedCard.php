@@ -27,11 +27,12 @@ class StoreMitSavedCard extends OrgAction
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'shop_id', $customer->shop_id);
-        data_set($modelData, 'ulid', Str::ulid());
+        data_set($modelData, 'ulid', (string) Str::ulid());
 
         $maxPriority = $customer->mitSavedCard()->where('state', MitSavedCardStateEnum::SUCCESS)->max('priority');
         data_set($modelData, 'priority', $maxPriority + 1);
 
+        /** @var MitSavedCard $savedCard */
         $savedCard = $customer->mitSavedCard()->create($modelData);
 
         $customer->refresh();
@@ -50,7 +51,11 @@ class StoreMitSavedCard extends OrgAction
     public function rules(): array
     {
         return [
-            'payment_account_shop_id' => ['required', 'integer', Rule::exists('payment_account_shops', 'id')->where('shop_id', $this->shop->id)],
+            'payment_account_shop_id' => [
+                'required',
+                'integer',
+                Rule::exists('payment_account_shop', 'id')->where('shop_id', $this->shop->id)
+            ],
         ];
     }
 

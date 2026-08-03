@@ -44,7 +44,7 @@ class StoreTransaction extends OrgAction
 
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
-        if ($this->strict) {
+        if ($this->strict && $historicAsset->asset->model_type == 'Product') {
             if (in_array($order->state, [
                 OrderStateEnum::CREATING,
                 OrderStateEnum::SUBMITTED
@@ -178,6 +178,7 @@ class StoreTransaction extends OrgAction
             'label'                   => ['sometimes', 'string', 'max:255'],
             'commission_amount'       => ['sometimes', 'numeric'],
             'is_gift'                 => ['sometimes', 'boolean'],
+            'is_follow_on'            => ['sometimes', 'boolean'],
             'marketplace_id'          => [
                 'sometimes',
                 Rule::unique('transactions', 'marketplace_id')->where(function ($query) {

@@ -17,8 +17,10 @@ use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
+use App\Models\Helpers\Currency;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
+use App\Models\Reviews\MasterAssetReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -31,11 +33,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -78,7 +82,6 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property numeric|null $cost_price_ratio
  * @property int|null $front_image_id
  * @property int|null $34_image_id
  * @property int|null $left_image_id
@@ -143,6 +146,11 @@ use Spatie\Translatable\HasTranslations;
  * @property HealthRankEnum|null $health_rank
  * @property bool|null $mismatch_with_seeder_detected
  * @property int|null $index_under_master_family
+ * @property bool $has_missing_child_description True when at least one linked product has a null or empty description
+ * @property array<array-key, mixed> $master_prices
+ * @property array<array-key, mixed> $master_rrps
+ * @property string|null $units_review
+ * @property numeric|null $effective_cost stock-weighted avg cost across organisations, group currency, per outer
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -167,8 +175,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
  * @property-read \App\Models\Masters\MasterVariant|null $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
- * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read LaravelCollection<int, Product> $products
+ * @property-read MasterAssetReviewStat|null $reviewStats
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
  * @property-read Media|null $sizeComparisonImage
@@ -194,6 +202,7 @@ use Spatie\Translatable\HasTranslations;
  */
 class MasterAsset extends Model implements Auditable, HasMedia
 {
+    use HasSearch;
     use SoftDeletes;
     use HasSlug;
     use HasHistory;
@@ -225,13 +234,17 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'web_images'              => 'array',
         'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
+        'master_prices'           => 'array',
+        'master_rrps'             => 'array',
     ];
 
     protected $attributes = [
-        'data'         => '{}',
-        'offers_data'  => '{}',
-        'web_images'   => '{}',
-        'tax_category' => '{}',
+        'data'          => '{}',
+        'offers_data'   => '{}',
+        'web_images'    => '{}',
+        'tax_category'  => '{}',
+        'master_prices' => '{}',
+        'master_rrps'   => '{}'
     ];
 
     public function generateTags(): array
@@ -279,6 +292,16 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
+    public function getPriceFromCurrency(Currency $currency): float
+    {
+        return data_get($this->master_prices, "$currency->code.value", 0);
+    }
+
+    public function getRrpFromCurrency(Currency $currency): float
+    {
+        return data_get($this->master_rrps, "$currency->code.value", 0);
+    }
+
     public function assets(): HasMany
     {
         return $this->hasMany(Asset::class, 'master_asset_id');
@@ -319,9 +342,9 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return $this->hasOne(MasterAssetStats::class);
     }
 
-    public function orderingIntervals(): HasOne
+    public function reviewStats(): HasOne
     {
-        return $this->hasOne(MasterAssetOrderingIntervals::class);
+        return $this->hasOne(MasterAssetReviewStat::class);
     }
 
     public function timeSeries(): HasMany
@@ -424,6 +447,15 @@ class MasterAsset extends Model implements Auditable, HasMedia
         })->get();
     }
 
+    public function getStockPackedInByTradeUnit(): array
+    {
+        return DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->whereIn('trade_unit_id', $this->tradeUnits->pluck('id'))
+            ->pluck('quantity', 'trade_unit_id')
+            ->toArray();
+    }
+
     public function getBrand(): ?Brand
     {
         return Brand::whereHas('tradeUnits', function ($query) {
@@ -434,6 +466,21 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function masterVariant(): BelongsTo
     {
         return $this->belongsTo(MasterVariant::class, 'master_variant_id');
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'             => (string)$this->id,
+            'group_id'       => $this->group_id,
+            'master_shop_id' => $this->master_shop_id,
+            'code'           => $this->code,
+            'name'           => (string)$this->name,
+            'description'    => (string)$this->description,
+            'state'          => $this->status ? 'active' : 'inactive',
+            'created_at'     => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }

@@ -69,6 +69,8 @@ Route::prefix("agents")->name("agents.")->group(
 Route::prefix("suppliers")->name("suppliers")->group(
     function () {
         Route::get('', IndexSuppliers::class)->name('.index');
+        Route::get('free', [IndexSuppliers::class, 'free'])->name('.free');
+        Route::get('in-agents', [IndexSuppliers::class, 'inAgents'])->name('.in_agents');
         Route::get('create', CreateSupplier::class)->name('.create');
         Route::get('export', ExportSuppliers::class)->name('.export');
 
@@ -94,6 +96,8 @@ Route::prefix("suppliers")->name("suppliers")->group(
 Route::prefix("supplier-products")->name("supplier_products.")->group(
     function () {
         Route::get('', IndexSupplierProducts::class)->name('index');
+        Route::get('free', [IndexSupplierProducts::class, 'free'])->name('free');
+        Route::get('in-agents', [IndexSupplierProducts::class, 'inAgents'])->name('in_agents');
 
         Route::get('/{supplierProduct}', ShowSupplierProduct::class)->name('show');
     }

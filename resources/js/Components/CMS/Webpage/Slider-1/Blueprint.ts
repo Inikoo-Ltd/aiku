@@ -28,11 +28,17 @@ export default {
 					key: ["slider_setting", "spaceBetween"],
 					type: "number",
 				},
+				{
+					label: "Transition Speed",
+					key: ['slider_setting',"speed"],
+					type: "number",
+					information: "Duration of one full slider loop in milliseconds (ms). Lower is faster. Defaults to 20000 when empty.",
+				},
 			],
 		},
 		{
 			name: "Images",
-			key: ["image",'properties'],
+			key: ["image", "properties"],
 			replaceForm: [
 				{
 					label: "Slide per View",

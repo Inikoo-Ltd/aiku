@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -46,6 +47,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Brand extends Model implements HasMedia
 {
+    use HasSearch;
     use InGroup;
     use HasSlug;
     use HasImage;
@@ -79,4 +81,15 @@ class Brand extends Model implements HasMedia
     {
         return $this->hasMany(BrandTimeSeries::class);
     }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'name'       => (string)$this->name,
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
 }

@@ -73,7 +73,18 @@ class ShowFooterWorkshop extends OrgAction
                 'domain'        => $website->domain,
                 'data'          => GetWebsiteWorkshopFooter::run($website),
                 'webBlockTypes' => WebBlockTypesResource::collection(
-                    $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'website')->get()
+                    $this
+                        ->organisation
+                        ->group
+                        ->webBlockTypes()
+                        ->where('fixed', false)
+                        ->where('scope', 'website')
+                        ->whereJsonContains('website_type', $website->shop->type)
+                        ->where(function ($q) use ($website) {
+                            $q->whereJsonContains('shop_availability', $website->shop->slug)
+                                ->orWhere('shop_availability', '[]');
+                        })
+                        ->get()
                 )
             ]
         );

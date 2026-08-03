@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Enums\UI\Fulfilment\StoredItemsInWarehouseTabsEnum;
 use App\Http\Resources\Fulfilment\ReturnStoredItemsResource;
@@ -56,6 +57,15 @@ class IndexStoredItems extends OrgAction
             });
         });
 
+        $storableFilter = AllowedFilter::callback('storable', function ($query, $value) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                $query->whereNotIn('stored_items.state', [
+                    StoredItemStateEnum::DISCONTINUING->value,
+                    StoredItemStateEnum::DISCONTINUED->value,
+                ]);
+            }
+        });
+
         return QueryBuilder::for(StoredItem::class)
             ->select(
                 'stored_items.id',
@@ -79,7 +89,7 @@ class IndexStoredItems extends OrgAction
                 }
             })
             ->allowedSorts(['reference', 'total_quantity', 'name', 'number_pallets', 'number_audits', 'pallet_reference'])
-            ->allowedFilters([$globalSearch, 'slug', 'state'])
+            ->allowedFilters([$globalSearch, $storableFilter, 'slug', 'state'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -116,8 +126,11 @@ class IndexStoredItems extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_pallets', label: __("Pallets"), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'total_quantity', label: __("Quantity"), canBeHidden: false, sortable: true, align: 'right');
+                ->column(key: 'number_audits', label: __("Audits"), canBeHidden: false, sortable: true, align: 'right');
+            if ($parent instanceof FulfilmentCustomer) {
+                $table->column(key: 'state_label', label: __('State'), canBeHidden: false);
+            }
+            $table->column(key: 'total_quantity', label: __("Quantity"), canBeHidden: false, sortable: true, align: 'right');
             if (class_basename($parent) == 'Group') {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'customer_name', label: __('Customer Name'), canBeHidden: false, sortable: true, searchable: true);
@@ -138,7 +151,7 @@ class IndexStoredItems extends OrgAction
         $subNavigation = [];
         $actions = [];
         $icon = ['fal', 'fa-narwhal'];
-        $title = __("Customer's SKUs");
+        $title = __("Customer's SKOs");
         $afterTitle = null;
         $iconRight = null;
 
@@ -151,7 +164,7 @@ class IndexStoredItems extends OrgAction
             ];
             $afterTitle = [
 
-                'label' => __("Customer's SKUs")
+                'label' => __("Customer's SKOs")
             ];
 
 
@@ -163,8 +176,8 @@ class IndexStoredItems extends OrgAction
                         $actions[] = [
                             'type' => 'button',
                             'style' => 'secondary',
-                            'tooltip' => __("Continue customer's SKUs audit"),
-                            'label' => __("Continue customer's SKUs audit"),
+                            'tooltip' => __("Continue customer's SKOs audit"),
+                            'label' => __("Continue customer's SKOs audit"),
                             'route' => [
                                 'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.show',
                                 'parameters' => array_merge($request->route()->originalParameters(), ['storedItemAudit' => $openStoredItemAudit->slug])
@@ -173,8 +186,8 @@ class IndexStoredItems extends OrgAction
                     } else {
                         $actions[] = [
                             'type' => 'button',
-                            'tooltip' => __("Start customer's SKUs audit"),
-                            'label' => __("Start customer's SKUs audit"),
+                            'tooltip' => __("Start customer's SKOs audit"),
+                            'label' => __("Start customer's SKOs audit"),
                             'route' => [
                                 'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -187,8 +200,8 @@ class IndexStoredItems extends OrgAction
                 $actions[] = [
                     'type' => 'button',
                     'style' => 'create',
-                    'tooltip' => __("Create SKU"),
-                    'label' => __("Create SKU"),
+                    'tooltip' => __("Create SKO"),
+                    'label' => __("Create SKO"),
                     'key' => 'create_sku',
                     'route' => [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.create',
@@ -199,8 +212,8 @@ class IndexStoredItems extends OrgAction
                 $actions[] = [
                     'type' => 'button',
                     'style' => 'edit',
-                    'tooltip' => __("Bulk Edit SKU"),
-                    'label' => __("Bulk Edit SKU"),
+                    'tooltip' => __("Bulk Edit SKO"),
+                    'label' => __("Bulk Edit SKO"),
                     'key' => 'edit_sku',
                     'route' => [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.create',
@@ -217,7 +230,7 @@ class IndexStoredItems extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title' => __("Customer's SKUs"),
+                'title' => __("Customer's SKOs"),
                 'pageHead' => [
                     'title' => $title,
                     'afterTitle' => $afterTitle,
@@ -233,7 +246,7 @@ class IndexStoredItems extends OrgAction
 
                 'bulk_edit_upload' => [
                     'title' => [
-                        'label' => __("Bulk Edit Customer's SKU"),
+                        'label' => __("Bulk Edit Customer's SKO"),
                         'information' => __('The list of column file: stored_items')
                     ],
                     'progressDescription'   => __('Editing stored item'),
@@ -242,15 +255,15 @@ class IndexStoredItems extends OrgAction
 
                 StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value => $this->tab == StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value ?
                     fn () => StoredItemsInWarehouseResource::collection($storedItems)
-                    : Inertia::lazy(fn () => StoredItemsInWarehouseResource::collection($storedItems)),
+                    : Inertia::optional(fn () => StoredItemsInWarehouseResource::collection($storedItems)),
 
                 StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value => $this->tab == StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value ?
                     fn () => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value))
-                    : Inertia::lazy(fn () => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value))),
+                    : Inertia::optional(fn () => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value))),
 
                 StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value => $this->tab == StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value ?
                     fn () => StoredItemAuditsResource::collection(IndexStoredItemAudits::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value))
-                    : Inertia::lazy(fn () => StoredItemAuditsResource::collection(IndexStoredItemAudits::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value))),
+                    : Inertia::optional(fn () => StoredItemAuditsResource::collection(IndexStoredItemAudits::run(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS->value))),
 
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value))
@@ -298,7 +311,7 @@ class IndexStoredItems extends OrgAction
                     'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __("Customer's SKUs"),
+                        'label' => __("Customer's SKOs"),
                         'icon' => 'fal fa-bars',
                     ],
 
@@ -327,7 +340,7 @@ class IndexStoredItems extends OrgAction
                                 'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.index',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => __("Customer's SKUs"),
+                            'label' => __("Customer's SKOs"),
                             'icon' => 'fal fa-bars',
                         ],
 

@@ -16,6 +16,7 @@ use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\OfferCampaign;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -29,6 +30,17 @@ class StoreOfferCampaign extends OrgAction
     {
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
+
+        if (Arr::get($modelData, 'type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)) {
+            data_set(
+                $modelData,
+                'data',
+                [
+                    'interval' => 30
+                ]
+            );
+        }
+
         /** @var OfferCampaign $offerCampaign */
         $offerCampaign = $shop->offerCampaigns()->create($modelData);
         $offerCampaign->stats()->create();

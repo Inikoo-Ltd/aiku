@@ -186,7 +186,7 @@ const selectedCountryCode = ref('')
 
     <!-- Field: Country -->
     <div class="sm:col-span-6">
-        <label for="address" class="block text-sm font-medium text-gray-700" >
+        <label for="address" class="block text-sm font-medium text-gray-700 mb-2" >
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{ trans("Country") }}
         </label >
@@ -203,7 +203,7 @@ const selectedCountryCode = ref('')
 
     <!-- Field: Tax Number -->
     <div class="sm:col-span-6">
-        <label for="tax_number" class="block text-sm font-medium text-gray-700" >
+        <label for="tax_number" class="mb-2 block text-sm font-medium text-gray-700" >
             <FontAwesomeIcon v-if="registration_settings.tax_number_is_required" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{ trans("Tax number") }}
         </label >
@@ -234,7 +234,7 @@ const selectedCountryCode = ref('')
         
         <div class="mt-2" :class="form.errors?.[`poll_replies.${idx}`] ? 'errorShake' : ''">
             <Select
-                v-if="pollReply.type === 'option' || pollReply.type === 'Multiple Choice' "
+                v-if="pollReply.type_value === 'option' || pollReply.type === 'Multiple Choice' "
                 v-model="form.poll_replies[idx].answer"
                 @update:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
                 :options="props.polls[idx].options"

@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Ordering\SalesChannel;
 use App\Models\Ordering\SalesChannelTimeSeries;
 use App\Traits\BuildsInvoiceTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,6 +22,7 @@ class ProcessSalesChannelTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -31,8 +33,7 @@ class ProcessSalesChannelTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $salesChannelId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $salesChannel = SalesChannel::find($salesChannelId);
 
@@ -54,6 +55,7 @@ class ProcessSalesChannelTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(SalesChannelTimeSeries $timeSeries, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.sales_channel_id', $timeSeries->sales_channel_id)
@@ -67,13 +69,11 @@ class ProcessSalesChannelTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'sales_channel_time_series_id' => $timeSeries->id,
-                    'period'                       => $period,
-                    'frequency'                    => $timeSeries->frequency->singleLetter()
-                ],
-                [
+            $rows[] = [
+                'sales_channel_time_series_id' => $timeSeries->id,
+                'period'                       => $period,
+                'frequency'                    => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
                     'sales_external'              => $result->sales_external,
@@ -86,7 +86,43 @@ class ProcessSalesChannelTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
                 ]
-            );
+            ];
+
+            $processedPeriods[] = $period;
         }
+
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['sales_channel_time_series_id', 'period', 'frequency']);
+    }
+
+    protected function periodsWithoutInvoicesRows(SalesChannelTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
+    {
+        $rows = [];
+
+        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $rows[] = [
+                'sales_channel_time_series_id' => $timeSeries->id,
+                'period'                       => $periodData['period'],
+                'frequency'                    => $timeSeries->frequency->singleLetter(),
+                ...[
+                    'from'                        => $periodData['from'],
+                    'to'                          => $periodData['to'],
+                    'sales_external'              => 0,
+                    'sales_org_currency_external' => 0,
+                    'sales_grp_currency_external' => 0,
+                    'lost_revenue'                => 0,
+                    'lost_revenue_org_currency'   => 0,
+                    'lost_revenue_grp_currency'   => 0,
+                    'customers_invoiced'          => 0,
+                    'invoices'                    => 0,
+                    'refunds'                     => 0,
+                ]
+            ];
+        }
+
+        return $rows;
     }
 }

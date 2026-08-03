@@ -114,7 +114,10 @@ console.log('ssss',props)
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image_thumbnail)="{ item: collection }">
             <div class="flex justify-center">
-                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image v-if="collection['image_thumbnail']" :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow-lg border" />
+                <div v-else v-tooltip="ctrans('No image found')" class="w-6 xbg-gray-100 text-gray-500 aspect-square rounded-full shadow flex items-center justify-center">
+                    -
+                </div>
             </div>
         </template>
         <template #cell(state_icon)="{ item: collection }">
@@ -122,7 +125,7 @@ console.log('ssss',props)
         </template>
         <template #cell(code)="{ item: collection }">
             <div class="flex items-center gap-2">
-                <Link :href="collectionRoute(collection) as string" class="primaryLink">
+                <Link :href="(collectionRoute(collection) as string)" class="primaryLink">
                     {{ collection["code"] }}
                 </Link>
 

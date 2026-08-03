@@ -16,6 +16,8 @@ use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Http\Resources\Goods\StockFamilyResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockFamilyTimeSeriesResource;
+use App\Actions\Traits\UI\WithBucketNavigation;
+use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -26,6 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgStockFamily extends OrgAction
 {
+    use WithBucketNavigation;
+
     use WithInventoryAuthorisation;
 
     public function handle(OrgStockFamily $orgStockFamily): OrgStockFamily
@@ -55,18 +59,18 @@ class ShowOrgStockFamily extends OrgAction
         return [
             [
                 'isAnchor' => true,
-                'label'    => __('SKU Family'),
+                'label'    => __('SKO Family'),
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
                     'parameters' => $routeParameters,
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-boxes-alt'],
-                    'tooltip' => __('SKU Family'),
+                    'tooltip' => __('SKO Family'),
                 ],
             ],
             [
-                'label'    => __('SKUs'),
+                'label'    => __('SKOs'),
                 'number'   => $orgStockFamily->stats->number_org_stocks ?? 0,
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
@@ -74,7 +78,18 @@ class ShowOrgStockFamily extends OrgAction
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-box'],
-                    'tooltip' => __('SKUs'),
+                    'tooltip' => __('SKOs'),
+                ],
+            ],
+            [
+                'label'    => __('Invoices'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.invoices',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-file-invoice-dollar'],
+                    'tooltip' => __('Invoices'),
                 ],
             ],
         ];
@@ -85,7 +100,7 @@ class ShowOrgStockFamily extends OrgAction
         return Inertia::render(
             'Org/Inventory/OrgStockFamily',
             [
-                'title'       => __('stock family'),
+                'title'       => __('stock family') . ' ' . $orgStockFamily->code,
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($orgStockFamily, $request),
@@ -110,19 +125,19 @@ class ShowOrgStockFamily extends OrgAction
 
                 OrgStockFamilyTabsEnum::SHOWCASE->value => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)
-                    : Inertia::lazy(fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)),
+                    : Inertia::optional(fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)),
 
                 OrgStockFamilyTabsEnum::SALES->value => $this->tab == OrgStockFamilyTabsEnum::SALES->value ?
                     fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))),
 
                 OrgStockFamilyTabsEnum::HISTORY->value => $this->tab == OrgStockFamilyTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))),
 
                 'salesData' => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)
-                    : Inertia::lazy(fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)),
+                    : Inertia::optional(fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: OrgStockFamilyTabsEnum::HISTORY->value))
          ->table(IndexOrgStockFamilyTimeSeries::make()->tableStructure(prefix: OrgStockFamilyTabsEnum::SALES->value));
@@ -149,7 +164,7 @@ class ShowOrgStockFamily extends OrgAction
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
                                 'parameters' => Arr::except($routeParameters, ['orgStockFamily']),
                             ],
-                            'label' => __('SKUs families'),
+                            'label' => __('SKOs families'),
                             'icon'  => 'fal fa-bars',
                         ],
                         'model' => [
@@ -169,14 +184,44 @@ class ShowOrgStockFamily extends OrgAction
 
     public function getPrevious(OrgStockFamily $orgStockFamily, ActionRequest $request): ?array
     {
-        $previous = OrgStockFamily::where('code', '<', $orgStockFamily->code)->orderBy('code', 'desc')->first();
+        $previous = $this->getOrgStockFamilyNeighbour($orgStockFamily, $request, forward: false);
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
+    private function getOrgStockFamilyNeighbour(OrgStockFamily $orgStockFamily, ActionRequest $request, bool $forward): ?OrgStockFamily
+    {
+        $query = OrgStockFamily::query()
+            ->where('org_stock_families.organisation_id', $orgStockFamily->organisation_id);
+
+        $state = match ($request->input('bucket')) {
+            'active'        => OrgStockFamilyStateEnum::ACTIVE,
+            'discontinuing' => OrgStockFamilyStateEnum::DISCONTINUING,
+            'discontinued'  => OrgStockFamilyStateEnum::DISCONTINUED,
+            'in_process'    => OrgStockFamilyStateEnum::IN_PROCESS,
+            default         => null,
+        };
+
+        if ($state) {
+            $query->where('org_stock_families.state', $state);
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $orgStockFamily,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'code' => 'org_stock_families.code',
+                'name' => 'org_stock_families.name',
+            ],
+            defaultSort: ['org_stock_families.code', false],
+            forward: $forward
+        );
+    }
+
     public function getNext(OrgStockFamily $orgStockFamily, ActionRequest $request): ?array
     {
-        $next = OrgStockFamily::where('code', '>', $orgStockFamily->code)->orderBy('code')->first();
+        $next = $this->getOrgStockFamilyNeighbour($orgStockFamily, $request, forward: true);
 
         return $this->getNavigation($next, $request->route()->getName());
     }

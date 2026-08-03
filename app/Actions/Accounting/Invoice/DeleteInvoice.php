@@ -69,7 +69,7 @@ class DeleteInvoice extends OrgAction
 
         UpdateCustomerLastInvoicedDate::run($invoice->customer);
 
-        CustomerHydrateClv::dispatch($invoice->customer_id)->delay($this->hydratorsDelay);
+        CustomerHydrateClv::dispatch($invoice->customer_id)->delay(5);
 
         return $invoice;
     }
@@ -77,7 +77,7 @@ class DeleteInvoice extends OrgAction
     public function htmlResponse(Invoice $invoice): RedirectResponse
     {
         if ($invoice->order) {
-            return Redirect::route('grp.helpers.redirect_order', [
+            return Redirect::route('grp.majordomo.redirect_order', [
                 $invoice->order->id
             ]);
         }

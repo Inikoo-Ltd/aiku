@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-06-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -24,10 +24,9 @@ class GetSKUs extends RetinaApiAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): LengthAwarePaginator
     {
-
         $queryBuilder = QueryBuilder::for(PalletStoredItem::class)
-        ->leftJoin('stored_items', 'pallet_stored_items.stored_item_id', '=', 'stored_items.id')
-        ->leftJoin('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id');
+            ->leftJoin('stored_items', 'pallet_stored_items.stored_item_id', '=', 'stored_items.id')
+            ->leftJoin('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id');
 
         $queryBuilder->where('pallets.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
 
@@ -35,7 +34,6 @@ class GetSKUs extends RetinaApiAction
         if (Arr::get($modelData, 'reference')) {
             $this->getReferenceSearch($queryBuilder, Arr::get($modelData, 'reference'));
         }
-
 
 
         $queryBuilder
@@ -66,6 +64,7 @@ class GetSKUs extends RetinaApiAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromFulfilment($request);
+
         return $this->handle($this->customerSalesChannel, $this->validateAttributes());
     }
 
@@ -79,9 +78,9 @@ class GetSKUs extends RetinaApiAction
     {
         return [
             'reference' => ['nullable', 'string'],
-            'page' => ['nullable', 'integer'],
-            'per_page' => ['nullable', 'integer'],
-            'sort' => ['nullable', 'string'],
+            'page'      => ['nullable', 'integer'],
+            'per_page'  => ['nullable', 'integer'],
+            'sort'      => ['nullable', 'string'],
         ];
     }
 
@@ -89,10 +88,10 @@ class GetSKUs extends RetinaApiAction
     {
         $request->merge(
             [
-                'reference' => $request->query('reference', null),
-                'page' => $request->query('page', 1),
-                'per_page' => $request->query('per_page', 50),
-                'sort' => $request->query('sort', 'id'),
+                'reference' => $request->query('reference'),
+                'page'      => $request->query('page', 1),
+                'per_page'  => $request->query('per_page', 50),
+                'sort'      => $request->query('sort', 'reference'),
             ]
         );
     }

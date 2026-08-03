@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 12-06-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -33,11 +33,12 @@ class DeleteCollection extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Collection $collection, bool $forceDelete = false): Collection
+    public function handle(Collection $collection, bool $forceDelete = false, ?Command $command = null): Collection
     {
         if ($forceDelete) {
             DB::table('model_has_collections')->where('collection_id', $collection->id)->delete();
             DB::table('collection_has_models')->where('collection_id', $collection->id)->delete();
+
             DB::table('model_has_media')->where('model_type', 'Collection')->where('model_id', $collection->id)->delete();
 
             if ($collection->stats) {
@@ -48,16 +49,13 @@ class DeleteCollection extends OrgAction
                 $collection->orderingStats->delete();
             }
 
-            if ($collection->orderingIntervals) {
-                $collection->orderingIntervals->delete();
-            }
-
             $collection->forceDelete();
         } else {
             $collection->delete();
         }
 
         if ($collection->webpage) {
+            $command?->line('Deleting webpage '.$collection->webpage->url);
             DeleteWebpage::make()->action(webpage: $collection->webpage, forceDelete: true);
         }
 
@@ -76,11 +74,11 @@ class DeleteCollection extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Collection $collection, bool $forceDelete = false): Collection
+    public function action(Collection $collection, bool $forceDelete = false, ?Command $command = null): Collection
     {
         $this->collection = $collection;
 
-        return $this->handle($collection, $forceDelete);
+        return $this->handle($collection, $forceDelete, $command);
     }
 
     /**
@@ -132,6 +130,7 @@ class DeleteCollection extends OrgAction
     {
         $collection = Collection::where('slug', $command->argument('collection'))->firstOrFail();
         $this->action($collection, $command->option('force_delete'));
+
         return 0;
     }
 

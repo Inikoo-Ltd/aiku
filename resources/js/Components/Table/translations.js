@@ -1,3 +1,5 @@
+import { trans } from "laravel-vue-i18n"
+
 const translationsObject = {
     translations: {
         next: "Next",
@@ -13,7 +15,15 @@ const translationsObject = {
 export default translationsObject.translations;
 
 export function getTranslations() {
-    return translationsObject.translations;
+    return {
+        next: trans("Next"),
+        no_results_found: trans("No results found"),
+        of: trans("of"),
+        per_page: trans("per page"),
+        previous: trans("Previous"),
+        results: trans("results"),
+        to: trans("to")
+    };
 }
 
 export function setTranslation(key, value) {

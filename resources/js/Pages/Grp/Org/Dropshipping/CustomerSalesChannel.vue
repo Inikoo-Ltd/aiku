@@ -32,7 +32,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    showcase: {
+    showcase?: {
         stats: {
             name: string
             number_orders: number
@@ -43,7 +43,7 @@ const props = defineProps<{
         customer_sales_channel: {}
         platform_user: {}
     }
-    logs: {}
+    logs?: {}
 }>()
 
 let currentTab = ref(props.tabs.current)

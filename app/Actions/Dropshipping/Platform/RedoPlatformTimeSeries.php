@@ -7,6 +7,7 @@
 
 namespace App\Actions\Dropshipping\Platform;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -22,7 +23,7 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long-slave';
+    public string $jobQueue = 'long-low-priority';
     public string $commandSignature = 'platforms:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -76,10 +77,12 @@ class RedoPlatformTimeSeries implements ShouldBeUnique
             }
 
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $resolvedFrom, $resolvedTo);
+
                 if ($async) {
-                    ProcessPlatformTimeSeriesRecords::dispatch($platform->id, $shopId, $frequency, $resolvedFrom, $resolvedTo);
+                    ProcessPlatformTimeSeriesRecords::dispatch($platform->id, $shopId, $frequency, $periodFrom, $periodTo);
                 } else {
-                    ProcessPlatformTimeSeriesRecords::run($platform->id, $shopId, $frequency, $resolvedFrom, $resolvedTo);
+                    ProcessPlatformTimeSeriesRecords::run($platform->id, $shopId, $frequency, $periodFrom, $periodTo);
                 }
             }
         }

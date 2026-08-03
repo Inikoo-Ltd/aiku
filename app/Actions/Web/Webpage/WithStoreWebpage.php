@@ -72,7 +72,7 @@ trait WithStoreWebpage
     protected function createWebBlockFromSavedTemplate(Webpage $webpage, WebBlockTemplateEnum $webBlockTemplate, string $webBlockCode): ?ModelHasWebBlocks
     {
         // Checks whether in WebBlockTemplateEnum or not. This function is only for web block that has templates from website
-        if (!in_array($webBlockCode, WebBlockTemplateEnum::allTemplateCodes())) {
+        if (!in_array($webBlockCode, WebBlockTemplateEnum::allTemplateCodesFiltered())) {
             return null;
         }
 
@@ -127,7 +127,7 @@ trait WithStoreWebpage
     protected function createDescriptionBlockFromSavedTemplate(Webpage $webpage, WebBlockTemplateEnum $webBlockTemplate, string $webBlockCode): ?ModelHasWebBlocks
     {
         // Checks whether in WebBlockTemplateEnum or not. This function is only for web block that has templates from website
-        if (!in_array($webBlockCode, WebBlockTemplateEnum::allTemplateCodes())) {
+        if (!in_array($webBlockCode, WebBlockTemplateEnum::allTemplateCodesFiltered())) {
             return null;
         }
 

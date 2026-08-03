@@ -46,7 +46,6 @@ class StoreAbnormalOrgStock extends OrgAction
             /** @var OrgStock $orgStock */
             $orgStock = $organisation->orgStocks()->create($modelData);
             $orgStock->stats()->create();
-            $orgStock->intervals()->create();
 
             if ($parent instanceof OrgStockFamily) {
                 $orgStock->orgStockFamily()->associate($parent);

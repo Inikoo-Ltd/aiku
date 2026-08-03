@@ -28,7 +28,7 @@ const props = defineProps<{
         navigation: object;
     },
     guests?: object
-    history: object
+    history?: object
     showcase?: {}
 
 }>()

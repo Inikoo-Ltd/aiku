@@ -331,7 +331,7 @@ class IndexProspects extends OrgAction
             ProspectsTabsEnum::PROSPECTS->value =>
                 $this->tab == ProspectsTabsEnum::PROSPECTS->value
                     ? fn () => ProspectsResource::collection($prospects)
-                    : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
+                    : Inertia::optional(fn () => ProspectsResource::collection($prospects)),
 
             ProspectsTabsEnum::OPT_IN->value =>
                 $this->tab == ProspectsTabsEnum::OPT_IN->value
@@ -342,7 +342,7 @@ class IndexProspects extends OrgAction
                             scope: 'opt_in'
                         )
                     )
-                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                    : Inertia::optional(fn () => ProspectsResource::collection(
                         IndexProspects::run(
                             parent: $this->parent,
                             prefix: ProspectsTabsEnum::OPT_IN->value,
@@ -359,7 +359,7 @@ class IndexProspects extends OrgAction
                             scope: 'opt_out'
                         )
                     )
-                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                    : Inertia::optional(fn () => ProspectsResource::collection(
                         IndexProspects::run(
                             parent: $this->parent,
                             prefix: ProspectsTabsEnum::OPT_OUT->value,
@@ -376,7 +376,7 @@ class IndexProspects extends OrgAction
                             scope: 'contacted'
                         )
                     )
-                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                    : Inertia::optional(fn () => ProspectsResource::collection(
                         IndexProspects::run(
                             parent: $this->parent,
                             prefix: ProspectsTabsEnum::CONTACTED->value,
@@ -393,7 +393,7 @@ class IndexProspects extends OrgAction
                             scope: 'fail'
                         )
                     )
-                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                    : Inertia::optional(fn () => ProspectsResource::collection(
                         IndexProspects::run(
                             parent: $this->parent,
                             prefix: ProspectsTabsEnum::FAILED->value,
@@ -410,7 +410,7 @@ class IndexProspects extends OrgAction
                             scope: 'success'
                         )
                     )
-                    : Inertia::lazy(fn () => ProspectsResource::collection(
+                    : Inertia::optional(fn () => ProspectsResource::collection(
                         IndexProspects::run(
                             parent: $this->parent,
                             prefix: ProspectsTabsEnum::SUCCESS->value,
@@ -426,7 +426,7 @@ class IndexProspects extends OrgAction
                             prefix: ProspectsTabsEnum::HISTORY->value
                         )
                     )
-                    : Inertia::lazy(fn () => HistoryResource::collection(
+                    : Inertia::optional(fn () => HistoryResource::collection(
                         IndexHistory::run(
                             model: Prospect::class,
                             prefix: ProspectsTabsEnum::HISTORY->value

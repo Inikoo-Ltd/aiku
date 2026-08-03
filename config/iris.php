@@ -26,6 +26,9 @@ return [
         'webpage'               => [
             'ttl'    => env('IRIS_WEBPAGE_CACHE_TTL', 21600), // 6 hours in seconds
             'prefix' => env('IRIS_WEBPAGE_CACHE_PREFIX', 'iris_webpage_cache'),
+        ],
+        'product_trends'        => [
+            'ttl' => env('IRIS_PRODUCT_TRENDS_CACHE_TTL', 86400), // 24 hours in seconds
         ]
     ],
 ];

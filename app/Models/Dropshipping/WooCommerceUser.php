@@ -12,7 +12,6 @@ use App\Actions\Dropshipping\WooCommerce\Traits\WithWooCommerceApiRequest;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\DebugWebhooks;
 use App\Models\Ordering\Order;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
@@ -46,7 +45,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property WebUserAuthTypeEnum $auth_type
  * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
- * @property-read \Illuminate\Database\Eloquent\Collection<int, DebugWebhooks> $debugWebhooks
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\DebugWebhooks> $debugWebhooks
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation

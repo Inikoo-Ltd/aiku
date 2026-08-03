@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Catalogue\Concerns\CanCloneImages;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
+    use CanCloneImages;
 
     public string $jobQueue = 'urgent';
 
@@ -50,9 +52,10 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
         }
 
 
+        $this->dedupeAttachedImages($masterAsset);
         $masterAsset->images()->sync($images);
         $masterAsset->update([
-            'bucket_images'            => count($images) > 0 || !empty($product->video_url),
+            'bucket_images'            => count($images) > 0 || !empty($tradeUnit->video_url),
             'image_id'                 => $tradeUnit->image_id,
             'front_image_id'           => $tradeUnit->front_image_id,
             '34_image_id'              => $tradeUnit->{'34_image_id'},

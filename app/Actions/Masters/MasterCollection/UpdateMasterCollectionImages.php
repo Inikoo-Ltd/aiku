@@ -10,14 +10,14 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\UpdateCollectionImages;
-use App\Actions\Concerns\CanUpdateImages;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Helpers\CanUpdateImages;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterCollectionImages extends GrpAction
+class UpdateMasterCollectionImages extends OrgAction
 {
     use WithActionUpdate;
     use CanUpdateImages;
@@ -58,7 +58,7 @@ class UpdateMasterCollectionImages extends GrpAction
 
     public function asController(MasterCollection $masterCollection, ActionRequest $request): void
     {
-        $this->initialisation($masterCollection->group, $request);
+        $this->initialisationFromGroup($masterCollection->group, $request);
 
         $this->handle($masterCollection, $this->validatedData, true);
     }

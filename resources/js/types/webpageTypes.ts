@@ -79,6 +79,7 @@ export interface Data {
 }
 
 export interface FieldValue {
+  id: string
   image: any
   button?: string
   headline?: string

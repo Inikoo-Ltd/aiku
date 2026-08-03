@@ -17,7 +17,7 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     tabs: TSTabs
-    showcase: {}
+    showcase?: {}
 
     
 }>()

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterProductCategory;
@@ -19,11 +19,11 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetTakenTradeUnits extends GrpAction
+class GetTakenTradeUnits extends OrgAction
 {
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisationFromGroup($masterProductCategory->group, $request);
 
         return $this->handle(parent: $masterProductCategory);
     }

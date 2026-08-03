@@ -48,7 +48,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\Comms\Email|null $email
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\Comms\EmailBulkRunIntervals|null $intervals
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailBulkRunRecipient> $recipients
@@ -108,11 +107,6 @@ class EmailBulkRun extends Model
         return $this->hasOne(EmailBulkRunStats::class);
     }
 
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(EmailBulkRunIntervals::class);
-    }
-
     public function dispatchedEmails(): BelongsToMany
     {
         return $this->belongsToMany(DispatchedEmail::class, 'email_bulk_run_has_dispatched_emails');
@@ -126,6 +120,11 @@ class EmailBulkRun extends Model
     public function recipients(): HasMany
     {
         return $this->hasMany(EmailBulkRunRecipient::class);
+    }
+
+    public function requiresUnsubscribeLink(): bool
+    {
+        return $this->outbox->code->requiresUnsubscribeLink();
     }
 
     public function sender(): string

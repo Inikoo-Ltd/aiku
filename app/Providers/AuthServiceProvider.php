@@ -12,9 +12,13 @@ use App\Extensions\CaseInsensitiveEloquentUserProvider;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\SysAdmin\User;
+use App\Actions\SysAdmin\UI\Auth\ProcessSuccessfulLogin;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
+use Laravel\Passkeys\Passkeys;
+use Laravel\Passport\Passport;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -23,9 +27,21 @@ class AuthServiceProvider extends ServiceProvider
     ];
 
 
+    public function register(): void
+    {
+        Passkeys::useUserModel(User::class);
+        Passkeys::ignoreRoutes();
+        Passkeys::authorizeLoginUsing(fn ($request, User $user) => $user->status);
+        $this->app->bind(PasskeyLoginResponse::class, ProcessSuccessfulLogin::class);
+    }
+
     public function boot(): void
     {
         $this->registerPolicies();
+
+        Passport::authorizationView(function ($parameters) {
+            return view('mcp.authorize', $parameters);
+        });
 
         Auth::provider('case-insensitive-eloquent', function ($app, array $config) {
             return new CaseInsensitiveEloquentUserProvider($app['hash'], $config['model']);
@@ -48,7 +64,7 @@ class AuthServiceProvider extends ServiceProvider
                 return ShopifyUser::find($id);
             }
 
-            return false;
+            return null;
         });
     }
 }

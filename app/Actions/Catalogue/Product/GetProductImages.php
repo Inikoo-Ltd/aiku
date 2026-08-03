@@ -48,6 +48,14 @@ class GetProductImages
                     'media'       => ''
                 ],
             ],
+            'update_image_alt_route' => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.product.images.update_image_alt',
+                'parameters' => [
+                    'product' => $product->id,
+                    'media'   => ''
+                ],
+            ],
             'images'              => ImagesResource::collection(IndexProductImages::run($product))->resolve(),
         ];
     }

@@ -17,8 +17,8 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
 {
     public function __construct(
         protected Organisation $parent,
-        protected string $startDate,
-        protected string $endDate,
+        protected ?string $startDate = null,
+        protected ?string $endDate = null,
     ) {
     }
 

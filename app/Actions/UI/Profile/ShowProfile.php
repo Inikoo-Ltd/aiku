@@ -78,15 +78,15 @@ class ShowProfile extends OrgAction
 
                 ProfileTabsEnum::DASHBOARD->value => $this->tab == ProfileTabsEnum::DASHBOARD->value ?
                     fn () => GetProfileShowcase::run($user)
-                    : Inertia::lazy(fn () => GetProfileShowcase::run($user)),
+                    : Inertia::optional(fn () => GetProfileShowcase::run($user)),
 
                 ProfileTabsEnum::TIMESHEETS->value => $this->tab == ProfileTabsEnum::TIMESHEETS->value ?
                     fn () => TimesheetsResource::collection(IndexTimesheets::run($parent, ProfileTabsEnum::TIMESHEETS->value))
-                    : Inertia::lazy(fn () => TimesheetsResource::collection(IndexTimesheets::run($parent, ProfileTabsEnum::TIMESHEETS->value))),
+                    : Inertia::optional(fn () => TimesheetsResource::collection(IndexTimesheets::run($parent, ProfileTabsEnum::TIMESHEETS->value))),
 
                 ProfileTabsEnum::HISTORY->value => $this->tab == ProfileTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($user, ProfileTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($user, ProfileTabsEnum::HISTORY->value))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($user, ProfileTabsEnum::HISTORY->value))),
 
 
 

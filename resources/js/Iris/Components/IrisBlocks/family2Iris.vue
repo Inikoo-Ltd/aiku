@@ -1,240 +1,528 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject } from "vue"
-import { get, isPlainObject } from "lodash-es"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import { getStyles } from "@/Composables/styles"
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 
 import Image from "@common/Components/Image.vue"
-import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+import { getStyles } from "@/Composables/styles"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faImage } from "@far"
 import { getBestOffer } from "@/Composables/useOffers"
+import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 
-import { faChevronCircleLeft, faChevronCircleRight } from "@far"
+interface ImageFormats {
+	original?: string
+	avif?: string
+	webp?: string
+}
 
-import { Swiper, SwiperSlide } from "swiper/vue"
-import { Navigation } from "swiper/modules"
+interface FamilyImage {
+	original: ImageFormats
+	srcset?: ImageFormats
+	alt?: string
+}
 
-import "swiper/css"
-import "swiper/css/navigation"
+interface FamilyData {
+	name?: string
+	description?: string
+	description_image?: Record<string, FamilyImage>
+	offers_data: object
+}
 
-library.add(faChevronCircleLeft, faChevronCircleRight)
+interface FieldValue {
+	id?: string | number
+	family?: FamilyData
+	container?: {
+		properties?: Record<string, unknown>
+	}
+}
+
+type ScreenType = "mobile" | "tablet" | "desktop"
 
 const props = defineProps<{
-  fieldValue: any
-  screenType: "mobile" | "tablet" | "desktop"
-  indexBlock: number
+	fieldValue: FieldValue
+	screenType: ScreenType
+	indexBlock: number
 }>()
 
-const layout: any = inject("layout", {})
-
-const showImage = computed(() => props.screenType !== "mobile")
-
-const offersData = computed(() => props.fieldValue?.family?.offers_data)
-const bestOffer = computed(() => getBestOffer(offersData.value))
-
-const showTriggers = computed(() => {
-  if (!bestOffer.value) return false
-  return (
-    !(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) &&
-    bestOffer.value.type === "Category Quantity Ordered Order Interval"
-  )
-})
+const layout = inject<Record<string, any>>("layout", {})
 
 const cleanedDescription = computed(() => {
-  const html = props.fieldValue?.family?.description || ""
-  return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+	const html = props.fieldValue?.family?.description || ""
+
+	return html
+		.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+		.replace(/<img\b(?![^>]*\bloading=)/gi, '<img loading="lazy" decoding="async"')
 })
 
-const columnPosition = computed(() => {
-  const raw = get(props.fieldValue, ["column_position"])
-  if (!isPlainObject(raw)) return raw
-  return raw?.[props.screenType] ?? raw?.desktop ?? "Image-right"
+const images = computed<FamilyImage[]>(() => {
+	const data = props.fieldValue?.family?.description_image
+
+	if (!data) return []
+
+	return Object.values(data).filter((item) => item && item.original)
 })
 
-const isImageLeft = computed(() => columnPosition.value === "Image-right")
+const hasImage = (index: number) => {
+	return Boolean(images.value?.[index]?.original)
+}
 
-const imageOrder = computed(() => (isImageLeft.value ? "order-1" : "order-2"))
-const textOrder = computed(() => (isImageLeft.value ? "order-2" : "order-1"))
-
-const images = computed(() => {
-  const data = props.fieldValue?.family?.description_image
-
-  if (!data) return []
-
-  return Object.values(data)
-    .map((item: any) => item )
-    .filter(Boolean)
+const bestOffer = computed(() => {
+	return getBestOffer(props.fieldValue?.family?.offers_data)
 })
 
-console.log(props)
+const isLcpBlock = computed(() => Number(props.indexBlock) === 0)
+
+const secondaryImageAttributes = computed(() =>
+	isLcpBlock.value
+		? { loading: "eager" as const, decoding: "async" as const }
+		: { loading: "lazy" as const, decoding: "async" as const }
+)
+
+const descriptionBoxRef = ref<HTMLElement | null>(null)
+const descriptionBodyRef = ref<HTMLElement | null>(null)
+const imagesRef = ref<HTMLElement | null>(null)
+const offersRef = ref<HTMLElement | null>(null)
+const offerBadgesRef = ref<HTMLElement | null>(null)
+const titleRef = ref<HTMLElement | null>(null)
+const titleTextRef = ref<HTMLElement | null>(null)
+const truncatedTitleRef = ref<HTMLElement | null>(null)
+const actionsRef = ref<HTMLElement | null>(null)
+const isTitleTruncated = ref(false)
+const isTitleSingleLine = ref(true)
+const expanded = ref(false)
+const showReadMore = ref(false)
+const collapsedHeight = ref(0)
+const titleWidth = ref(0)
+let resizeObserver: ResizeObserver | null = null
+
+const TITLE_OFFERS_GAP = 16
+const MIN_TITLE_WIDTH = 150
+const TITLE_ROW_MIN_SCREEN_WIDTH = 1024
+
+const titleWidthStyle = computed(() =>
+	titleWidth.value ? { width: `${titleWidth.value}px` } : {}
+)
+
+const COLLAPSED_HEIGHTS = [
+	{ minWidth: 1536, height: 250 },
+	{ minWidth: 1024, height: 195 },
+	{ minWidth: 0, height: 260 },
+]
+
+const READ_MORE_ROW_HEIGHT = 26
+const MIN_COLLAPSED_HEIGHT = 120
+
+const getFallbackCollapsedHeight = (): number => {
+	const width = window.innerWidth
+
+	return COLLAPSED_HEIGHTS.find((entry) => width >= entry.minWidth)!.height
+}
+
+const isSideBySide = (): boolean =>
+	Boolean(imagesRef.value) && !layout.rightbasket?.show && window.innerWidth >= 1024
+
+const getCollapsedHeight = (): number => {
+	if (!isSideBySide()) {
+		return getFallbackCollapsedHeight()
+	}
+
+	const siblingsHeight = [offersRef, titleRef, truncatedTitleRef, actionsRef].reduce(
+		(total, element) => total + (element.value?.offsetHeight ?? 0),
+		READ_MORE_ROW_HEIGHT
+	)
+
+	return Math.max(MIN_COLLAPSED_HEIGHT, imagesRef.value!.offsetHeight - siblingsHeight)
+}
+
+const TRUNCATION_TOLERANCE = 1
+const SINGLE_LINE_TOLERANCE = 1.5
+const NORMAL_LINE_HEIGHT_RATIO = 1.2
+const SINGLE_LINE_FONT_SIZE = "1.5rem"
+const MULTI_LINE_FONT_SIZE = "1.4rem"
+
+const titleFontSize = computed(() =>
+	isTitleSingleLine.value ? SINGLE_LINE_FONT_SIZE : MULTI_LINE_FONT_SIZE
+)
+
+const calculateTitleWidth = () => {
+	const offersRow = offersRef.value
+
+	if (!offersRow || window.innerWidth < TITLE_ROW_MIN_SCREEN_WIDTH) {
+		titleWidth.value = 0
+
+		return
+	}
+
+	if (titleRef.value) {
+		titleWidth.value = Math.round(titleRef.value.clientWidth)
+
+		return
+	}
+
+	const badgesWidth = offerBadgesRef.value?.offsetWidth ?? 0
+	const availableWidth =
+		offersRow.clientWidth - badgesWidth - (badgesWidth ? TITLE_OFFERS_GAP : 0)
+
+	titleWidth.value = Math.round(Math.max(MIN_TITLE_WIDTH, availableWidth))
+}
+
+const getLineHeight = (element: HTMLElement): number => {
+	const { lineHeight, fontSize } = window.getComputedStyle(element)
+	const parsedLineHeight = Number.parseFloat(lineHeight)
+
+	return Number.isNaN(parsedLineHeight)
+		? Number.parseFloat(fontSize) * NORMAL_LINE_HEIGHT_RATIO
+		: parsedLineHeight
+}
+
+const checkTitleTruncated = () => {
+	const title = titleTextRef.value
+
+	if (!title) {
+		isTitleTruncated.value = false
+		isTitleSingleLine.value = true
+
+		return
+	}
+
+	title.style.fontSize = SINGLE_LINE_FONT_SIZE
+	isTitleSingleLine.value =
+		title.scrollHeight <= getLineHeight(title) * SINGLE_LINE_TOLERANCE
+
+	title.style.fontSize = titleFontSize.value
+	isTitleTruncated.value = title.scrollHeight - title.clientHeight > TRUNCATION_TOLERANCE
+}
+
+const calculateDescriptionHeight = async () => {
+	await nextTick()
+
+	calculateTitleWidth()
+
+	await nextTick()
+
+	checkTitleTruncated()
+
+	if (!descriptionBoxRef.value) return
+
+	collapsedHeight.value = getCollapsedHeight()
+
+	showReadMore.value =
+		descriptionBoxRef.value.scrollHeight - collapsedHeight.value > TRUNCATION_TOLERANCE
+}
+
+const onWindowResize = () => {
+	calculateDescriptionHeight()
+}
+
+onMounted(() => {
+	calculateDescriptionHeight()
+
+	resizeObserver = new ResizeObserver(() => {
+		calculateDescriptionHeight()
+	})
+
+	if (descriptionBodyRef.value) {
+		resizeObserver.observe(descriptionBodyRef.value)
+	}
+
+	if (imagesRef.value) {
+		resizeObserver.observe(imagesRef.value)
+	}
+
+	if (titleTextRef.value) {
+		resizeObserver.observe(titleTextRef.value)
+	}
+
+	if (offersRef.value) {
+		resizeObserver.observe(offersRef.value)
+	}
+
+	if (offerBadgesRef.value) {
+		resizeObserver.observe(offerBadgesRef.value)
+	}
+
+	window.addEventListener("resize", onWindowResize)
+
+	document.fonts?.ready.then(() => {
+		calculateDescriptionHeight()
+	})
+})
+
+onUnmounted(() => {
+	if (resizeObserver) {
+		resizeObserver.disconnect()
+		resizeObserver = null
+	}
+
+	window.removeEventListener("resize", onWindowResize)
+})
+
+watch(
+	() => [
+		props.fieldValue?.family?.name,
+		props.fieldValue?.family?.description,
+		props.fieldValue?.family?.description_image,
+		layout?.user?.gr_data?.customer_is_gr,
+		layout?.user?.gr_data?.amnesty,
+		bestOffer.value?.type,
+	],
+	() => {
+		calculateDescriptionHeight()
+	}
+)
+
+const contentClass = computed(() =>
+	layout.rightbasket?.show
+		? "flex flex-col gap-6"
+		: "flex flex-col gap-6 lg:flex-row lg:items-stretch"
+)
 </script>
 
 <template>
-  <div class="w-full"  :id="fieldValue?.id ? fieldValue?.id : 'family-2'+indexBlock"  :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue?.container?.properties, screenType)
-    }">
+	<section :id="`family-2`" component="family-2-iris">
+		<div
+			class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1800px] 2xl:px-14"
+			:style="{
+				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+				...getStyles(fieldValue?.container?.properties, screenType),
+				width: 'auto',
+			}">
+			<div :class="contentClass">
+				<!-- ============================================================= -->
+				<!-- NEW IMAGE SECTION                                             -->
+				<!-- 1 image  -> only large image                                 -->
+				<!-- 2 images -> large + small top-right                          -->
+				<!-- 3 images -> large + small top-right + small bottom-right     -->
+				<!-- ============================================================= -->
+				<div
+					v-if="hasImage(0)"
+					ref="imagesRef"
+					class="flex shrink-0 items-start justify-center gap-[6px]">
+					<!-- IMAGE 1 (large) -->
+					<Image
+						:src="images[0].original"
+						:srcset="images[0].srcset"
+						sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
+						:imageCover="true"
+						:preload="isLcpBlock"
+						width="420"
+						height="380"
+						:alt="images[0]?.alt || 'family image'"
+						class="h-[280px] w-[220px] object-cover sm:w-[290px] lg:h-[320px] lg:w-[340px] 2xl:h-[380px] 2xl:w-[420px]" />
 
-    <!-- 🔧 LIMIT WIDTH biar tidak melebar di 2xl -->
-    <div class="mx-auto max-w-[2000px] w-full px-4 md:px-8 xl:px-12" id="family-description" >
+					<!-- Right column only when there is a 2nd image -->
+					<div v-if="hasImage(1)" class="flex flex-col gap-[6px]">
+						<!-- IMAGE 2 (small, top-right) -->
+						<Image
+							:src="images[1].original"
+							:srcset="images[1].srcset"
+							sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+							:imageCover="true"
+							:imgAttributes="secondaryImageAttributes"
+							width="200"
+							height="187"
+							:alt="images[1]?.alt || 'family image'"
+							class="h-[137px] w-[105px] object-cover sm:w-[140px] lg:h-[157px] lg:w-[160px] 2xl:h-[187px] 2xl:w-[200px]" />
 
-      <div class="grid w-full grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+						<!-- IMAGE 3 (small, bottom-right) only when there is a 3rd image -->
+						<Image
+							v-if="hasImage(2)"
+							:src="images[2].original"
+							:srcset="images[2].srcset"
+							sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+							:imageCover="true"
+							:imgAttributes="secondaryImageAttributes"
+							width="200"
+							height="187"
+							:alt="images[2]?.alt || 'family image'"
+							class="h-[137px] w-[105px] object-cover sm:w-[140px] lg:h-[157px] lg:w-[160px] 2xl:h-[187px] 2xl:w-[200px]" />
+					</div>
+				</div>
 
-        <!-- IMAGE -->
-        <div
-          v-if="showImage"
-          :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
-          class="relative w-full overflow-hidden
-                 aspect-[4/]
-                 max-h-[500px] md:max-h-[550px] xl:max-h-[600px] 2xl:max-h-[650px]"
-          :class="imageOrder"
-        >
+				<!-- CONTENT -->
+				<div class="flex min-w-0 flex-1 flex-col">
+					<div aria-hidden="true" class="invisible h-0 overflow-hidden">
+						<div class="w-full" :style="titleWidthStyle">
+							<h1
+								ref="titleTextRef"
+								class="title break-words font-bold tracking-tight text-left">
+								{{ fieldValue.family?.name }}
+							</h1>
+						</div>
+					</div>
 
-          <!-- NAV -->
-          <div v-if="images.length > 1" class="nav-btn left-3 swiper-btn-prev">
-            <FontAwesomeIcon icon="far fa-chevron-circle-left" />
-          </div>
+					<div
+						ref="offersRef"
+						class="flex flex-col-reverse gap-4 text-center items-center lg:text-left lg:flex-row"
+						:class="
+							isTitleTruncated
+								? 'lg:items-end lg:justify-end'
+								: isTitleSingleLine
+									? 'lg:items-center lg:justify-between'
+									: 'lg:items-start lg:justify-between'
+						">
+						<div
+							v-if="!isTitleTruncated"
+							ref="titleRef"
+							class="w-full pb-1 2xl:pb-1 lg:min-w-0 lg:flex-1">
+							<h1
+								:style="{ fontSize: titleFontSize }"
+								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
+								{{ fieldValue.family?.name }}
+							</h1>
+						</div>
+						<div
+							v-if="
+								fieldValue?.family?.offers_data?.number_offers &&
+								layout.iris.is_logged_in
+							"
+							ref="offerBadgesRef"
+							class="flex gap-x-1 gap-y-1 offer flex-wrap justify-center lg:justify-end">
+							<DiscountByType
+								:offers_data="fieldValue?.family?.offers_data"
+								:template="
+									bestOffer?.type == 'Category Quantity Ordered Order Interval'
+										? 'active-inactive-gr-v2'
+										: 'max_discount_2'
+								" />
 
-          <div v-if="images.length > 1" class="nav-btn right-3 swiper-btn-next">
-            <FontAwesomeIcon icon="far fa-chevron-circle-right" />
-          </div>
+							<DiscountByType
+								v-if="
+									!(
+										layout?.user?.gr_data?.amnesty ||
+										layout?.user?.gr_data?.customer_is_gr
+									) &&
+									bestOffer?.type == 'Category Quantity Ordered Order Interval'
+								"
+								:offers_data="fieldValue?.family?.offers_data"
+								:template="'triggers_labels_v2'" />
+						</div>
+					</div>
 
-          <!-- MULTI -->
-          <Swiper
-            v-if="images.length > 1"
-            :modules="[Navigation]"
-            :slides-per-view="1"
-            :loop="true"
-            :navigation="{ prevEl: '.swiper-btn-prev', nextEl: '.swiper-btn-next' }"
-            class="w-full h-full"
-          >
-            <SwiperSlide v-for="(img, i) in images" :key="i">
-              <div class="relative w-full h-full">
-                <Image
-                  :src="img.original"
-                  :imageCover="true"
-                  class="absolute inset-0 w-full h-full object-cover object-center"
-                />
-              </div>
-            </SwiperSlide>
-          </Swiper>
+					<div class="px-3 lg:px-0">
+						<div
+							v-if="isTitleTruncated"
+							ref="truncatedTitleRef"
+							class="pb-1 2xl:pb-1 px-3 lg:px-0">
+							<h1
+								:style="{ fontSize: titleFontSize }"
+								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
+								{{ fieldValue.family?.name }}
+							</h1>
+						</div>
+						<div
+							ref="descriptionBoxRef"
+							class="relative flex-1 min-h-0 space-y-[4px] text-[14px] leading-[1.6] text-[#1d2430] 2xl:space-y-2 overflow-hidden"
+							:class="
+								!expanded && !collapsedHeight
+									? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]'
+									: ''
+							"
+							:style="
+								!expanded && collapsedHeight
+									? { maxHeight: `${collapsedHeight}px` }
+									: {}
+							">
+							<div ref="descriptionBodyRef" v-html="cleanedDescription"></div>
 
-          <!-- SINGLE -->
-          <div v-else class="relative w-full h-full">
-            <Image
-              :src="images[0]?.original"
-              :imageCover="true"
-              class="absolute inset-0 w-full h-full object-cover object-center"
-            />
-          </div>
+							<!-- Fade overlay -->
+							<div
+								v-if="!expanded && showReadMore"
+								class="absolute bottom-0 left-0 right-0 h-6 pointer-events-none bg-gradient-to-t" />
+						</div>
+					</div>
 
-        </div>
+					<!-- Description fills remaining space -->
 
-        <!-- TEXT -->
-        <div
-          class="flex flex-col justify-center items-center text-center px-2 md:px-4
-                 md:items-start md:text-left"
-          :class="textOrder"
-        >
-          <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">
-            {{ fieldValue.family.name }}
-          </h1>
+					<div v-if="showReadMore" class="mt-2 flex justify-end">
+						<button
+							type="button"
+							class="text-xs italic underline"
+							@click="expanded = !expanded">
+							{{ expanded ? ctrans("Read Less") : ctrans("Read More") }}
+						</button>
+					</div>
 
-           <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"  class="discount-wrapper">
+					<!-- Always bottom -->
+					<div
+						ref="actionsRef"
+						class="mt-auto pt-1 flex items-center gap-4 flex-wrap 2xl:pt-8 justify-center lg:justify-start">
+						<a
+							v-if="fieldValue.family.description_extra || layout?.iris?.is_logged_in"
+							href="#family-2-extra-description"
+							class="shrink-0">
+							<button
+								class="h-[30px] rounded-xl border border-[#333] px-8 text-sm font-medium transition hover:bg-gray-50 2xl:h-[48px] 2xl:px-12 2xl:text-base"
+								:style="{
+									...getStyles(
+										fieldValue?.button?.container?.properties,
+										screenType
+									),
+								}">
+								{{ fieldValue?.button?.text || ctrans("Learn more") }}
+							</button>
+						</a>
 
-              <div
-                :class="bestOffer?.type === 'Category Quantity Ordered Order Interval' ? 'flex gap-3' : 'discount-grid'">
+						<div
+							v-for="data in fieldValue.family.tags"
+							:key="data.name"
+							class="flex items-center gap-2 px-3 py-1.5 sm:px-2 lg:px-2 lg:py-2 2xl:px-6 2xl:py-2.5">
+							<Image
+								:src="data.web_image"
+								sizes="20px"
+								width="20"
+								height="20"
+								class="h-4 w-4 shrink-0 2xl:h-5 2xl:w-5"
+								image-class="object-contain" />
 
-                <DiscountByType v-if="showTriggers" :offers_data="fieldValue?.family?.offers_data"
-                  template="triggers_labels" class="discount-item discount-span" />
-
-                <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type === 'Category Quantity Ordered Order Interval'
-                  ? 'active-inactive-gr'
-                  : 'max_discount'" class="discount-item" />
-              </div>
-
-            </div>
-
-          <div
-            v-html="cleanedDescription"
-            class="text-gray-600 leading-relaxed text-sm md:text-base max-w-xl"
-          />
-
-          <div class="btn-wrapper">
-                <a href="#family-extra-description">
-                  <Button 
-                    :label="fieldValue?.button?.text"
-                    :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" 
-                  />
-                </a>
-            </div>
-        </div>
-
-      </div>
-    </div>
-
-  </div>
+							<span
+								class="whitespace-nowrap text-[11px] font-medium text-[#555] sm:text-xs lg:text-sm 2xl:text-base">
+								{{ data.name }}
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
 </template>
 
 <style scoped>
-
-.btn-wrapper {
-  @apply flex justify-center md:justify-start mt-6;
+:deep(.offer .vd-content) {
+	@apply flex flex-col justify-center -ml-4 pl-7 pr-3 my-0.5 mr-0.5 rounded-md bg-gray-900 shadow-sm min-w-0;
 }
 
-.nav-btn {
-  @apply absolute top-1/2 -translate-y-1/2 z-10 cursor-pointer
-         text-gray-500 text-3xl opacity-70 hover:opacity-100;
-
-         
+:deep(.offer .vd-triggers) {
+	@apply text-[10px] leading-tight opacity-80 max-w-[7rem] md:max-w-full whitespace-normal overflow-visible;
 }
 
-/* discount layout */
-.discount-wrapper {
-  @apply w-full mt-4 2xl:mt-5;
+.editor-class h1 {
+	font-size: 1.75rem;
+	/* mobile */
 }
 
-.discount-grid {
-  @apply grid grid-cols-3 gap-2 2xl:gap-3 items-center;
+@media (min-width: 1280px) {
+	.editor-class h1 {
+		font-size: 1.8rem;
+		/* line-height: 1.5rem; */
+		/* lg */
+	}
 }
 
-.discount-span {
-  @apply col-span-2;
+@media (min-width: 1536px) {
+	.editor-class h1 {
+		font-size: 2.5rem;
+		/* 2xl */
+	}
 }
 
-.discount-item {
-  @apply min-w-0;
-}
+.title {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	overflow: hidden;
 
-/* discount styles */
-.discount-wrapper :deep(.offer-max-discount) {
-  @apply bg-[#A80000] border border-red-900 text-gray-100 flex items-center rounded-sm
-         px-1.5 py-1
-         text-xs
-         mb-2;
-}
-.discount-span :deep(.percentage-text) {
-  @apply text-xs md:text-xs 2xl:text-base;
-}
-
-.discount-wrapper :deep(.gr-content) {
-  @apply w-full relative flex items-center text-xs md:text-xs 2xl:text-base;
-}
-
-.discount-wrapper :deep(.discount-percentage) {
-  @apply flex items-center text-white font-bold text-center px-2 md:px-7 text-lg md:text-xs 2xl:text-sm max-w-fit;
-}
-
-.discount-wrapper :deep(.discount-title) {
-  @apply whitespace-nowrap capitalize text-sm md:text-xxs 2xl:text-xs;
-}
-
-.discount-span :deep(.discount-triggers) {
-  @apply text-xxs md:text-xs whitespace-pre-line;
-}
-
-.discount-wrapper :deep(.gr-logo) {
-  height: 3em;
+	/* font-size: clamp(1rem, 1.1rem + 1.2vw, 1.5rem); */
+	line-height: 1.25;
 }
 </style>

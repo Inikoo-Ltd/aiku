@@ -9,7 +9,6 @@
 namespace App\Actions\CRM\Prospect;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProspects;
-use App\Actions\Helpers\Query\HydrateModelTypeQueries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProspects;
 use App\Actions\Traits\WithCheckCanContactByEmail;
@@ -103,10 +102,6 @@ class StoreProspect extends OrgAction
 
         OrganisationHydrateProspects::dispatch($shop->organisation)->delay($this->hydratorsDelay);
         ShopHydrateProspects::dispatch($shop)->delay($this->hydratorsDelay);
-
-        HydrateModelTypeQueries::dispatch('Prospect')->delay($this->hydratorsDelay);
-
-
 
         if ($prospect->shop->is_aiku) {
             SaveProspectInAurora::dispatch($prospect);

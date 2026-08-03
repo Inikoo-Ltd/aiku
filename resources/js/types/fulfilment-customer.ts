@@ -17,5 +17,6 @@ export interface FulfilmentCustomer {
     shop: string
     shop_slug: string
     shop_code: string
+    organisation_slug?: string
     number_current_customer_clients: number
 }

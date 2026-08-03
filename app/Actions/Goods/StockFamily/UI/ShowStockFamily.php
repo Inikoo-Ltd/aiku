@@ -17,6 +17,8 @@ use App\Enums\UI\SupplyChain\StockFamilyTabsEnum;
 use App\Http\Resources\Goods\StockFamilyResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Actions\Traits\UI\WithBucketNavigation;
+use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Models\Goods\StockFamily;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,6 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowStockFamily extends OrgAction
 {
+    use WithBucketNavigation;
+
     use WithGoodsAuthorisation;
 
     public function handle(StockFamily $stockFamily): StockFamily
@@ -81,7 +85,7 @@ class ShowStockFamily extends OrgAction
 
                 StockFamilyTabsEnum::SHOWCASE->value => $this->tab == StockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetStockFamilyShowcase::run($stockFamily)
-                    : Inertia::lazy(fn () => GetStockFamilyShowcase::run($stockFamily)),
+                    : Inertia::optional(fn () => GetStockFamilyShowcase::run($stockFamily)),
                 StockFamilyTabsEnum::STOCKS->value    => $this->tab == StockFamilyTabsEnum::STOCKS->value
                     ?
                     fn () => StocksResource::collection(
@@ -91,7 +95,7 @@ class ShowStockFamily extends OrgAction
                             bucket: 'all'
                         )
                     )
-                    : Inertia::lazy(fn () => StocksResource::collection(
+                    : Inertia::optional(fn () => StocksResource::collection(
                         IndexStocks::run(
                             parent: $stockFamily,
                             prefix: StockFamilyTabsEnum::STOCKS->value,
@@ -100,7 +104,7 @@ class ShowStockFamily extends OrgAction
                     )),
                 StockFamilyTabsEnum::HISTORY->value  => $this->tab == StockFamilyTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($stockFamily))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($stockFamily)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockFamily)))
             ]
         ) ->table(
             IndexStocks::make()->tableStructure(
@@ -130,7 +134,7 @@ class ShowStockFamily extends OrgAction
                             'route' => [
                                 'name' => 'grp.goods.stock-families.index',
                             ],
-                            'label' => __('SKUs families'),
+                            'label' => __('SKOs families'),
                             'icon'  => 'fal fa-bars'
                         ],
                         'model' => [
@@ -151,16 +155,41 @@ class ShowStockFamily extends OrgAction
 
     public function getPrevious(StockFamily $stockFamily, ActionRequest $request): ?array
     {
-        $previous = StockFamily::where('code', '<', $stockFamily->code)->orderBy('code', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getStockFamilyNeighbour($stockFamily, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(StockFamily $stockFamily, ActionRequest $request): ?array
     {
-        $next = StockFamily::where('code', '>', $stockFamily->code)->orderBy('code')->first();
+        return $this->getNavigation($this->getStockFamilyNeighbour($stockFamily, $request, forward: true), $request->route()->getName());
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    private function getStockFamilyNeighbour(StockFamily $stockFamily, ActionRequest $request, bool $forward): ?StockFamily
+    {
+        $query = StockFamily::query()->where('stock_families.group_id', $stockFamily->group_id);
+
+        $state = match ($request->input('bucket')) {
+            'active'        => StockFamilyStateEnum::ACTIVE,
+            'discontinuing' => StockFamilyStateEnum::DISCONTINUING,
+            'discontinued'  => StockFamilyStateEnum::DISCONTINUED,
+            'in_process'    => StockFamilyStateEnum::IN_PROCESS,
+            default         => null,
+        };
+
+        if ($state) {
+            $query->where('stock_families.state', $state);
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $stockFamily,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'code' => 'stock_families.code',
+                'name' => 'stock_families.name',
+            ],
+            defaultSort: ['stock_families.code', false],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?StockFamily $stockFamily, string $routeName): ?array

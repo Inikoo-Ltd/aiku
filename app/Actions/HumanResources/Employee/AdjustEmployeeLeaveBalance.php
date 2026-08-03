@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * @Author: andiferdiawan (https://github.com/andiferdiawan)
+ * @Created: 2026-06-11
+ * @Copyright: Copyright (c) 2026, andiferdiawan
+ */
+
 namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\OrgAction;
@@ -14,29 +20,29 @@ class AdjustEmployeeLeaveBalance extends OrgAction
     public function rules(): array
     {
         return [
-            'year' => ['required', 'integer', 'min:2020', 'max:2100'],
-            'annual_days' => ['required', 'integer', 'min:0', 'max:365'],
+            'employee_contract_id' => ['sometimes', 'integer', 'exists:employee_contracts,id'],
         ];
     }
 
     public function handle(Employee $employee, array $data): EmployeeLeaveBalance
     {
-        $balance = EmployeeLeaveBalance::firstOrCreate(
-            [
-                'employee_id' => $employee->id,
-                'year'        => $data['year'],
-            ],
-            [
-                'annual_days'   => $employee->organisation->getDefaultAnnualLeaveDays(),
-                'annual_used'   => 0,
-                'unpaid_days'  => 0,
-                'unpaid_used'  => 0,
-            ]
-        );
+        if (!empty($data['employee_contract_id'])) {
+            $balance = EmployeeLeaveBalance::where('employee_contract_id', $data['employee_contract_id'])->first();
+        } else {
+            $balance = EmployeeLeaveBalance::where('employee_id', $employee->id)
+                ->whereNull('employee_contract_id')
+                ->first();
+        }
 
-        $balance->update([
-            'annual_days' => $data['annual_days'],
-        ]);
+        if (!$balance) {
+            $balance = EmployeeLeaveBalance::create([
+                'employee_id'          => $employee->id,
+                'employee_contract_id' => $data['employee_contract_id'] ?? null,
+                'annual_used'          => 0,
+                'medical_used'         => 0,
+                'unpaid_used'          => 0,
+            ]);
+        }
 
         return $balance;
     }
@@ -48,11 +54,11 @@ class AdjustEmployeeLeaveBalance extends OrgAction
         $balance = $this->handle($employee, $this->validatedData);
 
         return new JsonResponse([
-            'employee_id' => $employee->id,
-            'year' => $balance->year,
-            'annual_days' => $balance->annual_days,
-            'annual_used' => $balance->annual_used,
-            'annual_remaining' => $balance->annual_remaining,
+            'employee_id'          => $employee->id,
+            'employee_contract_id' => $balance->employee_contract_id,
+            'annual_days'          => $balance->contract?->annual_leave_days,
+            'annual_used'          => $balance->annual_used,
+            'annual_remaining'     => $balance->annual_remaining,
         ]);
     }
 }

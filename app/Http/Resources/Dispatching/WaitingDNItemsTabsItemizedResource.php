@@ -50,6 +50,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $notes
  * @property mixed $trolley_names
  * @property mixed $picked_bay_codes
+ * @property mixed $opposite_waiting_count
  */
 class WaitingDNItemsTabsItemizedResource extends JsonResource
 {
@@ -105,6 +106,16 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
 
         $quantityToPickFractional = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $packedIn);
 
+        $waitingWarehouseFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_warehouse ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_warehouse ?? 0) == ($this->quantity_waiting_warehouse ?? 0) && $packedIn > 1) {
+            $waitingWarehouseFractionalDS = [0, [($this->quantity_waiting_warehouse ?? 0) * $packedIn, $packedIn]];
+        }
+
+        $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_crm ?? 0) == ($this->quantity_waiting_crm ?? 0) && $packedIn > 1) {
+            $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
+        }
+
 
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
 
@@ -122,6 +133,7 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'delivery_note_slug'         => $this->delivery_note_slug,
             'delivery_note_reference'    => $this->delivery_note_reference,
             'delivery_note_state'        => $this->delivery_note_state,
+            'opposite_waiting_count'     => (int) $this->opposite_waiting_count,
             'trolley_names'   => $this->trolley_names,
             'picked_bay_codes' => $this->picked_bay_codes,
 
@@ -137,12 +149,13 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
 
             'shop_name' => $this->shop_name,
             'shop_code' => $this->shop_code,
+            'shop_slug' => $this->shop_slug,
 
             'org_stock_id'              => $this->org_stock_id,
             'org_stock_code'            => $this->org_stock_code,
             'org_stock_name'            => $this->org_stock_name,
             'org_stock_slug'            => $this->org_stock_slug,
-            'org_stock_image_thumbnail' => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
+            'org_stock_image_thumbnail' => null, // Using ajax call anyway
 
             'packed_in'         => $packedIn,
             'packed_in_message' => $packedInMessage,
@@ -153,7 +166,9 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'quantity_picked'             => $this->quantity_picked,
             'quantity_not_picked'         => $this->quantity_not_picked,
             'quantity_waiting_warehouse'  => $this->quantity_waiting_warehouse,
+            'quantity_waiting_warehouse_fractional_ds' => $waitingWarehouseFractionalDS,
             'quantity_waiting_crm'        => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds' => $waitingCrmFractionalDS,
 
             'is_handled'       => $this->is_handled,
             'picking_position' => $this->picking_position,

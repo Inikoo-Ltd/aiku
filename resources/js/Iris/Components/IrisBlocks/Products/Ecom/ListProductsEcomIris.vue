@@ -1,0 +1,699 @@
+<script setup lang="ts">
+import { faFilter } from "@fas"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { getStyles } from "@/Composables/styles"
+import { ref, onMounted, watch, computed, toRaw, inject } from "vue"
+import axios from "axios"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { notify } from "@kyvg/vue3-notification"
+import { routeType } from "@/types/route"
+import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue"
+import Drawer from "primevue/drawer"
+import Skeleton from "primevue/skeleton"
+import { debounce, get } from "lodash-es"
+import LoadingText from "@/Components/Utils/LoadingText.vue"
+import MobileShowMoreButton from "@/Iris/Components/MobileShowMoreButton.vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { faExclamationTriangle } from "@far"
+import ConfirmDialog from "primevue/confirmdialog"
+import { trans } from "laravel-vue-i18n"
+import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
+import Image from "@common/Components/Image.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
+
+
+const props = defineProps<{
+    fieldValue: {
+        card_product: { properties: {} }
+        products_route: {
+            iris: {
+                route_products: routeType,
+                route_out_of_stock_products: routeType
+            }
+            workshop: routeType
+        }
+        products: {
+            data: {},
+            links: {},
+            meta: {
+                current_page: number,
+                last_page: number,
+                total: number
+            }
+        }
+        container?: any
+        sub_type: string  // 'family'
+        model_type: string  // 'ProductCategory'
+        model_id: number  // '31890'
+    }
+    webpageData?: any
+    blockData?: {}
+    screenType: "mobile" | "tablet" | "desktop"
+    code: string
+}>()
+
+const layout = inject("layout", retinaLayoutStructure)
+const MOBILE_INITIAL_PRODUCTS = 16
+const showAllProductsOnMobile = ref(false)
+const mobileHiddenProductsCount = computed(() => products.value.length - MOBILE_INITIAL_PRODUCTS)
+const isMobileCollapsed = computed(() => !showAllProductsOnMobile.value && mobileHiddenProductsCount.value > 4)
+
+const firstLoad = ref(null)
+const products = ref<any[]>(
+    props.fieldValue?.products?.meta?.last_page == 1
+        ? [
+            ...(props.fieldValue?.products?.data ?? []),
+            ...(props.fieldValue?.products_out_of_stock?.data ?? [])
+        ]
+        : [...(props.fieldValue?.products?.data ?? [])]
+);
+
+const q = ref("")
+const orderByFromUrl = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("order_by")
+    : null
+const defaultOrderBy = props.fieldValue?.sub_type == 'family' ? 'recommended' : '-created_at'
+const orderBy = ref(orderByFromUrl || defaultOrderBy)
+const page = ref(toRaw(props.fieldValue.products.meta.current_page))
+const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
+const filter = ref({ data: {} })
+const totalProducts = ref(
+    props.fieldValue?.products?.meta?.last_page == 1 ?
+        props.fieldValue.products.meta.total + get(props.fieldValue, ['products_out_of_stock', 'meta', 'total'], 0) :
+        props.fieldValue.products.meta.total
+)
+const isShowFilters = ref(false)
+const isShowAside = ref(false)
+const isFetchingOutOfStock = ref(false)
+const isNewArrivals = ref(false)
+const isLoadingInitial = ref(false)
+const isLoadingMore = ref(false)
+const renderKey = ref(0)
+
+
+const getRoutes = () => {
+    if (props.fieldValue.model_type === "ProductCategory") {
+        return {
+            iris: {
+                route_products: {
+                    name: "iris.json.product_category.in_stock_products.index",
+                    parameters: { productCategory: props.fieldValue.model_id }
+                },
+                route_out_of_stock_products: {
+                    name: "iris.json.product_category.out_of_stock_products.index",
+                    parameters: { productCategory: props.fieldValue.model_id }
+                }
+            }
+        };
+    } else if (props.fieldValue.model_type === "Collection") {
+        return {
+            iris: {
+                route_products: {
+                    name: "iris.json.collection.in_stock_products.index",
+                    parameters: { collection: props.fieldValue.model_id }
+                },
+                route_out_of_stock_products: {
+                    name: "iris.json.collection.out_of_stock_products.index",
+                    parameters: { collection: props.fieldValue.model_id }
+                }
+            }
+        };
+    }
+
+    return { iris: { route_products: null, route_out_of_stock_products: null } };
+};
+
+function buildFilters(): Record<string, any> {
+    const filters: Record<string, any> = {}
+    const raw = filter.value.data || {}
+
+    for (const [key, val] of Object.entries(raw)) {
+        if (val === null || val === undefined || val === '') continue
+
+        if (key === 'price_range') {
+            const rawMin = val['between[price_min]']
+            const rawMax = val['between[price_max]']
+
+            const hasMin = rawMin !== '' && rawMin != null && !isNaN(rawMin)
+            const hasMax = rawMax !== '' && rawMax != null && !isNaN(rawMax)
+
+            if (hasMin || hasMax) {
+                const min = hasMin ? Number(rawMin) : 0
+                const max = hasMax ? Number(rawMax) : 0
+
+                if (!(min === 0 && max === 0)) {
+                    filters[`filter[${key}]`] = `${min},${max}` // ← no brackets
+                }
+            }
+        } else if (typeof val === 'object' && !Array.isArray(val)) {
+            for (const [subKey, subVal] of Object.entries(val)) {
+                if (subVal === null || subVal === undefined || subVal === '') continue
+                filters[subKey] = subVal
+            }
+        } else if (Array.isArray(val)) {
+            filters[`filter[${key}]`] = val.join(',')
+        } else {
+            filters[`filter[${key}]`] = val
+        }
+    }
+
+    if (isNewArrivals.value) {
+        filters[`filter[new_arrivals]`] = 3
+    }
+
+    return filters
+}
+
+
+
+const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false) => {
+    if (isLoadMore) {
+        isLoadingMore.value = true;
+    } else {
+        if (firstLoad.value == 1)
+            isLoadingInitial.value = false;
+    }
+
+    const filters = buildFilters();
+    // console.log("Filters used in API call:", filters);
+    const routes = getRoutes();
+    const useOutOfStock = isFetchingOutOfStock.value;
+
+    const currentRoute = useOutOfStock
+        ? routes.iris.route_out_of_stock_products
+        : routes.iris.route_products;
+
+    try {
+        const response = await axios.get(route(currentRoute.name, {
+            ...currentRoute.parameters,
+            ...filters,
+            "filter[global]": q.value,
+            sort: orderBy.value,
+            index_perPage: 25,
+            page: page.value
+        }));
+
+        const data = response.data;
+
+        lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
+
+
+        if (useOutOfStock) {
+            totalProducts.value =
+                totalProducts.value +
+                (data?.meta?.total ?? data?.total ?? 0)
+        } else {
+            totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+        }
+
+        if (isLoadMore) {
+            products.value = [...products.value, ...(data?.data ?? [])];
+        } else {
+            products.value = data?.data ?? [];
+        }
+
+        if (!ignoreOutOfStockFallback && !useOutOfStock && page.value >= lastPage.value) {
+            isFetchingOutOfStock.value = true;
+            page.value = 1;
+            await fetchProducts(true, true);
+        }
+
+    } catch (error) {
+        console.log(error);
+        notify({ title: "Error", text: "Failed to load products.", type: "error" });
+    } finally {
+        isLoadingInitial.value = false;
+        isLoadingMore.value = false;
+        firstLoad.value++;
+        renderKey.value++;
+    }
+};
+
+const debFetchProducts = debounce(fetchProducts, 300)
+
+const handleSearch = () => {
+    page.value = 1
+    isFetchingOutOfStock.value = false
+    updateQueryParams()
+    debFetchProducts(false, false)
+}
+
+
+watch([q, orderBy], () => {
+    page.value = 1
+    isFetchingOutOfStock.value = false
+    updateQueryParams()
+    debFetchProducts(false, false)
+}, { deep: true })
+
+watch(filter, () => {
+    page.value = 1
+    isFetchingOutOfStock.value = false
+    /* updateQueryParams(); */
+    debFetchProducts(false, false)
+}, { deep: true })
+
+
+const loadMore = () => {
+    if (page.value < lastPage.value && !isLoadingMore.value) {
+        page.value += 1
+        debFetchProducts(true)
+    }
+}
+
+const sortOptions = computed(() => {
+    const baseOptions = [
+        /* { label: "Latest Arrivals", value: "created_at" }, */
+        { label: trans("New arrivals"), value: "created_at" },
+        { label: trans("Product Code"), value: "code" },
+        { label: trans("Name"), value: "name" }
+    ]
+    if (layout?.iris?.is_logged_in) {
+        baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
+        baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
+    }
+    if (props.fieldValue?.sub_type == 'family') {
+        baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+    }
+    return baseOptions
+})
+
+const sortKey = ref(orderBy.value.replace(/^-/, ""))
+const isAscending = ref(!orderBy.value.startsWith("-"))
+
+
+const getArrow = (key: typeof sortKey.value) => {
+    if (sortKey.value !== key) return ""
+    if (sortKey.value == 'recommended') return ""
+    if (sortKey.value == 'created_at') return ""
+    return isAscending.value ? "↑" : "↓"
+}
+
+
+const isMobile = computed(() => props.screenType === "mobile")
+
+onMounted(() => {
+    layout.buttonBasket = {
+        buttonStyle: getStyles(props.fieldValue?.button?.properties, props.screenType, false),
+        buttonStyleLogin: getStyles(props.fieldValue?.buttonLogin?.properties, props.screenType),
+        buttonStyleHover: getStyles(props.fieldValue?.buttonHover?.properties, props.screenType, false),
+        button: props.fieldValue?.button
+    }
+
+    const urlParams = new URLSearchParams(window.location.search)
+	const sortParam = urlParams.get("order_by")
+
+   
+
+	if (sortParam) {
+		orderBy.value = sortParam
+		const key = sortParam.replace("-", "")
+		sortKey.value = key
+		isAscending.value = !sortParam.startsWith("-")
+	}
+
+     console.log('sortKey',sortKey)
+
+    if (layout?.iris?.is_logged_in) {
+        firstLoad.value = 1
+        fetchProducts(); // break chace from product dont deleted
+        /* fetchHasInBasket(); */
+    } else {
+        if (orderByFromUrl) {
+            firstLoad.value = 1
+            fetchProducts()
+        }
+
+        setTimeout(() => {   // Needed, to handle, after login phase
+            if (layout?.iris?.is_logged_in) {
+                firstLoad.value = 1
+                fetchProducts()
+                /* fetchHasInBasket() */
+            }
+        }, 400)
+    }
+})
+
+const updateQueryParams = () => {
+    const url = new URL(window.location.href)
+
+    // Reset existing filter params
+    Array.from(url.searchParams.keys()).forEach(key => {
+        if (key.startsWith("filter[")) {
+            url.searchParams.delete(key)
+        }
+    })
+
+    // Update sorting
+    if (orderBy.value) {
+        url.searchParams.set("order_by", orderBy.value)
+    } else {
+        url.searchParams.delete("order_by")
+    }
+
+    // Update filters
+    /*    const filters = buildFilters(); */
+    /* for (const [key, val] of Object.entries(filters)) {
+        url.searchParams.set(`filter[${key}]`, val);
+    } */
+
+    window.history.replaceState({}, "", url.toString())
+}
+
+const toggleSort = (key: string) => {
+    if (sortKey.value === key) {
+        isAscending.value = !isAscending.value
+    } else {
+        sortKey.value = key
+        isAscending.value = true
+    }
+
+    if (props.fieldValue?.sub_type == 'family' && key == 'recommended') orderBy.value = key
+    if (key == 'created_at') orderBy.value = `-${key}`
+    else orderBy.value = isAscending.value ? key : `-${key}`
+    updateQueryParams()
+    handleSearch()
+}
+
+//do not delete the comment please it will be use it
+
+// const productInBasket = ref({
+//     isLoading: false,
+//     list: []
+// })
+
+/* const getRouteForProductInBasket = () => {
+    const { model_type, model_id } = props.fieldValue;
+    if (model_type == "ProductCategory") {
+        return `/json/product-category/${model_id}/transaction-data`
+    } else if (model_type == "Collection") {
+        return `/json/collection/${model_id}/transaction-data`
+    }
+}; */
+
+// Method: fetch each quantity_ordered of the products
+/* const fetchHasInBasket = async () => {
+    // productInBasket.value.isLoading = true;
+    set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
+    try {
+        const apiUrl = getRouteForProductInBasket();
+
+        if (!apiUrl) {
+            throw new Error("Invalid model_type or missing route configuration");
+        }
+
+        const response = await axios.get(apiUrl);
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+    } catch (error) {
+        console.error('Failed to load product portfolio', error);
+        // notify({
+        //     title: "Error",
+        //     text: "Failed to load product portfolio.",
+        //     type: "error"
+        // });
+    } finally {
+        // productInBasket.value.isLoading = false;
+        set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
+
+    }
+}; */
+
+
+
+const gridColsVars = computed(() => {
+    const perRow = props.fieldValue?.settings?.per_row ?? {}
+    const basketOpen = layout.rightbasket?.show
+
+    return {
+        '--cols-mobile': basketOpen ? 2 : (perRow.mobile ?? 2),
+        '--cols-tablet': basketOpen ? 3 : (perRow.tablet ?? 3),
+        '--cols-desktop': basketOpen ? 3 : (perRow.desktop ?? 4),
+    }
+})
+
+
+const search_sort_class = ref(getStyles(props.fieldValue?.search_sort?.sort?.properties, props.screenType, false))
+const placeholder_class = ref(getStyles(props.fieldValue?.search_sort?.search?.placeholder?.properties, props.screenType, false))
+const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false))
+
+watch(
+    () => props.fieldValue?.search_sort,
+    () => {
+        search_sort_class.value = getStyles(props.fieldValue?.search_sort?.sort?.properties, props.screenType, false)
+        placeholder_class.value = getStyles(props.fieldValue?.search_sort?.search?.placeholder?.properties, props.screenType, false)
+        search_class.value = getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false)
+    },
+    { deep: true }
+)
+</script>
+
+<template>
+
+    <div :id="fieldValue?.id ? fieldValue?.id : 'list-products-ecom-iris'" component="list-products-ecom-iris" class="">
+        <ConfirmDialog>
+            <template #icon>
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+            </template>
+        </ConfirmDialog>
+        <div class="flex flex-col lg:flex-row" :style="{
+            ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+            ...getStyles(fieldValue.container?.properties, screenType),
+        }">
+
+            <!-- Sidebar Filters for Desktop -->
+            <transition v-if="!props.fieldValue?.settings?.is_hide_filter" name="slide-fade">
+                <aside v-show="!isMobile && isShowAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
+                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" :search="q"
+                        @handleSearch="handleSearch" @update:search="(e) => q = e" />
+                </aside>
+            </transition>
+
+            <!-- Main Content -->
+            <div class="flex-1">
+                <!-- Search & Sort -->
+                <div class="flex gap-4 px-0 2xl:px-[50px]" :class="layout.rightbasket?.show
+                    ? 'flex-col items-start'
+                    : 'flex-col md:flex-row items-center justify-between'">
+                    <div class="flex items-center w-full md:w-1/3 gap-2">
+                        <template v-if="!props.fieldValue?.settings?.is_hide_filter">
+                            <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-2 !w-auto"
+                                aria-label="Open Filters"
+                                :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
+                            <!-- Sidebar Toggle for Desktop -->
+                            <div v-else class="">
+                                <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-2 !w-auto"
+                                    aria-label="Open Filters"
+                                    :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
+                            </div>
+                        </template>
+                        <div
+                            class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+                            <span class="font-medium">
+                                {{ trans("Showing") }}
+                                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                    {{ products.length }}
+                                </span>
+                                {{ trans("of") }}
+                                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                    {{ totalProducts }}
+                                </span>
+                                {{ products.length === 1 ? trans("product") : trans("products") }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Sort Tabs -->
+                    <div class="flex space-x-6 w-fit max-w-full overflow-x-auto mt-2 md:mt-0">
+                        <button v-for="(option,index) in sortOptions" :key="`${renderKey}-${option.value}-${index}`"  @click="toggleSort(option.value)"
+                            class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
+                            :class="[
+                                sortKey === option.value
+                                    ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
+                                    : `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
+                            ]" :disabled="isLoadingInitial || isLoadingMore">
+                            {{ option.label }} {{ getArrow(option.value) }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Grid -->
+                <div :style="gridColsVars"
+                    class="products-grid grid gap-x-6 gap-y-10 p-3 px-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 2xl:px-[50px]">
+                    <!-- <pre>{{ getStyles(fieldValue?.container?.properties, screenType) }}</pre> -->
+                    <template v-if="isLoadingInitial">
+                        <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
+                            <Skeleton height="200px" class="mb-3" />
+                            <Skeleton width="80%" class="mb-2" />
+                            <Skeleton width="60%" class="mb-2" />
+                            <Skeleton width="100%" />
+                        </div>
+                    </template>
+
+
+
+                    <template v-else-if="products.length">
+                        <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
+                        <div v-for="(product, index) in products" :key="`${renderKey}-${index}`"
+                            :style="getStyles(fieldValue?.card_product?.properties, screenType)"
+                            class=" relative rounded flex md:flex-1 justify-center"
+                            :class="{ 'max-lg:hidden': isMobileCollapsed && index >= MOBILE_INITIAL_PRODUCTS }">
+                            <RenderProduct :code="code" :product="product" :key="`${renderKey}-${index}`"
+                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
+                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
+                                :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
+                                :button="fieldValue?.button"
+                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])"
+                                :bestSeller="fieldValue.bestseller" :screenType />
+                        </div>
+
+                        <div v-for="(card, cardIndex) in (fieldValue?.cards ?? []).filter((item: any) => item?.visible)"
+                            :key="card.ulid ?? cardIndex" class="relative rounded-2xl overflow-hidden min-h-80">
+                            <LinkIris :href="card?.image?.link?.href" :canonical_url="card?.link?.link?.canonical_url"
+                                :target="card?.image?.link?.target">
+                                <Image v-if="card?.image?.source" :src="card?.image?.source" :imageCover="true"
+                                    :alt="card?.image?.alt ?? 'card image'" class="absolute inset-0 w-full h-full" />
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                                </div>
+                                <!-- Center Content -->
+                                <div
+                                    class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
+                                    <div v-html="card.text"></div>
+                                    <LinkIris :href="card?.button?.link?.href"
+                                        :canonical_url="card?.button?.link?.canonical_url"
+                                        :target="card?.button?.link?.target">
+                                        <Button class="mt-4"
+                                            :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
+                                            :label="card?.button?.text" />
+                                    </LinkIris>
+
+                                </div>
+                            </LinkIris>
+
+                        </div>
+                    </template>
+
+                    <template v-else>
+                        <div class="col-span-full text-center py-10 text-gray-500">
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Show more (mobile only): reveal CSS-hidden products without fetching -->
+                <div v-if="isMobileCollapsed" class="lg:hidden mt-4 mb-7 px-2">
+                    <MobileShowMoreButton :count="mobileHiddenProductsCount" @show="showAllProductsOnMobile = true" />
+                </div>
+
+                <!-- Load More -->
+                <!--  {{ page   }}{{ lastPage }} -->
+                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12"
+                    :class="{ 'max-lg:hidden': isMobileCollapsed }">
+                    <Button @click="loadMore" type="tertiary" :disabled="isLoadingMore"
+                        :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
+                        <template v-if="isLoadingMore">
+                            <LoadingText />
+                        </template>
+                        <template v-else>{{ trans("Load More") }}</template>
+                    </Button>
+                </div>
+            </div>
+
+            <!-- Mobile Filters Drawer -->
+            <Drawer v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"
+                :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
+                <div class="p-4">
+                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" :search="q"
+                        @handleSearch="handleSearch" @update:search="(e) => q = e" />
+                </div>
+            </Drawer>
+        </div>
+    </div>
+
+    <!-- <ReviewFamily v-if="layout?.iris?.website?.reviews_settings" :products="products" code="family" /> -->
+
+</template>
+
+
+<style scoped>
+.products-grid {
+    grid-template-columns: repeat(var(--cols-mobile), minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-tablet), minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-desktop), minmax(0, 1fr));
+    }
+}
+
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+    transition: all 0.3s ease;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+aside {
+    transition: all 0.3s ease;
+}
+
+.auto-rows-fr {
+    grid-auto-rows: 1fr;
+}
+
+
+.sort-button {
+    color: v-bind('search_sort_class?.color || null') !important;
+    font-family: v-bind('search_sort_class?.fontFamily || null') !important;
+    font-size: v-bind('search_sort_class?.fontSize || "14px"') !important;
+    font-style: v-bind('search_sort_class?.fontStyle || null') !important;
+}
+
+.icon-search {
+    color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
+}
+
+.search-input {
+    color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
+
+    border-top: v-bind('search_class?.borderTop || null') !important;
+    border-bottom: v-bind('search_class?.borderBottom || null') !important;
+    border-left: v-bind('search_class?.borderLeft || null') !important;
+    border-right: v-bind('search_class?.borderRight || null') !important;
+
+    border-top-left-radius: v-bind('search_class?.borderTopLeftRadius || null') !important;
+    border-top-right-radius: v-bind('search_class?.borderTopRightRadius || null') !important;
+    border-bottom-left-radius: v-bind('search_class?.borderBottomLeftRadius || null') !important;
+    border-bottom-right-radius: v-bind('search_class?.borderBottomRightRadius || null') !important;
+
+    :deep(input) {
+        color: v-bind('search_class?.color || null') !important;
+        font-family: v-bind('search_class?.fontFamily || null') !important;
+        font-size: v-bind('search_class?.fontSize || null') !important;
+        font-style: v-bind('search_class?.fontStyle || null') !important;
+    }
+
+    :deep(input::placeholder) {
+        color: v-bind('placeholder_class?.color || "#999"') !important;
+        font-family: v-bind('placeholder_class?.fontFamily || "inherit"') !important;
+        font-size: v-bind('placeholder_class?.fontSize || null') !important;
+        font-style: v-bind('placeholder_class?.fontStyle || null') !important;
+    }
+}
+</style>

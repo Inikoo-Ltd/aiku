@@ -12,18 +12,16 @@ namespace App\Actions\Dropshipping\Magento\Orders;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedMagentoAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\MagentoUser;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
-use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -37,6 +35,7 @@ class StoreOrderFromMagento extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedMagentoAddress;
+    use WithPayAndSubmitOrder;
 
     /**
      * @throws \Throwable
@@ -75,12 +74,7 @@ class StoreOrderFromMagento extends OrgAction
                 );
             }
 
-            try {
-                PayOrderAsync::run($order);
-            } catch (Exception $e) {
-                Sentry::captureException($e);
-            }
-            SubmitOrder::run($order);
+            $order = $this->payAndSubmitOrder($order);
         }
     }
 

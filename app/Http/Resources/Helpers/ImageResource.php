@@ -37,7 +37,8 @@ class ImageResource extends JsonResource
             'thumbnail'            => GetPictureSources::run($imageThumbnail),
             'source'               => GetPictureSources::run($image),
             'created_at'           => $media->created_at,
-            'was_recently_created' => $media->wasRecentlyCreated
+            'was_recently_created' => $media->wasRecentlyCreated,
+            'alt'                  => $this->pivot?->caption,
         ];
     }
 }

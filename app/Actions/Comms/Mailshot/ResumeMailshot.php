@@ -47,7 +47,7 @@ class ResumeMailshot extends OrgAction
             ->where('state', MailshotSendChannelStateEnum::READY)
             ->chunk(1000, function ($channels) {
                 foreach ($channels as $mailshotSendChannel) {
-                    SendEmailDeliveryChannel::dispatch($mailshotSendChannel);
+                    SendEmailDeliveryChannel::dispatch($mailshotSendChannel->id)->delay(2);
                 }
             });
 

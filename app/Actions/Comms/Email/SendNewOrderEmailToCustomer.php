@@ -61,10 +61,16 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $paymentInfo = $order->to_be_paid_by == OrderToBePaidByEnum::BANK ?
             $this->generateOrderPaymentByBankTransferHtml($order) : $this->generateOrderPaymentsHtml($order);
 
+        $subject = $outbox->emailOngoingRun?->email?->subject;
+
+        if ($subject) {
+            $subject = str_replace('[Order Number]', $order->reference, $subject);
+        }
+
         $result = $this->sendEmailWithMergeTags(
             $dispatchedEmail,
             $outbox->emailOngoingRun->sender(),
-            $outbox->emailOngoingRun?->email?->subject,
+            $subject,
             $emailHtmlBody,
             '',
             additionalData: [
@@ -116,7 +122,10 @@ class SendNewOrderEmailToCustomer extends OrgAction
 
         $productTransactions = $order->transactions()
             ->where('model_type', 'Product')
-            ->get();
+            ->get()
+            ->sortBy(fn ($transaction) => $transaction->historicAsset?->code)
+            ->values();
+
         $currency            = $order->shop->currency->symbol;
         foreach ($productTransactions as $transaction) {
 

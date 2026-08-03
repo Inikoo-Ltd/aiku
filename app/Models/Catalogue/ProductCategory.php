@@ -14,8 +14,11 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Reviews\ProductCategoryReviewStat;
+use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -36,6 +39,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -75,6 +79,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $follow_master
  * @property bool $show_in_website
  * @property int|null $webpage_id
+ * @property bool $is_in_website has a live webpage, mirrored into the search index
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
  * @property int|null $top_seller
@@ -84,7 +89,6 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
- * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property bool|null $is_name_reviewed
@@ -106,6 +110,12 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $extra_desc_art2
  * @property int|null $extra_desc_art3
  * @property int|null $extra_desc_art4
+ * @property int|null $trade_unit_family_id
+ * @property array<array-key, mixed> $faq
+ * @property int|null $showcase_image_id
+ * @property bool|null $has_gr_vol_discount
+ * @property bool $follow_master_gr
+ * @property bool $not_follow_master_prices
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -129,12 +139,17 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read Organisation $organisation
  * @property-read ProductCategory|null $parent
+ * @property-read LaravelCollection<int, ProductCategory> $relatedProductCategories
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Product> $relatedProducts
+ * @property-read ProductCategoryReviewStat|null $reviewStats
+ * @property-read LaravelCollection<int, Review> $reviews
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Media|null $showcaseImage
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
  * @property-read ProductCategory|null $subDepartment
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategoryTimeSeries> $timeSeries
+ * @property-read TradeUnitFamily|null $tradeUnitFamily
  * @property-read mixed $translations
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, Webpage> $webpages
@@ -161,6 +176,14 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasSearch;
+    protected static function booted(): void
+    {
+        static::saved(function (ProductCategory $productCategory) {
+            if ($productCategory->wasChanged('webpage_id')) {
+                \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($productCategory);
+            }
+        });
+    }
 
     protected $guarded = [];
 
@@ -168,6 +191,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'data'                          => 'array',
+        'faq'                           => 'array',
         'web_images'                    => 'array',
         'health_rank'                   => HealthRankEnum::class,
         'state'                         => ProductCategoryStateEnum::class,
@@ -179,10 +203,12 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'last_fetched_at'               => 'datetime',
         'offers_data'                   => 'array',
         'mismatch_with_master_detected' => 'boolean',
+        'not_follow_master_prices'      => 'boolean',
     ];
 
     protected $attributes = [
         'data'        => '{}',
+        'faq'         => '{}',
         'web_images'  => '{}',
         'offers_data' => '{}',
     ];
@@ -198,6 +224,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
             'description'       => (string)$this->description,
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
+            'is_in_website'     => (bool) $this->is_in_website,
+            'image'             => json_encode(Arr::get($this->web_images, 'main.thumbnail')),
             'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
@@ -213,6 +241,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'code',
         'name',
         'description',
+        'not_follow_master_prices',
+        'follow_master_gr',
     ];
 
     public function getRouteKeyName(): string
@@ -240,6 +270,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(ProductCategoryStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ProductCategoryReviewStat::class);
     }
 
     public function timeSeries(): HasMany
@@ -349,6 +384,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->morphMany(Webpage::class, 'model');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'product_category_id');
+    }
+
     public function masterProductCategory(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class);
@@ -366,6 +406,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->where('trigger_type', class_basename(ProductCategory::class))
             ->where('state', OfferStateEnum::ACTIVE)
             ->where('type', 'Category Quantity Ordered Order Interval');
+    }
+
+    public function showcaseImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'showcase_image_id');
     }
 
     public function descArt1Image(): HasOne
@@ -417,5 +462,18 @@ class ProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->belongsToMany(Product::class, 'product_category_has_related_products')
             ->withTimestamps();
+    }
+
+    public function relatedProductCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductCategory::class, 'product_category_has_related_product_categories', 'product_category_id', 'related_product_category_id')
+            ->orderByPivot('position')
+            ->withPivot('id', 'position')
+            ->withTimestamps();
+    }
+
+    public function tradeUnitFamily(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
     }
 }

@@ -17,9 +17,10 @@ enum ProductCategoryTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case INDEX   = 'index';
-    case SALES      = 'sales';
-    case NEED_REVIEW      = 'need_review';
+    case INDEX       = 'index';
+    case SALES       = 'sales';
+    case NEED_REVIEW = 'need_review';
+    case MISSING_GR  = 'missing_gr';
 
     public function blueprint(): array
     {
@@ -35,6 +36,10 @@ enum ProductCategoryTabsEnum: string
             ProductCategoryTabsEnum::NEED_REVIEW => [
                 'title' => __('Need review'),
                 'icon'  => 'fal fa-pen-alt',
+            ],
+            ProductCategoryTabsEnum::MISSING_GR => [
+                'title' => __('Missing GR'),
+                'icon'  => 'fal fa-medal',
             ],
         };
     }

@@ -6,28 +6,31 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequests;
 use App\Actions\Comms\Mailshot\UI\ShowMailshot;
 use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
+use App\Actions\Helpers\Snapshot\UI\ShowSnapshot;
+use App\Actions\Helpers\Snapshot\UI\ShowSnapshotPreview;
+use App\Actions\SysAdmin\WebUserRequest\UI\IndexWebUserRequests;
 use App\Actions\Web\Announcement\UI\CreateAnnouncement;
 use App\Actions\Web\Announcement\UI\EditAnnouncement;
 use App\Actions\Web\Announcement\UI\IndexAnnouncements;
 use App\Actions\Web\Announcement\UI\ShowAnnouncement;
 use App\Actions\Web\Announcement\UI\ShowAnnouncementWorkshop;
-use App\Actions\Helpers\Snapshot\UI\ShowSnapshot;
-use App\Actions\Helpers\Snapshot\UI\ShowSnapshotPreview;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
 use App\Actions\Web\Banner\UI\ShowBanner;
 use App\Actions\Web\Banner\UI\ShowBannerWorkshop;
+use App\Actions\Web\Crawl\UI\IndexCrawls;
+use App\Actions\Web\Redirect\ExportRedirects;
 use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
+use App\Actions\Web\Webpage\ExportWebpages;
 use App\Actions\Web\Webpage\UI\CreateBlogWebpage;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
@@ -48,23 +51,37 @@ use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
 use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
-use App\Actions\Web\Crawl\UI\IndexCrawls;
+use App\Actions\Search\DecideSearchSynonymSuggestion;
+use App\Actions\Search\DeleteSearchSynonym;
+use App\Actions\Search\IndexSearchSynonyms;
+use App\Actions\Search\IndexSearchSynonymSuggestions;
+use App\Actions\Search\StoreSearchSynonym;
 use App\Actions\Web\Website\UI\CreateWebsite;
+use App\Actions\Web\Website\UI\GetWebsiteSearchBoostCandidates;
+use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
+use App\Actions\Web\Website\UI\ShowRestrictedCountry;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
+use App\Actions\Web\Website\UI\ShowWebsiteSearchAnalytics;
+use App\Actions\Web\Website\UI\ShowWebsiteSearchCustomer;
+use App\Actions\Web\Website\UI\ShowWebsiteSearchOpportunities;
+use App\Actions\Web\Website\UI\ShowWebsiteSearchPage;
+use App\Actions\Web\Website\UI\ShowWebsiteSearchQuery;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshopPreview;
+use App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors;
 use Illuminate\Support\Facades\Route;
 
 Route::name('websites.')->group(function () {
     Route::get('/', [IndexWebsites::class, 'inShop'])->name('index');
-    Route::get('/create', [CreateWebsite::class, 'inShop'])->name('create');
+    Route::get('/create', CreateWebsite::class)->name('create');
 
     Route::prefix('{website}')
         ->group(function () {
             Route::get('', ShowWebsite::class)->name('show');
+            Route::get('restricted-country', ShowRestrictedCountry::class)->name('restricted_country');
             Route::get('edit', EditWebsite::class)->name('edit');
             Route::get('outboxes', [IndexOutboxes::class, 'inWebsite'])->name('outboxes');
             Route::get('outboxes/{outbox}', [ShowOutbox::class, 'inWebsite'])->name('outboxes.show');
@@ -96,6 +113,7 @@ Route::name('websites.')->group(function () {
 
 Route::name('redirect')->prefix('{website}/redirect')->group(function () {
     Route::get('/', IndexRedirects::class)->name('.index');
+    Route::get('/export', ExportRedirects::class)->name('.export');
     Route::get('/{redirect}', [ShowRedirect::class, 'inWebsite'])->name('.show');
     Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebpage'])->name('.edit');
 });
@@ -123,6 +141,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
 
     Route::get('/{webpage}/redirect-options', [IndexWebpages::class, 'asRedirectOption'])->name('index.redirect-options');
 
+    Route::get('export', ExportWebpages::class)->name('export');
     Route::get('create', CreateWebpage::class)->name('create');
     Route::prefix('{webpage}')
         ->group(function () {
@@ -178,5 +197,17 @@ Route::prefix('{website}/crawls')->name('crawls.')->group(function () {
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('', ShowWebsiteAnalyticsDashboard::class)->name('dashboard');
     Route::get('web-user-requests', IndexWebUserRequests::class)->name('web_user_requests.index');
-    Route::get('visitors', [\App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors::class, 'asController'])->name('visitors.index');
+    Route::get('visitors', IndexWebsiteVisitors::class)->name('visitors.index');
+    Route::get('search', ShowWebsiteSearchAnalytics::class)->name('search');
+    Route::get('search/boost-candidates', GetWebsiteSearchBoostCandidates::class)->name('search.boost_candidates');
+    Route::post('search/boosts', UpdateWebsiteSearchBoosts::class)->name('search.boosts.update');
+    Route::get('search/synonyms', IndexSearchSynonyms::class)->name('search.synonyms.index');
+    Route::post('search/synonyms', StoreSearchSynonym::class)->name('search.synonyms.store');
+    Route::delete('search/synonyms/{synonym}', DeleteSearchSynonym::class)->name('search.synonyms.delete');
+    Route::get('search/synonym-suggestions', IndexSearchSynonymSuggestions::class)->name('search.synonym_suggestions.index');
+    Route::post('search/synonym-suggestions/{suggestion}/{decision}', DecideSearchSynonymSuggestion::class)->name('search.synonym_suggestions.decide')->whereIn('decision', ['approve', 'dismiss']);
+    Route::get('search/opportunities', ShowWebsiteSearchOpportunities::class)->name('search.opportunities');
+    Route::get('search/query', ShowWebsiteSearchQuery::class)->name('search.query');
+    Route::get('search/page', ShowWebsiteSearchPage::class)->name('search.page');
+    Route::get('search/customer/{customer}', ShowWebsiteSearchCustomer::class)->name('search.customer');
 });

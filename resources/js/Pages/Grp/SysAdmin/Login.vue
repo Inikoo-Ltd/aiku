@@ -4,11 +4,11 @@ import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
-import { onMounted, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import Layout from '@/Layouts/GrpAuth.vue'
-import { useLayoutStore } from '@/Stores/layout'
+import { Passkeys, UserCancelledError } from '@laravel/passkeys'
 defineOptions({ layout: Layout })
 
 const form = useForm({
@@ -26,21 +26,40 @@ const submit = () => {
         onError: () => (
             isLoading.value = false
         ),
-        onFinish: () => {
-            console.log('Org length', useLayoutStore().organisations.data.length)
-            // useLayoutStore().organisations.data.length === 1
-            //     ? router.get(route('grp.org.dashboard.show', useLayoutStore().organisations.data[0].slug))
-            //     : false
-        },
         onSuccess: () => {
             form.reset('password')
         }
     })
 }
 
-const _inputUsername = ref(null)
+const isPasskeySupported = Passkeys.isSupported()
+const isPasskeyLoading = ref(false)
+const passkeyError = ref<string | null>(null)
+
+const loginWithPasskey = async () => {
+    isPasskeyLoading.value = true
+    passkeyError.value = null
+    try {
+        const { redirect } = await Passkeys.verify()
+        window.location.href = redirect ?? '/dashboard'
+    } catch (error) {
+        isPasskeyLoading.value = false
+        if (!(error instanceof UserCancelledError)) {
+            passkeyError.value = trans('Could not sign in with passkey')
+            console.error(error)
+        }
+    }
+}
+
+const _inputUsername = ref<HTMLInputElement | null>(null)
 
 const hasFocused = ref(false)
+
+const focusUsernameOnReturn = () => {
+    if (document.visibilityState === 'visible' && !hasFocused.value) {
+        _inputUsername.value?.focus()
+    }
+}
 
 onMounted(() => {
     if (!hasFocused.value && _inputUsername.value) {
@@ -48,11 +67,11 @@ onMounted(() => {
         hasFocused.value = true
     }
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            _inputUsername.value?.blur()
-        }
-    })
+    document.addEventListener('visibilitychange', focusUsernameOnReturn)
+})
+
+onBeforeUnmount(() => {
+    document.removeEventListener('visibilitychange', focusUsernameOnReturn)
 })
 
 
@@ -90,7 +109,9 @@ onMounted(() => {
         </div>
 
         <div class="space-y-2">
-            <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" type="indigo"/>
+            <Button full @click.prevent="submit" :loading="isLoading" :disabled="isLoading" label="Sign in" type="indigo"/>
+            <Button v-if="isPasskeySupported" full @click.prevent="loginWithPasskey" :loading="isPasskeyLoading" :disabled="isPasskeyLoading" :label="trans('Sign in with passkey')" type="white-w-outline"/>
+            <p v-if="passkeyError" class="text-sm text-red-500">{{ passkeyError }}</p>
         </div>
     </form>
 

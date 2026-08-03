@@ -5,18 +5,20 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, onMounted, onBeforeUnmount, computed } from "vue"
+import { inject, ref, onMounted, onBeforeUnmount, computed, provide } from "vue"
 import { faCheck, faPlus, faMinus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { Head } from "@inertiajs/vue3"
+import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
-import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
-import { usePage } from "@inertiajs/vue3"
-import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue"
+import IrisBlockRenderer from "@/Iris/Components/IrisBlockRenderer.vue"
+import { useStructuredData } from "@/Iris/Composables/useStructuredData"
+import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
+library.add(faCheck, faPlus, faMinus)
 
 const props = defineProps<{
     webpage_data: {  // ShowIrisWebpage
         seo_data: {}
+        seo_image_alt?: string | null
         title: string
         description: string
         canonical_url: string
@@ -28,22 +30,45 @@ const props = defineProps<{
     webpage_img: any,
     index_page: boolean,
     follow_link: boolean
+    allow_review_reaction : boolean
+    allow_review_reply_reaction : boolean
+    minimum_reviews_to_show : number
+    webpage_reviews_count?: number | null
+    webpage_slug : string
+    show_staff_who_reply : boolean
+    webpage_id : number
 }>()
 
 defineOptions({ layout: LayoutIris })
-library.add(faCheck, faPlus, faMinus)
 
 const layout: any = inject("layout", {})
 const review = ref(usePage().props?.iris?.website?.reviews_settings)
+const getScreenType = (): "mobile" | "tablet" | "desktop" => {
+    if (typeof window === "undefined") return "desktop"
+    if (window.innerWidth < 640) return "mobile"
+    if (window.innerWidth < 1024) return "tablet"
+    return "desktop"
+}
+// ponytail: init to the SSR value ('desktop') so client hydration matches the server DOM;
+// onMounted -> checkScreenType flips it to the real viewport post-hydration.
 const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
 const currentUrl = ref("")
+const structuredDataScript = ref<HTMLScriptElement | null>(null)
+const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
+
+provide('webpage_data', props.webpage_data)
+provide('webpage_id', props.webpage_id)
+provide('minimum_reviews_to_show', props.minimum_reviews_to_show)
+provide('webpage_reviews_count', props.webpage_reviews_count ?? null)
+provide('allow_review_reaction', props.allow_review_reaction)
+provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
+provide('show_staff_who_reply', props.show_staff_who_reply)
 
 const checkScreenType = () => {
-    const width = window.innerWidth
-    if (width < 640) screenType.value = "mobile"
-    else if (width >= 640 && width < 1024) screenType.value = "tablet"
-    else screenType.value = "desktop"
+    screenType.value = getScreenType()
 }
+
+const shareImageAlt = computed(() => props.webpage_data.seo_image_alt || props.webpage_data.title || '')
 
 const robotsContent = computed(() => {
     const index = props.index_page ? "index" : "noindex"
@@ -51,39 +76,31 @@ const robotsContent = computed(() => {
     return `${index}, ${follow}`
 })
 
-
 onMounted(() => {
     currentUrl.value = window.location.href
 
-    if (props?.webpage_data?.seo_data?.structured_data) {
-        const script = document.createElement("script")
-        script.type = "application/ld+json"
-        let structuredData = props.webpage_data?.seo_data?.structured_data
-
-        if (typeof structuredData !== "string") {
-            try {
-                structuredData = JSON.stringify(structuredData)
-            } catch (e) {
-                console.error("Invalid structured data:", e)
-                structuredData = ""
-            }
-        }
-        script.textContent = structuredData
-        document.head.appendChild(script)
-    }
+    // Structure data (Family)
+    // Breadcrumbs structured data is mounted independently in BreadcrumbsIris.vue
+    // Product structured data is mounted independently in the product components (product-1 / product-2)
+    // Department structured data is mounted independently in SubDepartmentsIris.vue
+    structuredDataScript.value = mountStructuredData({
+        webpageData: props.webpage_data,
+        webBlocks: props.web_blocks,
+        currencyCode: layout.iris?.currency?.code,
+        websiteName: layout.iris?.website?.name,
+    })
 
     checkScreenType()
-    window.addEventListener("resize", checkScreenType)
+    window.addEventListener('resize', checkScreenType)
     window.listWebBlocks = props.web_blocks
     layout.recordWebsiteHit()
 })
 
 
 onBeforeUnmount(() => {
+    removeStructuredDataScript(structuredDataScript.value)
     window.removeEventListener("resize", checkScreenType)
 })
-
-
 </script>
 
 <template>
@@ -97,26 +114,30 @@ onBeforeUnmount(() => {
         <meta property="og:description" :content="webpage_data.description || ''" />
         <meta property="og:url" :content="webpage_data.canonical_url || currentUrl" />
         <meta property="og:image" :content="webpage_img?.png || webpage_img?.url || ''" />
-        <meta property="og:image:alt" :content="webpage_data.title || ''" />
+        <meta property="og:image:alt" :content="shareImageAlt" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" :content="usePage().props?.iris?.website?.name || webpage_data.title" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" :content="webpage_data.title || ''" />
         <meta name="twitter:description" :content="webpage_data.description || ''" />
         <meta name="twitter:image" :content="webpage_img?.png || webpage_img?.url || ''" />
+        <meta name="twitter:image:alt" :content="shareImageAlt" />
     </Head>
+
     <div class="bg-white">
-        <div class="mx-auto w-full max-w-screen-3xl">
+        <div class="mx-auto w-full">
             <div
                 v-for="(web_block_data, index) in props.web_blocks"
                 :key="'block-' + web_block_data.id"
                 class="w-full"
                 :id="`v-${web_block_data.type}-${index}`"
             >
-                <component
+                <IrisBlockRenderer
+                    :type="web_block_data.type"
+                    :shopType="layout.retina.type"
+                    :searchModel="layout?.iris?.iris_search_model"
                     :screenType="screenType"
                     :code="web_block_data.type"
-                    :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
                     :fieldValue="web_block_data?.web_block?.layout?.data?.fieldValue || web_block_data.structure"
                     :indexBlock="Number(index)"
                 />
@@ -124,10 +145,9 @@ onBeforeUnmount(() => {
 
             <!-- REVIEW -->
             <div 
-                v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)"
-                class="my-10 2xl:my-16">
+                v-if="webpage_data.model_type != 'Product' && (review?.enabled ?? true)">
                 <div>
-                    <ReviewByStore :code="'review-by-store'" />
+                     <ReviewsIris :webpage_id="webpage_id" />
                 </div>
             </div>
 

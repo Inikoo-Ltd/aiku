@@ -1,6 +1,6 @@
 @import url("transition.css");
 @import url("fonts.css");
-@import url("@vueform/multiselect/themes/default.css");
+@import "@fortawesome/fontawesome-free/css/svg-with-js.min.css";
 
 @tailwind base;
 @tailwind components;

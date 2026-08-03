@@ -2,12 +2,12 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
-use Illuminate\Support\Str;
-use App\Models\CRM\Livechat\ChatMessage;
-use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Models\Chat\ChatMessage;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 class ChatSessionListResource extends JsonResource
 {
@@ -31,9 +31,10 @@ class ChatSessionListResource extends JsonResource
 
         $activeAssignment = null;
         if ($this->relationLoaded('assignments')) {
-            $activeAssignment = $this->assignments
-                ->where('status', $assignmentStatus)
-                ->first();
+            $filtered = $this->assignments->where('status', $assignmentStatus);
+            $activeAssignment = $isClosed
+                ? $filtered->sortByDesc('updated_at')->first()
+                : $filtered->first();
         }
 
         $guestProfile = null;
@@ -69,7 +70,11 @@ class ChatSessionListResource extends JsonResource
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
             'priority' => $this->priority,
-            'contact_name' => $webUser?->customer?->contact_name,
+            'contact_name' => $webUser?->customer?->contact_name
+                ?? $webUser?->username
+                ?? Arr::get($guestProfile ?? [], 'name')
+                ?? $this->guest_identifier
+                ?? 'Guest',
             'last_message' => $lastMessage ? [
                 'message' => $this->truncateMessage($lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,
@@ -125,8 +130,9 @@ class ChatSessionListResource extends JsonResource
             ] : null,
 
             'assigned_agent' => $activeAssignment ? [
-                'id' => $activeAssignment->chatAgent?->id,
-                'name' => $activeAssignment->chatAgent?->user?->contact_name,
+                'id'      => $activeAssignment->chatAgent?->id,
+                'user_id' => $activeAssignment->chatAgent?->user_id,
+                'name'    => $activeAssignment->chatAgent?->user?->contact_name,
             ] : null,
 
             'unread_count' => ChatMessage::where('chat_session_id', $this->id)

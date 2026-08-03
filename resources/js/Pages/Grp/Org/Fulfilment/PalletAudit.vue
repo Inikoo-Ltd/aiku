@@ -117,9 +117,10 @@ const onStoreStoredItem = (idStoredItem: number, quantity: number, idStoredItemA
             },
             onError: (e) => {
                     console.error(e)
+                    const errorMessages = e && Object.keys(e).length ? Object.values(e).join('\n') : ''
                     notify({
                         title: trans('Something went wrong.'),
-                        text: trans('Failed to update the quantity.'),
+                        text: errorMessages || trans('Failed to update the quantity.'),
                         type: 'error',
                     })
             },
@@ -160,9 +161,10 @@ const onChangeQuantity = (idStoredItemAuditDelta: number | null, quantity: numbe
             },
             onError: (e) => {
                     console.error(e)
+                    const errorMessages = e && Object.keys(e).length ? Object.values(e).join('\n') : ''
                     notify({
                         title: trans('Something went wrong.'),
-                        text: trans('Failed to update the quantity.'),
+                        text: errorMessages || trans('Failed to update the quantity.'),
                         type: 'error',
                     })
             },
@@ -192,7 +194,7 @@ const isModalOpened = ref(false)
     <PageHeading :data="pageHead">
         <template #button-add-sku="{ }">
             <!-- <Button
-                :label="trans('Add SKU')"
+                :label="trans('Add SKO')"
                 icon="fal fa-plus"
                 type="secondary"
             /> -->
@@ -212,7 +214,7 @@ const isModalOpened = ref(false)
             >
                 <template #default="{ openModal }">
                     <Button @click="openModal" type="dashed" icon="fas fa-plus" fuxll
-                        :label="trans(`Customer's SKU`)" />
+                        :label="trans(`Customer's SKO`)" />
                 </template>
 
                 <template #modal="{ form, sendToServer, closeModal }">
@@ -224,7 +226,7 @@ const isModalOpened = ref(false)
                             audited_quantity: form.quantity,
                         },
                         true
-                    )" :stored_items="pallet?.data?.stored_items" @closeModal="closeModal" :title="trans(`Add Customer's SKU`)" />
+                    )" :stored_items="pallet?.data?.stored_items" @closeModal="closeModal" :title="trans(`Add Customer's SKO`)" />
                 </template>
             </StoredItemsProperty>
         </template>
@@ -249,10 +251,10 @@ const isModalOpened = ref(false)
 
     <DataTable v-if="editDeltas"
         :value="[...editDeltas.stored_items, ...editDeltas.new_stored_items]">
-        <Column field="reference" :header="trans('SKU')" class="">
+        <Column field="reference" :header="trans('SKO')" class="">
             <template #body="{ data }">
                 <div class="whitespace-nowrap">{{ data.reference }}
-                    <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans(`New added Customer's SKU`)" icon='fas fa-star' size="xs" class='text-indigo-500' fixed-width aria-hidden='true' />
+                    <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans(`New added Customer's SKO`)" icon='fas fa-star' size="xs" class='text-indigo-500' fixed-width aria-hidden='true' />
                 </div>
             </template>
         </Column>
@@ -439,7 +441,7 @@ const isModalOpened = ref(false)
     </DataTable>
 
     <div v-if="editDeltas" class="mx-auto px-4 w-10/12 mt-4">
-        <Button @click="isModalOpened = true" type="dashed" icon="fas fa-plus" full :label="trans(`Customer's SKU`)" />
+        <Button @click="isModalOpened = true" type="dashed" icon="fas fa-plus" full :label="trans(`Customer's SKO`)" />
     </div>
 
 

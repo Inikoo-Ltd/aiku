@@ -16,6 +16,7 @@ export default ({ mode }) => {
 
   return defineConfig(
     {
+      cacheDir: "node_modules/.vite-grp",
       server : {
         cors : true,
         watch: {

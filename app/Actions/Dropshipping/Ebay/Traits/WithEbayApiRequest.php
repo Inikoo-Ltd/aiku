@@ -213,7 +213,21 @@ trait WithEbayApiRequest
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
-                    // Add more mappings as needed
+                case 'Item Height':
+                    $height = Arr::get($product->marketing_dimensions, 'h');
+                    $h = in_array($height, [null, 0]) ? 0.5 : $height;
+                    $attributes['Item Height'] = [$h * 100 . 'cm'];
+                    break;
+                case 'Item Width':
+                    $width = Arr::get($product->marketing_dimensions, 'w');
+                    $w = in_array($width, [null, 0]) ? 0.5 : $width;
+                    $attributes['Item Width'] = [$w * 100 . 'cm'];
+                    break;
+                case 'Item Length':
+                    $length = Arr::get($product->marketing_dimensions, 'l');
+                    $l = in_array($length, [null, 0]) ? 0.5 : $length;
+                    $attributes['Item Length'] = [$l * 100 . 'cm'];
+                    break;
                 default:
                     // Use generic mapping or default value
                     $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
@@ -250,15 +264,47 @@ trait WithEbayApiRequest
         return $matches[1] ?? null;
     }
 
-    public function getItemAspectsForCategory($categoryId)
+    public function getFormattedDescriptions(string $description): string
+    {
+        $descriptions = mb_substr($description, 0, 4000);
+        $descriptions = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $descriptions = strip_tags($descriptions);
+
+        $bannedWords = [
+            'heal', 'heals', 'healing', 'healed',
+            'cure', 'cures', 'cured', 'curing',
+            'treat', 'treats', 'treated', 'treatment', 'treatments',
+            'remedy', 'remedies',
+            'therapy', 'therapies', 'therapeutic',
+            'diagnose', 'diagnosis',
+            'prevent', 'prevents', 'prevention',
+            'medicine', 'medicinal', 'medicate',
+            'antibacterial', 'antimicrobial', 'antifungal', 'antiviral',
+            'detox', 'detoxify', 'detoxification',
+            'pain relief', 'pain killer', 'painkiller',
+        ];
+
+        $pattern = '/\b(' . implode('|', array_map('preg_quote', $bannedWords)) . ')\b/iu';
+        $descriptions = preg_replace($pattern, '', $descriptions);
+
+        $descriptions = preg_replace('/\s+/', ' ', $descriptions);
+        return trim($descriptions);
+    }
+
+    public function getCategoryTreeId(): int
     {
         $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
-        $categoryTree = match ($marketplace) {
+        return match ($marketplace) {
             'EBAY_ES' => 186,
             'EBAY_DE' => 77,
             default => 3
         };
+    }
+
+    public function getItemAspectsForCategory($categoryId)
+    {
+        $categoryTree = $this->getCategoryTreeId();
 
         try {
             $endpoint = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_item_aspects_for_category";
@@ -296,12 +342,12 @@ trait WithEbayApiRequest
 
         $services = [
             'EBAY_GB' => [
-                'UK_OtherCourier'     => [
+                /*'UK_OtherCourier'     => [
                     'service_code' => 'UK_OtherCourier',
                     'service_name' => 'Yodel',
                     'carrier_code' => 'Yodel',
                     'carrier_name' => 'Yodel',
-                ],
+                ],*/
                 'UK_RoyalMailNextDay' => [
                     'service_code' => 'UK_RoyalMailNextDay',
                     'service_name' => 'Royal Mail',
@@ -746,10 +792,11 @@ trait WithEbayApiRequest
             };
 
             $response = Http::withHeaders([
-                'Authorization'    => 'Bearer '.$token,
-                'Content-Type'     => 'application/json',
-                'Accept'           => 'application/json',
-                'Content-Language' => $contentLanguage
+                'Authorization'           => 'Bearer '.$token,
+                'Content-Type'            => 'application/json',
+                'Accept'                  => 'application/json',
+                'Content-Language'        => $contentLanguage,
+                'X-EBAY-C-MARKETPLACE-ID' => $marketplaceId
             ])->withQueryParameters($queryParams)
                 ->$method(
                     $url,
@@ -764,14 +811,16 @@ trait WithEbayApiRequest
             if ($response->status() === 401) {
                 $token    = Arr::get($this->refreshEbayToken(), 'access_token');
                 $response = Http::withHeaders([
-                    'Authorization'    => 'Bearer '.$token,
-                    'Content-Type'     => 'application/json',
-                    'Accept'           => 'application/json',
-                    'Content-Language' => 'en-GB'
-                ])->$method(
-                    $url,
-                    $data
-                );
+                    'Authorization'           => 'Bearer '.$token,
+                    'Content-Type'            => 'application/json',
+                    'Accept'                  => 'application/json',
+                    'Content-Language'        => $contentLanguage,
+                    'X-EBAY-C-MARKETPLACE-ID' => $marketplaceId
+                ])->withQueryParameters($queryParams)
+                    ->$method(
+                        $url,
+                        $data
+                    );
 
                 if ($response->successful()) {
                     return $response->json();
@@ -897,7 +946,7 @@ trait WithEbayApiRequest
         try {
             $endpoint = "/sell/inventory/v1/bulk_update_price_quantity";
 
-            return $this->makeEbayRequest('put', $endpoint, $productData);
+            return $this->makeEbayRequest('post', $endpoint, $productData);
         } catch (Exception $e) {
             Log::error('Update eBay Product Price and Quantity Error: '.$e->getMessage());
 
@@ -1013,7 +1062,11 @@ trait WithEbayApiRequest
 
 
     /**
-     * Update offer by offer ID
+     * Update offer by offer ID.
+     *
+     * eBay's offer PUT is a full replace: any field omitted from the payload is deleted
+     * from the offer. To avoid wiping seller data (listing description, policies, category,
+     * pricing) the current offer is fetched first and only the provided fields are overlaid.
      *
      * @throws \Exception
      */
@@ -1022,55 +1075,79 @@ trait WithEbayApiRequest
         $currency = Arr::get($this->getEbayConfig(), 'currency');
 
         try {
-            $data = [
-                "format"              => "FIXED_PRICE",
-                "listingDescription"  => Arr::get($offerData, 'description'),
-                "availableQuantity"   => Arr::get($offerData, 'quantity', 1),
-                "pricingSummary"      => [
-                    "price" => [
-                        "value"    => Arr::get($offerData, 'price', 0),
-                        "currency" => $currency
-                    ]
-                ],
-                "listingPolicies"     => [
-                    "fulfillmentPolicyId" => $this->fulfillment_policy_id,
-                    "paymentPolicyId"     => $this->payment_policy_id,
-                    "returnPolicyId"      => $this->return_policy_id,
-                ],
-                "categoryId"          => Arr::get($offerData, 'category_id'),
-                "merchantLocationKey" => $this->location_key,
-            ];
+            $currentOffer = $this->getOffer($offerId);
+
+            if (!Arr::get($currentOffer, 'offerId')) {
+                return $currentOffer;
+            }
+
+            $data = Arr::only($currentOffer, [
+                'availableQuantity',
+                'categoryId',
+                'charity',
+                'extendedProducerResponsibility',
+                'format',
+                'hideBuyerDetails',
+                'includeCatalogProductDetails',
+                'listingDescription',
+                'listingDuration',
+                'listingPolicies',
+                'listingStartDate',
+                'lotSize',
+                'merchantLocationKey',
+                'pricingSummary',
+                'quantityLimitPerBuyer',
+                'regulatory',
+                'secondaryCategoryId',
+                'storeCategoryNames',
+                'tax',
+            ]);
+
+            if (Arr::has($offerData, 'description')) {
+                data_set($data, 'listingDescription', Arr::get($offerData, 'description'));
+            }
+
+            if (Arr::has($offerData, 'quantity')) {
+                data_set($data, 'availableQuantity', Arr::get($offerData, 'quantity'));
+            }
+
+            if (Arr::has($offerData, 'price')) {
+                data_set($data, 'pricingSummary.price', [
+                    'value'    => Arr::get($offerData, 'price'),
+                    'currency' => $currency
+                ]);
+            }
+
+            if (Arr::get($offerData, 'category_id')) {
+                data_set($data, 'categoryId', Arr::get($offerData, 'category_id'));
+            }
+
+            if (blank(Arr::get($data, 'format'))) {
+                data_set($data, 'format', 'FIXED_PRICE');
+            }
+
+            if (blank(Arr::get($data, 'merchantLocationKey'))) {
+                data_set($data, 'merchantLocationKey', $this->location_key);
+            }
+
+            if (blank(Arr::get($data, 'listingPolicies'))) {
+                data_set($data, 'listingPolicies', [
+                    'fulfillmentPolicyId' => $this->fulfillment_policy_id,
+                    'paymentPolicyId'     => $this->payment_policy_id,
+                    'returnPolicyId'      => $this->return_policy_id,
+                ]);
+            }
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";
 
             return $this->makeEbayRequest('put', $endpoint, $data);
         } catch (Exception $e) {
-            Log::error('Get eBay Offer Error: '.$e->getMessage());
+            Log::error('Update eBay Offer Error: '.$e->getMessage());
 
             return ['error' => $e->getMessage()];
         }
     }
 
-
-    /**
-     * Update offer by offer ID
-     */
-    public function updateQuantityOffer($offerId, array $offerData)
-    {
-        try {
-            $data = [
-                "availableQuantity" => Arr::get($offerData, 'availableQuantity'),
-            ];
-
-            $endpoint = "/sell/inventory/v1/offer/$offerId";
-
-            return $this->makeEbayRequest('put', $endpoint, $data);
-        } catch (Exception $e) {
-            Log::error('Get eBay Offer Error: '.$e->getMessage());
-
-            return ['error' => $e->getMessage()];
-        }
-    }
 
     /**
      * Delete product from eBay
@@ -1123,11 +1200,9 @@ trait WithEbayApiRequest
                 $params['filter'] = $filter;
             }
 
+            $endpoint    = "/sell/fulfillment/v1/order";
 
-            $queryString = http_build_query($params);
-            $endpoint    = "/sell/fulfillment/v1/order?$queryString";
-
-            return $this->makeEbayRequest('get', $endpoint);
+            return $this->makeEbayRequest('get', $endpoint, [], $params);
         } catch (Exception $e) {
             Log::error('Get eBay Orders Error: '.$e->getMessage());
 
@@ -1169,7 +1244,6 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
             $errMsg = 'Fulfill eBay Order Error: '.$e->getMessage();
-            Log::error($errMsg);
             \Sentry::captureMessage($errMsg);
 
             return ['error' => $e->getMessage()];
@@ -1411,6 +1485,23 @@ trait WithEbayApiRequest
         }
     }
 
+    public function deleteFulfilmentPolicies($fulfilmentPolicyId)
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        try {
+            $endpoint = "/sell/account/v1/fulfillment_policy/$fulfilmentPolicyId";
+
+            return $this->makeEbayRequest('delete', $endpoint, [], [
+                'marketplace_id' => $marketplaceId
+            ]);
+        } catch (Exception $e) {
+            Log::error('Delete Fulfilment Policy Error: '.$e->getMessage());
+
+            return ['error' => $e->getMessage()];
+        }
+    }
+
     /**
      * Create a user's eBay payment policy
      *
@@ -1610,7 +1701,8 @@ trait WithEbayApiRequest
     {
         try {
             $encodedKeyword = urlencode($keyword);
-            $endpoint       = "/commerce/taxonomy/v1/category_tree/3/get_category_suggestions";
+            $categoryTree   = $this->getCategoryTreeId();
+            $endpoint       = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_category_suggestions";
 
             return $this->makeEbayRequest('get', $endpoint, [], [
                 'q' => $encodedKeyword

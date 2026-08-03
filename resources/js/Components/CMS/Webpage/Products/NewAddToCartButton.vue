@@ -7,6 +7,7 @@ import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -35,7 +36,6 @@ import {
   faPercent,
   faPoundSign,
   faClock,
-  faMedal,
 } from "@far";
 import { faLambda } from "@fad";
 
@@ -78,6 +78,17 @@ const localBasket = ref({...props.hasInBasket})
 const layout = inject('layout', retinaLayoutStructure)
 const isLoadingSubmitQuantityProduct = ref(false)
 const status = ref<null | 'loading' | 'success' | 'error'>(null)
+
+const pushAddToCart = (quantity: number) => {
+    if (quantity <= 0) {
+        return
+    }
+
+    pushGtmEvent('add_to_cart', buildGtmProductPayload(props.product as any, {
+        currencyCode: layout?.iris?.currency?.code,
+        quantity,
+    }))
+}
 
 
 const currentQuantity = computed(() => {
@@ -181,6 +192,9 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
                 transaction_id: response.data?.transaction_id,
                 quantity_ordered: response.data?.quantity_ordered,
                 quantity_ordered_new: response.data?.quantity_ordered,
+                department_id: response.data?.department_id,
+                sub_department_id: response.data?.sub_department_id,
+                family_id: response.data?.family_id,
             }
         }
 
@@ -195,18 +209,21 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
         setStatus('success')
 
         // Luigi: event add to cart
+        const addToCartEcommerce = {
+            currency: layout?.iris?.currency?.code,
+            value: product.price,
+            items: [
+                {
+                    item_id: product?.luigi_identity,
+                }
+            ]
+        }
         window?.dataLayer?.push({
             event: "add_to_cart",
-            ecommerce: {
-                currency: layout?.iris?.currency?.code,
-                value: product.price,
-                items: [
-                    {
-                        item_id: product?.luigi_identity,
-                    }
-                ]
-            }
+            ecommerce: addToCartEcommerce,
         })
+
+        pushAddToCart(response.data?.quantity_ordered ?? get(basket, ['quantity_ordered_new'], 0))
 
     } catch (error: any) {
         setStatus('error')
@@ -224,6 +241,8 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
 const onUpdateQuantity = (product: ProductResource, basket: any) => {
     const isWillRemoveFrombasket = get(basket, ['quantity_ordered_new'], 0) === 0
     const productTransactionId = product.transaction_id
+    const previousQuantity = Number(get(basket, ['quantity_ordered'], 0)) || 0
+    const nextQuantity = Number(get(basket, ['quantity_ordered_new'], basket.quantity_ordered)) || 0
     router[props.updateBasketQuantityRoute.method || 'post'](
         route(props.updateBasketQuantityRoute.name, {
             transaction: product.transaction_id,
@@ -245,6 +264,7 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
                 setStatus('success')
                 layout.reload_handle()
                 basket.quantity_ordered = basket.quantity_ordered_new
+                pushAddToCart(nextQuantity - previousQuantity)
                 if (isWillRemoveFrombasket) {
                     // Remove product from layout basket
                     const products = layout.rightbasket?.products
@@ -275,12 +295,16 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
                 }
 
                 const currentList = layout.family_page?.productInBasket?.list || {}
+                const existingEntry = currentList[product.id] || {}
                 const updatedList = {
                     ...currentList,
                     [product.id]: {
                         transaction_id: product.transaction_id,
                         quantity_ordered: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
                         quantity_ordered_new: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
+                        department_id: existingEntry.department_id ?? null,
+                        sub_department_id: existingEntry.sub_department_id ?? null,
+                        family_id: existingEntry.family_id ?? null,
                     }
                 }
 

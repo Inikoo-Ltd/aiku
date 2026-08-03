@@ -10,8 +10,8 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\CRM\Platform\UI\ShowPlatform;
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
+use App\Actions\Dropshipping\UI\ShowPlatform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;

@@ -71,11 +71,11 @@ const props = defineProps<{
     }
   }
   agreed_prices?: {}
-  note: {},
-  history: {},
+  note?: {},
+  history?: {},
   email?: {},
   balance?: {},
-  attachments: {}
+  attachments?: {}
   attachmentRoutes: {
     attachRoute: routeType
     detachRoute: routeType

@@ -30,7 +30,7 @@ class RedirectsResource extends JsonResource
             'url'              => $this->url,
             'type'             => $this->type,
             'path'             => '…/'.$this->path,
-            'full_path'        => '…/'.explode('.com/', $this->full_path, 2)[1],
+            'full_path'        => $this->full_path,
             'to_webpage_title' => $this->to_webpage_title,
             'to_webpage_code'  => $this->to_webpage_code,
             'to_webpage_slug'  => $this->to_webpage_slug,

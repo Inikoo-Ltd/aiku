@@ -102,6 +102,8 @@ class Guest extends Model implements HasMedia, Auditable
     {
         return [
             'id'                       => (string)$this->id,
+            'slug'                     => (string)$this->slug,
+            'code'                     => (string)$this->code,
             'status'                   => $this->status,
             'contact_name'             => (string)$this->contact_name,
             'company_name'             => (string)$this->company_name,

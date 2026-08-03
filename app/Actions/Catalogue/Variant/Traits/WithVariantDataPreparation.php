@@ -36,6 +36,10 @@ trait WithVariantDataPreparation
 
     private function prepareVariantData(): void
     {
+        if (isset($this->status) && !$this->status) {
+            return;
+        }
+
         $masterProductList = MasterAsset::whereIn(
             'id',
             array_keys(data_get($this->data, 'products', []))

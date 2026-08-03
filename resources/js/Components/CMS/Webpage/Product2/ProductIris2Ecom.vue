@@ -144,6 +144,10 @@ const groupedAttachments = computed(() => {
     }, {})
 })
 
+const countriesOfOrigin = computed(() =>
+    (product.value?.specifications?.countries_of_origin || []).filter((country: any) => country?.code)
+)
+
 const toggleExpanded = () => {
     expanded.value = !expanded.value
 }
@@ -191,7 +195,7 @@ onMounted(() => {
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-iris-2-ecom'+indexBlock"  component="product-iris-2-ecom"
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'product-iris-2-ecom'+indexBlock"  component="product-iris-2-ecom"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -304,7 +308,7 @@ onMounted(() => {
                     <div>
                         <div class="text-xs font-medium border-b-2 border-gray-900 p-1.5 text-right ">
                             <p>{{ trans("Retail Price") }}:</p>
-                            <p>{{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                            <p>{{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                             </p>
                         </div>
                         <div class="p-1.5 text-right">
@@ -409,7 +413,7 @@ onMounted(() => {
 
                 <div v-if="fieldValue?.setting?.product_specs">
                     <div class="flex flex-wrap items-center gap-6 py-2 border bg-gray-50 p-4">
-                        <div class="font-bold text-xl">Product Specification</div>
+                        <div class="font-bold text-xl">{{ ctrans("Product Specification") }}</div>
 
                         <div class="w-full space-y-1">
 
@@ -458,14 +462,16 @@ onMounted(() => {
                             </div>
 
                             <!-- Origin Country -->
-                            <div v-if="product?.specifications?.country_of_origin?.code" class="grid grid-cols-2">
+                            <div v-if="countriesOfOrigin.length" class="grid grid-cols-2">
                                 <div class="p-2 text-sm font-thin">{{ trans('Origin Country') }}</div>
 
-                                <div class="p-2 flex items-center gap-2 font-thin text-sm">
-                                    <img :src="'/flags/' + product.specifications.country_of_origin.code.toLowerCase() + '.png'"
-                                        :alt="product.specifications.country_of_origin.name"
-                                        :title="product.specifications.country_of_origin.name" class="h-4 w-auto" />
-                                    <span>{{ product.specifications.country_of_origin.name }}</span>
+                                <div class="p-2 flex flex-col gap-1 font-thin text-sm">
+                                    <div v-for="country in countriesOfOrigin" :key="country.code"
+                                        class="flex items-center gap-2">
+                                        <img :src="'/flags/' + country.code.toLowerCase() + '.png'"
+                                            :alt="country.name" :title="country.name" class="h-4 w-auto" />
+                                        <span>{{ country.name }}</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -506,7 +512,7 @@ onMounted(() => {
 
 
     <!-- ================= MOBILE ================= -->
-    <div v-if="screenType === 'mobile'" class="bg-white">
+    <div class="sm:hidden bg-white">
 
         <!-- IMAGES -->
         <Product2Image :images="validImages" :video="videoSetup?.url" />
@@ -559,7 +565,7 @@ onMounted(() => {
                 <div>
                     <div class="text-xs font-medium border-b-2 border-gray-900 p-1.5 text-right ">
                         <p>Retail Price:</p>
-                        <p>{{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                        <p>{{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                         </p>
                     </div>
                     <div class="p-1.5 text-right">
@@ -695,14 +701,16 @@ onMounted(() => {
                             </div>
 
                             <!-- Origin Country -->
-                            <div v-if="product?.specifications?.country_of_origin?.code" class="grid grid-cols-2">
+                            <div v-if="countriesOfOrigin.length" class="grid grid-cols-2">
                                 <div class="p-2 text-sm font-thin">{{ trans('Origin Country') }}</div>
 
-                                <div class="p-2 flex items-center gap-2 font-thin text-sm">
-                                    <img :src="'/flags/' + product.specifications.country_of_origin.code.toLowerCase() + '.png'"
-                                        :alt="product.specifications.country_of_origin.name"
-                                        :title="product.specifications.country_of_origin.name" class="h-4 w-auto" />
-                                    <span>{{ product.specifications.country_of_origin.name }}</span>
+                                <div class="p-2 flex flex-col gap-1 font-thin text-sm">
+                                    <div v-for="country in countriesOfOrigin" :key="country.code"
+                                        class="flex items-center gap-2">
+                                        <img :src="'/flags/' + country.code.toLowerCase() + '.png'"
+                                            :alt="country.name" :title="country.name" class="h-4 w-auto" />
+                                        <span>{{ country.name }}</span>
+                                    </div>
                                 </div>
                             </div>
 

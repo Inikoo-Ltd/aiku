@@ -15,6 +15,7 @@ use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -27,6 +28,7 @@ use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundsResource;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Accounting\Invoice;
@@ -174,16 +176,9 @@ class ShowInvoice extends OrgAction
                 [
                     'label'       => __('Net'),
                     'information' => '',
-                    // 'styleField'    => [
-                    //     'background' => '#000000CC',
-                    //     'color' => '#fff',
-                    // ],
                     'price_total' => $invoice->net_amount
                 ],
-                [
-                    'label'       => __('Tax'),
-                    'price_total' => $invoice->tax_amount
-                ]
+                ...$this->getInvoiceTaxRows($invoice),
             ],
             [
                 [
@@ -244,6 +239,14 @@ class ShowInvoice extends OrgAction
                 'label' => __('Group by Tariff Code'),
                 'value' => 'group_by_tariff_code',
             ],
+            [
+                'label' => __('Show Dispatch Totals (SKO & Units)'),
+                'value' => 'show_dispatch_totals',
+            ],
+            [
+                'label' => __('Batch Code'),
+                'value' => 'show_batch_code',
+            ],
         ];
 
         return array_map(function (array $column) use ($savedColumns) {
@@ -264,11 +267,12 @@ class ShowInvoice extends OrgAction
                 'tooltip'    => __('Download PDF'),
                 'name'       => 'grp.org.accounting.invoices.download',
                 'parameters' => [
-                    'organisation'      => $invoice->organisation->slug,
-                    'invoice'           => $invoice->slug,
-                    'country_of_origin' => true,
-                    'weight'            => true,
-                    'commodity_codes'   => true,
+                    'organisation'         => $invoice->organisation->slug,
+                    'invoice'              => $invoice->slug,
+                    'country_of_origin'    => true,
+                    'weight'               => true,
+                    'commodity_codes'      => true,
+                    'show_dispatch_totals' => true,
                 ]
             ],
             [
@@ -326,7 +330,7 @@ class ShowInvoice extends OrgAction
         }
 
         if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {
-            return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab);
+            return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab, $this->parent);
         }
 
         $subNavigation = [];
@@ -365,7 +369,7 @@ class ShowInvoice extends OrgAction
         return Inertia::render(
             'Org/Accounting/Invoice',
             [
-                'title'       => __('Invoice'),
+                'title'       => __('Invoice') . ' ' . $invoice->reference,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),
@@ -396,8 +400,8 @@ class ShowInvoice extends OrgAction
 
                 'invoiceExportOptions'          => $exportInvoiceOptions,
                 'routes'                        => [
-                    'delivery_note'          => $deliveryNoteRoute,
-                    'updateInvoiceDateRoute' => [
+                    'delivery_note'             => $deliveryNoteRoute,
+                    'updateInvoiceDateRoute'    => [
                         'name'       => 'grp.models.invoice.update.date',
                         'parameters' => [$invoice->id]
                     ],
@@ -407,10 +411,10 @@ class ShowInvoice extends OrgAction
                     ],
                 ],
                 'can'                           => [
-                    'editInvoiceDate' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
+                    'editInvoiceDate'    => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                     'editInvoiceAddress' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                 ],
-                'billing_address_form'                 => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
+                'billing_address_form'          => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
                     'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),
                     'options' => [
                         'countriesAddressData' => GetAddressData::run()
@@ -425,36 +429,89 @@ class ShowInvoice extends OrgAction
                 ],
                 'download_pdf_column'           => $this->getDownloadPdfColumns($invoice),
                 'is_external'                   => $invoice->shop?->type->value == 'external',
+                'attachmentRoutes'              => [
+                    'attachRoute' => [
+                        'name'       => 'grp.models.invoice.attachment.attach',
+                        'parameters' => [
+                            'invoice' => $invoice->id,
+                        ]
+                    ],
+                    'detachRoute' => [
+                        'name'       => 'grp.models.invoice.attachment.detach',
+                        'parameters' => [
+                            'invoice' => $invoice->id,
+                        ],
+                        'method'     => 'delete'
+                    ]
+                ],
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
+                    : Inertia::optional(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
 
                 InvoiceTabsEnum::INVOICE_TRANSACTIONS->value => $this->tab == InvoiceTabsEnum::INVOICE_TRANSACTIONS->value ?
                     fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::INVOICE_TRANSACTIONS->value))),
+                    : Inertia::optional(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::INVOICE_TRANSACTIONS->value))),
 
 
                 InvoiceTabsEnum::EMAIL->value => $this->tab == InvoiceTabsEnum::EMAIL->value ?
                     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))
-                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))),
+                    : Inertia::optional(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, InvoiceTabsEnum::EMAIL->value))),
 
 
                 InvoiceTabsEnum::PAYMENTS->value => $this->tab == InvoiceTabsEnum::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexPayments::run($invoice))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
+                    : Inertia::optional(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
 
                 InvoiceTabsEnum::HISTORY->value => $this->tab == InvoiceTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($invoice))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($invoice))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($invoice))),
+
+                InvoiceTabsEnum::ATTACHMENTS->value => $this->tab == InvoiceTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $invoice, prefix: InvoiceTabsEnum::ATTACHMENTS->value))
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $invoice, prefix: InvoiceTabsEnum::ATTACHMENTS->value))),
 
             ]
         )->table(IndexPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
             ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: InvoiceTabsEnum::REFUNDS->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($invoice->customer, prefix: InvoiceTabsEnum::EMAIL->value))
             ->table(IndexHistory::make()->tableStructure(prefix: InvoiceTabsEnum::HISTORY->value))
+            ->table(IndexAttachments::make()->tableStructure(prefix: InvoiceTabsEnum::ATTACHMENTS->value))
             ->table(IndexInvoiceTransactions::make()->tableStructure(InvoiceTabsEnum::INVOICE_TRANSACTIONS->value));
     }
 
+
+    /**
+     * One tax row per rate on the invoice, with the net it applies to beside it, matching the
+     * order summary and the pdf. External shop and tax-only invoices keep the single stored
+     * figure, theirs is not derived from the lines.
+     *
+     * @return array<int, array{label: string, information?: string, price_total: mixed}>
+     */
+    public function getInvoiceTaxRows(Invoice $invoice): array
+    {
+        $taxRows = [];
+        if ($invoice->shop->type != ShopTypeEnum::EXTERNAL && !$invoice->is_tax_only) {
+            $taxBreakdown = $invoice->taxBreakdown();
+            foreach ($taxBreakdown as $taxRow) {
+                $taxRows[] = [
+                    'label'       => __('Tax').' ('.$taxRow['name'].')',
+                    'information' => count($taxBreakdown) > 1
+                        ? __('on').' '.$invoice->currency->symbol.number_format($taxRow['net_amount'], 2)
+                        : '',
+                    'price_total' => $taxRow['tax_amount'],
+                ];
+            }
+        }
+
+        if (empty($taxRows)) {
+            $taxRows[] = [
+                'label'       => __('Tax'),
+                'price_total' => $invoice->tax_amount,
+            ];
+        }
+
+        return $taxRows;
+    }
 
     public function jsonResponse(Invoice $invoice): InvoiceResource
     {

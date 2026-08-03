@@ -16,6 +16,7 @@ import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy, faInfoCircle)
 import { ref, watch } from "vue"
 import { SenderEmail } from '@/types/SenderEmail'
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

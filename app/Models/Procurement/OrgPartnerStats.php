@@ -57,6 +57,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stock_deliveries_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_stock_deliveries_state_booking_in
+ * @property int $number_stock_deliveries_state_booked_in
  * @property-read \App\Models\Procurement\OrgPartner $orgPartner
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartnerStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPartnerStats newQuery()

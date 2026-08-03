@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 30-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -12,6 +12,8 @@ namespace App\Actions\Retina\Ecom\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
+use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\GetRetinaPaymentMethods;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
@@ -28,6 +30,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowRetinaEcomCheckout extends RetinaAction
 {
     use IsOrder;
+    use WithOrderForbiddenCountryCheck;
     use CalculatesPaymentWithBalance;
 
     public function handle(Customer $customer): array
@@ -39,9 +42,13 @@ class ShowRetinaEcomCheckout extends RetinaAction
         $paymentMethods = [];
 
         if ($order) {
+            if ($this->isForbidden($order)) {
+                abort(403, __('Order billing or delivery address is marked as forbidden'));
+            }
+
+            $order = FixMiscalculatedTransactionAmounts::run($order, true);
             $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
         }
-
 
         return [
             'order'          => $order,

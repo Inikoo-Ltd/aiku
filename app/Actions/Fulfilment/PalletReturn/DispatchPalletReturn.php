@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\PalletReturn;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Dropshipping\Tiktok\Order\FulfillOrderToTiktok;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
@@ -38,6 +39,8 @@ use Lorisleiva\Actions\ActionRequest;
 class DispatchPalletReturn extends OrgAction
 {
     use WithActionUpdate;
+
+    private PalletReturn $palletReturn;
 
 
     /**
@@ -102,6 +105,9 @@ class DispatchPalletReturn extends OrgAction
         WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
         FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+        if ($palletReturn->customerSalesChannel) {
+            CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+        }
         SendPalletReturnNotification::run($palletReturn);
 
         $pickingSessions = $palletReturn->pickingSessions()->get();
@@ -119,7 +125,14 @@ class DispatchPalletReturn extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
+        $warehouseId = $this->palletReturn->warehouse_id;
+
+        return $request->user()->authTo([
+            "fulfilment-shop.{$this->fulfilment->id}.edit",
+            "fulfilment.$warehouseId.edit",
+            "supervisor-incoming.$warehouseId",
+            "supervisor-fulfilment.$warehouseId",
+        ]);
     }
 
     public function jsonResponse(PalletReturn $palletReturn): JsonResource
@@ -132,6 +145,7 @@ class DispatchPalletReturn extends OrgAction
      */
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
         return $this->handle($palletReturn, $this->validatedData);

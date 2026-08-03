@@ -13,6 +13,8 @@ use App\Enums\Transfers\Fetch\FetchTypeEnum;
 use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use App\Transfers\AuroraOrganisationService;
+use App\Transfers\WowsbarOrganisationService;
 use App\Models\Transfers\FetchStack;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +25,65 @@ class FetchAuroraAction extends FetchAction
 
     public string $jobQueue = 'aurora';
     public int $jobTimeout = 60 * 60 * 12;
+
+    protected bool $forcedSourceFetch = false;
+
+    public function getOrganisationSource(Organisation $organisation): AuroraOrganisationService|WowsbarOrganisationService|null
+    {
+        $organisationSource = parent::getOrganisationSource($organisation);
+        $organisationSource?->setForcedFetch($this->forcedSourceFetch);
+
+        return $organisationSource;
+    }
+
+    /**
+     * An organisation that has left Aurora only accepts the handful of fetchers it still
+     * has no aiku replacement for. Anything else arriving for it is stale by definition:
+     * its staff maintain that data in aiku now, and fetching would quietly revert them.
+     */
+    protected function auroraStillFeeds(Organisation $organisation): bool
+    {
+        if (in_array($organisation->slug, config('aurora.following_organisations', []))) {
+            return true;
+        }
+
+        $fetcher = str_replace('FetchAurora', '', class_basename(static::class));
+
+        return in_array($fetcher, config('aurora.allowed_fetchers', []));
+    }
+
+    public function processOrganisation(Command $command, Organisation $organisation): int
+    {
+        // An override is BOTH flags together: -s names the one record and --force says
+        // overwrite it. Either alone is not an override. -s by itself would still reach
+        // fetchers that have no is_aiku gate of their own (stock locations, deleted
+        // stocks) and update them; --force by itself would run the whole fetchAll sweep
+        // with every gate down, which is a mass overwrite switch, not an override.
+        $forcedSourceId = $command->hasOption('source_id') ? $command->option('source_id') : null;
+        $forcedOverride = $forcedSourceId && $command->hasOption('force') && (bool)$command->option('force');
+
+        $this->forcedSourceFetch = (bool)$forcedOverride;
+
+        if (!$forcedOverride && !$this->auroraStillFeeds($organisation)) {
+            $command->line('skipped '.$command->getName().' for '.$organisation->slug.': organisation no longer follows Aurora');
+
+            return 0;
+        }
+
+        return parent::processOrganisation($command, $organisation);
+    }
+
+    protected function markFetchStackIgnored(?int $fetchStackId): void
+    {
+        if (!$fetchStackId) {
+            return;
+        }
+
+        FetchStack::where('id', $fetchStackId)->update([
+            'finish_fetch_at' => now(),
+            'state'           => FetchStackStateEnum::IGNORED
+        ]);
+    }
 
     protected function preProcessCommand(Command $command): void
     {
@@ -215,6 +276,13 @@ class FetchAuroraAction extends FetchAction
         }
 
         $this->with               = $with;
+
+        if (!$this->auroraStillFeeds($organisation)) {
+            $this->markFetchStackIgnored($fetchStackId);
+
+            return;
+        }
+
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
@@ -244,6 +312,11 @@ class FetchAuroraAction extends FetchAction
         }
 
         $this->with               = $with;
+
+        if (!$this->auroraStillFeeds($organisation)) {
+            return null;
+        }
+
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 

@@ -10,6 +10,7 @@ namespace App\Enums\UI\Inventory;
 
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Models\Inventory\Location;
 
 enum LocationTabsEnum: string
 {
@@ -22,12 +23,31 @@ enum LocationTabsEnum: string
     case STOCK_MOVEMENTS = 'stock_movements';
     case HISTORY = 'history';
 
+    public static function navigation(?Location $location = null): array
+    {
+        return collect(self::cases())->mapWithKeys(function ($case) use ($location) {
+            $blueprint = $case->blueprint();
+
+            $number = $location ? match ($case) {
+                self::ORG_STOCKS => $location->stats?->number_org_stock_slots,
+                self::PALLETS    => $location->stats?->number_pallets,
+                default          => null,
+            } : null;
+
+            if ($number !== null) {
+                $blueprint['number'] = $number;
+            }
+
+            return [$case->value => $blueprint];
+        })->all();
+    }
+
 
     public function blueprint(): array
     {
         return match ($this) {
             LocationTabsEnum::ORG_STOCKS => [
-                'title' => 'SKUs',
+                'title' => 'SKOs',
                 'icon'  => 'fal fa-box',
             ],
             LocationTabsEnum::PALLETS => [

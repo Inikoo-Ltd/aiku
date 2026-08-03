@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { inject, ref, toRaw, watch, computed } from 'vue'
@@ -70,18 +69,19 @@ const onAddToAllPortfolios = async (product: ProductResource) => {
     isLoadingAllPortfolios.value = true
 
     // Luigi: event add to cart
+    const addToCartEcommerce = {
+        currency: layout?.iris?.currency?.code,
+        value: product.price,
+        channel: 'all',
+        items: [
+            {
+                item_id: product?.luigi_identity,
+            }
+        ]
+    }
     window?.dataLayer?.push({
         event: "add_to_cart",
-        ecommerce: {
-            currency: layout?.iris?.currency?.code,
-            value: product.price,
-            channel: 'all',
-            items: [
-                {
-                    item_id: product?.luigi_identity,
-                }
-            ]
-        }
+        ecommerce: addToCartEcommerce,
     })
 
     try {
@@ -130,18 +130,19 @@ const onAddPortfoliosSpecificChannel = async (product: ProductResource, channel:
     isLoadingSpecificChannel.value.push(channelId)
 
     // Luigi: event add to cart
+    const addToCartEcommerce = {
+        currency: layout?.iris?.currency?.code,
+        value: product.price,
+        channel: channel?.platform_slug || null,
+        items: [
+            {
+                item_id: product?.luigi_identity,
+            }
+        ]
+    }
     window?.dataLayer?.push({
         event: "add_to_cart",
-        ecommerce: {
-            currency: layout?.iris?.currency?.code,
-            value: product.price,
-            channel: channel?.platform_slug || null,
-            items: [
-                {
-                    item_id: product?.luigi_identity,
-                }
-            ]
-        }
+        ecommerce: addToCartEcommerce,
     })
 
     try {

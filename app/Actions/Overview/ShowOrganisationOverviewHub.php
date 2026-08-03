@@ -10,6 +10,7 @@ namespace App\Actions\Overview;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Search\GetSearchAnalytics;
 use App\Actions\Traits\Authorisations\Inventory\WithOrganisationOverviewAuthorisation;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -63,13 +64,13 @@ class ShowOrganisationOverviewHub extends OrgAction
                             ],
                             [
                                 'col_span' => 1,
-                                'type'     => 'operation_display',
-
+                                'type'     => 'search_analytics',
+                                'data'     => GetSearchAnalytics::run($this->organisation->group, $this->organisation->id)
                             ],
                             [
                                 'col_span' => 1,
-                                'type'     => 'operation_display',
-
+                                'type'     => 'typesense_display',
+                                'data'     => GetTypesenseMetrics::run()
                             ]
 
                         ]

@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\WarehouseArea\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -26,9 +27,9 @@ class EditWarehouseArea extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, $shop, WarehouseArea $warehouseArea, ActionRequest $request): WarehouseArea
+    public function asController(Organisation $organisation, Warehouse $warehouse, WarehouseArea $warehouseArea, ActionRequest $request): WarehouseArea
     {
-        $this->initialisation($warehouseArea->organisation, $request);
+        $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($warehouseArea);
     }

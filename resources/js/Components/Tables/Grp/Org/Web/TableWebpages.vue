@@ -10,10 +10,12 @@ import Table from '@/Components/Table/Table.vue';
 import { Webpage } from "@/types/webpage";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
-    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam, faExternalLink
+    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam, faExternalLink, faSquare
 } from '@fal'
+import { faCheckSquare } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from '@/Components/Icon.vue';
+import { computed } from 'vue';
 
 library.add(
     faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam
@@ -27,9 +29,7 @@ const props = defineProps<{
 const openWebsite = (href: string) => {
     window.open(href, '_blank')
 }
-function webpageRoute(webpage: Webpage) {
-
-//   console.log(route().current())
+function resolveWebpageRoute(webpage: Webpage) {
 
     switch (route().current()) {
 
@@ -128,7 +128,7 @@ function webpageRoute(webpage: Webpage) {
     }
 }
 
-function subDepartmentsRoute(webpage: Webpage) {
+function resolveSubDepartmentsRoute(webpage: Webpage) {
     switch (route().current()) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
@@ -147,7 +147,7 @@ function subDepartmentsRoute(webpage: Webpage) {
     }
 }
 
-function familiesRoute(webpage: Webpage) {
+function resolveFamiliesRoute(webpage: Webpage) {
     switch (route().current()) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
@@ -176,7 +176,7 @@ function familiesRoute(webpage: Webpage) {
     }
 }
 
-function productsRoute(webpage: Webpage) {
+function resolveProductsRoute(webpage: Webpage) {
     switch (route().current()) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
@@ -215,11 +215,129 @@ function productsRoute(webpage: Webpage) {
     }
 }
 
+type WebpageRow = Record<string, any>
+
+type SelectedWebpage = {
+    id: string
+    code: string
+    title: string
+}
+
+/**
+ * Ziggy's route() is rebuilt on every render and each row asks for up to four urls,
+ * twice each (v-if + :href), so the resolved urls are cached per webpage id.
+ */
+function memoizeRouteResolver(resolver: (webpage: Webpage) => string) {
+    const resolvedRoutes = new Map<string, string>()
+
+    return (webpage: Webpage) => {
+        const cacheKey = String(webpage.id ?? webpage.slug)
+
+        if (!resolvedRoutes.has(cacheKey)) {
+            resolvedRoutes.set(cacheKey, resolver(webpage))
+        }
+
+        return resolvedRoutes.get(cacheKey) as string
+    }
+}
+
+const webpageRoute = memoizeRouteResolver(resolveWebpageRoute)
+const subDepartmentsRoute = memoizeRouteResolver(resolveSubDepartmentsRoute)
+const familiesRoute = memoizeRouteResolver(resolveFamiliesRoute)
+const productsRoute = memoizeRouteResolver(resolveProductsRoute)
+
+const selectedWebpages = defineModel<SelectedWebpage[]>('selectedWebpages');
+
+const webpageRows = computed<WebpageRow[]>(() => (props.data as { data?: WebpageRow[] })?.data ?? [])
+
+const selectedWebpageIds = computed(() => new Set((selectedWebpages.value ?? []).map(item => item.id)))
+
+const toSelectedWebpage = (webpage: WebpageRow): SelectedWebpage => ({
+    id: webpage.id,
+    code: webpage.code,
+    title: webpage.title,
+})
+
+const onChangeChecked = (checked: boolean, selectedItem: WebpageRow) => {
+    if (!selectedWebpages.value) return
+
+    if (checked) {
+        if (!selectedWebpageIds.value.has(selectedItem.id)) {
+            selectedWebpages.value = [...selectedWebpages.value, toSelectedWebpage(selectedItem)]
+        }
+    } else {
+        selectedWebpages.value = selectedWebpages.value.filter(item => item.id != selectedItem.id)
+    }
+}
+
+const isWebpageChecked = (webpage: WebpageRow) => {
+    return selectedWebpageIds.value.has(webpage.id)
+}
+
+const isAllWebpagesChecked = computed(() => {
+    const ids = selectedWebpageIds.value
+
+    return webpageRows.value.length > 0 && webpageRows.value.every(row => ids.has(row.id))
+})
+
+const onCheckedAll = ({ data, allChecked }: { data: WebpageRow[], allChecked: boolean }) => {
+    if (!selectedWebpages.value) return
+
+    if (allChecked) {
+        const ids = selectedWebpageIds.value
+        const newItems = data.filter(row => !ids.has(row.id)).map(row => toSelectedWebpage(row))
+
+        selectedWebpages.value = [...selectedWebpages.value, ...newItems]
+    } else {
+        const rowIds = new Set(data.map(row => row.id))
+
+        selectedWebpages.value = selectedWebpages.value.filter(item => !rowIds.has(item.id))
+    }
+}
+
 </script>
 
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table 
+        :resource="data"
+        :isCheckBox="true"
+        :isChecked="isWebpageChecked"
+        checkboxKey='id'
+        :name="tab"
+        class="mt-5"
+    >
+        <template #header-checkbox>
+            <div @click="onCheckedAll({ data: webpageRows, allChecked: !isAllWebpagesChecked })" class="py-1.5 cursor-pointer">
+                <FontAwesomeIcon
+                    :icon="isAllWebpagesChecked ? faCheckSquare : faSquare"
+                    :class="isAllWebpagesChecked ? 'text-green-500' : 'text-gray-500 hover:text-gray-700'"
+                    class="mx-auto block h-5 my-auto"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+        </template>
+
+        <template #checkbox="{ data: webpage }">
+            <FontAwesomeIcon
+                v-if="isWebpageChecked(webpage)"
+                @click="onChangeChecked(false, webpage)"
+                :icon="faCheckSquare"
+                class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
+                fixed-width
+                aria-hidden="true"
+            />
+            <FontAwesomeIcon
+                v-else
+                @click="onChangeChecked(true, webpage)"
+                :icon="faSquare"
+                class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
+                fixed-width
+                aria-hidden="true"
+            />
+        </template>
+
         <!-- Column: Code -->
         <template #cell(code)="{ item: webpage }">
             <Link v-if="!!webpageRoute(webpage)" :href="webpageRoute(webpage)" class="primaryLink">

@@ -10,6 +10,7 @@
 namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Comms\Email\SendPalletReturnDeletedNotification;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
@@ -101,6 +102,9 @@ class DeleteDispatchedPalletReturn extends OrgAction
         $fulfilmentCustomer->refresh();
         FulfilmentCustomerHydratePalletReturns::dispatch($fulfilmentCustomer);
         FulfilmentCustomerHydratePallets::dispatch($fulfilmentCustomer);
+        if ($palletReturn->customerSalesChannel) {
+            CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+        }
     }
 
     public function rules(): array

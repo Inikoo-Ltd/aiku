@@ -31,7 +31,7 @@ class HydrateSubDepartments
     public function handle(ProductCategory $productCategory): void
     {
         SubDepartmentHydrateSubDepartments::run($productCategory);
-        SubDepartmentHydrateProducts::run($productCategory);
+        SubDepartmentHydrateProducts::run($productCategory->id);
         ProductCategoryHydrateFamilies::run($productCategory);
         ProductCategoryHydrateCollections::run($productCategory);
         ProductCategoryHydrateImages::run($productCategory);

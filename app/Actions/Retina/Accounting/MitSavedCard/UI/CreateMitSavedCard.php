@@ -15,6 +15,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\MitSavedCard;
+use App\Models\Accounting\PaymentAccountShop;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Checkout\Payments\ThreeDsRequest;
 use Exception;
@@ -29,6 +30,7 @@ class CreateMitSavedCard extends RetinaAction
 
     public function handle(): array
     {
+        /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $this->shop->paymentAccountShops()
             ->where('type', PaymentAccountTypeEnum::CHECKOUT)
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)->first();
@@ -64,6 +66,15 @@ class CreateMitSavedCard extends RetinaAction
         $paymentSessionRequest->success_url = $this->getSuccessUrl($mitSavedCard);
         $paymentSessionRequest->failure_url = $this->getFailureUrl($mitSavedCard);
 
+        $paymentSessionRequest->metadata = [
+            'origin'              => 'aiku',
+            'operation'           => 'mit_save_card',
+            'mit_saved_card_ulid' => $mitSavedCard->ulid,
+            'environment'         => app()->environment(),
+            'server'              => config('app.server_name') ?? ''
+        ];
+
+        /** @noinspection SpellCheckingInspection */
         $paymentSessionRequest->disabled_payment_methods = [
             'applepay',
         ];

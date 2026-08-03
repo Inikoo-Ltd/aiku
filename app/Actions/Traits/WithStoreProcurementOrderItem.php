@@ -8,10 +8,12 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\HistoricSupplierProduct;
+use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
 
 trait WithStoreProcurementOrderItem
@@ -21,6 +23,8 @@ trait WithStoreProcurementOrderItem
         data_set($modelData, 'group_id', $procurementOrder->group_id);
         data_set($modelData, 'organisation_id', $procurementOrder->organisation_id);
 
+        $orgExchange = $procurementOrder->org_exchange;
+        $grpExchange = $procurementOrder->grp_exchange;
 
         if ($historicSupplierProduct) {
             $supplierProduct = $historicSupplierProduct->supplierProduct;
@@ -40,19 +44,36 @@ trait WithStoreProcurementOrderItem
                     $unitCost * $quantity
                 );
             }
+
+            if ($procurementOrder instanceof PurchaseOrder && $supplierProduct->currency_id !== $procurementOrder->currency_id) {
+                [$orgExchange, $grpExchange] = $this->procurementOrderLineExchanges($procurementOrder, $supplierProduct, $orgExchange, $grpExchange);
+            }
         }
 
         data_set($modelData, 'org_stock_id', $orgStock->id);
         data_set($modelData, 'stock_id', $orgStock->stock_id);
 
-
-        data_set($modelData, 'org_exchange', $procurementOrder->org_exchange, overwrite: false);
-        data_set($modelData, 'grp_exchange', $procurementOrder->grp_exchange, overwrite: false);
+        data_set($modelData, 'org_exchange', $orgExchange, overwrite: false);
+        data_set($modelData, 'grp_exchange', $grpExchange, overwrite: false);
 
         data_set($modelData, 'grp_net_amount', Arr::get($modelData, 'net_amount', 0) * Arr::get($modelData, 'grp_exchange', 1));
         data_set($modelData, 'org_net_amount', Arr::get($modelData, 'net_amount', 0) * Arr::get($modelData, 'org_exchange', 1));
 
 
         return $modelData;
+    }
+
+    /**
+     * @return array{0: float|null, 1: float|null}
+     */
+    protected function procurementOrderLineExchanges(PurchaseOrder $purchaseOrder, SupplierProduct $supplierProduct, float|null $orgExchange, float|null $grpExchange): array
+    {
+        $orgLineExchange = GetHistoricCurrencyExchange::run($supplierProduct->currency, $purchaseOrder->organisation->currency, $purchaseOrder->date);
+        $grpLineExchange = GetHistoricCurrencyExchange::run($supplierProduct->currency, $purchaseOrder->group->currency, $purchaseOrder->date);
+
+        return [
+            $orgLineExchange ?? $orgExchange,
+            $grpLineExchange ?? $grpExchange,
+        ];
     }
 }

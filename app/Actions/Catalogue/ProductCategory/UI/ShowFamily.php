@@ -8,26 +8,31 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\OrgAction;
+use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
+use App\Actions\Catalogue\ProductCategory\RelatedProducts\GetRelatedProducts;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Catalogue\Variant\IndexVariant;
+use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\OrgAction;
+use App\Actions\Reviews\UI\IndexReviews;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
+use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Masters\RelatedMasterProductsResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Reviews\ReviewRatingLabel;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -51,7 +56,6 @@ class ShowFamily extends OrgAction
         return $family;
     }
 
-
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): ProductCategory
     {
         $this->parent = $department;
@@ -61,7 +65,6 @@ class ShowFamily extends OrgAction
         return $this->handle($family);
     }
 
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): ProductCategory
     {
@@ -70,7 +73,6 @@ class ShowFamily extends OrgAction
 
         return $this->handle($family);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
@@ -106,20 +108,8 @@ class ShowFamily extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ]
             ] : false,
-            $this->canDelete ? [
-                'type'  => 'button',
-                'style' => 'delete',
-                'route' => [
-                    'name'       => 'grp.models.product_category.delete',
-                    'method'     => 'delete',
-                    'parameters' => [
-                        'productCategory' => $family->id
-                    ]
-                ]
-            ] : false
         ]);
     }
-
 
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
@@ -159,111 +149,74 @@ class ShowFamily extends OrgAction
         $urlMaster = null;
         if ($family->master_product_category_id) {
             $urlMaster = [
-                'name'       => 'grp.helpers.redirect_master_product_category',
+                'name'       => 'grp.majordomo.redirect_master_product_category',
                 'parameters' => [
                     $family->masterProductCategory->id
                 ]
             ];
         }
 
-        $isRelatedProductFollowMaster = (bool) data_get($family->shop->settings, 'catalog.related_product_follow_master', false);
+        $iconLinks = [];
+        if ($family->has_gr_vol_discount) {
+            $iconLinks[] = [
+                'icon'    => 'fal fa-medal',
+                'tooltip' => __('Gold Reward Volume Discount'),
+                'color'   => '#D97706',
+            ];
+            if (!$family->follow_master_gr) {
+                $iconLinks[] = [
+                    'icon'    => 'fal fa-starfighter',
+                    'tooltip' => __('Not following master GR'),
+                    'color'   => '#DC2626',
+                ];
+            }
+        }
 
         $tabs = [
             FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
                 fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))
-                : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))),
+                : Inertia::optional(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))),
 
             FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                 fn () => GetProductCategoryShowcase::run($family)
-                : Inertia::lazy(fn () => GetProductCategoryShowcase::run($family)),
+                : Inertia::optional(fn () => GetProductCategoryShowcase::run($family)),
 
             FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-                : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
+                : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
 
             FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))),
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))),
 
             FamilyTabsEnum::IMAGES->value => $this->tab == FamilyTabsEnum::IMAGES->value ?
                 fn () => GetProductCategoryImages::run($family)
-                : Inertia::lazy(fn () => GetProductCategoryImages::run($family)),
+                : Inertia::optional(fn () => GetProductCategoryImages::run($family)),
 
             FamilyTabsEnum::CONTENT->value => $this->tab == FamilyTabsEnum::CONTENT->value ?
                 fn () => GetProductCategoryContent::run($family)
-                : Inertia::lazy(fn () => GetProductCategoryContent::run($family)),
+                : Inertia::optional(fn () => GetProductCategoryContent::run($family)),
 
             FamilyTabsEnum::OFFERS->value => $this->tab == FamilyTabsEnum::OFFERS->value ?
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
-                : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
+                : Inertia::optional(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
+
+            FamilyTabsEnum::REVIEWS->value => $this->tab == FamilyTabsEnum::REVIEWS->value ?
+                fn () => $this->getReviewsTabData($family)
+                : Inertia::optional(fn () => $this->getReviewsTabData($family)),
+
+            FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
+                    fn () => GetRelatedProductCategories::run($family)
+                    : Inertia::optional(fn () => GetRelatedProductCategories::run($family)),
 
             FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
-                fn () => [
-                    'id' => $family->id,
-                    'data' => RelatedMasterProductsResource::collection(
-                        GetProductCategoryRecomendation::run(
-                            $family,
-                            $isRelatedProductFollowMaster
-                        )
-                    ),
-                    'editable' => !$isRelatedProductFollowMaster,
-                    'route_sync_related_products' => [
-                        'name' => 'grp.models.product_category.related_products.sync',
-                        'parameters' => [
-                            'productCategory' => $family->id,
-                        ]
-                    ],
-                    'sync_payload_key' => 'product_ids',
-                    'route_get_products' => [
-                        'name' => 'grp.org.shops.show.catalogue.products.current_products.index',
-                        'parameters' => [
-                            'organisation' => $this->organisation->slug,
-                            'shop' => $this->shop->slug,
-                        ]
-                    ]
-                ]
-                : Inertia::lazy(fn () => [
-                    'id' => $family->id,
-                    'data' => RelatedMasterProductsResource::collection(
-                        GetProductCategoryRecomendation::run(
-                            $family,
-                            $isRelatedProductFollowMaster
-                        )
-                    ),
-                    'editable' => !$isRelatedProductFollowMaster,
-                    'route_sync_related_products' => [
-                        'name' => 'grp.models.product_category.related_products.sync',
-                        'parameters' => [
-                            'productCategory' => $family->id,
-                        ]
-                    ],
-                    'sync_payload_key' => 'product_ids',
-                    'route_get_products' => [
-                        'name' => 'grp.org.shops.show.catalogue.products.current_products.index',
-                        'parameters' => [
-                            'organisation' => $this->organisation->slug,
-                            'shop' => $this->shop->slug,
-                        ]
-                    ]
-                ]),
-        ];
+                fn () => GetRelatedProducts::run($family)
+                : Inertia::optional(fn () => GetRelatedProducts::run($family)),
 
-        $tabs[FamilyTabsEnum::VARIANTS->value] =
-            $this->tab === FamilyTabsEnum::VARIANTS->value
-                ? fn () => VariantsResource::collection(
-                    IndexVariant::run(
-                        $family,
-                        FamilyTabsEnum::VARIANTS->value
-                    )
-                )
-                : Inertia::lazy(
-                    fn () => VariantsResource::collection(
-                        IndexVariant::run(
-                            $family,
-                            FamilyTabsEnum::VARIANTS->value
-                        )
-                    )
-                );
+            FamilyTabsEnum::VARIANTS->value => $this->tab === FamilyTabsEnum::VARIANTS->value ?
+                fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))
+                : Inertia::optional(fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))),
+        ];
 
         return Inertia::render(
             'Org/Catalogue/Family',
@@ -317,9 +270,10 @@ class ShowFamily extends OrgAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('Department')
                     ],
-                    'iconRight' => $family->state->stateIcon()[$family->state->value],
-                    'actions'   => $this->getActions($family, $request),
-                    'parentTag' => $parentTag,
+                    'iconRight'  => $family->state->stateIcon()[$family->state->value],
+                    'iconLinks'  => $iconLinks,
+                    'actions'    => $this->getActions($family, $request),
+                    'parentTag'  => $parentTag,
 
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
                 ],
@@ -332,34 +286,67 @@ class ShowFamily extends OrgAction
                     'id'       => $family->shop->id,
                     'slug'          => $family->shop->slug,
                     'currency_code' => $family->shop->currency->code,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                    ],
                 ],
                 'product_category_id'   =>  $family->id,
                 'is_orphan'             => !$family->department_id,
                 'salesData'             => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryTimeSeriesData::run($family)
-                    : Inertia::lazy(fn () => GetProductCategoryTimeSeriesData::run($family)),
+                    : Inertia::optional(fn () => GetProductCategoryTimeSeriesData::run($family)),
                 ...$tabs
             ]
         )
-            ->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-            ->table(IndexMailshots::make()->tableStructure(parent: $family))
-            ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
-            ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
-            ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
-            ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value));
+        ->table(IndexCustomers::make()->tableStructure(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+        ->table(IndexMailshots::make()->tableStructure(parent: $family))
+        ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
+        ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
+        ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
+        ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
+        ->table(IndexReviews::make()->tableStructure(prefix: FamilyTabsEnum::REVIEWS->value));
     }
-
 
     public function jsonResponse(ProductCategory $family): DepartmentsResource
     {
         return new DepartmentsResource($family);
     }
 
+    private function getReviewsTabData(ProductCategory $family): array
+    {
+        return [
+            'data' => ReviewsResource::collection(
+                IndexReviews::run(parent: $family, prefix: FamilyTabsEnum::REVIEWS->value, scope: 'family')
+            ),
+            'rating_labels' => $this->ratingLabelsForShop($family->shop->id, ReviewContextEnum::FAMILY),
+            'reviewable_type' => 'ProductCategory',
+        ];
+    }
+
+    private function ratingLabelsForShop(int $shopId, ReviewContextEnum $context): array
+    {
+        return ReviewRatingLabel::query()
+            ->whereRaw('LOWER(model_type) = ?', ['shop'])
+            ->where('model_id', $shopId)
+            ->whereRaw('LOWER(review_context) = ?', [$context->value])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('dimension')
+            ->get(['dimension', 'label', 'is_required', 'weight'])
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
+                'dimension' => $reviewRatingLabel->dimension?->value ?? (string) $reviewRatingLabel->dimension,
+                'label' => (string) $reviewRatingLabel->label,
+                'is_required' => (bool) $reviewRatingLabel->is_required,
+                'weight' => (float) $reviewRatingLabel->weight,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function getBreadcrumbs(ProductCategory $family, string $routeName, array $routeParameters, $suffix = null): array
     {
         $headCrumb = function (ProductCategory $family, array $routeParameters, $suffix) {
             return [
-
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
@@ -373,12 +360,9 @@ class ShowFamily extends OrgAction
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
-
             ];
         };
-
 
         return match ($routeName) {
             'grp.org.shops.show.catalogue.families.show' =>
@@ -412,8 +396,6 @@ class ShowFamily extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -436,8 +418,6 @@ class ShowFamily extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -461,8 +441,6 @@ class ShowFamily extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -471,5 +449,4 @@ class ShowFamily extends OrgAction
             default => []
         };
     }
-
 }

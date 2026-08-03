@@ -12,7 +12,7 @@ use App\Actions\Discounts\Offer\ActivateOffer;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\OfferCampaign\StoreOfferCampaign;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -23,7 +23,7 @@ use App\Models\Discounts\OfferCampaign;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SeedShopOfferCampaigns extends GrpAction
+class SeedShopOfferCampaigns extends OrgAction
 {
     use AsAction;
 

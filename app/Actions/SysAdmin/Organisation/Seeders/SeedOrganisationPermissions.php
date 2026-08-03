@@ -33,7 +33,7 @@ class SeedOrganisationPermissions
         $currentPermissions = Permission::where('scope_type', 'Organisation')->where('scope_id', $organisation->id)->pluck('name');
         $currentPermissions->diff($organisationPermissions)
             ->each(function ($permissionName) use ($organisation) {
-                Permission::where('name', $permissionName)->first()->delete();
+                Permission::where('name', $permissionName)->delete();
             });
 
         $organisationPermissions->each(function ($permissionName) use ($organisation) {
@@ -55,10 +55,7 @@ class SeedOrganisationPermissions
         $currentRoles = Role::where('scope_type', 'Organisation')->where('scope_id', $organisation->id)->pluck('name');
         $currentRoles->diff($organisationRoles)
             ->each(function ($roleName) use ($organisation) {
-                Role::where(
-                    'name',
-                    $roleName
-                )->first()->delete();
+                Role::where('name', $roleName)->delete();
             });
 
 

@@ -75,7 +75,7 @@ class ShowRental extends OrgAction
 
                 FulfilmentRentalTabsEnum::SHOWCASE->value => $this->tab == FulfilmentRentalTabsEnum::SHOWCASE->value ?
                     fn () => GetRentalShowcase::run($rental)
-                    : Inertia::lazy(fn () => GetRentalShowcase::run($rental)),
+                    : Inertia::optional(fn () => GetRentalShowcase::run($rental)),
             ]
         );
     }

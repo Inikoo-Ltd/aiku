@@ -16,11 +16,14 @@ use App\Actions\Accounting\Payment\CancelPayment;
 use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
+use App\Actions\Accounting\PaymentAccountShop\UpdatePaymentAccountShop;
 use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
@@ -42,9 +45,10 @@ use App\Actions\Catalogue\Product\UI\HydrateProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UpdateProduct;
-use App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct;
+use App\Actions\Catalogue\Product\UpdateProductImageAlt;
 use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\Catalogue\Product\UpdateProductIndex;
+use App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
@@ -52,7 +56,8 @@ use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\RehydrateChildProductImages;
-use App\Actions\Catalogue\ProductCategory\SyncProductCategoryRelatedProducts;
+use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\SyncProductCategoryRelatedProductCategories;
+use App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRelatedProducts;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -65,16 +70,28 @@ use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
-use App\Actions\Comms\Email\PublishEmail;
+use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
+use App\Actions\Comms\Mailshot\ConvertMailshotToBlog;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
+use App\Actions\Comms\Mailshot\PublishMailShot;
+use App\Actions\Comms\Mailshot\ResumeMailshot;
+use App\Actions\Comms\Mailshot\SendMailShot;
+use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
+use App\Actions\Comms\Mailshot\SetMailshotSecondWaveStatus;
+use App\Actions\Comms\Mailshot\StopMailshot;
 use App\Actions\Comms\Mailshot\StoreMailshot;
+use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
+use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
+use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
+use App\Actions\Comms\Mailshot\UpdateMailshotSecondWave;
+use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
 use App\Actions\Comms\Wati\AddCustomerToWati;
 use App\Actions\Comms\Wati\BulkAddAllCustomersToWati;
@@ -87,17 +104,6 @@ use App\Actions\Comms\Outbox\PublishOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
-use App\Actions\Comms\Mailshot\PublishMailShot;
-use App\Actions\Comms\Mailshot\ResumeMailshot;
-use App\Actions\Comms\Mailshot\SendMailShot;
-use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
-use App\Actions\Comms\Mailshot\StopMailshot;
-use App\Actions\Comms\Mailshot\SetMailshotSecondWaveStatus;
-use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
-use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
-use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
-use App\Actions\Comms\Mailshot\UpdateMailshotSecondWave;
-use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
@@ -110,6 +116,9 @@ use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
+use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
@@ -134,6 +143,8 @@ use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dispatching\Trolley\UpdateTrolley;
+use App\Actions\Dropshipping\Allegro\Product\MatchPortfolioToCurrentAllegroProduct;
+use App\Actions\Dropshipping\Allegro\Product\StoreNewProductToCurrentAllegro;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
@@ -150,6 +161,9 @@ use App\Actions\Dropshipping\Shopify\Product\MatchBulkPortfoliosToCurrentShopify
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
+use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\Dropshipping\Tiktok\Product\MatchPortfolioToCurrentTiktokProduct;
+use App\Actions\Dropshipping\Tiktok\Product\StoreNewProductToCurrentTiktok;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
@@ -213,6 +227,7 @@ use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturnDeliveryAddress;
 use App\Actions\Fulfilment\PalletReturnItem\NotPickedPalletFromReturn;
 use App\Actions\Fulfilment\PalletReturnItem\PickNewPalletReturnItem;
 use App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemInPalletReturnWithStoredItem;
+use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
 use App\Actions\Fulfilment\PalletReturnItem\SyncPalletReturnItem;
 use App\Actions\Fulfilment\PalletReturnItem\UndoPalletReturnItem;
 use App\Actions\Fulfilment\PalletReturnItem\UndoPickingPalletFromReturn;
@@ -223,17 +238,19 @@ use App\Actions\Fulfilment\RecurringBillTransaction\DeleteRecurringBillTransacti
 use App\Actions\Fulfilment\RecurringBillTransaction\StoreRecurringBillTransaction;
 use App\Actions\Fulfilment\RecurringBillTransaction\UpdateRecurringBillTransaction;
 use App\Actions\Fulfilment\RentalAgreement\UpdateRentalAgreement;
-use App\Actions\Fulfilment\Space\StoreSpace;
 use App\Actions\Fulfilment\Space\StopSpaceRental;
+use App\Actions\Fulfilment\Space\StoreSpace;
 use App\Actions\Fulfilment\Space\UpdateSpace;
 use App\Actions\Fulfilment\StoredItem\AttachStoredItemToReturn;
 use App\Actions\Fulfilment\StoredItem\DeleteStoredItem;
+use App\Actions\Fulfilment\StoredItem\MarkStoredItemAsDiscontinuing;
 use App\Actions\Fulfilment\StoredItem\MoveStoredItem;
 use App\Actions\Fulfilment\StoredItem\ResetAuditStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPalletAudit;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
+use App\Actions\Goods\Barcode\UpdateBarcode;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -243,6 +260,24 @@ use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
+use App\Actions\GoodsIn\StockDelivery\DeleteStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UndispatchStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UnreceiveStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\FinishStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\DistributeStockDeliveryExtraCost;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToReadyToShipStockDeliveryItem;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Brand\AttachBrandToMultipleModel;
@@ -250,6 +285,7 @@ use App\Actions\Helpers\Brand\DeleteBrand;
 use App\Actions\Helpers\Brand\DetachBrandFromModel;
 use App\Actions\Helpers\Brand\StoreBrand;
 use App\Actions\Helpers\Brand\UpdateBrand;
+use App\Actions\Helpers\Dashboard\BreakDashboardTimeSeriesCache;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
@@ -262,25 +298,50 @@ use App\Actions\Helpers\Tag\DetachTagFromModel;
 use App\Actions\Helpers\Tag\StoreTag;
 use App\Actions\Helpers\Tag\UpdateTag;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
+use App\Actions\HumanResources\ClockingMachine\SetClockingMachineKioskToken;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\RegenerateClockingMachineQRCodeHash;
+use App\Actions\HumanResources\ClockingMachine\ToggleClockingMachineQRCodeActive;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachineQRCode;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMachineCoordinatePolicy;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\StoreClockingMachineCoordinatePolicy;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\UpdateClockingMachineCoordinatePolicy;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClockingMachineCoordinatePolicyRule;
+use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
 use App\Actions\HumanResources\Employee\DeleteEmployee;
-use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
+use App\Actions\HumanResources\Employee\UploadEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\LinkLeaveBalanceToContract;
+use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
 use App\Actions\HumanResources\JobPosition\DeleteJobPosition;
 use App\Actions\HumanResources\JobPosition\StoreJobPosition;
 use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
+use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
+use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\CloneFamilyAndProductsFromMaster;
 use App\Actions\Masters\MasterAsset\CloneMasterAssetToOtherShop;
 use App\Actions\Masters\MasterAsset\DeleteImageFromMasterProduct;
 use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
+use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetImageAlt;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
 use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
 use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
@@ -298,17 +359,20 @@ use App\Actions\Masters\MasterCollection\UploadImagesToMasterCollection;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\SyncMasterProductCategoryRelatedMasterProductCategories;
+use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\SyncMasterProductCategoryRelatedMasterAssets;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
-use App\Actions\Masters\MasterProductCategory\SyncMasterProductCategoryRelatedMasterAssets;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryImages;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryTranslations;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentsMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UploadImagesToMasterProductCategory;
+use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
+use App\Actions\Masters\MasterShop\UpdateMasterShopPriceExchange;
 use App\Actions\Masters\MasterVariant\StoreMasterVariant;
 use App\Actions\Masters\MasterVariant\UpdateMasterVariant;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -317,14 +381,16 @@ use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
+use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
-use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToNotReceived;
-use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSettled;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
+use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Production\Artefact\ImportArtefact;
@@ -337,6 +403,14 @@ use App\Actions\Production\ManufactureTask\UpdateManufactureTask;
 use App\Actions\Production\RawMaterial\ImportRawMaterial;
 use App\Actions\Production\RawMaterial\StoreRawMaterial;
 use App\Actions\Production\RawMaterial\UpdateRawMaterial;
+use App\Actions\Reviews\ApproveReview;
+use App\Actions\Reviews\DeleteReview;
+use App\Actions\Reviews\GetReviewCustomers;
+use App\Actions\Reviews\RejectReview;
+use App\Actions\Reviews\ReviewReply\DeleteReviewReply;
+use App\Actions\Reviews\ReviewReply\StoreReviewReply;
+use App\Actions\Reviews\ReviewReply\UpdateReviewReply;
+use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
@@ -347,15 +421,14 @@ use App\Actions\SysAdmin\Guest\UpdateGuest;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Actions\SysAdmin\User\DeleteUserAccessToken;
+use App\Actions\SysAdmin\User\StoreUserFromEmployee;
 use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
-use App\Actions\Web\Announcement\CloseAnnouncement;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
 use App\Actions\Web\Announcement\ResetAnnouncement;
-use App\Actions\Web\Announcement\StartAnnouncement;
 use App\Actions\Web\Announcement\StoreAnnouncement;
 use App\Actions\Web\Announcement\ToggleAnnouncement;
 use App\Actions\Web\Announcement\UpdateAnnouncement;
@@ -378,6 +451,8 @@ use App\Actions\Web\ModelHasWebBlocks\DuplicateModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
+use App\Actions\Web\Redirect\DeleteRedirect;
+use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\BreakWebpageCache;
@@ -385,6 +460,7 @@ use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
+use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
@@ -400,25 +476,10 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
-use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
-use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
-use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
-use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
-use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
-use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\StoreClockingMachineCoordinatePolicy;
-use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\UpdateClockingMachineCoordinatePolicy;
-use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMachineCoordinatePolicy;
-use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\StoreClockingMachineCoordinatePolicyRule;
-use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockingMachineCoordinatePolicyRule;
-use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\DeleteClockingMachineCoordinatePolicyRule;
-use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
-use App\Actions\Web\Redirect\DeleteRedirect;
-use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
-use App\Actions\Fulfilment\PalletReturnItem\SetNotPickedPallet;
-use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
-use App\Actions\Billables\ShippingZone\StoreShippingZone;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
+
+Route::post('dashboard/break-cache', BreakDashboardTimeSeriesCache::class)->name('dashboard.break_cache');
 
 Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('profile.app-login-qrcode');
 
@@ -426,11 +487,23 @@ Route::patch('notification/{notification}', MarkNotificationAsRead::class)->name
 Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notifications.all.read');
 
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
+    Route::post('create-user', StoreUserFromEmployee::class)->name('create_user');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inEmployee'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inEmployee'])->name('attachment.detach')->withoutScopedBindings();
     Route::patch('contract/upload', UploadEmployeeContract::class)->name('contract.upload');
     Route::patch('', UpdateEmployee::class)->name('update');
     Route::delete('', DeleteEmployee::class)->name('.delete');
+    Route::post('contracts', StoreEmployeeContract::class)->name('contracts.store');
+});
+
+Route::prefix('employee-contract/{contract:id}')->name('employee.contracts.')->group(function () {
+    Route::patch('', UpdateEmployeeContract::class)->name('update');
+    Route::delete('', DeleteEmployeeContract::class)->name('delete');
+    Route::post('generate-balance', GenerateEmployeeLeaveBalance::class)->name('generate_balance');
+});
+
+Route::prefix('employee-leave-balance/{balance:id}')->name('employee.leave_balance.')->group(function () {
+    Route::patch('link', LinkLeaveBalanceToContract::class)->name('link');
 });
 
 Route::prefix('workplace/{workplace:id}')->name('workplace.')->group(function () {
@@ -461,6 +534,17 @@ Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine
     Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
 });
 
+Route::prefix('clocking-machine-qr-code')->name('clocking_machine_qr_code.')->group(function () {
+    Route::patch('{clockingMachineQRCode:id}', UpdateClockingMachineQRCode::class)->name('update');
+    Route::patch('{clockingMachineQRCode:id}/toggle-active', ToggleClockingMachineQRCodeActive::class)->name('toggle_active');
+    Route::patch('{clockingMachineQRCode:id}/regenerate-hash', RegenerateClockingMachineQRCodeHash::class)->name('hash.regenerate');
+});
+
+
+Route::prefix('shipping-zone-schema')->name('shipping_zone_schema.')->group(function () {
+    Route::patch('{shippingZoneSchema:id}', UpdateShippingZoneSchema::class)->name('update');
+});
+
 Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
     Route::post('{shippingZoneSchema:id}/create', StoreShippingZone::class)->name('create');
     Route::patch('{shippingZone:id}', UpdateShippingZone::class)->name('update');
@@ -473,15 +557,27 @@ Route::patch('credit-transaction/{customer:id}/decrease', DecreaseCreditTransact
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
 
+Route::prefix('customer/{customer:id}/upcoming-transactions')->name('customer.upcoming_transactions.')->group(function () {
+    Route::post('', StoreUpcomingTransaction::class)->name('store')->withoutScopedBindings();
+});
+
+Route::prefix('upcoming-transaction/{upcomingTransaction:id}')->name('upcoming_transaction.')->group(function () {
+    Route::patch('', UpdateUpcomingTransaction::class)->name('update');
+    Route::delete('', DeleteUpcomingTransaction::class)->name('delete');
+});
+
 Route::patch('master-product-category/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product_category.update')->withoutScopedBindings();
+Route::patch('master-product-category/{masterProductCategory:id}/clone-family', CloneFamilyAndProductsFromMaster::class)->name('master_product_category.clone-to-child-shops')->withoutScopedBindings();
+
 Route::post('master-product-category/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_category_image.upload')->withoutScopedBindings();
 Route::patch('master-product-category/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
 Route::patch('master-product-category/{masterProductCategory:id}/master-sub-department/parent', UpdateMasterSubDepartmentsMasterDepartment::class)->name('master_product_category.master_sub_department.parent.update');
 
 Route::patch('master-product-category/{masterProductCategory:id}/related-assets', SyncMasterProductCategoryRelatedMasterAssets::class)->name('master_product_category.related_assets.sync')->withoutScopedBindings();
+Route::patch('master-product-category/{masterProductCategory:id}/related-master-product-categories', SyncMasterProductCategoryRelatedMasterProductCategories::class)->name('master_product_category.related_master_product_categories.sync')->withoutScopedBindings();
+
 Route::patch('product-category/{productCategory:id}/related-products', SyncProductCategoryRelatedProducts::class)->name('product_category.related_products.sync')->withoutScopedBindings();
-
-
+Route::patch('product-category/{productCategory:id}/related-product-categories', SyncProductCategoryRelatedProductCategories::class)->name('product_category.related_product_categories.sync')->withoutScopedBindings();
 
 Route::patch('master-product-category/{masterProductCategory:id}/reorder-index', UpdateMasterAssetIndex::class)->name('master_product_category.reorder_index');
 Route::patch('product-category/{productCategory:id}/reorder-index', UpdateProductIndex::class)->name('product_category.reorder_index');
@@ -497,8 +593,11 @@ Route::name('stock.')->prefix('/stock')->group(function () {
     Route::patch('/{stock:id}', UpdateStock::class)->name('update');
 });
 
+Route::post('master-shop', StoreMasterShop::class)->name('master_shop.store');
+
 Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
     Route::patch('/', UpdateMasterShop::class)->name('update');
+    Route::patch('price-exchange', UpdateMasterShopPriceExchange::class)->name('price_exchange.update');
     Route::post('master-department', StoreMasterDepartment::class)->name('master_department.store');
     Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
     Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
@@ -534,13 +633,16 @@ Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(
 
 Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
     Route::patch('update', UpdateMasterAsset::class)->name('update');
+    Route::patch('update-prices', UpdateMasterAssetPrices::class)->name('prices.update');
     Route::patch('repair-trade-units', RepairMasterAssetTradeUnitsToChildren::class)->name('repair_mismatch_trade_units');
     Route::patch('update-images', UpdateMasterProductImages::class)->name('update_images');
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
+    Route::patch('media/{media:id}/alt', UpdateMasterAssetImageAlt::class)->name('update_image_alt')->withoutScopedBindings();
 });
 
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
+Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::class)->name('master_asset.prices.bulk_update');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');
 
@@ -567,6 +669,17 @@ Route::prefix('/product_category/{productCategory:id}')->name('product_category.
     Route::patch('update-images', UpdateProductCategoryImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromProductCategory::class)->name('delete_images')->withoutScopedBindings();
 });
+
+Route::post('review/reply/store', StoreReviewReply::class)->name('review.reply.store');
+Route::patch('review/reply/{reviewReply:id}/update', UpdateReviewReply::class)->name('review.reply.update');
+Route::delete('review/reply/{reviewReply:id}/delete', DeleteReviewReply::class)->name('review.reply.delete');
+Route::get('review/customers/{productCategory:id}', GetReviewCustomers::class)->name('review.customers');
+Route::get('review/customers/product/{product:id}', [GetReviewCustomers::class, 'asControllerProduct'])->name('review.customers.product');
+Route::get('review/customers/shop/{shop:id}', [GetReviewCustomers::class, 'asControllerShop'])->name('review.customers.shop');
+Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
+Route::patch('review/{review:id}/approve', ApproveReview::class)->name('review.approve');
+Route::patch('review/{review:id}/reject', RejectReview::class)->name('review.reject');
+Route::delete('review/{review:id}/delete', DeleteReview::class)->name('review.delete');
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
@@ -676,6 +789,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
     Route::post('{product:id}/images', UploadImagesToProduct::class)->name('images.store')->withoutScopedBindings();
     Route::patch('{product:id}/update_images', UpdateProductImages::class)->name('images.update_images')->withoutScopedBindings();
+    Route::patch('{product:id}/media/{media:id}/alt', UpdateProductImageAlt::class)->name('images.update_image_alt')->withoutScopedBindings();
     Route::post('{product:id}/attachment/attach', [AttachAttachmentToModel::class, 'inProduct'])->name('attachment.attach');
     Route::delete('{product:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inProduct'])->name('attachment.detach')->withoutScopedBindings();
 
@@ -803,6 +917,12 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreNewProductToC
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
 
+Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product');
+Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-allegro-product', MatchPortfolioToCurrentAllegroProduct::class)->name('portfolio.match_to_existing_allegro_product');
+Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product');
+
 Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class)->name('stored-items.pallets.update');
 Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('stored-items.move');
 Route::delete('{storedItem:id}/stored-items', DeleteStoredItem::class)->name('stored-items.delete');
@@ -864,8 +984,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
             Route::patch('{announcement}/publish', PublishAnnouncement::class)->name('publish')->withoutScopedBindings();
             Route::patch('{announcement}', UpdateAnnouncement::class)->name('update')->withoutScopedBindings();
             Route::delete('{announcement}/reset', ResetAnnouncement::class)->name('reset')->withoutScopedBindings();
-            Route::patch('{announcement}/close', CloseAnnouncement::class)->name('close')->withoutScopedBindings();
-            Route::patch('{announcement}/start', StartAnnouncement::class)->name('start')->withoutScopedBindings();
             Route::patch('{announcement}/toggle', ToggleAnnouncement::class)->name('toggle')->withoutScopedBindings();
             Route::delete('{announcement}', DeleteAnnouncement::class)->name('delete')->withoutScopedBindings();
         });
@@ -894,6 +1012,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('recipient-filter', UpdateMailshotRecipientFilter::class)->name('recipient-filter.update')->withoutScopedBindings();
         Route::post('stop-mailshot', StopMailshot::class)->name('stop')->withoutScopedBindings();
         Route::post('resume-mailshot', ResumeMailshot::class)->name('resume')->withoutScopedBindings();
+        Route::get('convert-to-blog', ConvertMailshotToBlog::class)->name('convert-to-blog')->withoutScopedBindings();
         Route::post('second-wave', SetMailshotSecondWaveStatus::class)->name('second-wave')->withoutScopedBindings();
         Route::patch('second-wave', UpdateMailshotSecondWave::class)->name('second-wave.update')->withoutScopedBindings();
     });
@@ -949,6 +1068,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::patch('autosave/menu', [AutosaveWebsiteMarginal::class, 'menu'])->name('autosave.menu');
     Route::patch('autosave/sidebar', [AutosaveWebsiteMarginal::class, 'sidebar'])->name('autosave.sidebar');
     Route::patch('autosave/department', [AutosaveWebsiteMarginal::class, 'department'])->name('autosave.department');
+    Route::patch('autosave/department_description', [AutosaveWebsiteMarginal::class, 'departmentDescription'])->name('autosave.department_description');
     Route::patch('autosave/sub_department', [AutosaveWebsiteMarginal::class, 'subDepartment'])->name('autosave.sub_department');
     Route::patch('autosave/family', [AutosaveWebsiteMarginal::class, 'family'])->name('autosave.family');
     Route::patch('autosave/families_overview', [AutosaveWebsiteMarginal::class, 'familiesOverview'])->name('autosave.families_overview');
@@ -960,6 +1080,8 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('publish/menu', [PublishWebsiteMarginal::class, 'menu'])->name('publish.menu');
     Route::post('publish/sidebar', [PublishWebsiteMarginal::class, 'sidebar'])->name('publish.sidebar');
     Route::post('publish/department', [PublishWebsiteMarginal::class, 'department'])->name('publish.department');
+    Route::post('publish/department_description', [PublishWebsiteMarginal::class, 'department'])->name('publish.department_description');
+    Route::post('publish/department_description', [PublishWebsiteMarginal::class, 'departmentDescription'])->name('publish.department_description');
     Route::post('publish/sub_department', [PublishWebsiteMarginal::class, 'subDepartment'])->name('publish.sub_department');
     Route::post('publish/family', [PublishWebsiteMarginal::class, 'family'])->name('publish.family');
     Route::post('publish/families_overview', [PublishWebsiteMarginal::class, 'familiesOverview'])->name('publish.families_overview');
@@ -999,6 +1121,8 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
     Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
 });
+
+Route::patch('website/{website:id}/bulk-offline-webpages', SetWebpageOfflineBulk::class)->name('webpage.set_offline_bulk');
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::patch('', UpdateRedirect::class)->name('update');
@@ -1073,6 +1197,8 @@ Route::patch('/job-order/{jobOrder:id}', UpdateJobOrder::class)->name('job-order
 
 Route::patch('stored-items/{storedItem:id}', UpdateStoredItem::class)->name('stored-items.update');
 
+Route::patch('stored-items/{storedItem:id}/mark-as-discontinuing', MarkStoredItemAsDiscontinuing::class)->name('stored-items.mark-as-discontinuing');
+
 Route::patch('/group-settings', UpdateGroupSettings::class)->name('group-settings.update');
 
 Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mailshot.update');
@@ -1080,7 +1206,6 @@ Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mails
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
     Route::post('{emailTemplate:id}/images', UploadImagesToEmailTemplate::class)->name('images.store');
-    Route::post('{emailTemplate:id}/publish', PublishEmail::class)->name('content.publish');
 });
 
 Route::patch('/guest/{guest:id}', UpdateGuest::class)->name('guest.update');
@@ -1109,8 +1234,28 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
 });
 
 Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->group(function () {
+    Route::patch('update', UpdateStockDelivery::class)->name('update');
+    Route::patch('dispatch', DispatchStockDelivery::class)->name('dispatch');
+    Route::patch('undispatch', UndispatchStockDelivery::class)->name('undispatch');
+    Route::patch('receive', ReceiveStockDelivery::class)->name('receive');
+    Route::patch('unreceive', UnreceiveStockDelivery::class)->name('unreceive');
+    Route::patch('cancel', CancelStockDelivery::class)->name('cancel');
+    Route::patch('start-costing', StartStockDeliveryCosting::class)->name('start-costing');
+    Route::patch('finish-costing', FinishStockDeliveryCosting::class)->name('finish-costing');
+    Route::patch('distribute-extra-cost', DistributeStockDeliveryExtraCost::class)->name('distribute-extra-cost');
+    Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inStockDelivery'])->name('attachment.detach')->withoutScopedBindings();
+});
+
+Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryItem:id}')->group(function () {
+    Route::patch('confirm', UpdateStateToConfirmedStockDeliveryItem::class)->name('confirm')->withoutScopedBindings();
+    Route::patch('ready-to-ship', UpdateStateToReadyToShipStockDeliveryItem::class)->name('ready-to-ship')->withoutScopedBindings();
+    Route::patch('set-checked', SetStockDeliveryItemCheckedQuantity::class)->name('set-checked')->withoutScopedBindings();
+    Route::patch('set-all-checked', SetStockDeliveryItemAsChecked::class)->name('set-all-checked')->withoutScopedBindings();
+    Route::patch('place', UpsertStockDeliveryItemPlaced::class)->name('place')->withoutScopedBindings();
+    Route::patch('place-all', SetStockDeliveryItemAsPlaced::class)->name('place-all')->withoutScopedBindings();
+    Route::patch('update-cost', UpdateStockDeliveryItemCost::class)->name('update-cost')->withoutScopedBindings();
 });
 
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {
@@ -1125,14 +1270,17 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
+    Route::delete('', DeletePurchaseOrder::class)->name('delete');
     Route::patch('submit', UpdatePurchaseOrderStateToSubmitted::class)->name('submit');
+    Route::patch('undo-submit', UpdatePurchaseOrderStateToInProcess::class)->name('undo-submit');
     Route::patch('confirm', UpdatePurchaseOrderStateToConfirmed::class)->name('confirm');
-    Route::patch('settle', UpdatePurchaseOrderStateToSettled::class)->name('settle');
+    Route::patch('undo-confirm', RevertPurchaseOrderToSubmitted::class)->name('undo-confirm');
     Route::patch('cancel', UpdatePurchaseOrderStateToCancelled::class)->name('cancel');
-    Route::patch('not-received', UpdatePurchaseOrderStateToNotReceived::class)->name('not-received');
+    Route::post('stock-delivery', StoreStockDeliveryFromPurchaseOrder::class)->name('stock-delivery.store');
     Route::post('transactions/{historicSupplierProduct:id}/{orgStock:id}/store', StorePurchaseOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/update', UpdatePurchaseOrderTransaction::class)->name('transaction.update')->withoutScopedBindings();
     Route::delete('transactions/{purchaseOrderTransaction:id}/delete', DeletePurchaseOrderTransaction::class)->name('transaction.delete')->withoutScopedBindings();
+    Route::patch('transactions/{purchaseOrderTransaction:id}/cancel', CancelPurchaseOrderTransaction::class)->name('transaction.cancel')->withoutScopedBindings();
 });
 
 Route::name('email.')->prefix('email/')->group(function () {
@@ -1225,6 +1373,10 @@ Route::name('brand.')->prefix('brand')->group(function () {
     Route::patch('{brand:id}/attach-multiple', AttachBrandToMultipleModel::class)->name('brands.attach-multiple')->withoutScopedBindings();
 });
 
+Route::name('barcodes.')->prefix('barcode')->group(function () {
+    Route::patch('{barcode:id}/update', UpdateBarcode::class)->name('update')->withoutScopedBindings();
+});
+
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
     Route::post('store', StoreTradeUnitFamily::class)->name('store')->withoutScopedBindings();
     Route::patch('{tradeUnitFamily:id}/update', UpdateTradeUnitFamily::class)->name('update')->withoutScopedBindings();
@@ -1255,18 +1407,21 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
+Route::patch('variant/{variant:id}', UpdateVariant::class)->name('variant.update');
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
 Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');
 Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
 
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
-    Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
+    Route::post('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
+    Route::post('{clockingMachine}/kiosk-token', SetClockingMachineKioskToken::class)->name('kiosk_token.set');
     Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
     Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
 });
 Route::patch('time-tracker/{timeTracker:id}/clock-out', ClockOutTimeTracker::class)->name('time-tracker.clock-out');
 Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
+Route::patch('payment-account-shop/{paymentAccountShop:id}', UpdatePaymentAccountShop::class)->name('payment_account_shop.update');
 
 
 

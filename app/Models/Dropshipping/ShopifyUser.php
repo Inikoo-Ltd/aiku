@@ -14,7 +14,6 @@ use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\DebugWebhooks;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -81,7 +80,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dropshipping\PlatformHasClient> $clients
  * @property-read Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
- * @property-read Collection<int, DebugWebhooks> $debugWebhooks
+ * @property-read Collection<int, \App\Models\Dropshipping\DebugWebhooks> $debugWebhooks
  * @property-read Shop|null $externalShop
  * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image

@@ -101,7 +101,7 @@ class ShowBatchCode extends OrgAction
 
                 BatchCodeTabsEnum::DELIVERY_NOTES->value => $this->tab == BatchCodeTabsEnum::DELIVERY_NOTES->value
                     ? fn () => DeliveryNotesResource::collection(IndexDeliveryNotesInBatchCode::run($batchCode, BatchCodeTabsEnum::DELIVERY_NOTES->value))
-                    : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotesInBatchCode::run($batchCode, BatchCodeTabsEnum::DELIVERY_NOTES->value))),
+                    : Inertia::optional(fn () => DeliveryNotesResource::collection(IndexDeliveryNotesInBatchCode::run($batchCode, BatchCodeTabsEnum::DELIVERY_NOTES->value))),
             ]
         )->table(IndexDeliveryNotesInBatchCode::make()->tableStructure(
             prefix: BatchCodeTabsEnum::DELIVERY_NOTES->value,

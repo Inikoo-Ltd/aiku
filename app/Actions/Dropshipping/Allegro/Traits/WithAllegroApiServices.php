@@ -8,12 +8,11 @@
 
 namespace App\Actions\Dropshipping\Allegro\Traits;
 
+use DOMDocument;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 trait WithAllegroApiServices
 {
@@ -23,6 +22,10 @@ trait WithAllegroApiServices
 
     public function restApi(string $method = 'GET', array $params = []): PendingRequest
     {
+        if ($this->access_token_expire_in < now()->timestamp) {
+            $this->refreshAccessToken($this->refresh_token);
+        }
+
         $http = Http::withHeaders([
             'Authorization'  => 'Bearer ' . $this->access_token,
             'Accept'         => $this->allegroApiVersion,
@@ -76,13 +79,12 @@ trait WithAllegroApiServices
                     ?? Arr::get($firstError, 'message')
                     ?? 'Unknown Allegro API error';
 
-                throw new \Exception($errorMessage);
+                return ['message' => $errorMessage];
             }
 
             return $response->json() ?? [];
         } catch (\Exception $e) {
-            Log::error('Allegro API Request failed: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            return ['message' => $e->getMessage()];
         }
     }
 
@@ -93,8 +95,32 @@ trait WithAllegroApiServices
         }
 
         $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+        $content = str_replace(['<br>', '<br/>', '<br />'], ' ', $content);
+        $description = str_replace('&acute;', '´', $content);
 
-        return strip_tags($content, '<b><p><br>');
+        $description = preg_replace_callback('/<b>(.*?)<\/b>/is', function ($matches) {
+            return '<b>' . strip_tags($matches[1]) . '</b>';
+        }, $description);
+
+        $description = $this->fixHtml($description);
+
+        return strip_tags($description, '<b><p><br>');
+    }
+
+    public function fixHtml(string $html): string
+    {
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<div>' . $html . '</div>', LIBXML_NOERROR | LIBXML_HTML_NOIMPLIED);
+        libxml_clear_errors();
+
+        // Get the inner content of the wrapping div
+        $body = $dom->getElementsByTagName('div')->item(0);
+        $result = '';
+        foreach ($body->childNodes as $child) {
+            $result .= $dom->saveXML($child);
+        }
+        return $result;
     }
 
     // -------------------------------------------------------------------------
@@ -219,6 +245,13 @@ trait WithAllegroApiServices
     {
         return $this->makeApiRequest('PUT', "/order/checkout-forms/$orderId/fulfillment", [
             'status' => 'SENT',
+        ]);
+    }
+
+    public function setOrderCancelled(string $orderId): array
+    {
+        return $this->makeApiRequest('PUT', "/order/checkout-forms/$orderId/fulfillment", [
+            'status' => 'CANCELLED',
         ]);
     }
 
@@ -412,6 +445,14 @@ trait WithAllegroApiServices
     // Categories
     // -------------------------------------------------------------------------
 
+    public function getProductByEan(string $ean): array
+    {
+        return $this->makeApiRequest('GET', '/sale/products', [], [
+            'mode' => "GTIN",
+            'phrase' => $ean
+        ]);
+    }
+
     public function getCategories(array $params = []): array
     {
         return $this->makeApiRequest('GET', '/sale/categories', [], $params);
@@ -443,10 +484,21 @@ trait WithAllegroApiServices
         ]);
     }
 
+    public function createResponsibleProducer(array $data): array
+    {
+        return $this->makeApiRequest('POST', '/sale/responsible-producers', $data);
+    }
+
+    public function createResponsiblePerson(array $data): array
+    {
+        return $this->makeApiRequest('POST', '/sale/responsible-persons', $data);
+    }
+
     public function createReturnPolicy(array $data): array
     {
         $data = [
             'name'             => Arr::get($data, 'name', 'Default return policy'),
+            'isFulfillment' => false,
             'availability'     => [
                 'range' => 'FULL'
             ],

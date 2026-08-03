@@ -22,6 +22,13 @@ class UploadImagesToProductCategory extends OrgAction
     public function handle(ProductCategory $model, string $scope, array $modelData, bool $updateDependants = false): array
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
+
+        foreach ($medias as $media) {
+            $model->images()->updateExistingPivot($media->id, [
+                'caption' => $model->name,
+            ]);
+        }
+
         if ($updateDependants && $model->masterProductCategory) {
             $this->updateDependants($model, $medias, $scope);
         }

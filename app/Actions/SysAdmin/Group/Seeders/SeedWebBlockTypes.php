@@ -35,6 +35,7 @@ class SeedWebBlockTypes
                     'fixed',
                     'data',
                     'website_type',
+                    'shop_availability',
                     'is_in_test'
                 ]
             );
@@ -65,8 +66,6 @@ class SeedWebBlockTypes
 
             $webBlockType = $group->webBlockTypes()->where('code', $code)->first();
             if ($webBlockType) {
-
-
                 $webBlockType = UpdateWebBlockType::run($webBlockType, $webBlockTypeData);
             } else {
                 $webBlockType = StoreWebBlockType::run($group, $webBlockTypeData);

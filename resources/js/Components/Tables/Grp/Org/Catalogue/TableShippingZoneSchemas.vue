@@ -20,11 +20,10 @@ defineProps<{
 
 
 function shopRoute(schema: {}) {
-    console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.billables.shipping.index":
             return route(
-                "grp.org.shops.show.billables.shipping.show",
+                schema.is_current ? "grp.org.shops.show.billables.shipping.current.show" : "grp.org.shops.show.billables.shipping.discount.show",
                 [route().params["organisation"], route().params["shop"], schema.slug])
         default:
             return null
@@ -38,7 +37,7 @@ function shopRoute(schema: {}) {
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(name)="{ item: schema }">
             <Link :href="shopRoute(schema)" class="primaryLink">
-            {{ schema["name"] }}
+                {{ schema["name"] }}
             </Link>
         </template>
     </Table>

@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
@@ -56,10 +57,16 @@ class IndexProductsInMasterProduct extends OrgAction
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', 'organisations.id');
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.master_product_id', $masterAsset->id);
+        $queryBuilder->where('products.is_for_sale', true);
+        $queryBuilder->whereIn('products.state', [
+            ProductStateEnum::IN_PROCESS,
+            ProductStateEnum::ACTIVE,
+            ProductStateEnum::DISCONTINUING,
+        ]);
         $queryBuilder->where('shops.state', '!=', ShopStateEnum::CLOSED->value);
 
         $queryBuilder
-            ->defaultSort('products.code')
+            ->defaultSort('products.code', 'products.id')
             ->select([
                 'products.id',
                 'products.code',
@@ -191,7 +198,7 @@ class IndexProductsInMasterProduct extends OrgAction
                         ],
                     ],
                     'data'                              => ProductsResource::collection($products),
-                    'editable_table'                    => true,
+                    'editable_table'                    => false,
                     'mismatch_trade_unit_with_master'   => $hasMismatch,
                     'tabs'                         => [
                         'current'    => $this->tab,
@@ -199,7 +206,7 @@ class IndexProductsInMasterProduct extends OrgAction
                     ],
                     ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                         fn () => ProductsResource::collection($products)
-                        : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                        : Inertia::optional(fn () => ProductsResource::collection($products)),
                 ]
         )->table($this->tableStructure(ProductsTabsEnum::INDEX->value, $this->parent));
     }

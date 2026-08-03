@@ -31,6 +31,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_type
  * @property mixed $shop_engine
  * @property mixed $organisation_slug
+ * @property mixed $opposite_waiting_count
  */
 class WaitingDNItemsGroupedByDeliveryNoteResource extends JsonResource
 {
@@ -56,6 +57,7 @@ class WaitingDNItemsGroupedByDeliveryNoteResource extends JsonResource
             'shop_type'                         => $this->shop_type,
             'shop_engine'                       => $this->shop_engine,
             'organisation_slug'                 => $this->organisation_slug,
+            'opposite_waiting_count'            => (int) $this->opposite_waiting_count,
             'notes'                             => $this->notes,
             'items'                             => $deliveryNote
                 ? collect(WaitingDNItemsGroupedByDeliveryNoteForItemsResource::collection(

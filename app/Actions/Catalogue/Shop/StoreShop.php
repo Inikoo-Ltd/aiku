@@ -17,7 +17,6 @@ use App\Actions\CRM\TrafficSource\SeedTrafficSources;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
 use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
-use App\Actions\Helpers\Query\Seeders\ProspectQuerySeeder;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
@@ -33,7 +32,6 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
@@ -131,28 +129,19 @@ class StoreShop extends OrgAction
             $shop->crmStats()->create();
             $shop->orderingStats()->create();
             $shop->orderHandlingStats()->create();
-            $shop->mailshotsIntervals()->create();
             $shop->discountsStats()->create();
 
-            $shop->outboxNewsletterIntervals()->create();
-            $shop->outboxMarketingIntervals()->create();
-            $shop->outboxMarketingNotificationIntervals()->create();
-            $shop->outboxCustomerNotificationIntervals()->create();
-            $shop->outboxColdEmailsIntervals()->create();
-            $shop->outboxPushIntervals()->create();
+
 
             StoreShopPlatformStats::run($shop);
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $shop->timeSeries()->create(['frequency' => $frequency]);
             }
 
-            if ($shop->type === ShopTypeEnum::DROPSHIPPING) {
+            if ($shop->type === ShopTypeEnum::DROPSHIPPING || $shop->type === ShopTypeEnum::FULFILMENT) {
                 $shop->dropshippingStats()->create();
-
-                foreach (Platform::all() as $platform) {
-                    $shop->platformSalesIntervals()->create(['platform_id' => $platform->id]);
-                }
             }
+
             $shop->serialReferences()->create(
                 [
                     'model'           => SerialReferenceModelEnum::CUSTOMER,
@@ -238,7 +227,6 @@ class StoreShop extends OrgAction
 
         GroupHydrateShops::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateShops::dispatch($organisation)->delay($this->hydratorsDelay);
-        ProspectQuerySeeder::dispatch($shop);
         SeedShopOutboxes::dispatch($shop);
         SetIconAsShopLogo::dispatch($shop)->delay($this->hydratorsDelay);
         SeedShopOfferCampaigns::dispatch($shop);
@@ -292,21 +280,6 @@ class StoreShop extends OrgAction
 
         return $this->handle($organisation, $this->validatedData);
     }
-
-    /**
-     * @throws \Throwable
-     */
-    public function inMaster(MasterShop $masterShop, Organisation $organisation, ActionRequest $request): Shop
-    {
-        $this->masterShop = $masterShop;
-        $this->initialisation($organisation, $request);
-
-        $modelData = $this->validatedData;
-        data_set($modelData, 'master_shop_id', $masterShop->id);
-
-        return $this->handle($organisation, $modelData);
-    }
-
 
     public string $commandSignature = 'shop:create {organisation : organisation slug} {code} {name} {type}
     {--warehouses=*} {--contact_name=} {--company_name=} {--email=} {--phone=} {--identity_document_number=} {--identity_document_type=} {--country=} {--currency=} {--language=} {--timezone=}';

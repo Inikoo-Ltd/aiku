@@ -22,6 +22,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 
 class PayOrder extends OrgAction
 {
@@ -50,8 +51,9 @@ class PayOrder extends OrgAction
         $invoice = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
         if ($invoice) {
             AttachPaymentToInvoice::make()->action($invoice, $payment, []);
-        }
 
+            ProcessInvoicePaidNotification::dispatch($invoice->id, $payment->id);
+        }
 
         return $payment;
     }

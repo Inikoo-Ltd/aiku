@@ -174,6 +174,12 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         PlatformTypeEnum::EBAY => [
                             'name' => 'grp.json.dropshipping.customer_sales_channel.ebay_products'
                         ],
+                        PlatformTypeEnum::TIKTOK => [
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.tiktok_products'
+                        ],
+                        PlatformTypeEnum::ALLEGRO => [
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.allegro_products'
+                        ],
                         default => false
                     },
                     'single_create_new' => match ($this->customerSalesChannel->platform->type) {
@@ -186,6 +192,12 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         PlatformTypeEnum::EBAY => [
                             'name' => 'grp.models.portfolio.store_new_ebay_product'
                         ],
+                        PlatformTypeEnum::TIKTOK => [
+                            'name' => 'grp.models.portfolio.store_new_tiktok_product'
+                        ],
+                        PlatformTypeEnum::ALLEGRO => [
+                            'name' => 'grp.models.portfolio.store_new_allegro_product'
+                        ],
                         default => false
                     },
                     'single_match' => match ($this->customerSalesChannel->platform->type) {
@@ -197,6 +209,12 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         ],
                         PlatformTypeEnum::EBAY => [
                             'name' => 'grp.models.portfolio.match_to_existing_ebay_product'
+                        ],
+                        PlatformTypeEnum::TIKTOK => [
+                            'name' => 'grp.models.portfolio.match_to_existing_tiktok_product'
+                        ],
+                        PlatformTypeEnum::ALLEGRO => [
+                            'name' => 'grp.models.portfolio.match_to_existing_allegro_product'
                         ],
                         default => false
                     },

@@ -14,7 +14,6 @@ import Payments from '@/Components/CMS/Fields/Payment.vue'
 import socialMedia from '@/Components/CMS/Fields/SocialMedia.vue'
 import Script from '@/Components/CMS/Fields/Script.vue'
 import SelectLayout from '@/Components/CMS/Fields/SelectLayout.vue'
-import InputText from 'primevue/inputtext'
 import OverviewForm from '@/Components/CMS/Fields/OverviewForm.vue'
 import ArrayPhone from '@/Components/CMS/Fields/ArrayPhone.vue'
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
@@ -47,8 +46,11 @@ import Countdown from '@/Components/CMS/Fields/Countdown.vue'
 import UploadImageCropped from '@/Components/Workshop/Properties/UploadImageCropped.vue'
 import ShowBlockInResponsive from '@/Components/CMS/Fields/ShowBlockInResponsive.vue'
 import ResponsiveText from '@/Components/CMS/Fields/ResponsiveText.vue'
-import { SelectButton } from 'primevue'
+import { SelectButton, InputText } from 'primevue'
 import SelectBanner from '@/Components/CMS/Fields/SelectBanner.vue'
+import SelectProductCategory from '@/Components/Workshop/Properties/SelectProductCategory.vue'
+import TabsInput from '@/Components/CMS/Fields/TabsInput.vue'
+import RelatedProductsBlockSettings from '@/Components/Workshop/Properties/RelatedProductsBlockSettings.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -99,7 +101,10 @@ export const getComponent = (componentName: string) => {
         'visibility' : ShowBlockInResponsive,
         'text-responsive': ResponsiveText,
         'select-button' : SelectButton,
-        'select_banner' : SelectBanner
+        'select_banner' : SelectBanner,
+        'select_product_category' : SelectProductCategory,
+        'tabs' : TabsInput,
+        'related-products-block-settings' : RelatedProductsBlockSettings
     }
     return components[componentName] ?? NotFoundComponents
 }

@@ -81,7 +81,7 @@ const maxDiscountLabel = computed(() => {
 }
 
 .offer-max-discount {
-    @apply bg-[#A80000] border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
+    @apply items-center min-w-0 bg-[#A80000] border border-red-900 text-gray-100 w-fit flex  rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
 }
 
 
@@ -95,19 +95,18 @@ const maxDiscountLabel = computed(() => {
 }
 
 .offer-label {
-    @apply flex items-center gap-1;
+    @apply flex items-center gap-1 min-w-0 flex-nowrap;
 }
 
 .discount {
-    @apply flex items-center gap-0.5;
+    @apply flex items-center gap-0.5 shrink-0 whitespace-nowrap;
 }
 
 .label-text {
-    @apply leading-none;
+    @apply leading-none truncate min-w-0;
 }
-
 .info-icon {
-    @apply flex items-center ml-1 opacity-80 hover:opacity-100 cursor-pointer;
+    @apply flex items-center ml-1 shrink-0 opacity-80 hover:opacity-100 cursor-pointer;
 }
 
 

@@ -121,6 +121,39 @@ trait WithRetinaRegistration
                 );
             }
         }
+
+        $country  = Country::find($request->input('contact_address.country_id'));
+        $postcode = $request->input('contact_address.postal_code');
+
+        $bannedCountry = data_get($this->shop->banned_country_regions ?? [], $country?->code, null);
+
+        if (data_get($bannedCountry, 'billing', false)) {
+            $postcodeRegex = data_get($bannedCountry, 'postcode');
+
+            if ($postcodeRegex) {
+                // If have postcode regex, check for postcode (Postcode must be present to validate the Forbidden region)
+                if (!$postcode) {
+                    $validator->errors()->add(
+                        'contact_address',
+                        __('Postcode must be present for the selected Country')
+                    );
+                }
+
+                // Check whether regex match or not
+                if (preg_match($postcodeRegex, $postcode)) {
+                    $validator->errors()->add(
+                        'contact_address',
+                        __('Forbidden country is being selected. Registration is forbidden for users from the selected region.')
+                    );
+                }
+            } else {
+                // If don't have postcode Regex, ban the country al-together
+                $validator->errors()->add(
+                    'contact_address',
+                    __('Forbidden country is being selected. Registration is forbidden for users from the selected region.')
+                );
+            }
+        }
     }
 
     public function prepareForValidation(ActionRequest $request): void
@@ -161,6 +194,7 @@ trait WithRetinaRegistration
             'session_id'      => ['sometimes', 'nullable', 'string'],
             'contact_name'    => ['required', 'string', 'max:255'],
             'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'fiscal_name'     => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'           => [
                 'required',
@@ -180,7 +214,7 @@ trait WithRetinaRegistration
             'contact_address' => ['required', new ValidAddress()],
             'is_opt_in'       => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],
-            'tax_number' => [ Arr::get($this->shop->settings, 'registration.tax_number_is_required', false) ? 'required' : 'nullable',  'array'],
+            'tax_number'      => [Arr::get($this->shop->settings, 'registration.tax_number_is_required', false) ? 'required' : 'nullable', 'array'],
             'password'        =>
                 [
                     'required',

@@ -41,7 +41,8 @@ class IndexLocations extends OrgAction
 
     private Group|Warehouse|WarehouseArea|Organisation $parent;
     private OrgStock|null $orgStock = null;
-    private $mode = 'exclude';
+    private string $mode = 'exclude';
+    private ?string $emptyStockFilter = null;
 
     public function maya(Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
@@ -75,6 +76,26 @@ class IndexLocations extends OrgAction
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseAreaTabsEnum::values());
 
         return $this->handle(parent: $warehouseArea);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inWarehouseAllEmpty(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent           = $warehouse;
+        $this->emptyStockFilter = 'all_empty';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseTabsEnum::values());
+
+        return $this->handle(parent: $warehouse);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inWarehousePartialEmpty(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent           = $warehouse;
+        $this->emptyStockFilter = 'partial_empty';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseTabsEnum::values());
+
+        return $this->handle(parent: $warehouse);
     }
 
     public function excludeOrgStockLocs(Organisation $organisation, Warehouse $warehouse, OrgStock $orgStock, ActionRequest $request): LengthAwarePaginator
@@ -140,6 +161,8 @@ class IndexLocations extends OrgAction
                     'warehouses.slug as warehouse_slug',
                     'warehouse_areas.slug as warehouse_area_slug',
                     'warehouse_area_id',
+                    'number_org_stock_slots',
+                    'number_empty_stock_slots',
                     'organisations.slug as organisation_slug',
                     'organisations.name as organisation_name'
                 ]
@@ -155,7 +178,15 @@ class IndexLocations extends OrgAction
                     $q->whereIn('locations.code', $this->orgStock->locations->pluck('code'));
                 }
             })
-            ->allowedSorts(['code'])
+            ->when($this->emptyStockFilter == 'all_empty', function ($q) {
+                $q->where('location_stats.number_org_stock_slots', '>', 0)
+                    ->whereColumn('location_stats.number_empty_stock_slots', '>=', 'location_stats.number_org_stock_slots');
+            })
+            ->when($this->emptyStockFilter == 'partial_empty', function ($q) {
+                $q->where('location_stats.number_empty_stock_slots', '>', 0)
+                    ->whereColumn('location_stats.number_empty_stock_slots', '<', 'location_stats.number_org_stock_slots');
+            })
+            ->allowedSorts(['code', 'organisation_name', 'max_weight', 'max_volume', 'number_org_stock_slots', 'number_empty_stock_slots'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -210,10 +241,14 @@ class IndexLocations extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'max_weight', label: __('Weight'), canBeHidden: false, align: 'right');
-            $table->column(key: 'max_volume', label: __("CBM (Cubic meter)"), canBeHidden: false, align: 'right');
-            $table->column(key: 'stock_value', label: __('stock value'), canBeHidden: false, align: 'right')
-                ->defaultSort('code');
+            $table->column(key: 'max_weight', label: __('Weight'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'max_volume', label: __("CBM (Cubic meter)"), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'number_org_stock_slots', label: __("Slots"), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'number_empty_stock_slots', label: __("Empty slots"), canBeHidden: false, sortable: true, align: 'right');
+
+
+            //   $table->column(key: 'stock_value', label: __('Stock value'), canBeHidden: false, align: 'right');
+            $table->defaultSort('code');
         };
     }
 
@@ -241,7 +276,7 @@ class IndexLocations extends OrgAction
             'max_volume',
             'barcode'
         ])->map(fn ($col) => [
-            'label' => __(str_replace('_', ' ', ucfirst($col))), // Convert _ to space and capitalize the first letter
+            'label' => __(str_replace('_', ' ', ucfirst($col))),
             'value' => $col
         ])->toArray();
 
@@ -285,6 +320,14 @@ class IndexLocations extends OrgAction
             ];
         }
 
+        $title = match ($this->emptyStockFilter) {
+            'all_empty'     => __('Empty locations'),
+            'partial_empty' => __('Partially empty locations'),
+            default         => __('Locations')
+        };
+
+        $subNavigation = $scope instanceof Warehouse ? $this->getLocationsSubNavigation($scope) : null;
+
         return Inertia::render(
             'Org/Warehouse/Locations',
             [
@@ -292,12 +335,13 @@ class IndexLocations extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'            => __('Locations'),
+                'title'            => $title,
                 'pageHead'         => [
-                    'title'     => __('Locations'),
-                    'container' => $container,
-                    'icon'      => $icon,
-                    'actions'   => $this->getActions($request)
+                    'title'         => $title,
+                    'container'     => $container,
+                    'icon'          => $icon,
+                    'subNavigation' => $subNavigation,
+                    'actions'       => $this->getActions($request)
                 ],
                 'upload_locations' => [
                     'title'               => [
@@ -400,6 +444,43 @@ class IndexLocations extends OrgAction
         ];
     }
 
+    public function getLocationsSubNavigation(Warehouse $warehouse): array
+    {
+        $parameters = [$warehouse->organisation->slug, $warehouse->slug];
+
+        return [
+            [
+                'label'  => __('All'),
+                'root'   => 'grp.org.warehouses.show.infrastructure.locations.index',
+                'route'  => [
+                    'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                    'parameters' => $parameters,
+                ],
+                'number' => $warehouse->stats->number_locations,
+            ],
+            [
+                'label'  => __('Empty'),
+                'root'   => 'grp.org.warehouses.show.infrastructure.locations.all_empty',
+                'route'  => [
+                    'name'       => 'grp.org.warehouses.show.infrastructure.locations.all_empty',
+                    'parameters' => $parameters,
+                ],
+                'align'  => 'right',
+                'number' => $warehouse->stats->number_locations_stock_slots_all_empty,
+            ],
+            [
+                'label'  => __('Partially empty'),
+                'root'   => 'grp.org.warehouses.show.infrastructure.locations.partial_empty',
+                'route'  => [
+                    'name'       => 'grp.org.warehouses.show.infrastructure.locations.partial_empty',
+                    'parameters' => $parameters,
+                ],
+                'align'  => 'right',
+                'number' => $warehouse->stats->number_locations_stock_slots_partial_empty,
+            ],
+        ];
+    }
+
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = []) {
@@ -426,11 +507,13 @@ class IndexLocations extends OrgAction
                     ]
                 )
             ),
-            'grp.org.warehouses.show.infrastructure.locations.index' =>
+            'grp.org.warehouses.show.infrastructure.locations.index',
+            'grp.org.warehouses.show.infrastructure.locations.all_empty',
+            'grp.org.warehouses.show.infrastructure.locations.partial_empty' =>
             array_merge(
                 (new ShowWarehouse())->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'warehouse'])),
                 $headCrumb([
-                    'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                    'name'       => $routeName,
                     'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
                 ])
             ),

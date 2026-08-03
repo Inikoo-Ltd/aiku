@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -41,6 +42,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -92,11 +94,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $identity_document_issued_by
  * @property bool $allow_shift
  * @property EmploymentTypeEnum $employment_type
+ * @property-read \App\Models\HumanResources\EmployeeContract|null $activeContract
  * @property-read \App\Models\Helpers\Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Address> $addresses
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
+ * @property-read Collection<int, \App\Models\HumanResources\EmployeeContract> $contracts
+ * @property-read \App\Models\HumanResources\EmployeeLeaveBalance|null $currentLeaveBalance
  * @property-read string|null $department
  * @property-read Group|null $group
  * @property-read Collection<int, \App\Models\HumanResources\HRAnnouncement> $hrAnnouncements
@@ -105,7 +110,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\HumanResources\EmployeeHasJobPositions|null $pivot
  * @property-read Collection<int, \App\Models\HumanResources\JobPosition> $jobPositions
  * @property-read \App\Models\HumanResources\EmployeeAnalytics|null $latestAnalytics
- * @property-read \App\Models\HumanResources\EmployeeLeaveBalance|null $leaveBalance
+ * @property-read Collection<int, \App\Models\HumanResources\EmployeeLeaveBalance> $leaveBalances
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read \App\Models\Helpers\Media|null $seoImage
@@ -127,6 +132,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Employee extends Model implements HasMedia, Auditable
 {
+    use HasSearch;
     use HasSlug;
     use HasAddress;
     use HasAddresses;
@@ -271,7 +277,38 @@ class Employee extends Model implements HasMedia, Auditable
 
     public function leaveBalance()
     {
-        return $this->hasOne(EmployeeLeaveBalance::class)->where('year', now()->year);
+        return $this->currentLeaveBalance();
+    }
+
+    public function leaveBalances(): HasMany
+    {
+        return $this->hasMany(EmployeeLeaveBalance::class);
+    }
+
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(EmployeeContract::class)->orderBy('start_date');
+    }
+
+    public function activeContract(): HasOne
+    {
+        return $this->hasOne(EmployeeContract::class)
+            ->where('start_date', '<=', now()->toDateString())
+            ->where(function ($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
+            })
+            ->orderByDesc('start_date');
+    }
+
+    public function currentLeaveBalance(): HasOne
+    {
+        return $this->hasOne(EmployeeLeaveBalance::class)
+            ->whereHas('contract', function ($q) {
+                $q->where('start_date', '<=', now()->toDateString())
+                  ->where(function ($q2) {
+                      $q2->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
+                  });
+            });
     }
 
     public function latestAnalytics(): HasOne
@@ -373,6 +410,24 @@ class Employee extends Model implements HasMedia, Auditable
     public function getDepartmentAttribute(): ?string
     {
         return $this->getCurrentDepartment();
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'group_id'        => $this->group_id,
+            'organisation_id' => $this->organisation_id,
+            'alias'           => (string)$this->alias,
+            'contact_name'    => (string)$this->contact_name,
+            'worker_number'   => (string)$this->worker_number,
+            'job_title'       => (string)$this->job_title,
+            'email'           => (string)$this->email,
+            'phone'           => (string)$this->phone,
+            'state'           => $this->state->value,
+            'created_at'      => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }

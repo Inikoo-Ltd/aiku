@@ -10,28 +10,32 @@
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\RetinaApiAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class SubmitApiOrder extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
+    use WithPayAndSubmitOrder;
 
     /**
      * @throws \Throwable
      */
     public function handle(Order $order): Order|JsonResponse
     {
+        if ($order->transactions->count() === 0) {
+            return response()->json([
+                'message' => "This order has no products yet. Please add products to the order before submitting it."
+            ], 403);
+        }
+
         if ($order->customer_id != $this->customer->id || $order->shop_id != $this->shop->id) {
             return response()->json([
                 'message' => "Unable to make modifications for this order"
@@ -41,16 +45,10 @@ class SubmitApiOrder extends RetinaApiAction
         if ($order->state != OrderStateEnum::CREATING) {
             return response()->json([
                 'message' => "This order is already in the '{$order->state->value}' state and cannot be updated."
-            ], 409);
+            ], 403);
         }
 
-        try {
-            PayOrderAsync::run($order);
-        } catch (Exception $e) {
-            Sentry::captureException($e);
-        }
-
-        return SubmitOrder::make()->action($order);
+        return $this->payAndSubmitOrder($order);
     }
 
     public function jsonResponse(JsonResponse|Order $result): OrderApiResource|\Illuminate\Http\Resources\Json\JsonResource|JsonResponse
@@ -68,7 +66,7 @@ class SubmitApiOrder extends RetinaApiAction
     /**
      * @throws \Throwable
      */
-    public function asController(Order $order, ActionRequest $request): Order
+    public function asController(Order $order, ActionRequest $request): Order|JsonResponse
     {
         $this->initialisationFromDropshipping($request);
 

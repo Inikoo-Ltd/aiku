@@ -19,14 +19,14 @@ import Overview2 from "@/Components/CMS/Webpage/Overview2/Overview2Workshop.vue"
 import Footer1 from '@/Components/CMS/Website/Footers/footerTheme1/Footer1Workshop.vue'
 import Topbar1 from '@/Components/CMS/Website/TopBars/Template/Topbar1/Topbar1Workshop.vue'
 import Topbar2 from '@/Components/CMS/Website/TopBars/Template/Topbar2/Topbar2Workshop.vue'
-import Topbar3 from '@/Components/CMS/Website/TopBars/Template/Topbar3/Topbar3Workshop.vue'
+
 import Header1 from '@/Components/CMS/Website/Headers/Header1/Header1Workshop.vue'
 import Header2 from '@/Components/CMS/Website/Headers/Header2/Header2Workshop.vue'
 import Menu1 from '@/Components/CMS/Website/Menus/Menu1Workshop.vue'
 import TextColumn from '@/Components/CMS/Webpage/TextColumn/TextColumnWorkshop.vue'
 import Topbar1Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Topbar1FulfilmentWorkshop.vue'
 import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Topbar2FulfilmentWorkshop.vue' 
-import Topbar3Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar3Fulfilment/Topbar3FulfilemntWorkshop.vue'
+
 import Button from "@/Components/CMS/Webpage/Button/ButtonWorkshop.vue"
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
@@ -52,6 +52,7 @@ import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme
 import CarouselCtaWorkshop from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaWorkshop.vue'
 import CarouselImageBackground from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundWorkshop.vue'
 import SubDepartmentWorkshop2 from '@/Components/CMS/Webpage/SubDepartment2/SubDepartmentWorkshop.vue'
+import SubDepartmentWorkshop3 from '@/Components/CMS/Webpage/SubDepartment3/SubDepartment3Workshop.vue'
 
 import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'
 import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'
@@ -71,20 +72,24 @@ import Column4Workshop from '@/Components/CMS/Webpage/Column4/Column4Workshop.vu
 import Slider1Workshop from '@/Components/CMS/Webpage/Slider-1/Slider1Workshop.vue'
 import CollectionDescriptionWorkshop from '@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionWorkshop.vue'
 import DepartmentDescriptionWorkshop from '@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionWorkshop.vue'
+import DepartmentDescriptionWorkshop2 from '@/Components/CMS/Webpage/DepartmentDescription2/DepartmentDescription2Workshop.vue'
 import SubDepartmentDescriptionWorkshop from '../Components/CMS/Webpage/SubDepartmentDescription/SubDepartmentDescriptionWorkshop.vue'
 import Family2ExtraDescriptionWorkshop from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue'
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Families1OverviewWorkshop.vue'
 import RecommendationFromMasterWorkshop from '../Components/CMS/Webpage/RecommendationFromMaster/RecommendationFromMasterWorkshop.vue'
+import RelatedProductCategoryWorkshop from '@/Components/CMS/Webpage/RelatedProductCategory/RealatedProductCategoryWorkshop.vue'
+import Tabs from '@/Components/CMS/Webpage/Tabs/TabsWorkshop.vue'
+import RecommendationProductCategoryFromMasterWorkshop from '@/Components/CMS/Webpage/RecommendationProductCategoryFromMaster/RecommendationProductCategoryFromMasterWorkshop.vue'
+import FaqDepartmentWorkshop from '@/Components/CMS/Webpage/FaqDepartment/FaqDepartmentWorkshop.vue'
+import TopFamiliesWorkshop from '@/Components/CMS/Webpage/TopFamilies/TopFamiliesWorkshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
         //topbar
         'top-bar-1': Topbar1,
         'top-bar-2': Topbar2,
-        'top-bar-3': Topbar3,
         'top-bar-1-fulfilment': Topbar1Fulfilment,
         'top-bar-2-fulfilment': Topbar2Fulfilment,
-        'top-bar-3-fulfilment': Topbar3Fulfilment,
 
         //header
         'header-1': Header1,
@@ -99,11 +104,13 @@ const components = (shop_type?: string): Record<string, Component> => {
         //description catalouge
         'collection-description-1' : CollectionDescriptionWorkshop,
         'department-description-1' : DepartmentDescriptionWorkshop,
+        'department-description-2' : DepartmentDescriptionWorkshop2,
         'sub-department-description-1' : SubDepartmentDescriptionWorkshop,
 
         //sub-department
         'sub-departments-1' : SubDepartmentWorkshop1,
         'sub-departments-2' : SubDepartmentWorkshop2,
+        'sub-departments-3' : SubDepartmentWorkshop3,
 
         //family
         'families-1' : Families1Workshop,
@@ -173,7 +180,12 @@ const components = (shop_type?: string): Record<string, Component> => {
         'carousel-image-background' : CarouselImageBackground,
         'step-2' : TimelineWorkshop2,
         'slider-1' : Slider1Workshop,
-        'recommendation-from-master' : RecommendationFromMasterWorkshop
+        'recommendation-from-master' : RecommendationFromMasterWorkshop,
+        'relatedProductCategory' : RelatedProductCategoryWorkshop,
+        'recommendation-product-category-from-master' : RecommendationProductCategoryFromMasterWorkshop,
+        'tabs' : Tabs,
+        'faq-department' : FaqDepartmentWorkshop,
+        'top-families' : TopFamiliesWorkshop
     }
 }
 

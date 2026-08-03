@@ -22,7 +22,6 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrdersTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
-use App\Http\Resources\Sales\OrderResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -121,6 +120,7 @@ class IndexOrders extends OrgAction
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
+        $query->leftJoin('platforms', 'orders.platform_id', '=', 'platforms.id');
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')->where('shops.state', ShopStateEnum::OPEN);
 
 
@@ -200,6 +200,7 @@ class IndexOrders extends OrgAction
                 'orders.total_amount',
                 'orders.payment_amount',
                 'orders.pay_detailed_status',
+                'orders.updated_by_customer_at',
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
                 'customer_clients.name as client_name',
@@ -212,6 +213,7 @@ class IndexOrders extends OrgAction
                 'organisations.slug as organisation_slug',
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
+                'customers.is_vip as is_customer_vip',
                 'orders.customer_notes',
                 'orders.internal_notes',
                 'orders.public_notes',
@@ -220,9 +222,10 @@ class IndexOrders extends OrgAction
                 'orders.tracking_number',
                 'orders.shipping_data',
                 'orders.with_replacement',
+                'platforms.type as platform',
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at']) // Ensure `id` is the first sort column
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -301,6 +304,10 @@ class IndexOrders extends OrgAction
                 $table->column(key: 'submitted_at', label: __('Submitted'), sortable: true, type: 'date_hm');
             } else {
                 $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
+            }
+
+            if ($bucket == 'in_basket') {
+                $table->column(key: 'updated_by_customer_at', label: __('Last updated'), sortable: true, type: 'date_hm');
             }
 
 
@@ -421,7 +428,7 @@ class IndexOrders extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
-                'data'           => OrderResource::collection($orders),
+                'data'           => OrdersResource::collection($orders),
                 'submitRoute'    => $customerId ? [
                     'name'       => 'grp.models.customer.submitted_order.store',
                     'parameters' => [
@@ -435,7 +442,7 @@ class IndexOrders extends OrgAction
 
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
                     fn () => OrdersResource::collection($orders)
-                    : Inertia::lazy(fn () => OrdersResource::collection($orders)),
+                    : Inertia::optional(fn () => OrdersResource::collection($orders)),
 
                 OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value => $this->tab == OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                     ?
@@ -446,7 +453,7 @@ class IndexOrders extends OrgAction
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => OrdersResource::collection(
+                    : Inertia::optional(fn () => OrdersResource::collection(
                         IndexOrders::run(
                             $this->parent,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
@@ -456,11 +463,11 @@ class IndexOrders extends OrgAction
 
                 OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
                     fn () => GetLastOrders::run($this->parent)
-                    : Inertia::lazy(fn () => GetLastOrders::run($this->parent)),
+                    : Inertia::optional(fn () => GetLastOrders::run($this->parent)),
 
                 OrdersTabsEnum::EXCESS_ORDERS->value => $this->tab == OrdersTabsEnum::EXCESS_ORDERS->value ?
                     fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))),
             ]
         )->table(
             $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)

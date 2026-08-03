@@ -44,7 +44,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 </script>
 
 <template>
-    <div :id="modelValue?.id ? modelValue?.id  : 'carousel-cta' + indexBlock" >
+    <div :id="modelValue?.id ? modelValue?.id  : 'carousel-cta' + indexBlock">
         <div :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(modelValue.container?.properties, screenType)
@@ -74,6 +74,8 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                     :alt="data.image.alt || 'Image preview'"
                                     class="absolute inset-0 w-full h-full object-cover"
                                     :imgAttributes="data.image.attributes"
+                                    :height="getStyles(modelValue?.image?.container?.properties, screenType, false)?.height"
+                                    :width="getStyles(modelValue?.image?.container?.properties, screenType, false)?.width"
                                     />
                             </div>
 
@@ -86,11 +88,11 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                         sendMessageToParent('activeChildBlockArray', index)
                                     }
                                 ">
-                                    <EditorV2 
-                                        v-if="data?.text" 
+                                    <EditorV2
+                                        v-if="data?.text"
                                         v-model="data.text"
                                         @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-                                        @update:modelValue="(e) => { data.text = e, emits('autoSave')}" 
+                                        @update:modelValue="(e) => { data.text = e, emits('autoSave')}"
                                         class="mb-6" 
                                         :uploadImageRoute="{
                                             name: webpageData.images_upload_route.name,

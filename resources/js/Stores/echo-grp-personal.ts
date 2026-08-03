@@ -24,12 +24,49 @@ interface ProgressBar {
     }
 }
 
+export interface CloneFamilyProgress {
+    masterFamilyId: number
+    masterFamily: string
+    families: {
+        done: number
+        total: number
+    }
+    products: {
+        done: number
+        total: number
+    }
+    isStarting: boolean
+    isFinished: boolean
+}
+
+interface CloneFamilyProgressEvent {
+    master_family: string
+    family_progress: {
+        action_type: string
+        action_id: number
+    }
+    pending_families: number
+    done_families: number
+    pending_products: number
+    done_products: number
+}
+
 export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
     state: () => ({
         progressBars: {} as ProgressBar,
         isShowProgress: false,
-        recentlyUploaded: []
+        recentlyUploaded: [],
+        cloneFamilyProgress: {} as Record<number, CloneFamilyProgress>,
+        isShowCloneFamilyProgress: false
     }),
+    getters: {
+        cloneFamilyProgressList(state): CloneFamilyProgress[] {
+            return Object.values(state.cloneFamilyProgress)
+        },
+        hasCloneFamilyProgress(state): boolean {
+            return Object.keys(state.cloneFamilyProgress).length > 0
+        },
+    },
     actions: {
         subscribe(userID: number) {
             let param = window.Echo.private("grp.personal." + userID)
@@ -78,6 +115,44 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 layout.dispatching_waiting_count = eventData.dispatching_waiting_count
                 layout.crm_waiting_count = eventData.crm_waiting_count
             })
+            .listen('.clone-family-progress', (eventData: CloneFamilyProgressEvent) => {
+                const masterFamilyId = eventData.family_progress?.action_id
+                if (!masterFamilyId) return
+
+                if (!this.cloneFamilyProgress[masterFamilyId]) this.isShowCloneFamilyProgress = true
+
+                this.cloneFamilyProgress[masterFamilyId] = {
+                    masterFamilyId: masterFamilyId,
+                    masterFamily: eventData.master_family,
+                    families: {
+                        done: eventData.done_families,
+                        total: eventData.pending_families
+                    },
+                    products: {
+                        done: eventData.done_products,
+                        total: eventData.pending_products
+                    },
+                    isStarting: false,
+                    isFinished: eventData.done_families >= eventData.pending_families
+                        && eventData.done_products >= eventData.pending_products
+                }
+            })
+        },
+
+        startCloneFamilyProgress(masterFamilyId: number, masterFamily: string = '') {
+            this.cloneFamilyProgress[masterFamilyId] = {
+                masterFamilyId: masterFamilyId,
+                masterFamily: masterFamily,
+                families: { done: 0, total: 0 },
+                products: { done: 0, total: 0 },
+                isStarting: true,
+                isFinished: false
+            }
+            this.isShowCloneFamilyProgress = true
+        },
+
+        clearCloneFamilyProgress(masterFamilyId: number) {
+            delete this.cloneFamilyProgress[masterFamilyId]
         },
     },
 });

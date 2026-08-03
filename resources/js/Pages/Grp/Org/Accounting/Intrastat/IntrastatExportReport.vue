@@ -65,6 +65,13 @@ const exportExcel = () => {
                         label="Export Slovakia XML"
                     />
                 </a>
+                <a :href="route('grp.org.reports.intrastat.exports.export-aeat', route().params)" download target="_blank">
+                    <Button
+                        :style="'secondary'"
+                        icon="fal fa-file-export"
+                        label="Export Spain AEAT"
+                    />
+                </a>
                 <Button
                     @click="exportExcel"
                     :style="'secondary'"

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Search;
 
-use App\Http\Resources\CRM\Prospect\ProspectSearchResultResource;
 use App\Models\CRM\Prospect;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -16,6 +15,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SearchProspects
 {
     use AsAction;
+    use WithRawSearchResults;
 
     public function handle(string $query, array $options): array
     {
@@ -24,12 +24,18 @@ class SearchProspects
             $prospectsQuery->where('shop_id', $shopId);
         }
 
-
         return [
             'scope'   => 'prospects',
             'results' => [
-                'prospects' => ProspectSearchResultResource::collection($prospectsQuery->get()),
-
+                'prospects' => array_map(static fn (array $document) => [
+                    'id'           => (int)$document['id'],
+                    'name'         => $document['name'] ?? null,
+                    'contact_name' => $document['contact_name'] ?? null,
+                    'company_name' => $document['company_name'] ?? null,
+                    'email'        => $document['email'] ?? null,
+                    'phone'        => $document['phone'] ?? null,
+                    'state'        => $document['state'] ?? null,
+                ], $this->rawDocuments($prospectsQuery)),
             ],
         ];
     }

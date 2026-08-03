@@ -91,30 +91,58 @@ const itemStyle = computed(() => {
   return {
     flex: `0 0 ${width}%`,
     maxWidth: `${width}%`,
-    transition: 'all .35s ease'
+    transition: 'all .18s ease'
   }
 })
 
 
 
+const DEFAULT_SPEED = 20000
+
+const speed = computed(() => {
+  const raw = props.fieldValue?.slider_data?.slider_setting?.speed
+  if (raw == null) return DEFAULT_SPEED
+  const num = Number(raw)
+  return num > 0 ? num : DEFAULT_SPEED
+})
+
+const DRAG_THRESHOLD = 5
+
 const wrapperRef = ref<HTMLElement | null>(null)
+const isDragging = ref(false)
 let rafId: number | null = null
 let pos = 0
-const speed = 0.35
+let lastTimestamp = 0
+let isPointerDown = false
+let dragStartX = 0
+let dragStartPos = 0
+let suppressClick = false
+
+const loopDistance = () => {
+  const el = wrapperRef.value
+  return el ? el.scrollWidth / 2 : 0
+}
+
+const wrapPos = (value: number) => {
+  const distance = loopDistance()
+  if (distance <= 0) return 0
+  const wrapped = value % distance
+  return wrapped < 0 ? wrapped + distance : wrapped
+}
 
 const startAutoMove = () => {
   const el = wrapperRef.value
-  if (!el) return
+  if (!el || rafId) return
 
-  const step = () => {
-    pos += speed
-    el.scrollLeft = pos
+  const step = (timestamp: number) => {
+    const distance = loopDistance()
 
-    if (pos >= el.scrollWidth / 2) {
-      pos = 0
-      el.scrollLeft = 0
+    if (lastTimestamp && distance > 0) {
+      pos = wrapPos(pos + (distance / speed.value) * (timestamp - lastTimestamp))
+      el.scrollLeft = pos
     }
 
+    lastTimestamp = timestamp
     rafId = requestAnimationFrame(step)
   }
 
@@ -122,7 +150,59 @@ const startAutoMove = () => {
 }
 
 const stopAutoMove = () => {
-  if (rafId) cancelAnimationFrame(rafId)
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  lastTimestamp = 0
+}
+
+const onPointerDown = (event: PointerEvent) => {
+  const el = wrapperRef.value
+  if (!el || event.button !== 0) return
+
+  stopAutoMove()
+  suppressClick = false
+  isPointerDown = true
+  dragStartX = event.clientX
+  dragStartPos = pos
+}
+
+const onPointerMove = (event: PointerEvent) => {
+  const el = wrapperRef.value
+  if (!el || !isPointerDown) return
+
+  const delta = event.clientX - dragStartX
+  if (!isDragging.value && Math.abs(delta) < DRAG_THRESHOLD) return
+
+  if (!isDragging.value) {
+    el.setPointerCapture(event.pointerId)
+  }
+
+  isDragging.value = true
+  pos = wrapPos(dragStartPos - delta)
+  el.scrollLeft = pos
+}
+
+const onPointerUp = (event: PointerEvent) => {
+  const el = wrapperRef.value
+  if (!isPointerDown) return
+
+  isPointerDown = false
+  if (el?.hasPointerCapture(event.pointerId)) {
+    el.releasePointerCapture(event.pointerId)
+  }
+
+  suppressClick = isDragging.value
+  isDragging.value = false
+  startAutoMove()
+}
+
+const onClickCapture = (event: MouseEvent) => {
+  if (!suppressClick) return
+  suppressClick = false
+  event.preventDefault()
+  event.stopPropagation()
 }
 
 onMounted(startAutoMove)
@@ -136,6 +216,13 @@ onBeforeUnmount(stopAutoMove)
         ref="wrapperRef"
         :style="wrapperStyle"
         class="slider-wrapper overflow-x-hidden"
+        :class="{ 'is-dragging': isDragging }"
+        @pointerdown="onPointerDown"
+        @pointermove="onPointerMove"
+        @pointerup="onPointerUp"
+        @pointercancel="onPointerUp"
+        @click.capture="onClickCapture"
+        @dragstart.prevent
       >
         <div
           v-for="(data, index) in loopCards"
@@ -150,8 +237,9 @@ onBeforeUnmount(stopAutoMove)
                 :style="imageContainerStyle"
               >
                 <component
-                  :is="data?.link?.href ? LinkIris : 'div'"
-                  :href="data?.link?.url ?? data?.link?.href "
+                  :is="(data?.link?.href || data?.link?.url) ? LinkIris : 'div'"
+                  :href="data?.link?.url ?? data?.link?.href"
+                  :canonical_url="data?.link?.canonical_url"
                   :target="data?.link?.target"
                   :type="data?.link?.type"
                   class="overflow-hidden w-full flex items-center justify-center relative image-hover-wrap"
@@ -163,6 +251,8 @@ onBeforeUnmount(stopAutoMove)
                       :src="data.image.source"
                       :alt="data?.image?.alt || `image-${index}`"
                       class="slider-image"
+                      :height="getStyles(fieldValue?.image?.properties, screenType, false)?.height"
+                      :width="getStyles(fieldValue?.image?.properties, screenType, false)?.width"
                     />
 
                     <div
@@ -194,10 +284,21 @@ onBeforeUnmount(stopAutoMove)
 .slider-wrapper{
   width:100%;
   overflow:hidden;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+.slider-wrapper.is-dragging{
+  cursor: grabbing;
+}
+
+.slider-wrapper.is-dragging .slider-image{
+  pointer-events: none;
 }
 
 .slider-item{
-  transition: all .4s ease;
+  transition: all .18s ease;
 }
 
 /* hover effect */
@@ -208,7 +309,7 @@ onBeforeUnmount(stopAutoMove)
 
 .slider-image{
   object-fit:cover;
-  transition: all .45s cubic-bezier(.2,.8,.2,1);
+  transition: all .2s cubic-bezier(.2,.8,.2,1);
 }
 
 /* hover opacity + zoom 1.5x */

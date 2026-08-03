@@ -103,7 +103,7 @@ class ShowBanner extends OrgAction
                 BannerTabsEnum::SHOWCASE->value => $this->tab == BannerTabsEnum::SHOWCASE->value
                     ?
                     fn () => BannerResource::make($banner)->resolve()
-                    : Inertia::lazy(
+                    : Inertia::optional(
                         fn () => BannerResource::make($banner)->getArray()
                     ),
 
@@ -115,7 +115,7 @@ class ShowBanner extends OrgAction
                             prefix: BannerTabsEnum::SNAPSHOTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => BannerSnapshotResource::collection(
+                    : Inertia::optional(fn () => BannerSnapshotResource::collection(
                         IndexSnapshots::run(
                             parent: $banner,
                             prefix: BannerTabsEnum::SNAPSHOTS->value

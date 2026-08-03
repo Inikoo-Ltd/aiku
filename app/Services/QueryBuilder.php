@@ -15,6 +15,16 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @method self whereAnyWordStartWith(string $column, string|array $value)
+ * @method self whereStartWith(string $column, string|array $value)
+ * @method self whereEndWith(string $column, string|array $value)
+ * @method self whereWith(string $column, string|array $value)
+ * @method self orWhereAnyWordStartWith(string $column, string|array $value)
+ * @method self orWhereStartWith(string $column, string|array $value)
+ * @method self orWhereEndWith(string $column, string|array $value)
+ * @method self orWhereWith(string $column, string|array $value)
+ */
 class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 {
     public function whereElementGroup(
@@ -27,6 +37,40 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         $elementsData = null;
 
         $argumentName = ($prefix ? $prefix . '_' : '') . 'elements';
+
+        if (request()->has("$argumentName.$key")) {
+            $elements               = explode(',', request()->input("$argumentName.$key"));
+            $validatedElements      = array_intersect($allowedElements, $elements);
+            $countValidatedElements = count($validatedElements);
+            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
+                $elementsData = $validatedElements;
+            }
+        } elseif ($default !== null) {
+            $defaultElements        = explode(',', $default);
+            $validatedElements      = array_intersect($allowedElements, $defaultElements);
+            $countValidatedElements = count($validatedElements);
+            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
+                $elementsData = $validatedElements;
+            }
+        }
+
+        if ($elementsData) {
+            $engine($this, $elementsData);
+        }
+
+        return $this;
+    }
+
+    public function whereAdditionalElementGroup(
+        string $key,
+        array $allowedElements,
+        callable $engine,
+        ?string $prefix = null,
+        ?string $default = null
+    ): self {
+        $elementsData = null;
+
+        $argumentName = ($prefix ? $prefix . '_' : '') . 'additionalElements';
 
         if (request()->has("$argumentName.$key")) {
             $elements               = explode(',', request()->input("$argumentName.$key"));
@@ -108,15 +152,18 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     public function withBetweenDates(array $allowedColumns, ?string $prefix = null): static
     {
         $table          = $this->getModel()->getTable();
+        $defaultColumn  = $allowedColumns[0] ?? null;
         $allowedColumns = array_merge($allowedColumns, ['created_at', 'updated_at']);
         $argumentName   = ($prefix ? $prefix . '_' : '') . 'between';
 
-        $filters  = request()->input($argumentName, []);
+        $filters  = StickyBetweenDates::apply(request()->input($argumentName, []), $allowedColumns, $defaultColumn, $prefix);
         $timezone = resolveTimezoneHeader();
 
         foreach ($allowedColumns as $column) {
-            if (array_key_exists($column, $filters)) {
-                $range = $filters[$column];
+            $filterKey = StickyBetweenDates::filterKey($column);
+
+            if (array_key_exists($filterKey, $filters)) {
+                $range = $filters[$filterKey];
                 $parts = explode('-', $range);
 
                 if (count($parts) === 2) {
@@ -136,11 +183,11 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                         ->toDateTimeString();
 
                     if ($this->getModel() instanceof FulfilmentCustomer) {
-                        $this->whereBetween('customers.' . $column, [$start, $end]);
-                    } elseif ($this->getModel() instanceof Customer && $column == 'last_invoiced_at') {
-                        $this->whereBetween('customer_stats.' . $column, [$start, $end]);
+                        $this->whereBetween('customers.' . $filterKey, [$start, $end]);
+                    } elseif ($this->getModel() instanceof Customer && $filterKey == 'last_invoiced_at') {
+                        $this->whereBetween('customer_stats.' . $filterKey, [$start, $end]);
                     } else {
-                        $this->whereBetween("$table.$column", [$start, $end]);
+                        $this->whereBetween(str_contains($column, '.') ? $column : "$table.$column", [$start, $end]);
                     }
                 }
             }

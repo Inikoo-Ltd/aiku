@@ -56,6 +56,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\GoodsIn\ReturnDeliveryNoteItem|null $returnItem
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read User|null $sower
+ * @property-read \App\Models\GoodsIn\StockDelivery|null $stockDelivery
+ * @property-read \App\Models\GoodsIn\StockDeliveryItem|null $stockDeliveryItem
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sowing newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sowing newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sowing query()
@@ -115,6 +117,16 @@ class Sowing extends Model
 
     public function return(): BelongsTo
     {
-        return $this->belongsTo(ReturnDeliveryNote::class, 'return_item_id');
+        return $this->belongsTo(ReturnDeliveryNote::class, 'return_id');
+    }
+
+    public function stockDeliveryItem(): BelongsTo
+    {
+        return $this->belongsTo(StockDeliveryItem::class);
+    }
+
+    public function stockDelivery(): BelongsTo
+    {
+        return $this->belongsTo(StockDelivery::class);
     }
 }

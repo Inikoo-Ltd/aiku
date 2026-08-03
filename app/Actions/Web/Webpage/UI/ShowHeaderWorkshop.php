@@ -41,6 +41,19 @@ class ShowHeaderWorkshop extends OrgAction
     {
         $headerLayout   = Arr::get($website->published_layout, 'header');
         $isHeaderActive = Arr::get($headerLayout, 'status');
+        $webBlockType   = $this
+                        ->organisation
+                        ->group
+                        ->webBlockTypes()
+                        ->where('fixed', false)
+                        ->where('scope', 'website')
+                        ->whereJsonContains('website_type', $website->shop->type)
+                        ->where(function ($q) use ($website) {
+                            $q->whereJsonContains('shop_availability', $website->shop->slug)
+                                ->orWhere('shop_availability', '[]');
+                        })
+                        ->orderBy('id')
+                        ->get();
 
         return Inertia::render(
             'Org/Web/Workshop/Header/HeaderWorkshop',
@@ -68,9 +81,7 @@ class ShowHeaderWorkshop extends OrgAction
                         ]
                     ],
                     'actions'       => $this->getActions($website, 'grp.models.website.publish.header')
-
                 ],
-
                 'uploadImageRoute' => [
                     'name'       => 'grp.models.website.header.images.store',
                     'parameters' => [
@@ -104,9 +115,7 @@ class ShowHeaderWorkshop extends OrgAction
                 'state'           => $isHeaderActive ?? true,
                 'domain'          => $website->domain,
                 'data'            => GetWebsiteWorkshopHeader::run($website),
-                'web_block_types' => WebBlockTypesResource::collection(
-                    $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'website')->orderBy('id')->get()
-                )->toArray($request)
+                'web_block_types' => WebBlockTypesResource::collection($webBlockType)->toArray($request)
             ]
         );
     }

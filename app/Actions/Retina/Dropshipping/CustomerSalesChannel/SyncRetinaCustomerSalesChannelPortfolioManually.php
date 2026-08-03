@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Dropshipping\Shopify\Product\UpdateInventoryInShopifyPortfolio;
+use App\Actions\Dropshipping\Shopify\Product\UpdateInventoryInShopifyCustomerSalesChannel;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\RetinaAction;
@@ -31,7 +31,7 @@ class SyncRetinaCustomerSalesChannelPortfolioManually extends RetinaAction
 
         /** @var CustomerSalesChannel|null $result */
         $result = match ($customerSalesChannel->platform->type) {
-            PlatformTypeEnum::SHOPIFY => UpdateInventoryInShopifyPortfolio::run($customerSalesChannel),
+            PlatformTypeEnum::SHOPIFY => UpdateInventoryInShopifyCustomerSalesChannel::run($customerSalesChannel),
             PlatformTypeEnum::WOOCOMMERCE => UpdateInventoryInWooPortfolio::run($customerSalesChannel),
             PlatformTypeEnum::EBAY => UpdateInventoryInEbayPortfolio::run($customerSalesChannel),
             default => null

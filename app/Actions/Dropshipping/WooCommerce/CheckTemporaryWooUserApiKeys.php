@@ -57,6 +57,8 @@ class CheckTemporaryWooUserApiKeys extends RetinaAction
 
             CheckWooChannel::run($wooCommerceUser);
 
+            Cache::forget($uniqueIdCache);
+
             return $uniqueIdCache;
         }
 

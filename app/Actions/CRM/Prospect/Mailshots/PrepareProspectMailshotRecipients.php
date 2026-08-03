@@ -20,7 +20,7 @@ class PrepareProspectMailshotRecipients
 {
     use AsAction;
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'long-send-emails';
 
     protected int $countRecipients = 0;
 
@@ -41,6 +41,7 @@ class PrepareProspectMailshotRecipients
 
         $queryBuilder = $queryBuilder->select('id', 'email');
         $queryBuilder->orderBy('prospects.id', 'asc');
+        $queryBuilder->limit(1000);
 
         $mailshotId = $mailshot->id;
 

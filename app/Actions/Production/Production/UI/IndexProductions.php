@@ -157,12 +157,12 @@ class IndexProductions extends OrgAction
 
                 ProductionsTabsEnum::PRODUCTIONS->value => $this->tab == ProductionsTabsEnum::PRODUCTIONS->value ?
                     fn () => ProductionsResource::collection($productions)
-                    : Inertia::lazy(fn () => ProductionsResource::collection($productions)),
+                    : Inertia::optional(fn () => ProductionsResource::collection($productions)),
 
 
                 ProductionsTabsEnum::PRODUCTIONS_HISTORIES->value => $this->tab == ProductionsTabsEnum::PRODUCTIONS_HISTORIES->value ?
                     fn () => HistoryResource::collection(IndexHistory::run(Production::class))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run(Production::class)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run(Production::class)))
 
 
             ]

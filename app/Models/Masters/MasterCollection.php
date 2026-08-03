@@ -31,6 +31,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -69,7 +70,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterProducts
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
- * @property-read \App\Models\Masters\MasterCollectionOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterCollectionOrderingStats|null $orderingStats
  * @property-read Model|\Eloquent $parent
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $parentMasterDepartments
@@ -92,6 +92,7 @@ use Spatie\Translatable\HasTranslations;
  */
 class MasterCollection extends Model implements Auditable, HasMedia
 {
+    use HasSearch;
     use SoftDeletes;
     use HasSlug;
     use HasHistory;
@@ -157,12 +158,6 @@ class MasterCollection extends Model implements Auditable, HasMedia
         return $this->morphTo();
     }
 
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(MasterCollectionOrderingIntervals::class);
-    }
-
     public function orderingStats(): HasOne
     {
         return $this->hasOne(MasterCollectionOrderingStats::class);
@@ -215,4 +210,18 @@ class MasterCollection extends Model implements Auditable, HasMedia
     {
         return $this->hasMany(MasterCollectionTimeSeries::class);
     }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'             => (string)$this->id,
+            'group_id'       => $this->group_id,
+            'master_shop_id' => $this->master_shop_id,
+            'code'           => $this->code,
+            'name'           => (string)$this->name,
+            'state'          => $this->state->value,
+            'created_at'     => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
 }

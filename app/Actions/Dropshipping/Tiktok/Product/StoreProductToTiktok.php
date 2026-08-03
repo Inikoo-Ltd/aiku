@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Tiktok\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
@@ -29,11 +30,19 @@ class StoreProductToTiktok extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithPortfolioErrorResponse;
 
+    /**
+     * @throws \Exception
+     */
     public function handle(Portfolio $portfolio): Portfolio
     {
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $portfolio->customerSalesChannel->user;
+
+        if (! $tiktokUser) {
+            throw new \Exception('No authenticated TikTok channel found.');
+        }
 
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
@@ -60,6 +69,7 @@ class StoreProductToTiktok extends RetinaAction
             $leafCategoryId = $this->resolveSafeCategoryId($tiktokUser, $leafCategoryId);
 
             $categoryRules = $tiktokUser->getCategoryRules($leafCategoryId);
+
             $requiredCertifications = collect(Arr::get($categoryRules, 'data.product_certifications', []))
                 ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
                 ->map(fn ($cert) => [
@@ -69,13 +79,25 @@ class StoreProductToTiktok extends RetinaAction
                 ->values()
                 ->toArray();
 
+            $requiredPersonResponsible = [];
+
+            if (Arr::get($categoryRules, 'data.responsible_person.is_required')) {
+                $personResponsible = $tiktokUser->getPersonResponsible();
+                /** @var array $personId */
+                $personId = collect(Arr::get($personResponsible, 'data.responsible_persons', []))->first();
+                $requiredPersonResponsible = [
+                    'responsible_person_ids' => [Arr::get($personId, 'id')]
+                ];
+            }
+
             $categoryAttributes = $tiktokUser->getCategoryAttributes($leafCategoryId);
             $attributes = Arr::get($categoryAttributes, 'data.attributes', []);
 
             $productAttributes = collect($attributes)
-                ->filter(fn ($attribute) => Arr::get($attribute, 'is_requried') === true)
+                ->filter(fn ($attribute) => in_array(true, [Arr::get($attribute, 'is_requried'), Arr::get($attribute, 'is_required')]))
                 ->map(function ($attribute) {
-                    $firstValue = Arr::first(Arr::get($attribute, 'values', []));
+                    $attributeValues = Arr::get($attribute, 'values', []);
+                    $firstValue = collect($attributeValues)->firstWhere('name', 'No') ?? Arr::first($attributeValues);
 
                     if ($firstValue) {
                         return [
@@ -129,6 +151,7 @@ class StoreProductToTiktok extends RetinaAction
                     'unit' => "CENTIMETER",
                 ],
                 'product_certifications' => $requiredCertifications,
+                ...$requiredPersonResponsible,
                 'external_product_id' => (string) $portfolio->id,
                 'identifier_code' => [
                     'code' => (string) $product->barcode,
@@ -155,14 +178,6 @@ class StoreProductToTiktok extends RetinaAction
 
             $tiktokProduct = $tiktokUser->uploadProductToTiktok($productData);
 
-            if (Arr::get($tiktokProduct, 'error')) {
-                UpdatePortfolio::run($portfolio, [
-                    'errors_response' => [
-                        'message' => Arr::get($tiktokProduct, 'data')
-                    ]
-                ]);
-            }
-
             /*$result = $tiktokUser->activateProduct([
                 'product_ids' => [Arr::get($tiktokProduct, 'data.product_id')]
             ]);*/
@@ -177,11 +192,19 @@ class StoreProductToTiktok extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => null
+                ]);
+
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             } else {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => $this->portfolioErrorResponse(Arr::get($tiktokProduct, 'data'))
+                ]);
+
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => Arr::get($tiktokProduct, 'data')
                 ]);
@@ -190,13 +213,11 @@ class StoreProductToTiktok extends RetinaAction
             return $portfolio;
         } catch (\Exception $e) {
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [
-                    'message' => $e->getMessage()
-                ]
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
             ]);
 
             if ($logs) {
-                UpdatePlatformPortfolioLog::run($logs, [
+                UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $e->getMessage()
                 ]);

@@ -9,19 +9,23 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\Workshop\GetBlockSubDepartment;
-use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockCollection;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamiliesOverview;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartments;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSeeAlso;
-use App\Actions\Web\WebBlock\GetWebBlockBlog;
-use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
-use App\Actions\Web\WebBlock\GetWebBlockProduct;
-use App\Actions\Web\WebBlock\GetWebBlockProducts;
-use App\Actions\Web\WebBlock\GetWebBlockRecommendationsCRB;
-use App\Actions\Web\WebBlock\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsCRB;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartmentDescription;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategoriesFromMaster;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartmentsThree;
+use App\Actions\Web\WebBlock\Workshop\GetFaqDepartment;
+use App\Actions\Web\WebBlock\Workshop\GetTopFamilies;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks
@@ -30,14 +34,27 @@ trait WithFillWorkshopWebBlocks
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
-        if ($webBlockType == 'department-description-1') {
-            $parsedWebBlocks[$key] = GetWebBlockDepartment::run($webpage, $webBlock);
+
+        if (in_array($webBlockType, ['department-description-1', 'department-description-2'])) {
+            $departmentData = GetWebBlockDepartmentDescription::run($webpage, $webBlock);
+            if ($departmentData) {
+                $parsedWebBlocks[$key] = $departmentData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'sub-department-description-1') {
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'collection-description-1') {
             $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
         } elseif (str_starts_with($webBlockType, 'families-') && str_ends_with($webBlockType, '-overview')) {
             $parsedWebBlocks[$key] = GetWebBlockFamiliesOverview::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'sub-departments-3') {
+            $webBlockData = GetWebBlockSubDepartmentsThree::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
@@ -48,7 +65,7 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['family-2', 'family-2-extra-description', 'family-3', 'family-3-extra-description'])) {
             $parsedWebBlocks[$key] = GetWebBlockFamilyDescription::run($webpage, $webBlock);
-        } elseif (str_contains($webBlockType, 'product-')) {
+        } elseif (str_starts_with($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
         } elseif ($webBlockType == 'see-also-1') {
             $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
@@ -58,8 +75,29 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-from-master') {
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'recommendation-product-category-from-master') {
+            $webBlockData = GetWebBlockRecommendationsProductCategoriesFromMaster::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'faq-department') {
+            $webBlockData = GetFaqDepartment::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
+        } elseif ($webBlockType == 'top-families') {
+            $webBlockData = GetTopFamilies::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

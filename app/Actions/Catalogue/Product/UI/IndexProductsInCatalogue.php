@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithFamilySubNavigation;
+use App\Actions\Masters\MasterAsset\GetMasterUpdatedBadgeData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -20,6 +21,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ExternalShop\ProductInExternalShopResource;
+use App\Exports\Catalogue\ProductsExport;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -51,13 +53,55 @@ class IndexProductsInCatalogue extends OrgAction
 
             'state' => [
                 'label'    => __('State'),
-                'elements' => array_merge_recursive(
-                    ProductStateEnum::labels($bucket),
-                    ProductStateEnum::count($shop, $bucket)
+                'elements' => array_merge(
+                    array_merge_recursive(
+                        ProductStateEnum::labels($bucket),
+                        ProductStateEnum::count($shop, $bucket)
+                    ),
+                    ['price_not_match_master' => [__('Price/RRP ≠ Master'), null]]
                 ),
 
                 'engine' => function ($query, $elements) {
-                    $query->whereIn('products.state', $elements);
+                    if (in_array('price_not_match_master', $elements)) {
+                        GetMasterUpdatedBadgeData::make()->applyDriftConstraints($query);
+                    }
+
+                    $states = array_diff($elements, ['price_not_match_master']);
+                    if ($states) {
+                        $query->whereIn('products.state', $states);
+                    }
+                }
+
+            ],
+
+            /**
+             * A product takes its tax treatment from its master, so the override lives there
+             * rather than on the shop product. No counts: they would cost a scan of the
+             * catalogue on every page load.
+             */
+            'tax' => [
+                'label'    => __('Tax'),
+                'elements' => [
+                    'overridden' => [__('Reduced or zero rated'), null],
+                    'standard'   => [__('Standard rate'), null],
+                ],
+
+                'engine' => function ($query, $elements) {
+                    $overridden = function ($query) {
+                        $query->select('id')
+                            ->from('master_assets')
+                            ->whereRaw("master_assets.tax_category::text not in ('{}', '[]', 'null')");
+                    };
+
+                    if (in_array('overridden', $elements) && !in_array('standard', $elements)) {
+                        $query->whereIn('products.master_product_id', $overridden);
+                    } elseif (in_array('standard', $elements) && !in_array('overridden', $elements)) {
+                        /** A product with no master is standard rated, and NOT IN would drop it. */
+                        $query->where(function ($query) use ($overridden) {
+                            $query->whereNotIn('products.master_product_id', $overridden)
+                                ->orWhereNull('products.master_product_id');
+                        });
+                    }
                 }
 
             ],
@@ -85,7 +129,12 @@ class IndexProductsInCatalogue extends OrgAction
         $queryBuilder->orderBy('products.state');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
-        $queryBuilder->whereNull('products.exclusive_for_customer_id');
+
+        if (request()->has('is_bundle')) {
+            $queryBuilder->where('products.is_bundle', true);
+        } else {
+            $queryBuilder->whereNull('products.exclusive_for_customer_id');
+        }
 
         if ($bucket == 'current') {
             $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
@@ -127,6 +176,7 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.web_images',
                 'available_quantity',
                 'products.is_for_sale',
+                'products.is_bundle',
                 'products.units',
                 'products.unit',
                 'products.created_at',
@@ -240,7 +290,7 @@ class IndexProductsInCatalogue extends OrgAction
 
             if ($shop->type == ShopTypeEnum::EXTERNAL) {
                 $table
-                    ->column(key: 'product_org_stocks', label: __('SKU'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
+                    ->column(key: 'product_org_stocks', label: __('SKO'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
             } else {
                 $table
                     ->column(key: 'variant_slug', label: __('Variant'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
@@ -335,6 +385,43 @@ class IndexProductsInCatalogue extends OrgAction
         ];
     }
 
+    /**
+     * @return array<int, array{key: string, label: string}>
+     */
+    public function getExportFields(): array
+    {
+        $definitions = ProductsExport::fieldDefinitions();
+
+        return array_map(fn ($key) => [
+            'key'   => $key,
+            'label' => __($definitions[$key]['heading']),
+        ], array_keys($definitions));
+    }
+
+    public function getProductsExport(Shop $shop): array
+    {
+        $parameters = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+            'bucket'       => $this->bucket,
+            'prefix'       => ProductsTabsEnum::INDEX->value,
+        ];
+
+        return [
+            'fields'         => $this->getExportFields(),
+            'download_route' => [
+                'xlsx' => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.export',
+                    'parameters' => array_merge($parameters, ['type' => 'xlsx']),
+                ],
+                'csv'  => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.export',
+                    'parameters' => array_merge($parameters, ['type' => 'csv']),
+                ],
+            ],
+        ];
+    }
+
     public function htmlResponse(LengthAwarePaginator $products, ActionRequest $request): Response
     {
         /** @var Shop $shop */
@@ -371,6 +458,7 @@ class IndexProductsInCatalogue extends OrgAction
                 'title'                        => $title,
                 'pageHead'                     => [
                     'title'         => $title,
+                    'color'         => '#38bdf8',
                     'model'         => $model,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
@@ -389,6 +477,7 @@ class IndexProductsInCatalogue extends OrgAction
                     ]
                 ],
                 'data'                         => ProductsResource::collection($products),
+                'products_export'              => $this->getProductsExport($shop),
                 'editable_table'               => $shop->type != ShopTypeEnum::EXTERNAL,
                 'shop_id'                      => $shop->id,
                 'tabs'                         => [
@@ -398,11 +487,11 @@ class IndexProductsInCatalogue extends OrgAction
                 'variantSlugs'                 => $shop->type != ShopTypeEnum::EXTERNAL ? ProductsResource::collection($products)->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => $this->displayProductsShopTypeDependant($products, $shop)
-                    : Inertia::lazy(fn () => $this->displayProductsShopTypeDependant($products, $shop)),
+                    : Inertia::optional(fn () => $this->displayProductsShopTypeDependant($products, $shop)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))),
+                    : Inertia::optional(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))),
 
 
             ]

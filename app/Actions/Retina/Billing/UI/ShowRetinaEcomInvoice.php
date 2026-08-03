@@ -144,7 +144,7 @@ class ShowRetinaEcomInvoice extends RetinaAction
                             ]));
                         }
                     )
-                    : Inertia::lazy(
+                    : Inertia::optional(
                         fn () => tap(
                             ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value)),
                             function ($resource) {
@@ -157,7 +157,7 @@ class ShowRetinaEcomInvoice extends RetinaAction
 
                 RetinaEcomInvoiceTabsEnum::PAYMENTS->value => $this->tab == RetinaEcomInvoiceTabsEnum::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
+                    : Inertia::optional(fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
 
 
             ]

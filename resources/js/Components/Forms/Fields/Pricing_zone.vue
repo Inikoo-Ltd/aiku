@@ -13,6 +13,7 @@ import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
 import PurePricingZone from "@/Components/Pure/PurePricingZone.vue"
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

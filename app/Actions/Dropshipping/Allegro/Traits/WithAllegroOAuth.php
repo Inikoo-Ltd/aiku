@@ -8,10 +8,11 @@
 
 namespace App\Actions\Dropshipping\Allegro\Traits;
 
+use App\Actions\Dropshipping\Allegro\User\UpdateAllegroUser;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Sentry;
 
 trait WithAllegroOAuth
 {
@@ -52,13 +53,12 @@ trait WithAllegroOAuth
                     ?? Arr::get($response->json(), 'error')
                     ?? 'OAuth token request failed';
 
-                throw new \Exception($error);
+                return ['message' => $error];
             }
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('Allegro OAuth error: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            return [];
         }
     }
 
@@ -142,7 +142,7 @@ trait WithAllegroOAuth
                 $error = Arr::get($response->json(), 'error_description')
                     ?? Arr::get($response->json(), 'error')
                     ?? 'OAuth code exchange failed';
-                throw ValidationException::withMessages(['message' => $error]);
+                return ['message' => $error];
             }
 
             return $response->json();
@@ -196,15 +196,14 @@ trait WithAllegroOAuth
             ])->asForm()->post($this->allegroDeviceUrl, $params);
 
             if ($response->failed()) {
-                throw new \Exception(
-                    Arr::get($response->json(), 'error_description') ?? 'Device code request failed'
-                );
+                return $response->json();
             }
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('Allegro Device Flow error: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            Sentry::captureException($e);
+
+            return [];
         }
     }
 
@@ -253,19 +252,16 @@ trait WithAllegroOAuth
                     continue;
                 }
 
-                // access_denied, expired, invalid device code — abort
-                throw new \Exception(
-                    Arr::get($body, 'error_description') ?? $error ?? 'Device authorization failed'
-                );
             } catch (ValidationException $e) {
-                throw $e;
+                Sentry::captureException($e);
             } catch (\Exception $e) {
-                Log::error('Allegro Device Flow polling error: ' . $e->getMessage());
-                throw ValidationException::withMessages(['message' => $e->getMessage()]);
+                Sentry::captureException($e);
+
+                return [];
             }
         }
 
-        throw ValidationException::withMessages(['message' => 'Device flow timed out waiting for user approval.']);
+        return [];
     }
 
     // -------------------------------------------------------------------------
@@ -298,31 +294,36 @@ trait WithAllegroOAuth
      */
     public function refreshAccessToken(string $refreshToken): array
     {
-        return $this->postToTokenEndpoint([
+        $result = $this->postToTokenEndpoint([
             'grant_type'    => 'refresh_token',
             'refresh_token' => $refreshToken,
         ]);
-    }
 
-    /**
-     * Convenience: refresh the token stored on $this->refresh_token and
-     * update $this->access_token / $this->refresh_token in place, then
-     * persist the new tokens by calling persistAllegroTokens() if defined.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function refreshAndPersistTokens(): array
-    {
-        $tokens = $this->refreshAccessToken($this->refresh_token);
-
-        $this->access_token  = $tokens['access_token'];
-        $this->refresh_token = $tokens['refresh_token'];
-
-        if (method_exists($this, 'persistAllegroTokens')) {
-            $this->persistAllegroTokens($tokens);
+        if (blank($result)) {
+            return [];
         }
 
-        return $tokens;
+        if (Arr::get($result, 'message')) {
+            return [
+                'message' => Arr::get($result, 'message')
+            ];
+        }
+
+        $accessTokenExpiresAt = now()->addSeconds($result['expires_in'])->timestamp;
+        $refreshTokenExpiresAt = isset($result['refresh_token'])
+            ? now()->addDays(90)->timestamp
+            : null;
+
+        UpdateAllegroUser::make()->handle($this, [
+            'access_token' => Arr::get($result, 'access_token'),
+            'refresh_token' => Arr::get($result, 'refresh_token'),
+            'access_token_expire_in' => $accessTokenExpiresAt,
+            'refresh_token_expire_in' => $refreshTokenExpiresAt
+        ], false);
+
+        $this->refresh();
+
+        return $result;
     }
 
     // -------------------------------------------------------------------------
@@ -353,17 +354,14 @@ trait WithAllegroOAuth
             ]);
 
             if ($response->failed()) {
-                throw new \Exception(
-                    Arr::get($response->json(), 'error_description')
-                    ?? Arr::get($response->json(), 'message')
-                    ?? 'Dynamic Client Registration failed'
-                );
+                return $response->json();
             }
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('Allegro DCR error: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            Sentry::captureException($e);
+
+            return [];
         }
     }
 }

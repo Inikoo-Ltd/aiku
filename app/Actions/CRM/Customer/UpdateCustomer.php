@@ -325,6 +325,7 @@ class UpdateCustomer extends OrgAction
                 $this->strict ? new Phone() : 'string:255',
             ],
             'identity_document_number'                              => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt'                          => ['sometimes', 'nullable', 'string'],
             'contact_website'                                       => ['sometimes', 'nullable', 'active_url'],
             'contact_address'                                       => ['sometimes', 'required', new ValidAddress()],
             'delivery_address'                                      => ['sometimes', 'nullable', new ValidAddress()],
@@ -344,6 +345,7 @@ class UpdateCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_gold_reward_reminder' => ['sometimes', 'boolean'],
             'state'                                                 => ['sometimes', Rule::enum(CustomerStateEnum::class)],
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
@@ -351,6 +353,9 @@ class UpdateCustomer extends OrgAction
             'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
             'ukims'                                                 => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
+            'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
+            'is_vip'                                                => ['sometimes', 'boolean'],
+
         ];
 
         if ($this?->asAction) {
@@ -359,7 +364,6 @@ class UpdateCustomer extends OrgAction
 
 
         if (!$this->strict) {
-            $rules['is_vip']             = ['sometimes', 'boolean'];
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
             $rules['registered_at']      = ['sometimes', 'nullable', 'date'];

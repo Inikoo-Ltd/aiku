@@ -45,6 +45,32 @@ class GetWarehouseShowcase
                         'tooltip' => __('Locations')
                     ]
                 ],
+                [
+                    'name'  => __('Empty locations'),
+                    'value' => $warehouse->stats->number_locations_stock_slots_all_empty,
+                    'color' => 'red',
+                    'route' => [
+                        'name'       => 'grp.org.warehouses.show.infrastructure.locations.all_empty',
+                        'parameters' => array_merge($routeParameters, [$warehouse->slug])
+                    ],
+                    'icon'  => [
+                        'icon'    => 'fal fa-box-open',
+                        'tooltip' => __('Locations with all stock slots empty')
+                    ]
+                ],
+                [
+                    'name'  => __('Partially empty locations'),
+                    'value' => $warehouse->stats->number_locations_stock_slots_partial_empty,
+                    'color' => 'orange',
+                    'route' => [
+                        'name'       => 'grp.org.warehouses.show.infrastructure.locations.partial_empty',
+                        'parameters' => array_merge($routeParameters, [$warehouse->slug])
+                    ],
+                    'icon'  => [
+                        'icon'    => 'fal fa-box',
+                        'tooltip' => __('Locations with some stock slots empty')
+                    ]
+                ],
             ],
 
         ];

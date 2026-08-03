@@ -8,11 +8,14 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Analytics\WebUserRequest;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Deployment;
@@ -39,6 +42,8 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite;
+use App\Models\Traits\HasSearch;
 
 /**
  * App\Models\Web\Webpage
@@ -135,12 +140,25 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Webpage extends Model implements Auditable, HasMedia
 {
+    use HasSearch;
     use HasSlug;
     use HasFactory;
     use SoftDeletes;
     use InWebsite;
     use HasHistory;
     use HasImage;
+    protected static function booted(): void
+    {
+        static::saved(function (Webpage $webpage) {
+            if ($webpage->wasRecentlyCreated || $webpage->wasChanged('state')) {
+                HydrateIsInWebsite::make()->fromWebpage($webpage);
+            }
+        });
+
+        static::deleted(function (Webpage $webpage) {
+            HydrateIsInWebsite::make()->fromWebpage($webpage);
+        });
+    }
 
     protected $casts = [
         'data'                        => 'array',
@@ -365,6 +383,66 @@ class Webpage extends Model implements Auditable, HasMedia
     public function redirect(): BelongsTo
     {
         return $this->belongsTo(Redirect::class);
+    }
+
+    public function luigiIdentity(): string
+    {
+        //todo simplify to use this instead
+        //return 'webpage-' . $this->slug;
+
+        if ($this->model instanceof Product) {
+            return "$this->group_id:$this->organisation_id:$this->shop_id:{$this->website->id}:$this->id";
+        } else {
+
+            $model = $this->model;
+
+            // Start with just the current webpage's URL
+            $segments = [];
+
+            if ($model instanceof ProductCategory) {
+                if ($model->type === ProductCategoryTypeEnum::DEPARTMENT) {
+                    $segments = [
+                        optional($model->webpage ?? null)->url,
+                    ];
+                } elseif ($model->type === ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    $segments = collect([
+                        optional($model->department?->webpage ?? null)->url,
+                        $this->url,
+                    ])->filter()->all();
+                } elseif ($model->type === ProductCategoryTypeEnum::FAMILY) {
+                    $segments = collect([
+                        optional($model->department?->webpage ?? null)->url,
+                        optional($model->subDepartment?->webpage ?? null)->url,
+                        $this->url,
+                    ])->filter()->all();
+                }
+            } else {
+                $segments = [$this->url];
+            }
+
+            return '/'.collect($segments)->implode('/');
+
+        }
+
+
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'          => (string)$this->id,
+            'group_id'    => $this->group_id,
+            'shop_id'     => $this->shop_id,
+            'website_id'  => $this->website_id,
+            'code'        => $this->code,
+            'url'         => (string)$this->url,
+            'title'       => (string)$this->title,
+            'description' => (string)$this->description,
+            'type'        => $this->type->value,
+            'state'       => $this->state->value,
+            'created_at'  => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }

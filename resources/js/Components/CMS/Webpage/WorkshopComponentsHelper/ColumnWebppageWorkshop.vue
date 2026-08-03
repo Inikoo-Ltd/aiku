@@ -31,7 +31,7 @@ const updateData = (newVal: any) => {
 
 <template>
 		
-	<section class="w-full min-h-[100px] flex items-center justify-center"
+	<section class="w-full min-h-[100px] flex  justify-center"
 		:style="getStyles(modelValue?.data?.fieldValue?.container?.properties,screenType)"
 	>
 		<div

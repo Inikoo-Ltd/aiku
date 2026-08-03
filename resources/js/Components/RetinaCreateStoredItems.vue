@@ -12,7 +12,7 @@
   import axios from "axios"
   import { get } from 'lodash-es'
   import { routeType } from "@/types/route"
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import Tag from '@/Components/Tag.vue'
   import { library } from "@fortawesome/fontawesome-svg-core"
   import { faPlus, faChevronDown, faTimes, faMinus, faSparkles } from "@fas"
@@ -39,6 +39,14 @@
 
   const loadingAddStoredItem = ref(false)
   const newStoredItem = ref(null)
+
+  // Only show SKUs that can be stored (exclude discontinuing/discontinued) in the selector
+  const storedItemsIndexUrl = computed(() => {
+      const base = route(props.storedItemsRoute.index.name, props.storedItemsRoute.index.parameters)
+      const separator = base.includes('?') ? '&' : '?'
+      return `${base}${separator}filter[storable]=true`
+  })
+
   const messageMode = ref(false)
   const disabledSelect = ref({
       edit: props.form.id ? true : false,
@@ -219,7 +227,7 @@
   <template>
       <div v-if="!messageMode">
           <div class="text-center font-semibold text-2xl mb-4">
-              {{ title ? title : disabledSelect.edit ? trans("Edit customer's SKUs") : trans("Set up Customer's SKUs") }}
+              {{ title ? title : disabledSelect.edit ? trans("Edit customer's SKOs") : trans("Set up Customer's SKOs") }}
           </div>
           <div class="grid grid-cols-3 gap-x-4">
               <label class="mt-1 block text-sm font-medium text-gray-700">{{ trans("Reference") }}</label>
@@ -227,7 +235,7 @@
               <div class="mt-1 col-span-2">
                   <SelectQuery ref="_selectQuery"
                       :filterOptions="filterOptionsStoredItems"
-                      :urlRoute="route(storedItemsRoute.index.name, storedItemsRoute.index.parameters)"
+                      :urlRoute="storedItemsIndexUrl"
                       :value="form"
                       :placeholder="'Select or add item'"
                       :required="true"
@@ -319,7 +327,7 @@
                   @update:modelValue="() => errorNewStoredItemName = ''"
                   :class="errorNewStoredItemName ? 'errorShake' : ''"
                   class="col-span-2"
-                  :placeholder="trans(`Customer's SKU name`)"
+                  :placeholder="trans(`Customer's SKO name`)"
               />
           </div>
           <p v-if="errorNewStoredItemName" class="mt-2 text-sm text-red-500">

@@ -6,7 +6,11 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Goods\Barcode\UI\EditBarcode;
+use App\Actions\Goods\Barcode\UI\IndexBarcode;
+use App\Actions\Goods\Barcode\UI\ShowBarcode;
 use App\Actions\Goods\TradeUnit\UI\EditTradeUnit;
+use App\Actions\Goods\TradeUnit\UI\IndexMissingBarcodeTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingBrandTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingDescriptionTradeUnits;
 use App\Actions\Goods\TradeUnit\UI\IndexMissingDimensionsTradeUnits;
@@ -42,6 +46,7 @@ Route::prefix('units')->as('units.')->group(function () {
     Route::get('/missing-dimensions', IndexMissingDimensionsTradeUnits::class)->name('missing_dimensions');
     Route::get('/missing-description', IndexMissingDescriptionTradeUnits::class)->name('missing_description');
     Route::get('/missing-brand', IndexMissingBrandTradeUnits::class)->name('missing_brand');
+    Route::get('/missing-barcode', IndexMissingBarcodeTradeUnits::class)->name('missing_barcode');
     Route::prefix('{tradeUnit:slug}')->group(function () {
         Route::get('', ShowTradeUnit::class)->name('show');
         Route::get('edit', EditTradeUnit::class)->name('edit');
@@ -72,5 +77,13 @@ Route::prefix('tags')->as('tags.')->group(function () {
     Route::patch('update/{tag:id}', [UpdateTag::class, 'inProductProperty'])->name('update')->withoutScopedBindings();
     Route::prefix('{tag:slug}')->group(function () {
         Route::get('edit', [EditTag::class, 'inProductProperty'])->name('edit');
+    });
+});
+
+Route::prefix('barcodes')->as('barcodes.')->group(function () {
+    Route::get('/', IndexBarcode::class)->name('index');
+    Route::prefix('/{barcode}')->group(function () {
+        Route::get('', ShowBarcode::class)->name('show');
+        Route::get('/edit', EditBarcode::class)->name('edit');
     });
 });

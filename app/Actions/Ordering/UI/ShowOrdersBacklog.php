@@ -72,51 +72,51 @@ class ShowOrdersBacklog extends OrgAction
 
                 OrdersBacklogTabsEnum::IN_BASKET->value => $this->tab == OrdersBacklogTabsEnum::IN_BASKET->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))),
 
                 OrdersBacklogTabsEnum::SUBMITTED_PAID->value => $this->tab == OrdersBacklogTabsEnum::SUBMITTED_PAID->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_PAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_PAID->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_PAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_PAID->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_PAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_PAID->value))),
 
                 OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value => $this->tab == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value))),
 
                 OrdersBacklogTabsEnum::IN_WAREHOUSE->value => $this->tab == OrdersBacklogTabsEnum::IN_WAREHOUSE->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_WAREHOUSE->value, bucket: OrdersBacklogTabsEnum::IN_WAREHOUSE->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_WAREHOUSE->value, bucket: OrdersBacklogTabsEnum::IN_WAREHOUSE->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_WAREHOUSE->value, bucket: OrdersBacklogTabsEnum::IN_WAREHOUSE->value))),
 
                 OrdersBacklogTabsEnum::HANDLING->value => $this->tab == OrdersBacklogTabsEnum::HANDLING->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING->value, bucket: OrdersBacklogTabsEnum::HANDLING->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING->value, bucket: OrdersBacklogTabsEnum::HANDLING->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING->value, bucket: OrdersBacklogTabsEnum::HANDLING->value))),
 
                 OrdersBacklogTabsEnum::HANDLING_BLOCKED->value => $this->tab == OrdersBacklogTabsEnum::HANDLING_BLOCKED->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value, bucket: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value, bucket: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value, bucket: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value))),
 
                 OrdersBacklogTabsEnum::PICKED->value => $this->tab == OrdersBacklogTabsEnum::PICKED->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PICKED->value, bucket: OrdersBacklogTabsEnum::PICKED->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PICKED->value, bucket: OrdersBacklogTabsEnum::PICKED->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PICKED->value, bucket: OrdersBacklogTabsEnum::PICKED->value))),
 
                 OrdersBacklogTabsEnum::PACKING->value => $this->tab == OrdersBacklogTabsEnum::PACKING->value ?
                 fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKING->value, bucket: OrdersBacklogTabsEnum::PACKING->value))
-                : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKING->value, bucket: OrdersBacklogTabsEnum::PACKING->value))),
+                : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKING->value, bucket: OrdersBacklogTabsEnum::PACKING->value))),
 
                 OrdersBacklogTabsEnum::PACKED->value => $this->tab == OrdersBacklogTabsEnum::PACKED->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED->value, bucket: OrdersBacklogTabsEnum::PACKED->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED->value, bucket: OrdersBacklogTabsEnum::PACKED->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED->value, bucket: OrdersBacklogTabsEnum::PACKED->value))),
 
                 OrdersBacklogTabsEnum::FINALISED->value => $this->tab == OrdersBacklogTabsEnum::FINALISED->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::FINALISED->value, bucket: OrdersBacklogTabsEnum::FINALISED->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::FINALISED->value, bucket: OrdersBacklogTabsEnum::FINALISED->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::FINALISED->value, bucket: OrdersBacklogTabsEnum::FINALISED->value))),
 
                 OrdersBacklogTabsEnum::DISPATCHED_TODAY->value => $this->tab == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))),
 
                 OrdersBacklogTabsEnum::RETURNED->value => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ?
                     fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value))
-                    : Inertia::lazy(fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value))),
+                    : Inertia::optional(fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $parent, prefix: OrdersBacklogTabsEnum::RETURNED->value, bucket: OrdersBacklogTabsEnum::RETURNED->value))),
             ]
         )
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))

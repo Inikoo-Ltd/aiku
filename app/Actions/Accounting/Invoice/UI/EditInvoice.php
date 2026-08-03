@@ -53,20 +53,26 @@ class EditInvoice extends OrgAction
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
+
+        $title = _('Edit invoice');
+        if ($invoice->type == InvoiceTypeEnum::REFUND) {
+            $title = _('Edit refund');
+        }
+
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit invoice'),
+                'title'       => $title,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'     => __('Edit invoice'),
+                    'title'     => $title,
                     'container' => [
                         'icon'    => ['fal', 'fa-user'],
-                        'tooltip' => __('Edit Invoice'),
+                        'tooltip' => $title,
                         'label'   => Str::possessive($invoice->reference)
                     ],
                     'actions'   => [
@@ -124,17 +130,57 @@ class EditInvoice extends OrgAction
                             ],
                         ],
                         [
-                            'title'   => __('Customer identity number'),
-                            'label'   => __('Customer identity number'),
-                            'icon'    => 'fa-light fa-user',
+                            'title'   => __('Date'),
+                            'label'   => __('Date'),
+                            'icon'    => 'fa-light fa-calendar',
                             'fields'  => [
-                                'identity_document_number' => [
-                                    'type'  => 'input',
-                                    'label' => __('Identity document number'),
-                                    'value' => $invoice->identity_document_number
+                                'date' => [
+                                    'type'  => 'date',
+                                    'label' => __('Date'),
+                                    'value' => $invoice->date
                                 ],
                             ],
                         ],
+                        [
+                            'title'   => __('Tax number'),
+                            'label'   => __('Tax number'),
+                            'icon'    => 'fa-light fa-user',
+                            'fields'  => [
+                                'formatted_tax_number'          => [
+                                    'type'                      => 'input',
+                                    'label'                     => __('Tax Number'),
+                                    'information'               => __("Modifying this value would only affect the Invoice Tax Number and not the Customer's"),
+                                    'additional_instructions'   => __("You are required to add the Country Code as prefix"),
+                                    'value'                     => $invoice->tax_number
+                                ],
+
+                            ],
+                        ],
+                        [
+                            'title'   => __('Name/Id'),
+                            'label'   => __('Name/Id'),
+                            'icon'    => 'fa-light fa-id-card',
+                            'fields'  => [
+                                'fiscal_name'      => [
+                                    'type'          => 'input',
+                                    'label'         => __('Fiscal name'),
+                                    'value'         => $invoice->fiscal_name
+                                ],
+                                'identity_document_number'      => [
+                                    'type'          => 'input',
+                                    'label'         => data_get($invoice->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),
+                                    'value'         => $invoice->identity_document_number
+                                ],
+                                'identity_document_number_alt'  => [
+                                    'type'          => 'input',
+                                    'label'         => data_get($invoice->shop->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt').'/'.__('Registration number Alt'),
+                                    'value'         => $invoice->identity_document_number_alt
+                                ],
+
+                            ],
+
+                        ],
+
                     ],
                     'args'      => [
                         'updateRoute' => [

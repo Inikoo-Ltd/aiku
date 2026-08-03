@@ -62,6 +62,16 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    [
+                        "label"   => __("Changelogs"),
+                        "tooltip" => __("Changelogs"),
+                        "icon"    => ["fal", "fa-history"],
+                        'root'    => 'grp.org.shops.show.dashboard.changelogs',
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.dashboard.changelogs.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ]
                 ],
             ]
         ];
@@ -185,13 +195,76 @@ class GetShopNavigation
             }
         }
 
+        $navigation["reviews"] = [
+            "root" => "grp.org.shops.show.reviews.",
+            "icon" => ["fal", "fa-star"],
+            "label" => __("Reviews"),
+            "route" => [
+                "name" => "grp.org.shops.show.reviews.dashboard",
+                "parameters" => [$shop->organisation->slug, $shop->slug],
+            ],
+            "topMenu" => [
+                "subSections" => [
+                    [
+                        "tooltip" => __("Dashboard"),
+                        "icon"    => ["fal", "fa-chart-network"],
+                        "root"    => "grp.org.shops.show.reviews.dashboard",
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.reviews.dashboard",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label"   => __("Backlog Review"),
+                        "tooltip" => __("Backlog Review"),
+                        "icon"    => ["fal", "fa-tasks-alt"],
+                        "root"    => "grp.org.shops.show.reviews.backlog",
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.reviews.backlog",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label"   => __("Overall Review"),
+                        "tooltip" => __("Overall Review"),
+                        "icon"    => ["fal", "fa-star"],
+                        "root"    => "grp.org.shops.show.reviews.overall",
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.reviews.overall",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label"   => __("Family Review"),
+                        "tooltip" => __("Family Review"),
+                        "icon"    => ["fal", "fa-folder"],
+                        "root"    => "grp.org.shops.show.reviews.families",
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.reviews.families",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label"   => __("Product Review"),
+                        "tooltip" => __("Product Review"),
+                        "icon"    => ["fal", "fa-cube"],
+                        "root"    => "grp.org.shops.show.reviews.products",
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.reviews.products",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
         if ($user->hasPermissionTo("discounts.$shop->id.view") && $shop->type !== ShopTypeEnum::EXTERNAL) {
             $navigation["discounts"] = [
                 "root"    => "grp.org.shops.show.discounts.",
                 "icon"    => ["fal", "fa-badge-percent"],
                 "label"   => __("Offers"),
                 "route"   => [
-                    "name"       => 'grp.org.shops.show.discounts.dashboard',
+                    "name"       => 'grp.org.shops.show.discounts.insights',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "topMenu" => [
@@ -222,6 +295,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.discounts.offers.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.discounts.offers.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Insights"),
+                            "tooltip" => __("Insights"),
+                            "icon"    => ["fal", "fa-analytics"],
+                            'root'    => 'grp.org.shops.show.discounts.insights',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.discounts.insights",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
@@ -307,7 +390,8 @@ class GetShopNavigation
             ];
         }
 
-        if ($user->authTo([
+        if ($user->hasAnyPermission([
+            "websites-view.{$shop->organisation_id}",
             "web.$shop->id.view",
             "group-webmaster.view"
         ])) {
@@ -471,21 +555,62 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        app()->environment('local') ?
-                            [
-                                "label"   => __("Chat"),
-                                "icon"    => ["fal", "fa-comment-alt"],
-                                "root"    => "grp.org.shops.show.crm.chat.",
-                                "route"   => [
-                                    "name"       => "grp.org.shops.show.crm.chat.dashboard",
-                                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                                ],
-                            ]
-                        : [],
                     ],
                 ],
             ];
         }
+
+        $navigation["chat"] = [
+            "root"  => "grp.org.shops.show.chat.",
+            "label" => __("Chat"),
+            "icon"  => ["fal", "comment-alt"],
+            "route" => [
+                "name"       => "grp.org.shops.show.chat.dashboard",
+                "parameters" => [$shop->organisation->slug, $shop->slug],
+            ],
+            "topMenu" => [
+                "subSections" => [
+                    [
+                        "label" => __("Dashboard"),
+                        "icon"  => ["fal", "comment-alt"],
+                        "root"  => "grp.org.shops.show.chat.dashboard",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.dashboard",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Agents"),
+                        "icon"  => ["fal", "fa-headset"],
+                        "root"  => "grp.org.shops.show.chat.agents.show",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.agents.show",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Conversations"),
+                        "icon"  => ["fal", "fa-comments"],
+                        "root"  => "grp.org.shops.show.chat.conversations.show",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.conversations.show",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    ...($user->chatAgent ? [
+                        [
+                            "label" => __("Inbox"),
+                            "icon"  => ["fal", "fa-inbox"],
+                            "root"  => "grp.org.shops.show.chat.inbox",
+                            "route" => [
+                                "name"       => "grp.org.shops.show.chat.inbox",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                    ] : []),
+                ],
+            ],
+        ];
 
         if ($user->hasAnyPermission(["orders.$shop->id.view", "accounting.$shop->organisation_id.view"])) {
             $navigation["ordering"] = [
@@ -529,6 +654,16 @@ class GetShopNavigation
                             ],
                         ],
                         [
+                            "label"   => __("Invoices"),
+                            "tooltip" => __("Invoices"),
+                            "icon"    => ["fal", "fa-file-invoice-dollar"],
+                            'root'    => 'grp.org.shops.show.ordering.invoices.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.invoices.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
                             "label"   => __("Delivery notes"),
                             "tooltip" => __("Delivery notes"),
                             "icon"    => ["fal", "fa-truck"],
@@ -555,6 +690,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.ordering.couriers.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.ordering.couriers.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Abandoned Checkouts"),
+                            "tooltip" => __("Abandoned Checkouts"),
+                            "icon"    => ["fal", "fa-shopping-cart"],
+                            'root'    => 'grp.org.shops.show.ordering.checkout_abandonments.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.checkout_abandonments.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

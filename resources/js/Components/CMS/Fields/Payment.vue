@@ -39,6 +39,20 @@ import KarnaLogo from '@/../art/payment_service_providers/Klarna-Logo.wine.png'
 import KarnaPaylater from '@/../art/payment_service_providers/png-clipart-pay-later-with-klarna-logo-tech-companies.png'
 import PastPayWhite from '@/../art/payment_service_providers/past_pay_white.png'
 import GooglePayMark from '@/../art/payment_service_providers/google-pay-mark.png'
+import BizumIconWhite from '@/../art/payment_service_providers/BizumIconWhite.png'
+import BizumLogoWhite from '@/../art/payment_service_providers/BizumLogoWhite.png'
+import BizumLogoColour from '@/../art/payment_service_providers/BizumLogoColour.png'
+import BizumIconLogoColour from '@/../art/payment_service_providers/BizumIconLogoColour.png'
+import BlinkLogoBW from '@/../art/payment_service_providers/BlinkLogoBW.png'
+import BlinkLogoColour from '@/../art/payment_service_providers/BlinkLogoColour.png'
+import BlinkPayLaterBW from '@/../art/payment_service_providers/BlinkPayLaterBW.png'
+import BlinkPayLaterColour from '@/../art/payment_service_providers/BlinkPayLaterColour.png'
+import P24 from '@/../art/payment_service_providers/P24.png'
+import Przelewy24_logo from '@/../art/payment_service_providers/Przelewy24_logo.png'
+import SwishLogoSecondaryLightBG from '@/../art/payment_service_providers/SwishLogoSecondaryLightBG.png'
+import SwishLogoSecondaryGrayscaleLightBG from '@/../art/payment_service_providers/SwishLogoSecondaryGrayscaleLightBG.png'
+import SwishLogoPrimaryPNG from '@/../art/payment_service_providers/SwishLogoPrimaryPNG.png'
+import SwishLogoPrimaryGrayscaleLightBG from '@/../art/payment_service_providers/SwishLogoPrimaryGrayscaleLightBG.png'
 
 library.add(
   faFacebookF, faInstagram, faTiktok, faPinterest,
@@ -96,6 +110,20 @@ const payments = ref<PaymentItem[]>([
   { name: 'Karna Paylater', value: 'Karna Paylater', image: KarnaPaylater },
   { name: 'PastPay white', value: 'PastPay white', image: PastPayWhite },
   { name: 'Google Pay Mark', value: 'Google Pay Mark', image: GooglePayMark },
+  { name: 'Bizum Icon Logo Colour', value: 'Bizum Icon Logo Colour', image: BizumIconLogoColour },
+  { name: 'Bizum Logo Colour', value: 'Bizum Logo Colour', image: BizumLogoColour },
+  { name: 'Bizum Icon White', value: 'Bizum Icon White', image: BizumIconWhite },
+  { name: 'Bizum Logo White', value: 'Bizum Logo White', image: BizumLogoWhite },
+  { name: 'Blink Logo B&W', value: 'Blink Logo BW', image: BlinkLogoBW },
+  { name: 'Blink Logo Colour', value: 'Blink Logo Colour', image: BlinkLogoColour },
+  { name: 'Blink Pay Later B&W', value: 'Blink Pay Later BW', image: BlinkPayLaterBW },
+  { name: 'Blink PayLater Colour', value: 'Blink PayLater Colour', image: BlinkPayLaterColour },
+  { name: 'P24', value: 'P24', image: P24 },
+  { name: 'Przelewy24 logo', value: 'Przelewy24 logo', image: Przelewy24_logo },
+  { name: 'Swish Logo Secondary Light BG', value: 'Swish Logo Secondary Light BG', image: SwishLogoSecondaryLightBG },
+  { name: 'Swish Logo Secondary Grayscale Light BG', value: 'Swish Logo Secondary Grayscale Light BG', image: SwishLogoSecondaryGrayscaleLightBG },
+  { name: 'Swish Logo Primary PNG', value: 'Swish Logo Primary PNG', image: SwishLogoPrimaryPNG },
+  { name: 'Swish Logo Primary Gray scale Light BG', value: 'Swish Logo Primary Grayscale Light BG', image: SwishLogoPrimaryGrayscaleLightBG },
 ])
 
 const _addop = ref<any>(null);

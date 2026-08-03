@@ -6,6 +6,8 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\DevOps\UI\IndexAppDeployments;
+use App\Actions\HumanResources\ClockingMachine\UI\RedirectClockingMachineQrScan;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\Web\Webpage\BanVarnishWebpage;
@@ -14,10 +16,17 @@ use App\Actions\Web\Website\BreakWebsiteVarnishCache;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Laravel\Nightwatch\Http\Middleware\Sample;
 
 require __DIR__."/auth.php";
 
-Route::middleware(["auth", "two_fa"])->group(function () {
+Route::middleware(
+    [
+        "auth",
+        "two_fa",
+        Sample::rate(0.5)
+    ]
+)->group(function () {
     Route::get('/', function () {
         return redirect('/dashboard');
     });
@@ -44,9 +53,9 @@ Route::middleware(["auth", "two_fa"])->group(function () {
                 echo "<td>".$value->methods()[0]."</td>";
                 echo "<td>".$value->uri()."</td>";
                 echo "<td>".$value->getName()."</td>";
-                $actionName = $value->getActionName();
+                $actionName                = $value->getActionName();
                 $fileNameWithoutActionName = preg_replace('/@.*$/', '', $actionName);
-                $highlighted = preg_replace(
+                $highlighted               = preg_replace(
                     '/([^\\\\]+)$/',
                     '<span class="copy-action" data-copy="'.$fileNameWithoutActionName.'" style="cursor:pointer;background:#c790ff;padding:2px 4px">$1</span>',
                     $actionName
@@ -101,6 +110,7 @@ Route::middleware(["auth", "two_fa"])->group(function () {
     Route::get('ban/varnish/website/{website}', BreakWebsiteVarnishCache::class)->name('varnish.website');
 
     Route::get('/notifications', IndexNotification::class)->name('notifications');
+    Route::get('/deploys', IndexAppDeployments::class)->name('deploys');
     Route::prefix("overview")
         ->name("overview.")
         ->group(__DIR__."/overview.php");
@@ -155,6 +165,10 @@ Route::middleware(["auth", "two_fa"])->group(function () {
         ->name("websites.")
         ->group(__DIR__."/websites.php");
 
+    Route::prefix("majordomo")
+        ->name("majordomo.")
+        ->group(__DIR__."/majordomo.php");
+
     Route::prefix("helpers")
         ->name("helpers.")
         ->group(__DIR__."/helpers.php");
@@ -169,7 +183,9 @@ Route::middleware(["auth", "two_fa"])->group(function () {
 
     Route::prefix("clocking-employees")
         ->name("clocking_employees.")
-        ->group(__DIR__ . "/clocking_employees.php");
+        ->group(__DIR__."/clocking_employees.php");
+
+    Route::get('clocking-scan/{hash}', RedirectClockingMachineQrScan::class)->name('clocking_scan');
 
     Route::prefix("platforms")
         ->name("platforms.")
@@ -182,6 +198,10 @@ Route::middleware(["auth", "two_fa"])->group(function () {
     Route::prefix("chat")
         ->name("chat.")
         ->group(__DIR__."/chat.php");
+
+    Route::prefix("devops")
+        ->name("devops.")
+        ->group(__DIR__."/devops.php");
 
     Route::fallback(function () {
         $status = 404;

@@ -155,7 +155,7 @@ class IndexFulfilmentPhysicalGoods extends OrgAction
 
                 PhysicalGoodsTabsEnum::PHYSICAL_GOODS->value => $this->tab == PhysicalGoodsTabsEnum::PHYSICAL_GOODS->value ?
                     fn () => PhysicalGoodsResource::collection($physicalGoods)
-                    : Inertia::lazy(fn () => PhysicalGoodsResource::collection($physicalGoods)),
+                    : Inertia::optional(fn () => PhysicalGoodsResource::collection($physicalGoods)),
 
             ]
         )->table(

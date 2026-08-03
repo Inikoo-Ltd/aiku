@@ -291,7 +291,7 @@ class IndexPalletReturns extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('Customer reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_pallets', label: __('Pallets'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'unique_stored_item_count', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unique_stored_item_count', label: __('SKO'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
@@ -350,8 +350,8 @@ class IndexPalletReturns extends OrgAction
             $actions[] = [
                 'type'        => 'button',
                 'style'       => 'create',
-                'tooltip'     => __('Create new return (Customer SKUs)'),
-                'label'       => __('Return (Customer SKUs)'),
+                'tooltip'     => __('Create new return (Customer SKOs)'),
+                'label'       => __('Return (Customer SKOs)'),
                 'fullLoading' => true,
                 'route'       => [
                     'method'     => 'post',
@@ -387,12 +387,12 @@ class IndexPalletReturns extends OrgAction
 
                 PalletReturnsTabsEnum::RETURNS->value => $this->tab == PalletReturnsTabsEnum::RETURNS->value ?
                     fn () => PalletReturnsResource::collection($returns)
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection($returns)),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection($returns)),
 
 
                 PalletReturnsTabsEnum::UPLOADS->value => $this->tab == PalletReturnsTabsEnum::UPLOADS->value ?
                     fn () => PalletReturnItemUploadsResource::collection(IndexPalletReturnItemUploads::run($this->parent, PalletReturnsTabsEnum::UPLOADS->value))
-                    : Inertia::lazy(fn () => PalletReturnItemUploadsResource::collection(IndexPalletReturnItemUploads::run($this->parent, PalletReturnsTabsEnum::UPLOADS->value))),
+                    : Inertia::optional(fn () => PalletReturnItemUploadsResource::collection(IndexPalletReturnItemUploads::run($this->parent, PalletReturnsTabsEnum::UPLOADS->value))),
 
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: PalletReturnsTabsEnum::RETURNS->value, restriction: $this->restriction))

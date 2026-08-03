@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Search\GetWebsiteSearchAnalytics;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
@@ -36,6 +37,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWebsite extends OrgAction
 {
     use HasWorkshopAction;
+    use WithSearchMerchandising;
     use WithWebAuthorisation;
 
     private Fulfilment|Shop|Organisation $parent;
@@ -206,10 +208,25 @@ class ShowWebsite extends OrgAction
             ];
         }
 
+        $routeParamWelcome         = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+            'website'      => $website->slug,
+            'webpage'      => 'welcome-'.$shop->slug,
+        ];
+
+        $route_restricted_country = [];
+        if (!empty($website->blocked_country_regions)) {
+            $route_restricted_country = [
+                'name'       => str_replace('websites.show', 'websites.restricted_country', $request->route()->getName()),
+                'parameters' => $request->route()->originalParameters(),
+            ];
+        }
+
         return Inertia::render(
             'Org/Web/Website',
             [
-                'title'       => __('Website'),
+                'title'       => __('Website') . ' ' . $website->name,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $website,
                     $request->route()->getName(),
@@ -230,6 +247,20 @@ class ShowWebsite extends OrgAction
                     'actions'   =>
 
                         array_merge(
+                            [
+                                [
+                                    'type'    => 'button',
+                                    'style'   => 'tertiary',
+                                    'label'   => __('Export'),
+                                    'tooltip' => __('Export all pages: Code, URL & meta'),
+                                    'icon'    => ['fal', 'fa-file-export'],
+                                    'target'  => '_self',
+                                    'route'   => [
+                                        'name'       => str_replace('websites.show', 'webpages.export', $request->route()->getName()),
+                                        'parameters' => array_merge($request->route()->originalParameters(), ['type' => 'xlsx']),
+                                    ],
+                                ],
+                            ],
                             $this->workshopActions($request),
                             [
                                 $this->isSupervisor && $website->state == WebsiteStateEnum::IN_PROCESS ? [
@@ -255,6 +286,7 @@ class ShowWebsite extends OrgAction
 
                 'route_storefront'      => $route_storefront,
                 'route_landing_page'    => $route_landing_page,
+                'route_welcome'    => $route_landing_page,
                 'migrated'        => $website->migrated,
                 'luigi_data'      => [
                     'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
@@ -273,26 +305,34 @@ class ShowWebsite extends OrgAction
                         'stats'              => $stats,
                         'content_blog_stats' => $content_blog_stats,
                         'website_stats'      => $website_stats,
-                        'website_type'       => $website->shop->type
+                        'website_type'       => $website->shop->type,
+                        'iris_search_model'  => Arr::get($website->settings, 'iris_search_model', 'luigi'),
+                        'search_insights'    => GetWebsiteSearchAnalytics::run($website),
+                        'search_merchandising' => str_starts_with($request->route()->getName(), 'grp.org.shops.show.web.')
+                            ? $this->searchMerchandisingProps($website, $request->route()->originalParameters())
+                            : null,
                     ],
                     [
                         'pic' => null,// todo this is wrong User::permission("web.{$website->shop_id}.edit")->get()
                     ],
+                    [
+                        'route_restricted_country' => $route_restricted_country,
+                    ],
                 )
-                    : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
+                    : Inertia::optional(fn () => WebsiteResource::make($website)->getArray()),
 
 
                 WebsiteTabsEnum::CRAWLS->value => $this->tab == WebsiteTabsEnum::CRAWLS->value ?
                     fn () => CrawlsResource::collection(IndexCrawls::run($website))
-                    : Inertia::lazy(fn () => CrawlsResource::collection(IndexCrawls::run($website))),
+                    : Inertia::optional(fn () => CrawlsResource::collection(IndexCrawls::run($website))),
 
                 WebsiteTabsEnum::CHANGELOG->value => $this->tab == WebsiteTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))),
 
                 WebsiteTabsEnum::EXTERNAL_LINKS->value => $this->tab == WebsiteTabsEnum::EXTERNAL_LINKS->value ?
                     fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))
-                    : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
+                    : Inertia::optional(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
 
             ]
         )

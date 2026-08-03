@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 30-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -26,25 +26,40 @@ class RetinaEcomUpdateTransaction extends RetinaAction
 
     public function handle(Transaction $transaction, array $modelData)
     {
+        $transaction->order->update([
+            'updated_by_customer_at' => now()
+        ]);
+
         return UpdateTransaction::run($transaction, $modelData);
     }
 
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        if ($this->asAction) {
+            return true;
+        }
+
+        /** @var Transaction $transaction */
+        $transaction = $request->route('transaction');
+        if ($transaction->customer_id != $request->user()->customer_id) {
+            return false;
+        }
+
+        return true;
     }
 
     public function rules(): array
     {
-
         return [
-                'quantity_ordered'    => ['sometimes', 'numeric', 'min:0'],
-            ];
-
+            'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
+        ];
     }
 
-    public function prepareForValidation(ActionRequest $request)
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function prepareForValidation(ActionRequest $request): void
     {
         if ($this->order->state != OrderStateEnum::CREATING) {
             throw ValidationException::withMessages([
@@ -59,6 +74,7 @@ class RetinaEcomUpdateTransaction extends RetinaAction
 
     public function action(Transaction $transaction, Customer $customer, array $modelData): Transaction
     {
+        $this->asAction    = true;
         $this->transaction = $transaction;
         $this->order       = $transaction->order;
         $this->initialisationActions($customer, $modelData);
@@ -66,7 +82,7 @@ class RetinaEcomUpdateTransaction extends RetinaAction
         return $this->handle($transaction, $this->validatedData);
     }
 
-    public function asController(Transaction $transaction, ActionRequest $request)
+    public function asController(Transaction $transaction, ActionRequest $request): void
     {
         $this->transaction = $transaction;
         $this->order       = $transaction->order;

@@ -8,10 +8,13 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\Dropshipping\WooCommerce\Traits\WithWooCommerceAuthorizationToken;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -21,14 +24,23 @@ class CallbackRetinaWooCommerceUser extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithWooCommerceAuthorizationToken;
 
     public $commandSignature = 'retina:ds:callback-woo {customer} {store_url} {consumer_key} {consumer_secret}';
 
-    public function handle(Customer $customer, array $modelData): Customer
+    public function handle(Customer $customer, array $modelData): void
     {
         StoreTemporaryWooUser::run($customer, $modelData);
+    }
 
-        return $customer;
+    public function handleReAuthorization(WooCommerceUser $wooCommerceUser, array $modelData): void
+    {
+        $this->update($wooCommerceUser, [
+            'consumer_key' => Arr::get($modelData, 'consumer_key'),
+            'consumer_secret' => Arr::get($modelData, 'consumer_secret'),
+        ]);
+
+        CheckWooChannel::run($wooCommerceUser);
     }
 
     public function rules(): array
@@ -41,21 +53,38 @@ class CallbackRetinaWooCommerceUser extends OrgAction
 
     public function asController(ActionRequest $request): string
     {
-        $customer = Customer::findOrFail($request->input('user_id'));
+        $tokenPayload = $this->getWooAuthorizationTokenPayload($request->input('user_id'));
+
+        if (blank($tokenPayload)) {
+            abort(404);
+        }
+
+        if ($wooCommerceUserId = Arr::get($tokenPayload, 'woo_commerce_user_id')) {
+            $wooCommerceUser = WooCommerceUser::findOrFail($wooCommerceUserId);
+            $this->initialisationFromShop($wooCommerceUser->customer->shop, $request);
+
+            $this->handleReAuthorization($wooCommerceUser, $this->validatedData);
+
+            return 'success';
+        }
+
+        $customer = Customer::findOrFail(Arr::get($tokenPayload, 'customer_id'));
         $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData);
+        $this->handle($customer, $this->validatedData);
+
+        return 'success';
     }
 
     public function asCommand(Command $command): void
     {
         $modelData = [
-            'store_url' => $command->argument('store_url'),
+            'url' => rtrim(trim($command->argument('store_url')), '/'),
             'consumer_key' => $command->argument('consumer_key'),
             'consumer_secret' => $command->argument('consumer_secret')
         ];
 
-        $customer = Customer::find($command->argument('customer'));
+        $customer = Customer::findOrFail($command->argument('customer'));
 
         data_set($modelData, 'name', $customer->name);
 

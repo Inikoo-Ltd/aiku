@@ -15,6 +15,7 @@ const props = defineProps<{
     fontFamily?: string
   }
   routeList: {
+    announcementRoute: routeType
     headerRoute: routeType
     footerRoute: routeType
     webpageRoute: routeType
@@ -33,14 +34,16 @@ const props = defineProps<{
     <div :class="theme?.layout === 'fullscreen' ? 'w-full' : 'w-[80%]'" class="transition-all">
 
       <!-- Notification -->
-      <div class="group relative w-full h-8 bg-gray-200 text-gray-700 text-xxs flex items-center justify-center cursor-default">
-        <span>Notification</span>
-        <div class="inset-0 absolute items-center justify-center hidden group-hover:flex gap-x-1.5 bg-black/50 text-white text-xs whitespace-nowrap">
-          <!-- <span>Open Notification workshop</span>
-          <FontAwesomeIcon :icon="['fal', 'external-link']" fixed-width /> -->
-          Coming soon..
+      <a :href="routeList.announcementRoute?.name ? route(routeList.announcementRoute.name, routeList.announcementRoute.parameters) : '#'" target="_blank">
+        <div class="group relative w-full h-8 bg-gray-200 text-gray-700 text-xxs flex items-center justify-center cursor-point">
+          <span>Announcement</span>
+          <div class="inset-0 absolute items-center justify-center hidden group-hover:flex gap-x-1.5 bg-black/50 text-white text-xs whitespace-nowrap">
+            <span>Open Announcement workshop</span>
+            <FontAwesomeIcon :icon="['fal', 'external-link']" fixed-width />
+            <!-- Coming soon.. -->
+          </div>
         </div>
-      </div>
+      </a>
 
       <!-- Header -->
       <a

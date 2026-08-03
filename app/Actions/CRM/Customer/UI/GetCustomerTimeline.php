@@ -12,11 +12,13 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\CRM\Customer\CustomerWebActivityTypeEnum;
 use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use App\Enums\Helpers\Audit\AuditEventEnum;
+use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Accounting\Payment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerWebActivity;
 use App\Models\GoodsIn\OrderReturn;
 use App\Models\Helpers\History;
+use App\Models\Helpers\Media;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -51,32 +53,71 @@ class GetCustomerTimeline
 
     private function appendHistoryEvents(Customer $customer, Carbon $cutoff, int $limit, Collection $events): void
     {
-        History::where('customer_id', $customer->id)
+        $histories = History::where('customer_id', $customer->id)
             ->where('auditable_type', 'Customer')
             ->where('created_at', '>=', $cutoff)
             ->latest()
             ->limit($limit)
-            ->get()
-            ->each(function (History $history) use ($events) {
-                $isNote = $history->event === AuditEventEnum::CUSTOMER_NOTE->value;
+            ->get();
 
-                $events->push([
-                    'id'        => "audit_{$history->id}",
-                    'type'      => $isNote ? 'note' : 'account_update',
-                    'timestamp' => $history->created_at,
-                    'datetime'  => $history->created_at?->toIso8601String(),
-                    'title'     => $this->getHistoryTitle($history),
-                    'subtitle'  => $isNote ? cleanCapitalize(array_key_first($history->new_values)) : $history->comments,
-                    'comment'   => $isNote ? Arr::first($history->new_values) : $history->comments,
-                    'icon'      => $isNote ? ['fal', 'fa-sticky-note'] : ['fal', 'fa-user-edit'],
-                    'color'     => $isNote ? 'yellow' : 'blue',
-                    'metadata'  => [
-                        'event'      => $history->event,
-                        'old_values' => $history->old_values,
-                        'new_values' => $history->new_values,
-                    ],
-                ]);
-            });
+        $mediaById = $this->loadHistoryMedia($histories);
+
+        $histories->each(function (History $history) use ($events, $mediaById) {
+            $isNote = $history->event === AuditEventEnum::CUSTOMER_NOTE->value;
+
+            $events->push([
+                'id'        => "audit_{$history->id}",
+                'type'      => $isNote ? 'note' : 'account_update',
+                'timestamp' => $history->created_at,
+                'datetime'  => $history->created_at?->toIso8601String(),
+                'title'     => $this->getHistoryTitle($history),
+                'subtitle'  => $isNote ? cleanCapitalize(array_key_first($history->new_values)) : $history->comments,
+                'comment'   => $isNote ? Arr::first($history->new_values) : $history->comments,
+                'images'    => $isNote ? $this->getNoteImages($history, $mediaById) : [],
+                'icon'      => $isNote ? ['fal', 'fa-sticky-note'] : ['fal', 'fa-user-edit'],
+                'color'     => $isNote ? 'yellow' : 'blue',
+                'metadata'  => [
+                    'event'      => $history->event,
+                    'old_values' => $history->old_values,
+                    'new_values' => $history->new_values,
+                ],
+            ]);
+        });
+    }
+
+    /**
+     * @param  Collection<int, History>  $histories
+     * @return Collection<int, Media>
+     */
+    private function loadHistoryMedia(Collection $histories): Collection
+    {
+        $mediaIds = $histories
+            ->flatMap(fn (History $history) => Arr::get($history->new_values, 'details.images', []))
+            ->unique()
+            ->values();
+
+        if ($mediaIds->isEmpty()) {
+            return collect();
+        }
+
+        return Media::whereIn('id', $mediaIds)->get()->keyBy('id');
+    }
+
+    /**
+     * @param  Collection<int, Media>  $mediaById
+     * @return array<int, array<string, mixed>>
+     */
+    private function getNoteImages(History $history, Collection $mediaById): array
+    {
+        $images = [];
+
+        foreach (Arr::get($history->new_values, 'details.images', []) as $mediaId) {
+            if ($media = $mediaById->get($mediaId)) {
+                $images[] = ImageResource::make($media)->toArray(request());
+            }
+        }
+
+        return $images;
     }
 
     private function getHistoryTitle(History $history): string

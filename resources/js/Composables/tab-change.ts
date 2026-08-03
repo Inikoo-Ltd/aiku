@@ -12,12 +12,25 @@ export const useTabChange = (tabSlug: string, currentTab: Ref<string>) => {
         return
     }
 
-    // Advantage: reload 1 props (faster, example load: 826 B)
-    // Disadvantage: backward-forward browser isn't open the tab, query is stay on change Tab (will throw error)
-    router.reload(
+    const currentUrl = new URL(window.location.href)
+    const isTabChanged = currentUrl.searchParams.get('tab') !== tabSlug
+
+    // Section: remove other parameter if ?tab= has changed
+    let targetUrl: string
+    if (isTabChanged) {
+        targetUrl = `${currentUrl.pathname}?tab=${encodeURIComponent(tabSlug)}`
+    } else {
+        currentUrl.searchParams.set('tab', tabSlug)
+        targetUrl = `${currentUrl.pathname}?${currentUrl.searchParams.toString()}`
+    }
+
+    router.get(
+        targetUrl,
+        {},
         {
-            data: { tab: tabSlug },  // Sent to url parameter (?tab=showcase, ?tab=menu)
             only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
                 currentTab.value = tabSlug;
             },
@@ -26,6 +39,20 @@ export const useTabChange = (tabSlug: string, currentTab: Ref<string>) => {
             }
         }
     )
+
+    // Advantage: reload 1 props (faster, example load: 826 B)
+    // router.reload(
+    //     {
+    //         data: { tab: tabSlug },  // Sent to url parameter (?tab=showcase, ?tab=menu)
+    //         only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+    //         onSuccess: () => {
+    //             currentTab.value = tabSlug;
+    //         },
+    //         onError: (e) => {
+    //             // console.log('eeerr', e)
+    //         }
+    //     }
+    // )
 
     // Advantage: clear query on change tab, backward-forward browser will open correct tab
     // Disadvantage: reload 2 props (a little bit slower, example load: 993 B)

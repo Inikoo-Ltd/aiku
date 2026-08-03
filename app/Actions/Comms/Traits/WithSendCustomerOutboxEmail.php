@@ -29,7 +29,8 @@ trait WithSendCustomerOutboxEmail
         array $additionalData = [],
         string $unsubscribeUrl = '',
         ?string $passwordToken = null,
-        ?string $invoiceUrl = null
+        ?string $invoiceUrl = null,
+        array $attachments = []
     ): DispatchedEmail|null {
         /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', $code->value)->first();
@@ -39,6 +40,10 @@ trait WithSendCustomerOutboxEmail
         }
 
         if ($outbox->state != OutboxStateEnum::ACTIVE) {
+            return null;
+        }
+
+        if (!$outbox->is_applicable) {
             return null;
         }
 
@@ -65,7 +70,8 @@ trait WithSendCustomerOutboxEmail
             $passwordToken,
             $invoiceUrl,
             $additionalData,
-            senderName: $outbox->emailOngoingRun->senderName()
+            senderName: $outbox->emailOngoingRun->senderName(),
+            attachments: $attachments
         );
     }
 }

@@ -24,26 +24,26 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     tabs: TSTabs
-    in_basket: {}
-    submitted_paid: {}
-    submitted_unpaid: {}
-    picking: {}
-    blocked: {}
-    packed_done: {}
-    dispatched_today: {}
-    finalise: {}
-    creating: {}
-    submitted: {}
-    in_warehouse: {}
-    handling: {}
-    handling_blocked: {}
-    packed: {}
-    finalised: {}
-    dispatched: {}
-    cancelled: {}
-    picked: {}
-    packing: {}
-    returned: {}
+    in_basket?: {}
+    submitted_paid?: {}
+    submitted_unpaid?: {}
+    picking?: {}
+    blocked?: {}
+    packed_done?: {}
+    dispatched_today?: {}
+    finalise?: {}
+    creating?: {}
+    submitted?: {}
+    in_warehouse?: {}
+    handling?: {}
+    handling_blocked?: {}
+    packed?: {}
+    finalised?: {}
+    dispatched?: {}
+    cancelled?: {}
+    picked?: {}
+    packing?: {}
+    returned?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)

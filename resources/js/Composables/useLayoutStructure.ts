@@ -5,6 +5,7 @@ import { Colors } from "@/types/Color"
 import { Navigation, grpNavigation, orgNavigation } from "@/types/Navigation"
 import { Image } from "@/types/Image"
 import { Notification } from '@/types/Notification'
+import { Bookmark } from '@/types/Bookmark'
 
 export const layoutStructure = {
     agents: {
@@ -18,6 +19,10 @@ export const layoutStructure = {
         theme: useColorTheme[0] as string[],  // For styling app color
         url: null as string | null, // For url on logo top left
         environment: null as string | null, // 'local' | 'staging'
+        last_deployment_at: null as string | null, // created_at of the latest app deployment
+        last_deployment_hash: null as string | null, // hash of the latest commit
+        last_deployment_version: null as string | null, // semantic version tag of the latest app deployment
+        newVersionAvailable: false, // true after a post-deploy event when the user dismissed the refresh modal
     },
     currentModule: "",
     currentRoute: "grp.dashboard.show", // Define value to avoid route null at first load
@@ -57,17 +62,21 @@ export const layoutStructure = {
         id: number,
         email: string,
         username: string,
+        timezone: string | null,
+        timezone_place: string | null,
         settings: {
-            timezones: string[]
+            app_theme?: string[]
+            hide_logo?: boolean
         }
     },
     notifications: [] as Notification[],
     avatar_thumbnail: null as Image | null,
-
     isShopPage: false as boolean,
     isFulfilmentPage: false as boolean,
-    // isShopPage: false as boolean,
+
     dispatching_waiting_count: 0 as number,
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,
+    master_updated_count: 0 as number,
+    bookmarks: [] as Bookmark[],
 }

@@ -5,12 +5,13 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
 import { inject, ref, watch, computed } from 'vue'
-import { debounce, set } from 'lodash-es'
+import { debounce, set, toInteger } from 'lodash-es'
 import axios from 'axios'
 
 import { ProductResource } from '@/types/Iris/Products'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLongArrowRight } from '@fal'
@@ -47,6 +48,23 @@ let statusTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isLoadingSubmitQuantityProduct = ref(false)
 
+const availableStock = computed(() => {
+    const stock = customer.value.stock ?? product.value.stock
+
+    return Number.isFinite(Number(stock)) ? Number(stock) : Infinity
+})
+
+
+const pushAddToCart = (quantity: number) => {
+    if (quantity <= 0) {
+        return
+    }
+
+    pushGtmEvent('add_to_cart', buildGtmProductPayload(product.value as any, {
+        currencyCode: layout?.iris?.currency?.code,
+        quantity,
+    }))
+}
 
 const setStatus = (newStatus: typeof status.value) => {
     status.value = newStatus
@@ -60,7 +78,7 @@ const setStatus = (newStatus: typeof status.value) => {
 const showWarning = () => {
     notify({
         title: trans('Stock limit reached'),
-        text: trans('You cannot add more than :stock items.', { stock: customer.value.stock }),
+        text: trans('You cannot add more than :stock items.', { stock: String(availableStock.value) }),
         type: 'error'
     })
 }
@@ -70,16 +88,22 @@ const showWarning = () => {
 const fetchCustomerOrderingProduct = async () => {
 
     try {
-        const response = await axios.get(
-            route("iris.json.product.ecom_ordering_data", {
-                product: product.value.id,
-            })
-        )
+        if (product.value.id) {
+            const response = await axios.get(
+                route("iris.json.product.ecom_ordering_data", {
+                    product: product.value.id,
+                })
+            )
 
-        console.log('sdfsdf',response.data)
-        Object.keys(response.data).forEach(key => {
-            props.customerData[key] = response.data[key]
-        })
+            Object.keys(response.data).forEach(key => {
+                if (props.customerData) {
+                    props.customerData[key] = response.data[key]
+                }
+
+                customer.value[key] = response.data[key]
+            })
+        } else throw new Error("Product ID is required")
+
 
     } catch (error: any) {
         console.log('error', error)
@@ -110,6 +134,8 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
             quantity_ordered: payload.quantity_ordered
         })
 
+        pushAddToCart(payload.quantity_ordered ?? quantity)
+
         const products = layout.rightbasket?.products
         if (products) {
             const manipProduct = {
@@ -128,7 +154,10 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
             [product.value.id]: {
                 transaction_id: payload.transaction_id,
                 quantity_ordered: payload.quantity_ordered,
-                quantity_ordered_new:  payload.quantity_ordered
+                quantity_ordered_new:  payload.quantity_ordered,
+                department_id: payload.department_id,
+                sub_department_id: payload.sub_department_id,
+                family_id: payload.family_id,
             }
         }
         set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
@@ -153,6 +182,7 @@ const onUpdateQuantity = async () => {
     const qty = customer.value.quantity_ordered_new ?? 0
     const transactionId = customer.value.transaction_id
     const willRemove = qty === 0
+    const previousQty = customer.value.quantity_ordered ?? 0
 
     try {
         setStatus('loading')
@@ -186,11 +216,14 @@ const onUpdateQuantity = async () => {
             [product.value.id]: {
                 transaction_id: transactionId,
                 quantity_ordered: payload.quantity_ordered,
-                quantity_ordered_new:  qty
+                quantity_ordered_new:  qty,
+                department_id: payload.department_id,
+                sub_department_id: payload.sub_department_id,
+                family_id: payload.family_id,
             }
         }
         set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
-
+        pushAddToCart(payload.quantity_ordered - previousQty)
         fetchCustomerOrderingProduct()
         layout.reload_handle()
 
@@ -223,7 +256,7 @@ const debouncedSync = debounce(() => {
 const incrementQty = () => {
     const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
 
-    if (current >= customer.value.stock) {
+    if (current >= availableStock.value) {
         showWarning()
         return
     }
@@ -238,14 +271,57 @@ const decrementQty = () => {
     debouncedSync()
 }
 
+
+const setQuantity = async (quantity: number) => {
+    const next = Math.min(Math.max(0, quantity), customer.value.stock)
+
+    if (next !== quantity) showWarning()
+
+    debouncedSync.cancel()
+    set(customer.value, ['quantity_ordered_new'], next)
+
+    if (!customer.value.transaction_id && next > 0) {
+        await onAddToBasket(product.value, next)
+        return
+    }
+
+    await onUpdateQuantity()
+}
+
 const onManualInput = (e: Event) => {
     const value = Number((e.target as HTMLInputElement).value)
     if (Number.isNaN(value)) return
 
-    const next = Math.min(Math.max(0, value), customer.value.stock)
+    const next = Math.min(Math.max(0, value), availableStock.value)
     if (next !== value) showWarning()
 
     set(customer.value, ['quantity_ordered_new'], next)
+    debouncedSync()
+}
+
+const isDecimalQty = computed(() => {
+    const qty = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
+    return qty % 1 !== 0
+})
+
+const numerator = computed(() => {
+    const qty = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
+    return Math.round(qty * (product.value.units ?? 1))
+})
+
+const onNumeratorInput = (e: Event) => {
+    const value = Math.round(Number((e.target as HTMLInputElement).value))
+    if (Number.isNaN(value) || value < 0) return
+
+    const units = product.value.units ?? 1
+    const next = value / units
+
+    if (next > availableStock.value) {
+        showWarning()
+        set(customer.value, ['quantity_ordered_new'], availableStock.value)
+    } else {
+        set(customer.value, ['quantity_ordered_new'], next)
+    }
     debouncedSync()
 }
 
@@ -262,6 +338,7 @@ watch(
     val => (customer.value = { ...val }),
     { deep: true }
 )
+defineExpose({ setQuantity })
 </script>
 
 <template>
@@ -271,8 +348,16 @@ watch(
                 <FontAwesomeIcon icon="fas fa-minus" />
             </button>
 
-            <input type="number" class="qty-input" :disabled="isLoadingSubmitQuantityProduct"
-                :value="customer.quantity_ordered_new ?? customer.quantity_ordered ?? 0" @input="onManualInput" />
+            <!-- Fix this UI: make the denominator inside the same box with input -->
+            <template v-if="isDecimalQty">
+                <input type="number" class="qty-input" :disabled="isLoadingSubmitQuantityProduct"
+                    :value="numerator" @input="onNumeratorInput" />
+                <span class="opacity-70 xtext-sm select-none px-1">/{{ product.units }}</span>
+            </template>
+
+           
+            <input v-else type="number" class="qty-input" :disabled="isLoadingSubmitQuantityProduct"
+                :value="toInteger(customer.quantity_ordered_new) ?? toInteger(customer.quantity_ordered) ?? 0" @input="onManualInput" />
 
             <button class="qty-btn" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
                 <FontAwesomeIcon icon="fas fa-plus" />
@@ -338,7 +423,7 @@ input[type='number'] {
 } */
 
 .qty-control {
-  @apply flex items-center border border-gray-200 rounded-lg overflow-hidden min-w-28 max-w-32;
+  @apply flex items-center border border-gray-200 rounded-lg overflow-hidden min-w-28 max-w-36;
 }
 
 .qty-btn {

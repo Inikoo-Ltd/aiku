@@ -13,12 +13,17 @@ use App\Services\GeocoderService;
 use App\Services\Translation;
 use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
 use Gnikyt\BasicShopifyAPI\Options;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Facades\Actions;
+use Illuminate\Support\Facades\Event;
+use Laravel\Nightwatch\Records\QueuedJob;
+use Laravel\Nightwatch\Records\OutgoingRequest;
 use Vemcogroup\Translation\Translation as BaseTranslation;
 
 /**
@@ -32,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind('app.scope', function () {
             return 'aiku';
         });
+
+        $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
 
         $this->app->singleton(GeocoderService::class, function ($app) {
             return new GeocoderService();
@@ -68,6 +75,35 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Event::listen(function (CommandStarting $event) {
+            if (in_array($event->command, [
+                'fetch:orders',
+                'fetch:credits',
+                'fetch:stock_movements',
+                'fetch:dispatched_emails',
+                'fetch:stock_locations',
+                'fetch:email_tracking_events',
+                'clone:aurora_vol_gr_offers',
+                'inertia:start-ssr --runtime bun'
+            ])) {
+                Nightwatch::dontSample();
+            }
+        });
+
+        Nightwatch::rejectQueuedJobs(function (QueuedJob $job) {
+            return $job->queue == 'aurora';
+        });
+
+        Nightwatch::rejectOutgoingRequests(function (OutgoingRequest $request) {
+            return str_contains($request->url, '10.0.0.');
+        });
+
+        if ($this->app->runningUnitTests()) {
+            // ponytail: single PDO in tests; a real second connection self-deadlocks when
+            // sync-queued hydrators run inside an open transaction holding the same row locks
+            DB::extend('aiku_no_sticky', fn () => DB::connection('aiku'));
+        }
+
         ParallelTesting::setUpTestCase(function ($token, $testCase) {
             $databaseName = env('DB_DATABASE_TEST', 'aiku_test')."_".$token;
 
@@ -78,6 +114,10 @@ class AppServiceProvider extends ServiceProvider
                 DB::connection('aiku');
                 DB::purge('aiku');
                 DB::reconnect('aiku');
+                config(['database.connections.aiku_no_sticky.database' => $databaseName]);
+                DB::connection('aiku_no_sticky');
+                DB::purge('aiku_no_sticky');
+                DB::reconnect('aiku_no_sticky');
             }
         });
 
@@ -118,7 +158,6 @@ class AppServiceProvider extends ServiceProvider
                 'Service'                          => 'App\Models\Billables\Service',
 
                 // CRM
-                'Appointment'                      => 'App\Models\CRM\Appointment',
                 'Customer'                         => 'App\Models\CRM\Customer',
                 'CustomerNote'                     => 'App\Models\CRM\CustomerNote',
                 'Favourite'                        => 'App\Models\CRM\Favourite',
@@ -143,6 +182,7 @@ class AppServiceProvider extends ServiceProvider
                 'Sowing'                           => 'App\Models\GoodsIn\Sowing',
                 'StockDelivery'                    => 'App\Models\GoodsIn\StockDelivery',
                 'StockDeliveryItem'                => 'App\Models\GoodsIn\StockDeliveryItem',
+                'ReturnDeliveryNote'               => 'App\Models\GoodsIn\ReturnDeliveryNote',
 
                 // Dropshipping
                 'CustomerClient'                   => 'App\Models\Dropshipping\CustomerClient',
@@ -309,6 +349,10 @@ class AppServiceProvider extends ServiceProvider
                 'RawMaterial'                      => 'App\Models\Production\RawMaterial',
                 'ManufactureTask'                  => 'App\Models\Production\ManufactureTask',
                 'Artefact'                         => 'App\Models\Production\Artefact',
+
+                //Reviews
+                'Review'                           => 'App\Models\Catalogue\Review\Review',
+
             ]
         );
     }

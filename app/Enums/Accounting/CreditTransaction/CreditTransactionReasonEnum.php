@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 04-07-2025-18h-07m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -38,11 +38,11 @@ enum CreditTransactionReasonEnum: string
     {
         return match ($str) {
             CreditTransactionReasonEnum::PAY_FOR_SHIPPING->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
-            CreditTransactionReasonEnum::PAY_FOR_PRODUCT->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
-            CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
-            CreditTransactionReasonEnum::TRANSFER->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
-            CreditTransactionReasonEnum::MONEY_BACK->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
-            CreditTransactionReasonEnum::OTHER->value => CreditTransactionReasonEnum::PAY_FOR_SHIPPING->label(),
+            CreditTransactionReasonEnum::PAY_FOR_PRODUCT->value => CreditTransactionReasonEnum::PAY_FOR_PRODUCT->label(),
+            CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value => CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->label(),
+            CreditTransactionReasonEnum::TRANSFER->value => CreditTransactionReasonEnum::TRANSFER->label(),
+            CreditTransactionReasonEnum::MONEY_BACK->value => CreditTransactionReasonEnum::MONEY_BACK->label(),
+            CreditTransactionReasonEnum::OTHER->value => CreditTransactionReasonEnum::OTHER->label(),
         };
     }
 

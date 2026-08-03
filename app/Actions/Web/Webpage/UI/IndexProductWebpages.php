@@ -97,8 +97,9 @@ class IndexProductWebpages extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('webpages.code', $value)
-                    ->orWhereStartWith('webpages.url', $value);
+                $value = strip_tags($value);
+                $query->whereAnyWordStartWith('webpages.code', $value)
+                    ->orWhereAnyWordStartWith('webpages.url', $value);
             });
         });
 
@@ -210,8 +211,27 @@ class IndexProductWebpages extends OrgAction
     {
         $subNavigation = [];
 
-
         $subNavigation = $this->getWebpageNavigation($this->website);
+
+        $actions = [
+            [
+                'key'  => 'product_webpage_create',
+                'type' => 'button',
+            ]
+        ];
+
+        $website = $this->website;
+
+        $allowBulkOffline = $this->canEdit;
+
+        if ($allowBulkOffline) {
+            $actions[] = [
+                'key'   => 'bulk-offline',
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('Bulk Offline'),
+            ];
+        }
 
         return Inertia::render(
             'Org/Web/Webpages',
@@ -220,26 +240,17 @@ class IndexProductWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
+                'title'       => __('Webpages') . ' ' . __('Products'),
                 'pageHead'    => [
-                    'title'         => __('Product webpages'),
+                    'model'         => __('Webpages'),
+                    'title'         => __('Products'),
+                    'color'         => '#6366f1',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        [
-                            'key'  => 'product_webpage_create',
-                            'type' => 'button',
-                            // 'style' => 'create',
-                            // 'label' => __('Product Webpage'),
-                            // 'route' => [
-                            //     'name'       => $routeCreate,
-                            //     'parameters' => array_values($request->route()->originalParameters())
-                            // ],
-                        ]
-                    ]
+                    'actions'       => $actions,
                 ],
                 'routes_list' => [
                     'fetch_products_without_webpage' => [
@@ -250,7 +261,21 @@ class IndexProductWebpages extends OrgAction
                     ],
                     'submit_product_webpage'         => [
                         'name' => 'grp.models.webpages.product.store',
-                    ]
+                    ],
+                    'bulk_offline'        => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.webpage.set_offline_bulk',
+                        'parameters' => [
+                            'website'   => $website?->id
+                        ]
+                    ],
+                    'fetch_live_webpages' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.json.active_webpages.with_exclusion.index',
+                        'parameters' => [
+                            'shop' => $this->shop->slug,
+                        ]
+                    ],
                 ],
                 'data'        => WebpagesResource::collection($webpages),
 

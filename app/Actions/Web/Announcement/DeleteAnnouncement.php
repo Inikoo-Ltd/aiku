@@ -10,6 +10,7 @@ namespace App\Actions\Web\Announcement;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\WebsiteHydrateAnnouncements;
 use App\Models\CRM\Customer;
 use App\Models\Web\Announcement;
 use App\Models\Web\Website;
@@ -26,6 +27,8 @@ class DeleteAnnouncement extends OrgAction
     public function handle(Announcement $announcement): void
     {
         $announcement->delete();
+        WebsiteHydrateAnnouncements::dispatch($announcement->website_id)->delay(2);
+
     }
 
     public function authorize(ActionRequest $request): bool

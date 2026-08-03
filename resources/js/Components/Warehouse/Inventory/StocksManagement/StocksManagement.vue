@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
-import { inject, onMounted, nextTick } from 'vue'
+import { inject, onMounted, nextTick, computed } from 'vue'
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -25,8 +25,9 @@ import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import AddLocations from './AddLocations.vue'
-import EditLocationsModal from './EditLocationsModal.vue'
+import EditLocations from './EditLocations.vue'
 import { WINDOW } from '@sentry/vue'
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
 
 const props = defineProps<{
@@ -36,11 +37,19 @@ const props = defineProps<{
         is_quantity_excess: boolean
         currency_code: string
     }
+    actions?: ('stock_check' | 'move_stock' | 'edit_location' | 'add_location')[]
+    header_title?: string
+    reasons?: {
+        increase: [],
+        decrease: [],
+        transfer: [],
+    }
+    org_stock_id: number
 }>()
 
 const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
-
+const screenType = inject('screenType', ref('desktop'))
 // Active picking location state
 const activePickingLocationWholesale = ref<number | null>(null)
 const isLoadingActiveLocationWholesale = ref<number | null>(null)
@@ -332,6 +341,19 @@ const MODALS = {
     ADD_LOCATION: 'add_location'
 }
 
+const visibleActions = computed(() => props.actions ?? Object.values(MODALS))
+const showAction = (action: string) => visibleActions.value.includes(action)
+const locationCount = computed(() => props.stocks_management.locations.length)
+const actionGridClass = computed(() => {
+    const count = Object.values(MODALS).filter(action => showAction(action)).length
+    return {
+        1: 'xl:grid-cols-1',
+        2: 'xl:grid-cols-2',
+        3: 'xl:grid-cols-3',
+        4: 'xl:grid-cols-4',
+    }[count] ?? 'xl:grid-cols-4'
+})
+
 const isStockCheckModalOpen = ref(false)
 const isMoveStockModalOpen = ref(false)
 const isEditLocationModalOpen = ref(false)
@@ -407,9 +429,12 @@ const onAddLocationShow = () => {
 
         <!-- Header Section -->
         <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold flex items-center gap-2">
-                <!-- <FontAwesomeIcon :icon="faBox"></FontAwesomeIcon> Active -->
-            </h2>
+            <span>
+                <h2 v-if="header_title" class="text-xl font-bold flex items-center gap-2">
+                    {{ header_title }}
+                    <!-- <FontAwesomeIcon :icon="faBox"></FontAwesomeIcon> Active -->
+                </h2>
+            </span>
             <div v-if="data.is_quantity_excess" v-tooltip="ctrans('Excess stock')" class="text-gray-500 hover:text-gray-700">
                 <FontAwesomeIcon :icon="faPlusCircle" class="text-xl"></FontAwesomeIcon>
             </div>
@@ -422,15 +447,17 @@ const onAddLocationShow = () => {
                     <span>
                         <Icon :data="{...item.icon_state, tooltip : null}" />
                     </span>
-                    <span class="ml-2 text-lg font-bold">
-                        {{ locale.number(item.value ?? 0) }}
+                    <span class="ml-2 text-lg font-bold inline-flex align-middle">
+                        <FractionDisplay v-if="item.value_fractional" :fractionData="item.value_fractional" />
+                        <template v-else>{{ locale.number(item.value ?? 0) }}</template>
                     </span>
                 </div>
             </div>
 
             <div class="grid align-item-middle border-l">
-                <span class="my-auto text-lg text-center font-semibold mx-1 py-2 border border-green-200 bg-green-100 rounded" v-tooltip="trans('Stock in Location')">
-                    {{ locale.number(stocks_management.qty_in_location ?? 0) }}
+                <span class="my-auto text-lg text-center font-semibold mx-1 px-4 py-2 border border-green-200 bg-green-100 rounded tabular-nums flex items-center justify-center" v-tooltip="trans('Stock in Location')">
+                    <FractionDisplay v-if="stocks_management.qty_in_location_fractional" :fractionData="stocks_management.qty_in_location_fractional" />
+                    <template v-else>{{ locale.number(stocks_management.qty_in_location ?? 0) }}</template>
                 </span>
             </div>
         </div>
@@ -438,252 +465,253 @@ const onAddLocationShow = () => {
         <!-- Section: Location Grid -->
         <div class="border-t pt-2 gap-2 items-center text-gray-700">
 
-                <Dialog
-                    v-model:visible="isStockCheckModalOpen"
-                    :header="`${trans('Audit Stock')} - ${props.trade_units[0]?.code}`"
-                    modal
-                    :dismissableMask="true"
-                    :closeOnEscape="true"
-                    :focusOnShow="false"
-                    :style="{ width: '50vw' }"
-                    :breakpoints="{
-                        '1200px': '75vw',
-                        '992px': '80vw',
-                        '768px': '90vw',
-                        '576px': '95vw'
-                    }"
-                    :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }"
+            <Dialog
+                v-model:visible="isStockCheckModalOpen"
+                :header="`${ctrans('Audit Stock')} - ${props.trade_units[0]?.code}`"
+                modal
+                :dismissableMask="screenType === 'desktop'"
+                :closeOnEscape="true"
+                :focusOnShow="false"
+                :style="{ width: '60vw' }"
+                :breakpoints="{
+                    '1200px': '80vw',
+                    '992px': '80vw',
+                    '768px': '90vw',
+                    '576px': '95vw'
+                }"
+                :contentStyle="{ overflow: 'visible' }"
+            >
+                <StockCheck
+                    :selectedLocationId="selectedLocationId"
+                    :locations="props.stocks_management.locations"
+                    @close="isStockCheckModalOpen = false"
+                    :auditRoute="props.stocks_management?.routes?.audit_route"
+                    :bulkAuditRoute="props.stocks_management?.routes?.bulk_audit_route"
+                    :reasons
+                    :org_stock_id
+                />
+            </Dialog>
+
+            <Dialog v-model:visible="isMoveStockModalOpen" modal :header="ctrans('Move Stock')"
+                :style="{ width: '50vw' }"
+                :dismissableMask="screenType === 'desktop'"
+                :closeOnEscape="true"
+                :breakpoints="{
+                    '1200px': '75vw',
+                    '992px': '80vw',
+                    '768px': '90vw',
+                    '576px': '95vw'
+                }"
+                :contentStyle="{ overflow: 'visible' }">
+                <MoveStock
+                    :part_locations="props.stocks_management.locations"
+                    :replenishment_data="tempMinMaxStock"
+                    @close="isMoveStockModalOpen = false"
+                    :reasons
+                />
+            </Dialog>
+
+            <Dialog v-model:visible="isEditLocationModalOpen" modal :header="ctrans('Remove Locations')"
+                :dismissableMask="screenType === 'desktop'"
+                :style="{ width: '50vw' }"                
+                :closeOnEscape="true"
+                :breakpoints="{
+                    '1200px': '76vw',
+                    '992px': '80vw',
+                    '768px': '90vw',
+                    '576px': '95vw'
+                }"
                 >
-                    <StockCheck
-                        :selectedLocationId="selectedLocationId"
-                        :locations="props.stocks_management.locations"
-                        @close="isStockCheckModalOpen = false"
-                        :auditRoute="props.stocks_management?.routes?.audit_route"
-                    />
-                </Dialog>
-
-                 <Dialog v-model:visible="isMoveStockModalOpen" modal :header="trans('Move Stock')"
-                    :style="{ width: '50vw' }"
-                    :dismissableMask="true"
-                    :closeOnEscape="true"
-                    :breakpoints="{
-                        '1200px': '75vw',
-                        '992px': '80vw',
-                        '768px': '90vw',
-                        '576px': '95vw'
-                    }">
-                    <MoveStock
-                        :part_locations="props.stocks_management.locations"
-                        :replenishment_data="tempMinMaxStock"
-                        @close="isMoveStockModalOpen = false"
-                    />
-                 </Dialog>
-
-                <EditLocationsModal
-                    v-model="isEditLocationModalOpen"
+                <EditLocations
                     :locations="props.stocks_management.locations"
                     :routes="props.stocks_management.routes"
+                    @close="isEditLocationModalOpen = false"
                 />
+            </Dialog>
 
-                <Dialog v-model:visible="isAddLocationModalOpen" modal :header="trans('Add Location')"
-                    @show="onAddLocationShow"
-                    :style="{ width: '50vw' }"
-                    :dismissableMask="true"
-                    :closeOnEscape="true"
-                    :breakpoints="{
-                        '1200px': '75vw',
-                        '992px': '80vw',
-                        '768px': '90vw',
-                        '576px': '95vw'
-                    }"
-                    :contentStyle="{ overflow: 'visible' }">
-                     <AddLocations
-                        ref="addLocationRef"
-                        :locations="props.stocks_management.locations"
-                        @close="isAddLocationModalOpen = false"
-                        :routes="props.stocks_management?.routes"
-                    />
-                </Dialog>
+            <Dialog v-model:visible="isAddLocationModalOpen" modal :header="ctrans('Add Location')"
+                @show="onAddLocationShow"
+                :style="{ width: '50vw' }"
+                :dismissableMask="screenType === 'desktop'"
+                :closeOnEscape="true"
+                :breakpoints="{
+                    '1200px': '75vw',
+                    '992px': '80vw',
+                    '768px': '90vw',
+                    '576px': '95vw'
+                }"
+                :contentStyle="{ overflow: 'visible' }">
+                    <AddLocations
+                    ref="addLocationRef"
+                    :locations="props.stocks_management.locations"
+                    @close="isAddLocationModalOpen = false"
+                    :routes="props.stocks_management?.routes"
+                />
+            </Dialog>
 
-                <div v-for="(loc, idx) in props.stocks_management.locations" :key="loc.id"
-                        class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200 mb-1"
-                        :class="{
-                            'bg-blue-50 border border-blue-200': activePickingLocationDropshipping === loc.id && activePickingLocationWholesale !== loc.id,
-                            'bg-orange-50 border border-orange-200': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale === loc.id,
-                            'bg-purple-50 border border-purple-200': activePickingLocationDropshipping === loc.id && activePickingLocationWholesale === loc.id,
-                            'hover:bg-gray-50': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale !== loc.id,
-
-                        }">
-                        <div class="col-span-4 flex items-center gap-x-3">
-                            <!-- Note Icon with Popover -->
-                            <div class="relative">
-                                <div @click="(event) => toggleNotePopover(event, loc)"
-                                    v-tooltip="trans(`Add part's location note`)"
-                                    class="cursor-pointer transition-colors duration-200"
-                                    :class="loc.notes ? 'text-orange-600' : 'text-gray-400 hover:text-gray-700'"
-                                >
-                                    <LoadingIcon v-if="isLoadingNoteUpdate === loc.id"/>
-                                    <FontAwesomeIcon v-else :icon="loc.notes ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class="" fixed-width aria-hidden="true" />
+            <div class="max-h-[40vh] overflow-y-auto overflow-x-hidden">
+                <template v-if="props.stocks_management.locations?.length">
+                    <div v-for="(loc, idx) in props.stocks_management.locations" :key="loc.id"
+                            class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200 mb-1"
+                            :class="{
+                                'bg-blue-50 border border-blue-200': activePickingLocationDropshipping === loc.id && activePickingLocationWholesale !== loc.id,
+                                'bg-orange-50 border border-orange-200': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale === loc.id,
+                                'bg-purple-50 border border-purple-200': activePickingLocationDropshipping === loc.id && activePickingLocationWholesale === loc.id,
+                                'hover:bg-gray-50': activePickingLocationDropshipping !== loc.id && activePickingLocationWholesale !== loc.id,
+                            }">
+                            <div class="col-span-4 flex items-center gap-x-3">
+                                <!-- Note Icon with Popover -->
+                                <div class="relative">
+                                    <div @click="(event) => toggleNotePopover(event, loc)"
+                                        v-tooltip="trans(`Add part's location note`)"
+                                        class="cursor-pointer transition-colors duration-200"
+                                        :class="loc.notes ? 'text-orange-600' : 'text-gray-400 hover:text-gray-700'"
+                                    >
+                                        <LoadingIcon v-if="isLoadingNoteUpdate === loc.id"/>
+                                        <FontAwesomeIcon v-else :icon="loc.notes ? 'fas fa-sticky-note' : 'fal fa-sticky-note'" class="" fixed-width aria-hidden="true" />
+                                    </div>
                                 </div>
-                            </div>
-
-                            <!-- TODO ENABLE ON PRODUCTION  -->
-                            <!-- Wholesale Icon -->
-                            <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'wholesale')"
-                                v-tooltip="trans('Set as active picking location [Wholesale]')"
-                                class="cursor-pointer transition-colors duration-200" :class="{
-                                    'text-orange-500': activePickingLocationWholesale === loc.id,
-                                    'text-gray-600 hover:text-orange-400 opacity-30 hover:opacity-60': activePickingLocationWholesale !== loc.id
-                                }">
-                                <LoadingIcon v-if="isLoadingActiveLocationWholesale === loc.id" />
-                                <FontAwesomeIcon v-else :icon="activePickingLocationWholesale === loc.id ? 'fas fa-dolly-flatbed-empty' : 'fal fa-dolly-flatbed-empty'"
-                                    class="" fixed-width aria-hidden="true" />
-                            </div>
-                            <div v-else>
-                                <FontAwesomeIcon :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
-                            </div>
-
-                            <!-- TODO ENABLE ON PRODUCTION  -->
-                            <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'dropshipping')"
-                                v-tooltip="trans('Set as active picking location [Dropshipping]')"
-                                class="transition-colors duration-200 cursor-pointer" :class="{
-                                    'text-gray-400': activePickingLocationDropshipping !== loc.id,
-                                    'text-gray-600  opacity-30 hover:opacity-60': activePickingLocationDropshipping !== loc.id,
-                                    'text-blue-700': activePickingLocationDropshipping === loc.id,
-                                    'hover:text-blue-500': activePickingLocationDropshipping !== loc.id
-                                }">
-                                <LoadingIcon v-if="isLoadingActiveLocationDropshipping === loc.id" />
-                                <FontAwesomeIcon v-else :icon="activePickingLocationDropshipping === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
-                                    class="" fixed-width aria-hidden="true" />
-                            </div>
-                            <div v-else>
-                                <FontAwesomeIcon :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
-                            </div>
-
-                            <span class="font-medium">
-                                <Link :href="route('grp.org.warehouses.show.infrastructure.locations.show', {
-                                    organisation: loc.location.organisation_slug,
-                                    warehouse: loc.location.warehouse_slug,
-                                    location: loc.location.slug,
-                                })" :class="'primaryLink'">
-                                    {{ loc.code }}
-                                </Link>
-                            </span>
-
-                            <!-- Question Icon(s) -->
-                            <div @click="(event) => toggleQuestionPopover(loc.id, event)"
-                                v-tooltip="getQuestionTooltip(loc.id)"
-                                class="cursor-pointer text-gray-400 hover:text-gray-700 flex gap-1">
-                                <LoadingIcon v-if="isLoadingQtyUpdate === loc.id"/>
-                                <span v-else-if="(tempMinMaxStock[loc?.id]?.min_stock || tempMinMaxStock[loc?.id]?.max_stock) && isActivePickingLocation(loc.id)">( {{ tempMinMaxStock[loc?.id]?.min_stock }}, {{ tempMinMaxStock[loc?.id]?.max_stock }}
-                                    )</span>
-                                <span v-else-if="tempMinMaxStock[loc?.id]?.replenishment_stock && !isActivePickingLocation(loc.id)">( {{ tempMinMaxStock[loc?.id]?.replenishment_stock }} )</span>
-                                <div v-else>
-                                    <FontAwesomeIcon icon="fal fa-question-square" class="" fixed-width
-                                        aria-hidden="true" />
-                                    <!-- Show second question icon only when location is active -->
-                                    <FontAwesomeIcon v-if="isActivePickingLocation(loc.id)"
-                                        icon="fal fa-question-square" class="" fixed-width aria-hidden="true" />
+                                <!-- Wholesale Icon -->
+                                <div @click="() => setActivePickingLocation(loc, 'wholesale')"
+                                    v-tooltip="trans('Set as active picking location [Wholesale]')"
+                                    class="cursor-pointer transition-colors duration-200" :class="{
+                                        'text-orange-500': activePickingLocationWholesale === loc.id,
+                                        'text-gray-600 hover:text-orange-400 opacity-30 hover:opacity-60': activePickingLocationWholesale !== loc.id
+                                    }">
+                                    <LoadingIcon v-if="isLoadingActiveLocationWholesale === loc.id" />
+                                    <FontAwesomeIcon v-else :icon="activePickingLocationWholesale === loc.id ? 'fas fa-dolly-flatbed-empty' : 'fal fa-dolly-flatbed-empty'"
+                                        class="" fixed-width aria-hidden="true" />
                                 </div>
-
-                            </div>
-
-                            <!-- Question Popover -->
-                            <Popover :ref="(el) => setQuestionPopoverRef(el, loc.id)">
-                                <div class="w-80 p-2">
-                                    <div class="mb-3">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            {{ isActivePickingLocation(loc.id) ? trans('Min/Max Stock') :
-                                            trans('Replenishment Quantity') }} - {{ loc.code }}
-                                        </label>
-
-                                        <!-- Show Min/Max inputs when location is active -->
-                                        <div v-if="isActivePickingLocation(loc.id)" class="space-y-3">
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-1">
-                                                    {{ trans('Min') }}
-                                                </label>
-                                                <InputNumber :modelValue="tempMinMaxStock[loc.id]?.min_stock || null"
-                                                    :ref="(el) => setInputRef(el, `min-${loc.id}`)"
-                                                    @update:modelValue="(val) => {
-                                                        if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
-                                                        tempMinMaxStock[loc.id].min_stock = val
-                                                    }" class="w-full" :placeholder="trans('Enter minimum stock')"
-                                                    :min="0" autofocus/>
+                                <div @click="() => setActivePickingLocation(loc, 'dropshipping')"
+                                    v-tooltip="trans('Set as active picking location [Dropshipping]')"
+                                    class="transition-colors duration-200 cursor-pointer" :class="{
+                                        'text-gray-400': activePickingLocationDropshipping !== loc.id,
+                                        'text-gray-600  opacity-30 hover:opacity-60': activePickingLocationDropshipping !== loc.id,
+                                        'text-blue-700': activePickingLocationDropshipping === loc.id,
+                                        'hover:text-blue-500': activePickingLocationDropshipping !== loc.id
+                                    }">
+                                    <LoadingIcon v-if="isLoadingActiveLocationDropshipping === loc.id" />
+                                    <FontAwesomeIcon v-else :icon="activePickingLocationDropshipping === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
+                                        class="" fixed-width aria-hidden="true" />
+                                </div>
+                                <span class="font-medium">
+                                    <Link :href="route('grp.org.warehouses.show.infrastructure.locations.show', {
+                                        organisation: loc.location.organisation_slug,
+                                        warehouse: loc.location.warehouse_slug,
+                                        location: loc.location.slug,
+                                    })" :class="'primaryLink'">
+                                        {{ loc.code }}
+                                    </Link>
+                                </span>
+                                <!-- Question Icon(s) -->
+                                <div @click="(event) => toggleQuestionPopover(loc.id, event)"
+                                    v-tooltip="getQuestionTooltip(loc.id)"
+                                    class="cursor-pointer text-gray-400 hover:text-gray-700 flex gap-1">
+                                    <LoadingIcon v-if="isLoadingQtyUpdate === loc.id"/>
+                                    <span v-else-if="(tempMinMaxStock[loc?.id]?.min_stock || tempMinMaxStock[loc?.id]?.max_stock) && isActivePickingLocation(loc.id)">( {{ tempMinMaxStock[loc?.id]?.min_stock }}, {{ tempMinMaxStock[loc?.id]?.max_stock }}
+                                        )</span>
+                                    <span v-else-if="tempMinMaxStock[loc?.id]?.replenishment_stock && !isActivePickingLocation(loc.id)">( {{ tempMinMaxStock[loc?.id]?.replenishment_stock }} )</span>
+                                    <div v-else>
+                                        <FontAwesomeIcon icon="fal fa-question-square" class="" fixed-width
+                                            aria-hidden="true" />
+                                        <!-- Show second question icon only when location is active -->
+                                        <FontAwesomeIcon v-if="isActivePickingLocation(loc.id)"
+                                            icon="fal fa-question-square" class="" fixed-width aria-hidden="true" />
+                                    </div>
+                                </div>
+                                <!-- Question Popover -->
+                                <Popover :ref="(el) => setQuestionPopoverRef(el, loc.id)">
+                                    <div class="w-80 p-2">
+                                        <div class="mb-3">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                {{ isActivePickingLocation(loc.id) ? trans('Min/Max Stock') :
+                                                trans('Replenishment Quantity') }} - {{ loc.code }}
+                                            </label>
+                                            <!-- Show Min/Max inputs when location is active -->
+                                            <div v-if="isActivePickingLocation(loc.id)" class="space-y-3">
+                                                <div>
+                                                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                                                        {{ trans('Min') }}
+                                                    </label>
+                                                    <InputNumber :modelValue="tempMinMaxStock[loc.id]?.min_stock || null"
+                                                        :ref="(el) => setInputRef(el, `min-${loc.id}`)"
+                                                        @update:modelValue="(val) => {
+                                                            if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
+                                                            tempMinMaxStock[loc.id].min_stock = val
+                                                        }" class="w-full" :placeholder="trans('Enter minimum stock')"
+                                                        :min="0" autofocus/>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                                                        {{ trans('Max') }}
+                                                    </label>
+                                                    <InputNumber :modelValue="tempMinMaxStock[loc.id]?.max_stock || null"
+                                                        @update:modelValue="(val) => {
+                                                            if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
+                                                            tempMinMaxStock[loc.id].max_stock = val
+                                                        }" class="w-full" :placeholder="trans('Enter maximum stock')"
+                                                        :min="0" />
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-1">
-                                                    {{ trans('Max') }}
-                                                </label>
-                                                <InputNumber :modelValue="tempMinMaxStock[loc.id]?.max_stock || null"
+                                            <!-- Show Replenishment input when location is not active -->
+                                            <div v-else>
+                                                <InputNumber :ref="(el) => setInputRef(el, `replenish-${loc.id}`)" autofocus :modelValue="tempMinMaxStock[loc.id]?.replenishment_stock || null"
                                                     @update:modelValue="(val) => {
-                                                        if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
-                                                        tempMinMaxStock[loc.id].max_stock = val
-                                                    }" class="w-full" :placeholder="trans('Enter maximum stock')"
+                                                    if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null, replenishment_stock: null }
+                                                    tempMinMaxStock[loc.id].replenishment_stock = val
+                                                    }" class="w-full" :placeholder="trans('Enter replenishment quantity')"
                                                     :min="0" />
                                             </div>
                                         </div>
-
-                                        <!-- Show Replenishment input when location is not active -->
-                                        <div v-else>
-                                            <InputNumber :ref="(el) => setInputRef(el, `replenish-${loc.id}`)" autofocus :modelValue="tempMinMaxStock[loc.id]?.replenishment_stock || null"
-                                                @update:modelValue="(val) => {
-                                                if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null, replenishment_stock: null }
-                                                tempMinMaxStock[loc.id].replenishment_stock = val
-                                                }" class="w-full" :placeholder="trans('Enter replenishment quantity')"
-                                                :min="0" />
+                                        <div class="flex justify-end gap-2">
+                                            <button @click="() => cancelMinMaxStock(loc.id)"
+                                                class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                                                {{ trans('Cancel') }}
+                                            </button>
+                                            <button @click="() => saveMinMaxStock(loc)"
+                                                class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                {{ trans('Save') }}
+                                            </button>
                                         </div>
                                     </div>
-                                    <div class="flex justify-end gap-2">
-                                        <button @click="() => cancelMinMaxStock(loc.id)"
-                                            class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                                            {{ trans('Cancel') }}
-                                        </button>
-                                        <button @click="() => saveMinMaxStock(loc)"
-                                            class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            {{ trans('Save') }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </Popover>
-                        </div>
-
-                        <div v-if="loc.audited_at"
-                            v-tooltip="trans('Last audit :xdate', { xdate: useFormatTime(new Date(loc.audited_at)) })"
-                            class="col-span-2 text-center text-sm whitespace-nowrap">
-                            {{ formatDistanceStrict(new Date(loc.audited_at), new Date()) }}
-                            <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 ml-1" fixed-width aria-hidden="true" />
-                        </div>
-                        <div v-else
-                            class="col-span-2 text-center text-sm italic opacity-60 whitespace-nowrap">
-                            {{ trans("Never audited") }}
-                        </div>
-
-                        <div class="text-center font-semibold border-l">
-                            <span
-                                v-tooltip="trans('Stock quantity')"
-                                class="cursor-pointer hover:text-blue-500 transition"
-                                @dblclick="openModal(MODALS.STOCK_CHECK, loc.id)"
-                            >
-                                {{ Number(loc.quantity) }}
-                            </span>
-                        </div>
+                                </Popover>
+                            </div>
+                            <div v-if="loc.audited_at"
+                                v-tooltip="trans('Last audit :xdate', { xdate: useFormatTime(new Date(loc.audited_at)) })"
+                                class="col-span-2 text-center text-sm whitespace-nowrap">
+                                {{ formatDistanceStrict(new Date(loc.audited_at), new Date()) }}
+                                <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 ml-1" fixed-width aria-hidden="true" />
+                            </div>
+                            <div v-else
+                                class="col-span-2 text-center text-sm italic opacity-60 whitespace-nowrap">
+                                {{ trans("Never audited") }}
+                            </div>
+                            <div class="text-center font-semibold border-l">
+                                <span
+                                    v-tooltip="trans('Stock quantity')"
+                                    class="cursor-pointer hover:text-blue-500 transition tabular-nums"
+                                    @dblclick="openModal(MODALS.STOCK_CHECK, loc.id)"
+                                >
+                                    <FractionDisplay v-if="loc.quantity_fractional" :fractionData="loc.quantity_fractional"/>
+                                    <span v-else>
+                                        {{ Number(loc.quantity) }}
+                                    </span>
+                                </span>
+                            </div>
+                    </div>
+                </template>
+                <div v-else class="text-gray-500 text-center italic">
+                    {{ ctrans("No locations") }}
                 </div>
+            </div>
         </div>
 
         <!-- Action Buttons -->
-        <!-- TODO ENABLE ON PRODUCTION  -->
-        <div class="flex justify-between border-t pt-3 gap-2" v-if="layout.app.environment === 'local'">
-            <Button @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.EDIT_LOCATION)" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" />
-        </div>
-        <div class="flex justify-between border-t pt-3 gap-2" v-else>
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
+        <div class="grid grid-cols-2 border-t pt-3 gap-2" :class="actionGridClass">
+            <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to audit') : undefined" iconRight="fal fa-clipboard-check" :label="ctrans('Audit Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.MOVE_STOCK)" @click="openModal(MODALS.MOVE_STOCK)" :disabled="locationCount < 2" :tooltip="locationCount < 2 ? ctrans('Requires at least 2 locations') : undefined" iconRight="fal fa-forklift" :label="ctrans('Move Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to edit') : undefined" iconRight="fal fa-edit" :label="ctrans('Remove Locations')" size="sm" type="tertiary" full class="whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.ADD_LOCATION)" @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="ctrans('Add Location')" size="sm" type="tertiary" full class="whitespace-nowrap" />
         </div>
 
         <!-- Popover: Notes -->
@@ -712,7 +740,7 @@ const onAddLocationShow = () => {
                 <div class="flex justify-end gap-2">
                     <Button
                         @click="() => _popoverNotes?.hide()"
-                        type="negative"
+                        type="tertiary"
                         label="Cancel"
                     />
                     <Button

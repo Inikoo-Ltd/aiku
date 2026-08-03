@@ -262,7 +262,7 @@ class IndexDepartments extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $departments, ActionRequest $request): Response
     {
-        $navigation = ProductCategoryTabsEnum::navigation();
+        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
 
         $subNavigation = null;
         if ($this->parent instanceof Collection) {
@@ -328,6 +328,7 @@ class IndexDepartments extends OrgAction
                 'title'                               => __('Departments'),
                 'pageHead'                            => [
                     'title'         => $title,
+                    'color'         => '#a3e635',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
@@ -376,15 +377,15 @@ class IndexDepartments extends OrgAction
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => DepartmentsResource::collection($departments)
-                    : Inertia::lazy(fn () => DepartmentsResource::collection($departments)),
+                    : Inertia::optional(fn () => DepartmentsResource::collection($departments)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
                     fn () => DepartmentsResource::collection(IndexDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => DepartmentsResource::collection(IndexDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    : Inertia::optional(fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))

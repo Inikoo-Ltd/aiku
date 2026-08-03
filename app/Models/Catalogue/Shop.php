@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\Catalogue\Shop\Traits\WithReviewIOApi;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -36,7 +37,6 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
 use App\Models\Comms\TestEmailRecipient;
-use App\Models\CRM\Appointment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\CRM\Prospect;
@@ -49,7 +49,6 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dropshipping\CustomerClient;
-use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\GoodsIn\ReturnDeliveryNote;
@@ -67,10 +66,13 @@ use App\Models\Helpers\Timezone;
 use App\Models\Helpers\Upload;
 use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Models\Reviews\Review;
+use App\Models\Reviews\ShopReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
@@ -148,9 +150,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property bool $registration_needs_approval
  * @property array<array-key, mixed>|null $extra_languages
  * @property bool $is_aiku
- * @property numeric $cost_price_ratio
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
- * @property numeric $price_rrp_ratio
  * @property bool $is_migrating_to_aiku
  * @property array<array-key, mixed>|null $offers_data
  * @property ShopEngineEnum $engine
@@ -164,18 +164,19 @@ use App\Models\HumanResources\WorkSchedule;
  * @property int|null $seeder_shop_id
  * @property string|null $proforma_footer
  * @property \Illuminate\Support\Carbon|null $migrated_to_aiku_on
+ * @property array<array-key, mixed> $banned_country_regions
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
  * @property-read LaravelCollection<int, Adjustment> $adjustments
  * @property-read LaravelCollection<int, AikuSection> $aikuScopedSections
- * @property-read LaravelCollection<int, Appointment> $appointments
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Asset> $assets
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read LaravelCollection<int, Brand> $brands
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, ChatEmailRecipient> $chatEmailRecipients
+ * @property-read LaravelCollection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read Address|null $collectionAddress
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -199,7 +200,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Invoice> $invoices
  * @property-read Language $language
  * @property-read LaravelCollection<int, Mailshot> $mailshots
- * @property-read \App\Models\Catalogue\ShopMailshotsIntervals|null $mailshotsIntervals
  * @property-read MasterShop|null $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read LaravelCollection<int, OfferAllowance> $offerAllowances
@@ -211,18 +211,11 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read OrgPaymentServiceProviderShop|null $pivot
  * @property-read LaravelCollection<int, OrgPaymentServiceProvider> $orgPaymentServiceProviders
  * @property-read Organisation $organisation
- * @property-read \App\Models\Catalogue\ShopOutboxColdEmailsIntervals|null $outboxColdEmailsIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxCustomerNotificationIntervals|null $outboxCustomerNotificationIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxMarketingIntervals|null $outboxMarketingIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxMarketingNotificationIntervals|null $outboxMarketingNotificationIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxNewsletterIntervals|null $outboxNewsletterIntervals
- * @property-read \App\Models\Catalogue\ShopOutboxPushIntervals|null $outboxPushIntervals
  * @property-read LaravelCollection<int, Outbox> $outboxes
  * @property-read LaravelCollection<int, Packing> $packings
  * @property-read LaravelCollection<int, PaymentAccountShop> $paymentAccountShops
  * @property-read LaravelCollection<int, Payment> $payments
  * @property-read LaravelCollection<int, Picking> $pickings
- * @property-read LaravelCollection<int, PlatformShopSalesIntervals> $platformSalesIntervals
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopPlatformStats> $platformStats
  * @property-read LaravelCollection<int, Poll> $polls
  * @property-read LaravelCollection<int, Portfolio> $portfolios
@@ -235,6 +228,8 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
+ * @property-read ShopReviewStat|null $reviewStats
+ * @property-read LaravelCollection<int, Review> $reviews
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read Shop|null $seederShop
@@ -288,6 +283,7 @@ class Shop extends Model implements HasMedia, Auditable
         'location'                     => 'array',
         'extra_languages'              => 'array',
         'forbidden_dispatch_countries' => 'array',
+        'banned_country_regions'       => 'array',
         'type'                         => ShopTypeEnum::class,
         'state'                        => ShopStateEnum::class,
         'engine'                       => ShopEngineEnum::class,
@@ -304,6 +300,7 @@ class Shop extends Model implements HasMedia, Auditable
         'location'                     => '{}',
         'extra_languages'              => '{}',
         'forbidden_dispatch_countries' => '{}',
+        'banned_country_regions'       => '{}',
         'offers_data'                  => '{}',
         'opening_hours'                => '{}',
     ];
@@ -355,6 +352,28 @@ class Shop extends Model implements HasMedia, Auditable
             ->slugsShouldBeNoLongerThan(664);
     }
 
+    public function bannedBillingCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['billing']);
+    }
+
+    public function bannedDeliveryCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['delivery']);
+    }
+
+    public function bannedIPCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['ip_block']);
+    }
+
+    public function getCustomReviewCategoryLabel(): array
+    {
+        return collect(ReviewContextEnum::shortLabels())->mapWithKeys(fn ($item, $key) => [
+            $key => data_get($this->settings, "reviews.rating_labels.$key.label_tab") ?? $item
+        ])->toArray();
+    }
+
     public function crmStats(): HasOne
     {
         return $this->hasOne(ShopCRMStats::class);
@@ -370,14 +389,19 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasOne(ShopOrderHandlingStats::class);
     }
 
-    public function mailshotsIntervals(): HasOne
-    {
-        return $this->hasOne(ShopMailshotsIntervals::class);
-    }
-
     public function stats(): HasOne
     {
         return $this->hasOne(ShopStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ShopReviewStat::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
     }
 
     public function accountingStats(): HasOne
@@ -440,6 +464,22 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
     }
 
+    public function getDepartmentsRelation(): HasMany
+    {
+        return $this->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT);
+    }
+
+    public function getSubDepartmentsRelation(): HasMany
+    {
+        return $this->productCategories()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
+    }
+
+
+    public function getFamiliesRelation(): HasMany
+    {
+        return $this->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
@@ -488,9 +528,10 @@ class Shop extends Model implements HasMedia, Auditable
 
     public function getPaymentAccountTypeAccount(): ?PaymentAccount
     {
+        /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $this->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
 
-        return $paymentAccountShop ? $paymentAccountShop->paymentAccount : null;
+        return $paymentAccountShop?->paymentAccount;
     }
 
     public function salesChannels(): BelongsToMany
@@ -566,11 +607,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function fulfilment(): HasOne
     {
         return $this->hasOne(Fulfilment::class);
-    }
-
-    public function appointments(): HasMany
-    {
-        return $this->hasMany(Appointment::class);
     }
 
     public function senderEmail(): BelongsTo
@@ -674,6 +710,11 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(Purge::class);
     }
 
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
+    }
+
     public function polls(): HasMany
     {
         return $this->hasMany(Poll::class);
@@ -707,37 +748,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function timeSeries(): HasMany
     {
         return $this->hasMany(ShopTimeSeries::class);
-    }
-
-    public function outboxNewsletterIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxNewsletterIntervals::class);
-    }
-
-
-    public function outboxMarketingIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxMarketingIntervals::class);
-    }
-
-    public function outboxMarketingNotificationIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxMarketingNotificationIntervals::class);
-    }
-
-    public function outboxCustomerNotificationIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxCustomerNotificationIntervals::class);
-    }
-
-    public function outboxColdEmailsIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxColdEmailsIntervals::class);
-    }
-
-    public function outboxPushIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOutboxPushIntervals::class);
     }
 
     public function webUsers(): HasMany
@@ -774,11 +784,6 @@ class Shop extends Model implements HasMedia, Auditable
             Brand::class,
             'model_has_brands'
         );
-    }
-
-    public function platformSalesIntervals(): HasMany
-    {
-        return $this->hasMany(PlatformShopSalesIntervals::class);
     }
 
     public function productsInStock(): HasMany

@@ -38,9 +38,10 @@ class GetPickers extends OrgAction
         ->leftJoin('employee_has_job_positions', 'employee_has_job_positions.employee_id', '=', 'employees.id')
         ->leftJoin('job_positions', 'employee_has_job_positions.job_position_id', '=', 'job_positions.id')
         ->where('job_positions.organisation_id', $organisation->id)
-        ->where('job_positions.name', 'Picker');
+        ->whereIn('job_positions.name', ['Picker', 'Exception Picker', 'Dispatching supervisor']);
 
         $queryBuilder
+            ->distinct()
             ->defaultSort('employees.id')
             ->select([
                 'employees.id',

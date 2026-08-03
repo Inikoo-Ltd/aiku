@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
@@ -31,27 +32,36 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexSupplierProducts extends GrpAction
+class IndexSupplierProducts extends OrgAction
 {
+    use WithSupplyChainAuthorisation;
     use WithAgentSubNavigation;
     use WithSupplierSubNavigation;
     private Group|Agent|Supplier $scope;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('supply-chain.edit');
-
-        return $request->user()->authTo('supply-chain.view');
-    }
+    private string $bucket = 'all';
 
     protected function getElementGroups(Group|Agent|Supplier $parent): array
     {
+        if ($parent instanceof Group && $this->bucket != 'all') {
+            $bucketCounts = SupplierProduct::where('group_id', $parent->id)
+                ->when($this->bucket == 'free', fn ($query) => $query->whereNull('agent_id'))
+                ->when($this->bucket == 'in_agents', fn ($query) => $query->whereNotNull('agent_id'))
+                ->selectRaw('state, count(*) as count')
+                ->groupBy('state')
+                ->pluck('count', 'state')->all();
+            $stateCounts  = array_map(fn ($state) => $bucketCounts[$state->value] ?? 0, array_column(SupplierProductStateEnum::cases(), null, 'value'));
+        } else {
+            $stateCounts = SupplierProductStateEnum::count($parent);
+        }
+
         return [
             'state' => [
                 'label'    => __('State'),
+                'default'  => SupplierProductStateEnum::ACTIVE->value.','.SupplierProductStateEnum::DISCONTINUING->value,
                 'elements' => array_merge_recursive(
                     SupplierProductStateEnum::labels(),
-                    SupplierProductStateEnum::count($parent)
+                    $stateCounts
                 ),
 
                 'engine' => function ($query, $elements) {
@@ -83,13 +93,15 @@ class IndexSupplierProducts extends GrpAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null
             );
         }
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
             ->select([
+                'supplier_products.id',
                 'supplier_products.code',
                 'supplier_products.slug',
                 'supplier_products.name'
@@ -104,6 +116,11 @@ class IndexSupplierProducts extends GrpAction
                     $query->where('supplier_products.supplier_id', $parent->id);
                 } else {
                     $query->where('supplier_products.group_id', $this->group->id);
+                    if ($this->bucket == 'free') {
+                        $query->whereNull('supplier_products.agent_id');
+                    } elseif ($this->bucket == 'in_agents') {
+                        $query->whereNotNull('supplier_products.agent_id');
+                    }
                 }
             })
             ->allowedSorts(['code', 'name'])
@@ -112,14 +129,25 @@ class IndexSupplierProducts extends GrpAction
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null, Group|Agent|Supplier|null $parent = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
+        $parent ??= isset($this->scope) ? $this->scope : group();
+
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null
+                );
+            }
+
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
@@ -133,7 +161,7 @@ class IndexSupplierProducts extends GrpAction
     public function inAgent(Agent $agent, ActionRequest $request): LengthAwarePaginator
     {
         $this->scope = $agent;
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($agent);
     }
@@ -141,7 +169,7 @@ class IndexSupplierProducts extends GrpAction
     public function inSupplier(Supplier $supplier, ActionRequest $request): LengthAwarePaginator
     {
         $this->scope = $supplier;
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($supplier);
     }
@@ -150,7 +178,7 @@ class IndexSupplierProducts extends GrpAction
     public function inSupplierInAgent(Agent $agent, Supplier $supplier, ActionRequest $request): LengthAwarePaginator
     {
         $this->scope = $supplier;
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($supplier);
     }
@@ -158,7 +186,25 @@ class IndexSupplierProducts extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->scope = app('group');
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
+
+        return $this->handle($this->group);
+    }
+
+    public function free(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'free';
+        $this->scope  = app('group');
+        $this->initialisationFromGroup(app('group'), $request);
+
+        return $this->handle($this->group);
+    }
+
+    public function inAgents(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'in_agents';
+        $this->scope  = app('group');
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group);
     }
@@ -166,7 +212,7 @@ class IndexSupplierProducts extends GrpAction
     public function inOverview(ActionRequest $request): LengthAwarePaginator
     {
         $this->scope = app('group');
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group);
     }
@@ -179,7 +225,14 @@ class IndexSupplierProducts extends GrpAction
     public function htmlResponse(LengthAwarePaginator $supplier_products, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('Supplier Products');
+        $title = match ($this->bucket) {
+            'free' => __('Free Supplier Products'),
+            'in_agents' => __('Agents Supplier Products'),
+            default => __('Supplier Products')
+        };
+        if ($this->scope instanceof Group) {
+            $subNavigation = $this->getSupplierProductsSubNavigation();
+        }
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-box-usd'],
@@ -255,7 +308,7 @@ class IndexSupplierProducts extends GrpAction
                     $request->route()->originalParameters(),
                     $this->scope
                 ),
-                'title'       => __('Supplier products'),
+                'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -288,12 +341,14 @@ class IndexSupplierProducts extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.supply-chain.supplier_products.index' =>
+            'grp.supply-chain.supplier_products.index',
+            'grp.supply-chain.supplier_products.free',
+            'grp.supply-chain.supplier_products.in_agents' =>
             array_merge(
                 ShowSupplyChainDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name' => 'grp.supply-chain.supplier_products.index',
+                        'name' => $routeName,
                         null
                     ]
                 ),
@@ -311,7 +366,7 @@ class IndexSupplierProducts extends GrpAction
 
             'grp.supply-chain.agents.show.supplier_products.index' =>
             array_merge(
-                ShowAgent::make()->getBreadcrumbs($scope, $routeParameters),
+                ShowAgent::make()->getBreadcrumbs($scope, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.supply-chain.agents.show.supplier_products.index',
@@ -331,5 +386,40 @@ class IndexSupplierProducts extends GrpAction
             ),
             default => []
         };
+    }
+
+    public function getSupplierProductsSubNavigation(): array
+    {
+        return [
+            [
+                'label'  => __('Free'),
+                'root'   => 'grp.supply-chain.supplier_products.free',
+                'route'  => [
+                    'name'       => 'grp.supply-chain.supplier_products.free',
+                    'parameters' => []
+                ],
+                'number' => $this->group->supplyChainStats->number_independent_supplier_products
+            ],
+            [
+                'label'  => __('Agents'),
+                'root'   => 'grp.supply-chain.supplier_products.in_agents',
+                'route'  => [
+                    'name'       => 'grp.supply-chain.supplier_products.in_agents',
+                    'parameters' => []
+                ],
+                'number' => $this->group->supplyChainStats->number_supplier_products_in_agents
+            ],
+            [
+                'label'  => __('All'),
+                'icon'   => 'fal fa-bars',
+                'root'   => 'grp.supply-chain.supplier_products.index',
+                'align'  => 'right',
+                'route'  => [
+                    'name'       => 'grp.supply-chain.supplier_products.index',
+                    'parameters' => []
+                ],
+                'number' => $this->group->supplyChainStats->number_supplier_products
+            ],
+        ];
     }
 }

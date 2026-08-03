@@ -36,11 +36,15 @@ class ShowIrisFamily extends IrisAction
                 'pageHead'        => [
                     'title'     => $family->name,
                     'model'     => __('Family'),
+                    'afterTitle'    => [
+                        'label' => $family->code,
+                        'tooltip' => __('Family Code'),
+                    ],
                     'icon'      => [
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('Family'),
                     ],
-                    'iconRight' => $family->state->stateIcon()[$family->state->value],
+                   /*  'iconRight' => $family->state->stateIcon()[$family->state->value], */
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
@@ -49,6 +53,7 @@ class ShowIrisFamily extends IrisAction
                 'mini_breadcrumbs' => array_filter([
                     $family->department ? [
                         'label'   => $family->department->name,
+                        'url'     => route('iris.catalogue.department.show', ['department' => $family->department->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.department.show',
                             'parameters' => [
@@ -60,6 +65,7 @@ class ShowIrisFamily extends IrisAction
                     ] : [],
                     $family->subDepartment ? [
                         'label'   => $family->subDepartment->name,
+                        'url'     => route('iris.catalogue.sub_department.show', ['subDepartment' => $family->subDepartment->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.sub_department.show',
                             'parameters' => [
@@ -71,6 +77,7 @@ class ShowIrisFamily extends IrisAction
                     ] : [],
                     [
                         'label'   => $family->name,
+                        'url'     => route('iris.catalogue.family.show', ['family' => $family->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.family.show',
                             'parameters' => [
@@ -100,7 +107,7 @@ class ShowIrisFamily extends IrisAction
                             IrisFamilyTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => ProductsResource::collection(
+                    : Inertia::optional(fn () => ProductsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'product',

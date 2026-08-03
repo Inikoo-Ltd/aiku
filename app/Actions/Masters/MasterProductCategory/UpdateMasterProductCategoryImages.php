@@ -11,14 +11,14 @@ namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Actions\Catalogue\WithUpdateWebImages;
-use App\Actions\Concerns\CanUpdateImages;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Helpers\CanUpdateImages;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterProductCategoryImages extends GrpAction
+class UpdateMasterProductCategoryImages extends OrgAction
 {
     use WithActionUpdate;
     use WithUpdateWebImages;
@@ -31,6 +31,7 @@ class UpdateMasterProductCategoryImages extends GrpAction
         $this->update($masterProductCategory, $modelData);
 
         if (Arr::hasAny($modelData, [
+            'showcase_image_id',
             'desc_art1',
             'desc_art2',
             'desc_art3',
@@ -61,24 +62,25 @@ class UpdateMasterProductCategoryImages extends GrpAction
     public function rules(): array
     {
         return [
-            'image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art1' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art2' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art3' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art4' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_art5' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art1' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art2' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art3' => ['sometimes', 'nullable', 'exists:media,id'],
-            'extra_desc_art4' => ['sometimes', 'nullable', 'exists:media,id'],
-            'desc_video_url' => ['sometimes', 'nullable'],
+            'image_id'          => ['sometimes', 'nullable', 'exists:media,id'],
+            'showcase_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art1'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art2'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art3'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art4'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_art5'         => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art1'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art2'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art3'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'extra_desc_art4'   => ['sometimes', 'nullable', 'exists:media,id'],
+            'desc_video_url'    => ['sometimes', 'nullable'],
         ];
     }
 
 
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): void
     {
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisationFromGroup($masterProductCategory->group, $request);
 
         $this->handle($masterProductCategory, $this->validatedData, true);
     }

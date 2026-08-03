@@ -3,13 +3,19 @@ import { faCube, faLink } from "@fal"
 import { faFilePdf, faFileDownload } from "@fas"
 import { faGameConsoleHandheld } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, inject, onMounted, computed, watch } from "vue"
+import { ref, inject, onMounted, onBeforeUnmount, computed, watch } from "vue"
 import axios from "axios"
 
 import { Image as ImageTS } from "@/types/Image"
-import { getProductRenderDropshippingComponent } from "@/Iris/Composables/getIrisComponents"
+import ProductDsIris1 from "@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue"
+
+const productPageComponents: Record<string, any> = {
+    "product-1": ProductDsIris1,
+}
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
+import { useProductStructuredData } from "@/Iris/Composables/useProductStructuredData"
 import { set } from "lodash-es"
+import { pushGtmEvent } from "@/Composables/useGtm"
 
 library.add(
   faCube,
@@ -62,6 +68,7 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
+const injectedWebpageData = inject<any>("webpage_data", null)
 console.log(layout)
 
 const customerData = ref<Record<number, any>>({})
@@ -293,15 +300,57 @@ watch(
 
 
 
-onMounted(() => {
-  if (props.fieldValue?.product?.luigi_identity) {
+// Section: Product structured data (SEO)
+// Mounted independently here instead of inside the page structured data (useStructuredData),
+// so the product schema lives in its own <script> and is easier to maintain.
+const { mountProductStructuredData, removeStructuredDataScript } = useProductStructuredData()
+const productStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
+const pushViewItem = () => {
+  const prod = props.fieldValue?.product
+
+  if (!prod) {
+    return
+  }
+
+  if (prod.luigi_identity) {
     window?.dataLayer?.push({
       event: "view_item",
       ecommerce: {
-        items: [{ item_id: props.fieldValue.product.luigi_identity }],
+        items: [{ item_id: prod.luigi_identity }],
       },
     })
   }
+
+  const item: Record<string, any> = {
+    item_id: prod.slug,
+    item_name: prod.name,
+    price: prod.price,
+  }
+
+  if (prod.family_code) {
+    item.item_category = prod.family_code
+  }
+
+  pushGtmEvent("view_item", {
+    ecommerce: {
+      currency: prod.currency_code ?? layout?.iris?.currency?.code,
+      value: prod.price,
+      items: [item],
+    },
+  })
+}
+
+onMounted(() => {
+  pushViewItem()
+
+  productStructuredDataScript.value = mountProductStructuredData({
+    product: props.fieldValue?.product,
+    variant: props.fieldValue?.variant,
+    webpageData: props.webpageData ?? injectedWebpageData,
+    currencyCode: layout?.iris?.currency?.code,
+    websiteName: layout?.iris?.website?.name,
+  })
 
   if (layout?.iris?.is_logged_in) {
       fetchData()
@@ -310,13 +359,17 @@ onMounted(() => {
   getAllProductFromVariant()
 })
 
+onBeforeUnmount(() => {
+  removeStructuredDataScript(productStructuredDataScript.value)
+})
+
 
 </script>
 
 <template>
   <component
     :key="product.code"
-    :is="getProductRenderDropshippingComponent(code)"
+    :is="productPageComponents[code]"
     :fieldValue="fieldValue"
     :webpageData="webpageData"
     :blockData="blockData"

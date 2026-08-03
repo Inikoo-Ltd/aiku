@@ -13,6 +13,7 @@ import PureInputDimension from "@/Components/Pure/PureInputDimension.vue"
 import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

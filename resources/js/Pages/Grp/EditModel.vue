@@ -65,11 +65,17 @@ import {
     faShapes,
     faCommentAlt,
     faDollyFlatbedAlt,
-    faMapMarkedAlt
+    faMapMarkedAlt,
+    faMedal,
+    faBullseyePointer,
+    faClock,
+    faCalendarCheck,
+    faPercent
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
-import { faExclamationTriangle } from "@fas"
+import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
 import { faBan } from "@far"
+import { faTh, faFolderTree } from "@fad"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import Message from 'primevue/message';
@@ -128,7 +134,15 @@ library.add(
     faCommentAlt,
     faUserLock,
     faDollyFlatbedAlt,
-    faMapMarkedAlt
+    faMapMarkedAlt,
+    faBullseyePointer,
+    faMedal,
+    faBrowserSolid,
+    faTh,
+    faFolderTree,
+    faClock,
+    faCalendarCheck,
+    faPercent
 )
 
 const props = defineProps<{
@@ -219,6 +233,7 @@ const switchTab = (key: string) => {
             section: key
         },
         preserveState: true,
+        preserveScroll: true,
         replace: true,
         only: [] // Don't reload any data, just update URL
     })

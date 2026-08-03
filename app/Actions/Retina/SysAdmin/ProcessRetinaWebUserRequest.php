@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
-use App\Actions\Analytics\WebUserRequest\StoreWebUserRequest;
+use App\Actions\SysAdmin\WebUserRequest\StoreWebUserRequest;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Analytics\WebUserRequest;
 use App\Models\CRM\WebUser;
@@ -38,7 +38,7 @@ class ProcessRetinaWebUserRequest
 
         $modelData = [
             'date'         => $datetime,
-            'route_name'   => $routeData['name'],
+            'route_name'   => $routeData['name'] ?? '',
             'route_params' => json_encode($routeData['arguments']),
             'os'           => $browserData['os'],
             'device'       => $browserData['device'],

@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -53,6 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property int|null $webpage_id
+ * @property bool $is_in_website has a live webpage, mirrored into the search index
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
  * @property int|null $master_collection_id
@@ -74,7 +76,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read MasterCollection|null $masterCollection
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
- * @property-read \App\Models\Catalogue\CollectionOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Catalogue\CollectionsOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
  * @property-read Model|\Eloquent $parent
@@ -103,6 +104,14 @@ class Collection extends Model implements Auditable, HasMedia
     use InShop;
     use HasImage;
     use HasSearch;
+    protected static function booted(): void
+    {
+        static::saved(function (Collection $collection) {
+            if ($collection->wasChanged('webpage_id')) {
+                \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($collection);
+            }
+        });
+    }
 
     protected $guarded = [];
 
@@ -131,6 +140,8 @@ class Collection extends Model implements Auditable, HasMedia
             'name'              => (string)$this->name,
             'description'       => (string)$this->description,
             'state'             => $this->state->value,
+            'is_in_website'     => (bool) $this->is_in_website,
+            'image'             => json_encode(Arr::get($this->web_images, 'main.thumbnail')),
             'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
@@ -157,11 +168,6 @@ class Collection extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(CollectionStats::class);
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(CollectionOrderingIntervals::class);
     }
 
     public function orderingStats(): HasOne

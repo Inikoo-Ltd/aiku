@@ -37,6 +37,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $show_in_checkout
  * @property int $checkout_display_position for the order in which will be shown in checkout UI
  * @property string|null $source_id
+ * @property string|null $invoice_footer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
  * @property-read \App\Models\Accounting\PaymentAccount|null $paymentAccount
@@ -129,7 +130,7 @@ class PaymentAccountShop extends Model implements Auditable
         if (app()->environment('production')) {
             return Arr::get($this->data, 'credentials.payment_channel');
         } else {
-            return config('app.sandbox.checkout_com.payment_channel');
+            return config('app.sandbox.checkout_com.payment_channel', '');
         }
     }
 

@@ -42,6 +42,11 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::middleware(['grp'])
             ->domain('app.'.config('app.domain'))
+            ->name('grp.kiosk.')
+            ->group(base_path('routes/grp/web/kiosk.php'));
+
+        Route::middleware(['grp'])
+            ->domain('app.'.config('app.domain'))
             ->name('grp.')
             ->group(base_path('routes/grp/web/app.php'));
 
@@ -50,6 +55,12 @@ class RouteServiceProvider extends ServiceProvider
             ->domain($webHooksDomain)
             ->prefix('webhooks')
             ->group(base_path('routes/grp/webhooks/webhooks.php'));
+
+        Route::middleware('devops')
+            ->domain(config('app.domain'))
+            ->domain($webHooksDomain)
+            ->prefix('devops')
+            ->group(base_path('routes/grp/devops.php'));
 
         Route::middleware('han')
             ->domain(config('app.domain'))
@@ -60,11 +71,6 @@ class RouteServiceProvider extends ServiceProvider
             ->domain(config('app.domain'))
             ->prefix('maya')
             ->group(base_path('routes/maya/maya-app.php'));
-
-        Route::middleware('bk-api')
-            ->domain(config('app.domain'))
-            ->prefix('bk-api')
-            ->group(base_path('routes/bk-api/bk_api.php'));
 
         Route::middleware('aiku-public')
             ->domain(config('app.domain'))
@@ -81,11 +87,14 @@ class RouteServiceProvider extends ServiceProvider
             ->name('retina.api.')
             ->group(base_path('routes/api/retina/retina_api.php'));
 
-
         Route::middleware('grp-api')
         ->prefix('app/api')
         ->name('grp.api.')
         ->group(base_path('routes/api/grp/grp_api.php'));
+
+        Route::middleware('analytics')
+            ->name('analytics.')
+            ->group(base_path('routes/analytics/analytics.php'));
 
         Route::middleware('iris')
             ->name('iris.')
@@ -100,6 +109,14 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('maya', function (Request $request) {
             return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('kiosk', function (Request $request) {
+            return Limit::perMinute(600)->by($request->ip());
+        });
+
+        RateLimiter::for('iris-search', function (Request $request) {
+            return Limit::perMinute(6000)->by($request->ip());
         });
     }
 }

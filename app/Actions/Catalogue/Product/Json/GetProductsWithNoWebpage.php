@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -39,8 +40,6 @@ class GetProductsWithNoWebpage extends OrgAction
         $queryBuilder->orderBy('products.state');
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->leftJoin('webpages', function ($join) {
             $join->on('products.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'Product');
@@ -49,6 +48,22 @@ class GetProductsWithNoWebpage extends OrgAction
         $queryBuilder->where('products.shop_id', $shop->id);
         $queryBuilder->whereNull('webpages.id');
 
+
+
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'asset_time_series',
+            timeSeriesRecordsTable: 'asset_time_series_records',
+            foreignKey: 'asset_id',
+            aggregateColumns: [
+                'invoices'           => 'invoices_all',
+                'sales_external'     => 'sales_all',
+                'customers_invoiced' => 'customers_invoiced_all',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+            localKey: 'asset_id',
+        );
 
         $queryBuilder
             ->defaultSort('products.code')
@@ -67,9 +82,9 @@ class GetProductsWithNoWebpage extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                'invoices_all',
-                'sales_all',
-                'customers_invoiced_all'
+                $timeSeriesData['selectRaw']['invoices_all'],
+                $timeSeriesData['selectRaw']['sales_all'],
+                $timeSeriesData['selectRaw']['customers_invoiced_all']
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 

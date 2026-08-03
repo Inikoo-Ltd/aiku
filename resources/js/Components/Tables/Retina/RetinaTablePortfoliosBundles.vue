@@ -115,8 +115,6 @@ const props = defineProps<{
 		products: number[]
 	}
 	routes: {
-		batch_upload: routeType
-		batch_match: routeType
 		fetch_products: routeType
 		single_create_new: routeType
 		single_match: routeType
@@ -1371,7 +1369,7 @@ onBeforeUnmount(() => {
 					v-model="selectedEditProduct.description"
 					class="w-full"
 					:placeholder="trans('Input your description')"
-					:toogle="[
+					:toggle="[
 					'heading1',
 					'heading2',
 					'heading3',

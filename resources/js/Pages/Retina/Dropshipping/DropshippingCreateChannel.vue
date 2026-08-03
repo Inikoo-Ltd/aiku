@@ -37,6 +37,7 @@ import TiktokBusinessAccountsForm
 	from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokBusinessAccountsForm.vue"
 import TiktokConnectedFinish from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokConnectedFinish.vue"
 import AllegroAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelAllegro/AllegroAuthKeyForm.vue"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers)
@@ -93,6 +94,7 @@ const props = defineProps<{
 		ebay: number
 		amazon: number
 		magento: number
+		allegro: number
 	}
 }>()
 
@@ -297,43 +299,52 @@ const closeCreateTiktokModal = () => {
 
 const openCreateEbayModal = async () => {
 	isPlatformCreateLoading.value = true
-	const { data } = await axios.get(
-		route("retina.dropshipping.customer_sales_channels.ebay.creating_check")
-	)
+	try {
+		const { data } = await axios.get(
+			route("retina.dropshipping.customer_sales_channels.ebay.creating_check")
+		)
 
-	if (data) {
-		ebayId.value = data.id
-		customerSalesChannelId.value = data.customer_sales_channel_id
-		ebayName.value = data.name
-		switch (data.step) {
-			case "name":
-				currentStep.value = 1
-				steps.value[0].status = "complete"
-				steps.value[1].status = "current"
-				steps.value[2].status = "upcoming"
-				break
-			case "marketplace":
-				currentStep.value = 1
-				steps.value[0].status = "complete"
-				steps.value[1].status = "current"
-				steps.value[2].status = "upcoming"
-				break
-			case "auth":
-				currentStep.value = 2
-				steps.value[0].status = "complete"
-				steps.value[1].status = "complete"
-				steps.value[2].status = "current"
-				break
-			default:
-				currentStep.value = 0
-				steps.value[0].status = "current"
-				steps.value[1].status = "upcoming"
-				steps.value[2].status = "upcoming"
+		if (data) {
+			ebayId.value = data.id
+			customerSalesChannelId.value = data.customer_sales_channel_id
+			ebayName.value = data.name
+			switch (data.step) {
+				case "name":
+					currentStep.value = 1
+					steps.value[0].status = "complete"
+					steps.value[1].status = "current"
+					steps.value[2].status = "upcoming"
+					break
+				case "marketplace":
+					currentStep.value = 1
+					steps.value[0].status = "complete"
+					steps.value[1].status = "current"
+					steps.value[2].status = "upcoming"
+					break
+				case "auth":
+					currentStep.value = 2
+					steps.value[0].status = "complete"
+					steps.value[1].status = "complete"
+					steps.value[2].status = "current"
+					break
+				default:
+					currentStep.value = 0
+					steps.value[0].status = "current"
+					steps.value[1].status = "upcoming"
+					steps.value[2].status = "upcoming"
+			}
 		}
-	}
 
-	isPlatformCreateLoading.value = false
-	isModalCreateEbay.value = true
+		isModalCreateEbay.value = true
+	} catch (error) {
+		notify({
+			title: ctrans("Something went wrong"),
+			text: error.response?.data?.message,
+			type: "error",
+		})
+	} finally {
+		isPlatformCreateLoading.value = false
+	}
 }
 
 provide("closeCreateEbayModal", closeCreateEbayModal)
@@ -609,7 +620,6 @@ provide("goNext", goNext)
 
 			<!-- Section: Allegro -->
 			<div
-				v-if="layout?.app?.environment === 'local'"
 				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
 				<div
 					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
@@ -629,7 +639,7 @@ provide("goNext", goNext)
 				</div>
 
 				<div class="w-full flex justify-end">
-					<a v-if="layout?.app?.environment === 'local'" :href="props.allegroAuth?.url" class="w-full">
+					<a :href="props.allegroAuth?.url" :target="'_blank'" class="w-full">
 						<Button
 							:label="trans('Connect')"
 							type="primary"
@@ -637,7 +647,6 @@ provide("goNext", goNext)
 							xclick="() => (isModalAllegro = true)"
 						/>
 					</a>
-					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 				</div>
 			</div>
 		</div>

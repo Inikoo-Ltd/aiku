@@ -6,32 +6,35 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequests;
+use App\Actions\SysAdmin\WebUserRequest\UI\IndexWebUserRequests;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
 use App\Actions\Web\Banner\UI\ShowBanner;
 use App\Actions\Web\Banner\UI\ShowBannerWorkshop;
+use App\Actions\Web\Crawl\UI\IndexCrawls;
+use App\Actions\Web\Redirect\ExportRedirects;
 use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
+use App\Actions\Web\Webpage\ExportWebpages;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
-use App\Actions\Web\Webpage\UI\ShowSidebarWorkshop;
-use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
-use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Webpage\UI\ShowFooterWorkshop;
 use App\Actions\Web\Webpage\UI\ShowHeaderWorkshop;
 use App\Actions\Web\Webpage\UI\ShowMenuWorkshop;
+use App\Actions\Web\Webpage\UI\ShowSidebarWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
-use App\Actions\Web\Crawl\UI\IndexCrawls;
+use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
+use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
+use App\Actions\Web\Website\UI\ShowRestrictedCountry;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
@@ -45,6 +48,7 @@ Route::name('websites.')->group(function () {
     Route::prefix('{website}')
         ->group(function () {
             Route::get('', [ShowWebsite::class, 'inFulfilment'])->name('show');
+            Route::get('restricted-country', [ShowRestrictedCountry::class, 'inFulfilment'])->name('restricted_country');
             Route::get('edit', [EditWebsite::class, 'inFulfilment'])->name('edit');
 
             Route::name('workshop')->prefix('workshop')
@@ -61,6 +65,7 @@ Route::name('websites.')->group(function () {
 
 Route::name('redirect')->prefix('{website}/redirect')->group(function () {
     Route::get('/', [IndexRedirects::class, 'inFulfilment'])->name('.index');
+    Route::get('/export', [ExportRedirects::class, 'inFulfilment'])->name('.export');
     Route::get('/{redirect}', [ShowRedirect::class, 'inWebsite'])->name('.show');
     Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebsiteInFulfilment'])->name('.edit');
 });
@@ -75,6 +80,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/type/operations', [IndexWebpages::class, 'operationsInFulfilment'])->name('index.type.operations');
 
 
+    Route::get('export', [ExportWebpages::class, 'inFulfilment'])->name('export');
     Route::get('create', [CreateWebpage::class, 'inFulfilment'])->name('create');
 
     Route::prefix('{webpage}')

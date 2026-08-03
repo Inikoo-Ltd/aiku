@@ -47,24 +47,23 @@ class ShowAnnouncementWorkshop extends OrgAction
         return Inertia::render(
             'Websites/AnnouncementWorkshop',
             [
-                'title'             => __("Announcement's workshop"),
-                'breadcrumbs'       => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
-                'navigation'        => [
+                'title'                     => __("Announcement's workshop"),
+                'navigation'                => [
                     'previous' => $this->getPrevious($announcement, $request),
                     'next'     => $this->getNext($announcement, $request),
                 ],
-                'pageHead'          => [
-
+                'pageHead'                  => [
+                    'breadcrumbs'               => $this->getBreadcrumbs(
+                        $request->route()->getName(),
+                        $request->route()->originalParameters()
+                    ),
                     'title'     => __('Workshop'),
                     'container' => [
                         'icon'    => ['fal', 'fa-megaphone'],
                         'tooltip' => __('Announcement'),
                         'label'   => Str::possessive($announcement->name)
                     ],
-                    'icon' => [
+                    'icon'      => [
                         'icon'  => ['fal', 'drafting-compass'],
                         'title' => __("Announcement's workshop")
                     ],
@@ -83,131 +82,72 @@ class ShowAnnouncementWorkshop extends OrgAction
                         ],
                     ],
                 ],
-                'banner'            => AnnouncementResource::make($announcement)->getArray(),
-                'website' => [
+                'banner'                    => AnnouncementResource::make($announcement)->getArray(),
+                'website'                   => [
                     'name' => $announcement->website->name,
-                    'url' => $announcement->website->getUrl(),
+                    'url'  => $announcement->website->getUrl(),
                 ],
-                'is_announcement_dirty'       => $announcement->is_dirty,
-                'is_announcement_started'     => $this->isAnnouncementStarted($announcement),
-                'is_announcement_closed'      => $this->isAnnouncementClosed($announcement),
-                'portfolio_website'           => $announcement->website,
-                'announcement_data'           => $announcement->toArray(),
-                'is_announcement_published'   => $announcement->unpublishedSnapshot->state === SnapshotStateEnum::LIVE,
-                'is_announcement_active'      => $announcement->status,
-                'last_published_date'         => $announcement->ready_at,
-                'routes_list' => [
-                    'publish_route' => [
+                'is_announcement_dirty'     => $announcement->is_dirty,
+                'is_announcement_started'   => $this->isAnnouncementStarted($announcement),
+                'is_announcement_closed'    => $this->isAnnouncementClosed($announcement),
+                'portfolio_website'         => $announcement->website,
+                'announcement_data'         => $announcement->toArray(),
+                'is_announcement_published' => $announcement->unpublishedSnapshot->state === SnapshotStateEnum::LIVE,
+                'is_announcement_active'    => $announcement->status,
+                'last_published_date'       => $announcement->ready_at,
+                'routes_list'               => [
+                    'publish_route'                    => [
                         'name'       => 'grp.models.shop.website.announcement.publish',
                         'parameters' => [
-                            'shop' => $announcement->website->shop_id,
-                            'website' => $announcement->website_id,
-                            'announcement'     => $announcement->id
+                            'shop'         => $announcement->website->shop_id,
+                            'website'      => $announcement->website_id,
+                            'announcement' => $announcement->id
                         ],
-                        'method'    => 'patch'
+                        'method'     => 'patch'
                     ],
-                    'update_route' => [
+                    'update_route'                     => [
                         'name'       => 'grp.models.shop.website.announcement.update',
                         'parameters' => [
-                            'shop' => $announcement->website->shop_id,
-                            'website' => $announcement->website_id,
-                            'announcement'     => $announcement->id
+                            'shop'         => $announcement->website->shop_id,
+                            'website'      => $announcement->website_id,
+                            'announcement' => $announcement->id
                         ],
-                        'method'    => 'patch'
+                        'method'     => 'patch'
                     ],
-                    'reset_route' => [
+                    'reset_route'                      => [
                         'name'       => 'grp.models.shop.website.announcement.reset',
                         'parameters' => [
-                            'shop' => $announcement->website->shop_id,
-                            'website' => $announcement->website_id,
-                            'announcement'     => $announcement->id
+                            'shop'         => $announcement->website->shop_id,
+                            'website'      => $announcement->website_id,
+                            'announcement' => $announcement->id
                         ]
                     ],
-                    'close_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.close',
+                    'activated_route'                  => [
+                        'name'       => 'grp.models.shop.website.announcement.toggle',
                         'parameters' => [
-                            'shop' => $announcement->website->shop_id,
-                            'website' => $announcement->website_id,
-                            'announcement'     => $announcement->id
+                            'shop'         => $announcement->website->shop_id,
+                            'website'      => $announcement->website_id,
+                            'announcement' => $announcement->id
                         ],
-                        'method'    => 'patch'
+                        'method'     => 'patch'
                     ],
-                    'start_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.start',
+                    'upload_image_route'               => [
+                        'name'       => 'grp.models.shop.website.announcement.upload-images.store',
                         'parameters' => [
-                            'shop' => $announcement->website->shop_id,
-                            'website' => $announcement->website_id,
-                            'announcement'     => $announcement->id
+                            'shop'         => $announcement->website->shop_id,
+                            'website'      => $announcement->website_id,
+                            'announcement' => $announcement->id,
                         ],
-                        'method'    => 'patch'
+                        'method'     => 'post'
                     ],
-                    'activated_route'     => [
-                        'name'          => 'grp.models.shop.website.announcement.toggle',
-                        'parameters'    => [
-                            'shop' => $announcement->website->shop_id,
-                            'website' => $announcement->website_id,
-                            'announcement'     => $announcement->id
-                        ],
-                        'method'    => 'patch'
-                    ],
-                    'upload_image_route'     => [
-                        'name'          => 'grp.models.shop.website.announcement.upload-images.store',
-                        'parameters'    => [
-                            'shop'          => $announcement->website->shop_id,
-                            'website'       => $announcement->website_id,
-                            'announcement'  => $announcement->id,
-                        ],
-                        'method'    => 'post'
-                    ],
-                    'delete_announcement_route'     => [
-                        'name'          => 'grp.models.shop.website.announcement.delete',
-                        'parameters'    => [
-                            'shop' => $announcement->website->shop_id,
-                            'website' => $announcement->website_id
-                        ],
-                        'method'    => 'delete'
-                    ],
-                    'fetch_active_announcements_route'  => [
+                    'fetch_active_announcements_route' => [
                         'name'       => 'grp.json.announcement_active.index',
                         'parameters' => [
                             'website' => $announcement->website->slug
                         ],
                     ]
                 ],
-                'autoSaveRoute'     => [
-                    // 'name'       => 'grp.models.banner.layout.update',
-                    // 'parameters' => [
-                    //     'banner'  => $announcement->id
-                    // ]
-                ],
-                'publishRoute'      => [
-                    // 'name'       => 'grp.models.banner.publish',
-                    // 'parameters' => [
-                    //     'banner' => $announcement->id
-                    // ]
-                ],
-                'imagesUploadRoute' => [
-                    // 'name'       => 'grp.models.banner.images.store',
-                    // 'parameters' => [
-                    //     'banner' => $announcement->id
-                    // ]
-                ],
-                'galleryRoute'      => [
-                    // 'stock_images'    => [
-                    //     'name' => "grp.gallery.stock-images.banner.$announcement->type.index"
-                    // ],
-                    // 'uploaded_images' => [
-                    //     'name' => 'grp.gallery.uploaded-images.banner.index'
-                    // ]
-                ],
-                'is_announcement_dirty'       => $announcement->is_dirty,
-                'is_announcement_started'     => $this->isAnnouncementStarted($announcement),
-                'is_announcement_closed'      => $this->isAnnouncementClosed($announcement),
-                'portfolio_website'           => $announcement->portfolioWebsite,
-                'announcement_data'           => $announcement->toArray(),
-                'is_announcement_published'   => $announcement->unpublishedSnapshot->state === SnapshotStateEnum::LIVE,  // TODO
-                'is_announcement_active'      => $announcement->status,
-                'last_published_date'         => $announcement->ready_at,
+
             ]
         );
     }
@@ -217,7 +157,7 @@ class ShowAnnouncementWorkshop extends OrgAction
      */
     public function isAnnouncementStarted($announcement): bool
     {
-        if (! $announcement->live_at) {
+        if (!$announcement->live_at) {
             return false;
         }
 
@@ -237,7 +177,7 @@ class ShowAnnouncementWorkshop extends OrgAction
      */
     public function isAnnouncementClosed($announcement): bool
     {
-        if (! $announcement->live_at) {
+        if (!$announcement->live_at) {
             return true;
         }
 

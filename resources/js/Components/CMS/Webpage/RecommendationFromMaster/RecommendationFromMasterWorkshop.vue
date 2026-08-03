@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
-import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
-import ProductRender from '@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue'
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
+import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation } from 'swiper/modules'
@@ -31,6 +31,11 @@ const emits = defineEmits<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
+const key = ref(1)
+
+onMounted(() => {
+  key.value++
+})
 
 const prevEl = ref()
 const nextEl = ref()
@@ -74,7 +79,7 @@ const sendMessageToParent = (type: string, value: any) => {
         <div v-if="modelValue?.recommendation_settings.title" v-html="modelValue?.recommendation_settings.title">
         </div>
         <div v-else>
-          {{ ctrans("Recommendations") }}
+          {{ ctrans("Related Products") }}
         </div>
       </div>
     </div>
@@ -100,9 +105,9 @@ const sendMessageToParent = (type: string, value: any) => {
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product?.id || index" class="!h-auto">
           <div class="h-full flex flex-col">
             <div v-if="product" class="flex-1 flex flex-col">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :key="`ecom-${key}`" :product="product" />
 
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+              <ProductRender v-else :key="`ds-${key}`" :product="product" :productHasPortfolio="[]" />
             </div>
 
             <div v-else class="flex-1 flex items-center justify-center text-gray-400">
@@ -113,10 +118,20 @@ const sendMessageToParent = (type: string, value: any) => {
       </Swiper>
     </div>
 
-    <!-- Empty -->
-    <div v-else class="px-4 py-10 text-center text-gray-400">
-      No products available
-    </div>
+
+
+  </div>
+  <!-- Empty -->
+  <div v-else class="px-4 py-10 text-center text-gray-400 bg-gray-200">
+    <p class="font-semibold text-gray-700">
+      Related Products Block Hidden
+    </p>
+
+    <p class="mt-2 text-sm text-gray-500">
+      Add at least
+      {{ modelValue?.recommendation_settings?.min_amt_shown || 5 }}
+      products to display this section.
+    </p>
   </div>
 </template>
 

@@ -33,13 +33,10 @@ class StoreMultiPollReply extends OrgAction
         foreach ($pollReplies as $pollReply) {
 
             $pollId = Arr::pull($pollReply, 'id');
-            if (Arr::pull($pollReply, 'type') == 'Open Question') {
-                $type = PollTypeEnum::OPEN_QUESTION;
-            } else {
-                $type = PollTypeEnum::OPTION;
+            $poll   = Poll::find($pollId);
+            if (!$poll) {
+                continue;
             }
-
-
 
             $answer = Arr::pull($pollReply, 'answer');
 
@@ -49,8 +46,8 @@ class StoreMultiPollReply extends OrgAction
             ];
 
             $ok = false;
-            if ($type == PollTypeEnum::OPEN_QUESTION) {
-                $answer = (string)$answer ?? '';
+            if ($poll->type == PollTypeEnum::OPEN_QUESTION) {
+                $answer = (string)($answer ?? '');
                 if ($answer != '') {
                     $ok = true;
                 }
@@ -65,10 +62,7 @@ class StoreMultiPollReply extends OrgAction
                 }
             }
             if ($ok) {
-                $poll = Poll::find($pollId);
-                if ($poll) {
-                    StorePollReply::make()->action($poll, $replyData);
-                }
+                StorePollReply::make()->action($poll, $replyData);
             }
         }
     }

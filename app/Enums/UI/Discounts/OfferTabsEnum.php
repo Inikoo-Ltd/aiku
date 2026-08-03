@@ -22,7 +22,7 @@ enum OfferTabsEnum: string
     case CUSTOMERS           = 'customers';
 
     case SETTINGS            = 'setting';
-    case CHANGELOG           = 'changelog';
+    case HISTORY             = 'history';
 
 
     public function blueprint(): array
@@ -44,10 +44,12 @@ enum OfferTabsEnum: string
                 'title' => __('Settings'),
                 'icon'  => 'fal fa-slider-h',
                 'type'  => 'icon-only',
-            ],OfferTabsEnum::CHANGELOG => [
-                'title' => __('Changelog'),
-                'icon'  => 'fal fa-road',
-                'type'  => 'icon-only',
+            ],
+            OfferTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
         };
     }

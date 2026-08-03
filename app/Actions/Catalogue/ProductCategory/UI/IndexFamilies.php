@@ -413,7 +413,7 @@ class IndexFamilies extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $families, ActionRequest $request): Response
     {
-        $navigation = ProductCategoryTabsEnum::navigation();
+        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
         if ($this->parent instanceof Group) {
             unset($navigation[ProductCategoryTabsEnum::SALES->value]);
         }
@@ -508,6 +508,7 @@ class IndexFamilies extends OrgAction
                 'title'                               => __('Families'),
                 'pageHead'                            => [
                     'title'         => $title,
+                    'color'         => '#e879f9',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
@@ -523,15 +524,15 @@ class IndexFamilies extends OrgAction
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    : Inertia::optional(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
                     fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    : Inertia::optional(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))

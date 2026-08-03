@@ -43,8 +43,7 @@ class StoreVariantFromMaster extends OrgAction
             $variant = Variant::create($modelData);
 
             $variant->salesStats()->create();
-            $variant->salesOrderingStats()->create();
-            $variant->salesOrderingIntervals()->create();
+
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $variant->timeSeries()->create(['frequency' => $frequency]);
             }

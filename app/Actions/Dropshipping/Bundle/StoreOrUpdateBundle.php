@@ -10,8 +10,8 @@ namespace App\Actions\Dropshipping\Bundle;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Models\Bundle;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 

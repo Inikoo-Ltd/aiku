@@ -10,7 +10,7 @@ namespace App\Actions\CRM\WebUser;
 
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\CRM\WebUser;
-use App\Models\WebUserFailedLogin;
+use App\Models\CRM\WebUserFailedLogin;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;

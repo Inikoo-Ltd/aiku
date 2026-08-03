@@ -169,15 +169,17 @@ class IndexOrgStockFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'on_the_way_po_value', 'health_rank'];
+        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'on_the_way_po_value', 'health_rank', 'sales_grp_currency_external'];
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
             $allowedSorts[] = 'invoices';
         }
 
+        $defaultSort = $prefix === OrgStockFamiliesTabsEnum::SALES->value ? '-sales_grp_currency_external' : 'code';
+
         return $queryBuilder
-            ->defaultSort('code')
+            ->defaultSort($defaultSort)
             ->select($selects)
             ->leftJoin('organisations', 'org_stock_families.organisation_id', 'organisations.id')
             ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
@@ -208,22 +210,23 @@ class IndexOrgStockFamilies extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'code', label: 'Code', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($sales) {
                 $table->betweenDates(['date'])
                     ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
-                    ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
+                    // ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency') // Todo: fix after Purchase Order
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
-                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon')
+                    ->defaultSort('-sales_grp_currency_external');
             } else {
                 $table
-                    ->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
-                    ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKU)'), canBeHidden: false)
+                    ->column(key: 'number_current_org_stocks', label: __('SKOs'), canBeHidden: false, sortable: true)
+                    ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKO)'), canBeHidden: false)
                     ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                     ->defaultSort('code');
             }
@@ -312,14 +315,14 @@ class IndexOrgStockFamilies extends OrgAction
         $subNavigation = $this->getOrgStockFamiliesSubNavigation();
 
         $title = match ($this->bucket) {
-            'active' => __('Active SKU Families'),
-            'in_process' => __('In process SKU Families'),
-            'discontinuing' => __('Discontinuing SKU Families'),
-            'discontinued' => __('Discontinued SKU Families'),
-            default => __('SKU Families')
+            'active' => __('Active SKO Families'),
+            'in_process' => __('In process SKO Families'),
+            'discontinuing' => __('Discontinuing SKO Families'),
+            'discontinued' => __('Discontinued SKO Families'),
+            default => __('SKO Families')
         };
 
-        $titlePage = __("SKUs families");
+        $titlePage = __("SKOs families");
 
 
         return Inertia::render(
@@ -345,11 +348,11 @@ class IndexOrgStockFamilies extends OrgAction
 
                 OrgStockFamiliesTabsEnum::INDEX->value => $this->tab == OrgStockFamiliesTabsEnum::INDEX->value
                     ? fn () => OrgStockFamiliesResource::collection($orgStockFamilies)
-                    : Inertia::lazy(fn () => OrgStockFamiliesResource::collection($orgStockFamilies)),
+                    : Inertia::optional(fn () => OrgStockFamiliesResource::collection($orgStockFamilies)),
 
                 OrgStockFamiliesTabsEnum::SALES->value => $this->tab == OrgStockFamiliesTabsEnum::SALES->value
                     ? fn () => OrgStockFamiliesResource::collection($this->handle($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => OrgStockFamiliesResource::collection($this->handle($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => OrgStockFamiliesResource::collection($this->handle($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value))
          ->table($this->tableStructure($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value, sales: true));

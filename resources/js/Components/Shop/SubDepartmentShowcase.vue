@@ -9,8 +9,6 @@ import { trans } from "laravel-vue-i18n"
 import ProductCategoryCard from "../ProductCategoryCard.vue"
 import { Message } from "primevue"
 import { Link, router } from "@inertiajs/vue3";
-import MasterNavigation from "../Navigation/MasterNavigation.vue"
-import FormCreateMasterFamily from "../Master/FormCreateMasterFamily.vue"
 import ReviewContent from "../ReviewContent.vue"
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
@@ -18,90 +16,69 @@ import { faExternalLink } from "@far"
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
-const props = withDefaults(
-    defineProps<{
-        data: {
-            translation_box: {
-                title: string
-                save_route: routeType
-            }
-            subDepartment: {
-                slug: string
-                image_id: ImageTS | string | null
-                code: string
-                name: string
-                state: string
-                created_at: string
-                updated_at: string
-                description: string
-                description_title: string
-                description_extra: string
-                stats: any
-            }
+const props = defineProps<{
+    data: {
+        translation_box: {
+            title: string
+            save_route: routeType
+        }
+        subDepartment: {
+            slug: string
+            image_id: ImageTS | string | null
+            code: string
+            name: string
+            state: string
+            created_at: string
+            updated_at: string
+            description: string
+            description_title: string
+            description_extra: string
+            stats: any
+        }
 
-            routes: {
-                detach_family: routeType,
-                attach_collections_route: routeType,
-                detach_collections_route: routeType
-            }
-            collections: {
-                data: {
-                    id: number
-                    name: string
-                    description?: string
-                    image?: ImageTS[]
-                }[]
-            },
-            routeList: {
-                collectionRoute: string,
-                collections_route: string
-            },
-            has_wepage?: boolean
-            storeFamilyRoute: any
-            shopsData: any
+        routes: {
+            detach_family: routeType,
+            attach_collections_route: routeType,
+            detach_collections_route: routeType
+        }
+        collections: {
+            data: {
+                id: number
+                name: string
+                description?: string
+                image?: ImageTS[]
+            }[]
         },
-        salesData?: object
-        isMaster: boolean
-    }>(), {
-        isMaster: false,
-    }
-)
+        routeList: {
+            collectionRoute: string,
+            collections_route: string
+        },
+        has_wepage?: boolean
+        webpage_url?: string
+    },
+    salesData?: object
+}>()
 
 const isModalOpen = ref(false)
 provide('isModalOpen', isModalOpen)
 
 const navigateTo = () => {
-    let routeCurr = route().current();
-    let targetRoute;
-    let routeParams = route().params;
+    const routeParams = route().params;
 
-    switch (routeCurr) {
-        case "grp.masters.master_shops.show.master_departments.show.master_sub_departments.show":
-            targetRoute = route("grp.masters.master_shops.show.master_departments.show.master_sub_departments.edit", {
+    switch (route().current()) {
+        case "grp.org.shops.show.catalogue.sub_departments.show":
+            router.visit(route("grp.org.shops.show.catalogue.sub_departments.edit", {
                 ...routeParams,
                 section: 1
-            });
-            break;
-        case "grp.masters.master_shops.show.master_sub_departments.show":
-            targetRoute = route("grp.masters.master_shops.show.master_sub_departments.edit", {
-                ...routeParams,
-                section: 1
-            });
+            }));
             break;
         default:
-            targetRoute = route("grp.org.shops.show.catalogue.departments.show.sub_departments.edit", {
+            router.visit(route("grp.org.shops.show.catalogue.departments.show.sub_departments.edit", {
                 ...routeParams,
                 section: 1
-            });
+            }));
             break;
     }
-    router.visit(targetRoute);
-}
-
-const showDialog = ref<boolean>(false)
-
-const openFamilyModal = () => {
-    showDialog.value = true
 }
 </script>
 
@@ -117,7 +94,6 @@ const openFamilyModal = () => {
 		</div>
 	</div>
     <div class="px-4 pb-8 m-5">
-        <!-- Master Message -->
         <div class="space-y-4">
 
             <Message
@@ -156,15 +132,10 @@ const openFamilyModal = () => {
                 <!-- Product State Stats -->
                 <ProductCategoryStats v-if="data.subDepartment.stats" :stats="data.subDepartment.stats" />
 
-                <!-- Master Navigation or Review Content -->
-                <MasterNavigation v-if="isMaster"
-                    sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
-                    :families-event="openFamilyModal" isAddFamilies />
-                <ReviewContent v-else  :data="data.subDepartment"  />
+                <!-- Review Content -->
+                <ReviewContent :data="data.subDepartment" />
             </div>
         </div>
 
     </div>
-    <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="data.storeFamilyRoute"
-        @update:show-dialog="(value) => showDialog = value" :shopsData="data.shopsData" />
 </template>

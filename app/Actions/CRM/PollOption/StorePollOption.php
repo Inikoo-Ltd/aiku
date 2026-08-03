@@ -29,7 +29,9 @@ class StorePollOption extends OrgAction
         data_set($modelData, 'group_id', $poll->group_id);
         data_set($modelData, 'organisation_id', $poll->organisation_id);
         data_set($modelData, 'shop_id', $poll->shop_id);
+        data_set($modelData, 'language_id', $poll->shop->language_id);
 
+        /** @var PollOption $pollOption */
         $pollOption = $poll->pollOptions()->create($modelData);
         $pollOption->stats()->create([
             'poll_id'        => $poll->id,

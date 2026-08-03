@@ -136,4 +136,13 @@ class StoreRedirectFromWebpage extends OrgAction
 
         return $this->handle($webpage, $this->validatedData);
     }
+
+    public function action(Webpage $webpage, array $modelData): Redirect
+    {
+        $this->asAction = true;
+        $this->webpage = $webpage;
+        $this->initialisationFromShop($webpage->shop, $modelData);
+
+        return $this->handle($webpage, $this->validatedData);
+    }
 }

@@ -312,6 +312,8 @@ class StoreOrder extends OrgAction
             'delivery_address'          => ['sometimes', 'required', new ValidAddress()],  // only need when the parent is Shop|CustomerClient
             'commission_amount'         => ['sometimes', 'numeric'],
 
+            'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+
         ];
 
         if (!$this->strict) {

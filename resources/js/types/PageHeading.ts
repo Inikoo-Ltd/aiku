@@ -14,6 +14,7 @@ export interface PageHeadingTypes {
     afterTitle?: {
         label: string
         class?: string
+        tooltip?: string
     }
     platform?:{
         icon: string | string[],
@@ -62,6 +63,8 @@ export interface PageHeadingTypes {
     icon_rotation:  90 | 180 | 270 | '90' | '180' | '270'
     titleRight?: string
     title: string,
+    color?: string  // tint for the wavy background decoration (matches the linking stat box)
+    is_negative?: boolean  // faulty page → show fire decoration instead of waves
     subNavigation?: any
     subNavigation2?: any
     wrapped_actions: Action[]
@@ -71,6 +74,16 @@ export interface PageHeadingTypes {
         tooltip: string
         route: routeType
         color?: string  // rgb(75, 0, 130)
+    }[]
+    exports?: {
+        routes: {
+            label: string
+            key?: string
+            icon?: Icon
+            popover?: boolean
+            inside_popover?: boolean
+            route: routeType
+        }[]
     }[]
 }
 

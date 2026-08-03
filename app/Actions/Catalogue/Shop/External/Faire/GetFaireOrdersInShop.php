@@ -40,12 +40,41 @@ class GetFaireOrdersInShop extends OrgAction
             'created_at_min' => Carbon::parse('2026-02-01')->toIsoString(),
         ];
 
-        $orders = $shop->getFaireOrders([
-            'excluded_states' => 'PRE_TRANSIT,IN_TRANSIT,DELIVERED,PENDING_RETAILER_CONFIRMATION,BACKORDERED,CANCELED',
-            ...$filters
-        ]);
+        $cursor = null;
+        $pages  = 0;
+        do {
+            $orders = $shop->getFaireOrders($cursor ? [
+                'cursor' => $cursor,
+                'limit'  => 50,
+            ] : [
+                'excluded_states' => 'PRE_TRANSIT,IN_TRANSIT,DELIVERED,PENDING_RETAILER_CONFIRMATION,BACKORDERED,CANCELED',
+                'limit'           => 50,
+                ...$filters
+            ]);
 
+            if (Arr::get($orders, 'success') === false) {
+                \Sentry\withScope(function ($scope) use ($orders, $shop) {
+                    $scope->setContext('faire_api_error', [
+                        'shop'  => $shop->slug,
+                        'error' => Arr::get($orders, 'error'),
+                    ]);
+                    \Sentry\captureMessage('Faire orders API request failed ('.$shop->slug.')');
+                });
 
+                return;
+            }
+
+            $this->processFaireOrders($orders, $shop, $command);
+
+            $cursor = Arr::get($orders, 'cursor');
+        } while ($cursor && ++$pages < 100);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function processFaireOrders(array $orders, Shop $shop, Command|null $command = null): void
+    {
         foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
             // try {
             $externalId                   = Arr::get($faireOrder, 'id');
@@ -176,10 +205,22 @@ class GetFaireOrdersInShop extends OrgAction
                     UpdateFaireOrder::run($order);
 
                     $command?->info('Order '.$externalId.' created');
-                } elseif ($command) {
-                    print_r($orderData);
-                    print_r($errors);
+                } else {
+                    \Sentry\withScope(function ($scope) use ($faireOrder, $errors, $shop) {
+                        $scope->setContext('faire_order', [
+                            'shop'       => $shop->slug,
+                            'display_id' => Arr::get($faireOrder, 'display_id'),
+                            'errors'     => $errors,
+                        ]);
+                        \Sentry\captureMessage('Faire order skipped: '.Arr::get($faireOrder, 'display_id').' ('.$shop->slug.')');
+                    });
+                    if ($command) {
+                        print_r($orderData);
+                        print_r($errors);
+                    }
                 }
+            } else {
+                \Sentry\captureMessage('Faire order skipped, retailer not found: '.Arr::get($faireOrder, 'display_id').' ('.$shop->slug.')');
             }
         }
     }

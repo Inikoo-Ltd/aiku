@@ -9,7 +9,7 @@
 namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
-use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
@@ -21,8 +21,11 @@ use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteLocationOrgStock extends OrgAction
@@ -78,7 +81,7 @@ class DeleteLocationOrgStock extends OrgAction
         RepairOrgStockMissingLocationIds::dispatch($orgStock->id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($orgStock->id)->delay(2);
 
-        LocationHydrateStocks::dispatch($location);
+        LocationHydrateOrgStocks::dispatch($location);
         LocationHydrateStockValue::dispatch($location);
         OrgStockHydrateLocations::dispatch($orgStock);
         CalculateOrgStockCurrentStockHistories::dispatch($orgStock->id);
@@ -87,11 +90,26 @@ class DeleteLocationOrgStock extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(LocationOrgStock $locationOrgStock, ActionRequest $request): void
+    public function asController(LocationOrgStock $locationOrgStock, ActionRequest $request): RedirectResponse
     {
         $this->user = request()->user();
         $this->initialisation($locationOrgStock->organisation, $request);
-        $this->handle($locationOrgStock);
+
+        try {
+            $this->handle($locationOrgStock);
+
+            return Redirect::back()->with('notification', [
+                'status'      => 'success',
+                'title'       => __('Success!'),
+                'description' => __('Location stock deleted.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::back()->with('notification', [
+                'status'      => 'error',
+                'title'       => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

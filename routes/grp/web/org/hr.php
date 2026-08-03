@@ -16,6 +16,7 @@ use App\Actions\HumanResources\Clocking\UI\ShowClocking;
 use App\Actions\HumanResources\ClockingMachine\ExportWorkplaces;
 use App\Actions\HumanResources\ClockingMachine\UI\CreateClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UI\EditClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\UI\EditClockingMachineQRCode;
 use App\Actions\HumanResources\ClockingMachine\UI\IndexClockingMachines;
 use App\Actions\HumanResources\ClockingMachine\UI\ShowClockingMachine;
 use App\Actions\HumanResources\Employee\DownloadEmployeesTemplate;
@@ -26,6 +27,9 @@ use App\Actions\HumanResources\Employee\GetEmployeesByBirthMonth;
 use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
 use App\Actions\HumanResources\Employee\GetEmployeeContract;
 use App\Actions\HumanResources\Employee\UI\CreateEmployee;
+use App\Actions\HumanResources\EmployeeContract\UI\CreateEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\UI\EditEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\UI\IndexEmployeeContracts;
 use App\Actions\HumanResources\Employee\UI\EditEmployee;
 use App\Actions\HumanResources\Employee\UI\IndexEmployees;
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
@@ -48,6 +52,7 @@ use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
+use App\Actions\UI\HumanResources\ShowOrgChart;
 use App\Actions\HumanResources\Leave\ApproveLeave;
 use App\Actions\HumanResources\Leave\ExportCalendar;
 use App\Actions\HumanResources\Leave\ExportLeaveReport;
@@ -77,6 +82,7 @@ use App\Actions\HumanResources\HolidayYear\UpdateHolidayYear;
 use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
+Route::get('/org-chart', ShowOrgChart::class)->name('org_chart');
 
 Route::prefix('employees')->as('employees.')->group(function () {
     Route::get('', IndexEmployees::class)->name('index');
@@ -100,6 +106,10 @@ Route::prefix('employees')->as('employees.')->group(function () {
             Route::get('timesheets', [IndexTimesheets::class,'inEmployee'])->name('timesheets.index');
             Route::get('timesheets/export', ExportEmployeeTimesheets::class)->name('timesheets.export');
             Route::get('timesheets/{timesheet}', [ShowTimesheet::class, 'inEmployee'])->name('timesheets.show');
+
+            Route::get('contracts', IndexEmployeeContracts::class)->name('contracts.index');
+            Route::get('contracts/create', CreateEmployeeContract::class)->name('contracts.create');
+            Route::get('contracts/{contract}/edit', EditEmployeeContract::class)->name('contracts.edit');
         });
     });
 });
@@ -160,6 +170,7 @@ Route::prefix('clocking-machines')->as('clocking_machines.')->group(function () 
     Route::get('create', [CreateClockingMachine::class, 'inOrganisation'])->name('create');
     Route::get('{clockingMachine}', [ShowClockingMachine::class,'inOrganisation'])->name('show');
     Route::get('{clockingMachine}/edit', EditClockingMachine::class)->name('edit');
+    Route::get('{clockingMachine}/qr-codes/{clockingMachineQRCode:id}/edit', EditClockingMachineQRCode::class)->name('show.qr_codes.edit');
 });
 
 Route::get('/clocking', IndexClockings::class)->name('clockings.index');
@@ -193,6 +204,7 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('print', [PrintCalendar::class, 'asController'])->name('print');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
+    Route::patch('{leave}/admin', UpdateLeave::class)->name('admin.update');
     Route::post('{leave}', UpdateLeave::class)->name('update');
     Route::delete('{leave}', DeleteLeave::class)->name('delete');
 });

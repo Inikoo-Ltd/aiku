@@ -82,7 +82,8 @@ class GetProductCategoryShowcase
             ];
         } else {
             $data = [
-                'family' => FamilyResource::make($productCategory),
+                'family'      => FamilyResource::make($productCategory),
+                'bestSellers' => GetFamilyBestSellers::run($productCategory),
             ];
             if ($routeName == 'grp.org.shops.show.catalogue.families.show') {
                 $data['routeList'] = [
@@ -186,7 +187,13 @@ class GetProductCategoryShowcase
         $offer = IndexOffers::make()->getFirstInProductCategory($productCategory, 'Category Quantity Ordered Order Interval');
 
         $data['has_webpage'] = (bool)$productCategory->webpage;
+        $data['is_shop_gr_active'] = (bool) data_get($productCategory->shop->offers_data, 'gr.active', false);
         $data['gr_offer_data'] = $offer ? OfferResource::make($offer) : null;
+
+        $data['show_gr_vol'] = $data['gr_offer_data'] && $data['is_shop_gr_active'] && $offer && $offer->status ;
+
+        $data['follow_master_gr'] = $productCategory->follow_master_gr;
+        $data['tags'] = $productCategory->tradeUnitFamily?->tags;
         return $data;
     }
 }

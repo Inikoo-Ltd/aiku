@@ -2,6 +2,7 @@
 
 namespace App\Actions\Web\Website\LlmsTxt;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteLlmsTxt;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -42,6 +43,20 @@ class GetLlmsTxt
 
     protected function getDefaultContent(Website $website): string
     {
-        return 'if you see this, your .txt file was not uploaded successfully.';
+        $url = 'https://'.$website->domain;
+
+        $shopTypeDescription = match ($website->shop?->type) {
+            ShopTypeEnum::B2B => 'This is a B2B (wholesale) ecommerce website; purchases require a registered trade account.',
+            ShopTypeEnum::B2C => 'This is a B2C (retail) ecommerce website selling directly to consumers.',
+            ShopTypeEnum::DROPSHIPPING => 'This is a dropshipping ecommerce website; orders are shipped directly to end customers on behalf of resellers.',
+            ShopTypeEnum::FULFILMENT => 'This is a fulfilment services website offering warehousing and order fulfilment.',
+            default => null,
+        };
+
+        return "# {$website->name}\n\n"
+            ."> {$website->name} ({$website->domain})".($shopTypeDescription ? ' '.$shopTypeDescription : '')."\n\n"
+            ."## Links\n\n"
+            ."- [Home]({$url}): Homepage\n"
+            ."- [Sitemap]({$url}/sitemap.xml): Full list of pages\n";
     }
 }

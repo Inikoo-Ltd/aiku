@@ -19,6 +19,7 @@ enum MasterDepartmentTabsEnum: string
     case SHOWCASE = 'showcase';
     case CONTENT = 'content';
     case IMAGES = 'images';
+    case RELATED_PRODUCT_CATEGORY = 'related_product_category';
     // case DEPARTMENTS = 'departments';
     case SALES = 'sales';
     case HISTORY = 'history';
@@ -53,6 +54,10 @@ enum MasterDepartmentTabsEnum: string
             MasterDepartmentTabsEnum::IMAGES => [
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
+            ],
+            MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY => [
+                'title' => __('Related product category'),
+                'icon'  => 'fal fa-folder-tree',
             ]
         };
     }

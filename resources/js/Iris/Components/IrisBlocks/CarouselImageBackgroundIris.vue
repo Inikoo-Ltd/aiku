@@ -158,7 +158,10 @@ const idxSlideLoading = ref<null | number>(null)
               @finish="() => (idxSlideLoading = null)"
             >
               <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
-                class="absolute inset-0 -z-10 w-full h-full object-cover" />
+                class="absolute inset-0 -z-10 w-full h-full object-cover"
+                :height="getStyles(fieldValue?.carousel_data?.card_container?.properties, screenType, false)?.height"
+                :width="getStyles(fieldValue?.carousel_data?.card_container?.properties, screenType, false)?.width"
+                :preload="Number(indexBlock) === 0 && index === 0" />
               <div class="absolute inset-0 flex flex-col justify-start items-start p-6">
                 <div v-html="data.text" class="w-full"></div>
                 <div v-if="fieldValue?.carousel_data?.carousel_setting.button" class="flex mt-auto w-full"

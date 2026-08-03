@@ -7,11 +7,15 @@
                 "boost:mcp"
             ]
         },
+        "sentry": {
+            "type": "http",
+            "url": "https://mcp.sentry.dev/mcp"
+        },
         "postgres": {
             "command": "sh",
             "args": [
                 "-c",
-                "set -a && . /home/aiku/aiku/.env && set +a && npx -y @modelcontextprotocol/server-postgres \"postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_DATABASE}\""
+                "set -a && . ./.env && set +a && npx -y @modelcontextprotocol/server-postgres \"postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_DATABASE}\""
             ]
         }
     }

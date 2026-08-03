@@ -44,6 +44,8 @@ const isCellNumber = () => {
     
     return false
 }
+
+const isDebug = false   //  True will show the column key in the header
 </script>
 
 <template>
@@ -51,8 +53,9 @@ const isCellNumber = () => {
     <!-- <pre>{{ cell?.icon }}</pre> -->
     <th v-show="!cell?.hidden" class="font-normal"
         :class="[
-            cell?.type == 'avatar' || cell?.type == 'icon' ? 'thead-avatar px-5 w-1' : 'px-6 w-auto',
-            cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms' ? 'text-right' : 'text-left'
+            cell?.type == 'avatar' || cell?.type == 'icon' ? 'thead-avatar px-3 w-1' : 'px-6 w-auto',
+            cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms' ? 'text-right' : 'text-left',
+            cell?.className
         ]"
     >
         <component :is="cell?.sortable ? 'button' : 'div'" class="py-1"
@@ -97,8 +100,15 @@ const isCellNumber = () => {
                             aria-hidden="true"
                             fixed-width
                             class="text-gray-500 mr-2"/>
-                        <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
-                        <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
+
+                        <span v-if="isDebug">
+                            {{ cell.key }}
+                        </span>
+                        
+                        <template v-else>
+                            <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
+                            <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
+                        </template>
                         
                     </div>
 

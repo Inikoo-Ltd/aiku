@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Image as ImageProxy } from '@/types/Image'
+import { expandGallery } from '@/Common/Composables/useCompactImage'
 
 const fallbackPath = '/fallback/fallback.svg'
 const DEFAULT_ASPECT_RATIO = 16 / 9
@@ -30,6 +31,10 @@ const props = withDefaults(defineProps<{
 
   responsive?: ResponsiveSize
   responsiveEnabled?: boolean
+  sizes?: string
+  srcset?: { original?: string; avif?: string; webp?: string }
+
+  preload?: boolean
 
   imgAttributes?: {
     fetchpriority?: 'high' | 'low'
@@ -39,15 +44,19 @@ const props = withDefaults(defineProps<{
 }>(), {
   src: () => ({ original: fallbackPath }),
   responsiveEnabled: true,
+  preload: false,
   imgAttributes: () => ({
     loading: 'lazy',
     decoding: 'async',
   }),
+  alt: 'image',
 })
 
 const emits = defineEmits<{
   (e: 'onLoadImage'): void
 }>()
+
+const imageSrc = computed(() => expandGallery(props.src) as ImageProxy | null)
 
 
 const dpr =
@@ -124,8 +133,14 @@ const buildCFUrl = (url: string, width?: number, height?: number) => {
 
 
 
-const buildSrcSet = (url?: string) => {
-  if (!props.responsiveEnabled || !url) return undefined
+const buildSrcSet = (url?: string, url2x?: string) => {
+  if (!url) return undefined
+
+  if (url2x) {
+    return `${url} 1x, ${url2x} 2x`
+  }
+
+  if (!props.responsiveEnabled) return undefined
 
   return Object.keys(responsiveWidths.value)
     .map(key => {
@@ -136,9 +151,9 @@ const buildSrcSet = (url?: string) => {
     .join(', ')
 }
 
-const avif = computed(() => buildSrcSet(props.src?.avif))
-const webp = computed(() => buildSrcSet(props.src?.webp))
-const original = computed(() => buildSrcSet(props.src?.original))
+const avif = computed(() => props.srcset?.avif ?? buildSrcSet(imageSrc.value?.avif, imageSrc.value?.avif_2x))
+const webp = computed(() => props.srcset?.webp ?? buildSrcSet(imageSrc.value?.webp, imageSrc.value?.webp_2x))
+const original = computed(() => props.srcset?.original ?? buildSrcSet(imageSrc.value?.original, imageSrc.value?.original_2x))
 
 
 
@@ -147,7 +162,7 @@ const defaultSrc = computed(() => {
   const h = responsiveHeights.value.desktop
 
   return buildCFUrl(
-    props.src?.original || fallbackPath,
+    imageSrc.value?.original || fallbackPath,
     props.responsiveEnabled ? w : undefined,
     props.responsiveEnabled ? h : undefined
   )
@@ -155,7 +170,9 @@ const defaultSrc = computed(() => {
 
 
 const sizes = computed(() => {
-  if (!props.responsiveEnabled) return undefined
+  if (props.sizes) return props.sizes
+
+  if (props.srcset || !props.responsiveEnabled) return undefined
 
   return `
     (max-width: 640px) 100vw,
@@ -175,11 +192,11 @@ const sizes = computed(() => {
       :srcset="original"
       :sizes="sizes"
       :alt="alt"
-      :width="width"
-      :height="height"
+      :width="baseWidth"
+      :height="baseHeight"
       :style="{ height: 'inherit', ...style }"
       :class="imageCover ? 'w-full h-full object-cover' : undefined"
-      v-bind="imgAttributes"
+      v-bind="preload ? { ...imgAttributes, loading: 'eager', fetchpriority: 'high' } : imgAttributes"
       @load="emits('onLoadImage')"
     />
   </picture>

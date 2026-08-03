@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Models\Catalogue\Product;
@@ -27,6 +28,7 @@ class EditProduct extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
+    use WithUnitsChangeConfirmation;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -264,6 +266,78 @@ class EditProduct extends OrgAction
             }
         }
 
+        $pricingFields = [
+            'not_follow_master_prices'  => [
+                'type'      => 'toggle',
+                'label'     => __('Do not follow master prices'),
+                'value'     => $product->not_follow_master_prices,
+                'information' => __('Enabling this would allow product price to be editable and it will stop following master'),
+                'warningText' => __('Modifying this setting would cause the product to either diverge/follow master').'. '.__('Are you sure you want to do this?'),
+            ]
+        ];
+
+        if (!data_get($product->shop->settings, 'catalog.follow_master_pricing', true) || $product->family?->not_follow_master_prices) {
+            $pricingFields = [];
+        }
+
+        if (
+            !data_get($product->shop->settings, 'catalog.follow_master_pricing', true) ||
+            $product->family?->not_follow_master_prices ||
+            $product->not_follow_master_prices
+        ) {
+            $pricingFields = array_merge(
+                $pricingFields,
+                [
+                    'price'        => [
+                        'type'     => 'input_number',
+                        'label'    => __('Price').'/'.__('outer'),
+                        'required' => true,
+                        'bind'     => [
+                            'minFractionDigits' => 0,
+                            'maxFractionDigits' => 2,
+                        ],
+                        'value'    => $product->price,
+
+                        /*
+                         * Free is a real price for the gifts and samples, but it is also what an
+                         * accidental zero looks like, so it is the one price worth stopping for.
+                         * Only on zero: prices change thousands of times a month here and a dialog
+                         * on all of them would be clicked away without being read.
+                         */
+                        'saveConfirmation' => [
+                            'whenValueIs' => 0,
+                            'title'       => __('Give this product away for free?'),
+                            'description' => __('A price of zero means customers can order it at no charge. Only gifts and samples should be free.'),
+                        ],
+                    ],
+                    'rrp_per_unit' => [
+                        'type'     => 'input_number',
+                        'label'    => __('RRP').'/'.__('unit'),
+                        'required' => true,
+                        'bind'     => [
+                            'minFractionDigits' => 0,
+                            'maxFractionDigits' => 2,
+                        ],
+                        'value'    => $product->units > 0 ? ($product->rrp / trimDecimalZeros($product->units)) : $product->rrp,
+                        'min'      => 0.01
+                    ],
+                ]
+            );
+        }
+
+        if ($product->units_review) {
+            $pricingFields['units'] = [
+                'type'         => 'input_with_warning',
+                'label'        => __('Units'),
+                'value'        => $product->units,
+                'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
+                'showWarning'  => true,
+                'warningTitle' => __('Units mismatch with master product').' ('.$product->units_review.')',
+                'warningBody'  => __('Per-unit prices may be wrong, review units before editing prices'),
+            ];
+        }
+
+
         $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 
         $nameFields = [
@@ -309,7 +383,7 @@ class EditProduct extends OrgAction
                                 'website' => $product->shop->website?->slug
                             ]
                     ],
-                    'toogle'        => [
+                    'toggle'        => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -347,7 +421,7 @@ class EditProduct extends OrgAction
                                 'website' => $product->shop->website?->slug
                             ]
                     ],
-                    'toogle'      => [
+                    'toggle'      => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -391,7 +465,7 @@ class EditProduct extends OrgAction
                                 'website' => $product->shop->website?->slug
                             ]
                     ],
-                    'toogle'        => [
+                    'toggle'        => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -431,7 +505,7 @@ class EditProduct extends OrgAction
                                 'website' => $product->shop->website?->slug
                             ]
                     ],
-                    'toogle'      => [
+                    'toggle'      => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -533,40 +607,7 @@ class EditProduct extends OrgAction
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
-                    'fields' => [
-                        'price'            => [
-                            'type'     => 'input_number',
-                            'label'    => __('Price').'/'.__('outer'),
-                            'required' => true,
-                            'bind'     => [
-                                'minFractionDigits' => 0,
-                                'maxFractionDigits' => 2,
-                            ],
-                            'value'    => $product->price,
-                        ],
-                        'rrp_per_unit'  => [
-                            'type'     => 'input_number',
-                            'label'    => __('RRP').'/'.__('unit'),
-                            'required' => true,
-                            'bind'     => [
-                                'minFractionDigits' => 0,
-                                'maxFractionDigits' => 2,
-                            ],
-                            'value'    => ($product->rrp / trimDecimalZeros($product->units)),
-                            'min'      => 0.01
-                        ],
-                        'cost_price_ratio' => [
-                            'type'        => 'input_number',
-                            'bind'        => [
-                                'maxFractionDigits' => 3
-                            ],
-                            'label'       => __('Pricing ratio'),
-                            'placeholder' => __('Cost price ratio'),
-                            'required'    => true,
-                            'value'       => $product->cost_price_ratio,
-                            'min'         => 0.01
-                        ],
-                    ]
+                    'fields' => $pricingFields
                 ],
                 $product->is_single_trade_unit
                     ? []
@@ -585,6 +626,7 @@ class EditProduct extends OrgAction
                                 'type'  => 'input_number',
                                 'label' => __('Units'),
                                 'value' => $product->units,
+                                'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
                             ],
                             'marketing_weight'     => [
                                 'type'        => 'input_number',
@@ -630,6 +672,7 @@ class EditProduct extends OrgAction
                     'fields' => [
                         'is_for_sale' => [
                             'type'  => 'toggle',
+                            'information'   => __("If an item is not for sale, it will not appear in the website's search results and will be excluded from other related features"),
                             'label' => __('For Sale'),
                             'value' => $product->is_for_sale,
                         ],
@@ -645,43 +688,26 @@ class EditProduct extends OrgAction
                             'value' => $product->not_follow_master_trade_units,
                             'information' => __('Would set product to have standalone trade units (Differs from master)')
                         ] : [],
-                        'trade_units' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
-                            'label'        => __('Trade units'),
-                            'type'         => 'list-selector-trade-unit',
-                            'key_quantity' => 'quantity',
-                            'withQuantity' => true,
-                            'full'         => true,
-                            'noSaveButton' => false,
-                            'use_confirm'  => false,
-                            'is_dropship'  => $product->shop->type == ShopTypeEnum::DROPSHIPPING,
-                            'tabs' => array_values(array_filter([
-                                $product->family?->masterProductCategory ? [
-                                    'label'      => __('To do'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $product->family->masterProductCategory->id,
-                                        ],
-                                    ],
-                                ] : null,
-                                $product->family?->masterProductCategory ? [
-                                    'label'      => __('Done'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.taken-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $product->family->masterProductCategory->id,
-                                        ],
-                                    ],
-                                ] : null,
-                                [
-                                    'label'      => __('All'),
-                                    'search'     => true,
-                                    'routeFetch' => [
-                                        'name' => 'grp.json.master_product_category.all_trade_units',
-                                    ],
-                                ],
-                            ])),
-                            'value'        => $tradeUnits,
+                        /*
+                         * Composition, packing and the price they imply are one decision
+                         * with too many controls for this form, so they live on their own
+                         * page. This is only the summary and the door.
+                         */
+                        'composition' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
+                            'type'         => 'button',
+                            'noSaveButton' => true,
+                            'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']).' × '.$tradeUnit['code'])->implode(', '),
+                            'label_button' => __('Edit composition & packing'),
+                            'icon'         => 'fal fa-atom',
+                            'type_button'  => 'secondary',
+                            'route'        => [
+                                'name'       => 'grp.org.shops.show.catalogue.products.all_products.composition',
+                                'parameters' => [
+                                    'organisation' => $product->organisation->slug,
+                                    'shop'         => $product->shop->slug,
+                                    'product'      => $product->slug,
+                                ]
+                            ],
                         ] : [],
                     ]),
                 ],

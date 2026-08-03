@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
+use App\Support\Forms\SesConfigurationBlueprint;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -82,10 +83,40 @@ class EditOrganisationSettings extends OrgAction
 
         $allowWaiting = Arr::get($organisation->settings, 'orders.allow_waiting', false);
 
+        $pickingFields = [
+            'allow_waiting' => [
+                'type'  => 'toggle',
+                'label' => __('Waiting delivery notes'),
+                'value' => $allowWaiting,
+            ],
+        ];
+
+        if ($allowWaiting) {
+            $pickingFields['allow_picker_set_not_picked'] = [
+                'type'  => 'toggle',
+                'label' => __('Allow picker set out of stocks'),
+                'value' => Arr::get($organisation->settings, 'orders.allow_picker_set_not_picked', false),
+            ];
+            $pickingFields['allow_stock_controller_set_not_picked'] = [
+                'type'  => 'toggle',
+                'label' => __('Allow stock controller to set out of stocks'),
+                'value' => Arr::get($organisation->settings, 'orders.allow_stock_controller_set_not_picked', false),
+            ];
+        }
+
+        $pickingFields['allow_scan_to_pack'] = [
+            'type'  => 'toggle',
+            'label' => __('Allow packers to scan items to pack them'),
+            'information'   => __('Scan the items using scanner'),
+            'icon'  => 'fal fa-scanner',
+            'value' => Arr::get($organisation->settings, 'orders.allow_scan_to_pack', false),
+        ];
+        $routeParameters = request()->route()->originalParameters();
+
         return Inertia::render(
             'EditModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->getBreadcrumbs($routeParameters),
                 'title' => $title,
                 'pageHead' => [
                     'title' => $title,
@@ -164,6 +195,14 @@ class EditOrganisationSettings extends OrgAction
                             ],
                         ],
                         [
+                            'label'  => __('AWS-SES configuration'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => SesConfigurationBlueprint::make(
+                                $organisation->settings ?? [],
+                                ['failover', 'customer_notification']
+                            ),
+                        ],
+                        [
                             "label" => __("google drive"),
                             "icon" => "fab fa-google",
                             "button" => [
@@ -206,46 +245,30 @@ class EditOrganisationSettings extends OrgAction
                         [
                             'label' => __('Picking'),
                             'icon' => 'fa-light fa-dolly-flatbed-alt',
-                            'fields' => $allowWaiting ? [
-                                'allow_waiting' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Waiting delivery notes'),
-                                    'value' => $allowWaiting,
-                                ],
-                                'allow_picker_set_not_picked' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Allow picker set out of stocks'),
-                                    'value' => Arr::get($organisation->settings, 'orders.allow_picker_set_not_picked', false),
-                                ],
-                                'allow_stock_controller_set_not_picked' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Allow stock controller to set out of stocks'),
-                                    'value' => Arr::get($organisation->settings, 'orders.allow_stock_controller_set_not_picked', false),
-                                ]
-                            ] : [
-                                'allow_waiting' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Waiting delivery notes'),
-                                    'value' => $allowWaiting,
-                                ]
-                            ],
+                            'fields' => $pickingFields,
                         ],
+                        // [
+                        //     'label' => __('Shipping'),
+                        //     'icon' => 'fa-light fa-truck',
+                        //     'fields' => [
+                        //     ],
+                        // ],
                         [
-                            'label' => __('Shipping'),
-                            'icon' => 'fa-light fa-truck',
+                            'label' => __('Banned Countries') . ' (' . __('territories') . ')',
+                            'icon' => 'fa-light fa-ban',
                             'fields' => [
-                                'forbidden_dispatch_countries' => [
-                                    'type' => 'multiselect-tags',
-                                    'label' => __('Forbidden Countries'),
-                                    'placeholder' => __('Select countries'),
+                                'banned_countries' => [
+                                    'full' => true,
+                                    'hidden' => app()->environment('production'),
+                                    'type' => 'banned-countries',
+                                    'label' => __('Banned Countries'),
                                     'required' => true,
-                                    'value' => $organisation->forbidden_dispatch_countries ?? [],
-                                    'options' => GetCountriesOptions::run(),
-                                    'searchable' => true,
-                                    'mode' => 'tags',
-                                    'labelProp' => 'label',
-                                    'valueProp' => 'id'
-                                ]
+                                    'hideFollowOrganisation' => true,
+                                    'value' => [
+                                        'banned_list' => $organisation->banned_country_regions,
+                                    ],
+                                    'options' => GetCountriesOptions::run(true, true),
+                                ],
                             ],
                         ],
                         [
@@ -276,7 +299,7 @@ class EditOrganisationSettings extends OrgAction
                         ],
                         [
                             'label' => __('Leave Quota'),
-                            'icon' => 'fa-light fa-calendar-clock',
+                            'icon' => 'fa-light fa-calendar-check',
                             'fields' => [
                                 'hr_annual_leave_days' => [
                                     'type' => 'input',
@@ -305,8 +328,10 @@ class EditOrganisationSettings extends OrgAction
     }
 
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(array $routeParameters): array
     {
+        $organisationRouteParameters = Arr::only($routeParameters, 'organisation');
+
         return
             array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
@@ -316,7 +341,7 @@ class EditOrganisationSettings extends OrgAction
                         'simple' => [
                             'route' => [
                                 'name' => 'grp.org.settings.edit',
-                                'parameters' => [$this->organisation->slug]
+                                'parameters' => $organisationRouteParameters
                             ],
                             'label' => __('Organisation settings'),
                         ]

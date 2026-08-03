@@ -27,7 +27,7 @@ class GetMasterProductCategoryImages
         return [
             'id' => $masterProductCategory->id,
             // 'images_category_box' => $this->getSingleImageData($masterProductCategory), // Old One
-            'images_category_box' => array_merge($this->getSingleImageData($masterProductCategory), $this->getDescriptionImages($masterProductCategory)),
+            'images_category_box' => array_merge($this->getSingleImageData($masterProductCategory), $this->getShowcaseImageData($masterProductCategory), $this->getDescriptionImages($masterProductCategory)),
             'images_update_route' => [
                 'method'     => 'patch',
                 'name'       => 'grp.models.master_product_category.update_images',

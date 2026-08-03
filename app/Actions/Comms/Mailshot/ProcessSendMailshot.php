@@ -13,6 +13,7 @@ use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
+use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Actions\Comms\Traits\WithDispatchedEmailEncryption;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Customer;
@@ -38,7 +39,9 @@ class ProcessSendMailshot
 
         $outboxId = $mailshot->outbox_id;
 
-        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
+        $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot, [
+            'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
+        ]);
 
         foreach ($customerIds as $customerId) {
             $customer = Customer::find($customerId);
@@ -80,13 +83,14 @@ class ProcessSendMailshot
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
-                'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
+                'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count(),
+                'state'         => EmailDeliveryChannelStateEnum::READY->value
             ]
         );
 
         UpdateMailshotRecipientsStoredAt::run($mailshot);
         MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds(5));
 
-        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2);
     }
 }

@@ -34,7 +34,7 @@ class SeedFulfilmentPermissions
         $currentPermissions = Permission::where('scope_type', 'Fulfilment')->where('scope_id', $fulfilment->id)->pluck('name');
         $currentPermissions->diff($fulfilmentPermissions)
             ->each(function ($permissionName) use ($fulfilment) {
-                Permission::where('name', $permissionName)->first()->delete();
+                Permission::where('name', $permissionName)->delete();
             });
 
 
@@ -57,10 +57,7 @@ class SeedFulfilmentPermissions
         $currentRoles = Role::where('scope_type', 'Fulfilment')->where('scope_id', $fulfilment->id)->pluck('name');
         $currentRoles->diff($fulfilmentRoles)
             ->each(function ($roleName) use ($fulfilment) {
-                Role::where(
-                    'name',
-                    $roleName
-                )->first()->delete();
+                Role::where('name', $roleName)->delete();
             });
 
 

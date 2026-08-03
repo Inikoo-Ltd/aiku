@@ -76,8 +76,8 @@ class LocationOrgStockHistoriesExport implements FromQuery, WithMapping, WithHea
     {
         return [
             __('Date'),
-            __('SKU Code'),
-            __('SKU Name'),
+            __('SKO Code'),
+            __('SKO Name'),
             __('Location'),
             __('Quantity'),
             __('Actual Quantity'),

@@ -22,7 +22,9 @@ trait HasSearch
         }
 
         if (! config('scout.queue')) {
-            $this->syncMakeSearchable($models);
+            if (! app()->isLocal()) {
+                $this->syncMakeSearchable($models);
+            }
 
             return;
         }

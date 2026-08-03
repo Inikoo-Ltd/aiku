@@ -28,21 +28,17 @@ class IndexDeliveryNotesInCustomers extends OrgAction
     use WithCustomerSubNavigation;
     use WithCRMAuthorisation;
 
-
-
     private Customer $customer;
 
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, $prefix = null, $replacementsOnly = false): LengthAwarePaginator
     {
-        return IndexDeliveryNotes::run($customer, $prefix);
+        return IndexDeliveryNotes::run($customer, $prefix, replacementsOnly: $replacementsOnly);
     }
-
 
     public function tableStructure(Customer $customer, $prefix = null): Closure
     {
         return IndexDeliveryNotes::make()->tableStructure($customer, $prefix);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $deliveryNotes, ActionRequest $request): Response
     {
@@ -79,6 +75,7 @@ class IndexDeliveryNotesInCustomers extends OrgAction
             'Org/Dispatching/DeliveryNotes',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
                 'title'       => __('delivery notes'),
@@ -104,15 +101,23 @@ class IndexDeliveryNotesInCustomers extends OrgAction
         return $this->handle($customer);
     }
 
-    public function getBreadcrumbs(array $routeParameters): array
+    public function inCustomerReplacements(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
-        $headCrumb = function (array $routeParameters = []) {
+        $this->customer = $customer;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($customer, replacementsOnly: true);
+    }
+
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    {
+        $headCrumb = function (?string $customRouteLabel = null, array $routeParameters = []) {
             return [
                 [
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Delivery notes'),
+                        'label' => $customRouteLabel ?? __('Delivery notes'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],
@@ -122,6 +127,7 @@ class IndexDeliveryNotesInCustomers extends OrgAction
         return array_merge(
             ShowCustomer::make()->getBreadcrumbs('grp.org.shops.show.crm.customers.show', $routeParameters),
             $headCrumb(
+                $routeName == 'grp.org.shops.show.crm.customers.show.delivery_notes.index' ? __('Delivery notes') : __('Replacements'),
                 [
                     'name'       => 'grp.org.shops.show.crm.customers.show.delivery_notes.index',
                     'parameters' => $routeParameters

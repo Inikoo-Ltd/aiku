@@ -19,7 +19,7 @@ class GetFaireProductsAllShops extends OrgAction
 {
     public string $commandSignature = 'faire:products_all_shops';
 
-    public $jobQueue = 'default-long';
+    public $jobQueue = 'long-running';
 
     public function handle(Command|null $command = null): void
     {

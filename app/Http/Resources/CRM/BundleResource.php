@@ -4,9 +4,9 @@ namespace App\Http\Resources\CRM;
 
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\Catalogue\ProductResource;
-use App\Models\Bundle;
-use App\Models\BundleItem;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\Bundle;
+use App\Models\Dropshipping\BundleItem;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;

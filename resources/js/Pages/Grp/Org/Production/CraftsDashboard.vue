@@ -11,6 +11,7 @@ import FlatTreeMap from "@/Components/Navigation/FlatTreeMap.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSeedling, faThumbsDown } from "@fal";
 import { faCheckCircle, faTimesCircle, faPauseCircle } from "@fas";
+import UnderConstruction from "@/Iris/Pages/Disclosure/UnderConstruction.vue";
 
 import { capitalize } from "@/Composables/capitalize";
 import { useLocaleStore } from "@/Stores/locale";
@@ -35,6 +36,8 @@ const props = defineProps<{
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" />
+    <FlatTreeMap v-if="flatTreeMaps?.length" class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" />
+
+    <UnderConstruction v-else />
 
 </template>

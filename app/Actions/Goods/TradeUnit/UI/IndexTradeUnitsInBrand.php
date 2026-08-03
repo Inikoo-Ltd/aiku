@@ -2,7 +2,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Actions\Helpers\Brand\UI\ShowBrand;
 use App\Actions\Helpers\Brand\WithBrandSubNavigation;
@@ -18,7 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexTradeUnitsInBrand extends GrpAction
+class IndexTradeUnitsInBrand extends OrgAction
 {
     use WithGoodsAuthorisation;
     use WithTradeUnitIndex;
@@ -66,7 +66,7 @@ class IndexTradeUnitsInBrand extends GrpAction
     public function asController(Brand $brand, ActionRequest $request): LengthAwarePaginator
     {
         $this->brand = $brand;
-        $this->initialisation(group(), $request)->withTab(TradeUnitsTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(TradeUnitsTabsEnum::values());
 
         return $this->handle($brand, TradeUnitsTabsEnum::INDEX->value);
     }
@@ -138,7 +138,7 @@ class IndexTradeUnitsInBrand extends GrpAction
 
                 TradeUnitsTabsEnum::INDEX->value => $this->tab == TradeUnitsTabsEnum::INDEX->value
                     ? fn () => TradeUnitsResource::collection($tradeUnits)
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection($tradeUnits)),
+                    : Inertia::optional(fn () => TradeUnitsResource::collection($tradeUnits)),
             ]
         )->table($this->tableStructure(prefix: TradeUnitsTabsEnum::INDEX->value));
     }

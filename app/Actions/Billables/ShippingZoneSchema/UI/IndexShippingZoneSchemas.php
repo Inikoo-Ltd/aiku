@@ -70,6 +70,7 @@ class IndexShippingZoneSchemas extends OrgAction
                 'shipping_zone_schemas.name',
                 'shipping_zone_schemas.created_at',
                 'shipping_zone_schemas.state',
+                'shipping_zone_schemas.is_current',
                 'shipping_zone_schema_stats.number_customers',
                 'shipping_zone_schema_stats.number_orders',
                 'shipping_zone_schema_stats.number_shipping_zones',
@@ -110,17 +111,17 @@ class IndexShippingZoneSchemas extends OrgAction
                     }
                 );
             $table->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
-            $table->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            //  $table->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'zones', label: __('zones'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'first_used', label: __('first used'), canBeHidden: false);
-            $table->column(key: 'last_used', label: __('last used'), canBeHidden: false);
-            $table->column(key: 'number_customers', label: __('customers'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_orders', label: __('orders'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'zones', label: __('Zones'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'first_used', label: __('First used'), canBeHidden: false);
+            $table->column(key: 'last_used', label: __('Last used'), canBeHidden: false);
+            $table->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
         };
     }
@@ -136,6 +137,7 @@ class IndexShippingZoneSchemas extends OrgAction
         ];
         $afterTitle = null;
         $iconRight  = null;
+        $modelPageHeading = null;
 
         $actions = [
             [
@@ -152,6 +154,7 @@ class IndexShippingZoneSchemas extends OrgAction
 
         if ($this->parent instanceof Shop) {
             $subNavigation = $this->getShippingZoneSchemaSubNavigation($this->parent);
+            $modelPageHeading = $this->parent->code;
         } elseif ($this->parent instanceof Group) {
             $actions = null;
         }
@@ -166,6 +169,7 @@ class IndexShippingZoneSchemas extends OrgAction
                 'title'       => __('Shipping'),
                 'pageHead'    => array_filter([
                     'title'         => $title,
+                    'model'         => $modelPageHeading,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
@@ -173,8 +177,6 @@ class IndexShippingZoneSchemas extends OrgAction
                     'subNavigation' => $subNavigation,
                 ]),
                 'data'        => ShippingZoneSchemasResource::collection($shippingZoneSchemas),
-
-
             ]
         )->table($this->tableStructure($this->parent));
     }
@@ -203,7 +205,7 @@ class IndexShippingZoneSchemas extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Shippings'),
+                        'label' => __('Shipping schemas'),
                         'icon'  => 'fal fa-bars'
                     ],
                     'suffix' => $suffix

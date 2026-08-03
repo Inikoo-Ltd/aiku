@@ -16,6 +16,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,9 +25,28 @@ class CustomerSalesChannelsHydrateOrders implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
+    public string $commandSignature = 'hydrate:customer_sales_channel_orders {customerSalesChannel}';
+
     public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): string
     {
         return "{$customerSalesChannel->id}-hydrate-orders";
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
+
+        if (!$customerSalesChannel) {
+            $command->error("Customer sales channel not found: {$command->argument('customerSalesChannel')}");
+
+            return 1;
+        }
+
+        $this->handle($customerSalesChannel);
+
+        $command->info("Orders hydrated for customer sales channel: {$customerSalesChannel->slug}");
+
+        return 0;
     }
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void

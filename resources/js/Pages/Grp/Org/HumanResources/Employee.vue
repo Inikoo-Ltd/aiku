@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
     faEnvelope,
@@ -22,7 +22,8 @@ import {
     faPaperclip,
     faTimes,
     faCameraRetro,
-    faKey
+    faKey,
+    faPlus
 } from '@fal';
 import { faCheckCircle } from '@fas';
 import { router } from '@inertiajs/vue3'
@@ -45,6 +46,8 @@ import Button from '@/Components/Elements/Buttons/Button.vue';
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue';
 import ShowcaseEmployee from '@/Components/Showcases/Grp/ShowcaseEmployee.vue';
 import { trans } from 'laravel-vue-i18n'
+import Dialog from "primevue/dialog"
+import PureInput from "@/Components/Pure/PureInput.vue"
 
 library.add(
     faIdCard,
@@ -85,7 +88,8 @@ const props = defineProps<{
     job_positions?: Table
     attachments?: {}
     attachmentRoutes?:object
-    showcase : object
+    showcase? : object
+    employee_id : number
 }>()
 
 let currentTab = ref(props.tabs.current);
@@ -106,6 +110,40 @@ const component = computed(() => {
 
 });
 
+const showDialog = ref(false);
+
+
+const createUserForm = useForm<{
+    username: string
+    password: string
+    password_confirmation: string
+}>({
+    username: '',
+    password: '',
+    password_confirmation: '',
+});
+
+const openCreateUserDialog = () => {
+    createUserForm.reset();
+    createUserForm.clearErrors();
+    showDialog.value = true;
+}
+
+const createUser = () => {
+    createUserForm.post(
+        route(
+             'grp.models.employee.create_user', { employee  : props.employee_id}
+        ),
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                createUserForm.reset();
+                showDialog.value = false;
+            }
+        }
+    );
+}
+
 </script>
 
 
@@ -113,6 +151,96 @@ const component = computed(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #button-create-user="{ action }">
+            <Button
+                :icon="faPlus"
+                :label="action.label"
+                @click="() => openCreateUserDialog()"
+                :style="action.style"
+            />
+            <Dialog
+                v-model:visible="showDialog" 
+                modal 
+                :closable="true" 
+                :dismissableMask="true" 
+                :style="{ width: '40vw', 'max-height': '40vw' }" 
+                :contentClass="'!pb-0 mb-2 p-3'"
+            >
+
+                <template #header>
+                    <div class="grid">
+                        <div class="text-xl font-bold">
+                            {{ ctrans('Create New User') }}
+                        </div>
+                    </div>
+                </template>
+                <form
+                    @submit.prevent="createUser()"
+                    class="grid gap-y-4 h-full overflow-y-auto overflow-x-hidden px-5 pb-2"
+                    style="scrollbar-width: thin;"
+                >
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ ctrans('Username') }}:
+                        </label>
+                        <PureInput
+                            v-model="createUserForm.username"
+                            autofocus
+                            autocomplete="off"
+                            :isError="!!createUserForm.errors.username"
+                            :placeholder="trans('Username')"
+                        />
+                        <div v-if="createUserForm.errors.username" class="mt-1 text-xs text-red-600">
+                            {{ createUserForm.errors.username }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ ctrans('Password') }}:
+                        </label>
+                        <PureInput
+                            v-model="createUserForm.password"
+                            type="password"
+                            autocomplete="new-password"
+                            :isError="!!createUserForm.errors.password"
+                            :placeholder="trans('Password')"
+                        />
+                        <div v-if="createUserForm.errors.password" class="mt-1 text-xs text-red-600">
+                            {{ createUserForm.errors.password }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ ctrans('Confirm password') }}:
+                        </label>
+                        <PureInput
+                            v-model="createUserForm.password_confirmation"
+                            type="password"
+                            autocomplete="new-password"
+                            :isError="!!createUserForm.errors.password_confirmation"
+                            :placeholder="trans('Retype password')"
+                        />
+                        <div v-if="createUserForm.errors.password_confirmation" class="mt-1 text-xs text-red-600">
+                            {{ createUserForm.errors.password_confirmation }}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="hidden" />
+                </form>
+                <template #footer>
+                    <div class="flex justify-end pt-2 w-full">
+                        <Button
+                            @click="createUser()"
+                            :label="ctrans('Save')"
+                            :loading="createUserForm.processing"
+                            :disabled="createUserForm.processing || !createUserForm.username || !createUserForm.password || !createUserForm.password_confirmation"
+                        />
+                    </div>
+                </template>
+            </Dialog>
+        </template>
         <template #tabs-pin="{ data }">
             <div class="flex items-end gap-x-1">
                 <Popover v-if="data.label" class="flex items-end" position="left-0">

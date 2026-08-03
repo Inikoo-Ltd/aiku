@@ -87,7 +87,7 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
             'org_stock_code'                    => $orgStock?->code,
             'org_stock_name'                    => $orgStock?->name,
             'org_stock_slug'                    => $orgStock?->slug,
-            'org_stock_image_thumbnail'         => $orgStock?->tradeUnits->first()?->imageSources(64, 64),
+            'org_stock_image_thumbnail'         => null, // Using ajax call anyway
             'packed_in'                         => $packedIn,
             'packed_in_message'                 => $packedInMessage,
             'warehouse_area'                    => $warehouseArea,

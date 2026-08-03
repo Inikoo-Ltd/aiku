@@ -10,7 +10,7 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\UI\GetMasterDepartmentNavigation;
 use App\Actions\Masters\MasterProductCategory\UI\GetMasterFamilyNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
@@ -36,7 +36,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
-class IndexMasterProductsWithMismatch extends GrpAction
+class IndexMasterProductsWithMismatch extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
@@ -373,6 +373,7 @@ class IndexMasterProductsWithMismatch extends GrpAction
                 ] : [],
                 'pageHead'                => [
                     'title'         => $title,
+                    'is_negative'   => true,
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
@@ -396,7 +397,7 @@ class IndexMasterProductsWithMismatch extends GrpAction
                 ],
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)
-                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))),
+                    : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))),
             ]
         )->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value));
     }
@@ -437,7 +438,7 @@ class IndexMasterProductsWithMismatch extends GrpAction
     {
         $group        = group();
         $this->parent = $masterShop;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterShop, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -446,7 +447,7 @@ class IndexMasterProductsWithMismatch extends GrpAction
     {
         $group        = group();
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
     }

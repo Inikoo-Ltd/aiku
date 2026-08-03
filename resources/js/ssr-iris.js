@@ -16,8 +16,8 @@ import "floating-vue/dist/style.css"
 import PrimeVue from "primevue/config"
 import Aura from "@primevue/themes/aura"
 import { definePreset } from "@primevue/themes"
-
-const pinia = createPinia()
+import { ctrans } from "@/Composables/useTrans"
+import IrisLayout from "@/Layouts/Iris.vue"
 
 
 const MyPreset = definePreset(Aura, {
@@ -58,10 +58,17 @@ createServer(
 					throw new Error(`Page not found: ${name}`)
 				}
 
-				return page.default ?? page
+				const component = page.default ?? page
+				component.layout = component.layout || IrisLayout
+
+				return component
 			},
 			setup({ App, props, plugin }) {
-				return createSSRApp({ render: () => h(App, props) })
+				const app = createSSRApp({ render: () => h(App, props) })
+
+				app.config.globalProperties.ctrans = ctrans
+
+				return app
 					.use(Notifications)
 					.use(FloatingVue)
 					.use(PrimeVue, {
@@ -75,7 +82,7 @@ createServer(
 						},
 					})
 					.use(plugin)
-					.use(pinia)
+					.use(createPinia())
 					.use(ZiggyVue, {
 						...page.props.ziggy,
 						location: new URL(page.props.ziggy.location),

@@ -42,9 +42,18 @@ class GetProductForWooCommerce
 
     public function handle(WooCommerceUser $wooCommerceUser, $query = '')
     {
-        $products = $wooCommerceUser->getWooCommerceProducts([
-            'search' => $query
-        ]);
+        $query = trim($query);
+
+        $params = [
+            'per_page' => 50
+        ];
+
+        if ($query !== '') {
+            $params['search'] = $query;
+            $params['search_fields'] = ['name', 'sku'];
+        }
+
+        $products = $wooCommerceUser->getWooCommerceProducts($params ?? []);
 
         return array_map([$this, 'transformToStandardFormat'], $products);
     }

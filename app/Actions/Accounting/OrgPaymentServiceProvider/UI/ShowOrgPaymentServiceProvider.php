@@ -110,7 +110,7 @@ class ShowOrgPaymentServiceProvider extends OrgAction
                 ],
                 OrgPaymentServiceProviderTabsEnum::SHOWCASE->value => $this->tab == OrgPaymentServiceProviderTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgPaymentServiceProviderShowcase::run($orgPaymentServiceProvider)
-                    : Inertia::lazy(fn () => GetOrgPaymentServiceProviderShowcase::run($orgPaymentServiceProvider)),
+                    : Inertia::optional(fn () => GetOrgPaymentServiceProviderShowcase::run($orgPaymentServiceProvider)),
 
                 OrgPaymentServiceProviderTabsEnum::PAYMENTS->value         => $this->tab == OrgPaymentServiceProviderTabsEnum::PAYMENTS->value
                     ?
@@ -120,7 +120,7 @@ class ShowOrgPaymentServiceProvider extends OrgAction
                             prefix: OrgPaymentServiceProviderTabsEnum::PAYMENTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => PaymentsResource::collection(
+                    : Inertia::optional(fn () => PaymentsResource::collection(
                         IndexPayments::run(
                             parent: $orgPaymentServiceProvider,
                             prefix: OrgPaymentServiceProviderTabsEnum::PAYMENTS->value
@@ -134,7 +134,7 @@ class ShowOrgPaymentServiceProvider extends OrgAction
                             prefix: OrgPaymentServiceProviderTabsEnum::PAYMENT_ACCOUNTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => PaymentAccountsResource::collection(
+                    : Inertia::optional(fn () => PaymentAccountsResource::collection(
                         IndexPaymentAccounts::run(
                             parent: $orgPaymentServiceProvider,
                             prefix: OrgPaymentServiceProviderTabsEnum::PAYMENT_ACCOUNTS->value
@@ -148,7 +148,7 @@ class ShowOrgPaymentServiceProvider extends OrgAction
                             prefix: OrgPaymentServiceProviderTabsEnum::INVOICES->value
                         )
                     )
-                    : Inertia::lazy(fn () => InvoicesResource::collection(
+                    : Inertia::optional(fn () => InvoicesResource::collection(
                         IndexInvoices::run(
                             parent: $orgPaymentServiceProvider,
                             prefix: OrgPaymentServiceProviderTabsEnum::INVOICES->value
@@ -157,7 +157,7 @@ class ShowOrgPaymentServiceProvider extends OrgAction
 
                 OrgPaymentServiceProviderTabsEnum::HISTORY->value => $this->tab == OrgPaymentServiceProviderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgPaymentServiceProvider))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgPaymentServiceProvider)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgPaymentServiceProvider)))
             ]
         )
             ->table(

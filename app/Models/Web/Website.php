@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -71,7 +72,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $launched_at
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property int|null $storefront_id
- * @property string|null $cloudflare_id
+ * @property string|null $cloudflare_zone_id
  * @property WebsiteCloudflareStatusEnum|null $cloudflare_status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -115,6 +116,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $published_family_description_checksum
  * @property int|null $landing_page_id
  * @property \Illuminate\Support\Carbon|null $last_visited_at
+ * @property int|null $unpublished_department_description_snapshot_id
+ * @property int|null $live_department_description_snapshot_id
+ * @property string|null $published_department_description_checksum
+ * @property string|null $cloudflare_token
+ * @property array<array-key, mixed> $blocked_country_regions
  * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Web\Crawl> $crawls
@@ -125,6 +131,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read \App\Models\Web\Webpage|null $landingPage
  * @property-read Snapshot|null $liveCollectionSnapshot
+ * @property-read Snapshot|null $liveDepartmentDescriptionSnapshot
  * @property-read Snapshot|null $liveDepartmentSnapshot
  * @property-read Snapshot|null $liveFamiliesOverviewSnapshot
  * @property-read Snapshot|null $liveFamilyDescriptionSnapshot
@@ -147,6 +154,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Web\Webpage|null $storefront
  * @property-read Collection<int, \App\Models\Web\WebsiteTimeSeries> $timeSeries
  * @property-read Snapshot|null $unpublishedCollectionSnapshot
+ * @property-read Snapshot|null $unpublishedDepartmentDescriptionSnapshot
  * @property-read Snapshot|null $unpublishedDepartmentSnapshot
  * @property-read Snapshot|null $unpublishedFamiliesOverviewSnapshot
  * @property-read Snapshot|null $unpublishedFamilyDescriptionSnapshot
@@ -181,30 +189,74 @@ class Website extends Model implements Auditable, HasMedia
     use InShop;
     use InteractsWithMedia;
 
+    /**
+     * Settings the storefront renders from cache; a change to any of them has to invalidate
+     * it or visitors keep the old behaviour for hours while the admin UI shows the new value.
+     */
+    private const IRIS_CACHED_SETTINGS = [
+        'iris_search_model',
+        'luigisbox.tracker_id',
+        'google_tag_id',
+        'webpage.show_price',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (Website $website) {
+            if (!$website->wasChanged(['settings', 'domain'])) {
+                return;
+            }
+
+            // getOriginal() returns the already-cast new value for json columns, getRawOriginal
+            // is the pre-save database value
+            $previous = $website->getRawOriginal('settings');
+            $previous = is_string($previous) ? json_decode($previous, true) : $previous;
+
+            foreach (self::IRIS_CACHED_SETTINGS as $key) {
+                if (data_get($previous, $key) !== data_get($website->settings, $key)) {
+                    BreakWebsiteIrisCache::run($website);
+
+                    return;
+                }
+            }
+
+            if ($website->wasChanged('domain')) {
+                BreakWebsiteIrisCache::run($website);
+            }
+        });
+    }
+
+    public function usesLuigiSearch(): bool
+    {
+        return data_get($this->settings, 'iris_search_model', 'luigi') !== 'internal';
+    }
+
     protected $casts = [
-        'type'              => WebsiteTypeEnum::class,
-        'data'              => 'array',
-        'settings'          => 'array',
-        'structure'         => 'array',
-        'layout'            => 'array',
-        'published_layout'  => 'array',
-        'state'             => WebsiteStateEnum::class,
-        'status'            => 'boolean',
-        'cloudflare_status' => WebsiteCloudflareStatusEnum::class,
-        'launched_at'       => 'datetime',
-        'closed_at'         => 'datetime',
-        'fetched_at'        => 'datetime',
-        'last_fetched_at'   => 'datetime',
-        'last_visited_at'   => 'datetime',
+        'type'                    => WebsiteTypeEnum::class,
+        'data'                    => 'array',
+        'settings'                => 'array',
+        'structure'               => 'array',
+        'layout'                  => 'array',
+        'published_layout'        => 'array',
+        'blocked_country_regions' => 'array',
+        'state'                   => WebsiteStateEnum::class,
+        'status'                  => 'boolean',
+        'cloudflare_status'       => WebsiteCloudflareStatusEnum::class,
+        'launched_at'             => 'datetime',
+        'closed_at'               => 'datetime',
+        'fetched_at'              => 'datetime',
+        'last_fetched_at'         => 'datetime',
+        'last_visited_at'         => 'datetime',
 
     ];
 
     protected $attributes = [
-        'data'             => '{}',
-        'settings'         => '{}',
-        'structure'        => '{}',
-        'layout'           => '{}',
-        'published_layout' => '{}',
+        'data'                    => '{}',
+        'settings'                => '{}',
+        'structure'               => '{}',
+        'layout'                  => '{}',
+        'published_layout'        => '{}',
+        'blocked_country_regions' => '{}',
     ];
 
     protected $guarded = [];
@@ -272,8 +324,10 @@ class Website extends Model implements Auditable, HasMedia
     {
         if ($this->logo) {
             $avatarThumbnail = $this->logo->getImage()->resize($width, $height);
+
             return GetPictureSources::run($avatarThumbnail);
         }
+
         return null;
     }
 
@@ -281,8 +335,10 @@ class Website extends Model implements Auditable, HasMedia
     {
         if ($this->favicon) {
             $avatarThumbnail = $this->favicon->getImage()->resize($width, $height);
+
             return GetPictureSources::run($avatarThumbnail);
         }
+
         return null;
     }
 
@@ -416,6 +472,16 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Snapshot::class, 'live_family_description_snapshot_id');
     }
 
+    public function unpublishedDepartmentDescriptionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'unpublished_department_description_snapshot_id');
+    }
+
+    public function liveDepartmentDescriptionSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_department_description_snapshot_id');
+    }
+
     public function liveSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'live_snapshot_id');
@@ -441,7 +507,7 @@ class Website extends Model implements Auditable, HasMedia
             }
         }
 
-        return $scheme . '://' . $this->domain;
+        return $scheme.'://'.$this->domain;
     }
 
     public function webBlocks(): MorphMany
@@ -457,8 +523,8 @@ class Website extends Model implements Auditable, HasMedia
     public function externalLinks()
     {
         return $this->belongsToMany(ExternalLink::class, 'web_block_has_external_link')
-                    ->withPivot('webpage_id', 'web_block_id', 'show')
-                    ->withTimestamps();
+            ->withPivot('webpage_id', 'web_block_id', 'show')
+            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany
@@ -469,8 +535,8 @@ class Website extends Model implements Auditable, HasMedia
     public function getFullUrl(): string
     {
         return match (app()->environment()) {
-            'production' => 'https://'.$this->domain . '/app',
-            'staging' => 'https://canary.'.$this->domain . '/app',
+            'production' => 'https://'.$this->domain.'/app',
+            'staging' => 'https://canary.'.$this->domain.'/app',
             default => match ($this->shop->type) {
                 ShopTypeEnum::DROPSHIPPING => 'https://ds.test/app',
                 default => 'https://fulfilment.test/app'

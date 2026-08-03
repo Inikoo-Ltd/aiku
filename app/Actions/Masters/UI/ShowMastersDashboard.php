@@ -113,7 +113,19 @@ class ShowMastersDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-ruler-combined'],
                         'title' => __('Masters'),
                     ],
-                    'title' => __('Master catalogue'),
+                    'title'   => __('Master catalogue'),
+                    'actions' => [
+                        $this->canEdit ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('New master shop'),
+                            'label'   => __('Master shop'),
+                            'route'   => [
+                                'name'       => 'grp.masters.master_shops.create',
+                                'parameters' => []
+                            ]
+                        ] : false,
+                    ],
                 ],
                 'dashboard'   => $dashboard,
             ]

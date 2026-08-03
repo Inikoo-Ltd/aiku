@@ -12,18 +12,16 @@ namespace App\Actions\Dropshipping\WooCommerce\Orders;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedWooCommerceAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
-use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -36,6 +34,7 @@ class StoreOrderFromWooCommerce extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedWooCommerceAddress;
+    use WithPayAndSubmitOrder;
 
     /**
      * @throws \Throwable
@@ -77,12 +76,7 @@ class StoreOrderFromWooCommerce extends OrgAction
             );
         }
 
-        try {
-            PayOrderAsync::run($order);
-        } catch (Exception $e) {
-            Sentry::captureException($e);
-        }
-        SubmitOrder::run($order);
+        $order = $this->payAndSubmitOrder($order);
 
 
 
@@ -93,7 +87,7 @@ class StoreOrderFromWooCommerce extends OrgAction
      */
     public function digestWooCustomerClient(WooCommerceUser $wooCommerceUser, array $wooOrderData): CustomerClient
     {
-        $reference = trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name').' '.Arr::get($wooOrderData, 'shipping.company'));
+        $reference = trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name').' '.Arr::get($wooOrderData, 'shipping.company')) . $wooCommerceUser->customer_sales_channel_id;
 
         $customerClientID = DB::table('customer_clients')
             ->select('id')

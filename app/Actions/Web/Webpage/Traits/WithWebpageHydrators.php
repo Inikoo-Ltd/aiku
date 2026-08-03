@@ -26,7 +26,7 @@ trait WithWebpageHydrators
 {
     protected function dispatchWebpageHydrators(Webpage $webpage): void
     {
-        if ($webpage->model_type === Product::class && $webpage->model) {
+        if ($webpage->model instanceof Product) {
             ProductHydrateHasLiveWebpage::run($webpage->model);
         }
 

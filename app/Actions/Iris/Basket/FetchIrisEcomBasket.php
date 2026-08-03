@@ -10,6 +10,7 @@ namespace App\Actions\Iris\Basket;
 
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\IrisAction;
+use App\Actions\Ordering\Order\GetVoucherData;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -19,6 +20,7 @@ use Illuminate\Support\Number;
 
 class FetchIrisEcomBasket extends IrisAction
 {
+    use \App\Actions\Traits\WithLineTaxCategories;
     use HasBasketDetails;
 
     public function handle(ActionRequest $request): Order|null
@@ -55,6 +57,7 @@ class FetchIrisEcomBasket extends IrisAction
             'is_premium_dispatch' => $order->is_premium_dispatch,
             'has_extra_packing'   => $order->has_extra_packing,
             'has_insurance'       => $order->has_insurance,
+            'voucher_code'        => data_get($order->data, 'voucher_code'),
         ];
 
         $charges         = $this->getBasketCharges($order);
@@ -113,9 +116,12 @@ class FetchIrisEcomBasket extends IrisAction
                 'price_total' => $order->charges_amount
             ],
             [
-                'label'       => __('Shipping'),
-                'information' => '',
-                'price_total' => $order->shipping_amount
+                'label'         => __('Shipping'),
+                'label_class'   => '',  // TODO INI-1762: make it 'text-green-600' if have discount shipping
+                'is_discounted' => false,
+                'discount_data' => null,
+                'information'   => '',
+                'price_total'   => $order->shipping_amount
             ]
         ];
 
@@ -126,11 +132,7 @@ class FetchIrisEcomBasket extends IrisAction
                     'information' => '',
                     'price_total' => $order->net_amount
                 ],
-                [
-                    'label'       => __('Tax').' ('.$taxCategory->getLocalizedName().')',
-                    'information' => '',
-                    'price_total' => $order->tax_amount
-                ]
+                ...$this->getOrderTaxRows($order),
             ];
 
         $orderSummary[] = [
@@ -156,6 +158,10 @@ class FetchIrisEcomBasket extends IrisAction
                 'products.code',
                 'products.available_quantity',
                 'products.web_images',
+                'products.offers_data as product_offers_data',
+                'products.department_id',
+                'products.sub_department_id',
+                'products.family_id',
                 'webpages.url as canonical_url'
             )
             ->where('transactions.model_type', 'Product')
@@ -183,19 +189,22 @@ class FetchIrisEcomBasket extends IrisAction
                 'available_quantity'   => $productData->available_quantity,
                 'canonical_url'        => $productData->canonical_url,
                 'offers_data'          => json_decode($productData->offers_data, 1),
+                'product_offers_data'  => json_decode($productData->product_offers_data, true),
                 'name'                 => $productData->name,
                 'code'                 => $productData->code,
                 'units'                => (int)$productData->units,
                 'web_image_thumbnail'  => $webImageThumbnail,
-
+                'department_id'        => $productData->department_id,
+                'sub_department_id'    => $productData->sub_department_id,
+                'family_id'            => $productData->family_id,
             ];
         }
 
 
-        $orderArr['products']      = $transactions;
+        $orderArr['products'] = $transactions;
 
-        // Section: Missed Offers   // Maybe can take from HasBasketDetails->getMissedOffers()
-        $shopOffersData = $this->shop->offers_data;
+        // Section: Missed Offers - Maybe can take from HasBasketDetails->getMissedOffers()
+        $shopOffersData            = $this->shop->offers_data;
         $orderArr['missed_offers'] = [];
         if (Arr::get($shopOffersData, 'fob.active')) {
             $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
@@ -271,6 +280,8 @@ class FetchIrisEcomBasket extends IrisAction
                 'parameters' => [],
             ];
         }
+
+        $orderArr['voucher'] = GetVoucherData::run($order->offer_voucher_id);
 
         return $orderArr;
     }

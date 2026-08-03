@@ -17,12 +17,12 @@ class PostProcessingEmailTrackingEvent
 {
     use AsAction;
 
-    public string $jobQueue = 'analytics';
+    public string $jobQueue = 'ses-analytics';
 
     public function handle(int $emailTrackingEventId): void
     {
 
-        $emailTrackingEvent = EmailTrackingEvent::find($emailTrackingEventId);
+        $emailTrackingEvent = EmailTrackingEvent::on('aiku_no_sticky')->find($emailTrackingEventId);
         if (!$emailTrackingEvent) {
             return;
         }

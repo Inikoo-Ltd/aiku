@@ -20,17 +20,21 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PickingItemActionsPanel from "@/Components/Warehouse/DeliveryNotes/PickingItemActionsPanel.vue"
 import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForCrm.vue"
+import LabelItemsWaitingForWarehouse from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForWarehouse.vue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 library.add(faHandHoldingBox, faDolly, faMapMarkerAlt, faHourglassStart, faSkull, faCircle)
 
 const locale = inject('locale', aikuLocaleStructure)
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     allowStockControllerSetNotPicked: boolean
     isStillPicking: boolean
     isReadOnly?: boolean
+    waitingType?: string
 }>()
 
 const routeToDeliveryNote = (slug: string) => {
@@ -41,6 +45,16 @@ const routeToDeliveryNote = (slug: string) => {
     ])
 }
 
+const routeItemsWaitingCrm = (item: any): string => {
+    if (!item.shop_slug || !(route().params as RouteParams).organisation) {
+        return '#'
+    }
+    return route('grp.org.shops.show.ordering.backlog.waiting_items', {
+        organisation: (route().params as RouteParams).organisation,
+        shop: item.shop_slug,
+    })
+}
+
 const generateLocationRoute = (location: any) => {
     if (!location.location_slug) return "#"
     return route("grp.org.warehouses.show.infrastructure.locations.show", [
@@ -48,6 +62,20 @@ const generateLocationRoute = (location: any) => {
         (route().params as RouteParams).warehouse,
         location.location_slug,
     ])
+}
+
+const getWaitingWarehouseFractional = (item: any) => {
+    if (item?.delivery_note_shop_type == 'dropshipping') {
+        return item?.quantity_waiting_warehouse_fractional_ds
+    }
+    return null
+}
+
+const getWaitingCrmFractional = (item: any) => {
+    if (item?.delivery_note_shop_type == 'dropshipping') {
+        return item?.quantity_waiting_crm_fractional_ds
+    }
+    return null
 }
 </script>
 
@@ -68,6 +96,12 @@ const generateLocationRoute = (location: any) => {
                     internal: 'delivery_note_internal_notes',
                     public:   'delivery_note_public_notes',
                 }" />
+                <WaitingOppositeCountBadge
+                    v-if="props.waitingType && Number(item.opposite_waiting_count) > 0"
+                    :count="Number(item.opposite_waiting_count)"
+                    :type="props.waitingType === 'crm' ? 'warehouse' : 'crm'"
+                    :href="routeToDeliveryNote(item.delivery_note_slug)"
+                />
             </div>
             <div class="flex gap-x-2 mt-1 flex-wrap">
                 <span v-if="item.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 border rounded px-1.5 py-0.5">
@@ -101,13 +135,15 @@ const generateLocationRoute = (location: any) => {
                         <Link :href="generateLocationRoute(picking)" class="secondaryLink text-xs">{{ picking.location_code }}</Link>
                         <span v-tooltip="trans('Total picked in this location')" class="text-gray-500 whitespace-nowrap text-xs">
                             <FontAwesomeIcon icon="fal fa-hand-holding-box" fixed-width aria-hidden="true" />
-                            {{ picking.quantity_picked }}
+                            <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
+                            <template v-else>{{ picking.quantity_picked }}</template>
                         </span>
                     </div>
 
                     <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 text-xs">
                         <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
-                        {{ picking.quantity_picked }}
+                        <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
+                        <template v-else>{{ picking.quantity_picked }}</template>
                     </div>
 
                     <!-- <ButtonWithLink
@@ -124,31 +160,20 @@ const generateLocationRoute = (location: any) => {
             
             <!-- Section: items are waiting for warehouse -->
             <div v-if="Number(item.quantity_waiting_warehouse) > 0" class="mt-2 xmx-auto w-fit">
-                <div v-tooltip="trans('Quantity of items waiting for warehouse')" class="border-l-2 border-yellow-400 relative bg-yellow-500/20 py-1 pr-2 pl-1 text-yellow-700 whitespace-nowrap w-fit">
-                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
-                    <!-- <FractionDisplay v-if="item.quantity_picked_fractional"
-                        :fractionData="item.quantity_picked_fractional" /> -->
-                    <span>
-                        {{ trans(":quantityWaitingWarehouse items are waiting for warehouse", { quantityWaitingWarehouse: Number(item.quantity_waiting_warehouse) }) }}
-                    </span>
-
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
-                </div>
+                <LabelItemsWaitingForWarehouse
+                    :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)"
+                    :fractionData="getWaitingWarehouseFractional(item)"
+                />
             </div>
 
             <!-- Section: items are waiting for CRM -->
             <div v-if="Number(item.quantity_waiting_crm) > 0" class="mt-2 xmx-auto w-fit">
-                <LabelItemsWaitingForCrm v-if="Number(item.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
-                <!-- <div v-tooltip="trans('Quantity of items waiting for CRM')" class="border-l-2 border-purple-400 relative bg-purple-500/20 py-1 pr-2 pl-1 text-purple-700 whitespace-nowrap w-fit">
-                    <FontAwesomeIcon icon="fal fa-hourglass-start" class="mr opacity-70" fixed-width aria-hidden="true" />
-                    <span>
-                        {{ trans(":quantityWaitingCRM items are waiting for CRM", { quantityWaitingCRM: Number(item.quantity_waiting_crm) }) }}
-                    </span>
-
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
-                </div> -->
+                <Link :href="routeItemsWaitingCrm(item)" class="hover:underline">
+                    <LabelItemsWaitingForCrm
+                        :qty_waiting_crm="Number(item.quantity_waiting_crm)"
+                        :fractionData="getWaitingCrmFractional(item)"
+                    />
+                </Link>
             </div>
         </template>
 

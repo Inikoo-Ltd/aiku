@@ -11,8 +11,8 @@ namespace App\Actions\Dropshipping\Portfolio\Logs;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
+use App\Models\Dropshipping\PlatformPortfolioLogs;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\PlatformPortfolioLogs;
 use Illuminate\Support\Arr;
 
 class StorePlatformPortfolioLog extends OrgAction

@@ -8,15 +8,16 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableMasterFamilies from "@/Components/Tables/Grp/Goods/TableMasterFamilies.vue"
+import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ref, computed } from "vue"
-import { faCheckCircle, faTimesCircle } from '@fal'
+import { faCheckCircle, faTimesCircle, faStarfighter } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 
-library.add(faCheckCircle, faTimesCircle)
+library.add(faCheckCircle, faTimesCircle, faStarfighter)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -27,6 +28,7 @@ const props = defineProps<{
     }
     with?: {}
     without?: {}
+    not_follow_master?: {}
     shopsData: {}
 }>()
 
@@ -41,5 +43,6 @@ const currentData = computed(() => (props as any)[currentTab.value])
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <TableMasterFamilies :key="currentTab" :tab="currentTab" :data="currentData" />
+    <TableFamilies v-if="currentTab === 'not_follow_master'" :key="currentTab" :tab="currentTab" :data="currentData" />
+    <TableMasterFamilies v-else :key="currentTab" :tab="currentTab" :data="currentData" :isCheckBox="false" />
 </template>

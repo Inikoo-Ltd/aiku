@@ -44,20 +44,21 @@ class PrepareNewsletterRecipients
             ->whereNull('customers.deleted_at');
 
 
-        $baseQuery->select('customers.id', 'customers.email')->orderBy('customers.id')
-            ->chunk($chunkSize, function ($customers) use ($mailshot) {
-                $customerIds    = [];
-                $numValidEmails = 0;
-                foreach ($customers as $customer) {
-                    if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
-                        $customerIds[] = $customer->id;
-                        $numValidEmails++;
-                    }
-                }
+        $customers = $baseQuery->select('customers.id', 'customers.email')->orderBy('customers.id')->get();
 
+        foreach ($customers->chunk($chunkSize) as $customersChunk) {
+            $customerIds = [];
+            foreach ($customersChunk as $customer) {
+                if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
+                    $customerIds[] = $customer->id;
+                }
+            }
+
+            if (!empty($customerIds)) {
                 ProcessSendMailshot::dispatch($mailshot->id, $customerIds);
-                $this->countRecipients += $numValidEmails;
-            });
+                $this->countRecipients += count($customerIds);
+            }
+        }
 
         $mailshot->update([
             'recipients_prepared_at' => now(),

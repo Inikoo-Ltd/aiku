@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import Combobox from '@/Components/Forms/Fields/Combobox.vue'
 import Input from '@/Components/Forms/Fields/Input.vue'
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any,

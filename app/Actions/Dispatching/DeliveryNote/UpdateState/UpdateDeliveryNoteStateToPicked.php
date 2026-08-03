@@ -38,6 +38,7 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
 
             if ($hasWaiting) {
                 data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
+                data_set($modelData, 'handling_blocked_at', now());
                 if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                     UpdateOrderStateToHandlingBlocked::make()->action($deliveryNote->orders->first(), $deliveryNote);
                 }

@@ -23,6 +23,7 @@ library.add(faCube, faStar, faImage, faPencil)
 interface LinkData {
   url?: string
   workshop_url?: string
+  image_alt?: string
 }
 
 interface ImageData {
@@ -30,6 +31,7 @@ interface ImageData {
   properties?: Record<string, any>
   attributes?: Record<string, any>
   link_data?: LinkData
+  alt?: string
 }
 
 interface LayoutData {
@@ -60,18 +62,18 @@ const layout = inject('layout', {})
 const getHref = (index: number) => {
   const image = props.fieldValue?.value?.images?.[index]
   return (
-    image?.link_data?.url ||
-    image?.link_data?.workshop_url ||
+    image?.link_data?.canonical_url ||
     image?.link_data?.href ||
+    image?.link_data?.url ||
     ''
   )
 }
 
 const getHrefFromImageData = (image: any) => {
   return (
-    image?.link_data?.url ||
+    image?.link_data?.canonical_url ||
     image?.link_data?.href ||
-    image?.link_data?.workshop_url ||
+    image?.link_data?.url ||
     ''
   )
 }
@@ -102,12 +104,31 @@ const getVal = (base: any, path?: string[]) => {
   return resolveResponsiveValue(base, props.screenType, path);
 }
 
+const imageSizes = computed(() => {
+  const largestFraction: Record<string, number> = {
+    "1": 1, "2": 0.5, "3": 1 / 3, "4": 0.25, "6": 1 / 6,
+    "12": 0.5, "21": 0.5, "13": 0.75, "31": 0.75, "211": 0.5,
+  }
+  const fraction = largestFraction[String(getVal(props.fieldValue?.value?.layout_type) ?? "1")] ?? 1
+
+  return `${Math.round(fraction * 100)}vw`
+})
+
 
 const resolvedGap = computed(() => {
   return ( props.fieldValue?.value?.gap?.[props.screenType || 'desktop'] || 0 ) + 'px'
 })
 
 const idxSlideLoading = ref<number | null>(null)
+
+const isLcpCandidate = (index: number) => props.indexBlock === 0 && index === 0
+
+const imgAttrsFor = (image: any, index: number) => {
+  return isLcpCandidate(index)
+    ? { ...image?.attributes, loading: 'eager', fetchpriority: 'high', decoding: 'async' }
+    : { ...image?.attributes, loading: 'lazy', decoding: 'async' }
+}
+
 </script>
 
 <template>
@@ -118,9 +139,9 @@ const idxSlideLoading = ref<number | null>(null)
       width: 'auto'
     }" aria-label="Image Gallery Section">
       <!-- Mobile Carousel -->
-      <Swiper v-if="screenType === 'mobile' && fieldValue?.mobile?.type === 'carousel'" :slides-per-view="1"
+      <Swiper v-if="fieldValue?.mobile?.type === 'carousel'" :slides-per-view="1"
         :loop="true" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay, Pagination]"
-        class="w-full" :style="getStyles(fieldValue?.value?.layout?.properties, screenType)">
+        class="w-full sm:!hidden" :style="getStyles(fieldValue?.value?.layout?.properties, screenType)">
         <SwiperSlide v-for="(image, index) in fieldValue?.value?.images" :key="index" class="w-full">
             <component
                 v-if="getHref(index)"
@@ -140,7 +161,9 @@ const idxSlideLoading = ref<number | null>(null)
             <template #default>
                 <Image
                     :src="image?.source"
-                    :alt="image?.properties?.alt || `image ${index + 1}`"
+                    :srcset="image?.srcset"
+                    :sizes="imageSizes"
+                    :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`"
                     :imageCover="true"
                     :height="getStyles(image.properties, screenType, false)?.height"
 						        :width="getStyles(image.properties, screenType, false)?.width" 
@@ -148,7 +171,7 @@ const idxSlideLoading = ref<number | null>(null)
                         ...getStyles(fieldValue?.value?.layout?.properties, screenType),
                         ...getStyles(image?.properties, screenType)
                     }"
-                    :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
+                    :imgAttributes="imgAttrsFor(image, index)"
                 />
                 
               <div v-if="idxSlideLoading == index" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
@@ -158,13 +181,15 @@ const idxSlideLoading = ref<number | null>(null)
             </component>
           <div v-else class="block w-full h-full">
             <Image 
-              :src="image?.source" 
-              :alt="image?.properties?.alt || `image ${index + 1}`" 
+              :src="image?.source"
+                    :srcset="image?.srcset"
+                    :sizes="imageSizes" 
+              :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`" 
               :imageCover="true" :style="{
               ...getStyles(fieldValue?.value?.layout?.properties, screenType),
               ...getStyles(image?.properties, screenType)
-              }" 
-              :imgAttributes="{ ...image?.attributes, loading: 'lazy' }" 
+              }"
+              :imgAttributes="imgAttrsFor(image, index)"
               :height="getStyles(image.properties, screenType, false)?.height"
 						  :width="getStyles(image.properties, screenType, false)?.width" 
               />
@@ -185,6 +210,8 @@ const idxSlideLoading = ref<number | null>(null)
             <a v-if="getHref(index - 1)" :href="getHref(index - 1)" :target="getTarget(index - 1)"
               rel="noopener noreferrer" class="block w-full h-full">
               <Image :src="fieldValue?.value?.images?.[index - 1]?.source"
+              :srcset="fieldValue?.value?.images?.[index - 1]?.srcset"
+              :sizes="imageSizes"
                 :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
                 class="w-full h-full aspect-square object-cover rounded-lg" :style="{
                   ...getStyles(fieldValue?.value?.layout?.properties, screenType),
@@ -194,6 +221,8 @@ const idxSlideLoading = ref<number | null>(null)
 
             <div v-else class="block w-full h-full">
               <Image :src="fieldValue?.value?.images?.[index - 1]?.source"
+              :srcset="fieldValue?.value?.images?.[index - 1]?.srcset"
+              :sizes="imageSizes"
                 :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
                 class="w-full h-full aspect-square object-cover rounded-lg" :style="{
                   ...getStyles(fieldValue?.value?.layout?.properties, screenType),
@@ -215,7 +244,8 @@ const idxSlideLoading = ref<number | null>(null)
     
     
     
-      <div v-else class="grid w-full" :style="{
+      <div v-if="fieldValue?.mobile?.type !== 'carousel' || screenType !== 'mobile'" class="grid w-full"
+        :class="fieldValue?.mobile?.type === 'carousel' ? 'max-sm:hidden' : ''" :style="{
         gap: resolvedGap,
         ...getGridTemplate(getVal(fieldValue.value.layout_type))
       }">
@@ -231,10 +261,12 @@ const idxSlideLoading = ref<number | null>(null)
             @start="() => idxSlideLoading = index"
             @finish="() => idxSlideLoading = null"
           >
-            <Image 
-              v-if="image?.source" 
-              :src="image.source" 
-              :alt="image.properties?.alt || `image ${index + 1}`"
+            <Image
+              v-if="image?.source"
+              :src="image.source"
+              :srcset="image?.srcset"
+              :sizes="imageSizes"
+              :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`"
               :imageCover="true" 
               class="w-full h-full aspect-square object-cover rounded-lg"
               :height="getStyles(image.properties, screenType, false)?.height"
@@ -242,7 +274,7 @@ const idxSlideLoading = ref<number | null>(null)
               :style="{
                 ...getStyles(fieldValue.value.layout?.properties, screenType),
                 ...getStyles(image.properties, screenType)
-              }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }"
+              }" :imgAttributes="imgAttrsFor(image, index)"
             />
             <div v-else
               class="flex items-center justify-center w-full h-32 bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">

@@ -8,8 +8,8 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Helpers\Barcode\StoreBarcode;
-use App\Actions\Helpers\Barcode\UpdateBarcode;
+use App\Actions\Goods\Barcode\StoreBarcode;
+use App\Actions\Goods\Barcode\UpdateBarcode;
 use App\Models\Helpers\Barcode;
 use App\Transfers\SourceOrganisationService;
 use Exception;

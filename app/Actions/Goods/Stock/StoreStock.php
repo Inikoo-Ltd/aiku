@@ -51,7 +51,6 @@ class StoreStock extends OrgAction
             /** @var Stock $stock */
             $stock = $parent->stocks()->create($modelData);
             $stock->stats()->create();
-            $stock->intervals()->create();
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $stock->timeSeries()->create(['frequency' => $frequency]);
             }

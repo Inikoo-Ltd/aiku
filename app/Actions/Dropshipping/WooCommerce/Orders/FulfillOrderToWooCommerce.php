@@ -25,6 +25,10 @@ class FulfillOrderToWooCommerce extends OrgAction
 
     public function handle(Order $order): void
     {
+        if ($order->is_bypass_platform_update) {
+            return;
+        }
+
         $fulfillOrderId = Arr::get($order->data, 'woo_order.id');
 
         if (!$fulfillOrderId) {
@@ -38,30 +42,34 @@ class FulfillOrderToWooCommerce extends OrgAction
             return;
         }
 
-        /** @var DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes->first();
+        try {
+            /** @var DeliveryNote $deliveryNote */
+            $deliveryNote = $order->deliveryNotes->first();
 
-        $shipments = [];
-        foreach ($deliveryNote->shipments as $shipment) {
-            $shipments[] = [
-                'tracking_provider'    => $shipment->trade_as,
-                'tracking_number'      => $shipment->tracking,
-                'custom_tracking_link' => $shipment->combined_label_url,
-                'date_shipped'         => now()->timestamp // current timestamp
-            ];
+            $shipments = [];
+            foreach ($deliveryNote->shipments as $shipment) {
+                $shipments[] = [
+                    'tracking_provider'    => $shipment->trade_as,
+                    'tracking_number'      => $shipment->tracking,
+                    'custom_tracking_link' => $shipment->combined_label_url,
+                    'date_shipped'         => now()->timestamp // current timestamp
+                ];
 
-            $shippingNote = __("Shipping Tracking (:shipmentTracking): :shipmentTradeAs :shipmentLabelUrl", ['shipmentTracking' => $shipment->tracking, 'shipmentTradeAs' => $shipment->trade_as, 'shipmentLabelUrl' => $shipment->combined_label_url]);
-            $wooCommerceUser->createCustomerOrderNote($fulfillOrderId, $shippingNote);
-        }
+                $shippingNote = __("Shipping Tracking (:shipmentTracking): :shipmentTradeAs :shipmentLabelUrl", ['shipmentTracking' => $shipment->tracking, 'shipmentTradeAs' => $shipment->trade_as, 'shipmentLabelUrl' => $shipment->combined_label_url]);
+                $wooCommerceUser->createCustomerOrderNote($fulfillOrderId, $shippingNote);
+            }
 
-        $wooCommerceUser->updateWooCommerceOrder($fulfillOrderId, [
-            'status' => 'completed', // or 'processing', 'on-hold', etc.
-            'meta_data' => [
-                [
-                    'key'   => '_wc_shipment_tracking_items',
-                    'value' => $shipments
+            $wooCommerceUser->updateWooCommerceOrder($fulfillOrderId, [
+                'status' => 'completed', // or 'processing', 'on-hold', etc.
+                'meta_data' => [
+                    [
+                        'key'   => '_wc_shipment_tracking_items',
+                        'value' => $shipments
+                    ]
                 ]
-            ]
-        ]);
+            ]);
+        } catch (\Throwable $th) {
+            \Sentry::captureException($th);
+        }
     }
 }

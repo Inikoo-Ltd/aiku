@@ -14,7 +14,7 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
@@ -29,15 +29,26 @@ class UpdateTransaction extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
-    public function handle(Transaction $transaction, array $modelData, $calculateShipping = true): Transaction
+    public function handle(Transaction $transaction, array $modelData, $calculateShipping = true, bool $calculateDiscounts = true): Transaction
     {
+        if (Arr::has($modelData, 'units_ordered')) {
+            $unitsOrders = Arr::pull($modelData, 'units_ordered');
+            $product     = $transaction->model;
+            $units       = $product->units;
+            if ($units == 0) {
+                abort(423);
+            }
+
+            $modelData['quantity_ordered'] = round($unitsOrders / $units, 6);
+        }
+
         if (Arr::has($modelData, 'is_cut_view') && !Arr::get($modelData, 'is_cut_view')) {
             $modelData['quantity_ordered'] = (int)ceil($transaction->quantity_ordered);
         }
 
 
         if (Arr::exists($modelData, 'quantity_ordered') && $this->strict) {
-            if ($modelData['quantity_ordered'] == 0 && $transaction->order->status == OrderStatusEnum::CREATING) {
+            if ($modelData['quantity_ordered'] == 0 && ($transaction->order->state == OrderStateEnum::CREATING || $transaction->order->state == OrderStateEnum::SUBMITTED)) {
                 return DeleteTransaction::run($transaction);
             }
 
@@ -52,9 +63,9 @@ class UpdateTransaction extends OrgAction
             }
 
             $historicAsset = $transaction->historicAsset;
-            $net           = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-            // here we are going to deal with discounts 15/09/24
+
             $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+            $net   = round($gross * ($transaction->current_discount_factor ?? 1), 2);
 
             data_set($modelData, 'gross_amount', $gross);
             data_set($modelData, 'net_amount', $net);
@@ -86,7 +97,7 @@ class UpdateTransaction extends OrgAction
 
             if (Arr::hasAny($changes, ['quantity_ordered', 'net_amount', 'gross_amount'])) {
                 OrderHydrateCategoriesData::run($transaction->order);
-                CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping);
+                CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping, $calculateDiscounts);
             }
         }
 
@@ -99,6 +110,7 @@ class UpdateTransaction extends OrgAction
         $numericRule = ['sometimes', 'numeric'];
 
         $rules = [
+            'units_ordered'       => ['sometimes', 'numeric', 'integer', 'min:0'],
             'quantity_ordered'    => $qtyRule,
             'quantity_picked'     => $qtyRule,
             'quantity_bonus'      => $qtyRule,

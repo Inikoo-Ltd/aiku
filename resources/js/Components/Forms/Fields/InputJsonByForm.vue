@@ -8,6 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import PureInputNumber from "@/Components/Pure/PureInputNumber.vue"
 import Toggle from '@/Components/Pure/Toggle.vue'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

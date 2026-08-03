@@ -29,7 +29,7 @@ class StoreTopUpPaymentApiPoint extends RetinaAction
     {
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'ulid', Str::ulid());
+        data_set($modelData, 'ulid', (string) Str::ulid());
 
 
         $paymentMethodsData  = [];

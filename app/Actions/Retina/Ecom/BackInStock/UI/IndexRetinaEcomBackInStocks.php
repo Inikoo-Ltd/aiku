@@ -56,7 +56,7 @@ class IndexRetinaEcomBackInStocks extends RetinaAction
                 'title'       => __('Back In Stock Reminders'),
                 'pageHead' => [
                     'title'         => __('Back In Stock Reminders'),
-                    'icon'          => 'fal fa-heart',
+                    'icon'          => 'fal fa-envelope-open-text',
                 ],
                 'data'     => RetinaCustomerBackInStockRemindersResource::collection($productFavorites),
                 'basketTransactions' => $basketTransactions,

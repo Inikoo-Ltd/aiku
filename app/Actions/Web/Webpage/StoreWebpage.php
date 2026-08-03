@@ -15,6 +15,7 @@ use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
+use App\Actions\Web\Website\Layouts\FetchUsedDepartmentDescriptionWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedFamiliesOverviewWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedProductWebBlock;
@@ -62,6 +63,8 @@ class StoreWebpage extends OrgAction
      */
     public function handle(Website|Webpage $parent, array $modelData): Webpage
     {
+        $newBlogModelData = [];
+
         if (!Arr::exists($modelData, 'type')) {
             $modelData['type'] = WebpageTypeEnum::CONTENT;
         }
@@ -74,6 +77,15 @@ class StoreWebpage extends OrgAction
             $modelData['data'] = [
                 'seo_structure_type' => Arr::pull($modelData, 'seo_structure_type')
             ];
+        }
+
+        $isFromCSV = Arr::pull($modelData, 'fromCSV', false); // unset basically, safer this way. keep it be
+
+        if (
+            ($modelData['sub_type'] == WebpageSubTypeEnum::MAILSHOT || $isFromCSV) && Arr::exists($modelData, 'fieldValue')
+        ) {
+            $newBlogModelData['fieldValue'] = Arr::pull($modelData, 'fieldValue');
+
         }
 
         data_set($modelData, 'url', '', overwrite: false);
@@ -90,7 +102,7 @@ class StoreWebpage extends OrgAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
-        $webpage = DB::transaction(function () use ($parent, $modelData) {
+        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData, $isFromCSV) {
             /** @var Webpage $webpage */
             $webpage = $parent->webpages()->create($modelData);
             $webpage->stats()->create();
@@ -133,20 +145,21 @@ class StoreWebpage extends OrgAction
                 ]);
             }
 
-            $templates = [];
 
-            if ($this->strict) {
-                $usedProductsTemplateCode           = FetchUsedProductsWebBlock::run($this->website);
-                $usedProductTemplateCode            = FetchUsedProductWebBlock::run($this->website);
-                $usedFamiliesTemplateCode           = FetchUsedFamiliesWebBlock::run($this->website);
-                $usedFamiliesOverviewTemplateCode   = FetchUsedFamiliesOverviewWebBlock::run($this->website);
-                $usedFamilyDescriptionTemplateCode  = FetchUsedFamilyDescriptionWebBlock::run($this->website);
-                $usedSubDepartmentsTemplateCode     = FetchUsedSubDepartmentsWebBlock::run($this->website);
+            if ($this->strict || $isFromCSV) {
+                $usedProductsTemplateCode               = FetchUsedProductsWebBlock::run($this->website);
+                $usedProductTemplateCode                = FetchUsedProductWebBlock::run($this->website);
+                $usedFamiliesTemplateCode               = FetchUsedFamiliesWebBlock::run($this->website);
+                $usedFamiliesOverviewTemplateCode       = FetchUsedFamiliesOverviewWebBlock::run($this->website);
+                $usedFamilyDescriptionTemplateCode      = FetchUsedFamilyDescriptionWebBlock::run($this->website);
+                $usedDepartmentDescriptionTemplateCode  = FetchUsedDepartmentDescriptionWebBlock::run($this->website);
+                $usedSubDepartmentsTemplateCode         = FetchUsedSubDepartmentsWebBlock::run($this->website);
 
                 if ($model instanceof Product) {
                     $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::PRODUCT, $usedProductTemplateCode);
                     $this->createWebBlock($webpage, 'luigi-item-alternatives-1');
                     $this->createWebBlock($webpage, 'luigi-trends-1');
+                    $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
                     $this->createWebBlock($webpage, 'luigi-last-seen-1');
                 } elseif ($model instanceof Collection) {
                     $this->createWebBlock($webpage, 'collection-description-1');
@@ -157,21 +170,39 @@ class StoreWebpage extends OrgAction
                         $this->createWebBlock($webpage, 'sub-department-description-1');
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+                        $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
                         if (data_get($modelData, 'layout_style') == 'families-overview') {
-                            $this->createWebBlock($webpage, 'department-description-1');
+                            foreach ($usedDepartmentDescriptionTemplateCode as $code) {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, $code);
+                            }
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILY_OVERVIEW, $usedFamiliesOverviewTemplateCode);
                         } else {
-                            $this->createWebBlock($webpage, 'department-description-1');
+                            foreach ($usedDepartmentDescriptionTemplateCode as $code) {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, $code);
+                            }
+
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
-                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
-                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+
+                            if ($usedDepartmentDescriptionTemplateCode == 'department-description-1') {
+                                $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+                            }
+
+                            $this->createWebBlock($webpage, 'top-families');
+                            $this->createWebBlock($webpage, 'luigi-trends-1');
+                            $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+
+                            $this->createWebBlock($webpage, 'faq-department');
                         }
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
                         foreach ($usedFamilyDescriptionTemplateCode as $code) {
                             $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILY_DESCRIPTION, $code);
                         }
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+
+                        $this->createWebBlock($webpage, 'recommendation-from-master');
+                        $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+
                         $this->createWebBlock($webpage, 'luigi-trends-1');
                         $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
                         $this->createWebBlock($webpage, 'luigi-last-seen-1');
@@ -179,7 +210,12 @@ class StoreWebpage extends OrgAction
                 }
 
                 if ($webpage->type == WebpageTypeEnum::BLOG) {
-                    $this->createWebBlock($webpage, 'blog', $webpage);
+                    if ($webpage->sub_type == WebpageSubTypeEnum::MAILSHOT || $isFromCSV) {
+                        $this->createWebBlock($webpage, 'blog', $newBlogModelData);
+                    } else {
+                        $this->createWebBlock($webpage, 'blog', $webpage);
+                    }
+
                 }
             }
 
@@ -281,8 +317,10 @@ class StoreWebpage extends OrgAction
             'model_id'           => ['sometimes', 'integer'],
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
-            'layout_style'       => ['sometimes', 'string']
-
+            'seo_data'           => ['sometimes', 'array'],
+            'layout_style'       => ['sometimes', 'string'],
+            'fieldValue'         => ['sometimes', 'array'],
+            'fromCSV'            => ['sometimes', 'boolean']
         ];
 
         if ($this->parent instanceof Webpage) {
@@ -356,6 +394,7 @@ class StoreWebpage extends OrgAction
      */
     public function action(Website|Webpage $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Webpage
     {
+
         if (!$audit) {
             Webpage::disableAuditing();
         }

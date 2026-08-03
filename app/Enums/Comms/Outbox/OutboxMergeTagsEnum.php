@@ -36,6 +36,15 @@ enum OutboxMergeTagsEnum: string
     case RETINA_LOGIN_LINK = 'Retina Login Link';
     case WEB_USER_PASSWORD = 'Web User Password';
     case WEB_USER_CONTACT_NAME = 'Web User Contact Name';
+    case REVIEW_REMINDER_LINKS = 'Review Reminder Links';
+    case DOWNLOAD_INVOICE_PDF = 'Download Invoice Pdf';
+    case LAST_INVOICE_DATE = 'Last Invoice Date';
+    case GOLD_REWARD_DEADLINE = 'Gold Reward Deadline';
+    case ORDER = 'Order';
+    case ORDER_NUMBER = 'Order Number';
+    case CUSTOMER_NOTE = 'Customer Note';
+    case DELIVERY_ADDRESS = 'Delivery Address';
+    case INVOICE_ADDRESS = 'Invoice Address';
 
 
     public static function tags(): array
@@ -132,9 +141,59 @@ enum OutboxMergeTagsEnum: string
             [
                 'name' => __('Web User Contact Name'),
                 'value' => '[Web User Contact Name]'
-            ]
-
+            ],
+            [
+                'name' => __('Review Reminder Links'),
+                'value' => '[Review Reminder Links]'
+            ],
+            [
+                'name' => __('Download Invoice Pdf'),
+                'value' => '[Download Invoice Pdf]'
+            ],
+            [
+                'name' => __('Last Invoice Date'),
+                'value' => '[Last Invoice Date]'
+            ],
+            [
+                'name' => __('Gold Reward Deadline'),
+                'value' => '[Gold Reward Deadline]'
+            ],
+            [
+                'name' => __('Order'),
+                'value' => '[Order]'
+            ],
+            [
+                'name' => __('Order Number'),
+                'value' => '[Order Number]'
+            ],
+            [
+                'name' => __('Customer Note'),
+                'value' => '[Customer Note]'
+            ],
+            [
+                'name' => __('Delivery Address'),
+                'value' => '[Delivery Address]'
+            ],
+            [
+                'name' => __('Invoice Address'),
+                'value' => '[Invoice Address]'
+            ],
 
         ];
+    }
+
+    public static function filterTags(array $enumCases): array
+    {
+        // Get the enum values we're filtering by
+        $enumValues = array_map(fn ($case) => $case->value, $enumCases);
+
+        // Filter tags to only include those matching the provided enum cases
+        $filtered = array_filter(
+            self::tags(),
+            fn ($tag) => in_array(str_replace(['[', ']'], '', $tag['value']), $enumValues)
+        );
+
+        // Re-index array to remove gaps from filtering
+        return array_values($filtered);
     }
 }

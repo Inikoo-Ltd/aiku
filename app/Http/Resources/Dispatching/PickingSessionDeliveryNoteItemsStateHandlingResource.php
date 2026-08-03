@@ -25,6 +25,9 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $is_handled
  * @property mixed $quantity_packed
  * @property mixed $quantity_not_picked
+ * @property mixed $quantity_waiting_warehouse
+ * @property mixed $quantity_waiting_crm
+ * @property mixed $notes
  * @property mixed $quantity_dispatched
  * @property mixed $org_stock_slug
  * @property mixed $packed_in
@@ -96,10 +99,11 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             ->orderBy('picking_priority')->get();
 
 
-        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked);
+        $quantityRemaining = max(0, $this->quantity_required - $this->quantity_picked);
+        $quantityToPick    = max(0, $quantityRemaining - $this->quantity_not_picked - $this->quantity_waiting_warehouse - $this->quantity_waiting_crm);
 
 
-        $isPicked = $quantityToPick == 0;
+        $isPicked = $quantityRemaining == 0;
         $isPacked = $isPicked && $this->quantity_packed == $this->quantity_picked;
 
 
@@ -132,6 +136,16 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
         }
 
+        $waitingWarehouseFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_warehouse ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_warehouse ?? 0) == ($this->quantity_waiting_warehouse ?? 0) && $packedIn > 1) {
+            $waitingWarehouseFractionalDS = [0, [($this->quantity_waiting_warehouse ?? 0) * $packedIn, $packedIn]];
+        }
+
+        $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_crm ?? 0) == ($this->quantity_waiting_crm ?? 0) && $packedIn > 1) {
+            $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
+        }
+
         return [
             'id'                                => $this->id,
             'is_picked'                         => $isPicked,
@@ -145,6 +159,11 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_not_picked'               => $this->quantity_not_picked,
             'quantity_packed'                   => $this->quantity_packed,
             'quantity_dispatched'               => $this->quantity_dispatched,
+            'quantity_waiting_warehouse'                => $this->quantity_waiting_warehouse,
+            'quantity_waiting_warehouse_fractional_ds'  => $waitingWarehouseFractionalDS,
+            'quantity_waiting_crm'                      => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds'        => $waitingCrmFractionalDS,
+            'notes'                                     => $this->notes,
             'org_stock_id'                      => $this->org_stock_id,
             'org_stock_code'                    => $this->org_stock_code,
             'org_stock_slug'                    => $this->org_stock_slug,
@@ -158,6 +177,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'delivery_note_slug'                => $this->delivery_note_slug,
             'delivery_note_id'                  => $this->delivery_note_id,
             'delivery_note_state'               => $this->delivery_note_state,
+            'delivery_note_has_waiting_items'   => (bool)$this->delivery_note_has_waiting_items,
             'delivery_note_customer_notes'      => $this->delivery_note_customer_notes,
             'delivery_note_public_notes'        => $this->delivery_note_public_notes,
             'delivery_note_internal_notes'      => $this->delivery_note_internal_notes,

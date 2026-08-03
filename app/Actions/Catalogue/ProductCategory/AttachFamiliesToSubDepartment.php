@@ -58,7 +58,7 @@ class AttachFamiliesToSubDepartment extends OrgAction
         foreach ($departmentsToHydrate as $departmentID) {
             $department = ProductCategory::find($departmentID);
             if ($department) {
-                DepartmentHydrateProducts::dispatch($department);
+                DepartmentHydrateProducts::dispatch($departmentID)->delay(2);
                 ProductCategoryHydrateFamilies::dispatch($department);
             }
         }
@@ -67,7 +67,7 @@ class AttachFamiliesToSubDepartment extends OrgAction
             $subDepartment = ProductCategory::find($subDepartmentsToHydrateID);
             if ($subDepartment) {
                 ProductCategoryHydrateFamilies::dispatch($subDepartment);
-                SubDepartmentHydrateProducts::dispatch($subDepartment);
+                SubDepartmentHydrateProducts::dispatch($subDepartmentsToHydrateID)->delay(2);
             }
         }
 

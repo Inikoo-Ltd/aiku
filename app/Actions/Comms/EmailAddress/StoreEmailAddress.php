@@ -10,6 +10,7 @@ namespace App\Actions\Comms\EmailAddress;
 
 use App\Models\Comms\EmailAddress;
 use App\Models\SysAdmin\Group;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreEmailAddress
@@ -18,15 +19,16 @@ class StoreEmailAddress
 
     public function handle(Group $group, string $email): EmailAddress
     {
+        /** @var EmailAddress $emailAddress */
         $emailAddress = $group->emailAddresses()->where('email', $email)->first();
-        if (!$emailAddress) {
-            $emailAddress = $group->emailAddresses()->create(
-                [
-                    'email' => $email
-                ]
-            );
+        if ($emailAddress) {
+            return $emailAddress;
         }
 
-        return $emailAddress;
+        try {
+            return $group->emailAddresses()->create(['email' => $email]);
+        } catch (UniqueConstraintViolationException) {
+            return $group->emailAddresses()->where('email', $email)->firstOrFail();
+        }
     }
 }

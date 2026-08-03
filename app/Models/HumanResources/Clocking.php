@@ -45,7 +45,9 @@ use Spatie\MediaLibrary\HasMedia;
  * @property string|null $source_id
  * @property int|null $work_schedule_id
  * @property bool $is_late
+ * @property int|null $clocking_machine_qr_code_id
  * @property-read \App\Models\HumanResources\ClockingMachine|null $clockingMachine
+ * @property-read \App\Models\HumanResources\ClockingMachineQRCode|null $clockingMachineQrCode
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
@@ -94,6 +96,11 @@ class Clocking extends Model implements HasMedia
     public function clockingMachine(): BelongsTo
     {
         return $this->belongsTo(ClockingMachine::class);
+    }
+
+    public function clockingMachineQrCode(): BelongsTo
+    {
+        return $this->belongsTo(ClockingMachineQRCode::class, 'clocking_machine_qr_code_id');
     }
 
     public function timesheet(): BelongsTo

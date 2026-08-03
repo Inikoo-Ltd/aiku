@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { get } from 'lodash-es'
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: Record<string, any>

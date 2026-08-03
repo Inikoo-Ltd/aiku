@@ -8,7 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
-use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -22,7 +22,7 @@ class UpdateCustomerLastInvoicedDate
 {
     use AsAction;
 
-    public function handle(Customer $customer, ?Carbon $date = null): void
+    public function handle(Customer $customer, ?Carbon $date = null, bool $cache = true, bool $modifyBasket = true): void
     {
         if (!$date) {
             $date = $customer->invoices()
@@ -37,13 +37,22 @@ class UpdateCustomerLastInvoicedDate
 
         $customer->update(['last_invoiced_at' => $date]);
         $customer->stats()->update(['last_invoiced_at' => $date]);
-        Cache::put("customer_last_invoiced_at_$customer->id", $date, 7 * 24 * 60 * 60);
-        Cache::forget("customer_days_since_last_invoiced_at_$customer->id");
+
+        if ($customer->shop->is_aiku) {
+            if ($cache) {
+                Cache::put("customer_last_invoiced_at_$customer->id", $date, 7 * 24 * 60 * 60);
+            } else {
+                Cache::forget("customer_last_invoiced_at_$customer->id");
+            }
+            Cache::forget("customer_days_since_last_invoiced_at_$customer->id");
+        }
 
 
-        if ($customer->wasChanged('last_invoiced_at') && $customer->shop->type == ShopTypeEnum::B2B) {
+
+
+        if ($modifyBasket && $customer->shop->is_aiku && $customer->wasChanged('last_invoiced_at') && $customer->shop->type == ShopTypeEnum::B2B) {
             foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
-                CalculateOrderTotalAmounts::dispatch($order, true, true, false, true);
+                CalculateOrderDiscounts::dispatch($order);
             }
         }
     }

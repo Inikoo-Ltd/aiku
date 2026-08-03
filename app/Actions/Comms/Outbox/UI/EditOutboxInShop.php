@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Outbox\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\UI\Mail\OutboxTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
@@ -36,7 +37,7 @@ class EditOutboxInShop extends OrgAction
             'fields' => [
                 'subject' => [
                     'type' => 'input',
-                    'label' => __('subject'),
+                    'label' => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required' => false,
                     'value' => $outbox->emailOngoingRun?->email?->subject,
@@ -60,60 +61,131 @@ class EditOutboxInShop extends OrgAction
         $isApplicableField = [
             'title' => '',
             'fields' => [
-                'is_applicable' => [
+                'state' => [
                     'type' => 'select',
-                    'label' => __('Notification active'),
-                    'placeholder' => __('Notification active'),
-                    'options' => $outbox->is_applicable ? [
-                        ['label' => __('Yes'), 'value' => true],
-                        ['label' => __('No'), 'value' => false],
-                    ] : [
-                        ['label' => __('No'), 'value' => false],
-                        ['label' => __('Yes'), 'value' => true],
+                    'label' => __('Notification State'),
+                    'placeholder' => __('Notification State'),
+                    'options' => [
+                        ['label' => __(OutboxStateEnum::ACTIVE->value), 'value' => OutboxStateEnum::ACTIVE->value ],
+                        ['label' => __(OutboxStateEnum::SUSPENDED->value), 'value' => OutboxStateEnum::SUSPENDED->value],
                     ],
                     'required' => true,
                     'mode' => 'single',
-                    'value' => $outbox->is_applicable,
+                    'value' => $outbox->state->value,
                 ],
             ]
         ];
 
-        if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD])) {
-            $fields[] = [
-                'title' => '',
-                'fields' => [
-                    'days_after' => [
-                        'type' => 'input_number',
-                        'label' => __('Days after last order dispatched'),
-                        'placeholder' => __('Days after last order dispatched'),
-                        'required' => false,
-                        'value' => $outbox->days_after,
-                    ],
-                ]
-            ];
-        } elseif (in_array($outbox->code, [OutboxCodeEnum::BASKET_LOW_STOCK])) {
-            $fields[] = $subjectField;
-            $fields[] = [
-                'title' => '',
-                'fields' => [
-                    'threshold' => [
-                        'type' => 'input_number',
-                        'label' => __('Low Stock Threshold'),
-                        'placeholder' => __('Low Stock Threshold'),
-                        'required' => true,
-                        'value' => $outbox->threshold,
-                    ],
-                ]
-            ];
-            $fields[] = $intervalField;
-            $fields[] = $isApplicableField;
-        } elseif (in_array($outbox->code, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION])) {
-            $fields[] = $subjectField;
-            $fields[] = $intervalField;
-            $fields[] = $isApplicableField;
-        } else {
-            $fields[] = $subjectField;
+        $fields[] = $subjectField; // init fields
+
+        switch ($outbox->code) {
+            case OutboxCodeEnum::REORDER_REMINDER:
+            case OutboxCodeEnum::REORDER_REMINDER_2ND:
+            case OutboxCodeEnum::REORDER_REMINDER_3RD:
+            case OutboxCodeEnum::GOLD_REWARD_REMINDER_1:
+            case OutboxCodeEnum::GOLD_REWARD_REMINDER_2:
+            case OutboxCodeEnum::GOLD_REWARD_REMINDER_3:
+                $fields[] = [
+                    'title' => '',
+                    'fields' => [
+                        'days_after' => [
+                            'type' => 'input_number',
+                            'label' => __('Reminder Interval (Days)'),
+                            'placeholder' => __('Days after last order dispatched'),
+                            'information' => __('Number of days to wait after the last dispatched order before sending this reminder.'),
+                            'required' => true,
+                            'value' => $outbox->days_after,
+                        ],
+                    ]
+                ];
+                break;
+            case OutboxCodeEnum::PROSPECT_CONVERTION_1:
+            case OutboxCodeEnum::PROSPECT_CONVERTION_2:
+            case OutboxCodeEnum::PROSPECT_CONVERTION_3:
+                $fields[] = [
+                    'title' => '',
+                    'fields' => [
+                        'days_after' => [
+                            'type' => 'select',
+                            'label' => __('Follow-up After Subcribe (In Days)'),
+                            'placeholder' => __('Days after last contact'),
+                            'information' => __('Number of days to wait after the prospect was register as subscriber'),
+                            'required' => false,
+                            'searchable' => true,
+                            'mode' => 'single',
+                            'options' => [
+                                ...($outbox->code == OutboxCodeEnum::PROSPECT_CONVERTION_1 ? [['value' => 0, 'label' => __('Directly')]] : []),
+                                ['value' => 1, 'label' => __('1 Day later')],
+                                ...array_map(
+                                    fn (int $days) => ['value' => $days, 'label' => __(':days Days later', ['days' => $days])],
+                                    range(2, 30)
+                                ),
+                            ],
+                            'value' => $outbox->days_after,
+                        ],
+                    ]
+                ];
+                break;
+            case OutboxCodeEnum::REVIEW_REMINDER:
+                $fields[] = [
+                    'title' => '',
+                    'fields' => [
+                        'days_after' => [
+                            'type' => 'input_number',
+                            'label' => __('Days after order dispatched'),
+                            'placeholder' => __('Days after order dispatched'),
+                            'required' => false,
+                            'value' => $outbox->days_after ?? 10,
+                        ],
+                    ]
+                ];
+                break;
+            case OutboxCodeEnum::BASKET_LOW_STOCK:
+                $fields[] = [
+                    'title' => '',
+                    'fields' => [
+                        'threshold' => [
+                            'type' => 'input_number',
+                            'label' => __('Low Stock Threshold'),
+                            'placeholder' => __('Low Stock Threshold'),
+                            'required' => true,
+                            'value' => $outbox->threshold,
+                        ],
+                    ]
+                ];
+                $fields[] = $intervalField;
+                break;
+            case OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION:
+                $fields[] = $intervalField;
+                break;
+            case OutboxCodeEnum::PRICE_CHANGE:
+                $fields[] = [
+                    'title' => '',
+                    'fields' => [
+                        'interval' => [
+                            'type' => 'select',
+                            'label' => __('Cooldown Period'),
+                            'placeholder' => __('Cooldown Period'),
+                            'required' => true,
+                            'mode' => 'single',
+                            'options' => [
+                                ['value' => 10, 'label' => __('10 minutes')],
+                                ['value' => 20, 'label' => __('20 minutes')],
+                                ['value' => 30, 'label' => __('30 minutes')],
+                                ['value' => 60, 'label' => __('1 hour')],
+                                ['value' => 120, 'label' => __('2 hours')],
+                                ['value' => 1440, 'label' => __('1 day')],
+                            ],
+                            'value' => $outbox->interval ?? 10,
+                        ],
+                    ]
+                ];
+                break;
+            default:
+                break;
         }
+        // set end
+        $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
 
 
 

@@ -9,18 +9,36 @@
 namespace App\Actions\Web;
 
 use App\Models\Web\Website;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebsiteHydrateAnnouncements
+class WebsiteHydrateAnnouncements implements ShouldBeUnique
 {
     use AsAction;
 
-    public function handle(Website $website): void
+    public function getJobUniqueId(int|null $websiteId): string
     {
+        return $websiteId ?? 'empty';
+    }
+
+    public function handle(int|null $websiteId): void
+    {
+        if (!$websiteId) {
+            return;
+        }
+
+        $website = Website::find($websiteId);
+
+        if (!$website) {
+            return;
+        }
+
         $stats = [
-            'number_announcements' => $website->announcements()->count(),
+            'number_announcements'          => $website->announcements()->count(),
+            'number_active_announcements'   => $website->announcements()->where('status', 'active')->count(),
+            'number_inactive_announcements' => $website->announcements()->where('status', 'inactive')->count(),
         ];
 
-        $website->stats->update($stats);
+        $website->webStats->update($stats);
     }
 }

@@ -119,6 +119,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.luigisbox.last_reindex_at", Arr::pull($modelData, "last_reindex_at"));
         }
 
+        if (Arr::has($modelData, "iris_search_model")) {
+            data_set($modelData, "settings.iris_search_model", Arr::pull($modelData, "iris_search_model"));
+        }
+
         if (Arr::has($modelData, "return_policy")) {
             data_set($modelData, "settings.return_policy", Arr::pull($modelData, "return_policy"));
         }
@@ -139,6 +143,29 @@ class UpdateWebsite extends OrgAction
         }
         if (Arr::has($modelData, 'max_amt_shown_recommender')) {
             data_set($modelData, 'settings.recommender_web_block.max_amt_shown', Arr::pull($modelData, 'max_amt_shown_recommender', 100));
+        }
+
+        if (Arr::has($modelData, 'title_product_category_recommender')) {
+            data_set($modelData, 'settings.recommender_product_category_web_block.title', Arr::pull($modelData, 'title_product_category_recommender'));
+        }
+
+        if (Arr::has($modelData, 'min_amt_shown_recommender_product_category')) {
+            data_set($modelData, 'settings.recommender_product_category_web_block.min_amt_shown', Arr::pull($modelData, 'min_amt_shown_recommender_product_category', 5));
+        }
+
+        if (Arr::has($modelData, 'max_amt_shown_recommender_product_category')) {
+            data_set($modelData, 'settings.recommender_product_category_web_block.max_amt_shown', Arr::pull($modelData, 'max_amt_shown_recommender_product_category', 100));
+        }
+
+        if (Arr::has($modelData, 'webpage_title_prefix')) {
+            data_set($modelData, 'settings.webpage.title_prefix', Arr::pull($modelData, 'webpage_title_prefix', null));
+        }
+
+        if (Arr::has($modelData, 'webpage_title_suffix')) {
+            data_set($modelData, 'settings.webpage.title_suffix', Arr::pull($modelData, 'webpage_title_suffix', null));
+        }
+        if (Arr::has($modelData, 'show_price')) {
+            data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
         }
 
         // Handle LLMs.txt file upload
@@ -167,7 +194,7 @@ class UpdateWebsite extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'domain'                   => [
+            'domain'                                     => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -193,7 +220,7 @@ class UpdateWebsite extends OrgAction
                     ]
                 )
             ],
-            'code'                     => [
+            'code'                                       => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -214,78 +241,42 @@ class UpdateWebsite extends OrgAction
                 ),
 
             ],
-            'name'                     => ['sometimes', 'required', 'string', 'max:255'],
-            'launched_at'              => ['sometimes', 'date'],
-            'state'                    => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
-            'status'                   => ['sometimes', 'boolean'],
-            'google_tag_id'            => [
-                'sometimes',
-                'nullable',
-                'string',
-                'regex:/^GTM-[A-Z0-9]+$/'
-            ],
-           'gsc_content' => [
-                'sometimes',
-                'nullable',
-                'string',
-                'regex:/^[A-Za-z0-9_\-]+$/',
-            ],
-            'catalogue_template'       => ['sometimes', 'array'],
-            'luigisbox_tracker_id'     => [
-                'sometimes',
-                'string',
-                'nullable',
-                'regex:/^\d{6}-\d{6,8}$/'
-            ],
-            'luigisbox_script_lbx'     => [
-                'sometimes',
-                'nullable',
-                'string',
-            ],
-            'luigisbox_lbx_code'       => [
-                'sometimes',
-                'nullable',
-                'string',
-                'regex:/^LBX-\d{6,8}$/',
-            ],
-            'luigisbox_private_key'    => ['sometimes', 'nullable', 'string'],
-            'last_reindex_at'          => ['sometimes', 'nullable', 'string'],
-            'jira_help_desk_widget'    => ['sometimes', 'nullable', 'string'],
-            'return_policy'            => ['sometimes', 'string'],
-            'image'                    => [
-                'sometimes',
-                'nullable',
-                File::image()
-                    ->max(12 * 1024)
-            ],
-            'favicon'                  => [
-                'sometimes',
-                'nullable',
-                File::image()
-                    ->max(12 * 1024)
-            ],
-            'marketing_opt_in_label'   => ['sometimes', 'string'],
-            'marketing_opt_in_default' => ['sometimes', 'boolean'],
-            'script_website'           => [
-                'sometimes',
-                'nullable',
-                'string',
-            ],
-            'llms_txt'                 => [
-                'sometimes',
-                'nullable',
-                File::types(['txt'])
-                    ->max(50) // 50KB max
-            ],
-            'enable_chat'              => ['sometimes', 'boolean'],
-            'description_has_overview' => ['sometimes', 'boolean'],
-            'welcome_message' => ['sometimes', 'nullable', 'string'],
-            'company_name_label' => ['sometimes', 'nullable', 'string'],
-            'company_name_placeholder' => ['sometimes', 'nullable', 'string'],
-            'tax_number_is_required' => ['sometimes', 'nullable','boolean'],
-            'title_recommender'         =>  ['sometimes', 'nullable', 'string'],
-            'min_amt_shown_recommender' =>  ['sometimes', 'numeric', 'min:1'],
-            'max_amt_shown_recommender' =>  ['sometimes', 'numeric', 'min:1'],
+            'name'                                       => ['sometimes', 'required', 'string', 'max:255'],
+            'launched_at'                                => ['sometimes', 'date'],
+            'state'                                      => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
+            'status'                                     => ['sometimes', 'boolean'],
+            'google_tag_id'                              => ['sometimes', 'nullable', 'string', 'regex:/^GTM-[A-Z0-9]+$/'],
+            'gsc_content'                                => ['sometimes', 'nullable', 'string', 'regex:/^[A-Za-z0-9_\-]+$/'],
+            'catalogue_template'                         => ['sometimes', 'array'],
+            'luigisbox_tracker_id'                       => ['sometimes', 'string', 'nullable', 'regex:/^\d{6}-\d{6,8}$/'],
+            'luigisbox_script_lbx'                       => ['sometimes', 'nullable', 'string'],
+            'luigisbox_lbx_code'                         => ['sometimes', 'nullable', 'string', 'regex:/^LBX-\d{6,8}$/'],
+            'luigisbox_private_key'                      => ['sometimes', 'nullable', 'string'],
+            'last_reindex_at'                            => ['sometimes', 'nullable', 'string'],
+            'iris_search_model'                          => ['sometimes', 'string', Rule::in(['internal', 'luigi'])],
+            'jira_help_desk_widget'                      => ['sometimes', 'nullable', 'string'],
+            'return_policy'                              => ['sometimes', 'string'],
+            'image'                                      => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
+            'favicon'                                    => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
+            'marketing_opt_in_label'                     => ['sometimes', 'string'],
+            'marketing_opt_in_default'                   => ['sometimes', 'boolean'],
+            'script_website'                             => ['sometimes', 'nullable', 'string'],
+            'llms_txt'                                   => ['sometimes', 'nullable', File::types(['txt'])->max(50)], // 50KB max
+            'enable_chat'                                => ['sometimes', 'boolean'],
+            'description_has_overview'                   => ['sometimes', 'boolean'],
+            'welcome_message'                            => ['sometimes', 'nullable', 'string'],
+            'company_name_label'                         => ['sometimes', 'nullable', 'string'],
+            'company_name_placeholder'                   => ['sometimes', 'nullable', 'string'],
+            'tax_number_is_required'                     => ['sometimes', 'nullable', 'boolean'],
+            'title_recommender'                          => ['sometimes', 'nullable', 'string'],
+            'min_amt_shown_recommender'                  => ['sometimes', 'numeric', 'min:1'],
+            'max_amt_shown_recommender'                  => ['sometimes', 'numeric', 'min:1'],
+            'title_product_category_recommender'         => ['sometimes', 'nullable', 'string'],
+            'min_amt_shown_recommender_product_category' => ['sometimes', 'numeric', 'min:1'],
+            'max_amt_shown_recommender_product_category' => ['sometimes', 'numeric', 'min:1'],
+            'webpage_title_prefix'                       => ['sometimes', 'nullable', 'string'],
+            'webpage_title_suffix'                       => ['sometimes', 'nullable', 'string'],
+            'show_price'                                 => ['sometimes', 'nullable', 'boolean']
         ];
 
         if (!$this->strict) {

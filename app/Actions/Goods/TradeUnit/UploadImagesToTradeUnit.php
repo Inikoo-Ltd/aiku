@@ -8,13 +8,13 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\ActionRequest;
 
-class UploadImagesToTradeUnit extends GrpAction
+class UploadImagesToTradeUnit extends OrgAction
 {
     use WithUploadModelImages;
     use WithAttachMediaToModel;
@@ -23,6 +23,12 @@ class UploadImagesToTradeUnit extends GrpAction
     public function handle(TradeUnit $model, string $scope, array $modelData, bool $updateDependants = false): array
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
+
+        foreach ($medias as $media) {
+            $model->images()->updateExistingPivot($media->id, [
+                'caption' => $model->name,
+            ]);
+        }
 
         if ($updateDependants) {
             UpdateTradeUnitImages::make()->updateDependencies($model);
@@ -38,7 +44,7 @@ class UploadImagesToTradeUnit extends GrpAction
 
     public function asController(TradeUnit $tradeUnit, ActionRequest $request): void
     {
-        $this->initialisation($tradeUnit->group, $request);
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
         $this->handle($tradeUnit, 'image', $this->validatedData, true);
     }

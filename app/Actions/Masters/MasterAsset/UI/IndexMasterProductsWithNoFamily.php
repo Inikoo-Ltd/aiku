@@ -10,12 +10,11 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
@@ -33,7 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
-class IndexMasterProductsWithNoFamily extends GrpAction
+class IndexMasterProductsWithNoFamily extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
@@ -109,26 +108,6 @@ class IndexMasterProductsWithNoFamily extends GrpAction
             ]);
         } elseif ($parent instanceof MasterShop) {
             $queryBuilder->where('master_assets.master_shop_id', $parent->id);
-            $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
-            $queryBuilder->leftJoin('master_product_categories as families', 'families.id', 'master_assets.master_family_id');
-            $queryBuilder->addSelect([
-                'families.slug as master_family_slug',
-                'families.code as master_family_code',
-                'families.name as master_family_name',
-                'departments.slug as master_department_slug',
-                'departments.code as master_department_code',
-                'departments.name as master_department_name'
-            ]);
-        } elseif ($parent instanceof MasterProductCategory) {
-            if ($parent->type == MasterProductCategoryTypeEnum::FAMILY) {
-                $queryBuilder->where('master_assets.master_family_id', $parent->id);
-            } elseif ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-                $queryBuilder->where('master_assets.master_department_id', $parent->id);
-            } else {
-                $queryBuilder->where('master_assets.master_sub_department_id', $parent->id);
-            }
-
-
             $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
             $queryBuilder->leftJoin('master_product_categories as families', 'families.id', 'master_assets.master_family_id');
             $queryBuilder->addSelect([
@@ -260,6 +239,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
                 'currency'           => $this->parent->group->currency->code,
                 'pageHead'           => [
                     'title'         => $title,
+                    'is_negative'   => true,
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
@@ -312,7 +292,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group);
     }
@@ -321,7 +301,7 @@ class IndexMasterProductsWithNoFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterShop;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterShop);
     }

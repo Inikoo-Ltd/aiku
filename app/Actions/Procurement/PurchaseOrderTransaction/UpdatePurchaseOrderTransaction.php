@@ -16,6 +16,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrderTransaction extends OrgAction
@@ -25,6 +26,18 @@ class UpdatePurchaseOrderTransaction extends OrgAction
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData): PurchaseOrderTransaction
     {
+        if (Arr::has($modelData, 'quantity_ordered') && !Arr::has($modelData, 'net_amount')) {
+            $unitCost = $purchaseOrderTransaction->supplierProduct?->cost;
+
+            if ($unitCost !== null) {
+                $netAmount = $unitCost * Arr::get($modelData, 'quantity_ordered');
+
+                data_set($modelData, 'net_amount', $netAmount);
+                data_set($modelData, 'grp_net_amount', $netAmount * ($purchaseOrderTransaction->grp_exchange ?? 1));
+                data_set($modelData, 'org_net_amount', $netAmount * ($purchaseOrderTransaction->org_exchange ?? 1));
+            }
+        }
+
         $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, $modelData, ['data']);
         CalculatePurchaseOrderTotalAmounts::run($purchaseOrderTransaction->purchaseOrder);
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrderTransaction->purchaseOrder)->delay($this->hydratorsDelay);
@@ -46,8 +59,6 @@ class UpdatePurchaseOrderTransaction extends OrgAction
     {
         $rules = [
             'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
-            'unit_quantity' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
-            'unit_price' => ['sometimes', 'nullable', 'numeric'],
         ];
         if (! $this->strict) {
             $rules = $this->noStrictUpdateRules($rules);

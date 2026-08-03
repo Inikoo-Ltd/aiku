@@ -49,23 +49,31 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $discretionary_offer_label
  * @property mixed $transaction_label
  * @property mixed $product_units
+ * @property mixed $units_changed_to
  * @property mixed $quantity_picked
  * @property bool $is_cut_view
  * @property string|null $batch_codes
+ * @property mixed $is_gift
+ * @property mixed $is_follow_on
  */
 class TransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $quantityOrdered = $this->quantity_ordered;
+        if ($this->is_follow_on) {
+            $quantityOrdered = $this->quantity_ordered + $this->quantity_bonus;
+        }
+
         $quantityOrderedFractional = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
-                    $this->quantity_ordered ?? 0
+                    $quantityOrdered ?? 0
                 )
             ),
             $this->product_units
         );
-        $quantityPickedFractional = riseDivisor(
+        $quantityPickedFractional     = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
                     $this->quantity_picked ?? 0
@@ -81,6 +89,14 @@ class TransactionsResource extends JsonResource
             ),
             $this->product_units
         );
+        $quantityBonusFractional      = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->quantity_bonus ?? 0
+                )
+            ),
+            $this->product_units
+        );
 
         $media = null;
         if ($this->product_image_id) {
@@ -88,49 +104,54 @@ class TransactionsResource extends JsonResource
         }
 
         $webpageUrl = null;
+        $webpage = null;
         if ($this->model_type === class_basename(Product::class)) {
             $webpage = Webpage::where('model_id', $this->product_id)
                 ->where('model_type', class_basename(Product::class))->first();
-
             $webpageUrl = $webpage?->getUrl();
         }
 
 
         return [
-            'id'                        => $this->id,
-            'state'                     => $this->state,
-            'status'                    => $this->status,
-            'quantity_ordered'          => trimDecimalZeros($this->quantity_ordered),
-            'quantity_ordered_fractional'       => $quantityOrderedFractional,
-            'quantity_bonus'            => trimDecimalZeros($this->quantity_bonus),
-            'quantity_picked'           => trimDecimalZeros($this->quantity_picked),
-            'quantity_picked_fractional'        => $quantityPickedFractional,
-            'quantity_dispatched'       => trimDecimalZeros($this->quantity_dispatched),
-            'quantity_dispatched_fractional'    => $quantityDispatchedFractional,
-            'quantity_fail'             => $this->quantity_fail,
-            'quantity_cancelled'        => $this->quantity_cancelled,
-            'quantity_not_picked'       => $this->dni_quantity_not_picked,
-            'gross_amount'              => $this->gross_amount,
-            'net_amount'                => $this->net_amount,
-            'price'                     => $this->price,
-            'asset_code'                => $this->asset_code,
-            'asset_name'                => $this->asset_name,
-            'asset_type'                => $this->asset_type,
-            'image'                     => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
-            'product_slug'              => $this->product_slug,
-            'created_at'                => $this->created_at,
-            'currency_code'             => $this->currency_code,
-            'available_quantity'        => $this->available_quantity ?? 0,
-            'webpage_url'               => $webpageUrl,
-            'offers_data'               => $this->offers_data,
-            'discretionary_offer'       => $this->discretionary_offer !== null ? 100 * $this->discretionary_offer : null,
-            'discretionary_offer_label' => $this->discretionary_offer_label,
-            'transaction_label'         => $this->transaction_label,
-            'product_units'             => $this->product_units,
-            'is_cut_view'               => $this->is_cut_view,
-            'is_gift'                   => $this->is_gift,
-            'batch_codes'               => $this->batch_codes,
-
+            'id'                             => $this->id,
+            'state'                          => $this->state,
+            'status'                         => $this->status,
+            'quantity_ordered'               => trimDecimalZeros($quantityOrdered),
+            'quantity_ordered_fractional'    => $quantityOrderedFractional,
+            'quantity_bonus'                 => trimDecimalZeros($this->quantity_bonus),
+            'quantity_bonus_fractional'      => $quantityBonusFractional,
+            'quantity_picked'                => trimDecimalZeros($this->quantity_picked),
+            'quantity_picked_fractional'     => $quantityPickedFractional,
+            'quantity_dispatched'            => trimDecimalZeros($this->quantity_dispatched),
+            'quantity_dispatched_fractional' => $quantityDispatchedFractional,
+            'quantity_fail'                  => $this->quantity_fail,
+            'quantity_cancelled'             => trimDecimalZeros($this->quantity_cancelled),
+            'gross_amount'                   => $this->gross_amount,
+            'net_amount'                     => $this->net_amount,
+            'price'                          => $this->price,
+            'asset_code'                     => $this->asset_code,
+            'asset_name'                     => $this->asset_name,
+            'asset_type'                     => $this->asset_type,
+            'image'                          => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
+            'product_slug'                   => $this->product_slug,
+            'created_at'                     => $this->created_at,
+            'currency_code'                  => $this->currency_code,
+            'available_quantity'             => $this->available_quantity ?? 0,
+            'webpage_url'                    => $webpageUrl,
+            'webpage_canonical_url'          => $webpage?->getCanonicalUrl(),
+            'offers_data'                    => $this->offers_data,
+            'discretionary_offer'            => $this->discretionary_offer !== null ? 100 * $this->discretionary_offer : null,
+            'discretionary_offer_label'      => $this->discretionary_offer_label,
+            'transaction_label'              => $this->transaction_label,
+            'product_units'                  => $this->product_units,
+            'units_changed_to'               => $this->units_changed_to,
+            'is_cut_view'                    => $this->is_cut_view,
+            'is_gift'                        => $this->is_gift,
+            'is_follow_on'                   => $this->is_follow_on,
+            'batch_codes'                    => $this->batch_codes,
+            'upcoming_transaction_type'          => $this->upcoming_transaction_type,
+            'upcoming_transaction_private_notes' => $this->upcoming_transaction_private_notes,
+            'upcoming_transaction_public_notes'  => $this->upcoming_transaction_public_notes,
 
             'deleteRoute' => $request->user() instanceof User
                 ? [

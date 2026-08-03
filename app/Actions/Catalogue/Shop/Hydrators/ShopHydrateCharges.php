@@ -29,6 +29,7 @@ class ShopHydrateCharges implements ShouldBeUnique
     {
 
         $stats = [
+            'number_charges'            => $shop->charges()->count(),
             'number_assets_type_charge' => $shop->charges()->count(),
         ];
 

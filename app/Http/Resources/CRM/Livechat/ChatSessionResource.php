@@ -3,6 +3,7 @@
 namespace App\Http\Resources\CRM\Livechat;
 
 use App\Http\Resources\HasSelfCall;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ChatSessionResource extends JsonResource
@@ -43,6 +44,7 @@ class ChatSessionResource extends JsonResource
             'shop_name'     => $chatSession->relationLoaded('shop') && $chatSession->shop ? $chatSession->shop->name : null,
             'contact_name'  => $contactName,
             'assigned_agent' => $activeAssignment?->chatAgent?->user?->contact_name,
+            'ai_summary'    => Arr::get($chatSession->metadata ?? [], 'ai_summary'),
             'route'         => [
                 'name'       => 'grp.org.shops.show.crm.chat_sessions.show',
                 'parameters' => [
@@ -50,6 +52,44 @@ class ChatSessionResource extends JsonResource
                     'shop'         => request()->route()?->originalParameters()['shop'] ?? null,
                     'chatSession'  => $chatSession->id,
                 ],
+            ],
+            'conversation_route' => $this->conversationRoute($chatSession->id),
+        ];
+    }
+
+    protected function conversationRoute(int $chatSessionId): array
+    {
+        $routeParameters = request()->route()?->originalParameters() ?? [];
+        $routeName       = request()->route()?->getName() ?? '';
+        $organisation    = $routeParameters['organisation'] ?? null;
+
+        if (str_starts_with($routeName, 'grp.org.shops.show.chat.')) {
+            return [
+                'name'       => 'grp.org.shops.show.chat.conversations.detail',
+                'parameters' => [
+                    'organisation' => $organisation,
+                    'shop'         => $routeParameters['shop'] ?? null,
+                    'chatSession'  => $chatSessionId,
+                ],
+            ];
+        }
+
+        if (str_starts_with($routeName, 'grp.org.fulfilments.show.chat.')) {
+            return [
+                'name'       => 'grp.org.fulfilments.show.chat.conversations.detail',
+                'parameters' => [
+                    'organisation' => $organisation,
+                    'fulfilment'   => $routeParameters['fulfilment'] ?? null,
+                    'chatSession'  => $chatSessionId,
+                ],
+            ];
+        }
+
+        return [
+            'name'       => 'grp.org.chat.conversations.detail',
+            'parameters' => [
+                'organisation' => $organisation,
+                'chatSession'  => $chatSessionId,
             ],
         ];
     }

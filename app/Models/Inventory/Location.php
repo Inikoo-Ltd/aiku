@@ -60,6 +60,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property string|null $sort_code
+ * @property bool $is_partially_empty
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
@@ -94,6 +95,7 @@ class Location extends Model implements Auditable
         'stock_value'     => 'decimal:2',
         'max_weight'      => 'decimal:3',
         'max_volume'      => 'decimal:4',
+        'is_partially_empty' => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
@@ -111,6 +113,7 @@ class Location extends Model implements Auditable
                 'code',
                 'status',
                 'created_at',
+                'organisation_id',
                 'warehouse_area_id',
                 'warehouse_id'
             ]);
@@ -120,8 +123,10 @@ class Location extends Model implements Auditable
     {
         return [
             'id'                => (string)$this->id,
+            'organisation_id'   => $this->organisation_id,
             'warehouse_id'      => $this->warehouse_id,
             'warehouse_area_id' => $this->warehouse_area_id,
+            'slug'              => (string)$this->slug,
             'code'              => $this->code,
             'status'            => $this->status->value,
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,

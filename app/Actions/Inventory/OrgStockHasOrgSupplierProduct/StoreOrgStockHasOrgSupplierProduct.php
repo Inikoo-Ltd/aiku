@@ -30,10 +30,10 @@ class StoreOrgStockHasOrgSupplierProduct extends OrgAction
         data_set($modelData, 'org_stock_id', $orgStock->id);
         data_set($modelData, 'org_supplier_product_id', $orgSupplierProduct->id);
 
+        /** @var OrgStockHasOrgSupplierProduct $orgStockHasOrgSupplierProduct */
+        $orgStockHasOrgSupplierProduct = $stockHasSupplierProduct->orgStockHasOrgSupplierProducts()->create($modelData);
 
-        // dd($stockHasSupplierProduct);
-
-        return $stockHasSupplierProduct->orgStockHasOrgSupplierProducts()->create($modelData);
+        return $orgStockHasOrgSupplierProduct;
     }
 
     public function rules(): array

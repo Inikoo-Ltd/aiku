@@ -33,8 +33,8 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    offers: {}
-    overview: {
+    offers?: {}
+    overview?: {
         offerCampaign: {}
         stats: {}
     }

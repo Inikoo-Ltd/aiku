@@ -85,7 +85,7 @@ class EditPaymentAccount extends OrgAction
                                 ],
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('label'),
+                                    'label' => __('Label'),
                                     'value' => $paymentAccount->name
                                 ],
                                 ...$this->blueprint($paymentAccount->orgPaymentServiceProvider->paymentServiceProvider->slug, $paymentAccount->data)

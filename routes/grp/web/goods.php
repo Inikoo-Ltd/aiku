@@ -11,6 +11,7 @@ use App\Actions\Goods\Ingredient\UI\ShowIngredient;
 use App\Actions\Goods\Stock\ExportStocks;
 use App\Actions\Goods\Stock\UI\CreateStock;
 use App\Actions\Goods\Stock\UI\EditStock;
+use App\Actions\Goods\Stock\UI\EditStockComposition;
 use App\Actions\Goods\Stock\UI\IndexStocks;
 use App\Actions\Goods\Stock\UI\ShowStock;
 use App\Actions\Goods\StockFamily\ExportStockFamilies;
@@ -70,6 +71,7 @@ Route::prefix('stocks')->as('stocks.')->group(function () {
     Route::prefix('{stock}')->group(function () {
         Route::get('', ShowStock::class)->name('show');
         Route::get('edit', EditStock::class)->name('edit');
+        Route::get('composition', EditStockComposition::class)->name('composition');
     });
 });
 

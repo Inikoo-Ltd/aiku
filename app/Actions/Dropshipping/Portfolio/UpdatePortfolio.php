@@ -18,6 +18,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Fulfilment\StoredItem;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -34,6 +35,14 @@ class UpdatePortfolio extends OrgAction
 
     public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
+
+        if (Arr::exists($modelData, 'item_id') && Arr::get($modelData, 'item_type') === class_basename(StoredItem::class)) {
+            $storedItem = StoredItem::find(Arr::get($modelData, 'item_id'));
+            if ($storedItem) {
+                data_set($modelData, 'item_code', $storedItem->reference);
+                data_set($modelData, 'item_name', $storedItem->name);
+            }
+        }
 
         if (Arr::exists($modelData, 'customer_product_name') && !Arr::exists($modelData, 'platform_handle')) {
             data_set(
@@ -68,7 +77,7 @@ class UpdatePortfolio extends OrgAction
             GroupHydratePortfolios::dispatch($portfolio->group)->delay($this->hydratorsDelay);
             OrganisationHydratePortfolios::dispatch($portfolio->organisation)->delay($this->hydratorsDelay);
             ShopHydratePortfolios::dispatch($portfolio->shop)->delay($this->hydratorsDelay);
-            CustomerHydratePortfolios::dispatch($portfolio->customer_id)->delay($this->hydratorsDelay);
+            CustomerHydratePortfolios::dispatch($portfolio->customer_id)->delay(5);
         }
 
 
@@ -116,7 +125,7 @@ class UpdatePortfolio extends OrgAction
             'customer_description'  => ['sometimes', 'string', 'nullable'],
             'platform_product_id'   => 'sometimes|string',
             'platform_handle'       => 'sometimes|string',
-            'errors_response'       => 'sometimes|array',
+            'errors_response'       => 'sometimes|nullable|array',
             'options'               => 'sometimes|string',
             'data'                  => 'sometimes|array',
             'sku'                   => 'sometimes',

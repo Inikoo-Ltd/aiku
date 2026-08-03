@@ -3,14 +3,18 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 30-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Ordering\Order\GetVoucherData;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
+use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
+use App\Actions\Retina\Ecom\Basket\IndexRetinaUpcomingTransactions;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\InteractsWithOrderInBasket;
@@ -18,6 +22,7 @@ use App\Actions\RetinaAction;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\Ordering\UpcomingTransactionsResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Http\Resources\Sales\OrderResource;
@@ -31,6 +36,7 @@ class ShowRetinaEcomBasket extends RetinaAction
     use IsOrder;
     use InteractsWithOrderInBasket;
     use HasBasketDetails;
+    use WithOrderForbiddenCountryCheck;
 
     public function handle(Customer $customer): Order|null
     {
@@ -38,7 +44,9 @@ class ShowRetinaEcomBasket extends RetinaAction
             return null;
         }
 
-        return $this->getOrderInBasket($customer);
+        $order = $this->getOrderInBasket($customer);
+
+        return FixMiscalculatedTransactionAmounts::run($order, true);
     }
 
 
@@ -65,21 +73,15 @@ class ShowRetinaEcomBasket extends RetinaAction
             $insurance       = null;
         }
 
-
-
-        $isUnableDispatch = false;
-
-        if ($order && $order->deliveryAddress) {
-            $isUnableDispatch = in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? []));
-        }
-
         $grGifts = [
             'status'      => false,
             'is_eligible' => false,
             'gifts'       => []
         ];
+        $orderBanStatus = [];
         if ($order) {
             $grGifts = $this->getGrGifts($order);
+            $orderBanStatus = $this->isForbiddenDetailed($order);
         }
 
         \Sentry\traceMetrics()->count('visit.basket.ecom', 1, ['shop' => $this->shop->slug]);
@@ -126,9 +128,9 @@ class ShowRetinaEcomBasket extends RetinaAction
                         'method'     => 'patch'
                     ],
                 ],
+                'is_basket_created'     => (bool) $order,
 
-                'voucher' => [],
-
+                'voucher' => $order ? GetVoucherData::run($order->offer_voucher_id) : null,
                 'order'   => $order ? OrderResource::make($order)->resolve() : null,
                 'summary' => $order
                     ? $this->getOrderBoxStats($order)
@@ -145,7 +147,8 @@ class ShowRetinaEcomBasket extends RetinaAction
                             [
                                 [
                                     'label'       => __('Charges'),
-                                    'information' => '',
+                                    'information_icon' => __('A small administration, picking and packing charge of £5 +VAT applies to orders under £50 +VAT'),
+                                    'information_icon_button' => 'fal fa-info-circle',
                                     'price_total' => 0
                                 ],
                                 [
@@ -170,13 +173,16 @@ class ShowRetinaEcomBasket extends RetinaAction
                         ]
                     ],
 
-                'is_unable_dispatch' => $isUnableDispatch,
+                'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
+                'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
 
                 'charges' => [
                     'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
                     'extra_packing'    => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
                     'insurance'        => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
                 ],
+
+                'upcoming_transactions' => UpcomingTransactionsResource::collection(IndexRetinaUpcomingTransactions::run($this->customer)),
 
                 'contact_address'    => $order ? AddressResource::make($order->customer->address)->getArray() : null,
                 'address_management' => $order ? GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true) : [],

@@ -6,12 +6,14 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\Search\UI\IndexSearchLogs;
 use App\Actions\SysAdmin\Group\UI\EditGroupSettings;
 use App\Actions\SysAdmin\Guest\ExportGuests;
 use App\Actions\SysAdmin\Guest\UI\CreateGuest;
 use App\Actions\SysAdmin\Guest\UI\EditGuest;
 use App\Actions\SysAdmin\Guest\UI\IndexGuests;
 use App\Actions\SysAdmin\Guest\UI\ShowGuest;
+use App\Actions\SysAdmin\UI\IndexMcpRequests;
 use App\Actions\SysAdmin\UI\IndexSysAdminScheduledTasks;
 use App\Actions\SysAdmin\UI\ShowSysAdminAnalyticsDashboard;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
@@ -21,14 +23,18 @@ use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\IndexUserActions;
 use App\Actions\SysAdmin\User\UI\IndexUsers;
 use App\Actions\SysAdmin\User\UI\ShowUser;
+use App\Actions\SysAdmin\Group\UI\IndexHistoryInGroupSetting;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowSysAdminDashboard::class)->name('dashboard');
 Route::get('/settings', EditGroupSettings::class)->name('settings.edit');
+Route::get('/changelogs', IndexHistoryInGroupSetting::class)->name('changelogs.index');
 
 Route::prefix('analytics')->as('analytics.')->group(function () {
     Route::get('', ShowSysAdminAnalyticsDashboard::class)->name('dashboard');
 });
+
+Route::get('mcp', IndexMcpRequests::class)->name('mcp.index');
 
 Route::prefix('users')->as('users.')->group(function () {
     Route::get('active', [IndexUsers::class,'inActive'])->name('index');
@@ -56,3 +62,4 @@ Route::prefix('guests')->as('guests.')->group(function () {
 });
 
 Route::get('/scheduled-tasks', IndexSysAdminScheduledTasks::class)->name('scheduled-tasks.index');
+Route::get('/search-logs', IndexSearchLogs::class)->name('search_logs.index');

@@ -78,39 +78,65 @@ class GetGroupNavigation
             $groupNavigation['overview'] = $this->getOverviewNavs();
         }
 
-        if (app()->environment('local')) {
-            $groupNavigation['chat'] = [
-                'label'   => __('Chat'),
-                'tooltip' => __('Chat'),
-                'icon'    => ['fal', 'fa-comment-alt'],
-                'root'    => 'grp.chat.',
-                'route'   => [
-                    'name' => 'grp.chat.dashboard',
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label'   => __('Dashboard'),
-                            'tooltip' => __('Dashboard'),
-                            'icon'    => ['fal', 'fa-comment-alt'],
-                            'root'    => 'grp.chat.dashboard',
-                            'route'   => [
-                                'name' => 'grp.chat.dashboard',
-                            ],
-                        ],
-                        [
-                            'label'   => __('Agents'),
-                            'tooltip' => __('Agents'),
-                            'icon'    => ['fal', 'fa-headset'],
-                            'root'    => 'grp.chat.agents.',
-                            'route'   => [
-                                'name' => 'grp.chat.agents.show',
-                            ],
+
+        $groupNavigation['chat'] = [
+            'label'   => __('Chat'),
+            'tooltip' => __('Chat'),
+            'icon'    => ['fal', 'fa-comment-alt'],
+            'root'    => 'grp.chat.',
+            'route'   => [
+                'name' => 'grp.chat.dashboard',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Dashboard'),
+                        'tooltip' => __('Dashboard'),
+                        'icon'    => ['fal', 'fa-comment-alt'],
+                        'root'    => 'grp.chat.dashboard',
+                        'route'   => [
+                            'name' => 'grp.chat.dashboard',
                         ],
                     ],
+                    ...($user->chatAgent ? [
+                        [
+                            'label'   => __('Inbox'),
+                            'tooltip' => __('Inbox'),
+                            'icon'    => ['fal', 'fa-inbox'],
+                            'root'    => 'grp.chat.inbox',
+                            'route'   => [
+                                'name' => 'grp.chat.inbox',
+                            ],
+                        ],
+                    ] : []),
+                    // [
+                    //     'label'   => __('Agents'),
+                    //     'tooltip' => __('Agents'),
+                    //     'icon'    => ['fal', 'fa-headset'],
+                    //     'root'    => 'grp.chat.agents.',
+                    //     'route'   => [
+                    //         'name' => 'grp.chat.agents.show',
+                    //     ],
+                    // ],
                 ],
-            ];
-        }
+            ],
+        ];
+
+        $groupNavigation['devops'] = [
+            'label'   => __('Devops'),
+            'tooltip' => __('Application Performance Monitoring'),
+            'icon'    => ['fal', 'fa-server'],
+            'root'    => 'grp.devops.',
+            'route'   => [
+                'name' => 'grp.devops.dashboard',
+            ],
+            'topMenu' => [
+                'subSections' => [
+
+
+                ],
+            ],
+        ];
 
         if ($user->hasPermissionTo('sysadmin.view')) {
             $groupNavigation['sysadmin'] = $this->getSysAdminNavs();
@@ -131,7 +157,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => 'Trade Units',
+                        'label' => __('Trade Units'),
                         'icon'  => ['fal', 'fa-atom'],
                         'root'  => 'grp.trade_units.units.',
                         'route' => [
@@ -140,7 +166,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Trade Unit Families',
+                        'label' => __('Trade Unit Families'),
                         'icon'  => ['fal', 'fa-atom-alt'],
                         'root'  => 'grp.trade_units.families.',
                         'route' => [
@@ -149,7 +175,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Brands',
+                        'label' => __('Brands'),
                         'icon'  => ['fal', 'fa-copyright'],
                         'root'  => 'grp.trade_units.brands.',
                         'route' => [
@@ -158,11 +184,20 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Tags',
+                        'label' => __('Tags'),
                         'icon'  => ['fal', 'fa-tags'],
                         'root'  => 'grp.trade_units.tags.',
                         'route' => [
                             'name'       => 'grp.trade_units.tags.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    [
+                        'label' => __('Barcodes'),
+                        'icon'  => ['fal', 'fa-barcode'],
+                        'root'  => 'grp.trade_units.barcodes.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.barcodes.index',
                             'parameters' => []
                         ]
                     ],
@@ -219,7 +254,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('Master SKUs families'),
+                        'label' => __('Master SKOs families'),
                         'icon'  => ['fal', 'fa-rainbow'],
                         'root'  => 'grp.goods.stock-families.',
                         'route' => [
@@ -228,7 +263,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('Master SKUs'),
+                        'label' => __('Master SKOs'),
                         'icon'  => ['fal', 'fa-cloud-rainbow'],
                         'root'  => 'grp.goods.stocks.',
                         'route' => [
@@ -237,7 +272,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'Ingredients',
+                        'label' => __('Ingredients'),
                         'icon'  => ['fal', 'fa-apple-crate'],
                         'root'  => 'grp.goods.ingredients.',
                         'route' => [
@@ -347,7 +382,19 @@ class GetGroupNavigation
             'route'   => [
                 'name' => 'grp.overview.hub'
             ],
-            'topMenu' => []
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Top Customers'),
+                        'icon'    => ['fal', 'fa-trophy'],
+                        'root'    => 'grp.overview.crm.customers.top_customers',
+                        'route'   => [
+                            'name'       => 'grp.overview.crm.customers.top_customers',
+                            'parameters' => []
+                        ]
+                    ],
+                ]
+            ]
         ];
     }
 
@@ -395,6 +442,14 @@ class GetGroupNavigation
                         ]
                     ],
                     [
+                        'label' => __('Search analytics'),
+                        'icon'  => ['fal', 'fa-search'],
+                        'root'  => 'grp.sysadmin.search_logs.',
+                        'route' => [
+                            'name' => 'grp.sysadmin.search_logs.index',
+                        ]
+                    ],
+                    [
                         'label' => __('System Settings'),
                         'icon'  => ['fal', 'fa-cog'],
                         'root'  => 'grp.sysadmin.settings.',
@@ -402,6 +457,14 @@ class GetGroupNavigation
                             'name' => 'grp.sysadmin.settings.edit',
                         ]
                     ],
+                    [
+                        'label' => __('Changelogs'),
+                        'icon'  => ['fal', 'fa-history'],
+                        'root'  => 'grp.sysadmin.changelogs.index',
+                        'route' => [
+                            'name' => 'grp.sysadmin.changelogs.index',
+                        ]
+                    ]
                 ]
             ]
         ];

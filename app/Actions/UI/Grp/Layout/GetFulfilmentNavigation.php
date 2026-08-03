@@ -363,6 +363,48 @@ class GetFulfilmentNavigation
                 ]
 
             ];
+
+            $navigation['chat'] = [
+                'root'  => 'grp.org.fulfilments.show.chat.',
+                'label' => __('Chat'),
+                'icon'  => ['fal', 'comment-alt'],
+                'route' => [
+                    'name'       => 'grp.org.fulfilments.show.chat.dashboard',
+                    'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                ],
+
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label' => __('Dashboard'),
+                            'icon'  => ['fal', 'comment-alt'],
+                            'root'  => 'grp.org.fulfilments.show.chat.dashboard',
+                            'route' => [
+                                'name'       => 'grp.org.fulfilments.show.chat.dashboard',
+                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                            ],
+                        ],
+                        [
+                            'label' => __('Agents'),
+                            'icon'  => ['fal', 'fa-headset'],
+                            'root'  => 'grp.org.fulfilments.show.chat.agents.show',
+                            'route' => [
+                                'name'       => 'grp.org.fulfilments.show.chat.agents.show',
+                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                            ],
+                        ],
+                        [
+                            'label' => __('Conversations'),
+                            'icon'  => ['fal', 'fa-comments'],
+                            'root'  => 'grp.org.fulfilments.show.chat.conversations.show',
+                            'route' => [
+                                'name'       => 'grp.org.fulfilments.show.chat.conversations.show',
+                                'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
+                            ],
+                        ],
+                    ]
+                ]
+            ];
         }
 
         $navigation = array_merge($navigation, $appendedNavigation);

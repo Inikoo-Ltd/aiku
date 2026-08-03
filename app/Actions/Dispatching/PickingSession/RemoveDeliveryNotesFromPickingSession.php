@@ -9,9 +9,11 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\PickingSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +54,10 @@ class RemoveDeliveryNotesFromPickingSession extends OrgAction
                             'picking_session_id' => null
                         ]);
                     }
+                }
+
+                if ($deliveryNote->state === DeliveryNoteStateEnum::QUEUED) {
+                    UpdateDeliveryNoteStateToUnassigned::make()->action($deliveryNote);
                 }
             }
 

@@ -2,7 +2,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
@@ -18,7 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexMissingBrandTradeUnits extends GrpAction
+class IndexMissingBrandTradeUnits extends OrgAction
 {
     use WithGoodsAuthorisation;
     use WithTradeUnitIndex;
@@ -28,7 +28,7 @@ class IndexMissingBrandTradeUnits extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value);
     }
@@ -140,6 +140,7 @@ class IndexMissingBrandTradeUnits extends GrpAction
                 'title'       => __('Trade units without brand'),
                 'pageHead'    => [
                     'title'         => __('Trade units without brand'),
+                    'is_negative'   => true,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-tag'],
                         'title' => __('Trade units without brand'),
@@ -152,11 +153,11 @@ class IndexMissingBrandTradeUnits extends GrpAction
 
                 TradeUnitsTabsEnum::INDEX->value => $this->tab == TradeUnitsTabsEnum::INDEX->value
                     ? fn () => TradeUnitsResource::collection($tradeUnits)
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection($tradeUnits)),
+                    : Inertia::optional(fn () => TradeUnitsResource::collection($tradeUnits)),
 
                 TradeUnitsTabsEnum::SALES->value => $this->tab == TradeUnitsTabsEnum::SALES->value
                     ? fn () => TradeUnitsResource::collection($this->handle(prefix: TradeUnitsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection($this->handle(prefix: TradeUnitsTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => TradeUnitsResource::collection($this->handle(prefix: TradeUnitsTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::INDEX->value))
          ->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::SALES->value, sales: true));

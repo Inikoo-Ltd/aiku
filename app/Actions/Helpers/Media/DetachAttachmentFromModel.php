@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Media;
 
 use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\OrgAction;
+use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletDelivery;
@@ -28,7 +29,7 @@ class DetachAttachmentFromModel extends OrgAction
 {
     use AsAction;
 
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn|TradeUnitFamily|Product $model, Media $attachment): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn|TradeUnitFamily|Product
+    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product $model, Media $attachment): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|TradeUnitFamily|Product
     {
         $model->attachments()->detach($attachment->id);
         $model->refresh();
@@ -110,6 +111,12 @@ class DetachAttachmentFromModel extends OrgAction
     {
         $this->initialisation($order->organisation, []);
         $this->handle($order, $attachment);
+    }
+
+    public function inInvoice(Invoice $invoice, Media $attachment)
+    {
+        $this->initialisation($invoice->organisation, []);
+        $this->handle($invoice, $attachment);
     }
 
     public function inPalletDelivery(PalletDelivery $palletDelivery, Media $attachment): void

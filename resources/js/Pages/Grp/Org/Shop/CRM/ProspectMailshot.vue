@@ -23,9 +23,11 @@ import { routeType } from "@/types/route";
 import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
+import AlertMessage from '@/Components/Utils/AlertMessage.vue'
 import { trans } from "laravel-vue-i18n"
-import { useFormatTime } from "@/Composables/useFormatTime";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import { toZonedTime} from 'date-fns-tz';
+import { format } from 'date-fns'
 
 library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
 
@@ -47,6 +49,7 @@ const props = defineProps<{
     status?: string
     secondWaveStatus?: string
     estimatedRecipients?: number
+    isRecipientsCapped?: boolean
     mailshotType?: string
     setSecondWaveRoute?: routeType
     updateSecondWaveRoute?: routeType
@@ -75,6 +78,8 @@ const props = defineProps<{
         shop_name: string
     }>
     workshopRoute?: routeType
+    timeZoneOptions?: any[]
+    defaultShopTimezone?: string
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -115,12 +120,14 @@ const shouldShowCancelScheduleButton = computed(() => {
 
 // Schedule datetime picker state
 const showSchedulePicker = ref(false);
-const scheduleDateTime = ref(new Date());
-const minDateTime = ref(new Date());
+const scheduleDateTime = ref<string>(new Date().toISOString());
+const minDateTime = ref<string>(new Date().toISOString());
 const schedulePicker = ref();
+const nowUtc = ref(new Date());
 
 const inProgress = ref(false);
 const scheduleInProgress = ref(false);
+const selectedTimezone = ref(props.defaultShopTimezone || 'UTC');
 
 const handleSendNow = async () => {
     // Prevent multiple simultaneous requests
@@ -182,6 +189,10 @@ const handleSchedule = async (event: Event) => {
         return;
     }
 
+    nowUtc.value = new Date();
+    minDateTime.value = toZonedTime(new Date(nowUtc.value), selectedTimezone.value).toISOString();
+
+
     // Show the datetime picker using the ref
     if (schedulePicker.value) {
         schedulePicker.value.show(event);
@@ -194,7 +205,10 @@ const confirmSchedule = async () => {
     if (!props.scheduleMailshotRoute) return;
 
     scheduleInProgress.value = true;
-    const formattedDateTime = useFormatTime(scheduleDateTime.value, { formatTime: 'yyyy-MM-dd HH:mm:ss' })
+
+     const formattedDateTime = scheduleDateTime.value
+     const convertToTimezone = toZonedTime(formattedDateTime, selectedTimezone.value)
+     const displayFormated = format(convertToTimezone, 'yyyy-MM-dd HH:mm:ss')
 
     showSchedulePicker.value = false;
     schedulePicker.value?.hide();
@@ -207,7 +221,7 @@ const confirmSchedule = async () => {
                 notify({
                     type: 'success',
                     title: 'Success',
-                    text: `Mailshot scheduled for ${scheduleDateTime.value.toLocaleString()}`,
+                    text: `Mailshot scheduled for ${displayFormated} ${selectedTimezone.value}`,
                 })
                 showSchedulePicker.value = false;
                 schedulePicker.value?.hide();
@@ -237,22 +251,28 @@ const confirmSchedule = async () => {
 };
 
 // Function to get dynamic min time based on selected date
-const getMinTime = () => {
-    const now = new Date();
-    const selectedDate = scheduleDateTime.value;
+const minTime = computed(() => {
+    const tz = selectedTimezone.value;
+    const selectedZoned = toZonedTime(new Date(scheduleDateTime.value), tz);
+    const nowZoned = toZonedTime(nowUtc.value, tz);
 
-    // If selected date is today, set min time to current time
-    if (selectedDate && selectedDate.toDateString() === now.toDateString()) {
+    const sameUTCDate =
+        selectedZoned.getUTCFullYear() === nowZoned.getUTCFullYear() &&
+        selectedZoned.getUTCMonth() === nowZoned.getUTCMonth() &&
+        selectedZoned.getUTCDate() === nowZoned.getUTCDate();
+
+    if (sameUTCDate) {
+        // Today (UTC) → block past minutes/seconds
         return {
-            hours: now.getHours(),
-            minutes: now.getMinutes(),
-            seconds: now.getSeconds()
+            hours: nowZoned.getHours(),
+            minutes: nowZoned.getMinutes(),
+            seconds: nowZoned.getSeconds(),
         };
     }
 
-    // Otherwise, allow any time from start of day
+    // Future date → no time restriction
     return { hours: 0, minutes: 0, seconds: 0 };
-};
+});
 
 // Function to cancel schedule
 const cancelSchedule = () => {
@@ -260,7 +280,7 @@ const cancelSchedule = () => {
         schedulePicker.value.hide();
     }
     showSchedulePicker.value = false;
-    scheduleDateTime.value = new Date();
+    scheduleDateTime.value = new Date().toISOString();
 };
 
 const formatNumber = (num: number | null | undefined) => {
@@ -661,16 +681,35 @@ watch(
 
     </PageHeading>
 
+    <div v-if="props.isRecipientsCapped" class="p-2 pb-0">
+        <AlertMessage :alert="{
+            status: 'warning',
+            title: trans('Recipient limit applied'),
+            description: trans('Due to limited email resources. Only the first 1,000 prospects will receive this email, please focus on prospects who have never been contacted.')
+        }" />
+    </div>
+
     <!-- Schedule DateTime Picker Popover -->
     <Popover ref="schedulePicker" :visible="showSchedulePicker" @hide="cancelSchedule" appendTo="body">
         <div class="p-2 min-w-80 bg-white flex flex-col items-center">
             <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
-                    class="text-red-600">(Europe/London)</span> </h3>
-            <div class="mb-4 flex justify-center">
-                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="getMinTime()"
+                    class="text-red-600">{{ selectedTimezone }}</span> </h3>
+
+            <div class="min-w-0 w-full mb-3">
+                <PureMultiselect
+                    v-model="selectedTimezone"
+                    :placeholder="trans('Select timezone...')"
+                    :options="props.timeZoneOptions || []"
+                    :searchable="true"
+                    :required="true"
+                    caret/>
+            </div>
+
+            <div class="mb-4 flex justify-center z-10">
+                <VueDatePicker v-model="scheduleDateTime" :min-date="minDateTime" :min-time="minTime"
                     :text-input="true" :inline="true" :enable-time-picker="true" :is-24="true" :minutes-increment="1"
                     :seconds-increment="1" :auto-apply="true" :open-on-focus="true" :time-picker-inline="true"
-                    class="w-full" placeholder="" :teleport="true" />
+                    class="w-full" placeholder="" :teleport="true" model-type="iso" :timezone="selectedTimezone"  />
             </div>
             <div class="flex gap-2 justify-end w-full">
                 <Button :label="trans('Cancel')" @click="cancelSchedule"

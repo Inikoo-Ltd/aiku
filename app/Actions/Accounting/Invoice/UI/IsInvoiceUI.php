@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Traits\Actions\WithNavigation;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Dispatching\ShipmentsResource;
@@ -22,9 +23,9 @@ use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
-use Arr;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 trait IsInvoiceUI
@@ -117,6 +118,7 @@ trait IsInvoiceUI
                 'contact_name' => $invoice->customer_contact_name,
                 'location'     => $invoice->customer->location,
                 'phone'        => $invoice->customer->phone,
+                'fiscal_name'  => $invoice->fiscal_name,
             ],
             'delivery_notes' => $deliveryNotesData,
             'information'    => [
@@ -134,7 +136,34 @@ trait IsInvoiceUI
     protected function applyNavigationFilters(Builder $query, Model $model, ActionRequest $request): void
     {
         /** @var Invoice $model */
-        $query->where('invoices.shop_id', $model->shop_id);
+        $query->where('invoices.shop_id', $model->shop_id)
+            ->whereNot('invoices.in_process', true);
+    }
+
+    protected function applyNavigationBucket(Builder $query, string $bucket, Model $model, ActionRequest $request): void
+    {
+        if ($bucket == 'unpaid') {
+            $query->where('invoices.pay_status', InvoicePayStatusEnum::UNPAID);
+        } elseif ($bucket == 'paid') {
+            $query->where('invoices.pay_status', InvoicePayStatusEnum::PAID);
+        }
+    }
+
+    protected function getNavigationDefaultSort(Model $model): array
+    {
+        return ['invoices.date', true];
+    }
+
+    protected function getNavigationSortColumns(Model $model): array
+    {
+        return [
+            'number'       => 'invoices.number',
+            'reference'    => 'invoices.reference',
+            'date'         => 'invoices.date',
+            'pay_status'   => 'invoices.pay_status',
+            'total_amount' => 'invoices.total_amount',
+            'net_amount'   => 'invoices.net_amount',
+        ];
     }
 
     protected function getNavigationLabel(Model $model): string
@@ -528,7 +557,7 @@ trait IsInvoiceUI
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => $routeName,
+                            'name'       => $routeName,
                             'parameters' => $routeParameters
                         ],
                         'label' => __('Invoice').' '.$invoice->reference,

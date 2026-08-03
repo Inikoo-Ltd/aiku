@@ -1,0 +1,251 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 09 Jun 2026 16:05:27 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Discounts\Offer;
+
+use App\Actions\OrgAction;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
+use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferCampaign;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class StoreVoucherOffers extends OrgAction
+{
+    use AsAction;
+
+    public const float MAX_AMOUNT_OFF_RATIO = 0.3;
+
+    public function handle(Shop $shop, array $modelData): Offer
+    {
+
+        $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::VOUCHERS)->first();
+        if (!$offerCampaign) {
+            abort(404);
+        }
+
+        $percentageOff = Arr::pull($modelData, 'percentage_off');
+        $percentageOff = $percentageOff / 100;
+
+        $code = Arr::get($modelData, 'voucher');
+        data_set($modelData, 'code', $code);
+
+        data_set($modelData, 'voucher', Str::lower(Arr::get($modelData, 'voucher')));
+
+        if (Arr::get($modelData, 'offer_amount', 0) == 0) {
+            $type = OfferTypeEnum::VOUCHER_ANY_ORDER;
+        } else {
+            $type = OfferTypeEnum::VOUCHER_AMOUNT_ORDERED;
+        }
+
+
+        data_set($modelData, 'type', $type);
+
+        data_set(
+            $modelData,
+            'settings',
+            [
+                'can_customer_reuse' => Arr::pull($modelData, 'can_customer_reuse', false)
+            ]
+        );
+
+
+        data_set(
+            $modelData,
+            'trigger_data',
+            [
+                'item_amount' => Arr::pull($modelData, 'offer_amount')
+            ]
+        );
+        data_set($modelData, 'trigger_type', 'Shop');
+        data_set($modelData, 'trigger_id', $shop->id);
+        data_set($modelData, 'duration', 'interval');
+
+
+        $allowanceType = Arr::get($modelData, 'allowance_type');
+
+
+
+        if ($allowanceType == 'percentage_off' || $allowanceType == 'amount_off') {
+            $targetId       = Arr::pull($modelData, 'target_id');
+            $rawTargetType  = Arr::pull($modelData, 'target_type');
+            $targetType     = match ($rawTargetType) {
+                'shop' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
+                'department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
+                'sub_department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
+                'family' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY->value,
+                'collection' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION->value,
+                default => OfferAllowanceTargetTypeEnum::PRODUCT->value
+            };
+
+            if ($allowanceType == 'amount_off') {
+                $allowanceOpsData = ['amount_off' => (float)Arr::pull($modelData, 'amount_off')];
+            } else {
+                $allowanceOpsData = ['percentage_off' => $percentageOff];
+            }
+            if (in_array($rawTargetType, ['department', 'sub_department', 'family'])) {
+                $allowanceOpsData['category_id'] = $targetId;
+            } elseif ($rawTargetType == 'collection') {
+                $allowanceOpsData['collection_id'] = $targetId;
+            } elseif ($rawTargetType == 'product') {
+                $allowanceOpsData['product_id'] = $targetId;
+            }
+            if ($rawTargetType != 'shop' && Arr::get($modelData, 'trigger_data.item_amount', 0) > 0) {
+                $allowanceOpsData['item_amount'] = Arr::get($modelData, 'trigger_data.item_amount');
+            }
+
+            data_set(
+                $modelData,
+                'allowances',
+                [
+                    [
+                        'class'       => OfferAllowanceClass::DISCOUNT->value,
+                        'target_type' => $targetType,
+                        'target_id'   => $targetId,
+                        'type'        => $allowanceType == 'amount_off' ? OfferAllowanceType::AMOUNT_OFF->value : OfferAllowanceType::PERCENTAGE_OFF->value,
+                        'data'        => $allowanceOpsData
+                    ]
+                ]
+            );
+        } elseif ($allowanceType == 'discounted_shipping') {
+            data_forget($modelData, 'target_type');
+            data_forget($modelData, 'target_id');
+
+            data_set(
+                $modelData,
+                'allowances',
+                [
+                    [
+                        'class'       => OfferAllowanceClass::SHIPPING->value,
+                        'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
+                        'type'        => OfferAllowanceType::SHIPPING->value,
+                    ]
+                ]
+            );
+        } else {
+            data_forget($modelData, 'target_type');
+            data_forget($modelData, 'target_id');
+
+            $gift = Product::where('shop_id', $shop->id)->where('id', Arr::get($modelData, 'gift_product_id'))->first();
+
+
+            data_set(
+                $modelData,
+                'allowances',
+                [
+                    [
+                        'class'       => OfferAllowanceClass::GIFT->value,
+                        'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
+                        'type'        => OfferAllowanceType::GIFT->value,
+                        'data'        => [
+                            'product_id' => $gift->id,
+                            'quantity'   => Arr::pull($modelData, 'gift_quantity')
+                        ]
+                    ]
+                ]
+            );
+
+
+        }
+
+        data_forget($modelData, 'gift_product_id');
+        data_forget($modelData, 'gift_quantity');
+        data_forget($modelData, 'amount_off');
+
+
+        $offer = StoreOffer::run($offerCampaign, $modelData);
+        ActivateOffer::run($offer, 30);
+
+        return $offer;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'voucher'            => [
+                'required',
+                'string',
+                'max:16',
+                Rule::unique('offers', 'voucher')
+                    ->where('shop_id', $this->shop->id)
+                    ->where(fn ($query) => $query->whereRaw('LOWER(voucher) = ?', [Str::lower($this->get('voucher'))]))
+            ],
+            'name'               => ['required', 'string', 'max:255'],
+            'offer_amount'       => ['nullable', 'required', 'numeric', 'min:0'],
+            'can_customer_reuse' => ['required', 'boolean'],
+            'start_at'           => [
+                'required',
+                'date',
+                'before_or_equal:end_at'
+            ],
+            'end_at'             => ['required', 'date'],
+            'target_type'        => ['required', 'string', 'in:shop,department,sub_department,family,collection,product'],
+            'target_id'          => ['required', 'integer'],
+            'allowance_type'     => ['required', 'string', 'in:percentage_off,amount_off,discounted_shipping,gift'],
+            'percentage_off'     => ['nullable', 'required_if:allowance_type,percentage_off', 'numeric', 'gt:0', 'lt:100'],
+            'amount_off'         => [
+                'nullable',
+                'required_if:allowance_type,amount_off',
+                'numeric',
+                'gt:0',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if ($this->get('allowance_type') != 'amount_off') {
+                        return;
+                    }
+                    $minPurchase = (float)$this->get('offer_amount', 0);
+                    if ($minPurchase <= 0) {
+                        $fail(__('Amount off vouchers require a minimum purchase amount.'));
+
+                        return;
+                    }
+                    $maxAmountOff = round($minPurchase * self::MAX_AMOUNT_OFF_RATIO, 2);
+                    if ((float)$value > $maxAmountOff) {
+                        $fail(__('The amount off cannot exceed :percentage of the minimum purchase amount (max :max).', [
+                            'percentage' => percentage(self::MAX_AMOUNT_OFF_RATIO, 1),
+                            'max'        => $maxAmountOff,
+                        ]));
+                    }
+                },
+            ],
+
+            'gift_quantity'   => ['nullable', 'required_if:allowance_type,gift', 'integer', 'min:0'],
+            'gift_product_id' => [
+                'nullable',
+                'required_if:allowance_type,gift',
+                'integer',
+                Rule::exists('products', 'id')->where('shop_id', $this->shop->id)
+            ],
+        ];
+    }
+
+    public function action(Shop $shop, array $modelData): Offer
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($shop, $modelData);
+
+        return $this->handle($shop, $this->validatedData);
+    }
+
+
+    public function asController(Shop $shop, ActionRequest $request): Offer
+    {
+
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop, $this->validatedData);
+    }
+}

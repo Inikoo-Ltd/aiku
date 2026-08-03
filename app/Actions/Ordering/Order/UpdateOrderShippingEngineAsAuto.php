@@ -17,6 +17,7 @@ use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderShippingEngineAsAuto extends OrgAction
@@ -39,6 +40,14 @@ class UpdateOrderShippingEngineAsAuto extends OrgAction
 
         CalculateOrderTotalAmounts::run(order: $order, forceRecalculate: true);
 
+        $order->refresh();
+
+        if ($order->shipping_engine !== OrderShippingEngineEnum::AUTO) {
+            throw ValidationException::withMessages([
+                'message' => __('Automatic shipping is not available for this order because no shipping zone matches it. Shipping has been kept as manual.'),
+            ]);
+        }
+
         return $order;
     }
 
@@ -59,6 +68,6 @@ class UpdateOrderShippingEngineAsAuto extends OrgAction
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order, $this->validatedData);
+        return $this->handle($order);
     }
 }

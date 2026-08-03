@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import InputNumber from "primevue/inputnumber";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -29,9 +28,7 @@ const props = withDefaults(
 
 const emit = defineEmits(["update:modelValue", "refund"]);
 
-const editMode = ref(false);
-const loadingRefundAll = ref(false);
-const loadingPartial = ref(false);
+
 
 // Initialize form with useForm
 const form = useForm({

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
@@ -23,7 +23,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreMasterProductFromTradeUnits extends GrpAction
+class StoreMasterProductFromTradeUnits extends OrgAction
 {
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
@@ -80,6 +80,8 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'shop_products'        => $shopProducts,
                 'is_minion_variant'    => Arr::get($modelData, 'is_minion_variant', false),
                 'is_for_sale'          => $is_for_sale,
+                'master_prices'        => Arr::get($modelData, 'master_prices'),
+                'master_rrps'          => Arr::get($modelData, 'master_rrps'),
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
@@ -125,7 +127,22 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 default => false,
             });
         }
+
+        if ($this->get('master_prices')) {
+            $this->set('master_prices', collect($this->get('master_prices'))->map(fn ($item) => [
+                'value'         => $item['value'],
+                'independent'   => filter_var($item['independent'], FILTER_VALIDATE_BOOLEAN),
+            ])->toArray());
+        }
+
+        if ($this->get('master_rrps')) {
+            $this->set('master_rrps', collect($this->get('master_rrps'))->map(fn ($item) => [
+                'value'         => $item['value'],
+                'independent'   => filter_var($item['independent'], FILTER_VALIDATE_BOOLEAN),
+            ])->toArray());
+        }
     }
+
     public function rules(): array
     {
         return [
@@ -185,6 +202,14 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             'masterShop'             => ['required'],
             'is_minion_variant'      => ['required', 'boolean'],
             'is_for_sale'            => ['required', 'boolean'],
+            // Master Prices
+            'master_prices'                => ['sometimes', 'array'],
+            'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
+            'master_prices.*.independent'  => ['sometimes', 'boolean'],
+            // Master RRPs | This is per unit btw
+            'master_rrps'                   => ['sometimes', 'array'],
+            'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
+            'master_rrps.*.independent'     => ['sometimes', 'boolean'],
         ];
     }
 
@@ -202,7 +227,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
         $this->asAction       = true;
         $this->strict         = $strict;
 
-        $this->initialisation($masterFamily->group, $modelData);
+        $this->initialisationFromGroup($masterFamily->group, $modelData);
 
         return $this->handle($masterFamily, $this->validatedData);
     }
@@ -215,7 +240,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
         $this->masterFamily = $masterFamily;
 
-        $this->initialisation($masterFamily->group, $request);
+        $this->initialisationFromGroup($masterFamily->group, $request);
 
         return $this->handle($masterFamily, $this->validatedData);
     }

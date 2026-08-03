@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import { route } from 'ziggy-js'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 

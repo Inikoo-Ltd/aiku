@@ -33,8 +33,8 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    offers: {}
-    overview: {
+    offers?: {}
+    overview?: {
         offerCampaign: {}
         stats: {}
     }
@@ -64,7 +64,7 @@ const component = computed(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-voucher-create-discount>
+        <template #other>
             <ModalCreateVoucherOffers :shop_data="props.shop_data" />
         </template>
     </PageHeading>

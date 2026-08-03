@@ -101,7 +101,7 @@ class ShowDeletedBanner extends InertiaAction
                 BannerTabsEnum::SHOWCASE->value => $this->tab == BannerTabsEnum::SHOWCASE->value
                     ?
                     fn () => BannerResource::make($banner)->getArray()
-                    : Inertia::lazy(
+                    : Inertia::optional(
                         fn () => BannerResource::make($banner)->getArray()
                     ),
                 BannerTabsEnum::CHANGELOG->value => $this->tab == BannerTabsEnum::CHANGELOG->value
@@ -113,7 +113,7 @@ class ShowDeletedBanner extends InertiaAction
                             prefix:  BannerTabsEnum::CHANGELOG->value
                         )
                     )
-                    : Inertia::lazy(fn () => CustomerHistoryResource::collection(
+                    : Inertia::optional(fn () => CustomerHistoryResource::collection(
                         IndexCustomerHistory::run(
                             customer: $customer,
                             model: $banner,

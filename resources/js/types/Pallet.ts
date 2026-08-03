@@ -38,11 +38,6 @@ export interface Pallet {
     updateLocationRoute: routeType
     storeStoredItemRoute: routeType
     index: number
-    editingIndicator: {
-        loading: boolean
-        isSucces: boolean
-        isFailed: boolean
-    }
 }
 
 export interface PalletCustomer {
@@ -136,11 +131,14 @@ export interface FieldOrderSummary {
     label: string
     label_class?: string
     quantity: number
-    price_base?: number
-    price_total: number | string
+    styleField: Record<string, string>
+    price_total_old?: number
+    price_total: number | string  // 100 | 'free'
     price_total_class?: string
     information_icon?: string
     information?: string
+    slot_name?: string  // 'shipping'
+    information_icon_button? : string
     currency: {
         code: string
         symbol: string

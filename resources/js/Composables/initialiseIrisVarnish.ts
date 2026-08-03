@@ -17,6 +17,21 @@ export const initialiseIrisVarnish = async (layoutStore) => {
   if (typeof window !== "undefined") {
     storageIris = JSON.parse(localStorage.getItem("iris") || "{}")  // Get layout from localStorage
     layout.iris.is_logged_in = storageIris?.is_logged_in ?? false
+
+    // Restore the cached user snapshot immediately so logged-in chrome (topbar
+    // greeting, offer label) renders at first paint instead of popping in when
+    // the first-hit response lands; the fetch below refreshes the same fields.
+    if (storageIris?.is_logged_in) {
+      if (storageIris.iris_variables) {
+        layout.iris_variables = storageIris.iris_variables
+      }
+      if (storageIris.offer_data) {
+        layout.offer_data = storageIris.offer_data
+      }
+      if (storageIris.offer_meters) {
+        layout.offer_meters = storageIris.offer_meters
+      }
+    }
   }
 
   const isAppRoute = window.location.pathname.startsWith("/app")
@@ -43,6 +58,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
           ...storageIris,
           is_logged_in: false,
           iris_variables: null,
+          offer_data: null,
           offer_meters: null
         }))
         layout.iris.is_logged_in = false
@@ -64,8 +80,11 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       ...storageIris,
       is_logged_in: false,
       iris_variables: varnish?.variables ?? null,
+      offer_data: null,
       offer_meters: varnish?.offer_meters ?? null
     }))
+
+    layout.is_blocked = varnish.is_blocked
 
     layout.user = varnish.auth?.user || null
     if (layout.user?.customerSalesChannels) {
@@ -84,6 +103,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       layout.iris_variables = varnish.variables
     }
 
+    layout.is_blocked = varnish.is_blocked
+
     // Data: Gold Reward
     if (varnish?.offer_data) {
       layout.offer_data = varnish.offer_data
@@ -97,6 +118,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       ...storageIris,
       is_logged_in: true,
       iris_variables: varnish.variables,
+      offer_data: varnish.offer_data ?? null,
       offer_meters: varnish.offer_meters ?? null
     }))
 
@@ -169,7 +191,7 @@ export const recordWebsiteHit = () => {
   }
 
   // Fire-and-forget request used only to record hit analytics.
-  void axios.post("/models/record-hit", {
+  void axios.post("/analytics/hit", {
       original_route: route().current(),
       original_params: route().params,
       webpage_id: usePage().props.webpage_id,

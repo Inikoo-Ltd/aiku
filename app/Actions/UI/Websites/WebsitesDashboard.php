@@ -8,7 +8,7 @@
 
 namespace App\Actions\UI\Websites;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Enums\Web\Website\WebsiteDashboardTabsEnum;
@@ -19,13 +19,13 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WebsitesDashboard extends GrpAction
+class WebsitesDashboard extends OrgAction
 {
     use AsAction;
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisation(group(), $request)->withTab(WebsiteDashboardTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(WebsiteDashboardTabsEnum::values());
 
         return group();
     }
@@ -47,7 +47,7 @@ class WebsitesDashboard extends GrpAction
 
                 WebsiteDashboardTabsEnum::CRAWLS->value => $this->tab == WebsiteDashboardTabsEnum::CRAWLS->value ?
                     fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))
-                    : Inertia::lazy(fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))),
+                    : Inertia::optional(fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))),
             ]
         )->table(IndexCrawls::make()->tableStructure(parent: $group, prefix: WebsiteDashboardTabsEnum::CRAWLS->value));
     }

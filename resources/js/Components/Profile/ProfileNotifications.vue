@@ -1,15 +1,11 @@
 <script setup lang='ts'>
+import { trans } from 'laravel-vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-// import Row from 'primevue/row'
-// import ColumnGroup from 'primevue/columngroup'
-// import Tag from 'primevue/tag'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import IconField from 'primevue/iconfield'
-// import Rating from 'primevue/rating'
 import { FilterMatchMode } from '@primevue/core/api'
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle } from '@fas'
 import { faSearch, faExternalLink } from '@fal'
@@ -51,7 +47,7 @@ const selectIcon = (notifType: string) => {
                         <InputIcon>
                             <FontAwesomeIcon icon='fal fa-search' class='' fixed-width aria-hidden='true' />
                         </InputIcon>
-                        <InputText v-model="filters['global'].value" placeholder="Search..." />
+                        <InputText v-model="filters['global'].value" :placeholder="trans('Search...')" />
                     </IconField>
                 </div>
             </template>

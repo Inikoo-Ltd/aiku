@@ -11,7 +11,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { Link, router, usePage } from "@inertiajs/vue3";
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { computed, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
 import qs from 'qs'
 import clone from 'lodash-es/clone'
 import filter from 'lodash-es/filter'
@@ -30,7 +30,7 @@ import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
 import TableFrequencyFilter from '@/Components/Table/TableFrequencyFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
-import Icon from '../Icon.vue'
+import TableRows from './TableRows.vue'
 library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator,faYinYang)
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -177,7 +177,86 @@ const props = defineProps(
             default: false,
             required: false,
         },
+        // Opt-in: only render the rows visible in the scroll viewport. Every rendered row stays fully
+        // reactive, so per-row actions work normally. Good for big tables with per-row action buttons
+        // that mutate row data (example: Picking Session, Delivery Note picking).
+        virtualScroll: {
+            type: Boolean,
+            default: false,
+            required: false,
+        },
+        // Height of the scrollable viewport when virtualScroll is enabled.
+        virtualScrollHeight: {
+            type: String,
+            default: 'calc(100vh - 320px)',
+            required: false,
+        },
+        // Estimated row height in px, or a (item, index) => number function for variable-height rows.
+        virtualItemHeight: {
+            type: [Number, Function],
+            default: 90,
+            required: false,
+        },
+        virtualOverscan: {
+            type: Number,
+            default: 12,
+            required: false,
+        },
+        // Opt-in row memoization for the virtualScroll path (applied via v-memo). Receives (item, index)
+        // and must return every external reactive value the row's cells read (e.g. selected location,
+        // screen type); a row only re-renders when one of the returned values changes. Without it,
+        // every scroll tick re-renders all mounted rows.
+        virtualRowMemo: {
+            type: Function,
+            default: null,
+            required: false,
+        },
+        // Opt-in row memoization WITHOUT virtualization: every row still mounts, but each <tr> is
+        // wrapped in v-memo so mutating one row's data re-renders only that row instead of all of
+        // them. Receives (item, index) and must return every reactive value the row's cells read
+        // (item fields + external deps like screenType/selected location). Use for big tables where
+        // virtual scroll is undesirable (e.g. tablet). Does not support useExpandTable.
+        rowMemo: {
+            type: Function,
+            default: null,
+            required: false,
+        },
+        // Simpler alternative to rowMemo: set true and Table auto-builds the v-memo dependency array
+        // from every own property of the row object (nested objects/arrays are JSON.stringify'd). A row
+        // then only re-renders when its own data changes. Caveat: it can only see the row object, so
+        // cells that read external reactive state (injected refs, a lookup keyed elsewhere) will not
+        // refresh while memoized — use the rowMemo function for those.
+        isUseVMemo: {
+            type: Boolean,
+            default: false,
+            required: false,
+        },
+
+        useTopPagination: {
+            type: Boolean,
+            default: false,
+            required: false,
+        }
     });
+
+// Flatten a row into a stable list of primitives for v-memo. Nested objects/arrays are stringified
+// so a change inside them is detected; the row re-renders only when one of these values changes.
+function autoRowMemo(item: Record<string, any>) {
+    const values: any[] = []
+    for (const key in item) {
+        const value = item[key]
+        values.push(value !== null && typeof value === 'object' ? JSON.stringify(value) : value)
+    }
+    return values
+}
+
+// Signature of the current columns (count + key + label + visibility), appended to every row's
+// v-memo array. Without it a row memoized before a column was added/renamed/toggled keeps its cached
+// vnodes, so the new column's cell renders empty. When the columns change this value changes and all
+// rows re-render.
+const columnsMemoKey = computed(() =>
+    JSON.stringify((queryBuilderProps.value.columns ?? []).map((column: any) => [column.key, column.label, column.hidden]))
+)
 
 const emits = defineEmits<{
     (e: 'onSelectRow', value: {[key: string]: boolean}): void
@@ -245,6 +324,12 @@ const compResourceData = computed(() => {
 
     return props.resource;
 })
+
+// watch(compResourceData, (val, newval) => {
+//     console.log('gfgfgf', val, newval)
+// }, {
+//     deep: true
+// })
 
 // Meta Page (Previous/next link, current page, data per page)
 const compResourceMeta = computed(() => {
@@ -324,8 +409,7 @@ const changeGlobalSearchValue = debounce((value?: string) => {
 const immediateSearch = (value: string) => {
     changeGlobalSearchValue.cancel()
     changeSearchInputValue('global', value)
-    debouncedFilter.cancel()
-    visit(location.pathname + '?' + generateNewQueryString())
+    immediateVisit()
 }
 
 const cancelVisitIfInProgress = () => {
@@ -416,6 +500,7 @@ function dataForNewQueryString() {
     const sort = queryBuilderData.value.sort
     const perPage = queryBuilderData.value.perPage;
     const elementFilter = queryBuilderData.value.elementFilter
+    const additionalElementFilter = queryBuilderData.value.additionalElementFilter
     const period = queryBuilderData.value.periodFilter
     const radioFilter = queryBuilderData.value.radioFilter
     const dateInterval = queryBuilderData.value.dateInterval
@@ -439,6 +524,9 @@ function dataForNewQueryString() {
     if (elementFilter) {
         queryData.elements = elementFilter // elements[state] = working
     }
+    if (additionalElementFilter) {
+        queryData.additionalElements = additionalElementFilter
+    }
     if (period) {
         queryData.period = period // period[type]=year&period[date]=2024
     }
@@ -454,21 +542,39 @@ function generateNewQueryString() {
     const queryStringData = qs.parse(location.search.substring(1))
     const prefix = props.name === 'default' ? '' : props.name + '_'
 
+    const externalFilters = queryStringData[prefix + 'filter'] || {}
+    const managedKeys = [
+        ...map(queryBuilderProps.value.searchInputs, 'key'),
+        ...map(queryBuilderProps.value.filters, 'key'),
+    ]
+
+    forEach(managedKeys, (k : any) => { delete externalFilters[k] })
     // To exclude 'filter', 'columns', 'cursor', and 'sort' that received from the URL
-    forEach(['filter', 'columns', 'cursor', 'sort'], (key) => {
+    forEach(['columns', 'cursor', 'sort'], (key) => {
         delete queryStringData[prefix + key];
     });
 
     // To exclude page number from pagination
     delete queryStringData[pageName.value];
 
-    forEach(dataForNewQueryString(), (value, key) => {
+    const newData = dataForNewQueryString()
+    forEach(newData, (value, key) => {
         if (key === 'page') {
             queryStringData[pageName.value] = value;
+        } else if (key === 'filter') {
+            queryStringData[prefix + 'filter'] = {
+                ...externalFilters,
+                ...value,
+            };
         } else {
             queryStringData[prefix + key] = value;
         }
     });
+
+    if(!newData.filter && Object.keys(externalFilters).length) {
+        queryStringData[prefix + 'filter'] = externalFilters
+    }
+
     let query = qs.stringify(queryStringData, {
 
         encodeValuesOnly: true,
@@ -512,8 +618,15 @@ const visit = (url?: string) => {
             },
             onSuccess() {
                 if ('queryBuilderProps' in usePage().props) {
-                    queryBuilderData.value.cursor = queryBuilderProps.value.cursor;
-                    queryBuilderData.value.page = queryBuilderProps.value.page;
+                    const newCursor = queryBuilderProps.value.cursor;
+                    const newPage   = queryBuilderProps.value.page;
+
+                    if (queryBuilderData.value.cursor !== newCursor || queryBuilderData.value.page !== newPage) {
+                        skipNextDebouncedVisit = true;
+                    }
+
+                    queryBuilderData.value.cursor = newCursor;
+                    queryBuilderData.value.page   = newPage;
                 }
 
                 if (props.preserveScroll === 'table-top') {
@@ -522,7 +635,6 @@ const visit = (url?: string) => {
                         tableFieldset.value.getBoundingClientRect().top +
                         window.pageYOffset +
                         offset;
-
                     window.scrollTo({top});
                 }
 
@@ -545,12 +657,39 @@ const debouncedFilter = debounce(() => {
 
 let isMounted = false;
 
+// Set by immediateVisit() so the queryBuilderData watcher skips the debounced visit it would
+// otherwise schedule for the same mutation, preventing a duplicate request.
+let skipNextDebouncedVisit = false;
+
 watch(queryBuilderData, async () => {
-        if (!isMounted) return;
-        debouncedFilter();
-    },
+    const skipThisVisit = skipNextDebouncedVisit;
+    skipNextDebouncedVisit = false;
+
+    if (!isMounted) return;
+    if (skipThisVisit) return;
+
+    debouncedFilter();
+},
     {deep: true},
 );
+
+// Visit right away instead of waiting for the debounce (e.g. header sort click).
+const immediateVisit = () => {
+    skipNextDebouncedVisit = true;
+    debouncedFilter.cancel();
+    visit(location.pathname + '?' + generateNewQueryString());
+};
+
+// TableElements reports the selection it read from the URL right after mount. The server already
+// rendered that selection, so the state is stored without letting the watcher fire off a visit for
+// a query string identical to the current one.
+const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false) => {
+    if (isInitial) {
+        skipNextDebouncedVisit = true;
+    }
+
+    queryBuilderData.value[key] = data;
+};
 
 const inertiaListener = () => {
     updates.value++;
@@ -575,6 +714,8 @@ function sortBy(column) {
 
     queryBuilderData.value.cursor = null;
     queryBuilderData.value.page = 1;
+
+    immediateVisit();
 }
 
 function show(key) {
@@ -623,7 +764,6 @@ const onClickSelectAll = (state: boolean) => {
      emits('onCheckedAll', {data : props.resource.data, allChecked : compIsAllChecked.value})
 }
 
-
 // Check props.isCheckbox to improve performance
 const compIsAllChecked = props.isCheckBox
   ? computed(() => {
@@ -634,7 +774,6 @@ const compIsAllChecked = props.isCheckBox
         })
     })
   : false
-
 
 watch(selectRow, () => {
     emits('onSelectRow', selectRow)
@@ -648,6 +787,158 @@ defineExpose({
 })
 
 const isLoading = ref<string | boolean>(false)
+
+const virtualHeightCache = new Map<number, number>()
+
+watch(compResourceData, () => {
+    virtualHeightCache.clear()
+    if (props.virtualScroll) {
+        nextTick(() => calculateVirtualWindow())
+    }
+})
+
+function virtualRowHeight(index: number): number {
+    if (typeof props.virtualItemHeight !== 'function') {
+        return props.virtualItemHeight
+    }
+
+    if (!virtualHeightCache.has(index)) {
+        virtualHeightCache.set(index, props.virtualItemHeight(compResourceData.value[index], index))
+    }
+
+    return virtualHeightCache.get(index)!
+}
+
+const virtualRowOffsets = computed(() => {
+    const offsets = [0]
+    let total = 0
+    for (let i = 0; i < compResourceData.value.length; i++) {
+        total += virtualRowHeight(i)
+        offsets.push(total)
+    }
+    return offsets
+})
+
+const virtualContainerRef = ref<HTMLElement | null>(null)
+const virtualWindow = ref({
+    start: 0,
+    end: Math.min(compResourceData.value?.length ?? 0, props.virtualOverscan + 20),
+})
+
+// Greatest index whose estimated top offset is at or above y
+function findRowIndexAtOffset(offsets: number[], y: number, total: number): number {
+    let low = 0
+    let high = total - 1
+    let result = 0
+    while (low <= high) {
+        const mid = (low + high) >> 1
+        if (offsets[mid] <= y) {
+            result = mid
+            low = mid + 1
+        } else {
+            high = mid - 1
+        }
+    }
+    return result
+}
+
+// Recompute which rows to mount from the real scroll position against the estimated offsets.
+// Estimated heights drift from the real rendered heights, so the bottom edge is pinned: once
+// the container is physically scrolled to its end the window always includes the last row,
+// otherwise the drift can push the computed range past the data and only spacers would render.
+const calculateVirtualWindow = () => {
+    const total = compResourceData.value?.length ?? 0
+    const el = virtualContainerRef.value
+
+    if (total === 0) {
+        virtualWindow.value = { start: 0, end: 0 }
+        return
+    }
+
+    if (!el) {
+        virtualWindow.value = { start: 0, end: Math.min(total, props.virtualOverscan + 20) }
+        return
+    }
+
+    const offsets = virtualRowOffsets.value
+    const viewportTop = el.scrollTop
+    const viewportBottom = viewportTop + el.clientHeight
+
+    let start: number
+    let end: number
+
+    if (viewportBottom >= el.scrollHeight - 2) {
+        end = total
+        start = total
+        let coveredHeight = 0
+        while (start > 0 && coveredHeight < el.clientHeight) {
+            start--
+            coveredHeight += offsets[start + 1] - offsets[start]
+        }
+    } else {
+        start = findRowIndexAtOffset(offsets, viewportTop, total)
+        end = start + 1
+        while (end < total && offsets[end] < viewportBottom) {
+            end++
+        }
+    }
+
+    virtualWindow.value = {
+        start: Math.max(0, start - props.virtualOverscan),
+        end: Math.min(total, end + props.virtualOverscan),
+    }
+}
+
+const virtualList = computed(() => {
+    const { start, end } = virtualWindow.value
+    return compResourceData.value.slice(start, end).map((data: any, i: number) => ({ data, index: start + i }))
+})
+
+let virtualScrollRafId: number | null = null
+const onVirtualScroll = () => {
+    if (virtualScrollRafId !== null) {
+        return
+    }
+
+    virtualScrollRafId = requestAnimationFrame(() => {
+        calculateVirtualWindow()
+        virtualScrollRafId = null
+    })
+}
+
+let virtualResizeObserver: ResizeObserver | null = null
+watch(virtualContainerRef, (el) => {
+    if (!props.virtualScroll) {
+        return
+    }
+
+    virtualResizeObserver?.disconnect()
+    if (el && typeof ResizeObserver !== 'undefined') {
+        virtualResizeObserver = new ResizeObserver(() => calculateVirtualWindow())
+        virtualResizeObserver.observe(el)
+    }
+    if (el) {
+        calculateVirtualWindow()
+    }
+})
+
+onUnmounted(() => {
+    virtualResizeObserver?.disconnect()
+})
+
+const virtualTopSpacerHeight = computed(() => {
+    const startIndex = virtualList.value[0]?.index ?? 0
+    return virtualRowOffsets.value[startIndex] ?? 0
+})
+
+const virtualBottomSpacerHeight = computed(() => {
+    const lastItem = virtualList.value[virtualList.value.length - 1]
+    const endIndex = lastItem ? lastItem.index + 1 : 0
+    const total = virtualRowOffsets.value[virtualRowOffsets.value.length - 1] ?? 0
+    return total - (virtualRowOffsets.value[endIndex] ?? total)
+})
+
+const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?? 0) + (props.isCheckBox ? 1 : 0))
 
 </script>
 
@@ -684,16 +975,27 @@ const isLoading = ref<string | boolean>(false)
                 <!-- Wrapper -->
 
                 <!-- Filter: Checkbox element -->
-                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-gray-300" :class="{
+                    'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
+                }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
-                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                        :tableName="props.name" />
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('elementFilter', data, isInitial)"
+                        :tableName="props.name"
+                    />
+                </div>
+
+                <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
+                    <TableElements :elements="queryBuilderProps.additionalElementGroups"
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('additionalElementFilter', data, isInitial)"
+                        :tableName="props.name"
+                        :isAdditional="true"
+                    />
                 </div>
 
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4 table-query-builder">
 
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
-                    <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
+                    <div v-if="!useTopPagination" class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
                         <!-- Result Number -->
                         <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
                             <div class="grid justify-end items-center text-base font-normal text-gray-700">
@@ -792,6 +1094,7 @@ const isLoading = ref<string | boolean>(false)
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
+                                :appliedValue="queryBuilderProps?.betweenDatesValue"
                                 :tableName="props.name" />
                         </div>
 
@@ -833,15 +1136,109 @@ const isLoading = ref<string | boolean>(false)
 
             </div>
 
+            <slot name="before-table" />
+
             <!-- <pre>{{ compResourceData }}</pre> -->
 
             <!-- The Main Table -->
             <slot name="tableWrapper" :meta="compResourceMeta">
                 <TableWrapper :result="compResourceMeta.total === 0" :class="{ 'mt-0': !hasOnlyData }">
+                    <slot v-if="useTopPagination" name="pagination" :on-click="visit" :has-data="hasData" :meta="compResourceMeta" :per-page-options="queryBuilderProps.perPageOptions" :on-per-page-change="onPerPageChange">
+                        <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
+                            :exportLinks="queryBuilderProps.exportLinks"
+                            :per-page-options="queryBuilderProps.perPageOptions"
+                            :on-per-page-change="onPerPageChange"
+                            :custom-wrapper-class="'sticky top-[33px] z-[10] border-b !border-gray-300'"
+                        >
+                            <template #topRow="{ data }">
+                                <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center mt-0.5 px-2" :class="data.paginated ? 'mb-2' : ''">
+                                    <!-- Result Number -->
+                                    <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
+                                        <div class="grid justify-end items-center text-base font-normal text-gray-700">
+                                            <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
+                                                <span class="font-semibold tabular-nums">
+                                                    <CountUp :endVal="compResourceMeta?.total || 0" :duration="1.2"
+                                                        :scrollSpyOnce="true" :options="{
+                                                        formattingFn: (number) => locale.number(number)
+                                                    }" />
+                                                </span>
+
+                                                <span class="font-light">
+                                                    {{
+                                                    compResourceMeta.total > 1
+                                                    ? queryBuilderProps.labelRecord?.[1] || queryBuilderProps.labelRecord?.[0] ||
+                                                    trans('records')
+                                                    : queryBuilderProps.labelRecord?.[0] || trans('record')
+                                                    }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Button: Model Operations Bulk -->
+                                        <div v-if="queryBuilderProps.modelOperations?.bulk" class="flex">
+                                            <slot v-for="(linkButton, btnIndex) in queryBuilderProps.modelOperations?.bulk"
+                                                :name="`button${linkButton.label}`" :linkButton="linkButton">
+                                                <Link v-if="linkButton?.route?.name" as="div"
+                                                    :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                                    :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
+                                                    :data="selectRow"
+                                                    :class="[queryBuilderProps.modelOperations?.bulk.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
+                                                <Button
+                                                    :style="Object.values(selectRow).some(value => value) ? linkButton.style : 'disabled'"
+                                                    :icon="linkButton.icon" :label="linkButton.label" size="l"
+                                                    class="h-full border-none rounded-none"
+                                                    :class="{'rounded-l-md': btnIndex === 0, 'rounded-r-md ': btnIndex === queryBuilderProps.modelOperations?.bulk.length - 1}" />
+                                                </Link>
+                                            </slot>
+                                        </div>
+                                    </div>
+
+                                    <!-- Button: Model Operations -->
+                                    <div v-if="queryBuilderProps.modelOperations?.createLink" class="flex">
+                                        <slot v-for="(linkButton, btnIndex) in queryBuilderProps.modelOperations?.createLink"
+                                            :name="`button-${kebabCase(linkButton.label)}`"
+                                            :linkButton="{...linkButton, btnIndex: btnIndex }">
+                                            <!-- {{ linkButton?.route?.name }} -->
+                                            <component v-if="linkButton?.route?.name" :is="linkButton.target ? 'a' : Link" as="div"
+                                                :target="linkButton.target || undefined"
+                                                :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                                :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
+                                                :class="[queryBuilderProps.modelOperations?.createLink.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
+                                                <Button :style="linkButton.style" :type="linkButton.type" :icon="linkButton.icon"
+                                                    :label="linkButton.label" size="xs" key="1" class="h-full" />
+                                            </component>
+                                        </slot>
+                                    </div>
+
+                                    <!-- Search Input Button -->
+                                    <div v-if="queryBuilderProps.globalSearch" class="flex flex-row">
+                                        <slot name="tableFilterSearch" :has-global-search="queryBuilderProps.globalSearch"
+                                            :label="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.label : null"
+                                            :value="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.value : null"
+                                            :on-change="changeGlobalSearchValue">
+                                            <TableFilterSearch v-if="queryBuilderProps.globalSearch" class=""
+                                                @resetSearch="() => resetQuery()" :label="queryBuilderProps.globalSearch.label"
+                                                :value="queryBuilderProps.globalSearch.value" :on-change="changeGlobalSearchValue"
+                                                :on-enter="immediateSearch" :on-start-typing="cancelVisitIfInProgress" :isVisiting />
+                                        </slot>
+                                    </div>
+                                </div>
+                            </template>
+                        </Pagination>
+                    </slot>
+
                     <slot name="table">
+                        <div ref="virtualContainerRef"
+                            @scroll="virtualScroll ? onVirtualScroll() : undefined"
+                            :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
                         <table class="divide-y divide-gray-200 bg-white w-full">
-                            <thead class="bg-gray-50">
-                                <tr class="border-t border-gray-200 divide-x divide-gray-200">
+                            <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
+                                <tr
+                                    class="border-t border-gray-200 divide-x divide-gray-200"
+                                    :class="{
+                                        'border-t': !useTopPagination
+                                    }"
+                                >
                                     <slot v-if="isCheckBox" :name="`header-checkbox`"
                                         :header="{ value : compIsAllChecked , onClick : onClickSelectAll }">
                                         <div @click="() => onClickSelectAll(compIsAllChecked)"
@@ -866,9 +1263,161 @@ const isLoading = ref<string | boolean>(false)
 
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <slot name="body" :show="show">
-                                    <template v-for="(item, key) in compResourceData"
+                                    <!-- Virtualized path (opt-in via virtualScroll): only rows in the scroll
+                                         viewport are mounted. Rows stay fully reactive unless the consumer passes
+                                         virtualRowMemo, which skips re-rendering rows whose listed deps are unchanged.
+                                         Spacer rows stand in for the rows above/below the rendered window. -->
+                                    <template v-if="virtualScroll">
+                                        <tr v-if="virtualTopSpacerHeight > 0" aria-hidden="true" class="bg-gray-50/70">
+                                            <td :colspan="virtualColSpan" :style="{ height: `${virtualTopSpacerHeight}px`, padding: 0, border: 'none' }">
+                                                <div class="h-full animate-pulse" :style="{ background: 'repeating-linear-gradient(to bottom, rgb(249 250 251) 0px, rgb(249 250 251) 59px, rgb(229 231 235) 59px, rgb(229 231 235) 60px)' }" />
+                                            </td>
+                                        </tr>
+
+                                        <!-- v-memo must live on the same element as v-for (the compiler crashes when it
+                                             sits on a template v-for), so the virtual path renders plain rows and does
+                                             not support useExpandTable. -->
+                                        <tr v-for="{ data: item, index: key } in virtualList"
+                                            :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
+                                            v-memo="virtualRowMemo ? virtualRowMemo(item, key) : [{}]"
+                                            class="" :class="[
+                                                    {
+                                                        'bg-gray-50': striped && key % 2,
+                                                    },
+                                                    selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
+                                                        ? 'bg-green-100/70'
+                                                        : striped
+                                                            ? 'bg-gray-200 hover:bg-gray-300'
+                                                            : rowColorFunction(item)
+                                                                ? rowColorFunction(item)
+                                                                : 'hover:bg-gray-50'
+                                                ]">
+                                                <td v-if="isCheckBox" key="checkbox" class="">
+                                                    <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
+                                                        <FontAwesomeIcon v-if="disabledCheckbox(item)"
+                                                            icon="fal fa-minus-square"
+                                                            class='text-gray-400 p-2 cursor-not-allowed text-lg mx-auto block'
+                                                            fixed-width aria-hidden='true' />
+                                                    </slot>
+
+                                                    <template v-else>
+                                                        <slot :name="`checkbox`" :checked="{props : props.isChecked(item), item :item.is_checked, row : selectRow[item[checkboxKey]]}" :data="item">
+                                                            <FontAwesomeIcon
+                                                                v-show="props.isChecked(item) || item.is_checked || selectRow[item[checkboxKey]]"
+                                                                @click="async () => (setLodash(selectRow, [item.id], false), setLodash(item, ['is_checked'], false), emits('onUnchecked', item))"
+                                                                icon='fas fa-check-square'
+                                                                class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
+                                                                fixed-width aria-hidden='true' />
+                                                            <FontAwesomeIcon
+                                                                v-show="!props.isChecked(item) && !item.is_checked && !selectRow[item[checkboxKey]]"
+                                                                @click="async () => (setLodash(selectRow, [item.id], true), setLodash(item, ['is_checked'], true), emits('onChecked', item))"
+                                                                icon='fal fa-square'
+                                                                class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
+                                                                fixed-width aria-hidden='true' />
+                                                        </slot>
+                                                    </template>
+                                                </td>
+
+                                                <td v-for="(column, index) in queryBuilderProps.columns"
+                                                    v-show="show(column.key)"
+                                                    :key="`table-${name}-row-${key}-column-${column.key}`"
+                                                    class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                        column.type === 'avatar' || column.type === 'icon'
+                                                            ? 'text-center min-w-fit px-3'
+                                                            : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
+                                                                ? 'text-right pl-3 pr-9 tabular-nums'
+                                                                : 'px-6',
+                                                        props.rowAlignTop ? 'align-top' : '',
+                                                        { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
+                                                        column.className
+                                                    ]">
+                                                    <slot :name="`cell(${column.key})`"
+                                                        :item="{ ...item, index: index, rowIndex : key, data : item }"
+                                                        :proxyItem="item" :tabName="name" class=""
+                                                    >
+                                                        <TableRows :column :item />
+                                                    </slot>
+                                                </td>
+                                        </tr>
+
+                                        <tr v-if="virtualBottomSpacerHeight > 0" aria-hidden="true" class="bg-gray-50/70">
+                                            <td :colspan="virtualColSpan" :style="{ height: `${virtualBottomSpacerHeight}px`, padding: 0, border: 'none' }">
+                                                <div class="h-full animate-pulse" :style="{ background: 'repeating-linear-gradient(to bottom, rgb(249 250 251) 0px, rgb(249 250 251) 59px, rgb(229 231 235) 59px, rgb(229 231 235) 60px)' }" />
+                                            </td>
+                                        </tr>
+                                    </template>
+
+                                    <!-- Memoized non-virtual path (opt-in via rowMemo): all rows mount, but each
+                                         <tr> is wrapped in v-memo so mutating one row's data re-renders only that
+                                         row. v-memo must sit on the same element as v-for, so rows render directly
+                                         (no <template> wrapper) and useExpandTable is not supported here. -->
+                                    <template v-else-if="rowMemo || isUseVMemo">
+                                        <tr v-for="(item, key) in props.resource.data"
+                                            :key="`table-${name}-row-${item.id}-${item.slug}`"
+                                            v-memo="[...(rowMemo ? rowMemo(item, key) : autoRowMemo(item)), columnsMemoKey]"
+                                            class="" :class="[
+                                                {
+                                                    'bg-gray-50': striped && key % 2,
+                                                },
+                                                selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
+                                                    ? 'bg-green-100/70'
+                                                    : striped
+                                                        ? 'bg-gray-200 hover:bg-gray-300'
+                                                        : rowColorFunction(item)
+                                                            ? rowColorFunction(item)
+                                                            : 'hover:bg-gray-50'
+                                            ]">
+                                            <td v-if="isCheckBox" key="checkbox" class="">
+                                                <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
+                                                    <FontAwesomeIcon v-if="disabledCheckbox(item)"
+                                                        icon="fal fa-minus-square"
+                                                        class='text-gray-400 p-2 cursor-not-allowed text-lg mx-auto block'
+                                                        fixed-width aria-hidden='true' />
+                                                </slot>
+
+                                                <template v-else>
+                                                    <slot :name="`checkbox`" :checked="{props : props.isChecked(item), item :item.is_checked, row : selectRow[item[checkboxKey]]}" :data="item">
+                                                        <FontAwesomeIcon
+                                                            v-show="props.isChecked(item) || item.is_checked || selectRow[item[checkboxKey]]"
+                                                            @click="async () => (setLodash(selectRow, [item.id], false), setLodash(item, ['is_checked'], false), emits('onUnchecked', item))"
+                                                            icon='fas fa-check-square'
+                                                            class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
+                                                            fixed-width aria-hidden='true' />
+                                                        <FontAwesomeIcon
+                                                            v-show="!props.isChecked(item) && !item.is_checked && !selectRow[item[checkboxKey]]"
+                                                            @click="async () => (setLodash(selectRow, [item.id], true), setLodash(item, ['is_checked'], true), emits('onChecked', item))"
+                                                            icon='fal fa-square'
+                                                            class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
+                                                            fixed-width aria-hidden='true' />
+                                                    </slot>
+                                                </template>
+                                            </td>
+
+                                            <td v-for="(column, index) in queryBuilderProps.columns"
+                                                v-show="show(column.key)"
+                                                :key="`table-${name}-row-${key}-column-${column.key}`"
+                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                    column.type === 'avatar' || column.type === 'icon'
+                                                        ? 'text-center min-w-fit px-3'
+                                                        : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
+                                                            ? 'text-right pl-3 pr-9 tabular-nums'
+                                                            : 'px-6',
+                                                    props.rowAlignTop ? 'align-top' : '',
+                                                    { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
+                                                    column.className
+                                                ]">
+                                                <slot :name="`cell(${column.key})`"
+                                                    :item="{ ...item, index: index, rowIndex : key, data : item }"
+                                                    :proxyItem="item" :tabName="name" class="">
+                                                    <TableRows :column :item />
+                                                </slot>
+                                            </td>
+                                        </tr>
+                                    </template>
+
+                                    <template v-for="(item, key) in props.resource.data"
+                                        v-else
                                         :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
-                                        vxmemo="[JSON.stringify(item)]"
                                     >
                                         <tr class="" :class="[
                                                 {
@@ -913,6 +1462,7 @@ const isLoading = ref<string | boolean>(false)
                                                 </template>
                                             </td>
 
+                                            <!-- Rows: main data -->
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
@@ -927,36 +1477,9 @@ const isLoading = ref<string | boolean>(false)
                                                     column.className
                                                 ]">
                                                 <slot :name="`cell(${column.key})`"
-                                                    :item="{ ...item, index: index, rowIndex : key, editingIndicator: { loading: false, isSucces: false, isFailed: false, editMode: false }, data : item }"
+                                                    :item="{ ...item, index: index, rowIndex : key, data : item }"
                                                     :proxyItem="item" :tabName="name" class="">
-                                                    <template
-                                                        v-if="typeof item[column.key] == 'number' || column.type === 'number'">
-                                                        {{ locale.number(item[column.key]) }}
-                                                    </template>
-                                                    <template v-else-if="column.type === 'currency'">
-                                                        {{ locale.currencyFormat(item.currency_code, item[column.key]) }}
-                                                    </template>
-                                                    <template v-else-if="column.type === 'date'">
-                                                        <span
-                                                            v-tooltip="useFormatTime(item[column.key], { formatTime: 'hms' })"
-                                                            class="whitespace-nowrap">{{ useFormatTime(item[column.key]) }}</span>
-                                                    </template>
-                                                    <template v-else-if="column.type === 'date_hm'">
-                                                        <span class="whitespace-nowrap">{{useFormatTime(item[column.key], { formatTime: 'hm' }) }}</span>
-                                                    </template>
-                                                    <template v-else-if="column.type === 'date_hms'">
-                                                        <span class="whitespace-nowrap">{{useFormatTime(item[column.key], { formatTime: 'hms' }) }}</span>
-                                                    </template>
-                                                    <template v-else-if="column.type === 'icon'">
-                                                        <Icon
-                                                            v-if="item[column.key]?.icon || item[column.key]?.text || item[column.key]?.svg"
-                                                            :data="item[column.key]"
-                                                        />
-                                                        <FontAwesomeIcon v-else :icon="item[column.key]" class="" fixed-width aria-hidden="true" />
-                                                    </template>
-                                                    <template v-else>
-                                                        {{ item[column.key] }}
-                                                    </template>
+                                                    <TableRows :column :item />
                                                 </slot>
                                             </td>
                                         </tr>
@@ -1000,18 +1523,9 @@ const isLoading = ref<string | boolean>(false)
                                                     column.className
                                                 ]">
                                                 <slot :name="`footerRows-cell(${column.key})`"
-                                                    :item="{ ...item, index: index, rowIndex : key, editingIndicator: { loading: false, isSucces: false, isFailed: false, editMode: false }, data : item }"
+                                                    :item="{ ...item, index: index, rowIndex : key }"
                                                     :tabName="name" class="">
-                                                    <template
-                                                        v-if="typeof item[column.key] == 'number' || column.type === 'number'">
-                                                        {{ locale.number(item[column.key]) }}
-                                                    </template>
-                                                    <template v-else-if="column.type === 'currency'">
-                                                        {{ locale.currencyFormat(item.currency_code || 'usd', item[column.key]) }}
-                                                    </template>
-                                                    <template v-else>
-                                                        {{ item[column.key] }}
-                                                    </template>
+                                                    <TableRows :column :item />
                                                 </slot>
                                             </td>
                                         </tr>
@@ -1030,11 +1544,11 @@ const isLoading = ref<string | boolean>(false)
                                 </slot>
                             </tbody>
                         </table>
+                        </div>
                     </slot>
 
                     <!-- Pagination -->
-                    <slot name="pagination" :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
-                        :per-page-options="queryBuilderProps.perPageOptions" :on-per-page-change="onPerPageChange">
+                    <slot v-if="!useTopPagination"name="pagination" :on-click="visit" :has-data="hasData" :meta="compResourceMeta" :per-page-options="queryBuilderProps.perPageOptions" :on-per-page-change="onPerPageChange">
                         <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
                             :exportLinks="queryBuilderProps.exportLinks"
                             :per-page-options="queryBuilderProps.perPageOptions"

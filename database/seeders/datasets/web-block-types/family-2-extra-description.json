@@ -135,7 +135,7 @@
 					},
 					"background": {
 						"type": "color",
-						"color": "#D8D9DB",
+						"color": "#f4f4f4",
 						"image": {
 							"original": null
 						}

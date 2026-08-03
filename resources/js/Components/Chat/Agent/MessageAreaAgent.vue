@@ -10,9 +10,11 @@ import {
     faEllipsisVertical,
     faTimesCircle,
     faMessage,
-    faPaperclip, faXmark, faFilePdf, faEnvelope
+    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight
 } from "@fortawesome/free-solid-svg-icons"
+import { faJira } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
@@ -20,6 +22,7 @@ import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
+import { Select } from "primevue"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -48,13 +51,136 @@ const emit = defineEmits([
     "view-history",
     "view-user-profile",
     "view-message-details",
+    "transfer-agent-success",
+    "assign-self-success",
+    "messages-read",
+    "open-jira-settings",
 ])
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
+const isMyChat = computed(() => {
+    if (!props.session?.assigned_agent) return true
+    return String(props.session.assigned_agent.user_id ?? "") === String(layout?.user?.id ?? "")
+})
+
+const isTakingOver = ref(false)
+const takeoverChat = async () => {
+    if (!props.session?.ulid || isTakingOver.value) return
+    isTakingOver.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.patch(
+            route("grp.org.chat.agents.takeover", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.session.status = "active"
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent.user_id = layout?.user?.id
+            props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
+        }
+        emit("assign-self-success")
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to take over chat"), type: "error" })
+    } finally {
+        isTakingOver.value = false
+    }
+}
+
+const currentOrganisation = computed(
+    () => String((route().params as Record<string, any>)?.organisation ?? "aw")
+)
+
+const isJiraModalOpen = ref(false)
+const openJiraModal = () => {
+    isMenuOpen.value = false
+    isJiraModalOpen.value = true
+}
+const onOpenJiraSettings = () => {
+    isJiraModalOpen.value = false
+    emit("open-jira-settings")
+}
+
+const isAssigningSelf = ref(false)
+const assignSelf = async () => {
+    if (!props.session?.ulid || isAssigningSelf.value) return
+    isAssigningSelf.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.post(
+            route("grp.org.chat.agents.assign.self", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.session.status = "active"
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent.user_id = layout?.user?.id
+            props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
+        }
+        emit("assign-self-success")
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to assign chat"), type: "error" })
+    } finally {
+        isAssigningSelf.value = false
+    }
+}
+
+const isReopening = ref(false)
+const reopenChat = async () => {
+    if (!props.session?.ulid || isReopening.value) return
+    isReopening.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.patch(
+            route("grp.org.chat.agents.sessions.reopen", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.session.status = "active"
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent.user_id = layout?.user?.id
+            props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
+        }
+        emit("assign-self-success")
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to reopen chat"), type: "error" })
+    } finally {
+        isReopening.value = false
+    }
+}
+
 const messagesLocal = ref<LocalChatMessage[]>([])
 const newMessage = ref("")
+
+const handleEditMessage = async ({ id, text }: { id: number; text: string }) => {
+    if (!props.session?.ulid) return
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.patch(
+            route("grp.org.chat.agents.messages.update", [organisation, props.session.ulid, id]),
+            { message_text: text },
+            { withCredentials: true }
+        )
+
+        const updated = data?.data
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
+        if (msg) {
+            msg.message_text = updated?.message_text ?? text
+            msg.edited_at = updated?.edited_at ?? new Date().toISOString()
+            if (msg.original?.text) {
+                msg.original.text = msg.message_text
+            }
+        }
+    } catch (e: any) {
+        notify({
+            title: trans("Error"),
+            text: e?.response?.data?.message ?? trans("Failed to edit message"),
+            type: "error",
+        })
+    }
+}
 
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
@@ -90,6 +216,7 @@ const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
+const isWaiting = computed(() => chatSession.value?.status === "waiting")
 const menuRef = ref<HTMLElement | null>(null)
 
 const isTyping = ref(false)
@@ -454,6 +581,7 @@ const markAsRead = async () => {
             session_ulid: chatSession.value.ulid,
             request_from: requestFrom,
         })
+        emit("messages-read")
     } catch (e) {
         console.error("Failed to mark read", e)
     }
@@ -463,6 +591,22 @@ const onViewMessageDetails = () => {
     isMenuOpen.value = false
     emit("view-message-details")
 }
+
+const onViewUserProfile = () => {
+    isMenuOpen.value = false
+    emit("view-user-profile")
+}
+
+const statusBadgeClass = computed(() => {
+    const map: Record<string, string> = {
+        active:      "bg-green-100 text-green-700",
+        waiting:     "bg-yellow-100 text-yellow-700",
+        resolved:    "bg-blue-100 text-blue-700",
+        transferred: "bg-purple-100 text-purple-700",
+        closed:      "bg-gray-100 text-gray-600",
+    }
+    return map[chatSession.value?.status ?? ""] ?? "bg-gray-100 text-gray-600"
+})
 
 watch(
     () => chatSession.value?.ulid,
@@ -566,33 +710,59 @@ const handleClickOutside = (e: MouseEvent) => {
 <template>
     <div class="flex flex-col h-full bg-white overflow-hidden">
         <!-- Header -->
-        <header class="flex items-center gap-3 px-3 py-2 border-b bg-gray-50">
+        <header class="flex items-center gap-3 px-3 py-2 border-b">
             <button @click="$emit('back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
             </button>
 
-            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+            <button type="button" v-tooltip="trans('View profile')"
+                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500 hover:ring-2 hover:ring-gray-200 transition"
+                @click="onViewUserProfile">
                 <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
 
                 <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+            </button>
+
+            <div class="flex-1 min-w-0 cursor-pointer" @click="onViewMessageDetails">
+                <div class="text-sm font-semibold truncate primary-text hover:primary-text-hover transition-colors">
+                    {{ session?.guest_identifier || session?.contact_name }}
+                </div>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <span v-if="session?.status"
+                        class="text-[10px] font-medium capitalize rounded-full px-1.5 py-0.5"
+                        :class="statusBadgeClass">
+                        {{ session.status }}
+                    </span>
+                    <span v-if="session?.shop?.name" class="text-[11px] text-gray-400 truncate">
+                        {{ session.shop.name }}
+                    </span>
+                </div>
             </div>
 
-            <span
-                class="flex-1 text-sm font-semibold truncate cursor-pointer primary-text hover:primary-text-hover transition-colors"
-                @click="onViewMessageDetails">
-                {{ session?.guest_identifier || session?.contact_name }}
-            </span>
+            <ModalConfirmationDelete v-if="!isClosed && isMyChat" :routeDelete="{
+                name: 'grp.org.chat.agents.sessions.close',
+                parameters: [session?.organisation.id, session?.ulid],
+                method: 'patch',
+            }" :title="trans('Are you sure you want to end this chat?')"
+                :noLabel="trans('End chat')"
+                :noIcon="faTimesCircle"
+                :description="trans('This will close the chat session. The conversation history will be preserved.')"
+                @success="$emit('close-session')">
+                <template #default="{ changeModel }">
+                    <button @click="changeModel"
+                        class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
+                        :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
+                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
+                        {{ trans("End chat") }}
+                    </button>
+                </template>
+            </ModalConfirmationDelete>
 
-            <select v-if="languages.length" v-model="selectedLanguage" :disabled="isTranslating"
-                class="h-[20px] text-[10px] px-1.5 py-0 rounded border border-gray-300 bg-white text-gray-600 leading-none focus:outline-none focus:ring-0 disabled:opacity-50">
-                <option value="" disabled>
-                    Translate To..
-                </option>
-
-                <option v-for="lang in languages" :key="lang.id" :value="lang.code">
-                    {{ lang.native_name }}
-                </option>
-            </select>
+            <Select v-if="languages.length" v-model="selectedLanguage" :options="languages"
+                optionLabel="native_name" optionValue="code" :placeholder="trans('Translate To..')"
+                :disabled="isTranslating" size="small"
+                :pt="{ option: { style: 'font-size: 0.6875rem; padding-top: 0.35rem; padding-bottom: 0.35rem;' } }"
+                class="translate-select h-7 w-36 text-[11px]" />
 
             <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
 
@@ -603,22 +773,16 @@ const handleClickOutside = (e: MouseEvent) => {
 
                 <div v-if="isMenuOpen && !isClosed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
-                    <ModalConfirmationDelete :routeDelete="{
-                        name: 'grp.org.chat.agents.sessions.close',
-                        parameters: [session?.organisation.id, session?.ulid],
-                        method: 'patch',
-                    }" :title="trans('Are you sure you want to close this session?')"
-                        @success="$emit('close-session')">
-                        <template #default="{ changeModel }">
-                            <button @click="changeModel" class="menu-item text-red-600">
-                                <FontAwesomeIcon :icon="faTimesCircle" />
-                                {{ trans("Close Chat Session") }}
-                            </button>
-                        </template>
-                    </ModalConfirmationDelete>
+                    <button class="menu-item" @click="onViewUserProfile">
+                        <FontAwesomeIcon :icon="faUser" /> {{ trans("View Profile") }}
+                    </button>
 
                     <button class="menu-item" @click="onViewMessageDetails">
                         <FontAwesomeIcon :icon="faMessage" /> {{ trans("Message Details") }}
+                    </button>
+
+                    <button class="menu-item" @click="openJiraModal">
+                        <FontAwesomeIcon :icon="faJira" class="text-blue-600" /> {{ trans("Create Jira Ticket") }}
                     </button>
                 </div>
             </div>
@@ -639,7 +803,7 @@ const handleClickOutside = (e: MouseEvent) => {
         </div>
 
         <!-- Messages -->
-        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
             <div class="flex justify-center" v-if="canLoadMore && nextCursor">
                 <button @click="getMessages(true)" :disabled="isLoadingMore" class="flex items-center gap-2 text-xs text-gray-600 px-4 py-1.5
                border rounded-full hover:bg-gray-100 disabled:opacity-50">
@@ -654,7 +818,11 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
                 <div v-for="msg in msgs" :key="msg.id" class="flex"
                     :class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-                    <BubbleChat :message="msg" viewerType="agent" />
+                    <BubbleChat :message="msg" viewerType="agent"
+                        :contactName="session?.contact_name || session?.guest_identifier"
+                        :agentName="session?.assigned_agent?.name"
+                        :canEdit="isMyChat && !isClosed && !isWaiting"
+                        @edit-message="handleEditMessage" />
                 </div>
             </template>
         </div>
@@ -690,53 +858,120 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer v-if="!isClosed" class="flex items-center gap-2 px-3 py-2 border-t bg-white">
-            <button @click="imageInput?.click()"
-                class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100" title="Upload image">
-                <FontAwesomeIcon :icon="faImage" />
-            </button>
+        <!-- Footer: Reopen banner for closed chats -->
+        <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('This chat has been closed') }}
+                </div>
+                <Button
+                    @click="reopenChat"
+                    :loading="isReopening"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Reopen')"
+                    :icon="faRotateRight"
+                />
+            </div>
+        </footer>
 
-            <button @click="fileInput?.click()"
-                class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100" title="Upload file">
-                <FontAwesomeIcon :icon="faPaperclip" />
-            </button>
+        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
+        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('Assign this chat to yourself to start the conversation') }}
+                </div>
+                <Button
+                    @click="assignSelf"
+                    :loading="isAssigningSelf"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Assign to me')"
+                    :icon="['far', 'fa-user']"
+                />
+            </div>
+        </footer>
 
+        <!-- Footer: Takeover banner for team chats -->
+        <footer v-else-if="!isMyChat" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
+                <div class="text-xs text-indigo-600">
+                    <span class="font-semibold">{{ props.session?.assigned_agent?.name }}</span>
+                    {{ trans(' is handling this chat') }}
+                </div>
+                <Button
+                    @click="takeoverChat"
+                    :loading="isTakingOver"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Take Over')"
+                    :icon="['far', 'fa-user']"
+                />
+            </div>
+        </footer>
+
+        <!-- Footer: Normal message input -->
+        <footer v-else class="px-3 py-2 bg-white">
             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
                 @change="handleImageSelect" />
-
             <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
 
-            <textarea ref="messageInput" v-model="newMessage" @input="
-                () => {
-                    autoResize()
-                    handleTyping()
-                }
-            " @blur="
-                () => {
-                    isTyping = false
-                    sendTypingStatus(false)
-                }
-            " @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
-                class="flex-1 resize-none border rounded-lg px-3 py-3 text-sm leading-5 focus:outline-none" />
+            <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
+                <textarea ref="messageInput" v-model="newMessage" @input="
+                    () => {
+                        autoResize()
+                        handleTyping()
+                    }
+                " @blur="
+                    () => {
+                        isTyping = false
+                        sendTypingStatus(false)
+                    }
+                " @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
+                    class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
-            <Button
-                @click="isEmailNotif = !isEmailNotif"
-                type="transparent"
-                class="transition-all duration-150"
-                :class="isEmailNotif
-                    ? '!bg-green-500 !border-green-600 !text-white'
-                    : '!bg-transparent text-gray-500 hover:!bg-gray-100'"
-                :tooltip="isEmailNotif
-                    ? 'Email notification ON'
-                    : 'Send email notification'"
-            >
-                <template #icon>
-                    <FontAwesomeIcon :icon="faEnvelope" />
-                </template>
-            </Button>
-            <Button @click="sendMessage" :icon="faPaperPlane"></Button>
+                <div class="flex items-center justify-between px-2 pb-2 pt-1">
+                    <div class="flex items-center gap-1">
+                        <button @click="imageInput?.click()"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image">
+                            <FontAwesomeIcon :icon="faImage" class="text-sm" />
+                        </button>
+                        <button @click="fileInput?.click()"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file">
+                            <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
+                        </button>
+                        <Button
+                            @click="isEmailNotif = !isEmailNotif"
+                            type="transparent"
+                            class="transition-all duration-150"
+                            :class="isEmailNotif
+                                ? '!bg-green-500 !border-green-600 !text-white'
+                                : '!bg-transparent text-gray-500 hover:!bg-gray-100'"
+                            :tooltip="isEmailNotif
+                                ? 'Email notification ON'
+                                : 'Send email notification'"
+                        >
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faEnvelope" />
+                            </template>
+                        </Button>
+                        <button @click="openJiraModal"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create Jira ticket')">
+                            <FontAwesomeIcon :icon="faJira" class="text-sm" />
+                        </button>
+                    </div>
+                    <Button @click="sendMessage" :icon="faPaperPlane"></Button>
+                </div>
+            </div>
         </footer>
+
+        <JiraTicketModal
+            :is-open="isJiraModalOpen"
+            :session="session"
+            :organisation="currentOrganisation"
+            @close="isJiraModalOpen = false"
+            @open-settings="onOpenJiraSettings"
+        />
     </div>
 </template>
 <style scoped>
@@ -751,6 +986,21 @@ const handleClickOutside = (e: MouseEvent) => {
 
 .menu-item:hover {
     background: #f3f4f6;
+}
+
+.translate-select.p-select {
+    height: 1.75rem;
+    align-items: center;
+    border-radius: 0.375rem;
+}
+
+.translate-select :deep(.p-select-label) {
+    display: flex;
+    align-items: center;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 0.6875rem;
+    line-height: 1;
 }
 
 ::-webkit-scrollbar {

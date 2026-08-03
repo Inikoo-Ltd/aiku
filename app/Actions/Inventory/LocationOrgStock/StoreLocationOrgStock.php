@@ -8,7 +8,7 @@
 
 namespace App\Actions\Inventory\LocationOrgStock;
 
-use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
@@ -57,7 +57,12 @@ class StoreLocationOrgStock extends OrgAction
             data_set($modelData, 'quantity', 0);
         }
 
-        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData, $costPerSku) {
+        $date = now()->format('Y-m-d H:i:s.u');
+        if (Arr::has($modelData, 'date')) {
+            $date = Arr::pull($modelData, 'date');
+        }
+
+        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData, $costPerSku, $date) {
             StoreOrgStockMovement::make()->action(
                 $orgStock,
                 $location,
@@ -66,7 +71,7 @@ class StoreLocationOrgStock extends OrgAction
                     'audited_quantity' => 0,
                     'org_amount'       => 0,
                     'grp_amount'       => 0,
-                    'date'             => now()->format('Y-m-d H:i:s.u'),
+                    'date'             => $date,
                     'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
                     'cost_per_sku'     => $costPerSku,
                     'user_id'          => $this->user?->id,
@@ -82,7 +87,7 @@ class StoreLocationOrgStock extends OrgAction
         RepairOrgStockMissingLocationIds::dispatch($orgStock->id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($orgStock->id)->delay(2);
 
-        LocationHydrateStocks::dispatch($location)->delay($this->hydratorsDelay);
+        LocationHydrateOrgStocks::dispatch($location)->delay($this->hydratorsDelay);
         LocationHydrateStockValue::dispatch($location)->delay($this->hydratorsDelay);
         OrgStockHydrateLocations::dispatch($orgStock)->delay($this->hydratorsDelay);
         CalculateOrgStockCurrentStockHistories::dispatch($orgStock->id);
@@ -96,8 +101,9 @@ class StoreLocationOrgStock extends OrgAction
             'data'             => ['sometimes', 'array'],
             'settings'         => ['sometimes', 'array'],
             'notes'            => ['sometimes', 'nullable', 'string', 'max:255'],
-            'picking_priority' => ['sometimes', 'integer'],
+            'picking_priority' => ['sometimes', 'nullable', 'integer'],
             'type'             => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
+            'date'             => ['sometimes', 'date_format:Y-m-d H:i:s.u']
         ];
 
         if (!$this->strict) {
@@ -140,7 +146,7 @@ class StoreLocationOrgStock extends OrgAction
     {
         $this->location = $location;
         $this->orgStock = $orgStock;
-        $this->user = request()->user();
+        $this->user     = request()->user();
         $this->initialisation($orgStock->organisation, $request);
 
         $this->handle($orgStock, $location, $this->validatedData);

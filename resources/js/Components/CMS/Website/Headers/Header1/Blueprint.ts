@@ -3,27 +3,35 @@ import { trans } from "laravel-vue-i18n"
 export default {
 	blueprint: [
 		{
-			name: "Container",
-			icon: { icon: "fal fa-rectangle-wide", tooltip: "Container" },
-			key: ["container", "properties"],
+			name: "Logo",
+			key: ["logo"],
+			icon: {
+				icon: "fal fa-image",
+				tooltip: "Logo",
+			},
 			replaceForm: [
 				{
-					key: ["background"],
-					label: "Background",
-					type: "background",
-					useIn: ["desktop", "tablet", "mobile"],
+					key: ["image", "source"],
+					label: "Upload image",
+					type: "image-cropped",
+					props_data: {
+						stencilProps: {
+							aspectRatio: 4 / 2,
+							movable: true,
+							scalable: true,
+							resizable: true,
+						},
+					},
 				},
 				{
-					key: ["padding"],
-					label: "Padding",
-					type: "padding",
-					useIn: ["desktop", "tablet", "mobile"],
+					key: ["link"],
+					label : "Link",
+					type: "link",
 				},
 				{
-					key: ["margin"],
-					label: "Margin",
-					type: "margin",
-					useIn: ["desktop", "tablet", "mobile"],
+					key: ["alt"],
+					label: "Alternate Text",
+					type: "text",
 				},
 			],
 		},
@@ -44,127 +52,11 @@ export default {
 					},
 					type: "text",
 				},
-			],
-		},
-		{
-			name: "Logo",
-			key: ["logo"],
-			icon: {
-				icon: "fal fa-image",
-				tooltip: "Logo",
-			},
-			replaceForm: [
 				{
-					key: ["image", "source"],
-					label: "Upload image",
-					type: "upload_image",
-				},
-				{
-					key: ["link"],
-					label: "Link",
-					type: "link",
-				},
-				{
-					key: ["alt"],
-					label: "Alternate Text",
-					type: "text",
-				},
-				{
-					key: ["properties", "dimension"],
-					label: "Dimension",
-					type: "dimension",
-					useIn: ["desktop", "tablet"],
-				},
-				{
-					key: ["properties", "margin"],
-					label: "Margin",
-					type: "margin",
-					useIn: ["desktop"],
-				},
-				{
-					key: ["properties", "padding"],
-					label: "Padding",
-					type: "padding",
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["image", "attributes", "fetchpriority"],
-					label: trans("Fetch Priority"),
-					information: trans(
-						"Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."
-					),
-					type: "select",
-					props_data: {
-						placeholder: trans("Priority"),
-						options: [
-							{
-								label: trans("High"),
-								value: "high",
-							},
-							{
-								label: trans("Low"),
-								value: "low",
-							},
-						],
-					},
-				},
-			],
-		},
-		{
-			name: "Button 1",
-			key: ["button_1"],
-			icon: {
-				icon: "fal fa-sign-in-alt",
-				tooltip: "Action",
-			},
-			replaceForm: [
-				{
-					key: ["visible"],
-					label: "Visible",
-					type: "VisibleLoggedIn",
-				},
-				{
-					key: ["container", "properties", "background"],
-					label: "Background",
-					type: "background",
-				},
-				{
-					key: ["link"],
-					label: "Link",
-					type: "link",
-				},
-				{
-					key: ["text"],
-					label: "Text",
-					type: "text",
-				},
-				{
-					key: ["container", "properties", "text"],
-					type: "textProperty",
-				},
-				{
-					key: ["container", "properties", "margin"],
-					label: "Margin",
-					type: "margin",
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["container", "properties", "padding"],
-					label: "Padding",
-					type: "padding",
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["container", "properties", "border"],
-					label: "Border",
-					type: "border",
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["container", "properties", "dimension"],
-					label: "Dimension",
-					type: "dimension",
-					useIn: ["desktop", "tablet", "mobile"],
+					key: ["is_box_full_width"],
+					label: "Full width search box?",
+					information: "If enabled, the search box will take the full width available.",
+					type: "switch",
 				},
 			],
 		},

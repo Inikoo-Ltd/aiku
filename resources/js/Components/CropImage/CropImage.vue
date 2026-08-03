@@ -63,6 +63,15 @@ const aspectRatios = computed<number[]>(() => {
 })
 const selectedRatio = ref(aspectRatios.value[0])
 
+const previewStyle = computed(() => {
+    const ratio = selectedRatio.value ?? 4
+    const baseSquareSize = 448
+    return {
+        width: `min(100%, ${ratio * baseSquareSize}px)`,
+        aspectRatio: String(ratio),
+    }
+})
+
 const setData2 = () => {
     const data = []
     for (const set of props.data) {
@@ -189,12 +198,9 @@ watch(aspectRatios, (newRatios) => {
 </script>
 
 <template>
-    {{ ratio }}
     <!-- Preview cropped image -->
     <div class="mb-6 relative w-full flex justify-center">
-        <div class="flex items-center border-2 border-gray-500 shadow-md" :class="[
-            ratio ? `aspect-[4/1]` : 'aspect-[2/1] md:aspect-[3/1] lg:aspect-[4/1]'
-        ]">
+        <div class="flex items-center justify-center border-2 border-gray-500 shadow-md" :style="previewStyle">
             <img :src="generateThumbnail(setData[current])" alt="" class="w-full h-full object-fit" />
         </div>
     </div>

@@ -16,7 +16,7 @@ import Image from '../../Common/Components/Image.vue'
 import Dialog from 'primevue/dialog'
 
 const props = defineProps<{
-  images: { source: string; thumbnail: string }[]
+  images: { source: string; thumbnail: string; alt: string }[]
   video?: string
   breakpoints?: {
     [key: number]: { slidesPerView: number }
@@ -26,10 +26,33 @@ const props = defineProps<{
 const keySwiperMain = ref(ulid())
 const keySwiperThumb = ref(ulid())
 
-const thumbsSwiper = ref(null)
+const thumbsSwiper = ref<any>(null)
 const prevEl = ref<HTMLElement | null>(null)
 const nextEl = ref<HTMLElement | null>(null)
 const navigation = ref({ prevEl: null, nextEl: null })
+
+const isThumbBeginning = ref(true)
+const isThumbEnd = ref(false)
+const isThumbLocked = ref(true)
+
+function onThumbSwiper(swiper: any) {
+  thumbsSwiper.value = swiper
+  syncThumbNavigationState(swiper)
+}
+
+function syncThumbNavigationState(swiper: any) {
+  isThumbBeginning.value = swiper.isBeginning
+  isThumbEnd.value = swiper.isEnd
+  isThumbLocked.value = swiper.isLocked ?? (swiper.isBeginning && swiper.isEnd)
+}
+
+function slideThumbPrev() {
+  thumbsSwiper.value?.slidePrev()
+}
+
+function slideThumbNext() {
+  thumbsSwiper.value?.slideNext()
+}
 
 const showModal = ref(false)
 const selectedIndex = ref(0)
@@ -104,9 +127,10 @@ const enableLoop = computed(() => totalSlides.value > 1)
       <SwiperSlide v-for="(image, index) in props.images" :key="`img-${index}`"
         class="flex justify-center items-center">
         <div
-          class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
+          class=" w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
           @click="openImageModal(index)">
-          <Image :src="image.source" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
+          <Image :src="image.source" :alt="image.alt" class="w-full h-full flex items-center justify-center"
+            :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
         </div>
       </SwiperSlide>
 
@@ -123,31 +147,48 @@ const enableLoop = computed(() => totalSlides.value > 1)
     </Swiper>
 
     <!-- Thumbnail Swiper -->
-    <Swiper :key="keySwiperThumb" :space-between="8" watch-slides-progress :modules="[Thumbs]"
-      @swiper="(swiper) => (thumbsSwiper = swiper)"
-      :breakpoints="breakpoints ?? { 0: { slidesPerView: 3 }, 640: { slidesPerView: 6 } }" class="w-full">
-      <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
-        class="cursor-pointer rounded overflow-hidden border border-gray-300">
-        <div class="aspect-square w-full">
-          <Image :src="image.source" :alt="`Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
-        </div>
-      </SwiperSlide>
+    <div class="relative w-full" :class="isThumbLocked ? '' : 'px-8'">
+      <button v-show="!isThumbLocked" type="button" aria-label="Previous thumbnails" :disabled="isThumbBeginning"
+        class="absolute left-0 top-1/2 -translate-y-1/2 z-20 text-xs opacity-60 hover:opacity-100 disabled:opacity-20 disabled:cursor-default"
+        @click="slideThumbPrev">
+        <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" />
+      </button>
+      <button v-show="!isThumbLocked" type="button" aria-label="Next thumbnails" :disabled="isThumbEnd"
+        class="absolute right-0 top-1/2 -translate-y-1/2 z-20 text-xs opacity-60 hover:opacity-100 disabled:opacity-20 disabled:cursor-default"
+        @click="slideThumbNext">
+        <FontAwesomeIcon fixed-width :icon="faChevronCircleRight" />
+      </button>
 
-      <!-- Video thumbnail -->
-      <SwiperSlide v-if="props.video" key="thumb-video"
-        class="cursor-pointer rounded overflow-hidden border border-gray-300" @click="openVideoModal">
-        <div class="aspect-square w-full flex items-center justify-center bg-gray-200 relative">
-          <!--  <FontAwesomeIcon :icon="faVideo" class="text-3xl text-gray-600" />
-          <span class="absolute bottom-2 text-xs text-gray-700 bg-white/70 px-2 py-0.5 rounded">Video</span> -->
-          <div class="relative w-full h-full">
-            <iframe class="w-full h-full rounded-lg" :src="props.video" frameborder="0" allow="autoplay; fullscreen"
-              allowfullscreen></iframe>
-
-            <div class="absolute inset-0 z-10"></div>
+      <Swiper :key="keySwiperThumb" :space-between="8" watch-slides-progress :modules="[Thumbs]"
+        @swiper="onThumbSwiper" @slide-change="syncThumbNavigationState" @resize="syncThumbNavigationState"
+        @breakpoint="syncThumbNavigationState" @lock="syncThumbNavigationState" @unlock="syncThumbNavigationState"
+        @observer-update="syncThumbNavigationState"
+        :breakpoints="breakpoints ?? { 0: { slidesPerView: 3 }, 640: { slidesPerView: 6 } }" class="w-full">
+        <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
+          class="cursor-pointer rounded overflow-hidden border border-gray-300">
+          <div class="aspect-square w-full">
+            <Image :src="image.source" :alt="image.alt || `Thumbnail ${index + 1}`"
+              class="w-full h-full flex items-center justify-center"
+              :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
           </div>
-        </div>
-      </SwiperSlide>
-    </Swiper>
+        </SwiperSlide>
+
+        <!-- Video thumbnail -->
+        <SwiperSlide v-if="props.video" key="thumb-video"
+          class="cursor-pointer rounded overflow-hidden border border-gray-300" @click="openVideoModal">
+          <div class="aspect-square w-full flex items-center justify-center bg-gray-200 relative">
+            <!--  <FontAwesomeIcon :icon="faVideo" class="text-3xl text-gray-600" />
+            <span class="absolute bottom-2 text-xs text-gray-700 bg-white/70 px-2 py-0.5 rounded">Video</span> -->
+            <div class="relative w-full h-full">
+              <iframe class="w-full h-full rounded-lg" :src="props.video" frameborder="0" allow="autoplay; fullscreen"
+                allowfullscreen></iframe>
+
+              <div class="absolute inset-0 z-10"></div>
+            </div>
+          </div>
+        </SwiperSlide>
+      </Swiper>
+    </div>
 
     <!-- PrimeVue Dialog (Replaces Custom Modal) -->
     <Dialog v-model:visible="showModal" modal dismissable-mask :closable="false"
@@ -164,7 +205,8 @@ const enableLoop = computed(() => totalSlides.value > 1)
 
         <!-- Image Viewer -->
         <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded">
-          <Image :src="props.images[selectedIndex]?.source" :alt="`Image ${selectedIndex + 1}`"
+          <Image :src="props.images[selectedIndex]?.source"
+            :alt="props.images[selectedIndex]?.alt || `Image ${selectedIndex + 1}`"
             :style="{ objectFit: 'contain' }" :imageCover="true" />
         </div>
 

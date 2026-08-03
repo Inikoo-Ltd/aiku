@@ -3,15 +3,20 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
 
 namespace App\Actions\Masters\MasterShop\UI;
 
+use App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices;
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Models\Catalogue\Shop;
+use App\Models\Helpers\CurrencyExchange;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditMasterShop extends OrgAction
 {
     use WithMasterShopNavigation;
+    use WithMastersEditAuthorisation;
 
     public function asController(MasterShop $masterShop, ActionRequest $request): Response
     {
@@ -57,7 +63,7 @@ class EditMasterShop extends OrgAction
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' => [
+                    'blueprint' => array_values(array_filter([
                         [
                             'label'  => __('Id'),
                             'icon'   => 'fa-light fa-fingerprint',
@@ -74,45 +80,45 @@ class EditMasterShop extends OrgAction
                                 ]
                             ]
                         ],
-                        [
+                        $this->canEditPrices ? [
                             'label'  => __('Pricing'),
                             'icon'   => 'fa-light fa-money-bill',
                             'fields' => [
-                                'cost_price_ratio' => [
-                                    'type'        => 'input_number',
-                                    'bind'        => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'       => __('Pricing ratio'),
-                                    'placeholder' => __('Cost price ratio'),
-                                    'required'    => true,
-                                    'value'       => $masterShop->cost_price_ratio,
-                                    'min'         => 0
-                                ],
-                                'price_rrp_ratio'  => [
-                                    'type'        => 'input_number',
-                                    'bind'        => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'       => __('RRP ratio'),
-                                    'placeholder' => __('Price rrp ratio'),
-                                    'required'    => true,
-                                    'value'       => $masterShop->price_rrp_ratio,
-                                    'min'         => 0
-                                ],
-                                'price_rrp_warning_ratio'  => [
-                                    'type'        => 'input_number',
-                                    'label'       => __('Price rrp warning ratio'),
-                                    'bind'        => [
-                                         'suffix'      => '%',
-                                    ],
-                                    'required'    => false,
-                                    'value'       => $masterShop->price_rrp_warning_ratio,
-                                    'min'         => 0,
+                                'price_exchanges' => [
+                                    'type'        => 'master_shop_price_exchanges',
+                                    'label'       => __('Currencies'),
+                                    'full'        => true,
+                                    'noSaveButton' => true,
+                                    'value'       => $masterShop->price_exchanges,
+                                    'currencies_shops' => $this->getCurrenciesShops($masterShop),
+                                    'master_shop_id'   => $masterShop->id,
+                                    'running_operations' => collect(array_keys($masterShop->price_exchanges ?? []))
+                                        ->mapWithKeys(fn (string $currencyCode) => [
+                                            $currencyCode => RecalculateMasterShopMinorCurrencyPrices::getProgress($masterShop, $currencyCode)
+                                        ])
+                                        ->filter()
+                                        ->all(),
+                                    'updateRoute' => [
+                                        'name'       => 'grp.models.master_shops.price_exchange.update',
+                                        'parameters' => [
+                                            'masterShop' => $masterShop->id
+                                        ]
+                                    ]
                                 ]
                             ]
-                        ]
-                    ],
+                        ] : null,
+                        $this->canEditOffers ? [
+                            'label'  => __('Offers'),
+                            'icon'   => 'fa-light fa-badge-percent',
+                            'fields' => [
+                                'gold_reward_eligible' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Enable gold reward'),
+                                    'value' => $masterShop->gold_reward_eligible
+                                ],
+                            ]
+                        ] : null,
+                    ])),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.master_shops.update',
@@ -124,6 +130,52 @@ class EditMasterShop extends OrgAction
                 ]
             ]
         );
+    }
+
+    /** @return array<string, array{shops: array<int, string>, number_products: int}> */
+    protected function getCurrenciesShops(MasterShop $masterShop): array
+    {
+        $currenciesShops = [];
+
+        $shops = Shop::where('master_shop_id', $masterShop->id)
+            ->where('state', ShopStateEnum::OPEN)
+            ->with(['currency', 'stats'])
+            ->get();
+
+        foreach ($shops as $shop) {
+            $currencyCode = $shop->currency->code;
+            $currenciesShops[$currencyCode]['shops'][]        = $shop->name;
+            $currenciesShops[$currencyCode]['number_products'] =
+                ($currenciesShops[$currencyCode]['number_products'] ?? 0) + (int)$shop->stats?->number_current_products;
+        }
+
+        $currencies = $shops->pluck('currency')->unique('id');
+
+        $pivotCode      = config('app.currency_exchange.pivot');
+        $pivotExchanges = CurrencyExchange::whereIn('currency_id', $currencies->pluck('id'))
+            ->orderBy('date')
+            ->get()
+            ->keyBy('currency_id')
+            ->map(fn (CurrencyExchange $currencyExchange) => (float)$currencyExchange->exchange);
+
+        $pivotExchangeFor = function ($currency) use ($pivotExchanges, $pivotCode) {
+            return $currency->code === $pivotCode ? 1.0 : $pivotExchanges->get($currency->id);
+        };
+
+        foreach ($currencies as $currency) {
+            foreach ($currencies as $baseCurrency) {
+                if ($baseCurrency->id == $currency->id) {
+                    continue;
+                }
+                $basePivot   = $pivotExchangeFor($baseCurrency);
+                $targetPivot = $pivotExchangeFor($currency);
+
+                $currenciesShops[$currency->code]['real_exchanges'][$baseCurrency->code] =
+                    $basePivot && $targetPivot ? round($targetPivot / $basePivot, 6) : null;
+            }
+        }
+
+        return $currenciesShops;
     }
 
     public function getBreadcrumbs(MasterShop $masterShop): array

@@ -20,12 +20,20 @@ import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 import BasicDiscount from '@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue'
-import { OfferResource, OfferAllowanceResource } from '@/types/Catalogue/Offers'
+import { OfferResource, OfferAllowanceResource, OfferSimulation } from '@/types/Catalogue/Offers'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faFlagCheckered } from "@fortawesome/free-solid-svg-icons"
 import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
+import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import PreviewVoucher from '@/Components/Offers/PreviewOffer/PreviewVoucher.vue'
+import PreviewGift from '@/Components/Offers/PreviewOffer/PreviewGift.vue'
+import PreviewStepDiscount from '@/Components/Offers/PreviewOffer/PreviewStepDiscount.vue'
+import PreviewProductDiscount from '@/Components/Offers/PreviewOffer/PreviewProductDiscount.vue'
+import PreviewFreeItems from '@/Components/Offers/PreviewOffer/PreviewFreeItems.vue'
+import CustomerViewOffer from '@/Components/Offers/PreviewOffer/CustomerViewOffer.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 library.add(faFlagCheckered)
 
@@ -43,6 +51,7 @@ const props = defineProps<{
     }
     customers?: object
     orders?: object
+    history?: object
     url_master?: routeType
 }>()
 
@@ -77,6 +86,16 @@ const getCategoryLink = (productCategory?: ProductCategoryLink | null) => {
         organisation: route().params.organisation,
         shop: route().params.shop,
         family: productCategory.slug,
+    })
+}
+
+const getProductLink = (product?: { slug: string } | null) => {
+    if (!product) return '#'
+
+    return route('grp.org.shops.show.catalogue.products.all_products.show', {
+        organisation: route().params.organisation,
+        shop: route().params.shop,
+        product: product.slug,
     })
 }
 
@@ -122,6 +141,7 @@ const tabComponent = computed(() => {
     const components: Record<string, unknown> = {
         customers: TableCustomers,
         orders: TableOrders,
+        history: TableHistories
     }
     return components[currentTab.value]
 })
@@ -132,16 +152,59 @@ const hasTrigger = computed(() => {
         t?.item_quantity !== undefined ||
         t?.min_amount !== undefined ||
         t?.order_number !== undefined ||
-        t?.item_amount !== undefined
+        t?.item_amount !== undefined ||
+        t?.min_order_amount !== undefined
     )
 })
 
 const state = props.data.offer_allowances[0]?.state
 const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
+
+const offerSimulation = ref<OfferSimulation | null>(null)
+
+const triggerProduct = computed(() => props.data.offer.trigger_product ?? null)
+
+const giftProduct = computed(() => props.data.offer.gift_data?.product ?? null)
+
+const isProductDiscount = computed(() =>
+    ['Product Amount Ordered', 'Product Quantity Ordered'].includes(props.data.offer.type)
+    && !!triggerProduct.value
+)
+
+const freeItemsAllowance = computed(() =>
+    props.data.offer_allowances?.find(offerAllowance => offerAllowance.data?.free_quantity)?.data ?? null
+)
+
+const offerPercentageOff = computed(() => {
+    const fromAllowance = props.data.offer_allowances?.find(offerAllowance => offerAllowance.data?.percentage_off)?.data?.percentage_off
+    const fromSignature = props.data.offer.data_allowance_signature?.percentage_off
+
+    return parseFloat(String(fromAllowance ?? fromSignature ?? 0)) || 0
+})
+
+const hasDiscountSteps = computed(() =>
+    props.data.offer_allowances?.some(offerAllowance => offerAllowance.data?.steps?.length) ?? false
+)
+
+const irisOffersData = computed(() => {
+    const bestPercentageOff = props.data.offer_allowances?.reduce((best, oa) => {
+        const po = oa.data?.percentage_off ?? 0
+        return po > best ? po : best
+    }, 0) ?? 0
+
+    return {
+        number_offers: props.data.offer_allowances?.length ? 1 : 0,
+        offers: [{ ...props.data.offer, id: props.data.offer.id ?? 0 }],
+        best_percentage_off: props.data.offer.id ? {
+            offer_id: props.data.offer.id,
+            percentage_off: (bestPercentageOff * 100).toFixed(1) + '%'
+        } : undefined
+    }
+})
 </script>
 
 <template>
-    <Head :title="capitalize(title)" />
+    <Head :title />
     <PageHeading :data="pageHead">
         <template #afterTitle2>
             <div class="whitespace-nowrap">
@@ -162,9 +225,9 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
                         <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("Start") }}</span>
                         <span class="font-medium">{{ useFormatTime(data.offer.start_at ?? undefined, { formatTime: 'hm' }) }}</span>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div v-if="data.offer.end_at"  class="flex items-center gap-2">
                         <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("End") }}</span>
-                        <span class="font-medium">{{ data.offer.end_at ? useFormatTime(data.offer.end_at, { formatTime: 'hm' }) : ctrans('Permanent') }}</span>
+                        <span class="font-medium">{{ useFormatTime(data.offer.end_at, { formatTime: 'hm' }) }}</span>
                     </div>
                 </div>
 
@@ -178,6 +241,7 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
                 <div class="text-sm text-gray-600 gap-2">
                     {{ ctrans("Type") }}: <span class="font-bold">{{ data.offer.type }}</span>
                 </div>
+                
                 <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" :offer_allowances="data.offer_allowances" />
                 <BasicDiscount v-else-if="data.offer.type == 'GR Amnesty'"
                     :offers_data="{
@@ -198,7 +262,48 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
                 }"
                 class="!text-3xl"
                 />
-                <Coupon v-else :offer="data.offer" :currency_code="currency_code" />    
+                <!-- This should use component for GRP, not use Iris -->
+                <DiscountByType
+                    v-else-if="data.offer.type == 'Department Quantity Ordered'"
+                    :offers_data="irisOffersData"
+                    template="max_discount"
+                    class="scale-[200%] mt-6"
+                />
+                <PreviewVoucher
+                    v-else-if="data.offer.type == 'Voucher Amount Ordered'"
+                    :offer="data.offer"
+                    class="scale-[120%] mt-3"
+                />
+                <PreviewGift
+                    v-else-if="data.offer.type == 'Gift'"
+                    v-model:simulation="offerSimulation"
+                    :offer="data.offer"
+                    :currencyCode="currency_code"
+                    class="xscale-[120%] mt-3"
+                />
+                <PreviewStepDiscount
+                    v-else-if="data.offer.type == 'Product Quantity Ordered' && hasDiscountSteps"
+                    :offer="data.offer"
+                    :offer_allowances="data.offer_allowances"
+                    class="mt-3"
+                />
+                <PreviewFreeItems
+                    v-else-if="freeItemsAllowance"
+                    v-model:simulation="offerSimulation"
+                    :offer="data.offer"
+                    :offer_allowances="data.offer_allowances"
+                    :currencyCode="currency_code"
+                    class="mt-3"
+                />
+                <PreviewProductDiscount
+                    v-else-if="isProductDiscount"
+                    v-model:simulation="offerSimulation"
+                    :offer="data.offer"
+                    :offer_allowances="data.offer_allowances"
+                    :currencyCode="currency_code"
+                    class="mt-3"
+                />
+                <Coupon v-else :offer="data.offer" :currency_code="currency_code" />
             </div>
 
             <!-- RIGHT -->
@@ -244,6 +349,77 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
                             </dd>
                         </div>
 
+                        <!-- Product -->
+                        <div v-if="triggerProduct" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Product") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%]">
+                                <Link :href="getProductLink(triggerProduct)" class="secondaryLink">
+                                    {{ triggerProduct.code }}
+                                </Link>
+                                <div v-if="triggerProduct.name" class="text-xs text-gray-400 font-normal">
+                                    {{ triggerProduct.name }}
+                                </div>
+                            </dd>
+                        </div>
+
+                        <!-- Gift -->
+                        <div v-if="giftProduct" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Gift") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%]">
+                                <Link :href="getProductLink(giftProduct)" class="secondaryLink">
+                                    {{ giftProduct.code }}
+                                </Link>
+                                <span class="text-gray-500">&times;{{ data.offer.gift_data?.quantity }}</span>
+                                <div v-if="giftProduct.name" class="text-xs text-gray-400 font-normal">
+                                    {{ giftProduct.name }}
+                                </div>
+                            </dd>
+                        </div>
+
+                        <!-- Discount -->
+                        <div v-if="offerPercentageOff" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Discount") }}</dt>
+                            <dd class="font-medium text-right tabular-nums">
+                                {{ (offerPercentageOff * 100).toFixed(offerPercentageOff * 100 % 1 === 0 ? 0 : 1) }}%
+                            </dd>
+                        </div>
+
+                        <!-- Free items deal -->
+                        <div v-if="freeItemsAllowance" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Deal") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ ctrans('Buy :quantity, get :free free', {
+                                    quantity: String(freeItemsAllowance.item_quantity ?? data.offer.trigger_data?.item_quantity ?? ''),
+                                    free: String(freeItemsAllowance.free_quantity ?? '')
+                                }) }}
+                            </dd>
+                        </div>
+
+                        <div v-if="freeItemsAllowance?.free_quantity !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Free quantity") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ freeItemsAllowance?.free_quantity }}
+                            </dd>
+                        </div>
+
+                        <div v-if="data.offer.settings?.can_customer_reuse !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Customer can reuse") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%]">
+                                <span v-if="data.offer.settings?.can_customer_reuse" v-tooltip="ctrans('Voucher are allowed to reuse')">
+                                    <FontAwesomeIcon icon='fas fa-check-circle' class='text-green-500' fixed-width aria-hidden='true' />
+                                </span>
+                                <span v-else v-tooltip="ctrans('A customer cannot use the same voucher twice')">
+                                    <FontAwesomeIcon icon='fas fa-times-circle' class='text-red-500' fixed-width aria-hidden='true' />
+                                </span>
+                            </dd>
+                        </div>
+
                     </div>
                 </div>
 
@@ -259,7 +435,10 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
 
                         <!-- Item Quantity -->
                         <div v-if="data.offer.trigger_data?.item_quantity !== undefined" class="flex justify-between gap-4">
-                            <dt class="text-gray-500">{{ ctrans("Item quantity") }}</dt>
+                            <dt class="text-gray-500">
+                                {{ ctrans("Item quantity") }}
+                                <span v-if="triggerProduct" class="text-xs text-gray-400">({{ triggerProduct.code }})</span>
+                            </dt>
                             <dd class="font-medium text-right">
                                 {{ data.offer.trigger_data.item_quantity }}
                             </dd>
@@ -267,7 +446,10 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
 
                         <!-- Item Amount -->
                         <div v-if="data.offer.trigger_data?.item_amount !== undefined" class="flex justify-between gap-4">
-                            <dt class="text-gray-500">{{ ctrans("Item amount") }}</dt>
+                            <dt class="text-gray-500">
+                                {{ ctrans("Item amount") }}
+                                <span v-if="triggerProduct" class="text-xs text-gray-400">({{ triggerProduct.code }})</span>
+                            </dt>
                             <dd class="font-medium text-right">
                                 {{ locale.currencyFormat(currency_code, data.offer.trigger_data.item_amount) }}
                             </dd>
@@ -289,11 +471,29 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
                             </dd>
                         </div>
 
+                        <!-- Minimum Order Amount -->
+                        <div v-if="data.offer.trigger_data?.min_order_amount !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Min. order amount") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ locale.currencyFormat(currency_code, data.offer.trigger_data.min_order_amount) }}
+                            </dd>
+                        </div>
+
                     </div>
                 </div>
             </div>
             
         </div>
+    </div>
+
+    <!-- Section: What customers see -->
+    <div v-if="triggerProduct || giftProduct" class="px-5 py-4 border-b border-gray-300">
+        <CustomerViewOffer
+            :offer="data.offer"
+            :offer_allowances="data.offer_allowances"
+            :currency_code="currency_code"
+            :simulation="offerSimulation"
+        />
     </div>
 
     <!-- Tabs: Customers / Orders -->
@@ -304,12 +504,3 @@ const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
 </template>
 
 
-<style scoped>
-.offer :deep(.background-primary) {
-    background-color: #ff862f;
-}
-
-.offer :deep(.text-primary) {
-    color: #ff862f;
-}
-</style>

@@ -20,18 +20,16 @@ class FetchAuroraPaymentAccount extends FetchAurora
         }
 
 
-
-
         $type = match ($this->auroraModelData->{'Payment Account Block'}) {
             'Accounts' => PaymentAccountTypeEnum::ACCOUNT,
             'Paypal' => PaymentAccountTypeEnum::PAYPAL,
             'WP' => PaymentAccountTypeEnum::WORLD_PAY,
             'Sofort' => PaymentAccountTypeEnum::SOFORT,
-            'BTree','BTreePaypal' => PaymentAccountTypeEnum::BRAINTREE,
+            'BTree', 'BTreePaypal' => PaymentAccountTypeEnum::BRAINTREE,
             'Bank' => PaymentAccountTypeEnum::BANK,
             'Cash' => PaymentAccountTypeEnum::CASH,
             'Hokodo' => PaymentAccountTypeEnum::HOKODO,
-            'Checkout' => PaymentAccountTypeEnum::CHECKOUT,
+            'Checkout', 'CheckoutFlow' => PaymentAccountTypeEnum::CHECKOUT,
             'Pastpay' => PaymentAccountTypeEnum::PASTPAY,
             'ConD' => PaymentAccountTypeEnum::CASH_ON_DELIVERY,
             default => 'unknown'
@@ -125,9 +123,8 @@ class FetchAuroraPaymentAccount extends FetchAurora
                 ]
             ];
         } elseif ($type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
-
             $countryCodes = explode(',', $this->auroraModelData->{'Payment Account Settings'});
-            $countries = [];
+            $countries    = [];
             foreach ($countryCodes as $countryCode) {
                 $countries[] = $this->parseCountryID($countryCode);
             }
@@ -136,12 +133,12 @@ class FetchAuroraPaymentAccount extends FetchAurora
             ];
         } elseif ($type == PaymentAccountTypeEnum::BRAINTREE) {
             $data = [
-                'credentials' => [
-                    'client_id' => $this->auroraModelData->{'Payment Account Login'},
+                'credentials'     => [
+                    'client_id'     => $this->auroraModelData->{'Payment Account Login'},
                     'client_secret' => $this->auroraModelData->{'Payment Account Password'},
 
                 ],
-                'payment_methods' => $this->auroraModelData->{'Payment Account Block'} == 'BTreePaypal' ? ['paypal'] : ['card','paypal']
+                'payment_methods' => $this->auroraModelData->{'Payment Account Block'} == 'BTreePaypal' ? ['paypal'] : ['card', 'paypal']
             ];
         }
 

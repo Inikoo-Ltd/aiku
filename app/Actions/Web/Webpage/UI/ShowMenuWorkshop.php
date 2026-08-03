@@ -88,7 +88,19 @@ class ShowMenuWorkshop extends OrgAction
                 'domain'        => $website->domain,
                 'data'          => GetWebsiteWorkshopMenu::run($website),
                 'webBlockTypes' => WebBlockTypesResource::collection(
-                    $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'website')->where('data->component', 'menu')->get()
+                    $this
+                        ->organisation
+                        ->group
+                        ->webBlockTypes()
+                        ->where('fixed', false)
+                        ->where('scope', 'website')
+                        ->where('data->component', 'menu')
+                        ->whereJsonContains('website_type', $website->shop->type)
+                        ->where(function ($q) use ($website) {
+                            $q->whereJsonContains('shop_availability', $website->shop->slug)
+                                ->orWhere('shop_availability', '[]');
+                        })
+                        ->get()
                 )
             ]
         );

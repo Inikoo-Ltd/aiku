@@ -182,7 +182,7 @@ const tabsBox = computed(() => [
 </script>
 
 <template>
-    <div class="flex flex-col gap-6 px-4 pb-8 pt-8">
+    <div class="flex flex-col gap-6 pb-8 pt-8">
         <TabsBoxDisplay :tabs_box="tabsBox" />
 
         <div class="rounded-lg border border-gray-200 bg-white shadow-sm">

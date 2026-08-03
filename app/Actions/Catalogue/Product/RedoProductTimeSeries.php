@@ -7,6 +7,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
@@ -23,8 +24,8 @@ class RedoProductTimeSeries
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue         = 'default-long-slave';
-    public string $commandSignature = 'products:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
+    public string $jobQueue         = 'long-low-priority';
+    public string $commandSignature = 'products:redo_time_series {--S|shop= : Shop slug} {--O|organisation= : Organisation slug} {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
@@ -61,10 +62,12 @@ class RedoProductTimeSeries
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
+                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

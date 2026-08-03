@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Iris\CRM\StoreIrisProductLastSeen;
 use App\Actions\Retina\Dropshipping\Bundle\UI\RedirectIrisToRetinaBundle;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use Illuminate\Support\Facades\Route;
@@ -23,12 +24,17 @@ use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
+use App\Actions\Iris\Reviews\ShowIrisFamilyReview;
+use App\Actions\Iris\Reviews\ShowIrisProductReview;
+use App\Actions\Iris\Reviews\ShowIrisReviews;
+use Laravel\Nightwatch\Http\Middleware\Sample;
 
-Route::get('{path}', function ($path) {
+Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
+
+Route::get('{path}', function () {
     return redirect('/image_not_found.png');
 })->where('path', '.*\.(png|jpe?g|gif)$');
 
-Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
 
 Route::name('webhooks.')->group(function () {
     Route::any('webhooks/checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
@@ -51,23 +57,22 @@ Route::prefix("disclosure")
     ->name("disclosure.")
     ->group(__DIR__."/disclosure.php");
 
-Route::prefix("unsubscribe")
+Route::middleware(Sample::always())->prefix("unsubscribe")
     ->name("unsubscribe.")
     ->group(__DIR__."/unsubscribe.php");
 
 
-Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora');
+Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora')->middleware(Sample::always());
 
-Route::prefix("json")
+Route::middleware(Sample::always())->prefix("json")
     ->name("json.")
     ->group(__DIR__."/json.php");
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
-    Route::prefix("models")
+    Route::middleware(Sample::always())->prefix("models")
         ->name("models.")
         ->group(__DIR__."/models.php");
-
 
     Route::get('attachment/{media:ulid}/download', DownloadRetinaAttachment::class)->name('attach.download')->withoutScopedBindings();
 
@@ -100,6 +105,12 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
         //system
         Route::get('/catalogue', ShowIrisCatalogue::class)->name('catalogue_iris');
+
+        Route::get('/reviews', ShowIrisReviews::class)->name('reviews');
+        Route::get('/customer-reviews', ShowIrisReviews::class)->name('customer_reviews');
+
+        Route::get('/reviews/product/{product}', ShowIrisProductReview::class)->name('reviews.product');
+        Route::get('/reviews/family/{family}', ShowIrisFamilyReview::class)->name('reviews.family');
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');

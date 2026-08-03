@@ -340,6 +340,25 @@ const refundRoute = (refund) => {
 	}
 }
 
+const replacementRoute = (replacement) => {
+	switch(route().current()) {
+		case "grp.org.warehouses.show.dispatching.delivery_notes.show":
+			return route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
+				route().params["organisation"],
+				route().params["warehouse"],
+                replacement.slug,
+			])
+		case "grp.org.shops.show.ordering.return_delivery_notes.show":
+			return route("grp.org.shops.show.ordering.delivery-notes.show",[
+                route().params["organisation"],
+                route().params["shop"],
+                replacement.slug
+            ]);
+        default:
+            return '';
+	}
+}
+
 </script>
 
 <template>
@@ -470,7 +489,7 @@ const refundRoute = (refund) => {
                     {{ trans('Cash on Delivery') }}
                 </div>
 
-                <div v-if="boxStats.refund" class="font-semibold mt-2 text-base">
+                <div v-if="boxStats.refund || boxStats.state == 'done'" class="font-semibold mt-2 text-base">
                     {{ trans("Refund") }}
                 </div>
                 <div v-if="boxStats.refund" class="pl-2 w-max">
@@ -486,7 +505,35 @@ const refundRoute = (refund) => {
                         {{ trans('Refund has not been processed') }}
                     </span>
                 </div>
+                <div v-else-if="boxStats.state == 'done' && !boxStats.refund" class="pl-2 w-max">
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <span class="text-xs italic">
+                        - {{ 'No Refund' }}
+                    </span>
+                </div>
 
+                <div v-if="boxStats.replacement || boxStats.state == 'done'" class="font-semibold mt-2 text-base">
+                    {{ trans("Replacement") }}
+                </div>
+                <div v-if="boxStats.replacement" class="pl-2 w-max">
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <Link class="primaryLink" :href="replacementRoute(boxStats.replacement)">
+                        {{ boxStats.replacement.reference }}
+                    </Link>
+                    <Icon 
+                        :data="boxStats.replacement.state_icon" 
+                        :class="boxStats.replacement.state !== 'dispatched' ? '!text-red-500 animate-pulse' : ''"
+                    />
+                    <span v-if="boxStats.replacement.state !== 'dispatched'" class="pl-1 text-xs italic text-gray-500">
+                        {{ trans('Replacement has not been processed') }}
+                    </span>
+                </div>
+                <div v-else-if="boxStats.state == 'done' && !boxStats.refund" class="pl-2 w-max">
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <span class="text-xs italic">
+                        - {{ 'No Replacement' }}
+                    </span>
+                </div>
             </div>
         </BoxStatPallet>
 
@@ -495,15 +542,15 @@ const refundRoute = (refund) => {
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Delivery Note") }} 
-                    <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.helpers.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
+                    <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.majordomo.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
                         <FontAwesomeIcon :icon="faTruck"/>
                         {{ boxStats.parentDeliveryNote?.reference }}
                     </Link>
                 </div>
 
                 <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_create_replacement">
+                    <!-- Section: Picker name -->
                     <div class="flex gap-x-4 items-center">
-                        <!-- Section: Picker name -->
                         <div v-if="boxStats?.picker?.contact_name">
                             <dl class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                                 <dt class="flex-none">
@@ -514,8 +561,21 @@ const refundRoute = (refund) => {
                                 </dd>
                             </dl>
                         </div>
-                        
-                        <!-- Section: Packer name -->
+
+                        <template v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker">
+                            <FontAwesomeIcon
+                                v-if="boxStats?.picker?.id && boxStats?.picker?.id != layout?.user?.id"
+                                v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                                class="cursor-pointer focus:outline-none"
+                                :icon="allowActions ? faLockOpen : faLock"
+                                @click="assignSelfTemporarily()"
+                            />
+                            <Button @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
+                        </template>
+                    </div>
+
+                    <!-- Section: Packer name -->
+                    <div class="flex gap-x-4 items-center">
                         <div v-if="boxStats?.packer?.contact_name">
                             <dl v-tooltip="trans('Packer name')"
                                 class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -528,25 +588,16 @@ const refundRoute = (refund) => {
                             </dl>
                         </div>
 
-                        <FontAwesomeIcon
-                            v-if="boxStats?.picker?.id && boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
-                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
-                            class="cursor-pointer focus:outline-none"
-                            :icon="allowActions ? faLockOpen : faLock"
-                            @click="assignSelfTemporarily()"
-                        />
-
-                        <Button
-                            v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
-                            @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
-
-
-                        <Button
-                            v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
-                            @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
-
-
-                     
+                        <template v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker">
+                            <FontAwesomeIcon
+                                v-if="boxStats?.picker?.id && boxStats?.picker?.id != layout?.user?.id"
+                                v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                                class="cursor-pointer focus:outline-none"
+                                :icon="allowActions ? faLockOpen : faLock"
+                                @click="assignSelfTemporarily()"
+                            />
+                            <Button @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+                        </template>
                     </div>
 
                     <!-- Section: Trolleys -->

@@ -19,6 +19,9 @@ class UpdateEcomBasketTransaction extends IrisAction
 {
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
+        $transaction->order->update([
+            'updated_by_customer_at' => now()
+        ]);
         return UpdateTransaction::make()->action($transaction, [
             'quantity_ordered' => Arr::get($modelData, 'quantity_ordered')
         ]);
@@ -41,5 +44,18 @@ class UpdateEcomBasketTransaction extends IrisAction
     public function htmlResponse(): RedirectResponse
     {
         return back();
+    }
+
+    public function jsonResponse(Transaction $transaction): array
+    {
+        $product = $transaction->model;
+
+        return [
+            'transaction_id'    => $transaction->id,
+            'quantity_ordered'  => (int)$transaction->quantity_ordered,
+            'department_id'     => $product?->department_id,
+            'sub_department_id' => $product?->sub_department_id,
+            'family_id'         => $product?->family_id,
+        ];
     }
 }

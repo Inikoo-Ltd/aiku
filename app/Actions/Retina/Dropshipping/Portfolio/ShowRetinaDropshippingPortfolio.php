@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Catalogue\Product\UI\GetProductShowcaseInPortfolio;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Catalogue\RetinaProductTabsEnum;
-use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\CRM\RetinaPortfolioResource;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
@@ -70,15 +70,15 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
 
                 RetinaProductTabsEnum::SHOWCASE->value => $this->tab == RetinaProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcaseInPortfolio::run($product)
-                    : Inertia::lazy(fn () => GetProductShowcaseInPortfolio::run($product)),
+                    : Inertia::optional(fn () => GetProductShowcaseInPortfolio::run($product)),
 
             ]
         );
     }
 
-    public function jsonResponse(Product $product): ProductsResource
+    public function jsonResponse(Portfolio $portfolio): RetinaPortfolioResource
     {
-        return new ProductsResource($product);
+        return new RetinaPortfolioResource($portfolio);
     }
 
     public function getBreadcrumbs(array $routeParameters, $label): array

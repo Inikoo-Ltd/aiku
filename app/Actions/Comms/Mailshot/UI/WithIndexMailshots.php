@@ -45,7 +45,12 @@ trait WithIndexMailshots
             ->leftJoin('shops', 'mailshots.shop_id', '=', 'shops.id')
             ->leftJoin('outboxes', 'mailshots.outbox_id', 'outboxes.id')
             ->leftJoin('mailshot_stats', 'mailshot_stats.mailshot_id', 'mailshots.id')
-            ->leftJoin('post_rooms', 'outboxes.post_room_id', 'post_rooms.id');
+            ->leftJoin('post_rooms', 'outboxes.post_room_id', 'post_rooms.id')
+            ->leftJoin('webpages', function ($join) {
+                $join->on('webpages.model_id', '=', 'mailshots.id')
+                    ->where('webpages.model_type', '=', 'Mailshot');
+            })
+            ->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
 
         $queryBuilder->where(function ($query) {
             $query->where('mailshots.is_second_wave', false)
@@ -77,6 +82,12 @@ trait WithIndexMailshots
                 'mailshots.id',
                 'mailshots.subject',
                 'mailshots.name',
+                'mailshots.shop_id',
+                'mailshots.source_id',
+                'mailshots.source_alt_id',
+                'mailshots.source_alt2_id',
+                'webpages.slug as webpage_slug',
+                'websites.slug as webpage_website_slug',
                 'outboxes.slug as outboxes_slug',
                 'post_rooms.id as post_room_id',
                 'mailshot_stats.number_deliveries_success',

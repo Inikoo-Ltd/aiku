@@ -9,6 +9,7 @@ import { get } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
 
 library.add(faSyncAlt)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any;

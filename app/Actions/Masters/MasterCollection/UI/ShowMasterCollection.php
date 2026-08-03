@@ -11,7 +11,7 @@
 namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterCollection;
 use App\Actions\Masters\MasterCollection\GetMasterCollectionsImages;
@@ -36,7 +36,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterCollection extends GrpAction
+class ShowMasterCollection extends OrgAction
 {
     use WithMastersAuthorisation;
     use WithMasterCollectionNavigation;
@@ -54,7 +54,7 @@ class ShowMasterCollection extends GrpAction
         $this->parent = $masterShop;
         $group = group();
 
-        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionTabsEnum::values());
 
         return $this->handle($masterCollection);
     }
@@ -65,7 +65,7 @@ class ShowMasterCollection extends GrpAction
         $this->parent = $masterDepartment;
         $group = group();
 
-        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionTabsEnum::values());
 
         return $this->handle($masterCollection);
     }
@@ -76,7 +76,7 @@ class ShowMasterCollection extends GrpAction
         $this->parent = $masterSubDepartment;
         $group = group();
 
-        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionTabsEnum::values());
 
         return $this->handle($masterCollection);
     }
@@ -86,7 +86,7 @@ class ShowMasterCollection extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionTabsEnum::values());
 
         return $this->handle($masterCollection);
     }
@@ -124,7 +124,7 @@ class ShowMasterCollection extends GrpAction
                         'icon'    => 'fas fa-times-circle',
                         'class'   => 'text-red-400'
                     ],
-                    'actions' => [
+                    'actions' => $this->canEdit ? [
                         [
                             'type'    => 'button',
                             'style'   => 'edit',
@@ -137,7 +137,7 @@ class ShowMasterCollection extends GrpAction
                                 ]
                             ]
                         ]
-                    ],
+                    ] : [],
                     'subNavigation' => $subNavigation,
                 ],
                 'tabs'        => [
@@ -215,39 +215,39 @@ class ShowMasterCollection extends GrpAction
 
                 MasterCollectionTabsEnum::SHOWCASE->value => $this->tab == MasterCollectionTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterCollectionShowcase::run($masterCollection)
-                    : Inertia::lazy(fn () => GetMasterCollectionShowcase::run($masterCollection)),
+                    : Inertia::optional(fn () => GetMasterCollectionShowcase::run($masterCollection)),
 
                 'salesData' => $this->tab == MasterCollectionTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterCollectionTimeSeriesData::run($masterCollection)
-                    : Inertia::lazy(fn () => GetMasterCollectionTimeSeriesData::run($masterCollection)),
+                    : Inertia::optional(fn () => GetMasterCollectionTimeSeriesData::run($masterCollection)),
 
                 MasterCollectionTabsEnum::SALES->value => $this->tab == MasterCollectionTabsEnum::SALES->value ?
                     fn () => MasterCollectionTimeSeriesResource::collection(IndexMasterCollectionTimeSeries::run($masterCollection, MasterCollectionTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterCollectionTimeSeriesResource::collection(IndexMasterCollectionTimeSeries::run($masterCollection, MasterCollectionTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => MasterCollectionTimeSeriesResource::collection(IndexMasterCollectionTimeSeries::run($masterCollection, MasterCollectionTabsEnum::SALES->value))),
 
                 // MasterCollectionTabsEnum::FAMILIES->value => $this->tab == MasterCollectionTabsEnum::FAMILIES->value ?
                 //     fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))
-                //     : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))),
+                //     : Inertia::optional(fn () => FamiliesInCollectionResource::collection(IndexMasterFamiliesInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::FAMILIES->value))),
 
                 // MasterCollectionTabsEnum::PRODUCTS->value => $this->tab == MasterCollectionTabsEnum::PRODUCTS->value ?
                 //     fn () => MasterProductsResource::collection(IndexMasterProductsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::PRODUCTS->value))
-                //     : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::PRODUCTS->value))),
+                //     : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::PRODUCTS->value))),
 
                 // MasterCollectionTabsEnum::COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::COLLECTIONS->value ?
                 //     fn () => MasterCollectionsResource::collection(GetMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))
-                //     : Inertia::lazy(fn () => MasterCollectionsResource::collection(GetMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
+                //     : Inertia::optional(fn () => MasterCollectionsResource::collection(GetMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
 
                 MasterCollectionTabsEnum::IMAGES->value => $this->tab == MasterCollectionTabsEnum::IMAGES->value ?
                     fn () =>  GetMasterCollectionsImages::run($masterCollection)
-                    : Inertia::lazy(fn () => GetMasterCollectionsImages::run($masterCollection)),
+                    : Inertia::optional(fn () => GetMasterCollectionsImages::run($masterCollection)),
 
                 MasterCollectionTabsEnum::HISTORY->value => $this->tab == MasterCollectionTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterCollection, prefix: MasterCollectionTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterCollection, prefix: MasterCollectionTabsEnum::HISTORY->value))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterCollection, prefix: MasterCollectionTabsEnum::HISTORY->value))),
 
                 // MasterCollectionTabsEnum::SHOP_COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::SHOP_COLLECTIONS->value ?
                 //     fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))
-                //     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))),
+                //     : Inertia::optional(fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))),
             ]
         )
         // ->table(

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\Payment\PastPay\FinalizeOrderWithPastpay;
 use App\Actions\CRM\Customer\MatchCustomerProspects;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -20,6 +21,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
@@ -52,7 +54,7 @@ class StoreInvoice extends OrgAction
         }
 
         data_set($modelData, 'uuid', Str::uuid());
-        data_set($modelData, 'ulid', Str::ulid());
+        data_set($modelData, 'ulid', (string) Str::ulid());
 
         data_set($modelData, 'pay_status', InvoicePayStatusEnum::UNPAID);
         data_set($modelData, 'pay_detailed_status', InvoicePayDetailedStatusEnum::UNPAID);
@@ -92,6 +94,8 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'phone', $customer->phone, false);
         data_set($modelData, 'identity_document_type', $customer->identity_document_type, false);
         data_set($modelData, 'identity_document_number', $customer->identity_document_number, false);
+        data_set($modelData, 'identity_document_number_alt', $customer->identity_document_number_alt, false);
+        data_set($modelData, 'fiscal_name', $customer->fiscal_name, false);
 
 
         $taxNumber = $customer->taxNumber;
@@ -124,6 +128,20 @@ class StoreInvoice extends OrgAction
 
         if ($parent instanceof Order || $parent instanceof Customer) {
             data_set($modelData, 'is_re', $parent->is_re);
+        }
+
+        if ($parent instanceof Order) {
+            data_set($modelData, 'is_pastpay', $parent->is_pastpay);
+
+            if ($parent->is_pastpay) {
+                $pastpayFooter = $this->shop->paymentAccountShops()
+                    ->where('type', PaymentAccountTypeEnum::PASTPAY)
+                    ->first()?->invoice_footer;
+
+                if ($pastpayFooter) {
+                    data_set($modelData, 'footer', $pastpayFooter);
+                }
+            }
         }
 
 
@@ -216,6 +234,13 @@ class StoreInvoice extends OrgAction
             MatchCustomerProspects::dispatch($invoice->customer);
         }
 
+        if ($invoice->is_pastpay) {
+            try {
+                FinalizeOrderWithPastpay::run($invoice);
+            } catch (\Throwable $e) {
+                \Sentry::captureException($e);
+            }
+        }
 
         return $invoice;
     }
@@ -272,6 +297,7 @@ class StoreInvoice extends OrgAction
             'total_amount'              => ['required', 'numeric'],
             'gross_amount'              => ['required', 'numeric'],
             'rental_amount'             => ['sometimes', 'required', 'numeric'],
+            'amount_off'                => ['sometimes', 'numeric', 'min:0'],
             'goods_amount'              => ['sometimes', 'required', 'numeric'],
             'insurance_amount'          => ['sometimes', 'required', 'numeric'],
             'shipping_amount'           => ['sometimes', 'required', 'numeric'],
@@ -327,6 +353,8 @@ class StoreInvoice extends OrgAction
             $rules['tax_number_valid']         = ['sometimes', 'nullable', 'boolean'];
             $rules['identity_document_type']   = ['sometimes', 'nullable', 'string'];
             $rules['identity_document_number'] = ['sometimes', 'nullable', 'string'];
+            $rules['fiscal_name']              = ['sometimes', 'nullable', 'string'];
+
 
             $rules['invoice_category_id'] = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];
             $rules['tax_category_id']     = ['sometimes', 'required', 'exists:tax_categories,id'];

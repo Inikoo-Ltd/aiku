@@ -5,12 +5,15 @@ namespace App\Actions\Web\Website;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 
 class SaveWebsitesRobotsTxt extends OrgAction
 {
     public function handle(?Command $command = null): void
     {
+        Storage::disk('local')->deleteDirectory('robots');
+
         /** @var Website $website */
         foreach (Website::where('state', WebpageStateEnum::LIVE)->get() as $website) {
             SaveWebsiteRobotsTxt::run($website);

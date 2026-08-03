@@ -7,6 +7,7 @@
 
 namespace App\Actions\SysAdmin\Organisation;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -22,7 +23,7 @@ class RedoOrganisationTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long-slave';
+    public string $jobQueue = 'long-low-priority';
     public string $commandSignature = 'organisations:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -69,10 +70,12 @@ class RedoOrganisationTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessOrganisationTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to);
+                ProcessOrganisationTimeSeriesRecords::dispatch($organisation->id, $frequency, $periodFrom, $periodTo);
             } else {
-                ProcessOrganisationTimeSeriesRecords::run($organisation->id, $frequency, $from, $to);
+                ProcessOrganisationTimeSeriesRecords::run($organisation->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

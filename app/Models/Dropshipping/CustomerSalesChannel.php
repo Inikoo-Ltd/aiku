@@ -12,12 +12,13 @@ use App\Actions\Utils\Abbreviate;
 use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
-use App\Models\Bundle;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
+use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,8 +28,6 @@ use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 
 /**
  * @property int $id
@@ -85,8 +84,16 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property int|null $number_downside
  * @property int $number_orders_state_picked
  * @property int $number_orders_state_packing
+ * @property int $number_fulfilment_orders
+ * @property int $number_fulfilment_orders_state_in_process
+ * @property int $number_fulfilment_orders_state_submitted
+ * @property int $number_fulfilment_orders_state_confirmed
+ * @property int $number_fulfilment_orders_state_picking
+ * @property int $number_fulfilment_orders_state_picked
+ * @property int $number_fulfilment_orders_state_dispatched
+ * @property int $number_fulfilment_orders_state_cancel
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Bundle> $bundles
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\Bundle> $bundles
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders

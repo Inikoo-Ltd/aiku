@@ -6,13 +6,13 @@
 */
 
 
-import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo1.vue'
-import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
-import AnnouncementInformation1 from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation1.vue"
-import AnnouncementInformation2TransitionText from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue"
-import AnnouncementPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3.vue'
+import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo1/AnnouncementPromo1Workshop.vue'
+import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown/AnnouncementPromo2CountdownWorkshop.vue'
+import AnnouncementInformation1 from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation1/AnnouncementInformation1Workshop.vue"
+import AnnouncementInformation2TransitionText from "@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText/AnnouncementInformation2TransitionTextWorkshop.vue"
+import AnnouncementPromo3 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo3/AnnouncementPromo3Workshop.vue'
 import type { Component } from "vue"
-import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1.vue'
+import AnnouncementInformational1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformational1/AnnouncementInformational1Workshop.vue'
 
 
 // Get the component based on code

@@ -114,7 +114,12 @@ const fetchRecommenders = async () => {
                     "recommender_client_identifier": "last_seen",
                     "size": 25,
                     "user_id": userId ?? null,  // Customer ID or Cookie _lb
-                    "recommendation_context": {},
+                    "recommendation_context": {
+                        "availability": {
+                            "values": ["1"],
+                            "operator": "or"
+                        }
+                    },
                     // "hit_fields": ["url", "title"]
                 }
             ],
@@ -128,7 +133,7 @@ const fetchRecommenders = async () => {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        console.log('LLS:', response.data)
+        console.log(`LLS (${response.data?.[0]?.hits?.length}): `, response.data)
         RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProductsFromLuigi.value = response.data[0].hits
@@ -180,6 +185,9 @@ const fetchRecommendersToGetProducts = async () => {
                 }
             )
             listProducts.value = response.data.data
+            if (!(listProducts.value?.length > 3)) {
+                console.warn('Block Last Seen are less than 3, will not showed.')
+            }
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         } finally {
@@ -197,7 +205,7 @@ onMounted(() => {
 </script>
 
 <template>    
-    <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'luigi-last-seen-1-iris'+indexBlock"  component="luigi-last-seen-1-iris"
+    <div data-block-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'luigi-last-seen-1-iris'+indexBlock"  component="luigi-last-seen-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),

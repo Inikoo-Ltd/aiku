@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, onUnmounted, computed } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed, defineAsyncComponent } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -15,7 +15,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faMedal } from '@fal'
+import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faMedal, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes, faLock } from '@fal'
 import { faMedal as fasMedal, faCandleHolder, faCircle, faBoxFull } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -25,12 +25,12 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
-import IrisRightsideBasket from '@/Iris/Components/IrisRightsideBasket.vue'
+const IrisRightSideBasket = defineAsyncComponent(() => import('@iris/Components/IrisRightSideBasket.vue'))
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
-import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
+const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
 import axios from 'axios'
 import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
-import BundleSidebar from '@/Components/Dropshipping/BundleSidebar.vue'
+const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshipping/BundleSidebar.vue'))
 import { useBundle } from '@/Composables/useBundle'
 
 interface ChatConfig {
@@ -43,7 +43,7 @@ interface ChatConfig {
 }
 
 const bundle = useBundle()
-library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
+library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes, faLock)
 
 initialiseIrisApp()
 
@@ -75,12 +75,25 @@ const propsAnnouncementsTopFooter = announcementsByPosition('top-footer')
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
-const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const getInitialScreenType = (): 'mobile' | 'tablet' | 'desktop' => {
+    if (typeof window === 'undefined') return 'desktop'
+    if (window.innerWidth < 640) return 'mobile'
+    if (window.innerWidth < 1024) return 'tablet'
+    return 'desktop'
+}
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>(getInitialScreenType())
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
 
-/* if(layout?.rightbasket?.show) set(layout, ['rightbasket', 'show'], false) */
+const fallbackTheme = theme
+
+const safeTheme = computed(() => {
+    const t = layout?.app?.theme
+
+    return (t && t.length >= 8) ? t : fallbackTheme
+})
+
 
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
@@ -129,12 +142,63 @@ const handleTabFocus = () => {
     }
 }
 
+const resolvePaddingProp = (padding: any, screen: string, side?: string) => {
+    const read = (obj: any) => {
+        if (!obj || typeof obj !== 'object') return undefined
+        return side ? obj?.[side]?.value : obj?.unit
+    }
+    const fromScreen = read(padding?.[screen])
+    if (fromScreen !== undefined) return fromScreen
+    if (screen !== 'desktop') {
+        const fromDesktop = read(padding?.desktop)
+        if (fromDesktop !== undefined) return fromDesktop
+    }
+    return read(padding)
+}
+
+const containerPaddingCss = (() => {
+    const padding = theme?.container?.properties?.padding
+    if (!padding || typeof padding !== 'object') return null
+    if (padding.__irisCssVars) {
+        return padding.__irisCssVars
+    }
+
+    const sides: [string, string][] = [['left', '--iris-cp-l'], ['right', '--iris-cp-r']]
+    const rulesByScreen: Record<string, string> = {}
+
+    for (const screen of ['mobile', 'tablet', 'desktop']) {
+        const rules: string[] = []
+        for (const [side, cssVar] of sides) {
+            const value = resolvePaddingProp(padding, screen, side)
+            const unit = resolvePaddingProp(padding, screen)
+            if (value === null || value === undefined || !unit || (typeof value === 'string' && value.startsWith('var('))) {
+                return null
+            }
+            rules.push(`${cssVar}:${value}${unit}`)
+        }
+        rulesByScreen[screen] = rules.join(';')
+    }
+
+    for (const [side, cssVar] of sides) {
+        for (const target of [padding, padding.mobile, padding.tablet, padding.desktop]) {
+            if (target?.[side]) {
+                target[side].value = `var(${cssVar})`
+            }
+        }
+    }
+
+    padding.__irisCssVars = `:root{${rulesByScreen.mobile}}@media(min-width:640px){:root{${rulesByScreen.tablet}}}@media(min-width:1024px){:root{${rulesByScreen.desktop}}}`
+
+    return padding.__irisCssVars
+})()
+
+layout.app.webpage_layout = theme
+
 onMounted(() => {
     CustomerIdCollector(layout.iris_variables?.customer_id?.toString())
 
     checkScreenType()
     setColorStyleRoot(theme?.color)
-    layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 
     document.addEventListener('visibilitychange', handleTabFocus)
@@ -144,11 +208,23 @@ onMounted(() => {
     if(layout?.iris?.is_logged_in){
         fetchHasInBasket()
     }
+
+    ;(window as any).aikuIris = {
+        // For Search result (app-iris.blade )
+        refreshCustomerData: async () => {
+            layout.reload_handle?.()
+            await fetchHasInBasket()
+        }
+    }
 })
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
     document.removeEventListener('visibilitychange', handleTabFocus)
+
+    if ((window as any).aikuIris) {
+        delete (window as any).aikuIris
+    }
 })
 
 
@@ -162,8 +238,7 @@ const fetchHasInBasket = async () => {
         }
 
         const response = await axios.get(apiUrl);
-        /* console.log('plmnbvc',response.data) */
-        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || {})
     } catch (error) {
         console.error('Failed to load product portfolio', error);
     } finally {
@@ -176,7 +251,7 @@ onBeforeMount(() => {
     initialiseIrisVarnish(useIrisLayoutStore)
 })
 
-// Watch: open Side Basket if cart have any changes
+// Watch: open Side Basket if cart has any changes
 watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     if (typeof layout.rightbasket?.show === 'undefined') {
         set(layout, 'rightbasket.show', true)
@@ -188,18 +263,12 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
         set(layout, 'rightbasket.show', false)
     }
 })
-
-const fallbackTheme = theme
-
-const safeTheme = computed(() => {
-    const t = layout?.app?.theme
-
-    return (t && t.length >= 8) ? t : fallbackTheme
-})
 </script>
 
 <template>
     <div class="editor-class">
+        <component :is="'style'" v-if="containerPaddingCss">{{ containerPaddingCss }}</component>
+
         <ScreenWarning v-if="layout.app.environment === 'staging'">
             {{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
         </ScreenWarning>
@@ -224,6 +293,27 @@ const safeTheme = computed(() => {
                         </Button>
                     </div>
                 </div>
+            </div>
+        </Modal>
+
+        <!-- Modal: is blocked -->
+        <Modal
+            v-if="layout.is_blocked"
+            :isOpen="layout.is_blocked"
+            :isClosableInBackground="false"
+            :zIndex="9999"
+            width="w-full max-w-lg"
+        >
+            <div class="px-6 py-12 text-center">
+                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+                    <FontAwesomeIcon :icon="faLock" class="text-3xl text-red-600" fixed-width aria-hidden="true" />
+                </div>
+                <h2 class="mt-6 text-2xl font-bold tracking-tight text-gray-900">
+                    {{ ctrans("Access Unauthorized") }}
+                </h2>
+                <p class="mx-auto mt-4 text-base text-gray-600">
+                    {{ ctrans("You are not authorised to continue. Please contact support for assistance.") }}
+                </p>
             </div>
         </Modal>
 
@@ -286,10 +376,10 @@ const safeTheme = computed(() => {
                 <!-- Layout: SideBasket (right) -->
                 <div
                     v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
-                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
+                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen transition-all"
                     :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent max-w-0'"
                 >
-                    <IrisRightsideBasket
+                    <IrisRightSideBasket
                         v-if="layout.iris_variables?.cart_count > 0"
                         :isOpen="layout.rightbasket?.show"
                     />  
@@ -305,7 +395,7 @@ const safeTheme = computed(() => {
                 </div>
 
                 <div
-                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app.name === 'iris' && layout.retina.type === 'dropshipping'"
+                    v-if="layout?.iris?.is_logged_in && screenType !== 'mobile' && layout.app?.name === 'iris' && layout.retina?.type === 'dropshipping'"
                     @click="bundle.open.value = !bundle.open.value"
                     class="fixed z-[60] w-8 aspect-square rounded-full flex items-center justify-center cursor-pointer
                         bg-[var(--theme-color-0)]
@@ -341,6 +431,16 @@ const safeTheme = computed(() => {
 </template>
 
 <style lang="scss">
+
+html {
+  overscroll-behavior: none;
+}
+
+/* * {
+  outline: 1px solid red;
+} */
+
+
 #iris_breadcrumbs ol,
 #iris_breadcrumbs ul {
     margin-left: 0;
@@ -365,8 +465,14 @@ const safeTheme = computed(() => {
 }
 
 .basket-drawer {
-  width: min(92vw, 37%);
-  box-sizing: border-box;
+    width: min(92vw, 37%);
+    box-sizing: border-box;
+}
+
+@media (min-width: 1536px) {
+    .basket-drawer {
+        width: 25%;
+    }
 }
 
 // INI-562: live chat
@@ -376,6 +482,10 @@ iframe#launcher {
 
 .background-primary {
     background-color: var(--theme-color-4);
+}
+
+.border-primary {
+    border-color: var(--theme-color-4);
 }
 
 .text-primary {

@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Media;
 
 use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\OrgAction;
+use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletDelivery;
@@ -27,7 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachAttachmentToModel extends OrgAction
 {
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn|Product|TradeUnitFamily $model, array $modelData): void
+    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily $model, array $modelData): void
     {
         foreach (Arr::get($modelData, 'attachments') as $attachment) {
             $file           = $attachment;
@@ -130,6 +131,13 @@ class AttachAttachmentToModel extends OrgAction
         $this->initialisation($order->organisation, $request);
 
         $this->handle($order, $this->validatedData);
+    }
+
+    public function inInvoice(Invoice $invoice, ActionRequest $request): void
+    {
+        $this->initialisation($invoice->organisation, $request);
+
+        $this->handle($invoice, $this->validatedData);
     }
 
     public function inPalletDelivery(PalletDelivery $palletDelivery, ActionRequest $request): void

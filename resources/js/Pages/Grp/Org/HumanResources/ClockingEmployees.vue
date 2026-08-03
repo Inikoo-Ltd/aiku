@@ -164,6 +164,7 @@ const component = computed(() => {
 		:annualRemainingAfterSubmission="leaves?.annual_remaining_after_submission"
 		:medicalRequestCount="leaves?.medical_request_count"
 		:unpaidRequestCount="leaves?.unpaid_request_count"
+		:holidays="currentTab === 'leaves' ? (leaves?.holidays ?? []) : undefined"
 		:organisation="
 			currentTab === 'leaves'
 				? leaves?.organisation
@@ -182,6 +183,7 @@ const component = computed(() => {
 		:todayTimesheet="scan_qr_code?.today_timesheet"
 		:lastClockIn="scan_qr_code?.last_clock_in"
 		:lastClockOut="scan_qr_code?.last_clock_out"
+		:clockingSessions="scan_qr_code?.clocking_sessions"
 		:timezone="scan_qr_code?.timezone"
 		@update:isRequestLeaveModalOpen="isRequestLeaveModalOpen = $event"
 		@update:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen = $event">

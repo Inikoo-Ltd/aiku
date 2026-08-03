@@ -64,6 +64,7 @@ class RepairTradeUnitDescriptionAndBrandFromXlsx
                     AttachBrandToModel::make()->action($tradeUnit, ['brand_id' => $brand->id]);
                     $updatedBrand++;
                 } else {
+                    $command?->line('Brand '.$brandName.' not found');
                     $brandNotFound++;
                 }
             } else {

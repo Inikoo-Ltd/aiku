@@ -10,6 +10,7 @@ namespace App\Models\Helpers;
 
 use App\Enums\Helpers\TaxCategories\TaxCategoryTypeEnum;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -46,6 +47,11 @@ class TaxCategory extends Model
     protected $attributes = [
         'data' => '{}',
     ];
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
+    }
 
     public function getSlugOptions(): SlugOptions
     {

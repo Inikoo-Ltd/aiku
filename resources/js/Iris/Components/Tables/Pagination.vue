@@ -1,14 +1,9 @@
 <template>
-    <nav v-if="!hasData || pagination?.total < 1 || exportLinks?.export?.route || hasPagination && meta?.total > 15"
+    <nav v-if="!hasData || pagination?.total < 1 || hasPagination && meta?.total > 15"
         class="bg-white px-4 py-3 flex items-center space-x-2 justify-between border-t border-gray-200 sm:px-4">
         <p v-if="!hasData || pagination.total < 1" class="mx-auto">
             {{ trans('No result found') }}
         </p>
-
-        <!-- Button: Download Table -->
-        <slot name="tableDownload" class="">
-            <!-- <TableDownload v-if="exportLinks?.export?.route" :exportLinks="exportLinks" /> -->
-        </slot>
 
         <template v-if="hasPagination && meta?.total > 15">
             <!-- simple and mobile -->
@@ -112,9 +107,7 @@
 <script setup lang="ts">
 import PerPageSelector from "./PerPageSelector.vue"
 import { computed, inject } from "vue"
-import TableDownload from './TableDownload.vue'
 import { getTranslations } from "./translations.js"
-import { routeType } from "@/types/route"
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
@@ -136,11 +129,6 @@ const props = withDefaults(defineProps<{
         to: number
         from: number
         per_page: number
-    }
-    exportLinks?: {
-        export: {
-            route: routeType
-        }
     }
 }>(), {
     perPageOptions: () => [10, 25, 50, 100, 250, 500, 1000],

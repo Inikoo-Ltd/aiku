@@ -85,10 +85,14 @@ class CreateEmployee extends OrgAction
                                     'label' => __('personal email'),
                                     'value' => ''
                                 ],
-                                'phone'         => [
-                                    'type'  => 'input',
-                                    'label' => __('Contact number'),
-                                    'value' => ''
+                                'phone' => [
+                                    'type' => 'phone',
+                                    'label' => __('Phone'),
+                                    'placeholder' => __('Phone number'),
+                                    'value' => '',
+                                    'options' => [
+                                        'defaultCountry' => $this->organisation->country?->code ?? null,
+                                    ],
                                 ],
                                 'contact_address'      => [
                                     'type'    => 'address',
@@ -229,7 +233,7 @@ class CreateEmployee extends OrgAction
                             'title'  => __('job'),
                             'fields' => [
                                 'job_title' => [
-                                    'type' => 'job_title_select_create',
+                                    'type' => 'select_create',
                                     'label' => __('Job Title'),
                                     'placeholder' => __('Job Title'),
                                     'searchable' => true,
@@ -252,19 +256,42 @@ class CreateEmployee extends OrgAction
                             ]
                         ],
                         [
+                            'title'  => __('Contract'),
+                            'fields' => [
+                                'contract_start_date' => [
+                                    'type'  => 'date',
+                                    'label' => __('Contract start date'),
+                                    'value' => '',
+                                ],
+                                'contract_end_date'   => [
+                                    'type'  => 'date',
+                                    'label' => __('Contract end date'),
+                                    'value' => '',
+                                ],
+                                'annual_leave_days'   => [
+                                    'type'      => 'input',
+                                    'inputType' => 'number',
+                                    'label'     => __('Annual leave days'),
+                                    'value'     => '',
+                                ],
+                            ]
+                        ],
+                        [
                             'title'  => __('User credentials'),
                             'fields' => [
 
                                 'username' => [
-                                    'type'  => 'input',
-                                    'label' => __('Username'),
-                                    'value' => ''
+                                    'type'     => 'input',
+                                    'label'    => __('Username'),
+                                    'required' => true,
+                                    'value'    => ''
 
                                 ],
                                 'password' => [
-                                    'type'  => 'password',
-                                    'label' => __('Password'),
-                                    'value' => ''
+                                    'type'     => 'password',
+                                    'label'    => __('Password'),
+                                    'required' => true,
+                                    'value'    => ''
                                 ],
                             ]
                         ],

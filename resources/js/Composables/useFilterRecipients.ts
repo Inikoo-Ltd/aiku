@@ -13,6 +13,8 @@ export function useFilterRecipients(props: any) {
 
     const preloadedEntities = reactive<Record<string, any[]>>({})
 
+    const extraQuery = reactive<Record<string, any>>({})
+
     /* ---------------- COMPUTED ---------------- */
     const activeFilterCount = computed(() =>
         Object.keys(activeFilters.value ?? {}).length
@@ -220,12 +222,12 @@ export function useFilterRecipients(props: any) {
 
         router.get(
             route(currentRoute, route().params),
-            { filters: filtersPayload.value },
+            { filters: filtersPayload.value, ...extraQuery },
             {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
-                only: ['customers', 'filters', 'estimatedRecipients']
+                only: ['customers', 'filters', 'estimatedRecipients', 'queryBuilderProps']
             }
         )
     }, 400)
@@ -539,6 +541,7 @@ export function useFilterRecipients(props: any) {
         fetchCustomers,
         preloadedEntities,
         getLatLngToLocation,
+        extraQuery,
     }
 }
 

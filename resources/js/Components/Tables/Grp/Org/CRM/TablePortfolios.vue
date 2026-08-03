@@ -69,7 +69,7 @@ const querySearchPortfolios = ref('')
 const selectedVariant = ref<Product | null>(null)
 function itemRoute(portfolio: Portfolio) {
     return route(
-        "grp.helpers.redirect_portfolio_item",
+        "grp.majordomo.redirect_portfolio_item",
         [portfolio.id])
 }
 

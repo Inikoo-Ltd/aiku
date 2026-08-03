@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -66,8 +67,6 @@ class IndexProductsInGroup extends OrgAction
         $queryBuilder->orderBy('products.state');
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.group_id', $parent->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
@@ -82,6 +81,20 @@ class IndexProductsInGroup extends OrgAction
             );
         }
 
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'asset_time_series',
+            timeSeriesRecordsTable: 'asset_time_series_records',
+            foreignKey: 'asset_id',
+            aggregateColumns: [
+                'invoices'                    => 'invoices_all',
+                'sales_grp_currency_external' => 'sales_all',
+                'customers_invoiced'          => 'customers_invoiced_all',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+            localKey: 'asset_id',
+        );
 
         $queryBuilder
             ->defaultSort('products.code')
@@ -101,9 +114,9 @@ class IndexProductsInGroup extends OrgAction
                 'organisations.name as organisation_name',
                 'organisations.code as organisation_code',
                 'organisations.slug as organisation_slug',
-                'invoices_all',
-                'sales_all',
-                'customers_invoiced_all',
+                $timeSeriesData['selectRaw']['invoices_all'],
+                $timeSeriesData['selectRaw']['sales_all'],
+                $timeSeriesData['selectRaw']['customers_invoiced_all'],
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
@@ -191,11 +204,11 @@ class IndexProductsInGroup extends OrgAction
                 ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
 
             ]

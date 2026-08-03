@@ -10,7 +10,12 @@
 namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
+use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\GetRetinaPaymentMethods;
@@ -28,14 +33,19 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
 {
     use IsOrder;
     use CalculatesPaymentWithBalance;
+    use WithOrderForbiddenCountryCheck;
 
     public function handle(Order $order, Customer $customer): array
     {
+        if ($this->isForbidden($order)) {
+            abort(403, __('Order billing or delivery address is marked as forbidden'));
+        }
+
         $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);
 
+        $order = FixMiscalculatedTransactionAmounts::run($order, true);
 
         $paymentMethods = GetRetinaPaymentMethods::run($order, $orderPaymentApiPoint);
-
 
         return [
             'order'          => $order,
@@ -45,18 +55,55 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     }
 
 
-    public function asController(Order $order, ActionRequest $request): array
+    public function asController(Order $order, ActionRequest $request): array|RedirectResponse
     {
         $this->initialisation($request);
+
+        /** An order that already left the basket must never show a payment form again: a stale
+         * tab or revisited URL would let the customer charge their card for a paid order */
+        if ($order->state != OrderStateEnum::CREATING) {
+            $notification = [
+                'status'  => 'success',
+                'title'   => __('Order already submitted'),
+                'message' => __('This order has already been submitted and cannot be paid again.'),
+            ];
+
+            if ($order->customerSalesChannel) {
+                return [
+                    'redirect' => true,
+                    'route' => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.orders.show',
+                        'parameters' => [
+                            'customerSalesChannel' => $order->customerSalesChannel->slug,
+                            'order'                => $order->slug
+                        ]
+                    ],
+                    'notification' => $notification
+                ];
+            }
+
+            return [
+                'redirect' => true,
+                'route' => [
+                    'name'       => 'retina.dashboard.show',
+                    'parameters' => []
+                ],
+                'notification' => $notification
+            ];
+        }
 
         return $this->handle($order, $this->customer);
     }
 
-    public function htmlResponse(array $checkoutData): Response
+    public function htmlResponse(array $checkoutData): Response|RedirectResponse
     {
+        if (Arr::get($checkoutData, 'redirect') === true) {
+            return Redirect::route(Arr::get($checkoutData, 'route.name'), Arr::get($checkoutData, 'route.parameters'))
+                ->with('notification', Arr::get($checkoutData, 'notification'));
+        }
+
         /** @var Order $order */
         $order = Arr::get($checkoutData, 'order');
-
 
         $paymentAmounts = $this->calculatePaymentWithBalance(
             $order->total_amount,

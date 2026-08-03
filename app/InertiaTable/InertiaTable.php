@@ -3,6 +3,7 @@
 namespace App\InertiaTable;
 
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Services\StickyBetweenDates;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
@@ -19,6 +20,7 @@ class InertiaTable
     private Collection $columns;
     private Collection $searchInputs;
     private Collection $elementGroups;
+    private Collection $additionalElementGroups;
     private Collection $radioFilter;
     private array $periodFilters;
     private Collection $filters;
@@ -41,19 +43,20 @@ class InertiaTable
 
     public function __construct(Request $request)
     {
-        $this->request         = $request;
-        $this->periodFilters   = [];
-        $this->columns         = new Collection();
-        $this->searchInputs    = new Collection();
-        $this->elementGroups   = new Collection();
-        $this->radioFilter     = new Collection();
-        $this->filters         = new Collection();
-        $this->modelOperations = new Collection();
-        $this->exportLinks     = new Collection();
-        $this->emptyState      = new Collection();
-        $this->labelRecord     = [];
-        $this->footerRows      = null;
-        $this->dateInterval    = null;
+        $this->request                  = $request;
+        $this->periodFilters            = [];
+        $this->columns                  = new Collection();
+        $this->searchInputs             = new Collection();
+        $this->elementGroups            = new Collection();
+        $this->additionalElementGroups  = new Collection();
+        $this->radioFilter              = new Collection();
+        $this->filters                  = new Collection();
+        $this->modelOperations          = new Collection();
+        $this->exportLinks              = new Collection();
+        $this->emptyState               = new Collection();
+        $this->labelRecord              = [];
+        $this->footerRows               = null;
+        $this->dateInterval             = null;
 
         if (static::$defaultGlobalSearch !== false) {
             $this->withGlobalSearch(static::$defaultGlobalSearch);
@@ -210,6 +213,7 @@ class InertiaTable
             'pageName'                        => $this->pageName,
             'perPageOptions'                  => $this->perPageOptions,
             'elementGroups'                   => $this->transformElementGroups(),
+            'additionalElementGroups'         => $this->transformAdditionalElementGroups(),
             'radioFilter'                     => $this->transformRadioFilter(),
             'period_filter'                   => $this->transformPeriodFilters(),
             'modelOperations'                 => $this->modelOperations,
@@ -219,6 +223,7 @@ class InertiaTable
             'title'                           => $this->title,
             'footerRows'                      => $this->footerRows,
             'betweenDates'                    => $this->betweenDates,
+            'betweenDatesValue'               => StickyBetweenDates::resolve($this->betweenDates),
             'dateInterval'                    => $this->dateInterval,
             'withFrequency'                   => $this->withFrequency,
         ];
@@ -274,6 +279,20 @@ class InertiaTable
     protected function transformElementGroups(): Collection
     {
         $elementGroups = $this->elementGroups;
+        $queryElements = $this->query('elements', []);
+
+        return $elementGroups->map(function (ElementGroup $elementGroup) use ($queryElements) {
+            if (array_key_exists($elementGroup->key, $queryElements)) {
+                $elementGroup->values = explode(',', $queryElements[$elementGroup->key]);
+            }
+
+            return $elementGroup;
+        });
+    }
+
+    protected function transformAdditionalElementGroups(): Collection
+    {
+        $elementGroups = $this->additionalElementGroups;
         $queryElements = $this->query('elements', []);
 
         return $elementGroups->map(function (ElementGroup $elementGroup) use ($queryElements) {
@@ -347,6 +366,30 @@ class InertiaTable
 
 
         $this->elementGroups->put(
+            $key,
+            new ElementGroup(
+                key: $key,
+                label: $label,
+                elements: $elements,
+                default: $default,
+            )
+        );
+
+
+        return $this;
+    }
+
+    public function additionalElementGroup(string $key, array|string $label, array $elements, ?string $default = null): self
+    {
+        if (is_string($label)) {
+            $label = $label ?: Str::headline($key);
+            $key   = $key ?: Str::kebab($label);
+        } else {
+            $key = $key ?: Str::kebab($label['tooltip']);
+        }
+
+
+        $this->additionalElementGroups->put(
             $key,
             new ElementGroup(
                 key: $key,

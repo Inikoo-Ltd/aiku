@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
@@ -24,6 +25,10 @@ class GetRetinaPaymentAccountShopData
 
     public function handle(Order $order, PaymentAccountShop $paymentAccountShop, OrderPaymentApiPoint $orderPaymentApiPoint): ?array
     {
+        if ($paymentAccountShop->state != PaymentAccountShopStateEnum::ACTIVE) {
+            return null;
+        }
+
         if ($paymentAccountShop->type == PaymentAccountTypeEnum::CHECKOUT) {
             if (app()->environment('production')) {
                 $publicKey = Arr::get($paymentAccountShop->paymentAccount->data, 'credentials.public_key');
@@ -52,6 +57,36 @@ class GetRetinaPaymentAccountShopData
                         'bank_name'      => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.name'),
                         'account_number' => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.account'),
                         'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
+                    ]
+                ];
+        } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::PASTPAY) {
+
+            $options = Arr::get($paymentAccountShop->data, 'charges.options', []);
+
+            if (empty($options)) {
+                return null;
+            }
+
+            if (!$order->customer->taxNumber) {
+                return null;
+            }
+
+            if (blank(Arr::get($paymentAccountShop->paymentAccount->data, 'tax_number'))) {
+                return null;
+            }
+
+            if (blank(trim(strip_tags((string) $paymentAccountShop->invoice_footer)))) {
+                return null;
+            }
+
+            return
+                [
+                    'label' => __('Buy now pay later'),
+                    'key'   => 'pastpay',
+                    'icon'  => 'fal fa-hand-holding-usd',
+                    'order_payment_api_point' => $orderPaymentApiPoint->ulid,
+                    'data'  => [
+                        'charges'      => $options
                     ]
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {

@@ -2,6 +2,7 @@
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject } from "vue"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
     label?: string

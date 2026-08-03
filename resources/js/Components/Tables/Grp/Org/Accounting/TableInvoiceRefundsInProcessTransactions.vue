@@ -113,7 +113,7 @@ defineExpose({
 })
 
 const productRoute = (item) => {
-    return item.asset_id ? route('grp.helpers.redirect_asset', [item.asset_id]) : '';
+    return item.asset_id ? route('grp.majordomo.redirect_asset', [item.asset_id]) : '';
 }
 </script>
 

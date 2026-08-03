@@ -31,6 +31,8 @@ export interface StockLocation {
     id: number
     code: string
     quantity: string | number
+    packed_in?: number
+    quantity_fractional?: [number, [number, number]]
     value: string
     audited_at: string
     commercial_value: string
@@ -56,6 +58,7 @@ export interface StockManagementRoutes {
     associate_location_route: routeType
     disassociate_location_route: routeType
     audit_route: routeType
+    bulk_audit_route: routeType
     move_location_route: routeType
 }
 
@@ -65,6 +68,7 @@ export interface StocksManagementTS {
         [key: string]: {
             icon_state: IconTS
             value: number
+            value_fractional?: [number, [number, number]]
         }
     }
     stock_cost : {
@@ -75,4 +79,5 @@ export interface StocksManagementTS {
     }
     locations: StockLocation[]
     qty_in_location: number
+    qty_in_location_fractional?: [number, [number, number]]
 }

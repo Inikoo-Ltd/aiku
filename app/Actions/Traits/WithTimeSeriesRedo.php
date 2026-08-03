@@ -7,6 +7,8 @@
 
 namespace App\Actions\Traits;
 
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -23,12 +25,38 @@ trait WithTimeSeriesRedo
     {
     }
 
+    protected function scopeOrganisation(Builder $query, Command $command): Builder
+    {
+        if ($command->hasOption('organisation') && $command->option('organisation')) {
+            $organisation = Organisation::where('slug', $command->option('organisation'))->first();
+
+            if ($organisation) {
+                $query->where('organisation_id', $organisation->id);
+            }
+        }
+
+        return $query;
+    }
+
+    protected function scopeShop(Builder $query, Command $command): Builder
+    {
+        if ($command->hasOption('shop') && $command->option('shop')) {
+            $shop = Shop::where('slug', $command->option('shop'))->first();
+
+            if ($shop) {
+                $query->where('shop_id', $shop->id);
+            }
+        }
+
+        return $query;
+    }
+
     public function asCommand(Command $command): int
     {
         $this->beforeCommand($command);
         $command->info($command->getName());
         $tableName = (new $this->model())->getTable();
-        $query     = $this->modifyQuery($this->prepareQuery($tableName, $command));
+        $query     = $this->modifyQuery($this->scopeShop($this->scopeOrganisation($this->prepareQuery($tableName, $command), $command), $command));
         $count     = $query->count();
         $bar       = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');

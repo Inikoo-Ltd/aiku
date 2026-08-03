@@ -133,10 +133,15 @@ class ProcessFetchStack
 
 
         if ($res !== null) {
-            $fetchStack->update([
-                'state'  => $bg ? FetchStackStateEnum::PROCESSING : FetchStackStateEnum::SUCCESS,
-                'result' => $res,
-            ]);
+            // A refused fetcher marks itself IGNORED from inside the job, which can land
+            // before this line does. Writing PROCESSING over it would strand the row:
+            // nothing ever revisits PROCESSING.
+            FetchStack::where('id', $fetchStack->id)
+                ->where('state', '!=', FetchStackStateEnum::IGNORED)
+                ->update([
+                    'state'  => $bg ? FetchStackStateEnum::PROCESSING : FetchStackStateEnum::SUCCESS,
+                    'result' => $res,
+                ]);
 
             if (!$bg) {
                 $fetchStack->update(

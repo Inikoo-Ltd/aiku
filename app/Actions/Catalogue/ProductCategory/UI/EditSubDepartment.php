@@ -58,7 +58,7 @@ class EditSubDepartment extends OrgAction
         $urlMaster = null;
         if ($subDepartment->master_product_category_id) {
             $urlMaster = [
-                'name'       => 'grp.helpers.redirect_master_product_category',
+                'name'       => 'grp.majordomo.redirect_master_product_category',
                 'parameters' => [
                     $subDepartment->masterProductCategory->id
                 ]
@@ -186,7 +186,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                 'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -207,7 +207,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                     'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -232,7 +232,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                 'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -253,12 +253,13 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                     'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
+                                    ...$this->seoFields($subDepartment),
                                 ]
                             ],
                             [
@@ -272,23 +273,6 @@ class EditSubDepartment extends OrgAction
                                         "required"     => false,
                                         'noSaveButton' => true,
                                         "full"         => true
-                                    ],
-                                ]
-                            ],
-                            [
-                                'label'  => __('Pricing'),
-                                'icon'   => 'fa-light fa-money-bill',
-                                'fields' => [
-                                    'cost_price_ratio' => [
-                                        'type'        => 'input_number',
-                                        'bind'        => [
-                                            'maxFractionDigits' => 3
-                                        ],
-                                        'label'       => __('Pricing ratio'),
-                                        'placeholder' => __('Cost price ratio'),
-                                        'required'    => true,
-                                        'value'       => $subDepartment->cost_price_ratio,
-                                        'min'         => 0
                                     ],
                                 ]
                             ],
@@ -319,8 +303,6 @@ class EditSubDepartment extends OrgAction
                                     ]
                                 ],
                             ],
-
-
                         ]
                     ),
                     'args'      => [
@@ -336,6 +318,46 @@ class EditSubDepartment extends OrgAction
         );
     }
 
+
+    private function seoFields(ProductCategory $subDepartment): array
+    {
+        $webpage = $subDepartment->webpage;
+
+        if (!$webpage) {
+            return [];
+        }
+
+        return [
+            'webpage_title'       => [
+                'type'        => 'input',
+                'label'       => __('SEO title'),
+                'information' => __('Used as the browser title and as the meta title for search engines'),
+                'maxLength'   => 70,
+                'options'     => [
+                    'counter' => true,
+                ],
+                'value'       => $webpage->title,
+            ],
+            'webpage_description' => [
+                'type'        => 'textarea',
+                'label'       => __('Meta description'),
+                'information' => __('Used as the meta description for search engines'),
+                'maxLength'   => 160,
+                'counter'     => true,
+                'value'       => $webpage->description,
+            ],
+            'webpage_url'         => [
+                'type'        => 'inputWithAddOn',
+                'label'       => __('URL'),
+                'information' => __('Changing the URL will redirect the old one to the new one'),
+                'leftAddOn'   => [
+                    'label' => 'https://'.$webpage->website->domain.'/'
+                ],
+                'required'    => true,
+                'value'       => $webpage->url,
+            ],
+        ];
+    }
 
     public function getBreadcrumbs(ProductCategory $subDepartment, string $routeName, array $routeParameters): array
     {

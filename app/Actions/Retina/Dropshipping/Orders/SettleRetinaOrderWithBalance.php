@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 02-07-2025-15h-20m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -45,12 +45,25 @@ class SettleRetinaOrderWithBalance extends RetinaAction
             ];
         }
 
-        $amountToPay = $order->total_amount - $order->payment_amount;
-        $amount = 0;
+        /** Round to cents: raw float subtraction of the DB decimals yields values like
+         * 0.039999999999999 which StorePayment's decimal:0,2 rule rejects, rolling back
+         * the whole payment transaction */
+        $amountToPay = round($order->total_amount - $order->payment_amount, 2);
+
         if ($customer->balance < $amountToPay) {
-            $amount = $customer->balance;
+            $amount = round((float)$customer->balance, 2);
         } else {
             $amount = $amountToPay;
+        }
+
+        /** A zero-amount settle (no balance, or order already fully paid) must not create a
+         * payment record: staff read the £0.00 "Accounts" row as a failed bank transfer */
+        if ($amount <= 0) {
+            return [
+                'success' => true,
+                'reason'  => 'Nothing to settle with balance',
+                'order'   => $order,
+            ];
         }
 
         $paymentData = [
@@ -67,8 +80,8 @@ class SettleRetinaOrderWithBalance extends RetinaAction
                 'amount' => $amount
             ]);
 
-            $order = UpdateOrder::make()->action(order: $order, modelData:[
-                'payment_amount' => $order->payments->sum('amount')
+            $order = UpdateOrder::make()->action(order: $order, modelData: [
+                'payment_amount' => round($order->payments->sum('amount'), 2)
             ], strict: false);
 
             $creditTransactionData = [

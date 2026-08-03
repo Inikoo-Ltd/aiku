@@ -26,12 +26,15 @@ class MasterProductResource extends JsonResource
             return $tradeUnit->ingredients->pluck('name');
         })->unique()->values()->all();
 
-
         return [
             'slug'                          => $masterProduct->slug,
             'code'                          => $masterProduct->code,
             'name'                          => $masterProduct->name,
             'price'                         => $masterProduct->price,
+            'rrp'                           => $masterProduct->rrp,
+            'master_prices'                 => $masterProduct->master_prices,
+            'master_rrp'                    => $masterProduct->master_rrps,
+            'rrp_per_unit'                  => $masterProduct->units ? ($masterProduct->rrp / trimDecimalZeros($masterProduct->units)) : null,
             'currency'                      => $masterProduct->group->currency->code,
             'description'                   => $masterProduct->description,
             'description_title'             => $masterProduct->description_title,

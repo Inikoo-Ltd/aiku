@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\TaxNumber;
 
 use App\Actions\Helpers\TaxNumber\Concerns\HasTaxNumberType;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\TaxNumber;
@@ -22,7 +23,7 @@ class StoreTaxNumber
     use AsAction;
     use HasTaxNumberType;
 
-    public function handle(Shop|Customer $owner, array $modelData = [], bool $strict = true): TaxNumber
+    public function handle(Shop|Customer|Invoice $owner, array $modelData = [], bool $strict = true): TaxNumber
     {
 
         $country = Country::find($modelData['country_id']);

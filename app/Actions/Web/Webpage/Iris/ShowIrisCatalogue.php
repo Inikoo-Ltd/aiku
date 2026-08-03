@@ -111,11 +111,11 @@ class ShowIrisCatalogue extends IrisAction
     public function getTabNavigation(?string $level): array
     {
         $tabs = [
-            ['key' => 'department', 'label' => 'Departments'],
-            ['key' => 'sub_department', 'label' => 'Sub Departments'],
-            ['key' => 'family', 'label' => 'Families'],
-            ['key' => 'product', 'label' => 'Products'],
-            ['key' => 'collection', 'label' => 'Collections'],
+            ['key' => 'department', 'label' => __('Departments')],
+            ['key' => 'sub_department', 'label' => __('Sub Departments')],
+            ['key' => 'family', 'label' => __('Families')],
+            ['key' => 'product', 'label' => __('Products')],
+            ['key' => 'collection', 'label' => __('Collections')],
         ];
 
         if (!$level) {

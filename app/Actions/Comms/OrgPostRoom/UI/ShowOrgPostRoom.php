@@ -86,15 +86,15 @@ class ShowOrgPostRoom extends OrgAction
                 // TODO: Overview <-- is. a dashbpard
                 OrgPostRoomsTabsEnum::SHOWCASE->value => $this->tab == OrgPostRoomsTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgPostRoomShowcase::run($orgPostRoom)
-                    : Inertia::lazy(fn () => GetOrgPostRoomShowcase::run($orgPostRoom)),
+                    : Inertia::optional(fn () => GetOrgPostRoomShowcase::run($orgPostRoom)),
 
                 OrgPostRoomsTabsEnum::OUTBOXES->value => $this->tab == OrgPostRoomsTabsEnum::OUTBOXES->value ?
                     fn () => OutboxesResource::collection(IndexOutboxes::run($orgPostRoom, OrgPostRoomsTabsEnum::OUTBOXES->value))
-                    : Inertia::lazy(fn () => OutboxesResource::collection(IndexOutboxes::run($orgPostRoom, OrgPostRoomsTabsEnum::OUTBOXES->value))),
+                    : Inertia::optional(fn () => OutboxesResource::collection(IndexOutboxes::run($orgPostRoom, OrgPostRoomsTabsEnum::OUTBOXES->value))),
 
                 OrgPostRoomsTabsEnum::MAILSHOTS->value => $this->tab == OrgPostRoomsTabsEnum::MAILSHOTS->value ?
                     fn () => MailshotResource::collection(IndexMailshots::run($orgPostRoom))
-                    : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($orgPostRoom))),
+                    : Inertia::optional(fn () => MailshotResource::collection(IndexMailshots::run($orgPostRoom))),
 
                 'data'   => OrgPostRoomResource::make($orgPostRoom)
             ]

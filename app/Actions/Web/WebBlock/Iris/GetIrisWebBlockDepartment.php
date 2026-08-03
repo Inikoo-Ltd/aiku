@@ -8,28 +8,21 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
-use App\Http\Resources\Web\WebBlockProductCategoryDescriptionResource;
+use App\Actions\Web\WebBlock\Concerns\HasDepartmentData;
+use App\Actions\Web\WebBlock\Concerns\HasIrisWebBlockResponse;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
-use Illuminate\Support\Arr;
 
 class GetIrisWebBlockDepartment
 {
     use AsObject;
+    use HasDepartmentData;
+    use HasIrisWebBlockResponse;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $resource = WebBlockProductCategoryDescriptionResource::make($webpage->model)->toArray(request());
-        data_set($webBlock, 'web_block.layout.data.fieldValue.department', $resource);
+        $this->setDepartmentData($webpage, $webBlock);
 
-        return [
-            'type' => $webBlock['type'],
-            'structure' => Arr::get(
-                $webBlock,
-                'web_block.layout.data.fieldValue',
-                []
-            ),
-        ];
+        return $this->irisResponse($webBlock);
     }
-
 }

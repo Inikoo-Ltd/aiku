@@ -24,7 +24,7 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Collection<int, SpatiePermission> $permissions
- * @property-read Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read Collection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read Collection<int, \App\Models\SysAdmin\User> $users
  * @method static Builder<static>|Permission newModelQuery()
  * @method static Builder<static>|Permission newQuery()

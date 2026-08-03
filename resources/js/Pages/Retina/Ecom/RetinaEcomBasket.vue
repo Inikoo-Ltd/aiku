@@ -3,16 +3,17 @@ import { trans } from 'laravel-vue-i18n'
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed } from "vue"
+import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed, watch } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTag, faStar, faBoxHeart, faShieldAlt } from "@fas"
+import { faTag, faStar, faBoxHeart, faShieldAlt,faExclamationTriangle } from "@fas"
 import { faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
 import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -25,13 +26,17 @@ import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
+import BasketRecommendationsInternal from '@/Components/Retina/BasketRecommendationsInternal.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
-import { ToggleSwitch } from 'primevue'
+import { InputText, ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
-library.add(faTag, faCheck)
+import { useFormatTime } from '@/Composables/useFormatTime'
+import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
+import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
+library.add(faTag, faCheck, faExclamationTriangle)
 
 interface ChargeResource {
     label: string
@@ -60,6 +65,17 @@ const props = defineProps<{
         customer_name: string
         slug: string
     }
+    upcoming_transactions: {
+        data: {
+            id: number
+            product_code: string | null
+            product_name: string | null
+            quantity: number | string
+            public_notes: string | null
+            type: 'gift' | 'follow_on'
+            state: string
+        }[]
+    }
     transactions: {
         data: {
             id: string
@@ -80,6 +96,7 @@ const props = defineProps<{
             created_at: string
             available_quantity: string
             currency_code: string
+            luigi_identity: string | null
             deleteRoute: routeType
         }[]
     }
@@ -93,6 +110,7 @@ const props = defineProps<{
     }
     balance: string
     total_to_pay: string
+    cart_gross_amount: number
     routes: {
         update_route: routeType
         submit_route: routeType
@@ -103,7 +121,8 @@ const props = defineProps<{
     is_in_basket: boolean
     contact_address: Address | null
     address_management: AddressManagement
-    is_unable_dispatch: boolean
+    is_forbidden_delivery: boolean
+    is_forbidden_billing: boolean
     charges: {
         premium_dispatch?: ChargeResource
         extra_packing?: ChargeResource
@@ -125,10 +144,36 @@ const props = defineProps<{
         }
     }
     missed_offers: Record<string, { label: string }>
+    voucher: {
+        id: number
+        voucher_code: string
+        voucher_amount: number
+        status: string
+        until: string
+        name: string
+        discount: string
+    } | null
+    is_basket_created: boolean
 }>()
 
 
 const layout = inject('layout', retinaLayoutStructure)
+
+onMounted(() => {
+    if (window.Echo && layout.user?.customer_id && props.order?.id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`)
+            .listen(".order-submitted", (eventData: { order_id: number }) => {
+                if (eventData.order_id == props.order?.id) {
+                    window.location.href = route("retina.ecom.orders.show", { order: (props.order as any)?.slug })
+                }
+            })
+    }
+})
+onBeforeUnmount(() => {
+    if (window.Echo && layout.user?.customer_id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
+    }
+})
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
 
@@ -239,14 +284,70 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
+
+
 interface Product {
     historic_asset_id: number
     id: number
     quantity_selected?: number
     transaction_id?: string
     quantity_ordered?: number
+    slug?: string | null
+    name?: string | null
+    code?: string | null
+    price?: number | string | null
+    currency_code?: string | null
+    family_code?: string | null
+    luigi_identity?: string | null
 }
+
+const pushAddToCartLuigi = (product: Product) => {
+    if (product?.transaction_id) {
+        return
+    }
+
+    const addToCartEcommerce = {
+        currency: layout?.iris?.currency?.code,
+        value: product.price,
+        items: [
+            {
+                item_id: product?.luigi_identity,
+            }
+        ]
+    }
+
+    window?.dataLayer?.push({
+        event: "add_to_cart",
+        ecommerce: addToCartEcommerce,
+    })
+}
+
+const pushAddToCartGtm = (product: Product, quantity: number) => {
+    if (quantity <= 0) {
+        return
+    }
+
+    pushGtmEvent(
+        'add_to_cart',
+        buildGtmProductPayload(
+            {
+                slug: product?.slug,
+                name: product?.name,
+                price: product?.price,
+                currency_code: product?.currency_code ?? layout?.iris?.currency?.code ?? props.order?.currency_code ?? null,
+                family_code: product?.family_code,
+            },
+            { quantity }
+        )
+    )
+}
+
 const onAddProducts = async (product: Product) => {
+    const quantitySelected = Number(product.quantity_selected ?? 1)
+    const quantityAdded = product?.transaction_id
+        ? quantitySelected - Number(product.quantity_ordered ?? 0)
+        : quantitySelected
+
     const storeRoute = {
         route_post: route('retina.models.product.add-to-basket', { 
             product: product.id
@@ -269,7 +370,7 @@ const onAddProducts = async (product: Product) => {
 
     // return
 
-    const onlyProps = product?.transaction_id ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
+    const onlyProps = product?.transaction_id ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay', 'summary'] : {}
 
     router[routePost.method](
         routePost.route_post,
@@ -289,25 +390,10 @@ const onAddProducts = async (product: Product) => {
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
             },
             onSuccess: () => {
-                // Luigi: event add to cart
-                if (!product?.transaction_id) {
-                    if (!product?.transaction_id) {
-                        window?.dataLayer?.push({
-                            event: "add_to_cart",
-                            ecommerce: {
-                                currency: layout?.iris?.currency?.code,
-                                value: product.price,
-                                items: [
-                                    {
-                                        item_id: product?.luigi_identity,
-                                    }
-                                ]
-                            }
-                        })
-                    }
-                }
+                pushAddToCartLuigi(product)
+                pushAddToCartGtm(product, quantityAdded)
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
-                layout.reload_handle()
+                layout?.reload_handle?.()
             },
             onFinish: () => {
                 isLoadingSubmit.value = false
@@ -344,7 +430,7 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
         }
     } : storeRoute
 
-    const onlyProps = existingTransaction ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
+    const onlyProps = existingTransaction ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay', 'summary'] : {}
 
     router[routePost.method](
         routePost.route_post,
@@ -373,9 +459,8 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     type: "success"
                 })
                 
-                window?.dataLayer?.push({
-                    event: "add_to_cart",
-                    ecommerce: {
+                if (!isInternalRecommendation.value) {
+                    const addToCartEcommerce = {
                         currency: layout?.iris?.currency?.code,
                         value: productLuigi?.attributes?.price || 0,
                         items: [
@@ -384,8 +469,12 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                             }
                         ]
                     }
-                })
-                layout.reload_handle()
+                    window?.dataLayer?.push({
+                        event: "add_to_cart",
+                        ecommerce: addToCartEcommerce,
+                    })
+                }
+                layout?.reload_handle?.()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'
             },
@@ -398,13 +487,22 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
         })
 }
 
-const blackListProductIds = computed(() => {
+// const blackListProductIds = computed(() => {
+//     if (!props.transactions?.data) return []
+
+//     return props.transactions.data
+//         .map(transaction => transaction.id.toString())
+//         .filter(Boolean)
+// })
+
+// Section: recommendations, websites on the internal search model use our own recommender
+const isInternalRecommendation = computed(() => layout.iris?.iris_search_model === 'internal')
+
+const basketProductIdentities = computed(() => {
     if (!props.transactions?.data) return []
 
     return props.transactions.data
-        .map(transaction => {
-            return transaction.id.toString()
-        })
+        .map(transaction => transaction.luigi_identity)
         .filter(Boolean)
 })
 
@@ -576,12 +674,15 @@ const onChangeInsurance = async (val: boolean) => {
         :summary
         :balance
         :address_management
-        :is_unable_dispatch
+        :is_forbidden_delivery
+        :is_forbidden_billing
         :contact_address
         :currency_code="order?.currency_code"
         :isInBasket="true"
         :updateRoute="routes.update_route"
         :missed_offers
+        :upcoming_transactions
+        :isShowAllOffersMeter="true"
     />
     
     <template v-if="order">
@@ -591,136 +692,162 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
 
-            <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
-                <EligibleGift
-                    :routeUpdate="{
-                        name: 'retina.models.order.update_gr_gift',
-                        parameters: order?.id
-                    }"
-                    :giftOptions="gr_gifts?.gifts"
-                    :meter="gr_gifts.meter"
-                    :isOptedOut="gr_gifts.is_gift_opted_out"
-                    :routeOptOut="gr_gifts.route_customer_update"
-                />
-            </div>
-            
-            <!-- Section: Charge Premium Dispatch -->
-            <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
-                    <InformationIcon :information="charges.premium_dispatch?.description" />
-                    {{ charges.premium_dispatch?.label ? trans(charges.premium_dispatch.label) : trans(charges.premium_dispatch?.name ?? '') }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
-                </div>
-                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                    <ToggleSwitch
-                        :modelValue="order?.is_premium_dispatch"
-                        @update:modelValue="(e) => (onChangePriorityDispatch(e))"
-                        xdisabled="isLoadingPriorityDispatch"
-                    >
-                        <template #handle="{ checked }">
-                            <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
-                            <template v-else>
-                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </template>
-                    </ToggleSwitch>
-                </div>
-            </div>
-            
-            <!-- Section: Charge Extra Packing -->
-            <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
-                    <InformationIcon :information="charges.extra_packing?.description" />
-                    {{ charges.extra_packing?.label ? trans(charges.extra_packing.label) : trans(charges.extra_packing?.name ?? '') }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
-                </div>
-                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                    <ToggleSwitch
-                        :modelValue="order?.has_extra_packing"
-                        @update:modelValue="(e) => (onChangeExtraPacking(e))"
-                    >
-                        <template #handle="{ checked }">
-                            <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
-                            <template v-else>
-                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </template>
-                    </ToggleSwitch>
-                </div>
-            </div>
-            
-            <!-- Section: Charge Insurance -->
-            <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                <div class="px-2 flex justify-end items-center gap-x-1 relative">
-                    <InformationIcon :information="charges.insurance?.description" />
-                    {{ charges.insurance?.label ? trans(charges.insurance.label) : trans(charges.insurance?.name ?? '') }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
-                </div>
-                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                    <ToggleSwitch
-                        :modelValue="order?.has_insurance"
-                        @update:modelValue="(e) => (onChangeInsurance(e))"
-                        xdisabled="isLoadingInsurance"
-                    >
-                        <template #handle="{ checked }">
-                            <LoadingIcon v-if="isLoadingInsurance" xclass="text-sm text-gray-500" />
-                            <template v-else>
-                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </template>
-                    </ToggleSwitch>
-                </div>
-            </div>
+            <div class="grid md:grid-cols-2 gap-x-8 py-4">
+                <!-- Section: Instructions (delivery and other) -->
+                <div class="w-full md:px-4">
+                    <div v-if="total_products > 0" class="flex flex-col md:flex-row xjustify-end px-3 md:px-6 gap-x-4">
+                        <div class="grid md:grid-cols-2 gap-y-4 gap-x-4 w-full">
+                            <!-- <div></div> -->
                 
-        </div>
-        
-        <div class="w-full px-4 mt-8">
-            <div v-if="total_products > 0" class="flex flex-col md:flex-row justify-end px-6 gap-x-4">
-                <div class="grid md:grid-cols-3 gap-y-4 gap-x-4 w-full">
-                    <div></div>
-        
-                    <!-- Input text: Delivery instructions -->
-                    <div class="">
-                        <div class="text-sm text-gray-500">
-                            <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
-                            {{ trans("Delivery instructions") }}
-                            <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
-                            :
+                            <!-- Input text: Delivery instructions -->
+                            <div class="">
+                                <div class="text-sm text-gray-500">
+                                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
+                                    {{ trans("Delivery instructions") }}
+                                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                                    :
+                                </div>
+                                <PureTextarea
+                                    v-model="deliveryInstructions"
+                                    @update:modelValue="() => debounceDeliveryInstructions()"
+                                    :placeholder="trans('Add if needed')"
+                                    rows="4"
+                                    :disabled="!is_in_basket"
+                                    :loading="isLoadingNote.includes('shipping_notes')"
+                                    :isSuccess="recentlySuccessNote.includes('shipping_notes')"
+                                    :isError="recentlyErrorNote"
+                                    :maxlength="35"
+                                />
+                            </div>
+                            <!-- Input text: Other instructions -->
+                            <div class="">
+                                <div class="text-sm text-gray-500">
+                                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
+                                    {{ trans("Other instructions") }}:
+                                </div>
+                                <PureTextarea
+                                    v-model="noteToSubmit"
+                                    @update:modelValue="() => debounceSubmitNote()"
+                                    :placeholder="trans('Add if needed')"
+                                    rows="4"
+                                    :loading="isLoadingNote.includes('customer_notes')"
+                                    :isSuccess="recentlySuccessNote.includes('customer_notes')"
+                                    :isError="recentlyErrorNote"
+                                />
+                            </div>
                         </div>
-                        <PureTextarea
-                            v-model="deliveryInstructions"
-                            @update:modelValue="() => debounceDeliveryInstructions()"
-                            :placeholder="trans('Add if needed')"
-                            rows="4"
-                            :disabled="!is_in_basket"
-                            :loading="isLoadingNote.includes('shipping_notes')"
-                            :isSuccess="recentlySuccessNote.includes('shipping_notes')"
-                            :isError="recentlyErrorNote"
-                            :maxlength="35"
-                        />
-                    </div>
-                    <!-- Input text: Other instructions -->
-                    <div class="">
-                        <div class="text-sm text-gray-500">
-                            <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
-                            {{ trans("Other instructions") }}:
-                        </div>
-                        <PureTextarea
-                            v-model="noteToSubmit"
-                            @update:modelValue="() => debounceSubmitNote()"
-                            :placeholder="trans('Add if needed')"
-                            rows="4"
-                            :loading="isLoadingNote.includes('customer_notes')"
-                            :isSuccess="recentlySuccessNote.includes('customer_notes')"
-                            :isError="recentlyErrorNote"
-                        />
                     </div>
                 </div>
+
+                <!-- Section: List of charges -->
+                <div class="row-start-1 md:row-auto">
+                    <!-- Section: Voucher Code -->
+                    <InputVoucherInBasket
+                        v-if="layout.retina.type == 'b2b'"
+                        :voucher="voucher"
+                        :order="order"
+                        :routes="{
+                            store: {
+                                name: 'retina.models.order.store_voucher',
+                                parameters: order?.id
+                            },
+                            remove: {
+                                name: 'retina.models.order.remove_voucher',
+                                parameters: order?.id
+                            }
+                        }"
+                        :currentGrossAmount="summary.cart_gross_amount"
+                    />
+
+                    <!-- Section: Eligible Gifts -->
+                    <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
+                        <EligibleGift
+                            :routeUpdate="{
+                                name: 'retina.models.order.update_gr_gift',
+                                parameters: order?.id
+                            }"
+                            :giftOptions="gr_gifts?.gifts"
+                            :meter="gr_gifts.meter"
+                            :isOptedOut="gr_gifts.is_gift_opted_out"
+                            :routeOptOut="gr_gifts.route_customer_update"
+                        />
+                    </div>
+                
+                    <!-- Section: Charge Premium Dispatch -->
+                    <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
+                        <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                            <InformationIcon v-if="charges.premium_dispatch?.description" :information="charges.premium_dispatch.description ?? ''" />
+                            {{ charges.premium_dispatch?.label ? ctrans(charges.premium_dispatch.label) : ctrans(charges.premium_dispatch?.name ?? '') }}
+                            <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
+                        </div>
+                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                            <ToggleSwitch
+                                :modelValue="order?.is_premium_dispatch"
+                                @update:modelValue="(e) => (onChangePriorityDispatch(e))"
+                                xdisabled="isLoadingPriorityDispatch"
+                            >
+                                <template #handle="{ checked }">
+                                    <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
+                                    <template v-else>
+                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </template>
+                            </ToggleSwitch>
+                        </div>
+                    </div>
+                    <!-- Section: Charge Extra Packing -->
+                    <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
+                        <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
+                            <InformationIcon v-if="charges.extra_packing?.description" :information="charges.extra_packing.description ?? ''" />
+                            {{ charges.extra_packing?.label ? trans(charges.extra_packing.label) : trans(charges.extra_packing?.name ?? '') }}
+                            <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
+                        </div>
+                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                            <ToggleSwitch
+                                :modelValue="order?.has_extra_packing"
+                                @update:modelValue="(e) => (onChangeExtraPacking(e))"
+                            >
+                                <template #handle="{ checked }">
+                                    <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
+                                    <template v-else>
+                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </template>
+                            </ToggleSwitch>
+                        </div>
+                    </div>
+                
+                    <!-- Section: Charge Insurance -->
+                    <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
+                        <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                            <InformationIcon v-if="charges.insurance?.description" :information="charges.insurance.description ?? ''" />
+                            {{ charges.insurance?.label ? trans(charges.insurance.label) : trans(charges.insurance?.name ?? '') }}
+                            <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
+                        </div>
+                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                            <ToggleSwitch
+                                :modelValue="order?.has_insurance"
+                                @update:modelValue="(e) => (onChangeInsurance(e))"
+                                xdisabled="isLoadingInsurance"
+                            >
+                                <template #handle="{ checked }">
+                                    <LoadingIcon v-if="isLoadingInsurance" xclass="text-sm text-gray-500" />
+                                    <template v-else>
+                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </template>
+                            </ToggleSwitch>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t flex justify-end py-5 px-4 md:px-8">
                 <!-- Section: button Place Order & button Checkout -->
-                <div v-if="!is_unable_dispatch || order.is_collection" class="w-full md:w-72 pt-5">
+                <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || order.is_collection" class="w-full md:w-72">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink
@@ -740,7 +867,7 @@ const onChangeInsurance = async (val: boolean) => {
                             </div>
                         </div>
                     </template>
-                    
+
                     <!-- Checkout -->
                     <ButtonWithLink
                         v-else
@@ -759,7 +886,8 @@ const onChangeInsurance = async (val: boolean) => {
                     />
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
-                    <div class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
+                    <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
+                    <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
                 </div>
             </div>
         </div>
@@ -774,16 +902,24 @@ const onChangeInsurance = async (val: boolean) => {
     </div>
 
     <!-- Section: Recommendations -->
-    <Teleport xv-if="layout.app.environment !== 'production'" to="#retina-end-of-main" :disabled="!isTeleportReady" :key="teleportKey">
+    <Teleport v-if="is_basket_created" xv-if="layout.app.environment !== 'production'" to="#retina-end-of-main" :disabled="!isTeleportReady" :key="teleportKey">
         <div class="w-full mt-2 pt-4 border-t border-gray-300 border-dashed"
             :class="layout.leftSidebar.show ? 'max-w-[calc(1280px-200px)]' : 'max-w-[calc(1280px-(56px-0.5rem))]'"
         >
-            <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ trans('You might also like') }}</h2>
+            <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ ctrans('You might also like') }}</h2>
             <div class="bg-white p-4 rounded-md shadow-lg">
+                <BasketRecommendationsInternal
+                    v-if="isInternalRecommendation"
+                    @add-to-basket="(productId: string, productCode: string, product: {}) => onAddProductFromRecommender(productId, productCode, product)"
+                    :listLoadingProducts
+                />
+
                 <BasketRecommendations
+                    v-else
                     @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"
                     :listLoadingProducts
-                    :blacklistItems="blackListProductIds"
+                    xblacklistItems="blackListProductIds"
+                    :basketItemIds="basketProductIdentities"
                 />
             </div>
         </div>

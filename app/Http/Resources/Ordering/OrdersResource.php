@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
@@ -29,6 +30,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $customer_slug
  * @property mixed $payment_state
  * @property mixed $payment_status
+ * @property string $platform
  * @property mixed $currency_code
  * @property mixed $currency_id
  * @property mixed $organisation_name
@@ -54,14 +56,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property bool $with_replacement
  * @property mixed $submitted_at
  * @property mixed $dispatched_at
- *
+ * @property mixed $is_customer_vip
  */
 class OrdersResource extends JsonResource
 {
+    use GetPlatformLogo;
+
     public function toArray($request): array
     {
         $payDetailedStatus        = '';
         $payDetailedStatusTooltip = '';
+
 
         if ($this->pay_detailed_status == OrderPayDetailedStatusEnum::UNPAID && $this->to_be_paid_by) {
             if ($this->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
@@ -70,6 +75,15 @@ class OrdersResource extends JsonResource
             } elseif ($this->to_be_paid_by == OrderToBePaidByEnum::BANK) {
                 $payDetailedStatusTooltip = __('To be paid by bank transfer');
                 $payDetailedStatus        = __('To be paid by bank');
+            }
+        }
+        if ($this->pay_detailed_status == OrderPayDetailedStatusEnum::PARTIALLY_PAID && $this->to_be_paid_by) {
+            if ($this->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
+                $payDetailedStatusTooltip = __('Remaining to be paid by cash on delivery');
+                $payDetailedStatus        = __('To be paid by COD').' (P)';
+            } elseif ($this->to_be_paid_by == OrderToBePaidByEnum::BANK) {
+                $payDetailedStatusTooltip = __('Remaining to be paid by bank transfer');
+                $payDetailedStatus        = __('To be paid by bank').' (P)';
             }
         } else {
             $payDetailedStatus        = $this->pay_detailed_status ? $this->pay_detailed_status->labels()[$this->pay_detailed_status->value] : '';
@@ -87,6 +101,7 @@ class OrdersResource extends JsonResource
             'state_icon'                  => $this->state->stateIcon()[$this->state->value],
             'net_amount'                  => $this->net_amount,
             'payment_amount'              => $this->payment_amount,
+            'platform'                    => $this->getPlatformLogo($this->platform ?? ''),
             'total_amount'                => $this->total_amount,
             'customer_name'               => $this->customer_name,
             'customer_slug'               => $this->customer_slug,
@@ -113,6 +128,8 @@ class OrdersResource extends JsonResource
             'shipping_notes'              => $this->shipping_notes,
             'shipping_data'               => $this->shipping_data,
             'with_replacement'            => $this->with_replacement,
+            'platform_milestones'         => data_get($this->data, 'platform_milestones'),
+            'is_customer_vip'             => $this->is_customer_vip,
         ];
     }
 }

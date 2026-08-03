@@ -8,7 +8,7 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Http\Resources\SupplyChain\AgentResource;
+use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -18,37 +18,40 @@ class GetAgentShowcase
 
     public function handle(Agent $agent): array
     {
-        return [
-            "contactCard" => AgentResource::make($agent)->getArray(),
-            "stats" => [
-                [
-                    "label" => __("suppliers"),
-                    "count" => $agent->stats->number_active_suppliers,
-                    "orther_counts" => [
-                        [
-                            "icon" => [
-                                "icon" => ["fal", "fa-tombstone"],
-                                "title" => __("Archived Suppliers"),
-                                "class" => "text-gray-500"
-                            ],
-                            "count" => $agent->stats->number_archived_suppliers,
-                        ],
-                    ],
-                ],
+        $organisation = $agent->organisation;
 
+        return [
+            'contactCard' => [
+                'created_at' => $agent->created_at,
+                'company'    => $organisation->name,
+                'contact'    => $organisation->contact_name,
+                'location'   => $organisation->location,
+                'email'      => $organisation->email,
+                'phone'      => $organisation->phone,
+                'currency'   => $agent->currency ?? $organisation->currency,
+                'address'    => AddressResource::make($organisation->address)->getArray(),
+                'photo'      => $organisation->imageSources(),
+            ],
+            'stats'       => [
                 [
-                    "label" => __("products"),
-                    "count" => $agent->stats->number_supplier_products,
-                    "orther_counts" => [
-                        [
-                            "icon" => [
-                                "icon" => ["fal", "fa-tombstone"],
-                                "title" => __("Archived Products"),
-                                "class" => "text-gray-500"
-                            ],
-                            "count" => $agent->stats->number_archived_products,
-                        ],
-                    ],
+                    'label' => __('Suppliers'),
+                    'icon'  => 'fal fa-person-dolly',
+                    'count' => $agent->stats->number_active_suppliers,
+                ],
+                [
+                    'label' => __('Products'),
+                    'icon'  => 'fal fa-box-usd',
+                    'count' => $agent->stats->number_current_supplier_products,
+                ],
+                [
+                    'label' => __('Purchase Orders'),
+                    'icon'  => 'fal fa-clipboard-list',
+                    'count' => $agent->stats->number_purchase_orders,
+                ],
+                [
+                    'label' => __('Deliveries'),
+                    'icon'  => 'fal fa-truck-container',
+                    'count' => $agent->stats->number_stock_deliveries,
                 ],
             ],
         ];

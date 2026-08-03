@@ -12,6 +12,7 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
+use App\Actions\Dropshipping\Allegro\Order\CancelFulfillOrderAllegro;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
 use App\Actions\Dropshipping\Tiktok\Order\CancelFulfillOrderTiktok;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
@@ -122,6 +123,7 @@ class CancelOrder extends OrgAction
                 match ($order->customerSalesChannel->platform->type) {
                     PlatformTypeEnum::SHOPIFY => CloseFulfillOrderToShopify::run($order),
                     PlatformTypeEnum::TIKTOK => CancelFulfillOrderTiktok::run($order),
+                    PlatformTypeEnum::ALLEGRO => CancelFulfillOrderAllegro::run($order),
                     default => null,
                 };
             } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {

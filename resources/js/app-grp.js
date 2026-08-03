@@ -168,6 +168,12 @@ createInertiaApp(
     }
   });
 
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
+
 //https://github.com/getsentry/sentry-javascript/issues/11362
 function inertiaRoutingInstrumentation(
   customStartTransaction,
@@ -220,5 +226,3 @@ function inertiaRoutingInstrumentation(
   }
   console.info("inertiaRoutingInstrumentation Finished");
 }
-
-

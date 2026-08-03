@@ -21,16 +21,20 @@ defineProps<{
     tab?: string
 }>();
 
+const routeCurrent = route().current()
+const routeParams = route().params
 
 function locationRoute(location: Location) {
-    switch (route().current()) {
+    switch (routeCurrent) {
         case "grp.org.warehouses.show.infrastructure.dashboard":
         case "grp.org.warehouses.show.infrastructure.locations.index":
+        case "grp.org.warehouses.show.infrastructure.locations.all_empty":
+        case "grp.org.warehouses.show.infrastructure.locations.partial_empty":
             return route(
                 "grp.org.warehouses.show.infrastructure.locations.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).warehouse,
+                    (routeParams as RouteParams).organisation,
+                    (routeParams as RouteParams).warehouse,
                     location.slug]);
         case "grp.org.warehouse-areas.show":
         case "grp.org.warehouse-areas.locations.index":
@@ -38,8 +42,8 @@ function locationRoute(location: Location) {
             return route(
                 "grp.org.warehouse-areas.show.locations.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).warehouseArea,
+                    (routeParams as RouteParams).organisation,
+                    (routeParams as RouteParams).warehouseArea,
                     location.slug]
             );
 
@@ -48,9 +52,9 @@ function locationRoute(location: Location) {
             return route(
                 "grp.org.warehouses.show.infrastructure.warehouse_areas.show.locations.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).warehouse,
-                    (route().params as RouteParams).warehouseArea,
+                    (routeParams as RouteParams).organisation,
+                    (routeParams as RouteParams).warehouse,
+                    (routeParams as RouteParams).warehouseArea,
                     location.slug
                 ]);
 
@@ -58,7 +62,7 @@ function locationRoute(location: Location) {
             return route(
                 "grp.org.locations.show",
                 [
-                    (route().params as RouteParams).organisation,
+                    (routeParams as RouteParams).organisation,
                     location.slug
                 ]);
     }

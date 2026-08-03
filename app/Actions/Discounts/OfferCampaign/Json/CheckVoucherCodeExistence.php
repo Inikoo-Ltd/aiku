@@ -21,7 +21,7 @@ class CheckVoucherCodeExistence extends OrgAction
         }
 
         return Offer::where('shop_id', $offerCampaign->shop_id)
-            ->whereRaw('LOWER(code) = ?', [strtolower($code)])
+            ->whereRaw('LOWER(voucher) = ?', [strtolower($code)])
             ->exists();
     }
 

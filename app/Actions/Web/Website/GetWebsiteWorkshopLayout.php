@@ -76,6 +76,14 @@ class GetWebsiteWorkshopLayout
         } else {
             $workshopRoutes = [
                 'routeList' => [
+                    'announcementRoute' => [
+                        'name'       => 'grp.org.shops.show.web.announcements.index',
+                        'parameters' => [
+                            'organisation'  => $website->organisation->slug,
+                            'shop'          => $website->shop->slug,
+                            'website'       => $website->slug,
+                        ]
+                    ],
                     'headerRoute' => [
                         'name'       => 'grp.org.shops.show.web.websites.workshop.header',
                         'parameters' => [

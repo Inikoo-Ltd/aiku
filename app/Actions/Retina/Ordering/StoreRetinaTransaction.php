@@ -36,6 +36,10 @@ class StoreRetinaTransaction extends RetinaAction
             );
         }
 
+        $order->update([
+            'updated_by_customer_at' => now()
+        ]);
+
         $historicAsset = HistoricAsset::find($historicAssetId);
 
         $transaction = StoreTransaction::make()->action($order, $historicAsset, [

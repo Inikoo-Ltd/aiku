@@ -85,6 +85,11 @@ interface SourceOrganisationService
 
     public function fetchProductHasOrgStock($id);
 
+    /** True when a person named one record with -s, which overrides the per shop force_fetch column. */
+    public function isForcedFetch(): bool;
+
+    public function setForcedFetch(bool $forcedFetch): void;
+
     public function fetchStock($id);
 
     public function fetchStockFamily($id);

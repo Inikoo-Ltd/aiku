@@ -37,7 +37,7 @@ watchEffect(() => {
         <div role="menu" aria-orientation="horizontal" aria-labelledby="table-download-data" class="grid w-40 min-w-max">
             <!-- Table: XLSX -->
             <a :href="
-                    exportLinks.export?.route
+                    exportLinks.export?.route?.name
                         ? `${urlPage.origin}${urlPage.pathname}${route(exportLinks.export?.route?.name)}?type=xlsx&${cleanedSearchUrl}`
                         : `${urlPage.origin}${urlPage.pathname}/export?type=xlsx&${cleanedSearchUrl}`
                 "
@@ -50,7 +50,7 @@ watchEffect(() => {
 
             <!-- Table: CSV -->
             <a :href="
-                    exportLinks.export?.route
+                    exportLinks.export?.route?.name
                         ? `${urlPage.origin}${urlPage.pathname}${route(exportLinks.export?.route?.name)}?type=csv&${cleanedSearchUrl}`
                         : `${urlPage.origin}${urlPage.pathname}/export?type=csv&${cleanedSearchUrl}`
                 "

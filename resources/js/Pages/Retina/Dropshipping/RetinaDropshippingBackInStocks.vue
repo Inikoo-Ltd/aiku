@@ -13,7 +13,7 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ulid } from "ulid"
 
 import { GridProducts } from "@/Components/Product"
-import ProductRender from "@/Components/CMS/Webpage/Products1/Dropshipping/ProductRender.vue"
+import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 library.add(faHeart, faBoxOpen, faImage)
 

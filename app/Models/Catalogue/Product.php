@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
@@ -15,6 +16,7 @@ use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
+use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
@@ -23,11 +25,14 @@ use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
+use App\Models\Reviews\ProductReviewStat;
+use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
@@ -42,8 +47,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -147,7 +152,6 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $master_product_id
  * @property Carbon|null $mark_for_discontinued_at
  * @property Carbon|null $discontinued_at
- * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property int|null $art1_image_id
@@ -175,6 +179,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_variant_leader
  * @property bool $is_minion_variant
  * @property bool $has_live_webpage
+ * @property bool $is_in_website live webpage + sellable, mirrored into the search index
  * @property string|null $marketplace_id
  * @property numeric|null $margin
  * @property string|null $marketplace_second_id
@@ -182,6 +187,9 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $mismatch_with_master_detected
  * @property bool $not_follow_master_trade_units
  * @property int|null $index_under_family
+ * @property bool $is_on_demand
+ * @property bool $not_follow_master_prices
+ * @property string|null $units_review
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -194,6 +202,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read Media|null $bottomImage
  * @property-read LaravelCollection<int, Brand> $brands
+ * @property-read Bundle|null $bundle
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
@@ -219,6 +228,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Organisation $organisation
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, Product> $productVariants
+ * @property-read ProductReviewStat|null $reviewStats
+ * @property-read LaravelCollection<int, Review> $reviews
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
@@ -257,6 +268,14 @@ class Product extends Model implements Auditable, HasMedia
     use HasTranslations;
     use HasAttachments;
     use HasSearch;
+    protected static function booted(): void
+    {
+        static::saved(function (Product $product) {
+            if ($product->wasChanged(['is_for_sale', 'is_variant_leader', 'is_minion_variant', 'webpage_id'])) {
+                HydrateIsInWebsite::run($product);
+            }
+        });
+    }
 
     protected $guarded = [];
 
@@ -264,6 +283,7 @@ class Product extends Model implements Auditable, HasMedia
 
 
     protected $casts = [
+        'units'                         => 'decimal:3',
         'variant_ratio'                 => 'decimal:3',
         'price'                         => 'decimal:2',
         'rrp'                           => 'decimal:2',
@@ -289,7 +309,8 @@ class Product extends Model implements Auditable, HasMedia
         'is_for_sale'                   => 'boolean',
         'not_for_sale_from_master'      => 'boolean',
         'mismatch_with_master_detected' => 'boolean',
-
+        'is_on_demand'                  => 'boolean',
+        'not_follow_master_prices'      => 'boolean',
     ];
 
     protected $attributes = [
@@ -310,6 +331,7 @@ class Product extends Model implements Auditable, HasMedia
                 'description_extra',
                 'state',
                 'is_for_sale',
+                'is_on_demand',
                 'created_at'
             ]);
     }
@@ -326,6 +348,10 @@ class Product extends Model implements Auditable, HasMedia
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
             'is_for_sale'       => $this->is_for_sale,
+            'is_in_website'     => (bool) $this->is_in_website,
+            'barcode'           => (string) $this->barcode,
+            'is_on_demand'      => $this->is_on_demand,
+            'image'             => json_encode(Arr::get($this->web_images, 'main.gallery')),
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
@@ -355,6 +381,8 @@ class Product extends Model implements Auditable, HasMedia
         'auto_assign_subject_type',
         'auto_assign_status',
         'is_main',
+        'is_on_demand',
+        'not_follow_master_prices',
     ];
 
     public function getRouteKeyName(): string
@@ -376,6 +404,11 @@ class Product extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(ProductStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ProductReviewStat::class);
     }
 
     public function contents(): MorphMany
@@ -464,6 +497,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->morphMany(Portfolio::class, 'item');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'product_id');
+    }
+
     public function favourites(): HasMany
     {
         return $this->hasMany(Favourite::class);
@@ -521,7 +559,11 @@ class Product extends Model implements Auditable, HasMedia
 
     public function getLuigiIdentity(): string
     {
-        return $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->webpage?->website?->id.':'.$this->webpage?->id;
+        if ($this->webpage) {
+            return $this->webpage->luigiIdentity();
+        }
+
+        return 'unknown';
     }
 
     public function frontImage(): HasOne
@@ -597,5 +639,10 @@ class Product extends Model implements Auditable, HasMedia
     public function variant(): BelongsTo
     {
         return $this->belongsTo(Variant::class, 'variant_id');
+    }
+
+    public function bundle(): MorphOne
+    {
+        return $this->morphOne(Bundle::class, 'bundleable');
     }
 }

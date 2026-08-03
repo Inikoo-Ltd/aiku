@@ -110,7 +110,7 @@ class ShowStoredItem extends OrgAction
                             'title' => __('Stored item')
                         ],
                     'subNavigation' => $subNavigation,
-                    'model'  => __("Customer's SKU"),
+                    'model'  => __("Customer's SKO"),
                     'title'  => $storedItem->slug,
                     'actions' => [
 
@@ -164,23 +164,23 @@ class ShowStoredItem extends OrgAction
 
                 StoredItemTabsEnum::SHOWCASE->value => $this->tab == StoredItemTabsEnum::SHOWCASE->value ?
                     fn () => GetStoredItemShowcase::run($storedItem)
-                    : Inertia::lazy(fn () => GetStoredItemShowcase::run($storedItem)),
+                    : Inertia::optional(fn () => GetStoredItemShowcase::run($storedItem)),
 
                 StoredItemTabsEnum::PALLETS->value => $this->tab == StoredItemTabsEnum::PALLETS->value ?
                     fn () => PalletsInStoredItemResource::collection(IndexStoredItemPallets::run($storedItem, prefix: StoredItemTabsEnum::PALLETS->value))
-                    : Inertia::lazy(fn () => PalletsInStoredItemResource::collection(IndexStoredItemPallets::run($storedItem, prefix: StoredItemTabsEnum::PALLETS->value))),
+                    : Inertia::optional(fn () => PalletsInStoredItemResource::collection(IndexStoredItemPallets::run($storedItem, prefix: StoredItemTabsEnum::PALLETS->value))),
 
                 StoredItemTabsEnum::AUDITS->value => $this->tab == StoredItemTabsEnum::AUDITS->value ?
                     fn () => StoredItemAuditDeltasResource::collection(IndexStoredItemAuditDeltas::run($storedItem, prefix: StoredItemTabsEnum::AUDITS->value))
-                    : Inertia::lazy(fn () => StoredItemAuditDeltasResource::collection(IndexStoredItemAuditDeltas::run($storedItem, prefix: StoredItemTabsEnum::AUDITS->value))),
+                    : Inertia::optional(fn () => StoredItemAuditDeltasResource::collection(IndexStoredItemAuditDeltas::run($storedItem, prefix: StoredItemTabsEnum::AUDITS->value))),
 
                 StoredItemTabsEnum::MOVEMENTS->value => $this->tab == StoredItemTabsEnum::MOVEMENTS->value ?
                     fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($storedItem, prefix: StoredItemTabsEnum::MOVEMENTS->value))
-                    : Inertia::lazy(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($storedItem, prefix: StoredItemTabsEnum::MOVEMENTS->value))),
+                    : Inertia::optional(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($storedItem, prefix: StoredItemTabsEnum::MOVEMENTS->value))),
 
                 StoredItemTabsEnum::HISTORY->value => $this->tab == StoredItemTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($storedItem, prefix: StoredItemTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($storedItem, prefix: StoredItemTabsEnum::HISTORY->value)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($storedItem, prefix: StoredItemTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: StoredItemTabsEnum::HISTORY->value))
@@ -218,7 +218,7 @@ class ShowStoredItem extends OrgAction
                                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-items.index',
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ],
-                            'label' => __("Customer's SKUs")
+                            'label' => __("Customer's SKOs")
                         ],
                         'model' => [
                             'route' => [

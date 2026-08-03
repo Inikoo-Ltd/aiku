@@ -84,10 +84,12 @@ trait WithTiktokApiServices
     public function makeApiRequest(string $method, string $path, array $productData = [], bool $requireShopCipher = true, array $headers = [], bool $requireSign = true, array $params = [])
     {
         try {
-            $expiredTokenAt = now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($this->access_token_expire_in));
+            if ($this->access_token_expire_in) {
+                $expiredTokenAt = now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($this->access_token_expire_in));
 
-            if ($expiredTokenAt) {
-                AuthenticateTiktokAccount::make()->getAccessTokenViaRefreshToken($this);
+                if ($expiredTokenAt) {
+                    AuthenticateTiktokAccount::make()->getAccessTokenViaRefreshToken($this);
+                }
             }
 
             $apiRequest = $this->restApi($path, $productData, $requireShopCipher, $headers, $requireSign, $params);
@@ -106,8 +108,6 @@ trait WithTiktokApiServices
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('API Request failed: ' . $e->getMessage());
-
             return ['error' => true, 'data' => $e->getMessage()];
         }
     }
@@ -296,6 +296,24 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function getPackageHandoverTimeslot(string $packageId): array
+    {
+        $path = "/fulfillment/$this->version/packages/$packageId/handover_time_slots";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getTracking(string $orderId): array
+    {
+        $path = "/fulfillment/$this->version/orders/$orderId/tracking";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function cancelFulfilOrder(string $orderId): array
     {
         $path = "/return_refund/$this->version/cancellations";
@@ -305,6 +323,21 @@ trait WithTiktokApiServices
             'cancel_reason' => match ($this->customerSalesChannel?->shop?->country?->code) {
                 'GB' => 'seller_cancel_reason_out_of_stock_uk',
                 default => 'seller_cancel_reason_out_of_stock'
+            }
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function rejectFulfilOrder(string $orderId): array
+    {
+        $path = "/return_refund/$this->version/cancellations";
+
+        return $this->makeApiRequest('POST', $path, [
+            'order_id' => $orderId,
+            'cancel_reason' => match ($this->customerSalesChannel?->shop?->country?->code) {
+                'GB' => 'seller_cancel_paid_reason_address_not_deliver_uk',
+                default => 'seller_cancel_paid_reason_address_not_deliver'
             }
         ], true, [
             'content-type' => 'application/json'
@@ -353,6 +386,19 @@ trait WithTiktokApiServices
 
         return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getPersonResponsible()
+    {
+        $path = "/product/202501/compliance/responsible_persons/search";
+
+        return $this->makeApiRequest('POST', $path, [
+            'keyword' => '',
+        ], false, [
+            'content-type' => 'application/json'
+        ], true, [
+            'page_size' => 10
         ]);
     }
 }

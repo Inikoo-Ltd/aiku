@@ -63,12 +63,22 @@ class IndexTransactions extends OrgAction
         $query->leftJoin('products', 'assets.model_id', '=', 'products.id');
         $query->leftJoin('orders', 'transactions.order_id', '=', 'orders.id');
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
+        $query->leftJoin('upcoming_transactions', 'transactions.id', '=', 'upcoming_transactions.transaction_id');
+
+        /*
+         * The line was charged at the price held on its historic asset, which is a snapshot taken
+         * when it was added. Reading the price off the product instead showed whatever it costs
+         * today, so repackaging something into an outer made every earlier order look as though
+         * it had been undercharged.
+         */
+        $query->leftJoin('historic_assets', 'transactions.historic_asset_id', '=', 'historic_assets.id');
 
         return $query->defaultSort('transactions.id')
             ->select([
                 'transactions.id',
                 'transactions.state',
                 'transactions.status',
+                'transactions.is_follow_on',
                 'transactions.quantity_ordered',
                 'transactions.quantity_bonus',
                 'transactions.quantity_picked',
@@ -84,19 +94,28 @@ class IndexTransactions extends OrgAction
                 'transactions.discretionary_offer',
                 'transactions.discretionary_offer_label',
                 'transactions.is_cut_view',
-                // 'delivery_note_items.quantity_not_picked as dni_quantity_not_picked',
                 'assets.code as asset_code',
                 'assets.name as asset_name',
                 'assets.type as asset_type',
                 'products.id as product_id',
-                'products.price as price',
-                'products.units as product_units',
+                DB::raw('COALESCE(historic_assets.price, products.price) as price'),
+                DB::raw('COALESCE(historic_assets.units, products.units) as product_units'),
+
+                /*
+                 * The line keeps the quantity and price agreed against the pack size it was
+                 * ordered at, so repacking the product afterwards leaves the warehouse shipping
+                 * a different pack size for the same money. Nothing repricies it, it is flagged.
+                 */
+                DB::raw('CASE WHEN historic_assets.units IS NOT NULL AND historic_assets.units <> products.units THEN products.units END as units_changed_to'),
                 'products.slug as product_slug',
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
                 'currencies.code as currency_code',
                 'orders.id as order_id',
                 'transactions.offers_data',
+                'upcoming_transactions.public_notes as upcoming_transaction_public_notes',
+                'upcoming_transactions.private_notes as upcoming_transaction_private_notes',
+                'upcoming_transactions.type as upcoming_transaction_type',
                 DB::raw("(
                     SELECT STRING_AGG(DISTINCT bc.code, ', ')
                     FROM delivery_note_items dni2
@@ -135,7 +154,9 @@ class IndexTransactions extends OrgAction
             $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
 
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
+            if ($parent instanceof Order && $parent->deliveryNotes()->exists()) {
+                $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
+            }
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             if (
                 $parent instanceof Order

@@ -411,7 +411,7 @@ watch(
 								</InputIcon>
 								<InputText
 									v-model="filters['global'].value"
-									placeholder="Search..."
+									:placeholder="trans('Search...')"
 									class="w-full" />
 							</IconField>
 						</div>

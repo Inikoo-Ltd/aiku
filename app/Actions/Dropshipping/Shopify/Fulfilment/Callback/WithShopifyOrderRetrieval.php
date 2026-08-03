@@ -42,6 +42,7 @@ trait WithShopifyOrderRetrieval
                                     order {
                                         id
                                         createdAt
+                                        processedAt
                                         customer {
                                             id
                                             firstName

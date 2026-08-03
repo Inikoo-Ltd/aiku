@@ -11,11 +11,11 @@ namespace App\Actions\Dropshipping\Tiktok\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -35,15 +35,18 @@ class StoreTiktokOrder extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedTiktokAddress;
+    use WithPayAndSubmitOrder;
 
     public function handle(TiktokUser $tiktokUser, array $tiktokOrders): void
     {
         $customerClient = $this->digestTiktokCustomerClient($tiktokUser, $tiktokOrders);
         $orderedProducts = $this->digestTiktokProducts($tiktokUser, $tiktokOrders);
 
+        $shipByTiktok = Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK';
+
         $orderData = [
             'customer_client_id'        => $customerClient->id,
-            'is_shipping_by_external'   => Arr::get($tiktokOrders, 'shipping_type') === 'TIKTOK',
+            'is_shipping_by_external'   => $shipByTiktok,
             'platform_id'               => $tiktokUser->platform_id,
             'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
             'customer_reference'        => Arr::get($tiktokOrders, 'user_id'),
@@ -71,23 +74,22 @@ class StoreTiktokOrder extends RetinaAction
             );
         }
 
+        $handOverMethod = null;
         $packageId = Arr::get($order, 'packages.0.id');
-        $package = $tiktokUser->getPackageDetail($packageId);
-        $handOverMethod = Arr::get($package, 'data.handover_method');
+        if ($packageId) {
+            $package = $tiktokUser->getPackageDetail($packageId);
+            $handOverMethod = Arr::get($package, 'data.handover_method');
+        }
 
-        if ($handOverMethod && $handOverMethod !== 'PICKUP') {
+        if ($shipByTiktok) {
             UpdateOrder::run($order, [
-                'shipping_notes' => __('We\'re unable to ship this order due to customer\'s default pickup method is not PICKUP. Please contact customer to change the pickup method to PICKUP. TikTok Order ID: .' . $order->platform_order_id)
+                'shipping_notes' => __("We're unable to ship this order due to customer's default shipping template is not 'Shipped by Seller' and the default handover method is DROP_OFF. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
             ]);
+
+            // CancelOrder::run($order);
         }
 
-        try {
-            PayOrderAsync::run($order);
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-        }
-
-        SubmitOrder::run($order);
+        $order = $this->payAndSubmitOrder($order);
     }
 
     /**
@@ -165,10 +167,17 @@ class StoreTiktokOrder extends RetinaAction
             })
             ->values();*/
         foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
-            $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')
+
+            $product = $tiktokUser->getProduct($item['product_id']);
+            $externalProductId = Arr::get($product, 'data.external_product_id');
+
+            $portfolioData = DB::table('portfolios')->select('item_id')
+                ->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
                 ->where('platform_product_id', $item['product_id'])
+                ->orWhere('id', $externalProductId)
                 ->first();
+
             if ($portfolioData && $portfolioData->item_id) {
                 $product = Product::find($portfolioData->item_id);
                 if ($product) {

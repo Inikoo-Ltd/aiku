@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Helpers\NaturalLanguage;
@@ -17,7 +18,6 @@ use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Helpers\ImageResource;
 use Illuminate\Support\Arr;
 
 /**
@@ -37,8 +37,14 @@ class ProductOfVariantResource extends JsonResource
         /** @var Product $product */
         $product = $this->resource;
 
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $product->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
+
         $specifications = [
-            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
+            'countries_of_origin' => $countriesOrigin,
             'ingredients'       => $product->marketing_ingredients,
             'gross_weight'      => $product->gross_weight,
             'barcode'           => $product->barcode,
@@ -47,8 +53,6 @@ class ProductOfVariantResource extends JsonResource
             'marketing_weight'  => $product->marketing_weight,
             'unit'              => $product->unit,
         ];
-
-        $isOnDemand = $product->orgStocks()->where('is_on_demand', true)->exists();
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
@@ -61,7 +65,7 @@ class ProductOfVariantResource extends JsonResource
         $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
         $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
 
-        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
+        [$marginDiscounted, , $profitDiscounted, $profitPerUnitDiscounted, , $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
 
 
         $back_in_stock = false;
@@ -85,6 +89,7 @@ class ProductOfVariantResource extends JsonResource
             'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
+            'family_code'       => $product->family?->code,
             'name'              => $product->name,
             'description'       => $product->description,
             'description_title' => $product->description_title,
@@ -110,10 +115,10 @@ class ProductOfVariantResource extends JsonResource
             'web_images'        => $product->web_images,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
-            'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
+            'images'            => $product->bucket_images ? $this->getImagesData($product, false, 800) : $this->getResizedMediaImages($product, 800),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
-            'is_on_demand'      => $isOnDemand,
+            'is_on_demand'      => $product->is_on_demand,
             'is_back_in_stock'  => $product->backInStockReminders,
             'back_in_stock'     => $back_in_stock,
 
@@ -127,5 +132,18 @@ class ProductOfVariantResource extends JsonResource
 
 
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getResizedMediaImages($product, int $maxWidth): array
+    {
+        return $product->images->map(fn ($media) => [
+            'id'        => $media->id,
+            'source'    => GetPictureSources::run($media->getImage()->resize($maxWidth, $maxWidth)),
+            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 48)),
+            'alt'       => $media->pivot?->caption,
+        ])->all();
     }
 }

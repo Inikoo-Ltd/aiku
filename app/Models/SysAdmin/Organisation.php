@@ -78,6 +78,7 @@ use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Procurement\OrgAgent;
@@ -147,6 +148,11 @@ use App\Models\HumanResources\WorkSchedule;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property array<array-key, mixed> $opening_hours
  * @property int $late_grace_period_minutes
+ * @property array<array-key, mixed> $banned_country_regions
+ * @property bool $is_aiku_stock_control
+ * @property bool $is_aiku_stock_hr
+ * @property bool $is_aiku_stock_procurement
+ * @property bool $is_aiku_stock_production
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
@@ -160,6 +166,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Box> $boxes
  * @property-read \App\Models\SysAdmin\OrganisationCatalogueStats|null $catalogueStats
  * @property-read LaravelCollection<int, Charge> $charges
+ * @property-read LaravelCollection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read LaravelCollection<int, ClockingMachine> $clockingMachines
  * @property-read LaravelCollection<int, Collection> $collections
@@ -192,14 +199,12 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Location> $locations
  * @property-read Media|null $logo
  * @property-read LaravelCollection<int, Mailshot> $mailshots
- * @property-read \App\Models\SysAdmin\OrganisationMailshotsIntervals|null $mailshotsIntervals
  * @property-read \App\Models\SysAdmin\OrganisationManufactureStats|null $manufactureStats
  * @property-read LaravelCollection<int, ManufactureTask> $manufactureTasks
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read LaravelCollection<int, OfferCampaign> $offerCampaigns
  * @property-read LaravelCollection<int, Offer> $offers
  * @property-read \App\Models\SysAdmin\OrganisationOrderHandlingStats|null $orderHandlingStats
- * @property-read \App\Models\SysAdmin\OrganisationOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\SysAdmin\OrganisationOrderingStats|null $orderingStats
  * @property-read LaravelCollection<int, Order> $orders
  * @property-read LaravelCollection<int, OrgAgent> $orgAgents
@@ -210,14 +215,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, OrgStock> $orgStocks
  * @property-read LaravelCollection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read LaravelCollection<int, OrgSupplier> $orgSuppliers
- * @property-read \App\Models\SysAdmin\OrganisationOutboxColdEmailsIntervals|null $outboxColdEmailsIntervals
- * @property-read \App\Models\SysAdmin\OrganisationOutboxCustomerNotificationIntervals|null $outboxCustomerNotificationIntervals
- * @property-read \App\Models\SysAdmin\OrganisationOutboxMarketingIntervals|null $outboxMarketingIntervals
- * @property-read \App\Models\SysAdmin\OrganisationOutboxMarketingNotificationIntervals|null $outboxMarketingNotificationIntervals
- * @property-read \App\Models\SysAdmin\OrganisationOutboxNewsletterIntervals|null $outboxNewsletterIntervals
- * @property-read \App\Models\SysAdmin\OrganisationOutboxPushIntervals|null $outboxPushIntervals
- * @property-read \App\Models\SysAdmin\OrganisationOutboxTestIntervals|null $outboxTestIntervals
- * @property-read \App\Models\SysAdmin\OrganisationOutboxUserNotificationIntervals|null $outboxUserNotificationIntervals
  * @property-read LaravelCollection<int, Outbox> $outboxes
  * @property-read LaravelCollection<int, Packing> $packings
  * @property-read LaravelCollection<int, PaymentAccount> $paymentAccounts
@@ -288,8 +285,13 @@ class Organisation extends Model implements HasMedia, Auditable
         'source'                       => 'array',
         'location'                     => 'array',
         'forbidden_dispatch_countries' => 'array',
+        'banned_country_regions'       => 'array',
         'type'                         => OrganisationTypeEnum::class,
-        'opening_hours'                => 'array'
+        'opening_hours'                => 'array',
+        'is_aiku_stock_control'        => 'boolean',
+        'is_aiku_stock_hr'             => 'boolean',
+        'is_aiku_stock_procurement'    => 'boolean',
+        'is_aiku_stock_production'     => 'boolean',
     ];
 
     protected $attributes = [
@@ -298,7 +300,12 @@ class Organisation extends Model implements HasMedia, Auditable
         'source'                       => '{}',
         'location'                     => '{}',
         'forbidden_dispatch_countries' => '{}',
-        'opening_hours'                => '{}'
+        'banned_country_regions'       => '{}',
+        'opening_hours'                => '{}',
+        'is_aiku_stock_control'        => false,
+        'is_aiku_stock_hr'             => false,
+        'is_aiku_stock_procurement'    => false,
+        'is_aiku_stock_production'     => false,
     ];
 
     protected $guarded = [];
@@ -333,6 +340,16 @@ class Organisation extends Model implements HasMedia, Auditable
         return [
             'sysadmin',
         ];
+    }
+
+    public function bannedBillingCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['billing']);
+    }
+
+    public function bannedDeliveryCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['delivery']);
     }
 
     public function employees(): HasMany
@@ -395,19 +412,9 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasOne(OrganisationManufactureStats::class);
     }
 
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationOrderingIntervals::class);
-    }
-
     public function orderHandlingStats(): HasOne
     {
         return $this->hasOne(OrganisationOrderHandlingStats::class);
-    }
-
-    public function mailshotsIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationMailshotsIntervals::class);
     }
 
     public function crmStats(): HasOne
@@ -782,6 +789,11 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(Purge::class);
     }
 
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
+    }
+
     public function serialReferences(): MorphMany
     {
         return $this->morphMany(SerialReference::class, 'container');
@@ -830,47 +842,6 @@ class Organisation extends Model implements HasMedia, Auditable
     public function timeSeries(): HasMany
     {
         return $this->hasMany(OrganisationTimeSeries::class);
-    }
-
-    public function outboxNewsletterIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationOutboxNewsletterIntervals::class);
-    }
-
-
-    public function outboxMarketingIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationOutboxMarketingIntervals::class);
-    }
-
-    public function outboxMarketingNotificationIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationOutboxMarketingNotificationIntervals::class);
-    }
-
-    public function outboxCustomerNotificationIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationOutboxCustomerNotificationIntervals::class);
-    }
-
-    public function outboxColdEmailsIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationOutboxColdEmailsIntervals::class);
-    }
-
-    public function outboxUserNotificationIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationOutboxUserNotificationIntervals::class);
-    }
-
-    public function outboxPushIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationOutboxPushIntervals::class);
-    }
-
-    public function outboxTestIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationOutboxTestIntervals::class);
     }
 
     public function spaces(): HasMany
@@ -945,9 +916,9 @@ class Organisation extends Model implements HasMedia, Auditable
 
     public function setDefaultLeaveQuota(array $quota): void
     {
-        $settings = $this->settings ?? [];
+        $settings                      = $this->settings ?? [];
         $settings['hr']['leave_quota'] = $quota;
-        $this->settings = $settings;
+        $this->settings                = $settings;
         $this->save();
     }
 }

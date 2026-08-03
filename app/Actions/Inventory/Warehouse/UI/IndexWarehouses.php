@@ -153,7 +153,7 @@ class IndexWarehouses extends OrgAction
                         ] : null
                     ]
                 )
-                ->column(key: 'state', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'avatar')
+                ->column(key: 'state', label: '', canBeHidden: false, type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
@@ -214,12 +214,12 @@ class IndexWarehouses extends OrgAction
 
                 WarehousesTabsEnum::WAREHOUSES->value => $this->tab == WarehousesTabsEnum::WAREHOUSES->value ?
                     fn () => WarehousesResource::collection($warehouses)
-                    : Inertia::lazy(fn () => WarehousesResource::collection($warehouses)),
+                    : Inertia::optional(fn () => WarehousesResource::collection($warehouses)),
 
 
                 WarehousesTabsEnum::WAREHOUSES_HISTORIES->value => $this->tab == WarehousesTabsEnum::WAREHOUSES_HISTORIES->value ?
                     fn () => HistoryResource::collection(IndexHistory::run(Warehouse::class, 'hst'))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run(Warehouse::class, 'hst')))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run(Warehouse::class, 'hst')))
 
 
             ]

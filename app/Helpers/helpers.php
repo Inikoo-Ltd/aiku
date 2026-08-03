@@ -17,10 +17,90 @@ if (!function_exists('group')) {
     }
 }
 
+if (!function_exists('formatPrice')) {
+    /**
+     * Multiply two numbers into a price string. With fewer than 2 fraction digits the
+     * result is rounded UP at that precision (retail whole-number pricing, e.g. CZK/HUF);
+     * an increment rounds UP to its next multiple instead (e.g. 0.05 for PLN grosz
+     * steps). Both keep converted prices from ever losing margin; at 2 digits with no
+     * increment it rounds to nearest as before.
+     */
+    function formatPrice(int|float|null $num1 = 0, int|float|null $num2 = 0, int $fractionDigits = 2, ?float $increment = null)
+    {
+        $value = ($num1 ?? 0) * ($num2 ?? 0);
+
+        if ($increment > 0) {
+            $value = ceil(round($value / $increment, 6)) * $increment;
+        } elseif ($fractionDigits < 2) {
+            $factor = 10 ** $fractionDigits;
+            $value  = ceil(round($value * $factor, 6)) / $factor;
+        }
+
+        return trimDecimalZeros(number_format($value, 2, '.', ''));
+    }
+}
+
 if (!function_exists('escapeSQLSearch')) {
     function escapeSQLSearch(string $value): string
     {
         return preg_quote($value, '/');
+    }
+}
+
+if (!function_exists('maskName')) {
+    function maskName(?string $name): string
+    {
+        if (!$name) {
+            return '';
+        }
+
+        $parts = array_values(array_filter(
+            preg_split('/\s+/', trim($name))
+        ));
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        // Nama satu kata: tampilkan 2 huruf pertama, sisanya menjadi *
+        if (count($parts) === 1) {
+            $word = $parts[0];
+            $length = mb_strlen($word);
+
+            if ($length <= 2) {
+                return mb_convert_case($word, MB_CASE_TITLE, 'UTF-8');
+            }
+
+            return mb_convert_case(
+                mb_substr($word, 0, 2),
+                MB_CASE_TITLE,
+                'UTF-8'
+            ) . str_repeat('*', $length - 2);
+        }
+
+        // Nama lebih dari satu kata
+        return $parts[0] . ' ***';
+    }
+}
+
+if (!function_exists('getUnformattedTaxNumber')) {
+    function getUnformattedTaxNumber(?string $formattedTaxNumber = null): array|null
+    {
+        if (!$formattedTaxNumber) {
+            return null;
+        }
+
+        $prefix     = substr($formattedTaxNumber, 0, 2);
+        $taxNumber  = trim(substr($formattedTaxNumber, 2));
+
+        if (!ctype_alpha($prefix) || !$taxNumber) {
+            return null;
+        }
+
+        return [
+            'country_code' => strtoupper($prefix),
+            'number'       => $taxNumber,
+        ];
     }
 }
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getIrisAnnouncementComponent } from "@/Iris/Composables/getIrisComponents"
+import { getStyles } from "@/Composables/styles"
 import { inject, provide, computed, ref, onMounted, onBeforeUnmount } from "vue"
 
 const props = defineProps<{
@@ -49,6 +50,11 @@ const isWithinSchedule = computed(() => {
     return true
 })
 
+const reserveStyle = computed(() => {
+    const height = getStyles(props.data?.container_properties)?.height
+    return height ? { minHeight: height } : {}
+})
+
 const shouldShowAnnouncement = computed(() => {
     if (!isWithinSchedule.value) return false
 
@@ -62,9 +68,14 @@ const shouldShowAnnouncement = computed(() => {
 </script>
 
 <template>
-    <component
+    <div
         v-if="shouldShowAnnouncement"
-        :is="getIrisAnnouncementComponent(data?.template_code)"
-        :announcementData="data"
-    />
+        class="iris-announcement-reserve"
+        :style="reserveStyle"
+    >
+        <component
+            :is="getIrisAnnouncementComponent(data?.template_code)"
+            :announcementData="data"
+        />
+    </div>
 </template>

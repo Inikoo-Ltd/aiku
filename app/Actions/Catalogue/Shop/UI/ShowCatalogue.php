@@ -36,6 +36,16 @@ class ShowCatalogue extends OrgAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
+        $urlMaster = null;
+        if ($shop->master_shop_id) {
+            $urlMaster = [
+                'name'       => 'grp.masters.master_shops.show',
+                'parameters' => [
+                    $shop->masterShop->slug
+                ]
+            ];
+        }
+
         return Inertia::render(
             'Org/Catalogue/Catalogue',
             [
@@ -53,6 +63,7 @@ class ShowCatalogue extends OrgAction
                         'icon'  => 'fal fa-books'
                     ],
                 ],
+                'url_master'  => $urlMaster,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => CatalogueTabsEnum::navigation()
@@ -60,19 +71,19 @@ class ShowCatalogue extends OrgAction
                 CatalogueTabsEnum::SHOWCASE->value =>
                     $this->tab == CatalogueTabsEnum::SHOWCASE->value
                         ? fn () => GetCatalogueShowcase::run($shop)
-                        : Inertia::lazy(fn () => GetCatalogueShowcase::run($shop)),
+                        : Inertia::optional(fn () => GetCatalogueShowcase::run($shop)),
                 CatalogueTabsEnum::TOP_LISTED_FAMILIES->value =>
                     $this->tab == CatalogueTabsEnum::TOP_LISTED_FAMILIES->value
                         ? fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))
-                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))),
+                        : Inertia::optional(fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))),
                 CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value =>
                     $this->tab == CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value
                         ? fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))
-                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))),
+                        : Inertia::optional(fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))),
                 CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value =>
                     $this->tab == CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value
                         ? fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($shop, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))
-                        : Inertia::lazy(fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($shop, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))),
+                        : Inertia::optional(fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($shop, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))),
             ]
         )->table(
             IndexTopListedFamilies::make()->tableStructure(

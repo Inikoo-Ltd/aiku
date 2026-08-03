@@ -8,13 +8,13 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\ActionRequest;
 
-class UploadImagesToMasterProductCategory extends GrpAction
+class UploadImagesToMasterProductCategory extends OrgAction
 {
     use WithAttachMediaToModel;
     use WithUploadModelImages;
@@ -22,6 +22,13 @@ class UploadImagesToMasterProductCategory extends GrpAction
     public function handle(MasterProductCategory $model, string $scope, array $modelData, bool $updateDependants = false): array
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
+
+        foreach ($medias as $media) {
+            $model->images()->updateExistingPivot($media->id, [
+                'caption' => $model->name,
+            ]);
+        }
+
         if ($updateDependants) {
             $this->updateDependants($model, $medias, $scope);
         }
@@ -45,7 +52,7 @@ class UploadImagesToMasterProductCategory extends GrpAction
 
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): void
     {
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisationFromGroup($masterProductCategory->group, $request);
 
         $this->handle($masterProductCategory, 'image', $this->validatedData, true);
     }

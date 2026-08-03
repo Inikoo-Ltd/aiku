@@ -33,8 +33,8 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    offers: {}
-    overview: {
+    offers?: {}
+    overview?: {
         offerCampaign: {}
         stats: {}
     }
@@ -44,6 +44,9 @@ const props = defineProps<{
         currency_code: string
         organisation: string
         offercampaign: string
+        default_dates?: {
+            start: string            
+        }
     }
     tabsBox?: {
         label: string

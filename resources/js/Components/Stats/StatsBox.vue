@@ -55,9 +55,11 @@ const isLoadingMetaRight = ref(false)
             <Icon v-else-if="stat.icon" :data="stat.icon" class="text-xl" />
 
             <CountUp :endVal='stat?.value' :duration='1.5' :scrollSpyOnce='true' :options='{
-                    formattingFn: (value: number) => locale.number(value)
+                    formattingFn: (value: number) => stat.currency_code ? locale.currencyFormat(stat.currency_code, value) : locale.number(value)
                 }' />
         </dd>
+
+        <div v-if="stat.subtitle" class="mt-1 text-sm font-medium text-gray-600 truncate">{{ stat.subtitle }}</div>
 
         <!-- Meta right -->
         <component
@@ -107,7 +109,7 @@ const isLoadingMetaRight = ref(false)
                 </template>
             </component>
         </div>
-        <div v-else class="mt-3">
+        <div v-else-if="!stat.subtitle" class="mt-3">
 
         </div>
     </component>

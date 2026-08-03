@@ -13,7 +13,7 @@ use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
 use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
 use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
@@ -22,13 +22,17 @@ use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
+use App\Actions\Traits\UI\WithBucketNavigation;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowTradeUnit extends GrpAction
+class ShowTradeUnit extends OrgAction
 {
+    use WithBucketNavigation;
+
     use WithGoodsAuthorisation;
 
 
@@ -40,7 +44,7 @@ class ShowTradeUnit extends GrpAction
 
     public function asController(TradeUnit $tradeUnit, ActionRequest $request): TradeUnit
     {
-        $this->initialisation(group(), $request)->withTab(TradeUnitTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(TradeUnitTabsEnum::values());
 
         return $this->handle($tradeUnit);
     }
@@ -88,31 +92,35 @@ class ShowTradeUnit extends GrpAction
                 'tradeUnitFamilySlug'   => $tradeUnit->tradeUnitFamily?->slug,
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
                     fn () => GetTradeUnitShowcase::run($tradeUnit)
-                    : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
+                    : Inertia::optional(fn () => GetTradeUnitShowcase::run($tradeUnit)),
+
+                TradeUnitTabsEnum::COMPOSITION->value => $this->tab == TradeUnitTabsEnum::COMPOSITION->value ?
+                    fn () => GetTradeUnitComposition::run($tradeUnit)
+                    : Inertia::optional(fn () => GetTradeUnitComposition::run($tradeUnit)),
 
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
                     fn () => GetTradeUnitAttachment::run($tradeUnit)
-                    : Inertia::lazy(fn () => GetTradeUnitAttachment::run($tradeUnit)),
+                    : Inertia::optional(fn () => GetTradeUnitAttachment::run($tradeUnit)),
 
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
                     fn () => GetTradeUnitImages::run($tradeUnit)
-                    : Inertia::lazy(fn () => GetTradeUnitImages::run($tradeUnit)),
+                    : Inertia::optional(fn () => GetTradeUnitImages::run($tradeUnit)),
 
                 TradeUnitTabsEnum::MASTER_PRODUCTS->value => $this->tab == TradeUnitTabsEnum::MASTER_PRODUCTS->value ?
                     fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))),
+                    : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))),
 
                 TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))),
+                    : Inertia::optional(fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))),
 
                 TradeUnitTabsEnum::STOCKS->value => $this->tab == TradeUnitTabsEnum::STOCKS->value ?
                     fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))),
+                    : Inertia::optional(fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))),
 
                 TradeUnitTabsEnum::ORG_STOCKS->value => $this->tab == TradeUnitTabsEnum::ORG_STOCKS->value ?
                     fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))),
+                    : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))),
 
             ]
         )
@@ -177,16 +185,42 @@ class ShowTradeUnit extends GrpAction
 
     public function getPrevious(TradeUnit $tradeUnit, ActionRequest $request): ?array
     {
-        $previous = TradeUnit::where('code', '<', $tradeUnit->code)->orderBy('code', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getTradeUnitNeighbour($tradeUnit, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(TradeUnit $tradeUnit, ActionRequest $request): ?array
     {
-        $next = TradeUnit::where('code', '>', $tradeUnit->code)->orderBy('code')->first();
+        return $this->getNavigation($this->getTradeUnitNeighbour($tradeUnit, $request, forward: true), $request->route()->getName());
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    private function getTradeUnitNeighbour(TradeUnit $tradeUnit, ActionRequest $request, bool $forward): ?TradeUnit
+    {
+        $query = TradeUnit::query()->where('trade_units.group_id', $tradeUnit->group_id);
+
+        $status = match ($request->input('bucket')) {
+            'in_process'    => TradeUnitStatusEnum::IN_PROCESS,
+            'active'        => TradeUnitStatusEnum::ACTIVE,
+            'discontinuing' => TradeUnitStatusEnum::DISCONTINUING,
+            'discontinued'  => TradeUnitStatusEnum::DISCONTINUED,
+            'anomality'     => TradeUnitStatusEnum::ANOMALITY,
+            default         => null,
+        };
+
+        if ($status) {
+            $query->where('trade_units.status', $status);
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $tradeUnit,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'code' => 'trade_units.code',
+                'name' => 'trade_units.name',
+            ],
+            defaultSort: ['trade_units.code', false],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?TradeUnit $tradeUnit, string $routeName): ?array
@@ -195,16 +229,14 @@ class ShowTradeUnit extends GrpAction
             return null;
         }
 
-        return match ($routeName) {
-            'grp.trade_units.units.show' => [
-                'label' => $tradeUnit->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'tradeUnit' => $tradeUnit->slug
-                    ]
+        return [
+            'label' => $tradeUnit->name,
+            'route' => [
+                'name'       => $routeName,
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->slug
                 ]
-            ],
-        };
+            ]
+        ];
     }
 }

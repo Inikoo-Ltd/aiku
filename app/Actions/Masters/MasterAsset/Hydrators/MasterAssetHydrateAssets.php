@@ -47,6 +47,7 @@ class MasterAssetHydrateAssets implements ShouldBeUnique
             $numberCurrentAssets = DB::table('products')
                 ->join('shops', 'shops.id', '=', 'products.shop_id')
                 ->where('master_product_id', $masterAsset->id)
+                ->whereNull('products.exclusive_for_customer_id')
                 ->where('is_for_sale', true)
                 ->where('shops.state', '!=', ShopStateEnum::CLOSED)
                 ->whereIn('products.state', [
@@ -58,17 +59,20 @@ class MasterAssetHydrateAssets implements ShouldBeUnique
             $numberAssets = DB::table('products')
                 ->join('shops', 'shops.id', '=', 'products.shop_id')
                 ->where('master_product_id', $masterAsset->id)
+                ->whereNull('products.exclusive_for_customer_id')
                 ->where('shops.state', '!=', ShopStateEnum::CLOSED)
                 ->count();
 
             $totalAssets = DB::table('products')
                 ->where('master_product_id', $masterAsset->id)
+                ->whereNull('exclusive_for_customer_id')
                 ->count();
 
 
             $numberProductsIsNotForSale =  DB::table('products')
                 ->join('shops', 'shops.id', '=', 'products.shop_id')
                 ->where('master_product_id', $masterAsset->id)
+                ->whereNull('products.exclusive_for_customer_id')
                 ->where('is_for_sale', false)
                 ->where('shops.state', '!=', ShopStateEnum::CLOSED)
                 ->whereIn('products.state', [

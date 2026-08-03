@@ -8,12 +8,16 @@
 
 namespace App\Actions\Web\Webpage\UI;
 
+use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class SanitiseImagesWebBlock
 {
     use AsObject;
+    use WithIrisImageVariants;
+
+    public const array SRCSET_WIDTHS = [360, 720, 1440, 2048];
 
     public function handle(array $webBlockData): array
     {
@@ -22,6 +26,11 @@ class SanitiseImagesWebBlock
         if (isset($structure['value']['images']) && is_array($structure['value']['images'])) {
             foreach ($structure['value']['images'] as &$image) {
                 unset($image['link_data']['workshop']);
+
+                $media = $this->findMediaFromImgProxyUrl(Arr::get($image, 'source.original'));
+                if ($media) {
+                    $image['srcset'] = $this->getWidthSrcSets($media, self::SRCSET_WIDTHS);
+                }
             }
         }
 

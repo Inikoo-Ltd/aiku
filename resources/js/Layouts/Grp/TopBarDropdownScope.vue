@@ -106,22 +106,22 @@ const onClickOrg = async (slug?: string) => {
     }
 
 
-    try {
-        console.log('topbar dropdown scope 12')
-        if (!currentRoute.includes('grp.org.') && !currentRoute.includes('grp.agent.')) {
-            throw new Error('Redirect to dashboard')
-        }
+    if (!currentRoute.includes('grp.org.') && !currentRoute.includes('grp.agent.')) {
+        router.visit(route('grp.org.dashboard.show', { organisation: slug }))
+        return
+    }
 
+    try {
         const response = await axios.get(route('grp.profile.can_visit'))
 
-        if (!!response.data) {
+        if (response.data) {
             try {
                 router.visit(route(currentRoute, { ...currentRouteParams, organisation: slug }))
             } catch {
                 router.visit(route('grp.org.dashboard.show', { organisation: slug }))
             }
         } else {
-            throw new Error('Redirect to dashboard')
+            router.visit(route('grp.org.dashboard.show', { organisation: slug }))
         }
     } catch (error) {
         console.error(error)

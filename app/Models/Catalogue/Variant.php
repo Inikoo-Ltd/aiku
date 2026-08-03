@@ -42,6 +42,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property int $master_variant_id
  * @property string $slug
+ * @property bool $status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProductForSale
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
@@ -55,9 +56,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $minionProduct
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\VariantSalesIntervals|null $salesIntervals
- * @property-read \App\Models\Catalogue\VariantSalesOrderingIntervals|null $salesOrderingIntervals
- * @property-read \App\Models\Catalogue\VariantSalesOrderingStats|null $salesOrderingStats
  * @property-read \App\Models\Catalogue\VariantSalesStats|null $salesStats
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
@@ -163,21 +161,6 @@ class Variant extends Model implements Auditable, HasMedia
     public function salesStats(): HasOne
     {
         return $this->hasOne(VariantSalesStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(VariantSalesIntervals::class);
-    }
-
-    public function salesOrderingStats(): HasOne
-    {
-        return $this->hasOne(VariantSalesOrderingStats::class);
-    }
-
-    public function salesOrderingIntervals(): HasOne
-    {
-        return $this->hasOne(VariantSalesOrderingIntervals::class);
     }
 
     public function timeSeries(): HasMany

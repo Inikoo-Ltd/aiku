@@ -196,11 +196,11 @@ class IndexSubDepartmentsInMasterSubDepartment extends OrgAction
 
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => SubDepartmentsResource::collection($subDepartment)
-                    : Inertia::lazy(fn () => SubDepartmentsResource::collection($subDepartment)),
+                    : Inertia::optional(fn () => SubDepartmentsResource::collection($subDepartment)),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    : Inertia::optional(fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
         )
         ->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value))

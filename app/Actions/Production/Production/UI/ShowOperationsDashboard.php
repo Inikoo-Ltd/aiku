@@ -106,7 +106,7 @@ class ShowOperationsDashboard extends OrgAction
 
                 ProductionTabsEnum::SHOWCASE->value => $this->tab == ProductionTabsEnum::SHOWCASE->value ?
                     fn () => GetProductionShowcase::run($production)
-                    : Inertia::lazy(fn () => GetProductionShowcase::run($production)),
+                    : Inertia::optional(fn () => GetProductionShowcase::run($production)),
 
 
 
@@ -114,7 +114,7 @@ class ShowOperationsDashboard extends OrgAction
 
                 ProductionTabsEnum::HISTORY->value => $this->tab == ProductionTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($production))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($production)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($production)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));

@@ -14,6 +14,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Comms\BackInStockReminder\UI\ProductHasBackInStockReminders;
+use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -21,23 +22,31 @@ use App\Actions\Goods\Asset\UI\IndexAssetTimeSeries;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInProduct;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
+use App\Actions\Ordering\Order\UI\IndexOrdersInProduct;
 use App\Actions\OrgAction;
+use App\Actions\Reviews\UI\IndexReviews;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Catalogue\ExternalShop\ProductInExternalTabsEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
+use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
+use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Goods\AssetTimeSeriesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStocksResource;
+use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\Reviews\ReviewRatingLabel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -55,6 +64,14 @@ class ShowProduct extends OrgAction
 
     public function handle(Product $product): Product
     {
+        if (!$this->parent instanceof Group && !$this->parent instanceof Organisation && !$this->parent instanceof Fulfilment) {
+            $shop =  $this->parent instanceof Shop ? $this->parent : $this->parent?->shop;
+
+            if ($shop->id != $product->shop_id) {
+                abort(404, 'Product not found under this shop');
+            }
+        }
+
         return $product;
     }
 
@@ -140,9 +157,10 @@ class ShowProduct extends OrgAction
 
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
-        $shop           = $product->shop;
-        $isExternalShop = $shop->type == ShopTypeEnum::EXTERNAL;
-        $hasMaster      = (bool)$product->masterProduct;
+        $shop              = $product->shop;
+        $isExternalShop    = $shop->type == ShopTypeEnum::EXTERNAL;
+        $hasMaster         = (bool)$product->masterProduct;
+        $giftOfferCampaign = $shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::GIFT)->first();
 
         $miniBreadcrumbs = [];
         if ($product->department) {
@@ -223,22 +241,8 @@ class ShowProduct extends OrgAction
 
         $actions = [];
 
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'edit',
-            'tooltip' => __('Sync Product Images from Trade Units'),
-            'label'   => __('Repair Images'),
-            'icon'    => 'fal fa-tools',
-            'route'   => [
-                'name'          => 'grp.models.product.repair_product_images',
-                'method'        => 'patch',
-                'parameters'    => [
-                    'product' => $product->id
-                ],
-            ]
-        ];
-
         if ($this->canEdit) {
+
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
@@ -248,15 +252,46 @@ class ShowProduct extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ]
             ];
-        }
 
-        if ($product->webpage) {
-            $actions = array_merge($actions, [
-                [
+            if ($product->shop->type != ShopTypeEnum::EXTERNAL) {
+                $actions[] = [
                     'type'  => 'button',
                     'style' => 'edit',
-                    'key'   => 'reindex',
-                ],
+                    'label' => __('Composition'),
+                    'icon'  => ['fal', 'fa-atom'],
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.catalogue.products.all_products.composition',
+                        'parameters' => [
+                            'organisation' => $product->organisation->slug,
+                            'shop'         => $product->shop->slug,
+                            'product'      => $product->slug,
+                        ]
+                    ]
+                ];
+            }
+        }
+
+        // $actions[] = [
+        //     'type'    => 'button',
+        //     'style'   => 'edit',
+        //     'tooltip' => __('Sync Product Images from Trade Units'),
+        //     'label'   => __('Repair Images'),
+        //     'icon'    => 'fal fa-tools',
+        //     'route'   => [
+        //         'name'          => 'grp.models.product.repair_product_images',
+        //         'method'        => 'patch',
+        //         'parameters'    => [
+        //             'product' => $product->id
+        //         ],
+        //     ]
+        // ];
+        if ($product->webpage) {
+            $actions = array_merge($actions, [
+                // [
+                //     'type'  => 'button',
+                //     'style' => 'edit',
+                //     'key'   => 'reindex',
+                // ],
                 [
                     'type'  => 'button',
                     'style' => 'edit',
@@ -296,7 +331,7 @@ class ShowProduct extends OrgAction
                     'type'    => 'button',
                     'style'   => 'edit',
                     'icon'    => ["fal", "fa-external-link"],
-                    'tooltip' => "Open website in a new tab",
+                    'tooltip' => __("Open product in the website"),
                     'route'   => [
                         'url'       => $product->webpage?->canonical_url,
                         'openBlank' => true,
@@ -307,61 +342,73 @@ class ShowProduct extends OrgAction
         $componentData = [
             ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                 fn () => GetProductShowcase::run($product)
-                : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+                : Inertia::optional(fn () => GetProductShowcase::run($product)),
 
             'salesData' => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                 fn () => GetProductTimeSeriesData::run($product)
-                : Inertia::lazy(fn () => GetProductTimeSeriesData::run($product)),
+                : Inertia::optional(fn () => GetProductTimeSeriesData::run($product)),
 
             ProductTabsEnum::SALES->value => $this->tab == ProductTabsEnum::SALES->value
                 ?
                 fn () => $product->asset
                     ? AssetTimeSeriesResource::collection(IndexAssetTimeSeries::run($product->asset, ProductTabsEnum::SALES->value))
                     : AssetTimeSeriesResource::collection(new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20))
-                : Inertia::lazy(fn () => $product->asset
+                : Inertia::optional(fn () => $product->asset
                     ? AssetTimeSeriesResource::collection(IndexAssetTimeSeries::run($product->asset, ProductTabsEnum::SALES->value))
                     : AssetTimeSeriesResource::collection(new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20))),
 
+            ProductTabsEnum::ORDERS->value => $this->tab == ProductTabsEnum::ORDERS->value ?
+                fn () => OrdersResource::collection(IndexOrdersInProduct::run($product, ProductTabsEnum::ORDERS->value))
+                : Inertia::optional(fn () => OrdersResource::collection(IndexOrdersInProduct::run($product, ProductTabsEnum::ORDERS->value))),
+
             ProductTabsEnum::TRADE_UNITS->value => $this->tab == ProductTabsEnum::TRADE_UNITS->value ?
                 fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
-                : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
+                : Inertia::optional(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
 
             ProductTabsEnum::STOCKS->value => $this->tab == ProductTabsEnum::STOCKS->value ?
                 fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
-                : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
+                : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
             ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($product))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($product))),
 
             ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run($product))
-                : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
+                : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run($product))),
+
+            ProductTabsEnum::REVIEWS->value => $this->tab == ProductTabsEnum::REVIEWS->value
+                ? fn () => $this->getReviewsTabData($product)
+                : Inertia::optional(fn () => $this->getReviewsTabData($product)),
         ];
 
         if (!$isExternalShop) {
             $componentData = array_merge($componentData, [
                 ProductTabsEnum::CONTENT->value => $this->tab == ProductTabsEnum::CONTENT->value ?
                     fn () => GetProductContent::run($product)
-                    : Inertia::lazy(fn () => GetProductContent::run($product)),
+                    : Inertia::optional(fn () => GetProductContent::run($product)),
 
 
                 ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
                     fn () => GetProductImages::run($product)
-                    : Inertia::lazy(fn () => GetProductImages::run($product)),
+                    : Inertia::optional(fn () => GetProductImages::run($product)),
 
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
                     fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
-                    : Inertia::lazy(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
+                    : Inertia::optional(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
 
                 ProductTabsEnum::REMINDERS->value => $this->tab == ProductTabsEnum::REMINDERS->value ?
                     fn () => ProductHasBackInStockRemindersResource::collection(ProductHasBackInStockReminders::run($product))
-                    : Inertia::lazy(fn () => ProductHasBackInStockRemindersResource::collection(ProductHasBackInStockReminders::run($product))),
+                    : Inertia::optional(fn () => ProductHasBackInStockRemindersResource::collection(ProductHasBackInStockReminders::run($product))),
 
                 ProductTabsEnum::ATTACHMENTS->value => $this->tab == ProductTabsEnum::ATTACHMENTS->value ?
                     fn () => GetProductAttachment::run($product)
-                    : Inertia::lazy(fn () => GetProductAttachment::run($product)),
+                    : Inertia::optional(fn () => GetProductAttachment::run($product)),
+
+                ProductTabsEnum::OFFERS->value => $this->tab == ProductTabsEnum::OFFERS->value ?
+                    fn () => OffersResource::collection(IndexOffers::make()->inProduct(parent: $product, prefix: ProductTabsEnum::OFFERS->value))
+                    : Inertia::optional(fn () => OffersResource::collection(IndexOffers::make()->inProduct(parent: $product, prefix: ProductTabsEnum::OFFERS->value))),
             ]);
         }
 
@@ -408,10 +455,18 @@ class ShowProduct extends OrgAction
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
                 ],
                 'product_id'           => $product->id,
+                'product_units'        => (int)$product->units,
+                'product_unit'         => $product->unit,
                 'shop_data'            => [
                     'id'            => $product->shop_id,
                     'slug'          => $product->shop->slug,
                     'currency_code' => $product->shop->currency->code,
+                    'organisation'  => $product->organisation->slug,
+                    'offercampaign' => $giftOfferCampaign?->slug,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                        'end'   => now()->addDays(7)->toDateString(),
+                    ],
                 ],
                 'is_external_shop'          => $isExternalShop,
                 'is_dependent_trade_unit'   => $product->not_follow_master_trade_units,
@@ -430,19 +485,23 @@ class ShowProduct extends OrgAction
                 ...$componentData,
                 'variant'       => $product->variant,
                 'is_variant_leader' => $product->is_variant_leader,
+                'rating_labels'     => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::PRODUCT),
             ]
         )
             ->table(IndexAssetTimeSeries::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
+            ->table(IndexOrdersInProduct::make()->tableStructure($product, ProductTabsEnum::ORDERS->value))
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
-            ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value));
+            ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value))
+            ->table(IndexReviews::make()->tableStructure(prefix: ProductTabsEnum::REVIEWS->value));
 
         if (!$isExternalShop) {
             $productPage = $productPage
                 ->table(ProductHasBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
                 ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value))
-                ->table(IndexProductImages::make()->tableStructure($product, ProductTabsEnum::IMAGES->value));
+                ->table(IndexProductImages::make()->tableStructure($product, ProductTabsEnum::IMAGES->value))
+                ->table(IndexOffers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::OFFERS->value));
         }
 
         return $productPage;
@@ -453,11 +512,42 @@ class ShowProduct extends OrgAction
         return new ProductsResource($product);
     }
 
+    private function getReviewsTabData(Product $product): array
+    {
+        return [
+            'data' => ReviewsResource::collection(
+                IndexReviews::run(parent: $product, prefix: ProductTabsEnum::REVIEWS->value, scope: 'product')
+            ),
+            'rating_labels'     => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::PRODUCT),
+            'reviewable_type'   => 'product_reviews',
+            'replier_type'      => 'merchant',
+        ];
+    }
+
+    private function ratingLabelsForShop(int $shopId, ReviewContextEnum $context): array
+    {
+        return ReviewRatingLabel::query()
+            ->whereRaw('LOWER(model_type) = ?', ['shop'])
+            ->where('model_id', $shopId)
+            ->whereRaw('LOWER(review_context) = ?', [$context->value])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('dimension')
+            ->get(['dimension', 'label', 'is_required', 'weight'])
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
+                'dimension' => $reviewRatingLabel->dimension?->value ?? (string) $reviewRatingLabel->dimension,
+                'label' => (string) $reviewRatingLabel->label,
+                'is_required' => (bool) $reviewRatingLabel->is_required,
+                'weight' => (float) $reviewRatingLabel->weight,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function getBreadcrumbs(Organisation|Shop|Fulfilment|ProductCategory $parent, Product $product, string $routeName, array $routeParameters, $suffix = null): array
     {
         $headCrumb = function (Product $product, array $routeParameters, $suffix, $suffixIndex = '', $prefixIndex = '') {
             return [
-
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
@@ -471,13 +561,30 @@ class ShowProduct extends OrgAction
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
-
             ];
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.catalogue.products.not_online_products.show'  =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.not_online_products.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.not_online_products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    suffixIndex: " (".__("Not Online").")"
+                )
+            ),
             'grp.org.shops.show.catalogue.products.independent_products.all.show'  =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
@@ -829,8 +936,6 @@ class ShowProduct extends OrgAction
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.products.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix
@@ -839,5 +944,4 @@ class ShowProduct extends OrgAction
             default => []
         };
     }
-
 }

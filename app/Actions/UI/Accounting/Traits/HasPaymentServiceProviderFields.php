@@ -110,8 +110,8 @@ trait HasPaymentServiceProviderFields
                     'type'     => 'input',
                     'label'    => __('api key'),
                     'required' => true,
-                    'value'    => Arr::get($data, 'pastpay_apikey')
-                ]
+                    'value'    => Arr::get($data, 'credentials.api_key')
+                ],
             ],
             default => []
         };

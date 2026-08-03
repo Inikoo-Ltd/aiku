@@ -149,7 +149,7 @@ class Payment extends Model implements Auditable
             'organisation_id' => $this->organisation_id,
             'shop_id'         => $this->shop_id,
             'customer_id'     => $this->customer_id,
-            'status'          => $this->status->value,
+            'status'          => $this->status->value ?? 'in_process',
             'state'           => $this->state->value,
             'type'            => $this->type->value,
             'reference'       => (string)$this->reference,

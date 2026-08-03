@@ -9,15 +9,20 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\CRM\Customer\GetCustomerFilterStructure;
+use App\Actions\CRM\Customer\GetCustomersQueryByRecipe;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\UI\CRM\CustomersTabsEnum;
+use App\Exports\CRM\CustomersExport;
 use App\Http\Resources\CRM\CustomersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -25,6 +30,7 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSource;
 use App\Models\Discounts\Offer;
+use App\Models\Ordering\UpcomingTransaction;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasSearchableText;
@@ -32,6 +38,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -45,9 +52,28 @@ class IndexCustomers extends OrgAction
 
     private Group|Shop|Organisation $parent;
 
+    private array $customerFilters = [];
+
+    private int $estimatedRecipients = 0;
+
+    private array $stateFilter = [];
+
+    private array $statusFilter = [];
+
+    private ?string $upcomingFilter = null;
+
+    private int $upcomingReadyCount = 0;
+
+    private int $upcomingOutOfStockCount = 0;
+
+    protected function recipeHasFilters(array $recipe): bool
+    {
+        return count(array_diff_key($recipe, ['all_customers' => true])) > 0;
+    }
+
     protected function getElementGroups($parent): array
     {
-        return [
+        $groups = [
             'state'  => [
                 'label'    => __('State'),
                 'elements' => array_merge_recursive(
@@ -69,6 +95,117 @@ class IndexCustomers extends OrgAction
                 }
             ]
         ];
+
+        if ($parent instanceof Shop) {
+            unset($groups['state'], $groups['status']);
+        }
+
+        return $groups;
+    }
+
+    protected function getStateFilter(): array
+    {
+        $states = request()->input('state', []);
+
+        if (!is_array($states)) {
+            $states = [$states];
+        }
+
+        return array_values(array_intersect($states, array_keys(CustomerStateEnum::labels())));
+    }
+
+    protected function getStatusFilter(): array
+    {
+        $statuses = request()->input('status', []);
+
+        if (!is_array($statuses)) {
+            $statuses = [$statuses];
+        }
+
+        return array_values(array_intersect($statuses, array_keys(CustomerStatusEnum::labels())));
+    }
+
+    protected function getUpcomingFilter(): ?string
+    {
+        $value = request()->input('upcoming');
+
+        return in_array($value, ['ready', 'out_of_stock'], true) ? $value : null;
+    }
+
+    protected function outOfStockStatuses(): array
+    {
+        return [
+            ProductStatusEnum::OUT_OF_STOCK->value,
+            ProductStatusEnum::NOT_FOR_SALE->value,
+        ];
+    }
+
+    protected function getUpcomingCounts(int $shopId): array
+    {
+        $base = UpcomingTransaction::query()
+            ->where('shop_id', $shopId)
+            ->where('state', UpcomingTransactionStateEnum::READY->value);
+
+        return [
+            'ready'      => (clone $base)->distinct()->count('customer_id'),
+            'outOfStock' => (clone $base)
+                ->whereHas('product', fn ($query) => $query->whereIn('status', $this->outOfStockStatuses()))
+                ->distinct()
+                ->count('customer_id'),
+        ];
+    }
+
+    protected function applyUpcomingFilter($query, int $shopId): void
+    {
+        if (!in_array($this->upcomingFilter, ['ready', 'out_of_stock'], true)) {
+            return;
+        }
+
+        $query->whereIn('customers.id', function ($sub) use ($shopId) {
+            $sub->select('customer_id')
+                ->from('upcoming_transactions')
+                ->where('upcoming_transactions.shop_id', $shopId)
+                ->where('upcoming_transactions.state', UpcomingTransactionStateEnum::READY->value);
+
+            if ($this->upcomingFilter === 'out_of_stock') {
+                $sub->join('products', 'products.id', '=', 'upcoming_transactions.product_id')
+                    ->whereIn('products.status', $this->outOfStockStatuses());
+            }
+        });
+    }
+
+    protected function getStateOptions(Shop $shop): array
+    {
+        $labels = CustomerStateEnum::labels();
+        $counts = CustomerStateEnum::count($shop);
+
+        return array_map(fn ($value) => [
+            'value' => $value,
+            'label' => $labels[$value],
+            'count' => $counts[$value] ?? 0,
+        ], array_keys($labels));
+    }
+
+    protected function getStatusOptions(Shop $shop): array
+    {
+        $labels = CustomerStatusEnum::labels();
+        $counts = CustomerStatusEnum::count($shop);
+
+        return array_map(fn ($value) => [
+            'value' => $value,
+            'label' => $labels[$value],
+            'count' => $counts[$value] ?? 0,
+        ], array_keys($labels));
+    }
+
+    protected function getExportFields(): array
+    {
+        $definitions = CustomersExport::fieldDefinitions();
+
+        return array_map(fn ($key) => [
+            'key'   => $key,
+            'label' => __($definitions[$key]['heading']),
+        ], array_keys($definitions));
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -97,18 +234,34 @@ class IndexCustomers extends OrgAction
 
     public function handle(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, $prefix = null): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
-            $query->where(function ($query) use ($value, $parent) {
-                $value = $this->normalizeSearchableText($value);
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $normalized = $this->normalizeSearchableText($value);
 
                 // Ignore if search token is less than 2 words
                 $searchTokens = array_values(array_filter(
-                    explode(' ', trim($value)),
+                    explode(' ', trim($normalized)),
                     fn ($t) => strlen($t) >= 2
                 ));
 
-                foreach ($searchTokens as $searchToken) {
-                    $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+                $query->where(function ($textQuery) use ($searchTokens) {
+                    foreach ($searchTokens as $searchToken) {
+                        $textQuery->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+                    }
+                });
+
+                $postalCode = str_replace(' ', '', trim($normalized));
+
+                if (strlen($postalCode) >= 2) {
+                    $query->orWhereExists(function ($existsQuery) use ($postalCode) {
+                        $existsQuery->select(DB::raw(1))
+                            ->from('addresses')
+                            ->whereColumn('addresses.id', 'customers.address_id')
+                            ->whereRaw(
+                                "regexp_replace(lower(addresses.postal_code), '[^a-z0-9]', '', 'g') LIKE ?",
+                                ["{$postalCode}%"]
+                            );
+                    });
                 }
             });
         });
@@ -140,6 +293,42 @@ class IndexCustomers extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Customer::class);
 
+        if ($parent instanceof Shop) {
+            $this->stateFilter = $this->getStateFilter();
+            $this->statusFilter = $this->getStatusFilter();
+            $this->upcomingFilter = $this->getUpcomingFilter();
+
+            $upcomingCounts = $this->getUpcomingCounts($parent->id);
+            $this->upcomingReadyCount = $upcomingCounts['ready'];
+            $this->upcomingOutOfStockCount = $upcomingCounts['outOfStock'];
+
+            $recipe = request()->input('filters', []);
+
+            if (is_array($recipe) && $this->recipeHasFilters($recipe)) {
+                $this->customerFilters = $recipe;
+
+                $recipeQuery = GetCustomersQueryByRecipe::run($parent->id, $recipe);
+
+                $queryBuilder->whereIn('customers.id', (clone $recipeQuery)->select('customers.id'));
+
+                $estimateQuery = (clone $recipeQuery);
+            } else {
+                $estimateQuery = Customer::where('shop_id', $parent->id);
+            }
+
+            if (count($this->stateFilter) > 0) {
+                $estimateQuery->whereIn('customers.state', $this->stateFilter);
+            }
+
+            if (count($this->statusFilter) > 0) {
+                $estimateQuery->whereIn('customers.status', $this->statusFilter);
+            }
+
+            $this->applyUpcomingFilter($estimateQuery, $parent->id);
+
+            $this->estimatedRecipients = $estimateQuery->count('customers.id');
+        }
+
         if ($parent instanceof Organisation || $parent instanceof Shop) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
@@ -149,6 +338,18 @@ class IndexCustomers extends OrgAction
                     prefix: $prefix
                 );
             }
+        }
+
+        if ($parent instanceof Shop) {
+            if (count($this->stateFilter) > 0) {
+                $queryBuilder->whereIn('customers.state', $this->stateFilter);
+            }
+
+            if (count($this->statusFilter) > 0) {
+                $queryBuilder->whereIn('customers.status', $this->statusFilter);
+            }
+
+            $this->applyUpcomingFilter($queryBuilder, $parent->id);
         }
 
         if ($parent instanceof Product) {
@@ -216,12 +417,19 @@ class IndexCustomers extends OrgAction
         }
 
         if ($parent instanceof TrafficSource) {
-            $queryBuilder->withBetweenDates(['registered_at', 'last_invoiced_at']);
+            $queryBuilder->withBetweenDates(['last_invoiced_at', 'registered_at']);
         } else {
             $queryBuilder->withBetweenDates(['registered_at']);
         }
 
         $queryBuilder->with('tags');
+
+        if ($this->upcomingFilter !== null) {
+            $queryBuilder->with(['upcomingTransactions' => function ($query) {
+                $query->where('state', UpcomingTransactionStateEnum::READY->value)
+                    ->with('product:id,code,name,status');
+            }]);
+        }
 
         return $queryBuilder
             ->defaultSort('-created_at')
@@ -232,6 +440,7 @@ class IndexCustomers extends OrgAction
                 'customers.name',
                 'customers.slug',
                 'customers.created_at',
+                'customers.is_vip',
                 'customer_stats.number_current_portfolios',
                 'customer_stats.number_current_customer_clients',
                 'customer_stats.last_invoiced_at',
@@ -322,8 +531,17 @@ class IndexCustomers extends OrgAction
                 $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($this->upcomingFilter !== null) {
+                $table->column(
+                    key: 'upcoming_products',
+                    label: __('Upcoming Products'),
+                    canBeHidden: false
+                );
+            }
+
+            $table->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
 
             if ($isDropshipping) {
                 $table->column(
@@ -382,23 +600,60 @@ class IndexCustomers extends OrgAction
         }
 
         $scope  = $this->parent;
-        $action = null;
+        $action = [];
+
+        $filterProps = [];
+
+        if ($this->parent instanceof Shop) {
+            $filterProps = [
+                'filtersStructure'    => GetCustomerFilterStructure::run($this->parent),
+                'filters'             => $this->customerFilters,
+                'estimatedRecipients' => $this->estimatedRecipients,
+                'shop_id'             => $this->parent->id,
+                'shop_slug'           => $this->parent->slug,
+                'stateOptions'        => $this->getStateOptions($this->parent),
+                'stateFilter'         => $this->stateFilter,
+                'statusOptions'       => $this->getStatusOptions($this->parent),
+                'statusFilter'        => $this->statusFilter,
+                'upcomingReadyCount'  => $this->upcomingReadyCount,
+                'upcomingOutOfStockCount' => $this->upcomingOutOfStockCount,
+                'upcomingFilter'      => $this->upcomingFilter,
+                'exportFields'        => $this->getExportFields(),
+            ];
+        }
 
         if (!$scope instanceof Group && $this->canEdit && $this->parent->engine !== ShopEngineEnum::FAIRE) {
-            $action = [
-                [
-                    'type'    => 'button',
-                    'style'   => 'create',
-                    'tooltip' => __('New Customer'),
-                    'label'   => __('New Customer'),
-                    'route'   => [
-                        'name'       => 'grp.org.shops.show.crm.customers.create',
-                        'parameters' => [
-                            'organisation' => $scope->organisation->slug,
-                            'shop'         => $scope->slug
-                        ]
+            $action[] = [
+                'type'    => 'button',
+                'style'   => 'create',
+                'tooltip' => __('New Customer'),
+                'label'   => __('New Customer'),
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.crm.customers.create',
+                    'parameters' => [
+                        'organisation' => $scope->organisation->slug,
+                        'shop'         => $scope->slug
                     ]
-                ],
+                ]
+            ];
+        }
+
+        if ($this->parent instanceof Shop && $this->canEdit && filled(data_get($this->parent->settings, 'google_ads.refresh_token'))) {
+            $action[] = [
+                'type'        => 'button',
+                'style'       => 'tertiary',
+                'icon'        => ['fab', 'fa-google'],
+                'tooltip'     => __('Sync all customers to Google Ads'),
+                'label'       => __('Sync to Google Ads'),
+                'fullLoading' => true,
+                'route'       => [
+                    'method'     => 'post',
+                    'name'       => 'grp.org.shops.show.crm.customers.sync_to_google_ads',
+                    'parameters' => [
+                        'organisation' => $this->parent->organisation->slug,
+                        'shop'         => $this->parent->slug
+                    ]
+                ]
             ];
         }
 
@@ -439,7 +694,8 @@ class IndexCustomers extends OrgAction
                         ]
                     ]
                 ],
-                'customers' => CustomersResource::collection($customers)
+                'customers' => CustomersResource::collection($customers),
+                ...$filterProps,
             ]
         )->table($this->tableStructure(parent: $this->parent));
     }

@@ -17,13 +17,12 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasEmail;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
 use App\Models\Traits\InCustomer;
 use App\Models\Traits\IsUserable;
 use App\Models\Web\Website;
-use App\Models\WebUserFailedLogin;
-use App\Models\WebUserLogin;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -34,9 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
-use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Sluggable\SlugOptions;
-use App\Models\Traits\HasHistory;
 
 /**
  * App\Models\CRM\WebUser
@@ -84,13 +81,13 @@ use App\Models\Traits\HasHistory;
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\CRM\WebUserPasswordReset> $passwordResets
  * @property-read Collection<int, \Spatie\Permission\Models\Permission> $permissions
- * @property-read Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read Collection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read \App\Models\CRM\WebUserStats|null $stats
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read Collection<int, WebUserFailedLogin> $webUserFailedLogins
- * @property-read Collection<int, WebUserLogin> $webUserLogins
+ * @property-read Collection<int, \App\Models\CRM\WebUserFailedLogin> $webUserFailedLogins
+ * @property-read Collection<int, \App\Models\CRM\WebUserLogin> $webUserLogins
  * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Website|null $website
  * @method static \Database\Factories\CRM\WebUserFactory factory($count = null, $state = [])
@@ -109,7 +106,6 @@ use App\Models\Traits\HasHistory;
 class WebUser extends Authenticatable implements HasMedia, Auditable
 {
     use IsUserable;
-    use HasPermissions;
     use HasEmail;
     use HasImage;
     use InCustomer;

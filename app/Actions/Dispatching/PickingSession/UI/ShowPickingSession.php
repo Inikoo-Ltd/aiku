@@ -88,6 +88,8 @@ class ShowPickingSession extends OrgAction
         $actions   = null;
         $navigation = PickingSessionTabsEnum::navigation();
 
+        $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
+
 
         if (!request()->input('tab')) {
             if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
@@ -126,7 +128,7 @@ class ShowPickingSession extends OrgAction
         }
 
         $props = [
-            'title'       => $title,
+            'title'       => $title . ' (' . $pickingSession->reference . ')',
             'breadcrumbs' => $this->getBreadcrumbs(
                 $pickingSession,
                 $request->route()->getName(),
@@ -150,7 +152,34 @@ class ShowPickingSession extends OrgAction
                 'current'    => $this->tab,
                 'navigation' => $navigation,
             ],
-            'data' => PickingSessionResource::make($pickingSession)
+            'data' => PickingSessionResource::make($pickingSession),
+
+            'allow_waiting'               => $allowWaiting,
+            'allow_picker_set_not_picked' => !$allowWaiting || (bool)data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false),
+
+            /*
+             * The picker of every note in the session is decided here, so this is the one safe
+             * place to hand the work to somebody else: doing it note by note would leave two
+             * people picking the same one.
+             */
+            'picker'                      => $pickingSession->user ? [
+                'id'           => $pickingSession->user->id,
+                'contact_name' => $pickingSession->user->contact_name,
+            ] : null,
+            'routes'                      => [
+                'update'       => [
+                    'name'       => 'grp.models.picking_session.update',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id,
+                    ],
+                ],
+                'pickers_list' => [
+                    'name'       => 'grp.json.employees.picker_users',
+                    'parameters' => [
+                        'organisation' => $pickingSession->organisation->slug,
+                    ],
+                ],
+            ],
         ];
 
 
@@ -178,17 +207,17 @@ class ShowPickingSession extends OrgAction
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
                     fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
-                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
+                    : Inertia::optional(fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
 
             ];
         } else {
             return [
                 PickingSessionTabsEnum::GROUPED->value => $this->tab == PickingSessionTabsEnum::GROUPED->value ?
                     fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession))
-                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession))),
+                    : Inertia::optional(fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession))),
                 PickingSessionTabsEnum::ITEMIZED->value => $this->tab == PickingSessionTabsEnum::ITEMIZED->value ?
                     fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))
-                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))),
+                    : Inertia::optional(fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))),
 
             ];
         }

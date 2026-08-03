@@ -22,7 +22,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { faPresentation, faSearch, faCube, faText, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, faHeart as falHeart, faExternalLink, faBrowser, faMobile, faSignIn as falSignIn, faSignOut } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faHeading, faHeart, faLowVision, faSignIn } from '@far'
+import { faHeading, faHeart, faLowVision, faSignIn, faThLarge } from '@fas'
 import { faEye } from '@fad'
 
 import { trans } from 'laravel-vue-i18n'
@@ -296,7 +296,7 @@ watch(currentView, (newValue) => {
 
                         <div class="py-1 px-2 cursor-pointer" title="template" v-tooltip="'Template'"
                             @click="isModalOpen = true">
-                            <FontAwesomeIcon icon="fas fa-th-large" aria-hidden='true' />
+                            <FontAwesomeIcon :icon="faThLarge" aria-hidden='true' />
                         </div>
                     </div>
 

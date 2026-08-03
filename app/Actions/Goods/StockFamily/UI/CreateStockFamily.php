@@ -31,9 +31,9 @@ class CreateStockFamily extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('New SKU family'),
+                'title'       => __('New SKO family'),
                 'pageHead'    => [
-                    'title'        => __('New SKU family'),
+                    'title'        => __('New SKO family'),
                     'icon'         => [
                         'title' => __("stock's families"),
                         'icon'  => 'fal fa-boxes-alt'

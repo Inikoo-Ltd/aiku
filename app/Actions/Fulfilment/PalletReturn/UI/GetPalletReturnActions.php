@@ -88,7 +88,7 @@ class GetPalletReturnActions
             $isDisabled = !($palletReturn->estimated_delivery_date) || !$hasSelectedStoredItem;
 
             if (!$hasSelectedStoredItem) {
-                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __("Select Customer's SKU before submit");
+                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __("Select Customer's SKO before submit");
             } else {
                 $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit');
             }
@@ -451,6 +451,7 @@ class GetPalletReturnActions
     public function addCancelButton(PalletReturn $palletReturn, array $actions): array
     {
         if (in_array($palletReturn->state, [
+            PalletReturnStateEnum::IN_PROCESS,
             PalletReturnStateEnum::CONFIRMED,
             PalletReturnStateEnum::PICKING,
             PalletReturnStateEnum::PICKED,

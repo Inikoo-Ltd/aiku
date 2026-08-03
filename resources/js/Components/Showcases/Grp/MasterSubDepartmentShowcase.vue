@@ -1,0 +1,118 @@
+<script setup lang="ts">
+import { faUnlink, faThLarge, faBars, faSeedling, faCheck, faInfoCircle } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { ref, provide } from 'vue'
+import { Image as ImageTS } from '@/types/Image'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { trans } from "laravel-vue-i18n"
+import ProductCategoryCard from "@/Components/ProductCategoryCard.vue"
+import { Message } from "primevue"
+import { Link, router } from "@inertiajs/vue3";
+import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue"
+import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue"
+import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
+
+library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
+
+const props = defineProps<{
+    data: {
+        subDepartment: {
+            slug: string
+            image_id: ImageTS | string | null
+            code: string
+            name: string
+            state: string
+            created_at: string
+            updated_at: string
+            description: string
+            description_title: string
+            description_extra: string
+            stats: any
+        }
+        storeFamilyRoute: any
+        shopsData: any
+    },
+    salesData?: object
+}>()
+
+const isModalOpen = ref(false)
+provide('isModalOpen', isModalOpen)
+
+const navigateTo = () => {
+    const routeParams = route().params;
+
+    switch (route().current()) {
+        case "grp.masters.master_shops.show.master_sub_departments.show":
+            router.visit(route("grp.masters.master_shops.show.master_sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            }));
+            break;
+        default:
+            router.visit(route("grp.masters.master_shops.show.master_departments.show.master_sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            }));
+            break;
+    }
+}
+
+const showDialog = ref<boolean>(false)
+
+const openFamilyModal = () => {
+    showDialog.value = true
+}
+</script>
+
+<template>
+    <div class="px-4 pb-8 m-5">
+        <div class="space-y-4">
+
+            <Message
+                v-if="!data.subDepartment.description || !data.subDepartment.description_title || !data.subDepartment.description_extra"
+                severity="error" closable>
+                <template #icon>
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </template>
+                <div class="ml-2">
+                    <div class="flex gap-2 flex-wrap box-border">
+                        <span v-if="!data.subDepartment.description_title">{{ trans("Description Title is missing")
+                            }}.</span>
+                        <span v-if="!data.subDepartment.description">{{ trans("Description is missing") }}.</span>
+                        <span v-if="!data.subDepartment.description_extra">{{ trans("Extra description is missing")
+                            }}.</span>
+                    </div>
+                    {{ trans("Please") }}
+                    <Link @click="navigateTo()" class="underline font-bold">
+                    {{ trans("add missing description fields") }}
+                    </Link>.
+                </div>
+            </Message>
+        </div>
+
+         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
+            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                  <ProductCategoryCard :data="data.subDepartment" />
+            </div>
+            <div class="col-span-1 md:col-span-2 lg:col-span-4">
+                <!-- Spacing / Content area -->
+            </div>
+            <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
+                <!-- Sales Analytics Compact -->
+                <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
+
+                <!-- Product State Stats -->
+                <ProductCategoryStats v-if="data.subDepartment.stats" :stats="data.subDepartment.stats" />
+
+                <!-- Master Navigation -->
+                <MasterNavigation
+                    sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
+                    :families-event="openFamilyModal" isAddFamilies />
+            </div>
+        </div>
+
+    </div>
+    <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="data.storeFamilyRoute"
+        @update:show-dialog="(value) => showDialog = value" :shopsData="data.shopsData" />
+</template>

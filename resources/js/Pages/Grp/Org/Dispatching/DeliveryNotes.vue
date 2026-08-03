@@ -32,7 +32,6 @@ const props = defineProps<{
 }>()
 
 const selectedDeliveryNotes = ref<number[]>([])
-const layoutStore = inject("layout", layoutStructure);
 const loading=ref(false)
 
 // const pickingSessionRoute = {
@@ -88,14 +87,15 @@ const isHidden = computed(() => {
   <PageHeading :data="pageHead">
     <template #other>
         <Button
-        v-if="selectedDeliveryNotes.length > 0 && !isHidden"
+        v-if="!isHidden && todo"
         type="create"
-        :label="trans('Picking session')"
+        :label="trans('Picking session') + ' ('+ selectedDeliveryNotes.length + ')'"
         :loading="loading"
+        :disabled="selectedDeliveryNotes.length <= 0"
         @click="createPickingSession"
       />
     </template>
   </PageHeading>
-   <HasPickTableDeliveryNote v-if="todo" :data="data" v-model:selectedDeliveryNotes="selectedDeliveryNotes"/>
+  <HasPickTableDeliveryNote v-if="todo" :data="data" v-model:selectedDeliveryNotes="selectedDeliveryNotes"/>
   <TableDeliveryNotes v-else :data="data" />
 </template>

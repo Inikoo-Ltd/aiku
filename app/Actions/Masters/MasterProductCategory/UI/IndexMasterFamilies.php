@@ -15,6 +15,7 @@ use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigati
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -36,6 +37,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMasterFamilies extends OrgAction
 {
+    use WithMastersAuthorisation;
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
     use WithMasterSubDepartmentSubNavigation;
@@ -436,6 +438,7 @@ class IndexMasterFamilies extends OrgAction
             'title'       => __('Master Families'),
             'pageHead'    => [
                 'title'         => $title,
+                'color'         => '#c026d3',
                 'icon'          => $icon,
                 'model'         => $model,
                 'afterTitle'    => $afterTitle,
@@ -476,11 +479,11 @@ class IndexMasterFamilies extends OrgAction
 
         $baseData[MasterProductCategoryTabsEnum::INDEX->value] = $this->tab == MasterProductCategoryTabsEnum::INDEX->value ?
             fn () => MasterFamiliesResource::collection($masterFamilies)
-            : Inertia::lazy(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::INDEX->value)));
+            : Inertia::optional(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::INDEX->value)));
 
         $baseData[MasterProductCategoryTabsEnum::SALES->value] = $this->tab == MasterProductCategoryTabsEnum::SALES->value ?
             fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::SALES->value))
-            : Inertia::lazy(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::SALES->value)));
+            : Inertia::optional(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::SALES->value)));
 
         return Inertia::render('Masters/MasterFamilies', $baseData)
             ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))
@@ -490,6 +493,10 @@ class IndexMasterFamilies extends OrgAction
     public function getActions(): array
     {
         $actions = [];
+
+        if (!$this->canEdit) {
+            return $actions;
+        }
 
         if ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT || $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
             $actions[] = [

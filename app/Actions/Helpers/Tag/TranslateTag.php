@@ -23,14 +23,14 @@ class TranslateTag
 
     public function handle(Tag $tag): Tag
     {
-        $english          = Language::where('code', 'en')->first();
+        $english       = Language::where('code', 'en')->first();
         $shopLanguages = Shop::pluck('language_id')->unique()->toArray();
 
         $translations = [];
         foreach ($shopLanguages as $languageId) {
             $language = Language::find($languageId);
 
-            $translatedLabel = Translate::run($tag->name, $english, $language);
+            $translatedLabel               = Translate::run($tag->name, $english, $language, 'gpt-5-nano');
             $translations[$language->code] = $translatedLabel;
         }
         $tag->setTranslations('label', $translations);

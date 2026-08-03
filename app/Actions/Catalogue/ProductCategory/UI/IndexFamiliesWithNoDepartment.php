@@ -137,7 +137,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $families, ActionRequest $request): Response
     {
-        $navigation = ProductCategoryTabsEnum::navigation();
+        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
 
         unset($navigation[ProductCategoryTabsEnum::SALES->value]);
 
@@ -161,7 +161,8 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                 ),
                 'title'       => $title,
                 'pageHead'    => [
-                    'title'     => $title,
+                    'title'       => $title,
+                    'is_negative' => true,
                     'icon'      => $icon,
                     'model'     => $model,
                     'iconRight' => $iconRight,
@@ -188,7 +189,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                 'is_orphan_families'                  => true,
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    : Inertia::optional(fn () => FamiliesResource::collection($families)),
             ]
         )->table($this->tableStructure(shop: $this->shop, prefix: ProductCategoryTabsEnum::INDEX->value));
     }

@@ -24,9 +24,9 @@ class UpdateTiktokUser extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser, array $modelData): TiktokUser
     {
-        if (Arr::has($modelData, 'tiktok_shop_id') && Arr::has($modelData, 'tiktok_shop_chiper')) {
+        /*if (Arr::has($modelData, 'tiktok_shop_id') && Arr::has($modelData, 'tiktok_shop_chiper')) {
             $tiktokUser = CloneTiktokUser::run($tiktokUser, $modelData);
-        }
+        }*/
 
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $this->update($tiktokUser, $modelData);

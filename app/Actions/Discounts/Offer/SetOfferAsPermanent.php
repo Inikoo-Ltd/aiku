@@ -9,10 +9,10 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
+use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\Discounts\OfferAllowance\SetOfferAllowanceAsPermanent;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
-use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
@@ -26,10 +26,12 @@ use Lorisleiva\Actions\ActionRequest;
 class SetOfferAsPermanent extends OrgAction
 {
     use WithActionUpdate;
-
+    use HandlesOfferSideEffects;
 
     public function handle(Offer $offer): Offer
     {
+        $currentStatus = $offer->status;
+
         $modelData = [
             'state'    => OfferStateEnum::ACTIVE,
             'status'   => true,
@@ -54,7 +56,11 @@ class SetOfferAsPermanent extends OrgAction
         ShopHydrateOffers::dispatch($offerCampaign->shop)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffers::dispatch($offerCampaign)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffersState::run($offer->offerCampaign);
-        RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id);
+
+
+        if ($currentStatus != $offer->status) {
+            $this->handleOfferSideEffects($offer);
+        }
 
         return $offer;
     }

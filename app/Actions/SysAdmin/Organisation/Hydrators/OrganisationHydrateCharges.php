@@ -30,6 +30,7 @@ class OrganisationHydrateCharges implements ShouldBeUnique
     public function handle(Organisation $organisation): void
     {
         $stats = [
+            'number_charges'            => $organisation->charges()->count(),
             'number_assets_type_charge' => $organisation->charges()->count(),
         ];
 

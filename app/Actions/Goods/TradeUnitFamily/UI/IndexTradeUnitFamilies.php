@@ -9,7 +9,7 @@
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Goods\TradeUnitFamiliesTabsEnum;
@@ -26,7 +26,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexTradeUnitFamilies extends GrpAction
+class IndexTradeUnitFamilies extends OrgAction
 {
     use WithGoodsAuthorisation;
 
@@ -35,7 +35,7 @@ class IndexTradeUnitFamilies extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitFamiliesTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitFamiliesTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitFamiliesTabsEnum::INDEX->value);
     }
@@ -186,6 +186,7 @@ class IndexTradeUnitFamilies extends GrpAction
                 'title'       => __('Trade Unit Families'),
                 'pageHead'    => [
                     'title'     => __('Trade Unit Families'),
+                    'color'     => '#7DA78C',
                     'actions'   => $actions,
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-atom-alt'],
@@ -199,11 +200,11 @@ class IndexTradeUnitFamilies extends GrpAction
 
                 TradeUnitFamiliesTabsEnum::INDEX->value => $this->tab == TradeUnitFamiliesTabsEnum::INDEX->value
                     ? fn () => TradeUnitFamiliesResource::collection($tradeUnitFamilies)
-                    : Inertia::lazy(fn () => TradeUnitFamiliesResource::collection($tradeUnitFamilies)),
+                    : Inertia::optional(fn () => TradeUnitFamiliesResource::collection($tradeUnitFamilies)),
 
                 TradeUnitFamiliesTabsEnum::SALES->value => $this->tab == TradeUnitFamiliesTabsEnum::SALES->value
                     ? fn () => TradeUnitFamiliesResource::collection($this->handle(prefix: TradeUnitFamiliesTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => TradeUnitFamiliesResource::collection($this->handle(prefix: TradeUnitFamiliesTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => TradeUnitFamiliesResource::collection($this->handle(prefix: TradeUnitFamiliesTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitFamiliesTabsEnum::INDEX->value))
          ->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitFamiliesTabsEnum::SALES->value, sales: true));

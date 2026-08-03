@@ -8,10 +8,10 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\Dropshipping\WooCommerce\Traits\WithWooCommerceAuthorizationToken;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\WooCommerceUser;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -20,21 +20,23 @@ class ReAuthorizeRetinaWooCommerceUser extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
-
-    public $commandSignature = 'retina:ds:authorize-woo {customer} {name} {url}';
+    use WithWooCommerceAuthorizationToken;
 
     public function handle(WooCommerceUser $wooCommerceUser): string
     {
-        $endpoint = '/wc-auth/v1/authorize';
+        $token = $this->storeWooAuthorizationToken([
+            'woo_commerce_user_id' => $wooCommerceUser->id
+        ]);
+
         $params = [
             'app_name' => 'AW Connect',
             'scope' => 'read_write',
-            'user_id' => $wooCommerceUser->id,
+            'user_id' => $token,
             'return_url' => route('retina.dropshipping.customer_sales_channels.index'),
             'callback_url' => route('webhooks.woo.callback')
         ];
 
-        return Arr::get($wooCommerceUser, 'settings.credentials.store_url').$endpoint.'?'.http_build_query($params);
+        return rtrim($wooCommerceUser->store_url, '/') . '/wc-auth/v1/authorize?' . http_build_query($params);
     }
 
     public function jsonResponse(string $url): string

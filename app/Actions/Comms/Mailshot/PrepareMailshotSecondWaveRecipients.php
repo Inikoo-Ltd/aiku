@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
-use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
@@ -89,8 +88,10 @@ class PrepareMailshotSecondWaveRecipients
                 }
             }
 
-            ProcessSendMailshot::dispatch($mailshotId, $customerIds);
-            $this->countRecipients += $numValidEmails;
+            if (!empty($customerIds)) {
+                ProcessSendMailshot::dispatch($mailshotId, $customerIds);
+                $this->countRecipients += $numValidEmails;
+            }
         });
 
         $mailshot->update([
@@ -101,7 +102,6 @@ class PrepareMailshotSecondWaveRecipients
 
         GroupHydrateMailshots::dispatch($mailshot->group);
         OrganisationHydrateMailshots::dispatch($mailshot->organisation);
-        OutboxHydrateMailshots::dispatch($mailshot->outbox);
         ShopHydrateMailshots::dispatch($mailshot->shop);
     }
 

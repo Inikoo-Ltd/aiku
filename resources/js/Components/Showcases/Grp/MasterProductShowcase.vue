@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, ref } from "vue"
+import { computed, inject, ref, useTemplateRef } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faTrash as falTrash,
@@ -19,7 +19,7 @@ import {
 	faCheckCircle
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faThumbtack } from "@fas"
-import { faImage } from "@far"
+import { faImage, faStarfighter, faStarshipFreighter } from "@far"
 import ImagePrime from "primevue/image"
 import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
@@ -29,12 +29,17 @@ import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterPro
 import AttachmentCard from "@/Components/AttachmentCard.vue"
 import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
+import Popover from "primevue/popover"
 import { Link, router } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/layout"
 import { provide } from "vue"
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
+import { faWarning } from "@fortawesome/free-solid-svg-icons"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { createReusableTemplate } from "@vueuse/core"
+import { Disclosure, DisclosureButton } from "@headlessui/vue"
 
 
 library.add(
@@ -66,6 +71,10 @@ const props = defineProps<{
 	handleTabUpdate: Function
 	salesData?: any
 	data: {
+		rebel_prices  : {},
+        rebel_rrp : {}
+		majorCurrencies?: string[]
+		pricingCosts?: Record<string, number | null> | null
 		availability_status: {
 			is_for_sale: boolean
 			product: {}[]
@@ -78,6 +87,8 @@ const props = defineProps<{
 			attachImageRoute: routeType
 			deleteImageRoute: routeType
 			imagesUploadedRoutes: routeType
+			master_prices : any
+			master_rrp : any
 			webpage_url: string
 			attachment_box?: {}
 			translation_box: {
@@ -145,6 +156,91 @@ const props = defineProps<{
 	const unique = new Map(tags.map(tag => [tag.id, tag]))
 	return [...unique.values()]
 }) */
+const locale = inject('locale', aikuLocaleStructure)
+
+const rebelPricePopover = useTemplateRef('rebelPricePopover')
+type RebelPrice = {
+	id: number
+	shop_id: number
+	shop_code: string
+	currency_code: string
+	value: number | null
+	currency_symbol: string
+}
+const rebelPriceList = computed<RebelPrice[]>(() => Object.values(props.data?.rebel_prices ?? {}))
+
+const toggleRebelPrice = (event: Event) => {
+	rebelPricePopover.value?.toggle(event)
+}
+
+const rebelRrpPopover = useTemplateRef('rebelRrpPopover')
+const rebelRrpList = computed<RebelPrice[]>(() => Object.values(props.data?.rebel_rrp ?? {}))
+
+const toggleRebelRrp = (event: Event) => {
+	rebelRrpPopover.value?.toggle(event)
+}
+
+type MasterPrices = Record<string, { value: string | number | null; independent?: boolean }>
+
+// Majors come from the master shop's price_exchanges config (same as the pricing
+// table); minors the user detached from the exchange rate are shown alongside them
+const majorCodes = computed<string[]>(() => props.data?.majorCurrencies ?? ['EUR', 'GBP'])
+
+const priceEntries = (prices?: MasterPrices) =>
+	Object.entries(prices ?? {})
+		.filter(([, entry]) => entry?.value != null && Number(entry.value) !== 0)
+		.map(([code, entry]) => ({ code, value: entry.value, independent: !!entry.independent }))
+
+const topPrices = (prices?: MasterPrices) => {
+	const entries = priceEntries(prices)
+	return majorCodes.value
+		.map(code => entries.find(entry => entry.code === code))
+		.filter((entry): entry is { code: string; value: string | number | null; independent: boolean } => Boolean(entry))
+}
+
+const independentMinorPrices = (prices?: MasterPrices) =>
+	priceEntries(prices).filter(entry => !majorCodes.value.includes(entry.code) && entry.independent)
+
+const restPrices = (prices?: MasterPrices) =>
+	priceEntries(prices).filter(entry => !majorCodes.value.includes(entry.code) && !entry.independent)
+
+const hasPrices = (prices?: MasterPrices) => priceEntries(prices).length > 0
+
+const [DefineMasterPriceBlock, ReuseMasterPriceBlock] = createReusableTemplate<{
+	title: string
+	prices?: MasterPrices
+	rebelList: RebelPrice[]
+	toggleRebel: (event: Event) => void
+	emptyTooltip: string
+	perUnits?: number
+	costs?: Record<string, number | null> | null
+	counterpart?: MasterPrices
+}>()
+
+// RRP is stored per outer but displayed per unit, same as the pricing table
+const formatBlockValue = (code: string, value: string | number | null, perUnits?: number) =>
+	locale.currencyFormat(code, perUnits && perUnits > 0 ? Number(value) / perUnits : Number(value))
+
+// Same margins as the pricing table: price margin vs effective cost when `costs`
+// is set, retail margin vs the price record when `counterpart` is set
+const blockMarginPct = (
+	code: string,
+	value: string | number | null,
+	costs?: Record<string, number | null> | null,
+	counterpart?: MasterPrices
+): string | null => {
+	const amount = Number(value)
+	if (!amount) {
+		return null
+	}
+
+	const base = costs ? (costs[code] ?? null) : Number(counterpart?.[code]?.value ?? 0) || null
+	if (!base) {
+		return null
+	}
+
+	return Math.round(((amount - base) / amount) * 100) + '%'
+}
 
 const tradeUnitTags = computed(() => {
 	const list = props.data?.trade_units ?? []
@@ -208,7 +304,72 @@ const isModalProductForSale = ref(false)
 
 
 <template>
-	<div class="w-full  px-4 py-3 mb-3 shadow-sm grid grid-cols-2">
+	<DefineMasterPriceBlock v-slot="{ title, prices, rebelList, toggleRebel, emptyTooltip, perUnits, costs, counterpart }">
+		<Disclosure as="div" v-slot="{ open }" class="w-full">
+			<div
+				class="border border-solid rounded-md w-full px-3 py-1.5"
+				:class="hasPrices(prices) ? 'border-gray-300' : 'border-red-700 text-red-500 animate-pulse'"
+				v-tooltip="hasPrices(prices) ? '' : emptyTooltip"
+			>
+				<div class="flex items-start justify-between gap-3">
+					<div class="flex items-center gap-2 pt-0.5 text-xs font-semibold text-gray-500">
+						<span>{{ title }}</span>
+						<FontAwesomeIcon v-if="!hasPrices(prices)" :icon="faWarning" />
+						<span
+							v-if="rebelList.length > 0"
+							class="inline-flex items-center gap-1 text-yellow-500 hover:text-yellow-600 cursor-pointer"
+							v-tooltip="trans('Show rebel prices (products not following master pricing)')"
+							@click.stop="toggleRebel"
+						>
+							<FontAwesomeIcon :icon="faStarfighter" />
+							<span class="text-xs font-bold">{{ rebelList.length }}</span>
+						</span>
+					</div>
+					<div class="grid grid-cols-[auto_auto] justify-end gap-x-2 gap-y-0.5 tabular-nums text-sm font-medium text-gray-700">
+					<template v-for="price in topPrices(prices)" :key="price.code">
+						<span
+							class="self-center text-right text-xs font-normal text-gray-400"
+							v-tooltip="costs ? trans('Margin vs effective cost') : trans('Retail margin vs price')"
+						>{{ blockMarginPct(price.code, price.value, costs, counterpart) ?? '' }}</span>
+						<span class="text-right">{{ formatBlockValue(price.code, price.value, perUnits) }}</span>
+					</template>
+					<template v-for="price in independentMinorPrices(prices)" :key="price.code">
+						<span
+							class="self-center text-right text-xs font-normal text-gray-400"
+							v-tooltip="costs ? trans('Margin vs effective cost') : trans('Retail margin vs price')"
+						>{{ blockMarginPct(price.code, price.value, costs, counterpart) ?? '' }}</span>
+						<span class="text-right text-green-600" v-tooltip="trans('Independent price')">
+							{{ formatBlockValue(price.code, price.value, perUnits) }}
+						</span>
+					</template>
+					<DisclosureButton
+						v-if="restPrices(prices).length > 0"
+						class="col-span-2 text-right text-xs font-normal text-gray-400 hover:text-gray-600"
+					>
+						{{ trans('Minor currencies') }} ({{ restPrices(prices).length }})
+						<FontAwesomeIcon
+							:icon="faChevronDown"
+							class="text-xs transition-transform duration-200"
+							:class="{ '-rotate-90': !open }"
+						/>
+					</DisclosureButton>
+					<template v-if="open">
+						<template v-for="price in restPrices(prices)" :key="price.code">
+							<span
+								class="self-center text-right text-xs font-normal text-gray-400"
+							>{{ blockMarginPct(price.code, price.value, costs, counterpart) ?? '' }}</span>
+							<span class="text-right text-sm font-normal text-gray-500">
+								{{ formatBlockValue(price.code, price.value, perUnits) }}
+							</span>
+						</template>
+					</template>
+					</div>
+				</div>
+			</div>
+		</Disclosure>
+	</DefineMasterPriceBlock>
+
+	<div class="w-full pl-4 pr-3 py-3 mb-3 shadow-sm grid grid-cols-2">
 		<div class="text-xl font-semibold text-gray-800 whitespace-pre-wrap justify-self-start">
 			<ProductUnitLabel v-if="data.masterProduct?.units" :units="data.masterProduct?.units"
 				:unit="data.masterProduct?.unit" class="mr-2" />
@@ -226,7 +387,7 @@ const isModalProductForSale = ref(false)
 			<span v-if="data.availability_status"
 				v-on:click="isModalProductForSale = true"
 				v-tooltip="getTooltips()"
-				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer mx-2"
+				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer "
 				:class="data.availability_status.status ? 'border-green-500' : 'border-red-500'"
 			>
 				{{ data.availability_status.status ? trans('For Sale') : trans('Not For Sale') }}
@@ -242,52 +403,126 @@ const isModalProductForSale = ref(false)
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mx-3 lg:mx-0 mt-2">
-		<!-- Sidebar -->
-		<div class="space-y-4 lg:space-y-6">
-			<!-- Master Product Tags -->
-			<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
-				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
-					class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
-					{{ tag.name }}
-				</span>
-			</dd>
-			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white   p-4 lg:p-5">
-				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
-					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
-					<!-- <div class="text-sm italic text-gray-500">
-						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">images</span>
-					</div> -->
-				</div>
-				<div v-else>
-					<div
-						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
-						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+	<!-- The right sidebar (prices, analytics) always keeps its width; the content area
+	     gets the rest, with the image beside the summary only when there is room -->
+	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mx-0 lg:grid-cols-[minmax(0,1fr)_minmax(385px,420px)]">
+		<!-- Content: image + summary. The summary is capped; spare width goes first to
+		     the image column (up to its own cap), the rest stays as breathing room -->
+		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
+			<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]">
+				<!-- Master Product Tags -->
+				<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
+					<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
+						class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+						{{ tag.name }}
+					</span>
+				</dd>
+				<!-- Image Preview & Thumbnails -->
+				<div class="bg-white p-4 lg:p-5">
+					<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
+						<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
 					</div>
-					<!-- <div class="mt-2 text-sm italic text-gray-500">
-						Manage images in tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div> -->
+					<div v-else>
+						<div
+							class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+							<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+							<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+						</div>
+					</div>
 				</div>
+			</div>
+
+			<!-- Product Summary -->
+			<div class="min-w-0 flex-1 max-w-2xl">
+				<TradeUnitMasterProductSummary
+					:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
+					:gpsr="data.gpsr"
+					:properties="data.properties"
+					:attachments="data.attachment_box"
+				/>
 			</div>
 		</div>
 
-		<!-- Product Summary - spans 2 columns -->
-		<div class="lg:col-span-2">
-			<TradeUnitMasterProductSummary
-				:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
-				:gpsr="data.gpsr"
-				:properties="data.properties"
-				:attachments="data.attachment_box"
-			/>
-		</div>
-
         <!-- Sales Analytics - right sidebar -->
-        <div v-if="salesData">
-            <SalesAnalyticsCompact :salesData="salesData" class="mr-2" />
+        <div class="min-w-0">
+			<div class="grid justify-items-end pr-3 pb-2 gap-2">
+				<ReuseMasterPriceBlock
+					:title="trans('Price / Outer')"
+					:prices="data.masterProduct.master_prices"
+					:rebelList="rebelPriceList"
+					:toggleRebel="toggleRebelPrice"
+					:emptyTooltip="trans('Price is not set up for this master product')"
+					:costs="data.pricingCosts"
+				/>
+
+				<Popover ref="rebelPricePopover">
+					<div class="min-w-[20rem]">
+						<div class="mb-2 text-xs font-semibold text-gray-700">
+							{{ trans('Rebel Prices') }}
+							<span class="text-gray-400">({{ trans('not following master pricing') }})</span>
+						</div>
+
+						<div class="overflow-x-auto">
+							<table class="w-full border-collapse text-xs">
+								<thead>
+									<tr class="bg-gray-100 text-left text-gray-600">
+										<th class="border px-3 py-1.5">{{ trans('Shop') }}</th>
+										<th class="border px-3 py-1.5 text-right">{{ trans('Price') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="rebel in rebelPriceList" :key="rebel.shop_id" class="hover:bg-gray-50">
+										<td class="border px-3 py-1.5 font-medium text-gray-700">{{ rebel.shop_code }}</td>
+										<td class="border px-3 py-1.5 text-right">
+											{{ locale.currencyFormat(rebel.currency_code, rebel.value ?? 0) }}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</Popover>
+				<ReuseMasterPriceBlock
+					:title="trans('RRP / Unit')"
+					:prices="data.masterProduct.master_rrp"
+					:rebelList="rebelRrpList"
+					:toggleRebel="toggleRebelRrp"
+					:emptyTooltip="trans('RRP is not set up for this master product')"
+					:perUnits="Number(data.masterProduct?.units) || 0"
+					:counterpart="data.masterProduct.master_prices"
+				/>
+
+				<Popover ref="rebelRrpPopover">
+					<div class="min-w-[20rem]">
+						<div class="mb-2 text-xs font-semibold text-gray-700">
+							{{ trans('Rebel RRP') }}
+							<span class="text-gray-400">({{ trans('not following master pricing') }})</span>
+						</div>
+
+						<div class="overflow-x-auto">
+							<table class="w-full border-collapse text-xs">
+								<thead>
+									<tr class="bg-gray-100 text-left text-gray-600">
+										<th class="border px-3 py-1.5">{{ trans('Shop') }}</th>
+										<th class="border px-3 py-1.5 text-right">{{ trans('RRP') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="rebel in rebelRrpList" :key="rebel.shop_id" class="hover:bg-gray-50">
+										<td class="border px-3 py-1.5 font-medium text-gray-700">{{ rebel.shop_code }}</td>
+										<td class="border px-3 py-1.5 text-right">
+											{{ locale.currencyFormat(rebel.currency_code, rebel.value ?? 0) }}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</Popover>
+			</div>
+			<div class="mr-3">
+				<SalesAnalyticsCompact  v-if="salesData" :salesData="salesData" />
+			</div>
         </div>
 
 		<!-- <div>

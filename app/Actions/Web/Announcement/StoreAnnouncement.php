@@ -30,23 +30,23 @@ class StoreAnnouncement extends OrgAction
 
     public $commandSignature = 'announcement:create {website}';
 
-    public function handle(Website $parent, array $modelData): Announcement
+    public function handle(Website $website, array $modelData): Announcement
     {
-        $this->parent = $parent;
+        $this->parent = $website;
 
-        data_set($modelData, 'group_id', $parent->group_id);
-        data_set($modelData, 'organisation_id', $parent->organisation_id);
+        data_set($modelData, 'group_id', $website->group_id);
+        data_set($modelData, 'organisation_id', $website->organisation_id);
         data_set($modelData, 'ulid', Str::ulid());
 
         /** @var Announcement $announcement */
-        $announcement = $parent->announcements()->create($modelData);
+        $announcement = $website->announcements()->create($modelData);
 
         $snapshot = StoreAnnouncementSnapshot::run(
             $announcement,
             [
                 'layout' => [
-                    'container_properties'  => null,
-                    'fields'                => null
+                    'container_properties' => null,
+                    'fields'               => null
                 ]
             ],
         );
@@ -57,7 +57,7 @@ class StoreAnnouncement extends OrgAction
             ]
         );
 
-        WebsiteHydrateAnnouncements::dispatch($parent);
+        WebsiteHydrateAnnouncements::dispatch($website->id)->delay(2);
 
         return $announcement;
     }
@@ -66,9 +66,9 @@ class StoreAnnouncement extends OrgAction
     {
         return Redirect::route('grp.org.shops.show.web.announcements.show', [
             'organisation' => $announcement->website->organisation->slug,
-            'shop' => $announcement->website->shop->slug,
-            'website' => $announcement->website->slug,
-            'announcement'     => $announcement->ulid
+            'shop'         => $announcement->website->shop->slug,
+            'website'      => $announcement->website->slug,
+            'announcement' => $announcement->ulid
         ]);
     }
 
@@ -80,14 +80,14 @@ class StoreAnnouncement extends OrgAction
     public function rules(): array
     {
         return [
-            'name'                 => ['required', 'string', 'max:255']
+            'name' => ['required', 'string', 'max:255']
         ];
     }
 
     public function asController(Shop $shop, Website $website, ActionRequest $request): Announcement
     {
-        $this->scope    = 'website';
-        $this->parent   = $website;
+        $this->scope  = 'website';
+        $this->parent = $website;
 
         $this->initialisationFromShop($shop, $request);
 

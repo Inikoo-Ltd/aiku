@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditMasterCollection extends OrgAction
 {
-    use WithMastersAuthorisation;
+    use WithMastersEditAuthorisation;
     use WithMasterCollectionNavigation;
 
     public function asController(MasterShop $masterShop, MasterCollection $masterCollection, ActionRequest $request): Response
@@ -83,7 +83,7 @@ class EditMasterCollection extends OrgAction
                                             'counter' => true,
                                         ],
                                         'value'   => $masterCollection->description,
-                                        'toogle'  => [
+                                        'toggle'  => [
                                             'heading2',
                                             'heading3',
                                             'fontSize',
@@ -113,7 +113,7 @@ class EditMasterCollection extends OrgAction
                                             'counter' => true,
                                         ],
                                         'value'   => $masterCollection->description_extra,
-                                        'toogle'  => [
+                                        'toggle'  => [
                                             'heading2',
                                             'heading3',
                                             'fontSize',

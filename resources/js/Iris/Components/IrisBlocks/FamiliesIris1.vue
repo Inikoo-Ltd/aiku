@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue"
+import { computed, inject, ref, onMounted, onBeforeUnmount } from "vue"
 import { faCube, faLink } from "@fal"
 import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
@@ -9,6 +9,7 @@ import { trans } from "laravel-vue-i18n"
 import Family1Render from "@/Iris/Components/Families1Render.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { useSubDepartmentStructuredData } from "@/Iris/Composables/useSubDepartmentStructuredData"
 
 library.add(
   faCube,
@@ -80,6 +81,7 @@ const props = defineProps<{
 }>()
 
 const layout = inject<LayoutContext>("layout", {})
+const injectedWebpageData = inject<any>("webpage_data", null)
 
 const idxSlideLoading = ref<string | null>(null)
 
@@ -122,6 +124,25 @@ const overviewUrl = computed(() => props.fieldValue.webpage_data?.overview_url ?
 const families = computed<FamilyOrCollectionItem[]>(
   () => props.fieldValue.families ?? []
 )
+
+// Section: Sub Department structured data (SEO)
+// Mounted independently here in its own <script> ld+json, listing the families and
+// collections (if any) shown on the sub-department page as an ItemList.
+const { mountSubDepartmentStructuredData, removeStructuredDataScript } = useSubDepartmentStructuredData()
+const subDepartmentStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
+onMounted(() => {
+  subDepartmentStructuredDataScript.value = mountSubDepartmentStructuredData({
+    families: props.fieldValue?.families,
+    collections: props.fieldValue?.collections,
+    webpageData: (props.webpageData ?? injectedWebpageData) as any,
+    listId: props.fieldValue?.id ?? props.indexBlock,
+  })
+})
+
+onBeforeUnmount(() => {
+  removeStructuredDataScript(subDepartmentStructuredDataScript.value)
+})
 </script>
 
 <template>

@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -47,8 +48,6 @@ class IndexProductsWithNoFamily extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
 
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
 
@@ -64,6 +63,20 @@ class IndexProductsWithNoFamily extends OrgAction
             );
         }
 
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'asset_time_series',
+            timeSeriesRecordsTable: 'asset_time_series_records',
+            foreignKey: 'asset_id',
+            aggregateColumns: [
+                'invoices'           => 'invoices_all',
+                'sales_external'     => 'sales_all',
+                'customers_invoiced' => 'customers_invoiced_all',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+            localKey: 'asset_id',
+        );
 
         $queryBuilder
             ->defaultSort('products.code')
@@ -77,9 +90,9 @@ class IndexProductsWithNoFamily extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
-                'invoices_all',
-                'sales_all',
-                'customers_invoiced_all',
+                $timeSeriesData['selectRaw']['invoices_all'],
+                $timeSeriesData['selectRaw']['sales_all'],
+                $timeSeriesData['selectRaw']['customers_invoiced_all'],
             ]);
 
         return $queryBuilder->allowedSorts(['code', 'name', 'state', 'price'])
@@ -154,6 +167,7 @@ class IndexProductsWithNoFamily extends OrgAction
                 'title'                        => $title,
                 'pageHead'                     => [
                     'title'         => $title,
+                    'is_negative'   => true,
                     'model'         => $model,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
@@ -180,11 +194,11 @@ class IndexProductsWithNoFamily extends OrgAction
                 'is_orphan_products' => true,
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value))),
 
 
             ]

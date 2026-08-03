@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from '@/Components/Table/Table.vue'
 import Icon from "@/Components/Icon.vue"
 import { Invoice } from "@/types/invoice"
@@ -26,6 +27,10 @@ defineProps<{
 
 const locale = useLocaleStore();
 
+
+function refundHref(refund: Invoice) {
+    return refundRoute(refund) + bucketQuery()
+}
 
 function refundRoute(refund: Invoice) {
 
@@ -118,13 +123,13 @@ function organisationRoute(order: Order) {
 
 function shopRoute(invoice: Invoice) {
   return route(
-    "grp.helpers.redirect_invoices_in_shop",
+    "grp.majordomo.redirect_invoices_in_shop",
     [invoice.id]);
 }
 
 function customerRoute(invoice: Invoice) {
   return route(
-    "grp.helpers.redirect_invoices_in_customer",
+    "grp.majordomo.redirect_invoices_in_customer",
     [invoice.id]);
 }
 
@@ -133,7 +138,7 @@ function customerRoute(invoice: Invoice) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: refund }">
-            <Link :href="refundRoute(refund) as string" class="primaryLink py-0.5">
+            <Link :href="refundHref(refund) as string" class="primaryLink py-0.5">
                 {{ refund.reference }}
             </Link>
         </template>

@@ -43,10 +43,8 @@ class CheckIfProductExistInAllegro extends RetinaAction
                 $result = $allegroUser->getProduct($portfolio->platform_product_id);
             } else {
                 foreach ($searchFields as $field => $value) {
-                    $searchResult = $allegroUser->getProducts([
+                    $searchResult = $allegroUser->searchProducts([
                         $field => $value
-                    ], [
-                        'page_size' => 1
                     ]);
 
                     if (!empty($searchResult)) {

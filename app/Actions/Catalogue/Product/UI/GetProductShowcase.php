@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Traits\HasBucketImages;
+use App\Actions\Traits\WithLuigiAvailabilityChecklist;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
@@ -25,6 +26,7 @@ class GetProductShowcase
     use AsObject;
     use HasBucketImages;
     use HasBucketAttachment;
+    use WithLuigiAvailabilityChecklist;
 
     public function handle(Product $product): array
     {
@@ -34,12 +36,22 @@ class GetProductShowcase
         }
 
 
+        $countryOrigins = [];
+        // $countryOrigin  = null;
+        $countries      = array_filter(array_map('trim', explode(',', $product->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countryOrigins[] = NaturalLanguage::make()->country($country);
+            // $countryOrigin    = NaturalLanguage::make()->country($country);
+        }
+
+
         $properties = [
-            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
-            'ingredients'       => $product->marketing_ingredients,
-            'tariff_code'       => $product->tariff_code,
-            'duty_rate'         => $product->duty_rate,
-            'hts_us'            => $product->hts_us,
+            // 'country_of_origin'  => $countryOrigin,
+            'countries_of_origin' => $countryOrigins,
+            'ingredients'        => explode(', ', $product->marketing_ingredients),
+            'tariff_code'        => $product->tariff_code,
+            'duty_rate'          => $product->duty_rate,
+            'hts_us'             => $product->hts_us,
         ];
 
         $gpsr = [
@@ -82,21 +94,21 @@ class GetProductShowcase
 
 
         return [
-            'product'             => ProductResource::make($product),
-            'is_external'         => $product->shop->type == ShopTypeEnum::EXTERNAL,
-            'properties'          => $properties,
-            'gpsr'                => $gpsr,
-            'parts'               => // todo: delete this asap use org_stocks
+            'product'                      => ProductResource::make($product),
+            'is_external'                  => $product->shop->type == ShopTypeEnum::EXTERNAL,
+            'properties'                   => $properties,
+            'gpsr'                         => $gpsr,
+            'parts'                        => // todo: delete this asap use org_stocks
                 OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-            'org_stocks'          => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-            'stats'               => $product->stats,
-            'images'              => $this->getImagesData($product),
-            'brand'               => $product->brand(),
-            'tags'                => TagsResource::collection($product->tags)->toArray(request()),
-            'main_image'          => $product->imageSources(),
-            'attachment_box'      => $this->getAttachmentData($product),
-            'webpage_url'         => $webpageUrl,
-            'availability_status' => [
+            'org_stocks'                   => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+            'stats'                        => $product->stats,
+            'images'                       => $this->getImagesData($product, true),
+            'brand'                        => $product->brand(),
+            'tags'                         => TagsResource::collection($product->tags)->toArray(request()),
+            'main_image'                   => $product->imageSources(),
+            'attachment_box'               => $this->getAttachmentData($product),
+            'webpage_url'                  => $webpageUrl,
+            'availability_status'          => [
                 'is_for_sale'        => $product->is_for_sale,
                 'from_master'        => $product->not_for_sale_from_master,
                 'from_trade_unit'    => $product->not_for_sale_from_trade_unit,
@@ -104,8 +116,8 @@ class GetProductShowcase
                 'product_state_icon' => $product->state->stateIcon()[$product->state->value],
                 'parentLink'         => $parentLink,
             ],
+            'luigi_availability_checklist' => $product->webpage ? $this->getLuigiAvailabilityChecklist($product) : null,
         ];
     }
-
 
 }

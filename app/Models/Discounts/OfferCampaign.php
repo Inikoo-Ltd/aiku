@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -67,6 +68,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class OfferCampaign extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use HasSlug;
     use HasFactory;
@@ -144,4 +146,18 @@ class OfferCampaign extends Model implements Auditable
     {
         return $this->hasMany(OfferCampaignTimeSeries::class);
     }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'shop_id'    => $this->shop_id,
+            'code'       => $this->code,
+            'name'       => (string)$this->name,
+            'state'      => $this->status ? 'active' : 'inactive',
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
 }

@@ -7,6 +7,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -22,8 +23,8 @@ class RedoWebpageTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue         = 'default-long-slave';
-    public string $commandSignature = 'webpages:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
+    public string $jobQueue         = 'long-low-priority';
+    public string $commandSignature = 'webpages:redo_time_series {--S|shop= : Shop slug} {--O|organisation= : Organisation slug} {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
@@ -60,10 +61,12 @@ class RedoWebpageTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessWebpageTimeSeriesRecords::dispatch($webpage->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessWebpageTimeSeriesRecords::dispatch($webpage->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessWebpageTimeSeriesRecords::run($webpage->id, $frequency, $from, $to);
+                ProcessWebpageTimeSeriesRecords::run($webpage->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

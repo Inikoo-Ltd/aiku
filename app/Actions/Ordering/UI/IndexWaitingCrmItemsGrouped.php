@@ -49,7 +49,10 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
 
         $query->where('delivery_notes.shop_id', $shop->id);
         $query->where('delivery_notes.number_items_waiting_crm', '>', 0);
-        $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
+        $query->whereIn('delivery_notes.state', [
+            DeliveryNoteStateEnum::HANDLING->value,
+            DeliveryNoteStateEnum::HANDLING_BLOCKED->value,
+        ]);
 
         return $query->defaultSort('delivery_notes.id')
             ->select([
@@ -57,9 +60,10 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
                 'delivery_notes.slug as delivery_note_slug',
                 'delivery_notes.reference as delivery_note_reference',
                 'delivery_notes.state as delivery_note_state',
+                'delivery_notes.number_items_waiting_crm as delivery_note_number_items_waiting_crm',
                 'delivery_notes.customer_notes as delivery_note_customer_notes',
                 'delivery_notes.public_notes as delivery_note_public_notes',
-                'delivery_notes.internal_notes as delivery_note_internal_notes',
+                'delivery_notes.private_warehouse_note as delivery_note_internal_notes',
                 'delivery_notes.shipping_notes as delivery_note_shipping_notes',
                 'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',
                 'delivery_notes.has_extra_packing as delivery_note_has_extra_packing',

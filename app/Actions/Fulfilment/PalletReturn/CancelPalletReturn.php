@@ -10,6 +10,7 @@ namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateFulfilmentOrders;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -102,6 +103,9 @@ class CancelPalletReturn extends OrgAction
             FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
             FulfilmentCustomerHydratePallets::dispatch($palletReturn->fulfilmentCustomer);
             FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+            if ($palletReturn->customerSalesChannel) {
+                CustomerSalesChannelsHydrateFulfilmentOrders::dispatch($palletReturn->customerSalesChannel);
+            }
             SendPalletReturnNotification::run($palletReturn);
             return $palletReturn;
 

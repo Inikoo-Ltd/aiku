@@ -9,7 +9,6 @@ import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
-import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
 
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -19,10 +18,11 @@ import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 import { trans } from "laravel-vue-i18n"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
+import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
-
+import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
@@ -38,9 +38,9 @@ import { Navigation, Thumbs } from 'swiper/modules'
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
-import ReviewsProduct from "@/Components/CMS/Reviews/ReviewsProduct.vue"
-
-
+import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
+import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
+import { Rating } from "primevue"
 
 // Register icons
 library.add(faCube, faLink, faPlus, faMinus)
@@ -73,7 +73,7 @@ const props = withDefaults(
                 discounted_profit: number
                 discounted_profit_per_unit: number
                 discounted_margin: number
-
+                is_single_trade_unit : boolean
                 offers_data: {
                     number_offers: 1
                     offers: {
@@ -95,6 +95,11 @@ const props = withDefaults(
                     }
                 }
             }
+            paymentData: {
+                name: string
+                image: string
+                value: string
+            }[]
         }
         webpageData?: any
         blockData?: object
@@ -124,6 +129,10 @@ const emits = defineEmits<{
 
 const product = ref(props.product)
 const layout = inject("layout", {})
+const webpage_id = inject<number | null>("webpage_id", null)
+const isPriceVisible = computed(() =>
+    Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price)
+)
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 
@@ -140,27 +149,51 @@ watch(
     () => props.product,
     (newProduct) => {
        product.value = newProduct
-       console.log('product',product.value)
     },
     { deep: true }
 )
 
 
 const _popoverProfit = ref(null)
-
-// console.log('fdsfds', props.fieldValue.product)
-/* const getBestOffer = (offerId: string) => {
-    if (!offerId) {
-        return
-    }
-
-    return product.value?.offers_data?.offers?.[offerId] 
-} */
-
 const bestOffer = computed(() => {
   return getBestOffer(props.product?.offers_data)
 })
 
+const _desktopAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
+const _mobileAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
+
+const orderedQuantity = computed<number>(() =>
+    Number(props.customerData?.quantity_ordered_new ?? props.customerData?.quantity_ordered ?? 0)
+)
+
+const isDesktopStepSyncing = ref(false)
+const isMobileStepSyncing = ref(false)
+
+const onSelectStepQuantityDesktop = async (quantity: number) => {
+    if (isDesktopStepSyncing.value) {
+        return
+    }
+
+    isDesktopStepSyncing.value = true
+    try {
+        await _desktopAddToBasket.value?.setQuantity(quantity)
+    } finally {
+        isDesktopStepSyncing.value = false
+    }
+}
+
+const onSelectStepQuantityMobile = async (quantity: number) => {
+    if (isMobileStepSyncing.value) {
+        return
+    }
+
+    isMobileStepSyncing.value = true
+    try {
+        await _mobileAddToBasket.value?.setQuantity(quantity)
+    } finally {
+        isMobileStepSyncing.value = false
+    }
+}
 
 const variantPrevEl = ref<HTMLElement | null>(null)
 const variantNextEl = ref<HTMLElement | null>(null)
@@ -180,9 +213,6 @@ const showDiscount = computed(() => {
 })
 
 
-
-
-
 watch([variantPrevEl, variantNextEl], () => {
   if (variantPrevEl.value && variantNextEl.value) {
     varinatNavigation.value = {
@@ -192,21 +222,31 @@ watch([variantPrevEl, variantNextEl], () => {
   }
 })
 
+// Section: GTM / dataLayer - view_item
+const pushViewItem = () => {
+    if (!product.value?.code) {
+        return
+    }
 
+    pushGtmEvent("view_item", buildGtmProductPayload(product.value as any, {
+        currencyCode: (layout as any)?.iris?.currency?.code,
+    }))
+}
 
 onMounted(async () => {
   await nextTick()
   varinatNavigation.value.prevEl = variantPrevEl.value
   varinatNavigation.value.nextEl = variantNextEl.value
+  pushViewItem()
 })
-console.log(props)
+
 </script>
 
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'+indexBlock"  component="product-ecom-1"
-        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4" :style="{
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'+indexBlock"  component="product-ecom-1"
+        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4 rating" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
             marginRight: 'auto'
@@ -219,7 +259,7 @@ console.log(props)
                 </div>
 
                 <!-- TAGS -->
-                <div class="flex gap-x-10 text-gray-400 text-xs mb-6 mt-4">
+                <div v-if="props?.fieldValue?.product?.is_single_trade_unit" class="flex gap-x-10 text-gray-400 text-xs mb-6 mt-4">
                     <div v-for="(tag, index) in product.tags" :key="index" class="flex items-center gap-1">
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`"
@@ -231,8 +271,7 @@ console.log(props)
 
             <!-- RIGHT: Product Info -->
             <div class="col-span-5 self-start">
-                
-                
+      
                 <div class="relative flex justify-between items-start mb-4 gap-x-3">
                     <div class="w-full">
                         <h1 class="text-3xl font-bold">
@@ -243,13 +282,18 @@ console.log(props)
                         <div class="text-sm font-medium text-gray-600 mt-2 mb-1">
                             <div class="flex items-center justify-between">
 
-                                <span>
+                                <div>
                                     {{ trans("Product code") }}: {{ product.code }}
-                                </span>
+                                </div>
 
-                                <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
-                                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
-                                </span>
+                                <div class="relative rating" v-if="fieldValue?.reviews?.review_summary > 0">
+                                    <Rating :modelValue="parseInt(fieldValue?.reviews?.review_summary)" readonly :cancel="false"
+                                        class="review-rating-small absolute -right-9 top-0" />
+                                </div>
+
+                                <!-- <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
+                                    RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
+                                </span> -->
 
                             </div>
                         </div>
@@ -300,16 +344,8 @@ console.log(props)
                 </div>       
 
                 <!-- PRICE -->
-                <!-- <ProductPrices
-                    :field-value="fieldValue"
-                    :key="product.code"
-                    :offers_data="customerData?.offers_data"
-                    :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
-                    :offer_price_per_unit="customerData?.offer_price_per_unit"
-                /> -->
-
                 <ProductPrices2
-                    v-if="layout?.iris?.is_logged_in"
+                    v-if="isPriceVisible"
                     :field-value="fieldValue"
                     :product="product"
                     :key="product.code"
@@ -326,6 +362,8 @@ console.log(props)
                                 <NonMemberPriceLabel v-else :product />
                             </template>
 
+
+                             <DiscountByType  v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type == 'Category Quantity Ordered Order Interval') && showDiscount" :offers_data="product?.offers_data" template="products_triggers_label" />
 
                             <DiscountByType
                                 v-if="showDiscount && bestOffer.type == 'Category Ordered'"
@@ -372,12 +410,24 @@ console.log(props)
 
                 </div>
 
-                
+                <!-- Section: Step discount (buy more, save more) -->
+                <StepDiscountOffer
+                    v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+                    class="mt-3"
+                    :stepDiscount="product.step_discount"
+                    :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+                    :originalPrice="product.price"
+                    :unit="product.unit"
+                    :quantity="orderedQuantity"
+                    :isSubmitting="isDesktopStepSyncing"
+                    @selectQuantity="onSelectStepQuantityDesktop"
+                />
+
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="product.status !== 'coming-soon' && layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock" v-model:product="product" :customerData="customerData"
+                        <EcomAddToBasketv2 v-if="product.stock" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
@@ -469,8 +519,12 @@ console.log(props)
                     </h2>
 
                     <div class="flex flex-wrap items-center gap-6 py-2">
-                        <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
-                            class="h-4 px-1" />
+                        <template v-for="logo in fieldValue.paymentData" :key="logo.value">
+                            <img :src="logo.image"
+                                class="h-4 px-1"
+                                :alt="ctrans('Logo of :paymentLabel', { paymentLabel: logo.name })"
+                            />
+                        </template>
                     </div>
                 </div>
             </div>
@@ -478,13 +532,13 @@ console.log(props)
     </div>
 
     <!-- MOBILE -->
-    <div v-else class="block sm:hidden px-4 py-6 text-gray-800">
+    <div class="block sm:hidden px-4 py-6 text-gray-800">
 
         <!-- TITLE -->
-        <h1 class="text-xl font-bold mb-3">
+        <p class="text-xl font-bold mb-3">
             <span v-if="product.units > 1">{{ product.units }}x</span>
             {{ product.name }}
-        </h1>
+        </p>
 
         <!-- MEDIA -->
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
@@ -531,15 +585,16 @@ console.log(props)
         </div>
 
         <!-- PRICE / OFFERS / PROFIT -->
-        <div v-if="layout?.iris?.is_logged_in" class="mt-3 space-y-2">
+        <div class="mt-3 space-y-2">
 
-            <ProductPrices2
+            <ProductPrices2   
+                v-if="isPriceVisible"             
                 :field-value="fieldValue"
                 :product="product"
                 :key="product.code"
             />
 
-            <div class="flex justify-between items-start">
+            <div v-if="layout?.iris?.is_logged_in"  class="flex justify-between items-start">
 
                 <!-- OFFERS -->
                 <div v-if="product.offers_data?.number_offers > 0" class="flex flex-col gap-1 offers">
@@ -594,7 +649,7 @@ console.log(props)
         </div>
 
         <!-- TAGS -->
-        <div class="flex flex-wrap gap-2 mt-4 text-xs text-gray-500">
+        <div v-if="props?.fieldValue?.product?.is_single_trade_unit" class="flex flex-wrap gap-2 mt-4 text-xs text-gray-500">
             <div
                 v-for="(tag, index) in product.tags"
                 :key="index"
@@ -619,7 +674,7 @@ console.log(props)
                 </span>
 
                 <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
-                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
+                    RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
                     product.unit }}
                 </span>
 
@@ -647,10 +702,24 @@ console.log(props)
             </span>
         </button>
 
+        <!-- Section: Step discount (buy more, save more) -->
+        <StepDiscountOffer
+            v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+            class="mt-4"
+            :stepDiscount="product.step_discount"
+            :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+            :originalPrice="product.price"
+            :unit="product.unit"
+            :quantity="orderedQuantity"
+            :isSubmitting="isMobileStepSyncing"
+            @selectQuantity="onSelectStepQuantityMobile"
+        />
+        
         <!-- ADD TO CART -->
         <div class="mt-5 space-y-2">
             <EcomAddToBasketv2
                 v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
+                ref="_mobileAddToBasket"
                 v-model:product="product"
                 :customerData="customerData"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
@@ -740,8 +809,9 @@ console.log(props)
                 <div class="flex flex-wrap gap-4">
                     <img
                         v-for="logo in fieldValue.paymentData"
-                        :key="logo.code"
+                        :key="logo.value"
                         :src="logo.image"
+                        :alt="ctrans('Logo of :paymentLabel', { paymentLabel: logo.name })"
                         class="h-4"
                     />
                 </div>
@@ -750,7 +820,7 @@ console.log(props)
 
     </div>
 
-    <ReviewsProduct :product="product" class="mt-10" />
+    <ReviewsIris  :webpage_id="webpage_id"/>
 
 
 </template>
@@ -778,4 +848,29 @@ console.log(props)
     @apply bg-gray-400 rounded px-2 py-0.5 text-xs md:text-sm text-white w-fit;
 }
 
+:deep(.review-rating .p-rating) {
+    gap: 2px;
+}
+
+:deep(.review-rating-small .p-rating) {
+    gap: 2px;
+}
+
+:deep(.review-rating .p-rating-item-icon) {
+    color: #f59e0b;
+    font-size: 1rem;
+}
+
+:deep(.review-rating-small .p-rating-item-icon) {
+    color: #f59e0b;
+    font-size: 0.8rem;
+}
+
+:deep(.p-rating-item) {
+    margin-right: 1px;
+}
+
+:deep(.rating .p-rating-option-active .p-rating-icon) {
+    color: #f59e0b !important;
+}
 </style>

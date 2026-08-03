@@ -8,39 +8,39 @@
 
 namespace App\Models\SysAdmin;
 
+use App\Audits\Redactors\PasswordRedactor;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Enums\SysAdmin\User\UserAuthTypeEnum;
+use App\Models\Analytics\UserRequest;
 use App\Models\Catalogue\Shop;
+use App\Models\Chat\ChatAgent;
 use App\Models\Comms\DispatchedEmail;
+use App\Models\Comms\OutBoxHasSubscriber;
+use App\Models\Fulfilment\Fulfilment;
+use App\Models\Helpers\Timezone;
+use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\JobPosition;
+use App\Models\Inventory\Warehouse;
+use App\Models\Production\Production;
 use App\Models\Traits\HasEmail;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
-use App\Models\Traits\IsUserable;
-use App\Models\UserFailedLogIn;
-use App\Models\UserLogin;
-use Illuminate\Support\Carbon;
-use Laravel\Sanctum\HasApiTokens;
 use App\Models\Traits\HasSearch;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\Sluggable\SlugOptions;
-use Illuminate\Support\Collection;
-use App\Models\Inventory\Warehouse;
-use App\Models\Analytics\UserRequest;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\Production\Production;
-use App\Models\CRM\Livechat\ChatAgent;
-use App\Models\HumanResources\Employee;
-use OwenIt\Auditing\Contracts\Auditable;
-use App\Models\Comms\OutBoxHasSubscriber;
-use App\Audits\Redactors\PasswordRedactor;
-use App\Models\HumanResources\JobPosition;
+use App\Models\Traits\IsUserable;
 use App\Models\Traits\WithPushNotifications;
-use App\Enums\SysAdmin\User\UserAuthTypeEnum;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Laravel\Passkeys\Contracts\PasskeyUser;
+use Laravel\Passkeys\PasskeyAuthenticatable;
+use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\Sluggable\SlugOptions;
 
 /**
  * @property int $id
@@ -82,6 +82,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string|null $google2fa_secret
  * @property bool $is_two_factor_required
  * @property array<array-key, mixed> $bookmarks
+ * @property int|null $employed_in_organisation_id
+ * @property bool $can_use_mcp
+ * @property bool $can_use_mcp_sql
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedDigitalAgencyOrganisations
@@ -93,6 +96,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Warehouse> $authorisedWarehouses
  * @property-read ChatAgent|null $chatAgent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DispatchedEmail> $dispatchedEmails
+ * @property-read \App\Models\SysAdmin\Organisation|null $employedInOrganisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $employees
  * @property-read \App\Models\Notifications\FcmToken|null $fcmToken
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Notifications\FcmToken> $fcmTokens
@@ -103,10 +107,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read \App\Models\Helpers\Language $language
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Passkeys\Passkey> $passkeys
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \App\Models\SysAdmin\UserHasPseudoJobPositions|null $pivot
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JobPosition> $pseudoJobPositions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\SysAdmin\UserStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OutBoxHasSubscriber> $subscribedOutboxes
@@ -114,8 +119,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserHasAuthorisedModels> $userAuthorisedModels
- * @property-read \Illuminate\Database\Eloquent\Collection<int, UserFailedLogIn> $userFailedLogins
- * @property-read \Illuminate\Database\Eloquent\Collection<int, UserLogin> $userLogins
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserFailedLogIn> $userFailedLogins
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserLogin> $userLogins
  * @property-read \Illuminate\Database\Eloquent\Collection<int, UserRequest> $userRequests
  * @method static \Database\Factories\SysAdmin\UserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
@@ -130,18 +135,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
  * @mixin \Eloquent
  */
-class User extends Authenticatable implements HasMedia, Auditable
+class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
 {
     use HasEmail;
     use HasRoles;
     use WithPushNotifications;
     use IsUserable;
     use HasImage;
-    use HasApiTokens;
     use HasSearch;
+    use PasskeyAuthenticatable;
 
     protected $guarded = [
     ];
+
+    /**
+     * Roles and permissions are all stored under the web guard. Without this,
+     * spatie resolves the guard from the active auth driver, so requests
+     * authenticated on another guard (mcp, mcp-oauth) match nothing.
+     */
+    protected $guard_name = 'web';
 
     protected $hidden = [
         'password',
@@ -149,13 +161,14 @@ class User extends Authenticatable implements HasMedia, Auditable
     ];
 
     protected $casts = [
-        'data'      => 'array',
-        'settings'  => 'array',
-        'sources'   => 'array',
-        'bookmarks' => 'array',
-        'status'    => 'boolean',
-        'auth_type' => UserAuthTypeEnum::class,
-        'password'  => 'hashed',
+        'data'                        => 'array',
+        'settings'                    => 'array',
+        'sources'                     => 'array',
+        'bookmarks'                   => 'array',
+        'status'                      => 'boolean',
+        'auth_type'                   => UserAuthTypeEnum::class,
+        'password'                    => 'hashed',
+        'employed_in_organisation_id' => 'integer',
     ];
 
 
@@ -166,6 +179,16 @@ class User extends Authenticatable implements HasMedia, Auditable
         'bookmarks' => '{}'
     ];
 
+    public function getPasskeyUsername(): string
+    {
+        return $this->username;
+    }
+
+    public function getPasskeyDisplayName(): string
+    {
+        return $this->contact_name ?? $this->username;
+    }
+
     public function searchIndexShouldBeUpdated(): bool
     {
         return $this->wasRecentlyCreated
@@ -174,19 +197,21 @@ class User extends Authenticatable implements HasMedia, Auditable
                 'email',
                 'contact_name',
                 'status',
-                'created_at'
+                'created_at',
+                'employed_in_organisation_id'
             ]);
     }
 
     public function toSearchableArray(): array
     {
         return [
-            'id'           => (string)$this->id,
-            'username'     => $this->username,
-            'email'        => (string)$this->email,
-            'contact_name' => (string)$this->contact_name,
-            'status'       => $this->status,
-            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'id'                          => (string)$this->id,
+            'username'                    => $this->username,
+            'email'                       => (string)$this->email,
+            'contact_name'                => (string)$this->contact_name,
+            'status'                      => $this->status,
+            'employed_in_organisation_id' => $this->employed_in_organisation_id,
+            'created_at'                  => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
 
@@ -243,6 +268,43 @@ class User extends Authenticatable implements HasMedia, Auditable
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
+    }
+
+    public function employedInOrganisation(): BelongsTo
+    {
+        return $this->belongsTo(Organisation::class, 'employed_in_organisation_id');
+    }
+
+    public function timezone(): BelongsTo
+    {
+        return $this->belongsTo(Timezone::class);
+    }
+
+    private ?string $resolvedTimezoneName = null;
+
+    /**
+     * The timezone this user's clock should be shown in: their own choice when they
+     * have made one, otherwise the timezone of the organisation they work for.
+     *
+     * Resolved rather than stored so users follow their organisation without a backfill.
+     */
+    public function getTimezoneNameAttribute(): string
+    {
+        if ($this->timezone_id) {
+            return $this->timezone->name;
+        }
+
+        // ponytail: memoised per instance only; cache across requests if the join shows up in profiling
+        if ($this->resolvedTimezoneName === null) {
+            $organisation = $this->employees()
+                ->with('organisation.timezone')
+                ->orderBy('employees.organisation_id')
+                ->first()?->organisation;
+
+            $this->resolvedTimezoneName = $organisation?->timezone?->name ?? config('app.timezone');
+        }
+
+        return $this->resolvedTimezoneName;
     }
 
 

@@ -17,6 +17,10 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Dispatching\DeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNote;
+use App\Models\GoodsIn\StockDelivery;
+use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
@@ -25,6 +29,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -33,7 +38,7 @@ class IndexOrgStockMovements extends OrgAction
     use WithInventoryAuthorisation;
 
     private string $bucket;
-    private Organisation|OrgStock $parent;
+    private Organisation|OrgStock|Location $parent;
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
@@ -68,7 +73,7 @@ class IndexOrgStockMovements extends OrgAction
         ];
     }
 
-    public function handle(Organisation|OrgStock $parent, $prefix = null, $bucket = null, OrgStockMovementTypeEnum|null $type = null): LengthAwarePaginator
+    public function handle(Organisation|OrgStock|Location $parent, $prefix = null, $bucket = null, OrgStockMovementTypeEnum|null $type = null): LengthAwarePaginator
     {
         $this->parent = $parent;
 
@@ -76,7 +81,7 @@ class IndexOrgStockMovements extends OrgAction
             $this->bucket = $bucket;
         }
 
-        if ($parent instanceof OrgStock) {
+        if ($parent instanceof OrgStock || $parent instanceof Location) {
             $organisation = $parent->organisation;
         } else {
             $organisation = $parent;
@@ -113,9 +118,25 @@ class IndexOrgStockMovements extends OrgAction
                     $q->whereNot('org_stock_movements.class', OrgStockMovementClassEnum::GARBAGE);
                 }
             );
+        } elseif ($parent instanceof Location) {
+            $queryBuilder->where('org_stock_movements.location_id', $parent->id);
         } else {
             $queryBuilder->where('org_stock_movements.organisation_id', $organisation->id);
         }
+
+        $queryBuilder
+            ->leftJoin('return_delivery_notes as rdn', function ($join) {
+                $join->on('rdn.id', 'org_stock_movements.parent_id')
+                    ->where('org_stock_movements.parent_type', class_basename(ReturnDeliveryNote::class));
+            })
+            ->leftJoin('delivery_notes as dn', function ($join) {
+                $join->on('dn.id', 'org_stock_movements.parent_id')
+                    ->where('org_stock_movements.parent_type', class_basename(DeliveryNote::class));
+            })
+            ->leftJoin('stock_deliveries as sd', function ($join) {
+                $join->on('sd.id', 'org_stock_movements.parent_id')
+                    ->where('org_stock_movements.parent_type', class_basename(StockDelivery::class));
+            });
 
 
         return $queryBuilder
@@ -127,6 +148,7 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.type',
                 'org_stock_movements.class',
                 'org_stock_movements.quantity',
+                'org_stock_movements.audited_quantity',
                 'org_stock_movements.org_amount',
                 'org_stock_movements.grp_amount',
                 'org_stock_movements.operation_type',
@@ -141,7 +163,13 @@ class IndexOrgStockMovements extends OrgAction
                 'locations.code as location_code',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.name as org_stock_name',
-                'org_stock_movements.user_id'
+                'org_stocks.packed_in',
+                'org_stock_movements.user_id',
+                'org_stock_movements.is_migration_point',
+                'org_stock_movements.reason',
+                'org_stock_movements.note',
+                'org_stock_movements.parent_type',
+                DB::raw('COALESCE(dn.reference, rdn.reference, sd.reference) as parent_reference'),
             ])
             ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')
@@ -149,15 +177,15 @@ class IndexOrgStockMovements extends OrgAction
             ->leftJoin('locations', 'locations.id', 'org_stock_movements.location_id')
             ->leftJoin('org_stocks', 'org_stocks.id', 'org_stock_movements.org_stock_id')
             ->with('user')
-            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name', 'user'])
+            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name', 'user', 'reason'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|OrgStock $parent, $prefix = null): Closure
+    public function tableStructure(Organisation|OrgStock|Location $parent, $prefix = null): Closure
     {
-        if ($parent instanceof OrgStock) {
+        if ($parent instanceof OrgStock || $parent instanceof Location) {
             $organisation = $parent->organisation;
         } else {
             $organisation = $parent;
@@ -180,7 +208,7 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hm')
+                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hms')
                 ->column(key: 'user', label: __('User'), sortable: true);
 
             if (!($parent instanceof OrgStock)) {
@@ -188,14 +216,23 @@ class IndexOrgStockMovements extends OrgAction
             }
 
             $table
-                ->column(key: 'flow', label: ['fal', 'fa-chart-line'], tooltip:__('Movement Flow'), type: 'icon', sortable: true)
-                ->column(key: 'type', label: __('Type'), sortable: true)
-                ->column(key: 'class', label: __('Class'), sortable: true)
-                ->column(key: 'location_code', label: __('Location'))
-                ->column(key: 'quantity', label: __('Quantity'), sortable: true, align: 'right')
-                ->column(key: 'running_quantity', label: __('Running Quantity'), sortable: true, align: 'right')
-                ->column(key: 'running_quantity_org_stock', label: __('Running Quantity (All)'), sortable: true, align: 'right')
-                ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
+                ->column(key: 'type', label: __('Type'), sortable: true);
+
+            $table
+                ->column(key: 'reason', label: 'Reason', align: 'left', searchable: true, sortable: true);
+
+            if (!($parent instanceof Location)) {
+                $table->column(key: 'location_code', label: __('Location'));
+            }
+
+            $table->column(key: 'quantity', label: __('Delta'), align: 'right');
+
+            if (!($parent instanceof Location)) {
+                $table->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), align: 'right');
+            } else {
+                $table->column(key: 'running_quantity_location', label: __('Running Quantity'), align: 'right');
+            }
+
         };
     }
 

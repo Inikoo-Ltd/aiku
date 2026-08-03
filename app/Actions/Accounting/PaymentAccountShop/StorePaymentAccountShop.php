@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 17-02-2025-15h-36m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -41,6 +41,7 @@ class StorePaymentAccountShop extends OrgAction
 
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $paymentAccount->paymentAccountShops()->create($modelData);
+        $paymentAccountShop->stats()->create();
         PaymentAccountHydratePAS::dispatch($paymentAccount)->delay($this->hydratorsDelay);
 
         return $paymentAccountShop;

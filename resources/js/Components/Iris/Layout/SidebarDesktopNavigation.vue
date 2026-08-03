@@ -22,7 +22,7 @@ const isLoading = ref(false)
 </script>
 
 <template>
-    <div class="p-2 px-4 flex items-center justify-between gap-x-2 " >
+    <div v-if="nav.name" class="p-2 px-4 flex items-center justify-between gap-x-2 " >
         <LinkIris
             v-if="nav.url"
             :href="internalHref ? internalHref(nav) : nav.url"

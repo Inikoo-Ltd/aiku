@@ -32,8 +32,8 @@ const props = defineProps<{
         navigation: {};
     }
     showcase?: {}
-    details: {}
-    history: {}
+    details?: {}
+    history?: {}
 }>()
 
 let currentTab = ref(props.tabs.current);

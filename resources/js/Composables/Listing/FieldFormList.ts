@@ -28,6 +28,7 @@ import Pin from '@/Components/Forms/Fields/Pin.vue'
 import GeneratePassword from '@/Components/Forms/Fields/GeneratePassword.vue'
 import TaxNumber from '@/Components/Forms/Fields/TaxNumber.vue'
 import EditorHtml from '@/Components/Forms/Fields/EditorHtml.vue'
+import EditorV2Field from '@/Components/Forms/Fields/EditorV2Field.vue'
 import StructureDataWebsite from '@/Components/Forms/Fields/StructureDataWebsite.vue'
 import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll.vue'
 import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
@@ -52,7 +53,9 @@ const JobPosition = defineAsyncComponent(() => import('@/Components/Forms/Fields
 const Interest = defineAsyncComponent(() => import('@/Components/Forms/Fields/Interest.vue'))
 const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/Fields/EmployeePosition.vue'))
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
-const JobTitleSelectCreate = defineAsyncComponent(() => import('@/Components/Forms/Fields/JobTitleSelectCreate.vue'))
+const SelectCreate = defineAsyncComponent(() => import('@/Components/Forms/Fields/SelectCreate.vue'))
+const DynamicList = defineAsyncComponent(() => import('@/Components/Forms/Fields/DynamicList.vue'))
+const TaxPreset = defineAsyncComponent(() => import('@/Components/Forms/Fields/TaxPreset.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
@@ -73,6 +76,7 @@ import InputJsonByForm from '@/Components/Forms/Fields/InputJsonByForm.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
 import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
+import PasskeysManager from '@/Components/Forms/Fields/PasskeysManager.vue'
 import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
@@ -83,7 +87,19 @@ import EmergencyContact from '@/Components/Forms/Fields/EmergencyContact.vue'
 import WebsiteReview from '@/Components/Forms/Fields/WebsiteReview.vue'
 import InputTranslationWithOptionLanguages from '@/Components/Forms/Fields/InputTranslationWithOptionLanguages.vue'
 import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQrExpiry.vue'
-
+import ReviewRatingLabels from '@/Components/Forms/Fields/ReviewRatingLabels.vue'
+import ReviewPublishing from '@/Components/Forms/Fields/ReviewPublishing.vue'
+import ReviewVisibility from '@/Components/Forms/Fields/ReviewVisibility.vue'
+import ReviewValidationScope from '@/Components/Forms/Fields/ReviewValidationScope.vue'
+import InputFaqMaster from '@/Components/Forms/Fields/InputFaqMaster.vue'
+import InputFaqShop from '@/Components/Forms/Fields/InputFaqShop.vue'
+import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
+import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
+import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
+import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
+import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
+import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
+import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -107,6 +123,7 @@ export const componentsList: { [key: string]: Component } = {
     'textEditor': TextEditor,
     'toggle': Toggle,
     'toggle2fa': ToggleState2FA,
+    'passkeys': PasskeysManager,
     'jobPosition': JobPosition,
     'senderEmail': SenderEmail,
     'employeePosition': EmployeePosition,
@@ -131,6 +148,7 @@ export const componentsList: { [key: string]: Component } = {
     'pin': Pin,
     'tax_number': TaxNumber,
     'editor': EditorHtml,
+    'editor_v2': EditorV2Field,
     'structure_data_website': StructureDataWebsite,
     'poll_type_select': PollTypeSelect,
     'toggle_state_webpage': ToggleStateWebpage,
@@ -138,6 +156,7 @@ export const componentsList: { [key: string]: Component } = {
     'button': ButtonForm,
     'input_translation': InputTranslation,
     'select_infinite': SelectInfiniteScroll,
+    'ingredients': IngredientsField,
     'textEditor_translation': TextEditorTranslation,
     'pricing_zone': Pricing_zone,
     'territory_zone': TerritoryZone,
@@ -154,6 +173,7 @@ export const componentsList: { [key: string]: Component } = {
     'email_subscriptions': WrapperEmailSubscribetion,
     'set_json_by_form': InputJsonByForm,
     'list-selector-trade-unit': ListSelectorTradeUnit,
+    'trade-units-for-stock': TradeUnitsForStock,
     'file_upload': FileUpload,
     'input-variant' : VariantsField,
     'editOffer' : EditOffer,
@@ -165,9 +185,22 @@ export const componentsList: { [key: string]: Component } = {
     'free_gift': FreeGift,
     'emergency_contact' : EmergencyContact,
     'website_reviews' : WebsiteReview,
+    'review_rating_labels': ReviewRatingLabels,
+    'review_publishing': ReviewPublishing,
+    'review_visibility': ReviewVisibility,
+    'review_validation_scope': ReviewValidationScope,
     'input_translation_use_option' : InputTranslationWithOptionLanguages,
     'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
-    'job_title_select_create': JobTitleSelectCreate
+    'select_create': SelectCreate,
+    'dynamic_list': DynamicList,
+    'tax_preset': TaxPreset,
+    'faq-master' : InputFaqMaster,
+    'faq-shop' : InputFaqShop,
+    'tags': TagsInput,
+    'banned-countries': BannedCountries,
+	field_group: FieldGroup,
+    'multiple_price_currency' : MultiplePriceCurrency,
+    'master_shop_price_exchanges' : MasterShopPriceExchanges
 }
 
 export const getComponent = (componentName: string) => {

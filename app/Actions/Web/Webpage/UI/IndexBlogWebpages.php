@@ -254,6 +254,7 @@ class IndexBlogWebpages extends OrgAction
                 'pageHead'    => [
                     'model'         => strtoupper($website?->code ?? '') . ' ' . __('Webpages'),
                     'title'         => ucfirst($this->bucket),
+                    'color'         => '#f59e0b',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')

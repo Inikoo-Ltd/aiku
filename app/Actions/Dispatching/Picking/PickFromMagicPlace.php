@@ -24,6 +24,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class PickFromMagicPlace extends OrgAction
 {
@@ -80,8 +81,9 @@ class PickFromMagicPlace extends OrgAction
             return $picking;
 
         } catch (Exception $e) {
+            Sentry::captureException($e);
 
-            $deliveryNoteItem->update(['locked_at'  => null]);
+            $deliveryNoteItem->update(['locked_at' => null]);
 
             return null;
         }
@@ -105,18 +107,7 @@ class PickFromMagicPlace extends OrgAction
         }
     }
 
-    /**
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    // public function prepareForValidation(ActionRequest $request): void
-    // {
-    //     if (!$request->has('picker_user_id')) {
-    //         $this->set('picker_user_id', $this->user->id);
-    //     }
-    //     if (!$request->has('quantity')) {
-    //         $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
-    //     }
-    // }
+
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): ?Picking
     {
@@ -126,17 +117,5 @@ class PickFromMagicPlace extends OrgAction
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
-
-    // public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): ?Picking
-    // {
-    //     $this->asAction         = true;
-    //     $this->user             = $user;
-    //     $this->deliveryNoteItem = $deliveryNoteItem;
-
-    //     $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
-
-    //     return $this->handle($deliveryNoteItem, $this->validatedData);
-    // }
-
 
 }

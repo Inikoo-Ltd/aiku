@@ -68,7 +68,7 @@ class ConvertUnitsTest extends TestCase
         $this->assertEquals(39.3701, convertUnits(1, 'm', 'in'));
         $this->assertEquals(3.28084, convertUnits(1, 'm', 'ft'));
 
-        // mm to other units
+        // mm, to other units
         $this->assertEquals(0.001, convertUnits(1, 'mm', 'm'));
         $this->assertEquals(0.1, convertUnits(1, 'mm', 'cm'));
 

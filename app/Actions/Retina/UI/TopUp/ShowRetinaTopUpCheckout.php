@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 06-05-2025-17h-01m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -58,7 +58,8 @@ class ShowRetinaTopUpCheckout extends RetinaAction
             'origin'         => 'aiku',
             'operation'      => 'top_up',
             'api_point_ulid' => $topUpPaymentApiPoint->ulid,
-            'environment'    => app()->environment()
+            'environment'    => app()->environment(),
+            'server'         => config('app.server_name') ?? ''
         ];
 
         $paymentSessionRequest->disabled_payment_methods = [
@@ -69,6 +70,7 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         $product->name                = 'top up';
         $product->quantity            = 1;
         $product->unit_price          = $topUpAmount;
+        $product->total_amount        = $topUpAmount;
         $paymentSessionRequest->items = [$product];
 
 

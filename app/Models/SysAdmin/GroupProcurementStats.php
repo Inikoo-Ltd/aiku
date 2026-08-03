@@ -105,6 +105,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_delivery_notes_state_returned
  * @property int $number_return_delivery_notes_state_done
  * @property int $number_return_delivery_notes_state_cancelled
+ * @property int $number_stock_deliveries_state_booking_in
+ * @property int $number_stock_deliveries_state_booked_in
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static Builder<static>|GroupProcurementStats newModelQuery()
  * @method static Builder<static>|GroupProcurementStats newQuery()

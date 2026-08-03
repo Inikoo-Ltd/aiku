@@ -18,6 +18,7 @@ class WebsiteFactory extends Factory
             'code'                     => fake()->lexify(),
             'name'                     => fake()->company(),
             'domain'                   => fake()->domainName,
+            'cloudflare_token'         => fake()->password(40, 40),
         ];
     }
 }

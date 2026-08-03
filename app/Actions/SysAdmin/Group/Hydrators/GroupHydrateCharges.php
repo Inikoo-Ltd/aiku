@@ -30,6 +30,7 @@ class GroupHydrateCharges implements ShouldBeUnique
     public function handle(Group $group): void
     {
         $stats = [
+            'number_charges'            => $group->charges()->count(),
             'number_assets_type_charge' => $group->charges()->count(),
         ];
 

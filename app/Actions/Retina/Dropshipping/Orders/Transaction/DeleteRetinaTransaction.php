@@ -32,6 +32,10 @@ class DeleteRetinaTransaction extends RetinaAction
      */
     public function handle(Order $order, Transaction $transaction): Order
     {
+        $order->update([
+            'updated_by_customer_at' => now()
+        ]);
+
         DeleteTransaction::make()->action($transaction);
 
         return $order;

@@ -11,11 +11,10 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
@@ -24,12 +23,10 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
-use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class StoreOrderFromShopify extends OrgAction
 {
@@ -37,13 +34,14 @@ class StoreOrderFromShopify extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedShopifyAddress;
+    use WithPayAndSubmitOrder;
 
     /**
      * @throws \Throwable
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-        $deliveryAddress = Arr::get($modelData, 'shipping_address');
+        $deliveryAddress = Arr::get($modelData, 'shipping_address', []); // AIKU-Z20: fallback empty array
 
         $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
         $shopifyProducts = collect($modelData['line_items']);
@@ -66,7 +64,13 @@ class StoreOrderFromShopify extends OrgAction
                     'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
                     'date'                      => $modelData['created_at'],
                     'delivery_address'          => new Address($deliveryAddress),
-                    'data'                      => ['shopify_data' => $modelData],
+                    'data'                      => [
+                        'shopify_data' => $modelData,
+                        'platform_milestones' => [
+                            'draft_created_at' => Arr::get($modelData, 'created_at'),
+                            'placed_at'        => Arr::get($modelData, 'placed_at'),
+                        ]
+                    ],
                     'platform_order_id'         => Arr::get($modelData, 'id'),
 
                 ]);
@@ -111,13 +115,7 @@ class StoreOrderFromShopify extends OrgAction
                 return $order->refresh();
             });
 
-            try {
-                PayOrderAsync::run($order);
-            } catch (Exception $e) {
-                Sentry::captureException($e);
-            }
-
-            SubmitOrder::run($order);
+            $order = $this->payAndSubmitOrder($order);
         }
     }
 
@@ -128,8 +126,7 @@ class StoreOrderFromShopify extends OrgAction
     {
         $receiverDetail = Arr::get($shopifyOrderData, 'shipping_address');
 
-        $reference = trim(Arr::get($receiverDetail, 'firstName') . ' ' . Arr::get($receiverDetail, 'lastName') . ' ' . $shopifyUser->customer_sales_channel_id);
-
+        $reference = preg_replace('/\s+/', '', trim(Arr::get($receiverDetail, 'firstName') . Arr::get($receiverDetail, 'lastName') . $shopifyUser->customer_sales_channel_id));
         $customerClientID = DB::table('customer_clients')
             ->select('id')
             ->where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)

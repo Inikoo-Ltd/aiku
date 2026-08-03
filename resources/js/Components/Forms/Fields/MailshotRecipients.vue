@@ -12,6 +12,7 @@ import AccordionPanel from 'primevue/accordionpanel';
 import AccordionHeader from 'primevue/accordionheader';
 import AccordionContent from 'primevue/accordioncontent';
 import Multiselect from "@vueform/multiselect"
+import "@vueform/multiselect/themes/default.css"
 import { trans } from 'laravel-vue-i18n';
 import Tag from '@/Components/Tag.vue';
 import PureInput from '@/Components/Pure/PureInput.vue';
@@ -31,6 +32,7 @@ import { fromPairs } from 'lodash-es';
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue';
 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy, faThumbsDown, faChair, faLaugh, faCopy, faUser)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any
@@ -283,7 +285,7 @@ onMounted(() => {
         <PickList v-model="prospect" dataKey="id">
             <template #sourceheader>
                 <div class="border-b p-3">
-                    <PureInput v-model="search" placeholder="Search" :suffix="true">
+                    <PureInput v-model="search" :placeholder="trans('Search')" :suffix="true">
                     <template #suffix>
                         <div
                             class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100">
@@ -295,7 +297,7 @@ onMounted(() => {
             </template>
             <template #targetheader>
                 <div class="border-b p-3">
-                    <PureInput v-model="search" placeholder="Search" :suffix="true">
+                    <PureInput v-model="search" :placeholder="trans('Search')" :suffix="true">
                     <template #suffix>
                         <div
                             class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100">

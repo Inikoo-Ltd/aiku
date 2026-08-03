@@ -18,9 +18,11 @@ import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTruck, faYinYang } from "@fal"
+import { faMapMarkerAlt, faTruck, faYinYang } from "@fal"
+import { faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTruck, faYinYang)
 
@@ -30,19 +32,43 @@ defineProps<{
 }>()
 
 
+const routeParams = route().routeParams
+const routeCurrent = route().current()
+
+function deliveryNoteHref(deliveryNote: DeliveryNote) {
+	return deliveryNoteRoute(deliveryNote) + bucketQuery()
+}
+
+function bucketQuery() {
+	const bucket = routeCurrent?.match(/^grp\.org\.warehouses\.show\.dispatching\.([^.]+)\.delivery-notes/)?.[1]
+
+	if (!bucket) return ''
+
+	const query = new URLSearchParams({ bucket: bucket.replace('handling-blocked', 'handling_blocked') })
+	const sort = new URLSearchParams(location.search).get('sort')
+
+	if (routeParams["shopType"]) {
+		query.set('bucket_shop_type', routeParams["shopType"] as string)
+	}
+
+	if (sort) {
+		query.set('bucket_sort', sort)
+	}
+
+	return `?${query.toString()}`
+}
 
 function deliveryNoteRoute(deliveryNote: DeliveryNote) {
-	console.log(route().current())
-	switch (route().current()) {
+	switch (routeCurrent) {
 		case "shops.show.orders.show":
 			return route("shops.show.orders.show.delivery-notes.show", [
-				route().params["shop"],
-				route().params["order"],
+				routeParams["shop"],
+				routeParams["order"],
 				deliveryNote.slug,
 			])
 		case "orders.show":
 			return route("orders.show,delivery-notes.show", [
-				route().params["order"],
+				routeParams["order"],
 				deliveryNote.slug,
 			])
 		case "shops.show.delivery-notes.index":
@@ -52,35 +78,41 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 			])
 		case "grp.org.warehouses.show.dispatching.delivery-notes":
 			return route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
-				route().params["organisation"],
-				route().params["warehouse"],
+				routeParams["organisation"],
+				routeParams["warehouse"],
 				deliveryNote.slug,
 			])
 		case "grp.org.shops.show.ordering.delivery-notes.index":
 			return route("grp.org.shops.show.ordering.delivery-notes.show", [
-				route().params["organisation"],
-				route().params["shop"],
+				routeParams["organisation"],
+				routeParams["shop"],
 				deliveryNote.slug,
 			])
 		case "grp.org.shops.show.ordering.orders.index":
 			return route("grp.org.shops.show.ordering.show.delivery-note.show", [
-				route().params["organisation"],
-				route().params["shop"],
+				routeParams["organisation"],
+				routeParams["shop"],
 				deliveryNote.slug,
 			])
-
 		case "grp.org.shops.show.crm.customers.show.delivery_notes.index":
 			return route("grp.org.shops.show.crm.customers.show.delivery_notes.show", [
-				route().params["organisation"],
-				route().params["shop"],
-				route().params["customer"],
+				routeParams["organisation"],
+				routeParams["shop"],
+				routeParams["customer"],
+				deliveryNote.slug,
+			])
+		case "grp.org.shops.show.crm.customers.show.replacements.index":
+			return route("grp.org.shops.show.crm.customers.show.replacements.show", [
+				routeParams["organisation"],
+				routeParams["shop"],
+				routeParams["customer"],
 				deliveryNote.slug,
 			])
 		case "grp.org.shops.show.crm.customers.show.orders.show":
 			return route("grp.org.shops.show.crm.customers.show.delivery_notes.show", [
-				route().params["organisation"],
-				route().params["shop"],
-				route().params["customer"],
+				routeParams["organisation"],
+				routeParams["shop"],
+				routeParams["customer"],
 				deliveryNote.slug,
 			])
 		case "grp.overview.ordering.delivery_notes.index":
@@ -91,28 +123,36 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 				deliveryNote.slug,
 			])
 		default:
-			return route("grp.helpers.redirect_delivery_notes", [deliveryNote.id])
+			return route("grp.majordomo.redirect_delivery_notes", [deliveryNote.id])
 	}
 }
 
 function returnNoteRoute(returnDeliveryNote) {
-	switch(route().current()) {
+	switch(routeCurrent) {
 		case "grp.org.warehouses.show.incoming.return_delivery_notes.index":
 			return route('grp.org.warehouses.show.incoming.return_delivery_notes.show', [
-				route().params["organisation"],
-				route().params["warehouse"],
+				routeParams["organisation"],
+				routeParams["warehouse"],
 				returnDeliveryNote.slug,
 			])
 		case "grp.org.shops.show.ordering.backlog":
 		case "grp.org.shops.show.ordering.return_delivery_notes.index":
 			return route("grp.org.shops.show.ordering.return_delivery_notes.show", [
-				route().params["organisation"],
-				route().params["shop"],
+				routeParams["organisation"],
+				routeParams["shop"],
+				returnDeliveryNote.slug,
+
+			])
+		case "grp.org.shops.show.crm.customers.show.return_delivery_notes.index":
+			return route("grp.org.shops.show.crm.customers.show.return_delivery_notes.show", [
+				routeParams["organisation"],
+				routeParams["shop"],
+				routeParams["customer"],
 				returnDeliveryNote.slug,
 
 			])
 		default:
-			return route("grp.helpers.redirect_return_notes", returnDeliveryNote.id)
+			return route("grp.majordomo.redirect_return_notes", returnDeliveryNote.id)
 	}
 }
 
@@ -122,7 +162,7 @@ function customerRoute(deliveryNote: DeliveryNote) {
 		return "#"
 	}
 
-	switch (route().current()) {
+	switch (routeCurrent) {
 		case "grp.overview.ordering.delivery_notes.index":
 			return route("grp.org.shops.show.crm.customers.show", [
 				deliveryNote.organisation_slug,
@@ -131,13 +171,13 @@ function customerRoute(deliveryNote: DeliveryNote) {
 			])
 		case "grp.org.warehouses.show.dispatching.delivery-notes":
 			return route("grp.org.shops.show.crm.customers.show", [
-				route().params["organisation"],
+				routeParams["organisation"],
 				deliveryNote.shop_slug,
 				deliveryNote.customer_slug,
 			])
 		default:
 			return route("grp.org.shops.show.crm.customers.show", [
-				route().params["organisation"],
+				routeParams["organisation"],
 				deliveryNote.shop_slug,
 				deliveryNote.customer_slug,
 			])
@@ -184,7 +224,7 @@ const onClickPick = () => {
 const generateRouteDeliveryNote = (id: string) => {
 	if (!id) return ""
 
-	return route("grp.helpers.redirect_delivery_notes", {
+	return route("grp.majordomo.redirect_delivery_notes", {
 		deliveryNote: id,
 	})
 }
@@ -195,7 +235,7 @@ const generateRouteDeliveryNote = (id: string) => {
 		<template #cell(status)="{ item: deliveryNote }">
 			<!-- {{deliveryNote.state_icon}} -->
 			<Icon :data="deliveryNote.state_icon" />
-			<!-- <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
+			<!-- <Link :href="deliveryNoteHref(deliveryNote)" class="primaryLink">
                 {{ deliveryNote["reference"] }}
             </Link> -->
 		</template>
@@ -205,25 +245,56 @@ const generateRouteDeliveryNote = (id: string) => {
 		</template>
 
 		<template #cell(reference)="{ item: deliveryNote }">
-			<div class="flex gap-2 flex-wrap items-center">
-				<Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
-					{{ deliveryNote["reference"] }}
-				</Link>
-				<FontAwesomeIcon
-					v-if="deliveryNote.is_premium_dispatch"
-					v-tooltip="trans('Priority dispatch')"
-					icon="fas fa-star"
-					class="text-yellow-500"
-					fixed-width
-					aria-hidden="true" />
-				<FontAwesomeIcon
-					v-if="deliveryNote.has_extra_packing"
-					v-tooltip="trans('Extra packing')"
-					icon="fas fa-box-heart"
-					class="text-yellow-500"
-					fixed-width
-					aria-hidden="true" />
-				<NotesDisplay :item="deliveryNote" reference-field="reference" />
+            <div class="flex flex-rows gap-2">
+				<div class="flex gap-2 flex-wrap items-center">
+					<Link :href="deliveryNoteHref(deliveryNote)" class="primaryLink">
+						{{ deliveryNote["reference"] }}
+					</Link>
+					<FontAwesomeIcon
+						v-if="deliveryNote.is_premium_dispatch"
+						v-tooltip="trans('Priority dispatch')"
+						icon="fas fa-star"
+						class="text-yellow-500"
+						fixed-width
+						aria-hidden="true" />
+					<FontAwesomeIcon
+						v-if="deliveryNote.is_customer_vip"
+						v-tooltip="trans('VIP Customer')"
+						:icon="faCertificate"
+						color="#191970"
+						fixed-width
+					/>
+					<FontAwesomeIcon
+						v-if="deliveryNote.has_extra_packing"
+						v-tooltip="trans('Extra packing')"
+						icon="fas fa-box-heart"
+						class="text-yellow-500"
+						fixed-width
+						aria-hidden="true" />
+					<NotesDisplay :item="deliveryNote" reference-field="reference" />
+					<WaitingOppositeCountBadge
+						v-if="Number(deliveryNote.waiting_warehouse_count) > 0"
+						:count="Number(deliveryNote.waiting_warehouse_count)"
+						type="warehouse"
+						:href="deliveryNoteHref(deliveryNote)"
+					/>
+					<WaitingOppositeCountBadge
+						v-if="Number(deliveryNote.waiting_crm_count) > 0"
+						:count="Number(deliveryNote.waiting_crm_count)"
+						type="crm"
+						:href="deliveryNoteHref(deliveryNote)"
+					/>
+				</div>
+				<span
+                    v-if="deliveryNote.is_collection"
+					class="border border-pink-500 text-pink-500 py-[0.15rem] px-[0.25rem] rounded-md ml-auto text-xs my-auto whitespace-nowrap"
+				>
+					{{ ctrans('Collection') }}
+					<FontAwesomeIcon 
+						:icon="faMapMarkerAlt"
+						class="text-pink-500"
+					/>
+				</span>
 			</div>
 		</template>
 

@@ -28,6 +28,7 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Models\Fulfilment\RecurringBill;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\SysAdmin\Organisation;
@@ -41,6 +42,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowRecurringBill extends OrgAction
 {
+    use WithBucketNavigation;
+
     use WithFulfilmentShopAuthorisation;
     use WithFulfilmentCustomerSubNavigation;
     private Fulfilment|FulfilmentCustomer $parent;
@@ -211,19 +214,19 @@ class ShowRecurringBill extends OrgAction
 
                 RecurringBillTabsEnum::TRANSACTIONS->value => $this->tab == RecurringBillTabsEnum::TRANSACTIONS->value ?
                     fn () => RecurringBillTransactionsResource::collection(IndexRecurringBillTransactions::run($recurringBill, RecurringBillTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => RecurringBillTransactionsResource::collection(IndexRecurringBillTransactions::run($recurringBill, RecurringBillTabsEnum::TRANSACTIONS->value))),
+                    : Inertia::optional(fn () => RecurringBillTransactionsResource::collection(IndexRecurringBillTransactions::run($recurringBill, RecurringBillTabsEnum::TRANSACTIONS->value))),
 
                 RecurringBillTabsEnum::PALLET_DELIVERIES->value => $this->tab == RecurringBillTabsEnum::PALLET_DELIVERIES->value ?
                     fn () => PalletDeliveriesResource::collection(IndexPalletDeliveries::run($recurringBill, RecurringBillTabsEnum::PALLET_DELIVERIES->value))
-                    : Inertia::lazy(fn () => PalletDeliveriesResource::collection(IndexPalletDeliveries::run($recurringBill, RecurringBillTabsEnum::PALLET_DELIVERIES->value))),
+                    : Inertia::optional(fn () => PalletDeliveriesResource::collection(IndexPalletDeliveries::run($recurringBill, RecurringBillTabsEnum::PALLET_DELIVERIES->value))),
 
                 RecurringBillTabsEnum::PALLET_RETURNS->value => $this->tab == RecurringBillTabsEnum::PALLET_RETURNS->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturns::run($recurringBill, RecurringBillTabsEnum::PALLET_RETURNS->value))
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturns::run($recurringBill, RecurringBillTabsEnum::PALLET_RETURNS->value))),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturns::run($recurringBill, RecurringBillTabsEnum::PALLET_RETURNS->value))),
 
                 RecurringBillTabsEnum::HISTORY->value => $this->tab == RecurringBillTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($recurringBill))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($recurringBill)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($recurringBill)))
             ]
         )->table(
             IndexRecurringBillTransactions::make()->tableStructure(
@@ -350,20 +353,53 @@ class ShowRecurringBill extends OrgAction
 
     public function getPrevious(RecurringBill $recurringBill, ActionRequest $request): ?array
     {
-        $previous = RecurringBill::where('slug', '<', $recurringBill->slug)
-            ->where('recurring_bills.fulfilment_id', $recurringBill->fulfilment_id)
-            ->orderBy('slug', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getRecurringBillNeighbour($recurringBill, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(RecurringBill $recurringBill, ActionRequest $request): ?array
     {
-        $next = RecurringBill::where('slug', '>', $recurringBill->slug)
-            ->where('recurring_bills.fulfilment_id', $recurringBill->fulfilment_id)
-            ->orderBy('slug')->first();
+        return $this->getNavigation($this->getRecurringBillNeighbour($recurringBill, $request, forward: true), $request->route()->getName());
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    private function getRecurringBillNeighbour(RecurringBill $recurringBill, ActionRequest $request, bool $forward): ?RecurringBill
+    {
+        $routeName = $request->route()->getName();
+        $query     = RecurringBill::query();
+
+        if (str_contains($routeName, 'crm.customers.show.recurring_bills')) {
+            $query->where('recurring_bills.fulfilment_customer_id', $recurringBill->fulfilment_customer_id);
+        } else {
+            $query->where('recurring_bills.fulfilment_id', $recurringBill->fulfilment_id);
+
+            $bucket = $request->input('bucket');
+
+            if (!$bucket && preg_match('/\.recurring_bills\.(current|former)\./', $routeName, $matches)) {
+                $bucket = $matches[1];
+            }
+
+            $status = match ($bucket) {
+                'current' => RecurringBillStatusEnum::CURRENT,
+                'former'  => RecurringBillStatusEnum::FORMER,
+                default   => null,
+            };
+
+            if ($status) {
+                $query->where('recurring_bills.status', $status);
+            }
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $recurringBill,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'reference'  => 'recurring_bills.reference',
+                'start_date' => 'recurring_bills.start_date',
+                'end_date'   => 'recurring_bills.end_date',
+            ],
+            defaultSort: ['recurring_bills.reference', false],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?RecurringBill $recurringBill, string $routeName): ?array

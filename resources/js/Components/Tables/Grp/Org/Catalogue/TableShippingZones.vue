@@ -123,7 +123,7 @@ const handleDragChange = async (event: any) => {
 	try {
 		await axios.patch(
 			route(
-				"grp.org.shops.show.billables.shipping.show.shipping-zone.reorder",
+				"grp.org.shops.show.billables.shipping.shipping-zone.reorder",
 				[
 					routeParams.value.organisation,
 					routeParams.value.shop,
@@ -164,7 +164,7 @@ const shopRoute = (zone: ShippingZone): string | null => {
 		const params = route().params as RouteParams
 
 		switch (currentRoute) {
-			case "grp.org.shops.show.billables.shipping.show":
+			case "grp.org.shops.show.billables.shipping.current.show":
 				if (
 					!params.organisation ||
 					!params.shop ||
@@ -180,7 +180,30 @@ const shopRoute = (zone: ShippingZone): string | null => {
 					return null
 				}
 
-				return route("grp.org.shops.show.billables.shipping.show.shipping-zone.show", [
+				return route("grp.org.shops.show.billables.shipping.current.show.shipping-zone.show", [
+					params.organisation,
+					params.shop,
+					params.shippingZoneSchema,
+					// zone.slug,
+					`${zone.slug}/edit`,
+				])
+			case "grp.org.shops.show.billables.shipping.discount.show":
+				if (
+					!params.organisation ||
+					!params.shop ||
+					!params.shippingZoneSchema ||
+					!zone.slug
+				) {
+					console.warn("Missing required route parameters:", {
+						organisation: params.organisation,
+						shop: params.shop,
+						shippingZoneSchema: params.shippingZoneSchema,
+						zoneSlug: zone.slug,
+					})
+					return null
+				}
+
+				return route("grp.org.shops.show.billables.shipping.discount.show.shipping-zone.show", [
 					params.organisation,
 					params.shop,
 					params.shippingZoneSchema,

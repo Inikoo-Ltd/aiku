@@ -21,12 +21,14 @@ class UpdateAllegroUser extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(AllegroUser $allegroUser, array $modelData): AllegroUser
+    public function handle(AllegroUser $allegroUser, array $modelData, bool $isNeedCheck = true): AllegroUser
     {
         /** @var AllegroUser $allegroUser */
         $allegroUser = $this->update($allegroUser, $modelData);
 
-        CheckAllegroChannel::run($allegroUser);
+        if ($isNeedCheck) {
+            CheckAllegroChannel::run($allegroUser);
+        }
 
         return $allegroUser;
     }

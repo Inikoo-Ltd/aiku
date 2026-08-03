@@ -8,26 +8,26 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Masters\MasterProductCategory;
 
-class DetachFamilyToMasterSubDepartment extends GrpAction
+class DetachFamilyToMasterSubDepartment extends OrgAction
 {
     use WithActionUpdate;
 
     public function handle(MasterProductCategory $family): MasterProductCategory
     {
-        $currentSubDepartment = $family->subDepartment;
+        $currentSubDepartment = $family->masterSubDepartment;
 
         $family->update(
             [
-                'sub_department_id' => null,
-                'department_id'     => $currentSubDepartment->department_id,
-                'parent_id'         => $currentSubDepartment->department_id,
+                'master_sub_department_id' => null,
+                'master_department_id'     => $currentSubDepartment->master_department_id,
+                'master_parent_id'         => $currentSubDepartment->master_department_id,
             ]
         );
 

@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
-use App\Actions\CRM\Prospect\Queries\UI\IndexProspectQueries;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -75,38 +74,7 @@ class CreateProspectMailshot extends OrgAction
             ]
         ];
 
-        // $tags = explode(',', $request->input('tags'));
 
-
-
-        // $fields[] = [
-        //     'title'  => '',
-        //     'fields' => [
-        //         'recipients_recipe' => [
-        //             'type'        => 'prospectRecipients',
-        //             'label'       => __('recipients'),
-        //             'required'    => true,
-        //             'options'     => [
-        //                 'query'                  => IndexProspectQueries::run(),
-        //                 'custom_prospects_query' => '',
-        //             ],
-        //             'full'      => true,
-        //             'value'     => [
-        //                 'recipient_builder_type' => 'query',
-        //                 'recipient_builder_data' => [
-        //                     'query'                     => null,
-        //                     'custom_prospects_query'    => $tags[0] != '' ? [
-        //                         'tags'   => [
-        //                             'logic'    => 'all',
-        //                             'tag_ids'  => $tags
-        //                         ],
-        //                     ] : null,
-        //                     'prospects' => null,
-        //                 ]
-        //             ]
-        //         ],
-        //     ]
-        // ];
 
         return Inertia::render(
             'CreateModel',

@@ -176,13 +176,37 @@ class EditWebsite extends OrgAction
         if (in_array($website->type, [WebsiteTypeEnum::B2B, WebsiteTypeEnum::DROPSHIPPING])) {
             $blueprints[] = [
                 'label'  => __('Catalogue Pages'),
-                'icon'   => 'fa-light fa-browser',
+                'icon'   => 'fa-solid fa-browser',
                 'fields' => [
                     'description_has_overview'  => [
                         'type'          => 'toggle',
                         'information'   => __('Toggle whether or not Department Pages have a dedicated overview page that lists all of the families under that department'),
                         'label'         => __('Department Pages has Family Overview'),
                         'value'         => data_get($website->settings, 'catalogue_pages.description_has_overview', false),
+                    ]
+                ]
+            ];
+            $blueprints[] = [
+                'label'  => __('Webpage'),
+                'icon'   => 'fa-light fa-browser',
+                'fields' => [
+                    'webpage_title_prefix'  => [
+                        'type'          => 'input',
+                        'information'   => __('Would add the set prefix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                        'label'         => __('Title Prefix'),
+                        'value'         => data_get($website->settings, 'webpage.title_prefix', null),
+                    ],
+                    'webpage_title_suffix'  => [
+                        'type'          => 'input',
+                        'information'   => __('Would add the set suffix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                        'label'         => __('Title Suffix'),
+                        'value'         => data_get($website->settings, 'webpage.title_suffix', null),
+                    ],
+                    'show_price'  => [
+                        'type'          => 'toggle',
+                        'information'   => __('Toggle whether or not the price is shown when logged out on the webpage. This would not override individual webpage setting (if exists)'),
+                        'label'         => __('Show Price on Webpage'),
+                        'value'         => data_get($website->settings, 'webpage.show_price', false),
                     ]
                 ]
             ];
@@ -210,6 +234,31 @@ class EditWebsite extends OrgAction
                         'value'         => data_get($website->settings, 'recommender_web_block.description_has_overview', 100),
                     ]
                 ]
+            ];
+            $blueprints[] = [
+               'label'  => __('Related Products Category Web Block'),
+               'icon'   => 'fad fa-folder-tree',
+               'fields' => [
+                   'title_product_category_recommender'  => [
+                       'type'          => 'textEditor',
+                       'label'         => __('Title'),
+                       'value'         => data_get($website->settings, 'recommender_product_category_web_block.title', null),
+                   ],
+                   'min_amt_shown_recommender_product_category'  => [
+                       'type'          => 'input_number',
+                       'label'         => __('Min Amount'),
+                       'min'           => 1,
+                       'information'   => __('If product count is less than min amount, then that web block will not be shown'),
+                       'value'         => data_get($website->settings, 'recommender_product_category_web_block.min_amt_shown', 5),
+                   ],
+                   'max_amt_shown_recommender_product_category'  => [
+                       'type'          => 'input_number',
+                       'label'         => __('Max Amount'),
+                       'min'           => 1,
+                       'information'   => __('If product count is more than max amount, then the exceeding products will not be shown'),
+                       'value'         => data_get($website->settings, 'recommender_product_category_web_block.description_has_overview', 100),
+                   ]
+               ]
             ];
             $blueprints[] = [
                 'label'  => __('Registration'),
@@ -436,7 +485,7 @@ class EditWebsite extends OrgAction
                     'value' => Arr::get($website->settings, 'welcome_message'),
                     'full' => true,
                     'information' => __('Displayed on the Retina dashboard as the main text.'),
-                    'toogle' => [
+                    'toggle' => [
                         'heading2',
                         'heading3',
                         'fontSize',

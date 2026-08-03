@@ -6,16 +6,17 @@
 
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 import Icon from "@/Components/Icon.vue"
 import { remove as loRemove, cloneDeep} from "lodash-es"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faToolbox, faTools } from "@fal"
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faToolbox, faTools, faDownload } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { onMounted, onUnmounted, ref, inject, shallowRef  } from "vue"
+import { computed, onMounted, onUnmounted, ref, inject, shallowRef, watch  } from "vue"
 import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Invoice } from "@/types/invoice"
@@ -33,7 +34,8 @@ import axios from "axios"
 import { ulid } from "ulid"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { notify } from "@kyvg/vue3-notification"
-
+import Popover from "primevue/popover"
+import Checkbox from "primevue/checkbox"
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack)
@@ -53,7 +55,49 @@ const props = defineProps<{
     variantSlugs?: Record<string, string>;
     mismatch_trade_unit_with_master?: boolean
     hide_sku_in_name_column?: boolean
+    productsExport?: {
+        fields: { key: string; label: string }[]
+        download_route: { xlsx: routeType; csv: routeType }
+    }
 }>()
+
+const exportPanel = ref()
+const exportFields = computed(() => props.productsExport?.fields ?? [])
+const selectedExportColumns = ref<string[]>([])
+
+const allExportColumnsSelected = computed({
+    get: () => !!exportFields.value.length && selectedExportColumns.value.length === exportFields.value.length,
+    set: (value: boolean) => {
+        selectedExportColumns.value = value ? exportFields.value.map(field => field.key) : []
+    }
+})
+
+watch(exportFields, (fields) => {
+    selectedExportColumns.value = fields.map(field => field.key)
+}, { immediate: true })
+
+const exportUrl = (type: 'csv' | 'xlsx') => {
+    const exportRoute = props.productsExport?.download_route?.[type]
+    if (!exportRoute?.name) return ''
+
+    const base = route(exportRoute.name, exportRoute.parameters) as unknown as string
+
+    const query = new URLSearchParams()
+    new URLSearchParams(window.location.search).forEach((value, key) => {
+        if (key.includes('filter[') || key.includes('elements[')) {
+            query.append(key, value)
+        }
+    })
+    selectedExportColumns.value.forEach(column => query.append('columns[]', column))
+
+    const queryString = query.toString()
+    return queryString ? base + (base.includes('?') ? '&' : '?') + queryString : base
+}
+
+const onExport = (type: 'csv' | 'xlsx') => {
+    if (!selectedExportColumns.value.length) return
+    window.open(exportUrl(type), '_blank')
+}
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
@@ -136,13 +180,26 @@ function onCancel(item) {
 }
 
 
+function productHref(product: Product) {
+    return productRoute(product) + bucketQuery()
+}
+
 function productRoute(product: Product) {
     if (!product.slug) {
-        return ""
+        return "ss"
     }
 
     // console.log(route().current())
     switch (route().current()) {
+        case 'grp.org.shops.show.catalogue.products.not_online_products.index': 
+            return route(
+                'grp.org.shops.show.catalogue.products.not_online_products.show',
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]
+            )
         case 'grp.org.shops.show.catalogue.products.independent_products.current.index':
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.current.show",
@@ -206,6 +263,14 @@ function productRoute(product: Product) {
         case "grp.org.shops.show.catalogue.products.rrp_violation_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.rrp_violation_products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ])
+        case "grp.org.shops.show.catalogue.products.missing_description_products.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.missing_description_products.show",
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
@@ -329,7 +394,7 @@ function productRoute(product: Product) {
         default:
             if (product.asset_id) {
                 return route(
-                    "grp.helpers.redirect_asset",
+                    "grp.majordomo.redirect_asset",
                     [product.asset_id])
             } else return ""
 
@@ -354,7 +419,7 @@ function masterProductRoute(product: {}) {
     }
 
     return route(
-        "grp.helpers.redirect_master_product",
+        "grp.majordomo.redirect_master_product",
         [product.master_product_id])
 }
 
@@ -372,7 +437,7 @@ function shopRoute(invoice: Invoice) {
     if (!invoice.organisation_slug || !invoice.shop_slug) {
         //todo fix this
         // return route(
-        //     "grp.helpers.redirect_asset",
+        //     "grp.majordomo.redirect_asset",
         //     [invoice.asset_id])
     }
     if (route().current() == "grp.trade_units.units.show") {
@@ -573,6 +638,35 @@ const repairTradeUnitFromChildren = async (product) => {
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
 
+        <template v-if="exportFields.length" #add-on-button>
+            <Button :icon="faDownload" :label="trans('Export')" type="tertiary" size="xs"
+                @click="exportPanel.toggle($event)" />
+
+            <Popover ref="exportPanel">
+                <div class="w-72">
+                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
+                        <Button :icon="faDownload" label="XLSX" type="tertiary"
+                            :disabled="!selectedExportColumns.length" @click="onExport('xlsx')" />
+                        <Button :icon="faDownload" label="CSV" type="tertiary"
+                            :disabled="!selectedExportColumns.length" @click="onExport('csv')" />
+                    </div>
+
+                    <label class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
+                        <Checkbox v-model="allExportColumnsSelected" :binary="true" />
+                        <span>{{ trans("Select all") }}</span>
+                    </label>
+
+                    <div class="max-h-72 overflow-y-auto">
+                        <label v-for="field in exportFields" :key="field.key"
+                            class="flex items-center gap-2 px-1 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded">
+                            <Checkbox v-model="selectedExportColumns" :value="field.key" />
+                            <span>{{ field.label }}</span>
+                        </label>
+                    </div>
+                </div>
+            </Popover>
+        </template>
+
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">
                 <Image :src="product['image_thumbnail']" imageCover class="w-6 aspect-square rounded-full overflow-hidden shadow" />
@@ -686,6 +780,10 @@ const repairTradeUnitFromChildren = async (product) => {
             </LabelSKU>
         </template>
 
+        <template #cell(webpage_state)="{ item: product }">
+            <Icon :data="product.webpage_state" />
+        </template>
+
         <template #cell(price)="{ item: product }">
             <div v-if="onEditOpen.includes(product.id)">
                 <InputNumber v-model="editingValues[product.id].price" mode="currency" :currency="product.currency_code"
@@ -718,7 +816,7 @@ const repairTradeUnitFromChildren = async (product) => {
                 </InputNumber>
                 <p class="text-red-600 text-xxs">{{ errors?.[product.id]?.rrp }}</p>
             </div>
-            <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp_per_unit) }}</span>
+            <span v-else>{{ locale.currencyFormatRrp(product.currency_code, product.rrp_per_unit) }}</span>
         </template>
 
         <template #cell(rrp)="{ item: product }">
@@ -876,8 +974,8 @@ const repairTradeUnitFromChildren = async (product) => {
                     :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                 <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
                 </Link>
-                <Link :href="productRoute(product)" class="primaryLink">
-                {{ product["code"] }}
+                <Link :href="productHref(product)" class="primaryLink">
+                    {{ product["code"] }}
                 </Link>
             </div>
         </template>
@@ -896,7 +994,7 @@ const repairTradeUnitFromChildren = async (product) => {
                         <FontAwesomeIcon icon="fab fa-octopus-deploy" class="text-indigo-700" />
                     </Link>
 
-                    <Link :href="productRoute(product)" class="primaryLink">
+                    <Link :href="productHref(product)" class="primaryLink">
                         {{ product.code }}
                     </Link>
                 </div>

@@ -68,7 +68,7 @@ class ShowShippingZoneSchema extends OrgAction
                             'style' => 'create',
                             'label' => 'Create shipping zone',
                             'route' => [
-                                'name'       => "grp.org.shops.show.billables.shipping.show.shipping-zone.create",
+                                'name'       => $shippingZoneSchema->is_current ? "grp.org.shops.show.billables.shipping.current.show.shipping-zone.create" : "grp.org.shops.show.billables.shipping.discount.show.shipping-zone.create" ,
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ] : false,
@@ -90,7 +90,7 @@ class ShowShippingZoneSchema extends OrgAction
                 ],
                 ShippingZoneSchemaTabsEnum::ZONES->value => $this->tab == ShippingZoneSchemaTabsEnum::ZONES->value ?
                     fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema, ShippingZoneSchemaTabsEnum::ZONES->value))
-                    : Inertia::lazy(fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema)))
+                    : Inertia::optional(fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema)))
             ]
         );
     }
@@ -109,8 +109,9 @@ class ShowShippingZoneSchema extends OrgAction
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Shippings')
+                            'route'     => $routeParameters['index'],
+                            'label'     => __('Shippings'),
+                            'suffix'    => '('. ($shippingZoneSchema->is_current ? __("Current") : __("Discount")) . ')',
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -124,14 +125,15 @@ class ShowShippingZoneSchema extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.billables.shipping.show' =>
+            'grp.org.shops.show.billables.shipping.current.show',
+            'grp.org.shops.show.billables.shipping.discount.show' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $shippingZoneSchema,
                     [
                         'index' => [
-                            'name'       => preg_replace('/show$/', 'index', $routeName),
+                            'name'       => 'grp.org.shops.show.billables.shipping.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
@@ -168,7 +170,8 @@ class ShowShippingZoneSchema extends OrgAction
 
 
         return match ($routeName) {
-            'grp.org.shops.show.billables.shipping.show' => [
+            'grp.org.shops.show.billables.shipping.current.show',
+            'grp.org.shops.show.billables.shipping.discount.show' => [
                 'label' => $shippingZoneSchema->name,
                 'route' => [
                     'name'       => $routeName,

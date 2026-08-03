@@ -48,12 +48,12 @@ class ShowAnnouncement extends OrgAction
         return Inertia::render(
             'Websites/Announcement',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
                 'title'       => $announcement->name,
                 'pageHead'    => [
+                    'breadcrumbs' => $this->getBreadcrumbs(
+                        $request->route()->getName(),
+                        $request->route()->originalParameters()
+                    ),
                     'title'     => $announcement->name,
                     'icon'      => [
                         'tooltip' => __('announcement'),
@@ -87,83 +87,10 @@ class ShowAnnouncement extends OrgAction
                     'navigation' => AnnouncementTabsEnum::navigation()
                 ],
 
-                'routes_list' => [
-                    'publish_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.publish',
-                        'parameters' => [
-                            'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
-                        ],
-                        'method'    => 'patch'
-                    ],
-                    'update_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.update',
-                        'parameters' => [
-                            'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
-                        ],
-                        'method'    => 'patch'
-                    ],
-                    'reset_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.reset',
-                        'parameters' => [
-                            'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
-                        ],
-                        'method'    => 'delete'
-                    ],
-                    'close_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.close',
-                        'parameters' => [
-                            'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
-                        ],
-                        'method'    => 'patch'
-                    ],
-                    'start_route' => [
-                        'name'       => 'grp.models.shop.website.announcement.start',
-                        'parameters' => [
-                            'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
-                        ],
-                        'method'    => 'patch'
-                    ],
-                    'activated_route'     => [
-                        'name'          => 'grp.models.shop.website.announcement.toggle',
-                        'parameters'    => [
-                            'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->website->slug,
-                            'announcement'     => $announcement->ulid
-                        ],
-                        'method'    => 'patch'
-                    ],
-                    'upload_image_route'     => [
-                        'name'          => 'grp.models.shop.website.announcement.upload-images.store',
-                        'parameters'    => [
-                            'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->portfolio_website_id
-                        ],
-                        'method'    => 'post'
-                    ],
-                    'delete_announcement_route'     => [
-                        'name'          => 'grp.models.shop.website.announcement.delete',
-                        'parameters'    => [
-                            'shop' => $announcement->website->shop->slug,
-                            'website' => $announcement->portfolio_website_id
-                        ],
-                        'method'    => 'delete'
-                    ]
-                ],
-
                 AnnouncementTabsEnum::SHOWCASE->value => $this->tab == AnnouncementTabsEnum::SHOWCASE->value
                     ?
                     fn () => AnnouncementResource::make($announcement)->getArray()
-                    : Inertia::lazy(
+                    : Inertia::optional(
                         fn () => AnnouncementResource::make($announcement)->getArray()
                     ),
 
@@ -175,7 +102,7 @@ class ShowAnnouncement extends OrgAction
                             prefix: AnnouncementTabsEnum::SNAPSHOTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => SnapshotResource::collection(
+                    : Inertia::optional(fn () => SnapshotResource::collection(
                         IndexSnapshots::run(
                             parent: $announcement,
                             prefix: AnnouncementTabsEnum::SNAPSHOTS->value

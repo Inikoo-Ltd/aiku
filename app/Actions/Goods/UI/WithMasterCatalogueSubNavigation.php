@@ -104,7 +104,7 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Master Collections')
                 ]
             ],
-            app()->environment('local') ? [
+            $masterShop->gold_reward_eligible ? [
                 'number'   => $masterShop->stats->number_master_families_with_vol_gr_discount,
                 'label'    => __('M. Vol/GR'),
                 'tooltip'    => __('Master Volume/Gold Reward Discount'),

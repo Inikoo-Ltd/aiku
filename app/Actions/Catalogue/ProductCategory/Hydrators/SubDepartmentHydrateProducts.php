@@ -15,6 +15,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SubDepartmentHydrateProducts implements ShouldBeUnique
@@ -23,19 +24,32 @@ class SubDepartmentHydrateProducts implements ShouldBeUnique
     use WithEnumStats;
     use HasGetProductCategoryState;
 
-    public function getJobUniqueId(ProductCategory $subDepartment): string
+    public string $jobQueue = 'hydrators-slave';
+
+    public function getJobUniqueId(?int $subDepartmentId): string
     {
-        return $subDepartment->id;
+        return $subDepartmentId ?? 'empty';
     }
 
-    public function handle(ProductCategory $subDepartment): void
+    public function handle(?int $subDepartmentId): void
     {
-        if ($subDepartment->type !== ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+
+        if (!$subDepartmentId) {
+            return;
+        }
+
+        $subDepartment = ProductCategory::on('aiku_no_sticky')->find($subDepartmentId);
+
+
+        if (!$subDepartment || $subDepartment->type !== ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             return;
         }
 
         $stats = [
-            'number_products' => $subDepartment->getproducts()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count()
+            'number_products' => DB::connection('aiku_no_sticky')->table('products')
+                ->whereNull('deleted_at')
+                ->where('sub_department_id', $subDepartment->id)
+                ->where('is_main', true)->whereNull('exclusive_for_customer_id')->count()
         ];
 
         $stats = array_merge(
@@ -47,14 +61,15 @@ class SubDepartmentHydrateProducts implements ShouldBeUnique
                 models: Product::class,
                 where: function ($q) use ($subDepartment) {
                     $q->where('is_main', true)->where('sub_department_id', $subDepartment->id);
-                }
+                },
+                connection: 'aiku_no_sticky'
             )
         );
 
-        $numberCurrentProductsActiveForSale = Product::where('sub_department_id', $subDepartment->id)->where('is_for_sale', true)
+        $numberCurrentProductsActiveForSale = Product::on('aiku_no_sticky')->where('sub_department_id', $subDepartment->id)->where('is_for_sale', true)
             ->where('state', ProductStateEnum::ACTIVE)
             ->count();
-        $numberCurrentProductsDiscontinuingForSale = Product::where('sub_department_id', $subDepartment->id)->where('is_for_sale', true)
+        $numberCurrentProductsDiscontinuingForSale = Product::on('aiku_no_sticky')->where('sub_department_id', $subDepartment->id)->where('is_for_sale', true)
             ->where('state', ProductStateEnum::DISCONTINUING)
             ->count();
 

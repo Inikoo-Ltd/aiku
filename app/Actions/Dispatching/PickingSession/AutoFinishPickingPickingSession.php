@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 22-05-2025-15h-44m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -16,34 +16,44 @@ use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\PickingSession;
+use Illuminate\Console\Command;
 
 class AutoFinishPickingPickingSession extends OrgAction
 {
     use WithActionUpdate;
+
     public function handle(PickingSession $pickingSession): PickingSession
     {
-
         $numberItems = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->count();
 
         $numberHandled = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)
+            ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
             ->where('is_handled', true)
             ->count();
+
+
         if ($numberHandled == $numberItems) {
             $this->update($pickingSession, [
                 'state' => PickingSessionStateEnum::PICKING_FINISHED
             ]);
             WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }
+
         return $pickingSession;
     }
 
-    public function action(PickingSession $pickingSession): PickingSession
+    public function getCommandSignature(): string
     {
-        $this->initialisationFromWarehouse($pickingSession->warehouse, []);
-
-        return $this->handle($pickingSession);
+        return 'auto-finish-picking-picking-session {picking_session}';
     }
 
+    public function asCommand(Command $command): int
+    {
+        $pickingSession = PickingSession::where('slug', $command->argument('picking_session'))->firstOrFail();
+        $this->handle($pickingSession);
+
+        return 0;
+    }
 
 
 }

@@ -47,6 +47,10 @@ class ShowWorkshopBlueprint extends OrgAction
         /** @var ProductCategory $productCategory */
         $productCategory = $webpage->model;
 
+        if (!$productCategory instanceof ProductCategory) {
+            abort(404);
+        }
+
         if ($productCategory->type === ProductCategoryTypeEnum::DEPARTMENT) {
             $families        = FamiliesResource::collection($productCategory->getFamilies());
             $productCategory = DepartmentResource::make($productCategory);

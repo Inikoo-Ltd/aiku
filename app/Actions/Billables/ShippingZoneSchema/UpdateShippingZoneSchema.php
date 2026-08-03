@@ -8,7 +8,10 @@
 
 namespace App\Actions\Billables\ShippingZoneSchema;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingZoneSchemas;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShippingZoneSchemas;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShippingZoneSchemas;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
 use App\Models\Billables\ShippingZoneSchema;
@@ -20,11 +23,19 @@ class UpdateShippingZoneSchema extends OrgAction
     use WithActionUpdate;
 
 
-    private ShippingZoneSchema $shippingZoneSchema;
 
     public function handle(ShippingZoneSchema $shippingZoneSchema, array $modelData): ShippingZoneSchema
     {
-        return $this->update($shippingZoneSchema, $modelData);
+        $shippingZoneSchema = $this->update($shippingZoneSchema, $modelData);
+
+        if ($shippingZoneSchema->wasChanged('state')) {
+            $shop = $shippingZoneSchema->shop;
+            ShopHydrateShippingZoneSchemas::dispatch($shop)->delay($this->hydratorsDelay);
+            OrganisationHydrateShippingZoneSchemas::dispatch($shop->organisation)->delay($this->hydratorsDelay);
+            GroupHydrateShippingZoneSchemas::dispatch($shop->group)->delay($this->hydratorsDelay);
+        }
+
+        return $shippingZoneSchema;
     }
 
 
@@ -47,7 +58,6 @@ class UpdateShippingZoneSchema extends OrgAction
             ShippingZoneSchema::disableAuditing();
         }
         $this->strict             = $strict;
-        $this->shippingZoneSchema = $shippingZoneSchema;
         $this->hydratorsDelay     = $hydratorsDelay;
         $this->initialisationFromShop($shippingZoneSchema->shop, $modelData);
 
@@ -57,7 +67,6 @@ class UpdateShippingZoneSchema extends OrgAction
 
     public function asController(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZoneSchema
     {
-        $this->shippingZoneSchema = $shippingZoneSchema;
         $this->initialisationFromShop($shippingZoneSchema->shop, $request);
 
         return $this->handle($shippingZoneSchema, $this->validatedData);

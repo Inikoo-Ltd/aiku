@@ -26,7 +26,7 @@ class HydrateOffers
     public function handle(Offer $offer): void
     {
         OfferHydrateInvoices::run($offer);
-        OfferHydrateOrders::run($offer);
+        OfferHydrateOrders::run($offer->id);
     }
 
 }

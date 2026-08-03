@@ -33,7 +33,8 @@ return [
     |
     */
 
-    'default_driver' => env('TRANSLATION_DEFAULT_DRIVER', 'chatgpt5'),
+    'default_driver'                 => env('TRANSLATION_DEFAULT_DRIVER', 'gpt-4o-mini'),
+    'default_driver_detect_language' => env('DETECT_LANGUAGE_DEFAULT_DRIVER', 'gpt-5-nano'),
 
     /*
     |--------------------------------------------------------------------------
@@ -59,29 +60,35 @@ return [
 
     'drivers' => [
 
-        'chatgpt' => [
-            'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY'),
-            'model' => env('CHATGPT_MODEL', 'gpt-3.5-turbo'),
-            'temperature' => (float) env('CHATGPT_TEMPERATURE', 0.7),
-            'max_tokens' => (int) env('CHATGPT_MAX_TOKENS', 4096),
-            'http_timeout' => (int) env('CHATGPT_HTTP_TIMEOUT', 300),
+        'gpt-3.5-turbo' => [
+            'api_key'      => env('CHATGPT_TRANSLATIONS_API_KEY'),
+            'model'        => env('CHATGPT_MODEL', 'gpt-3.5-turbo'),
+            'temperature'  => (float)env('CHATGPT_TEMPERATURE', 0.7),
+            'max_tokens'   => (int)env('CHATGPT_MAX_TOKENS', 4096),
+            'http_timeout' => (int)env('CHATGPT_HTTP_TIMEOUT', 300),
         ],
 
         'google' => [
             'api_key' => env('GOOGLE_API_KEY'),
         ],
 
-        'deepl' => [
+        'deepl'      => [
             'api_key' => env('DEEPL_API_KEY'),
             'api_url' => env('DEEPL_API_URL', 'https://api-free.deepl.com/v2/translate'),
         ],
-        'chatgpt5' => [
-            'class' => ChatGPT5Driver::class,
-            'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY'),
-            'model' => env('CHATGPT_MODEL', 'gpt-5-nano'),
-            'max_tokens' => (int) env('CHATGPT_MAX_TOKENS', 16384),
-            'http_timeout' => (int) env('CHATGPT_HTTP_TIMEOUT', 300),
-
+        'gpt-5-nano' => [
+            'class'        => ChatGPT5Driver::class,
+            'api_key'      => env('CHATGPT_TRANSLATIONS_API_KEY'),
+            'model'        => env('CHATGPT_MODEL', 'gpt-5-nano'),
+            'max_tokens'   => (int)env('CHATGPT_MAX_TOKENS', 16384),
+            'http_timeout' => (int)env('CHATGPT_HTTP_TIMEOUT', 740),
+        ],
+        'gpt-4o-mini' => [
+            'class'        => ChatGPT5Driver::class,
+            'api_key'      => env('CHATGPT_TRANSLATIONS_API_KEY'),
+            'model'        => env('CHATGPT_MODEL', 'gpt-4o-mini'),
+            'max_tokens'   => (int)env('CHATGPT_MAX_TOKENS', 16384),
+            'http_timeout' => (int)env('CHATGPT_HTTP_TIMEOUT', 500),
         ],
     ],
 ];

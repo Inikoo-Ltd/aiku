@@ -24,7 +24,9 @@ import {
     faPause,
     faPlay,
 	faStore,
-	faExchange
+	faExchange,
+    faFileCertificate,
+    faEnvelopeOpenText, faPaperclip
 } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MetaLabel from "@/Components/Headings/MetaLabel.vue"
@@ -67,7 +69,10 @@ library.add(
     faPlay,
 	faStore,
 	faExchange,
-	faWarehouseAlt
+	faWarehouseAlt,
+    faFileCertificate,
+    faEnvelopeOpenText,
+    faPaperclip
 )
 
 const props = defineProps<{
@@ -75,6 +80,7 @@ const props = defineProps<{
 	dataToSubmit?: any
 	dataToSubmitIsDirty?: any
 	isButtonGroupWithBorder?: boolean
+	ignoreIsolate?: boolean
 }>()
 
 const isButtonLoading = ref<boolean | string>(false)
@@ -83,7 +89,7 @@ if (props.dataToSubmit && props.data.actionActualMethod) {
 	props.dataToSubmit["_method"] = props.data.actionActualMethod
 }
 
-const originUrl = location.origin
+const originUrl = typeof window !== "undefined" ? window.location.origin : ""
 const layout = inject("layout", layoutStructure)
 
 const isShowDummySlotName = false
@@ -105,7 +111,19 @@ const setError = (e) => {
 	<slot name="afterSubNav"></slot>
 
 	<div
-		class="relative px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2">
+		class="relative  px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2"
+		:class="[
+			props.ignoreIsolate ? '' : 'isolate z-10',
+		]"
+	>
+		<!-- Section: Left accent bar + fade decoration -->
+		<div
+			v-if="data.color || data.is_negative"
+			class="pointer-events-none absolute inset-0 -z-10 border-l-4"
+			:style="{
+				borderColor: data.is_negative ? '#df1c1c' : data.color,
+				background: `linear-gradient(90deg, color-mix(in srgb, ${data.is_negative ? '#df1c1c' : data.color} 18%, transparent), transparent 35%)`,
+			}" />
 		<div class="flex items-end gap-x-3">
 			<!-- Section: Main Title -->
 			<div
@@ -198,7 +216,7 @@ const setError = (e) => {
 												data?.iconRight?.url.name,
 												data?.iconRight?.url.parameters
 											)
-										: ''
+										: undefined
 								">
 								<div class="flex gap-x-2 items-center">
 									<FontAwesomeIcon
@@ -215,7 +233,9 @@ const setError = (e) => {
 									}}</span>
 									<div
 										v-if="data.afterTitle"
-										class="font-normal text-lg leading-none">
+										class="font-normal text-lg leading-none"
+										v-tooltip="data.afterTitle.tooltip || ''"
+									>
 										{{ data.afterTitle.label }}
 									</div>
 								</div>
@@ -424,7 +444,7 @@ const setError = (e) => {
 
 					<Transition name="headlessui">
 						<PopoverPanel
-							class="top-[120%] absolute z-10 right-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 min-w-32 w-fit max-w-96">
+							class="top-[120%] absolute z-50 right-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 min-w-32 w-fit max-w-96">
 							<div
 								class="flex flex-col items-end sm:flex-row flex-wrap justify-end sm:items-center gap-y-1 gap-x-2 rounded-md">
 								<template v-for="(action, wrappedIdx) in data.wrapped_actions">
@@ -520,5 +540,5 @@ const setError = (e) => {
 			</div>
 		</slot>
 	</div>
-	<hr class="border-gray-300" />
+	<hr class="border-gray-300 !my-0" />
 </template>

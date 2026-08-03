@@ -63,7 +63,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $number_platform_possible_matches
  * @property bool $mark_for_update_stock
  * @property \Illuminate\Support\Carbon|null $stock_last_updated_at
- * @property string|null $stock_last_fail_updated_at
+ * @property \Illuminate\Support\Carbon|null $stock_last_fail_updated_at
  * @property int|null $last_stock_value
  * @property bool $is_bundle
  * @property int|null $bundle_id
@@ -97,6 +97,7 @@ class Portfolio extends Model implements Auditable
         'added_at'                        => 'datetime',
         'removed_at'                      => 'datetime',
         'stock_last_updated_at'           => 'datetime',
+        'stock_last_fail_updated_at'      => 'datetime',
         'platform_possible_matches'       => 'array',
     ];
 

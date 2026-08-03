@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAssetTimeSeries;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -23,7 +24,7 @@ class RedoMasterAssetTimeSeries implements ShouldBeUnique
         WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public string $jobQueue = 'default-long-slave';
+    public string $jobQueue = 'long-low-priority';
     public string $commandSignature = 'master-assets:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
@@ -61,10 +62,12 @@ class RedoMasterAssetTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessMasterAssetTimeSeriesRecords::dispatch($masterAsset->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessMasterAssetTimeSeriesRecords::dispatch($masterAsset->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessMasterAssetTimeSeriesRecords::run($masterAsset->id, $frequency, $from, $to);
+                ProcessMasterAssetTimeSeriesRecords::run($masterAsset->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

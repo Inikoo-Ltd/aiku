@@ -42,7 +42,7 @@ const props = defineProps<{
     current: string
     navigation: {}
   }
-  customers: {}
+  customers?: {}
 }>();
 
 let currentTab = ref(props.tabs.current);

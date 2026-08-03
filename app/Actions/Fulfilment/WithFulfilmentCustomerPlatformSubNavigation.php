@@ -63,7 +63,7 @@ trait WithFulfilmentCustomerPlatformSubNavigation
         ];
 
         $subNavigation[] = [
-            "number"   => $customerSalesChannel->number_orders,
+            "number"   => $customerSalesChannel->number_fulfilment_orders,
             'label'    => __('Orders'),
             'route'    => [
                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.orders.index',

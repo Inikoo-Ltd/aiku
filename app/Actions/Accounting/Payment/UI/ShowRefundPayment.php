@@ -126,15 +126,15 @@ class ShowRefundPayment extends OrgAction
 
                 PaymentTabsEnum::SHOWCASE->value => $this->tab == PaymentTabsEnum::SHOWCASE->value ?
                     fn () => GetPaymentShowcase::run($payment)
-                    : Inertia::lazy(fn () => GetPaymentShowcase::run($payment)),
+                    : Inertia::optional(fn () => GetPaymentShowcase::run($payment)),
 
                 PaymentTabsEnum::REFUNDS->value => $this->tab == PaymentTabsEnum::REFUNDS->value ?
                     fn () => PaymentsResource::collection(IndexRefundPayments::run($payment, PaymentTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexRefundPayments::run($payment, PaymentTabsEnum::REFUNDS->value))),
+                    : Inertia::optional(fn () => PaymentsResource::collection(IndexRefundPayments::run($payment, PaymentTabsEnum::REFUNDS->value))),
 
                 PaymentTabsEnum::HISTORY_NOTES->value => $this->tab == PaymentTabsEnum::HISTORY_NOTES->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($payment, PaymentTabsEnum::HISTORY_NOTES->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($payment, PaymentTabsEnum::HISTORY_NOTES->value))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($payment, PaymentTabsEnum::HISTORY_NOTES->value))),
 
             ]
         )->table(IndexRefundPayments::make()->tableStructure($payment, [], PaymentTabsEnum::REFUNDS->value))

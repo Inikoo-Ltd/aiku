@@ -144,14 +144,14 @@ const borderWidth = computed(() => {
 </script>
 
 <template>
-    <div class="grid h-full" :class="[
+    <div class="grid grid-rows-1 h-full overflow-hidden" :class="[
         (activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'grid-cols-2',
         (activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'grid-cols-3']"
     >
    
         <!-- Column 1: Categories + Custom Menus -->
-        <div class="flex flex-col justify-between gap-y-10" :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r']">
-            <div class="overflow-y-auto">
+        <div class="flex flex-col justify-between gap-y-10 min-h-0 overflow-hidden" :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r']">
+            <div class="flex-1 min-h-0 overflow-y-auto">
                 <!-- Skeleton: while sidebar fetch in-flight and no data yet -->
                 <div v-if="layout.iris.isSidebarLoading && !sortedProductCategories.length && !customMenusTop.length && !customMenusBottom.length" class="flex flex-col gap-y-3 p-2 px-4">
                     <div v-for="i in 12" :key="`sk-cat-${i}`" class="w-full h-[1.9rem] skeleton" />
@@ -235,9 +235,10 @@ const borderWidth = computed(() => {
 
         <!-- Column 2: Subdepartments -->
         <div v-if="activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null"
+            class="min-h-0 overflow-hidden"
             :class="[(activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'border-r']">
 
-            <div class="overflow-y-auto">
+            <div class="h-full overflow-y-auto">
                 <!-- Section: Subdepartments (Top) -->
                 <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
                     <template v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex">
@@ -337,8 +338,8 @@ const borderWidth = computed(() => {
         </div>
 
         <!-- Column 3: Families -->
-        <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null">
-            <div class="overflow-y-auto">
+        <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null" class="min-h-0 overflow-hidden">
+            <div class="h-full overflow-y-auto">
                 <!-- Families: Top -->
                 <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
                     <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"

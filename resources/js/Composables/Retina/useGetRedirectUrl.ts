@@ -25,10 +25,10 @@ export const getRefRedirect = async () => {
             return response.data?.redirect_url  // "https://ecom.test/gold_reward"
         }
 
-        return route('retina.dashboard.show')
+        return route('iris.iris_webpage')
 
 
     } catch (error: any) {
-        return route('retina.dashboard.show')
+        return route('iris.iris_webpage')
     }
 }

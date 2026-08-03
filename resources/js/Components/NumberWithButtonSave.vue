@@ -10,7 +10,7 @@ import { faRobot, faPlus, faMinus, faUndoAlt } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import InputNumber from "primevue/inputnumber"
-import { ref, watch } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { faSave as fadSave } from "@fad"
 import { faSave as falSave, faInfoCircle } from "@fal"
 import { faAsterisk, faQuestion, faSpinner, faMinus as fasMinus, faPlus as fasPlus } from "@fas"
@@ -63,6 +63,7 @@ const props = defineProps<{
 	autoSave?: boolean
 	isWithRefreshModel?: boolean
 	denominator?: number
+	disableInput?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -74,11 +75,24 @@ const emits = defineEmits<{
 
 const model = defineModel()
 
+const roundToDecimals = (value: number, decimals: number = 2): number => {
+	return Number(Number(value).toFixed(decimals))
+}
+
+// Snap fractional (denominator based) quantities to the nearest 1/denominator multiple
+// while keeping full precision, otherwise fall back to 2-decimals rounding.
+const roundQuantity = (value: number): number => {
+	if (props.denominator) {
+		return Math.round(Number(value) * props.denominator) / props.denominator
+	}
+	return roundToDecimals(value)
+}
+
 const form = useForm({
-	quantity: props.modelValue,
+	quantity: roundQuantity(props.modelValue),
 })
 const formDefaultValue = ref({
-	quantity: props.modelValue,
+	quantity: roundQuantity(props.modelValue),
 })
 
 const onSaveViaForm = async () => {
@@ -92,15 +106,16 @@ const onSaveViaForm = async () => {
 				route(props.routeSubmit?.name, props.routeSubmit?.parameters),
 				{
 					[props.keySubmit || "quantity"]: form.quantity,
+					...props.additionalData,
 				}
 			)
 
-			form.defaults("quantity", form.quantity)
+			form.defaults("quantity", roundQuantity(form.quantity))
 			emits("onSuccess", form.quantity, formDefaultValue.value.quantity)
 			formDefaultValue.value.quantity = form.quantity
 			// console.log('ee axios', form.processing)
 		} catch (error) {
-			console.log("ERR1", errors);
+			console.log("ERR1", error);
 			emits("onError", error?.response?.data)
 			notify({
 				title: trans("Something went wrong"),
@@ -136,6 +151,39 @@ const onSaveViaForm = async () => {
 }
 const debounceSaveViaForm = debounce(onSaveViaForm, 1000)
 
+// The input displays units (quantity * denominator), so its boundaries have to be expressed in
+// units too, while min/max are given as real quantities like every other prop here.
+const toInputScale = (value?: number | null) => {
+	if (value === undefined || value === null) {
+		return undefined
+	}
+
+	return props.denominator ? Math.round(Number(value) * props.denominator) : Number(value)
+}
+
+const inputMin = computed(() => toInputScale(props.bindToTarget?.min ?? props.min) ?? 0)
+const inputMax = computed(() => toInputScale(props.bindToTarget?.max ?? props.max))
+
+// min/max are bound explicitly above, so they must not be spread over again by bindToTarget.
+const inputBindings = computed(() => {
+	const { min, max, ...rest } = props.bindToTarget ?? {}
+
+	return rest
+})
+
+const inputWidth = computed(() => {
+	if (props.bindToTarget?.fluid) {
+		return undefined
+	}
+
+	const baseWidth = props.denominator ? 75 : 50
+	const displayedValue = props.denominator
+		? `${Math.round(form.quantity * props.denominator)}/${props.denominator}`
+		: new Intl.NumberFormat().format(Number(form.quantity) || 0)
+
+	return `${Math.max(baseWidth, displayedValue.length * 9 + 12)}px`
+})
+
 const keyIconUndo = ref(0)
 
 defineOptions({
@@ -156,7 +204,8 @@ watch(
 	() => props.modelValue,
 	async (newVal: number) => {
 		if (props.isWithRefreshModel) {
-			form.defaults('quantity', newVal)
+			const roundedVal = roundQuantity(newVal)
+			form.defaults('quantity', roundedVal)
 			form.reset()
 		}
 	}
@@ -171,9 +220,13 @@ const onClickMinusButton = () => {
 		return false // Prevent decreasing when the quantity is at or below the min value
 	} else {
 		if (props.denominator) {
-			form.quantity = Number(form.quantity) - Number((1 / props.denominator).toPrecision(25)) // Increase quantity if it's less than the max
+			const stepped = roundQuantity(Number(form.quantity) - 1 / props.denominator)
+			const minVal = props.bindToTarget?.min ?? props.min ?? 0
+			form.quantity = stepped < minVal ? roundQuantity(minVal) : stepped
 		} else {
-			form.quantity--
+			const stepped = roundToDecimals(form.quantity - 1)
+			const minVal = props.bindToTarget?.min ?? props.min ?? 0
+			form.quantity = stepped < minVal ? roundToDecimals(minVal) : stepped
 		}
 	}
 }
@@ -186,12 +239,40 @@ const onClickPlusButton = () => {
 		return false // Prevent increase if quantity is at or exceeds max value
 	} else {
 		if (props.denominator) {
-			form.quantity = Number(form.quantity) + Number((1 / props.denominator).toPrecision(25)) // Increase quantity if it's less than the max
+			const stepped = roundQuantity(Number(form.quantity) + 1 / props.denominator)
+			const maxVal = props.bindToTarget?.max ?? props.max
+			form.quantity = maxVal !== undefined && stepped > maxVal ? roundQuantity(maxVal) : stepped
 		} else {
-			form.quantity++
+			const stepped = roundToDecimals(form.quantity + 1)
+			const maxVal = props.bindToTarget?.max ?? props.max
+			form.quantity = maxVal !== undefined && stepped > maxVal ? roundToDecimals(maxVal) : stepped
 		}
 	}
 }
+
+const layout = inject("layout", {})
+
+const holdInterval = ref<ReturnType<typeof setInterval> | null>(null)
+const holdTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const startHold = (action: () => void) => {
+	action()
+	holdTimeout.value = setTimeout(() => {
+		holdInterval.value = setInterval(action, 50)
+	}, 400)
+}
+
+const stopHold = () => {
+	if (holdInterval.value) {
+		clearInterval(holdInterval.value)
+		holdInterval.value = null
+	}
+	if (holdTimeout.value) {
+		clearTimeout(holdTimeout.value)
+		holdTimeout.value = null
+	}
+}
+
 </script>
 
 <template>
@@ -227,15 +308,17 @@ const onClickPlusButton = () => {
 			<!-- Section: - and + -->
 			<div
 				class="w-fit transition-all relative inline-flex items-center justify-center"
-				:class="bindToTarget?.fluid ? 'w-full' : 'w-28'">
+				:class="bindToTarget?.fluid ? 'w-full' : 'min-w-28'">
 				<!-- Button: Minus -->
 				<div
-					@click.stop="() => props.readonly || form.processing ? null : onClickMinusButton()"
+					@mousedown.stop="() => props.readonly || form.processing ? null : startHold(onClickMinusButton)"
+					@mouseup="stopHold"
+					@mouseleave="stopHold"
 					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing
 							? 'text-gray-400 '
-							:  (props.bindToTarget?.min && form.quantity <= props.bindToTarget?.min) || (props.min && form.quantity <= props.min)
+							:  (props.bindToTarget?.min !== undefined && form.quantity <= props.bindToTarget?.min) || (props.min !== undefined && form.quantity <= props.min)
 								? 'text-gray-400'
 								: 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"
@@ -248,46 +331,50 @@ const onClickPlusButton = () => {
 				</div>
 
 				<!-- Input -->
+
 				<div
 					class="mx-1 text-center tabular-nums rounded"
 					:style="{
 						border: `1px dashed ${(colorTheme ? colorTheme : null) || '#374151'}55`,
 					}">
+					<span v-if="layout.app.environment == 'local' && props.denominator">
+						Would only show in local <br>
+						{{ form.quantity }}
+						{{ roundToDecimals(props.denominator ? (roundToDecimals(Math.floor(form.quantity * props.denominator)) / props.denominator) : form.quantity) }}
+					</span>
 					<InputNumber
 						vxmodel="form.quantity"
-						:modelValue="props.denominator ? Math.floor(form.quantity * props.denominator) : form.quantity"
-						@update:model-value="(e) => (props.denominator? (form.quantity = e/props.denominator) : (form.quantity = e))"
-						@input="(e) => (props.denominator ? (form.quantity = e.value/props.denominator) : (form.quantity = e.value))"
+						:modelValue="props.denominator ? Math.round(form.quantity * props.denominator) : form.quantity"
+						@update:model-value="(e) => (props.denominator? (form.quantity = roundQuantity(e/props.denominator)) : (form.quantity = roundToDecimals(e)))"
+						@input="(e) => (props.denominator ? (form.quantity = roundQuantity(e.value/props.denominator)) : (form.quantity = roundToDecimals(e.value)))"
 						buttonLayout="horizontal"
-						:min="min || 0"
-						:max="max || undefined"
+						:min="inputMin"
+						:max="inputMax"
 						style="width: 100%"
-						:disabled="props.readonly || form.processing"
+						:disabled="props.readonly || form.processing || props.disableInput"
 						inputClass="!p-1 lg:!p-0"
 						:suffix="props.denominator ? '/' + props.denominator : undefined"
 						:inputStyle="{
-							width: bindToTarget?.fluid ? undefined : (
-								props.denominator
-									? '75px'
-									: '50px'
-							),
+							width: inputWidth,
 							color: props.readonly ? '#6b7280' : colorTheme ?? '#374151',
 							border: 'none',
 							textAlign: 'center',
 							background: (colorTheme ? colorTheme + '22' : null) ?? 'transparent',
 						}"
-						v-bind="bindToTarget"
+						v-bind="inputBindings"
 					/>
 				</div>
 
 				<!-- Button: Plus -->
 				<div
-					@click.stop="() => props.readonly || form.processing ? null : onClickPlusButton()"
+					@mousedown.stop="() => props.readonly || form.processing ? null : startHold(onClickPlusButton)"
+					@mouseup="stopHold"
+					@mouseleave="stopHold"
 					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing
 							? 'text-gray-400 '
-							:  (props.bindToTarget?.max && form.quantity >= props.bindToTarget?.max) || (props.max && form.quantity >= props.max)
+							: (props.bindToTarget?.max !== undefined && form.quantity >= props.bindToTarget?.max) || (props.max !== undefined && form.quantity >= props.max)
 								? 'text-gray-400'
 								: 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"

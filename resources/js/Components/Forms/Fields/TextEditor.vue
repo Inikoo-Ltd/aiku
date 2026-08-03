@@ -3,6 +3,7 @@ import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
 import { trans } from 'laravel-vue-i18n'
 import { get } from 'lodash-es'
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any
@@ -14,7 +15,7 @@ const props = defineProps<{
         readonly?: boolean
         copyButton: boolean
         maxLength?: number
-        toogle?: string[]
+        toggle?: string[]
         routeGetInternalLink : routeType
     }
 }>()
@@ -23,7 +24,7 @@ console.log('sdasda',props)
 
 <template>
   <div class="">
-    <Editor v-model="form[fieldName]" :toogle="fieldData.toogle" :routeGetInternalLink="fieldData.routeGetInternalLink">
+    <Editor v-model="form[fieldName]" :toggle="fieldData.toggle" :routeGetInternalLink="fieldData.routeGetInternalLink">
       <template #editor-content="{ editor }">
         <div class="editor-wrapper h-full border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-[var(--theme-color-0)]">
           <EditorContent :editor="editor" class="editor-content focus:outline-none" />

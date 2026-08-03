@@ -16,6 +16,7 @@ namespace App\Actions\Comms\Traits;
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\ExternalSubscriberEmailRecipient\StoreExternalSubscriberEmailRecipient;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
 use App\Models\SysAdmin\User;
@@ -43,6 +44,14 @@ trait WithSendSubscribersOutboxEmail
         ?string $invoiceUrl = null
     ): void {
         $subscribedUsers = $outbox->subscribedUsers ?? [];
+
+        if ($outbox->state != OutboxStateEnum::ACTIVE) {
+            return;
+        }
+
+        if (!$outbox->is_applicable) {
+            return;
+        }
 
         foreach ($subscribedUsers as $subscribedUser) {
             if ($subscribedUser->user) {

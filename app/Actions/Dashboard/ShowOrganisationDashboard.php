@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithDashboardTableTabResolution;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
@@ -31,6 +32,7 @@ class ShowOrganisationDashboard extends OrgAction
     use WithDashboardSettings;
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
+    use WithDashboardTableTabResolution;
     use WithTabsBox;
     use WithPerformanceDateResolution;
 
@@ -46,12 +48,8 @@ class ShowOrganisationDashboard extends OrgAction
     {
         $userSettings = $request->user()->settings;
 
-        $tabValues = OrganisationDashboardSalesTableTabsEnum::values();
-        $currentTab = Arr::get($userSettings, 'organisation_dashboard_tab', Arr::first($tabValues));
-
-        if (! in_array($currentTab, $tabValues, true)) {
-            $currentTab = Arr::first($tabValues);
-        }
+        $tabValues  = OrganisationDashboardSalesTableTabsEnum::values();
+        $currentTab = $this->resolveDashboardTableTab($tabValues, $userSettings, 'organisation_dashboard_tab');
 
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
@@ -73,9 +71,9 @@ class ShowOrganisationDashboard extends OrgAction
                         'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings)
                     ],
                     'settings'  => [
-                        'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
-                        'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-                        'currency_type'     => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
+                        'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
+                        'currency_type'       => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
                     ],
                     'blocks'    => [
                         [

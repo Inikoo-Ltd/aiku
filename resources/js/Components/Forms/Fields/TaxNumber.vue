@@ -13,6 +13,7 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import { Tooltip } from 'floating-vue'
 import Modal from "@/Components/Utils/Modal.vue"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

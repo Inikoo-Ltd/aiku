@@ -4,9 +4,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLink, faUnlink } from "@fal";
 import { faExclamation, faCaretDown, faCaretLeft } from "@fortawesome/free-solid-svg-icons";
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue";
-import { provide } from "vue";
+import { provide, watch, onMounted, ref } from "vue";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
+import { get, set } from 'lodash-es';
 
 library.add(faExclamation, faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter, faLink, faUnlink, faCaretDown, faCaretLeft);
 
@@ -16,7 +17,7 @@ const emit = defineEmits(["update:modelValue"]);
 const model = defineModel();
 
 const blueprint = [
-  { key: ["source"], label: "Image", type: "upload_image" },
+  { key: ["source"], label: "Image", type: "upload_image", props_data: { altKey: ["properties", "alt"] } },
   {
     key: ["caption"],
     label: trans("Caption"),
@@ -77,7 +78,28 @@ const onSaveWorkshopFromId = () => {
   emit("update:modelValue", model.value);
 };
 
-/* provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
+// Section: autofill alt image from link title
+const isAltManuallySet = ref(false)
+let isAutoFilling = false
+onMounted(() => {
+    if (get(model.value, 'properties.alt')) {
+        isAltManuallySet.value = true
+    }
+})
+watch(() => get(model.value, 'properties.alt'), (newVal, oldVal) => {
+    if (!isAutoFilling && newVal !== oldVal && newVal) {
+        isAltManuallySet.value = true
+    }
+})
+watch(() => get(model.value, 'link_data.id'), (newId) => {
+    if (isAltManuallySet.value) return
+
+    const imageAlt = get(model.value, 'link_data.image_alt')
+    isAutoFilling = true
+    set(model.value, 'properties.alt', imageAlt ?? null)
+    isAutoFilling = false
+    onSaveWorkshopFromId()
+})
 </script>
 
 <template>

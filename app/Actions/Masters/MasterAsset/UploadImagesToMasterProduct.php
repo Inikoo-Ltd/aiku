@@ -8,13 +8,13 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\ActionRequest;
 
-class UploadImagesToMasterProduct extends GrpAction
+class UploadImagesToMasterProduct extends OrgAction
 {
     use WithUploadModelImages;
     use WithAttachMediaToModel;
@@ -22,6 +22,12 @@ class UploadImagesToMasterProduct extends GrpAction
     public function handle(MasterAsset $model, string $scope, array $modelData, bool $updateDependants = false): array
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
+
+        foreach ($medias as $media) {
+            $model->images()->updateExistingPivot($media->id, [
+                'caption' => $model->name,
+            ]);
+        }
 
         if ($updateDependants) {
 
@@ -42,7 +48,7 @@ class UploadImagesToMasterProduct extends GrpAction
 
     public function asController(MasterAsset $masterAsset, ActionRequest $request): void
     {
-        $this->initialisation($masterAsset->group, $request);
+        $this->initialisationFromGroup($masterAsset->group, $request);
 
         $this->handle($masterAsset, 'image', $this->validatedData, true);
     }

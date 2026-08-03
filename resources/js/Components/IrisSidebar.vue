@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Drawer from 'primevue/drawer';
-import { ref, inject, onMounted, onUnmounted, computed, watch, type Ref } from 'vue';
+import { ref, inject, onMounted, onUnmounted, computed, watch, defineAsyncComponent, type Ref } from 'vue';
+const Drawer = defineAsyncComponent(() => import('primevue/drawer'));
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faBars } from '@fal';
 import { getStyles } from '@/Composables/styles';
@@ -12,6 +12,7 @@ import { trans } from 'laravel-vue-i18n';
 import { faSearch, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { useIrisSearchMobile } from '@/Iris/Composables/useIrisSearchMobile'
 import axios from 'axios'
 library.add(faSearch, faTimes)
 
@@ -49,6 +50,7 @@ const irisLayout = inject("layout", {})
 const sidebarMenu = inject<Ref<any> | null>('sidebarMenu', null)
 
 const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false))
+const { openIrisSearchMobile } = useIrisSearchMobile()
 
 const isMobile = ref(false)
 const activeIndex = ref<number | null>(null) // active category
@@ -60,7 +62,7 @@ const activeCustomTopSubIndex = ref<number | null>(null) // active custom menu t
 
 
 const sortedProductCategories = computed(() => {
-	const fromFetch = (sidebarMenu?.value ?? (irisLayout as any).iris?.sidebar)?.data?.fieldValue?.product_categories
+	const fromFetch = (sidebarMenu?.value ?? (irisLayout as any).iris?.sidebar)?.product_categories
 	const source = Array.isArray(fromFetch) && fromFetch.length ? fromFetch : props.productCategories
 	if (!source) return []
 	return [...source].sort((a, b) =>
@@ -289,9 +291,15 @@ const internalHref = (item) => {
 	return path
 }
 
-const onClickLuigi = () => {
-	const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
-	if (input) input.focus();
+const onClickSearch = () => {
+	if ((irisLayout as any)?.iris?.iris_search_model === 'internal') {
+		isOpenMenuMobile.value = false
+		openIrisSearchMobile()
+		return
+	}
+
+	const input = document.getElementById('luigi_mobile') as HTMLInputElement | null
+	if (input) input.focus()
 }
 
 
@@ -418,13 +426,14 @@ const fetchSidebarOnce = async () => {
         isSidebarFetching.value = false
     }
 }
+
 </script>
 
 <template>
 	<div class="mobile-menu editor-class">
 
 		<!-- Button: hamburger (showed on mobile) -->
-		<button @click="isOpenMenuMobile = true" class="">
+		<button @click="isOpenMenuMobile = true" class="" aria-label="Hamburger icon">
 			<slot name="icon">
 				<FontAwesomeIcon
 					:icon="props.header?.mobile?.menu?.icon || faBars"
@@ -461,27 +470,21 @@ const fetchSidebarOnce = async () => {
 			@show="() => fetchSidebarOnce()"
 		>
 			<template #header>
-				<div>
-					<div class="md:max-w-[270px] overflow-hidden">
-						<!-- <Image
-                            v-if="sidebarLogo"
-                            :src="sidebarLogo"
-                            class="h-fit w-full object-contain aspect-auto"
-                            :alt="trans('Sidebar logo')"
-                        /> -->
+				<div class="w-full">
+					<div class="w-full md:max-w-[270px] h-20 overflow-hidden">
 						<img
 							xv-else
 							:src="sidebarLogo?.original || header?.logo?.image?.source?.original"
-							:alt="header?.logo?.alt"
-							zclass="w-full h-auto max-h-20 object-contain"
+							:alt="header?.logo?.alt ?? ctrans('Logo on sidebar')"
+							class="w-full h-full object-contain"
 							:style="getStyles(props.sidebar?.data?.fieldValue?.logo_dimension)" />
 					</div>
 
 					<!-- Section: input search -->
-					<div class="md:hidden mt-6 flex gap-x-4 items-center">
+					<div class="w-full md:hidden mt-6 flex gap-x-4 items-center">
 						<div
-							@click="() => onClickLuigi()"
-							class="flex-grow border border-gray-300/40 rounded-md px-2 py-1">
+							@click="() => onClickSearch()"
+							class="flex-grow border border-gray-300/70 rounded-md px-2 py-2 cursor-pointer">
 							<FontAwesomeIcon
 								icon="fal fa-search"
 								class=""
@@ -503,7 +506,6 @@ const fetchSidebarOnce = async () => {
 					</span>
 				</div>
 			</template>
-
 			<!-- Sidebar Menu: Mobile -->
 			<IrisSidebarMobile
 				v-if="isMobile"
@@ -511,7 +513,7 @@ const fetchSidebarOnce = async () => {
 					props.sidebar?.data?.fieldValue?.container?.properties ||
 					props.menu?.container?.properties
 				"
-				:productCategories
+				:productCategories="layout?.iris?.sidebar?.product_categories ||product_categories "
 				:customMenusTop
 				:customTopSubDepartments
 				:customMenusBottom
@@ -545,7 +547,7 @@ const fetchSidebarOnce = async () => {
 					props.sidebar?.data?.fieldValue?.container?.properties ||
 					props.menu?.container?.properties
 				"
-				:productCategories
+				:productCategories="layout?.iris?.sidebar?.product_categories ||product_categories "
 				:customMenusTop
 				:customTopSubDepartments
 				:customMenusBottom

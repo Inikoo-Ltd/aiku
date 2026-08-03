@@ -9,7 +9,6 @@
 namespace App\Actions\Helpers\Translations;
 
 use App\Actions\OrgAction;
-use App\Events\TranslateProgressEvent;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -26,29 +25,22 @@ class Translate extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(?string $text, Language $languageFrom, Language $languageTo, $broadcastRandomString = null): string
+    public function handle(?string $text, Language $languageFrom, Language $languageTo, ?string $translationDriver = null): string
     {
         try {
             if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
                 return $text ?? '';
             }
 
+            $cacheKey          = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
+            $cachedTranslation = Cache::get($cacheKey);
+            if ($cachedTranslation !== null) {
+                return $cachedTranslation;
+            }
 
             if (app()->environment('local') && !config('app.sandbox.translate')) {
                 return $text;
             }
-
-            $cacheKey = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
-            $cachedTranslation = Cache::get($cacheKey);
-            if ($cachedTranslation !== null) {
-                if ($broadcastRandomString != null) {
-                    TranslateProgressEvent::dispatch($cachedTranslation, $broadcastRandomString);
-                }
-
-                return $cachedTranslation;
-            }
-
-
             $translationEngineService   = new TranslationEngineService();
             $translationWorkflowService = new TranslationWorkflowService($translationEngineService);
 
@@ -58,17 +50,12 @@ class Translate extends OrgAction
 
             $translationWorkflowService->setInMemoryTexts($texts);
 
-            $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, config('auto-translations.default_driver'));
+            $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, $translationDriver ?? config('auto-translations.default_driver'));
 
             $text = Arr::get($translatedTexts, 'text_to_translate', $text);
 
             $cacheTtlHours = mb_strlen($text) < 32 ? 1440 : (mb_strlen($text) < 256 ? 480 : 72);
             Cache::put($cacheKey, $text, now()->addHours($cacheTtlHours));
-
-            if ($broadcastRandomString != null) {
-                TranslateProgressEvent::dispatch($text, $broadcastRandomString);
-            }
-
 
             return $text;
         } catch (\Throwable $e) {
@@ -103,10 +90,6 @@ class Translate extends OrgAction
         $languageTo   = Language::where('code', $languageTo)->first();
         $text         = Arr::get($this->validatedData, 'text');
 
-        /* $randomString = Str::random(10);
-        Translate::dispatch($text, $languageFrom, $languageTo, $randomString);
-
-        return $randomString; */
 
         return $this->handle($text, $languageFrom, $languageTo);
     }

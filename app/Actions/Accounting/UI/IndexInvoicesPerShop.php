@@ -24,7 +24,7 @@ class IndexInvoicesPerShop extends OrgAction
 {
     use AsAction;
 
-    public function handle(Organisation $parent, $prefix = null)
+    public function handle(Organisation $parent, $prefix = null): \Illuminate\Contracts\Pagination\Paginator|LengthAwarePaginator
     {
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -39,14 +39,10 @@ class IndexInvoicesPerShop extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Shop::class);
-        $queryBuilder->leftJoin('shop_ordering_stats', 'shop_id.id', '=', 'shop_ordering_stats.shop_id');
+        $queryBuilder->leftJoin('shop_ordering_stats', 'shops.id', '=', 'shop_ordering_stats.shop_id');
         $queryBuilder->where('shops.type', '!=', ShopTypeEnum::FULFILMENT);
 
         $queryBuilder->where('shops.organisation_id', $parent->id);
-
-
-
-
 
         return $queryBuilder
             ->defaultSort('shops.code')
@@ -76,14 +72,10 @@ class IndexInvoicesPerShop extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-
-
-
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'avatar');
-
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)

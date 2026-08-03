@@ -49,7 +49,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property array<array-key, mixed> $config
+ * @property string|null $kiosk_token
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Collection<int, \App\Models\HumanResources\ClockingMachineQRCode> $clockingMachineQrCodes
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
  * @property-read Group|null $group
  * @property-read Organisation $organisation
@@ -129,6 +131,19 @@ class ClockingMachine extends Authenticatable implements Auditable
     public function clockings(): HasMany
     {
         return $this->hasMany(Clocking::class);
+    }
+
+    public function clockingMachineQrCodes(): HasMany
+    {
+        return $this->hasMany(ClockingMachineQRCode::class);
+    }
+
+    public function activeQrCode(): ?ClockingMachineQRCode
+    {
+        return $this->clockingMachineQrCodes()
+            ->where('active', true)
+            ->orderByDesc('id')
+            ->first();
     }
 
     public function stats(): HasOne

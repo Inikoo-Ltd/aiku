@@ -18,12 +18,15 @@ defineProps<{
     tab?: string
 }>()
 
+const routeCurrent = route().current()
+const routeParams = route().params
+
 function locationRoute(location: Location) {
-    switch (route().current()) {
+    switch (routeCurrent) {
           default:
             return route(
                 'grp.org.warehouses.show.fulfilment.locations.show',
-              [route().params['organisation'], route().params['warehouse'], location.slug])
+              [routeParams['organisation'], routeParams['warehouse'], location.slug])
     }
 }
 
