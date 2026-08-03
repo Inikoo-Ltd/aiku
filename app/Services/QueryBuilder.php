@@ -152,15 +152,18 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     public function withBetweenDates(array $allowedColumns, ?string $prefix = null): static
     {
         $table          = $this->getModel()->getTable();
+        $defaultColumn  = $allowedColumns[0] ?? null;
         $allowedColumns = array_merge($allowedColumns, ['created_at', 'updated_at']);
         $argumentName   = ($prefix ? $prefix . '_' : '') . 'between';
 
-        $filters  = request()->input($argumentName, []);
+        $filters  = StickyBetweenDates::apply(request()->input($argumentName, []), $allowedColumns, $defaultColumn, $prefix);
         $timezone = resolveTimezoneHeader();
 
         foreach ($allowedColumns as $column) {
-            if (array_key_exists($column, $filters)) {
-                $range = $filters[$column];
+            $filterKey = StickyBetweenDates::filterKey($column);
+
+            if (array_key_exists($filterKey, $filters)) {
+                $range = $filters[$filterKey];
                 $parts = explode('-', $range);
 
                 if (count($parts) === 2) {
@@ -180,11 +183,11 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                         ->toDateTimeString();
 
                     if ($this->getModel() instanceof FulfilmentCustomer) {
-                        $this->whereBetween('customers.' . $column, [$start, $end]);
-                    } elseif ($this->getModel() instanceof Customer && $column == 'last_invoiced_at') {
-                        $this->whereBetween('customer_stats.' . $column, [$start, $end]);
+                        $this->whereBetween('customers.' . $filterKey, [$start, $end]);
+                    } elseif ($this->getModel() instanceof Customer && $filterKey == 'last_invoiced_at') {
+                        $this->whereBetween('customer_stats.' . $filterKey, [$start, $end]);
                     } else {
-                        $this->whereBetween("$table.$column", [$start, $end]);
+                        $this->whereBetween(str_contains($column, '.') ? $column : "$table.$column", [$start, $end]);
                     }
                 }
             }

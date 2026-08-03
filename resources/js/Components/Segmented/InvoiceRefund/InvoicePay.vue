@@ -16,6 +16,8 @@ import { faPlus, faMinus, faArrowRight } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Dialog from "primevue/dialog"
 
+const screenType = inject('screenType', ref('desktop'))
+
 library.add(faCheck, faSave, faPlus, faMinus, faArrowRight)
 
 
@@ -351,7 +353,7 @@ const compTooltipTotalToPay = computed(() => {
         </dl>
 
         <!-- Modal: Pay Invoice -->
-        <Dialog v-model:visible="isOpenModalInvoice" :style="{ width: '100%', maxWidth: '600px'}" modal dismissableMask>
+        <Dialog v-model:visible="isOpenModalInvoice" :style="{ width: '100%', maxWidth: '600px'}" modal :dismissableMask="screenType === 'desktop'">
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Invoice Payment") }}</h2>

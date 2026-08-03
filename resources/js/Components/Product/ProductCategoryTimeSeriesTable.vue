@@ -62,6 +62,12 @@ const getInvoicesRoute = (filterDate?: string) => {
             </div>
         </template>
 
+        <template #cell(sales_org_currency_external)="{ item }">
+            <div v-if="item.sales_org_currency_external" :class="item.sales_org_currency_external >= 0 ? 'text-gray-700' : 'text-red-500'">
+                {{ locale.currencyFormat(item.currency_code ?? currency, item.sales_org_currency_external) }}
+            </div>
+        </template>
+
         <template #cell(sales_grp_currency_external)="{ item }">
             <div v-if="item.sales_grp_currency_external" :class="item.sales_grp_currency_external >= 0 ? 'text-gray-700' : 'text-red-500'">
                 {{ locale.currencyFormat(item.currency_code ?? currency, item.sales_grp_currency_external) }}

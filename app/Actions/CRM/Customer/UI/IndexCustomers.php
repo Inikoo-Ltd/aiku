@@ -417,7 +417,7 @@ class IndexCustomers extends OrgAction
         }
 
         if ($parent instanceof TrafficSource) {
-            $queryBuilder->withBetweenDates(['registered_at', 'last_invoiced_at']);
+            $queryBuilder->withBetweenDates(['last_invoiced_at', 'registered_at']);
         } else {
             $queryBuilder->withBetweenDates(['registered_at']);
         }

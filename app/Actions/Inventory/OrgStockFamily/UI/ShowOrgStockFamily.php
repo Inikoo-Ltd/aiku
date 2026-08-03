@@ -81,6 +81,17 @@ class ShowOrgStockFamily extends OrgAction
                     'tooltip' => __('SKOs'),
                 ],
             ],
+            [
+                'label'    => __('Invoices'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.invoices',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-file-invoice-dollar'],
+                    'tooltip' => __('Invoices'),
+                ],
+            ],
         ];
     }
 

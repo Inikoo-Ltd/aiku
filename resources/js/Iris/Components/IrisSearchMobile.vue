@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 library.add(faSearch, faTimes)
 
 const SearchResultCatalogueMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogueMobile.vue"))
@@ -134,7 +135,7 @@ const fetchResults = debounce(async (query: string) => {
     isInternalLoading.value = true
     try {
         const { data } = await axios.get(
-            route('iris.json.search.catalogue', { q: query }),
+            route(searchRoute('catalogue'), { q: query }),
             { signal: internalAbort.signal }
         )
         if (requestId !== internalRequestId) {
