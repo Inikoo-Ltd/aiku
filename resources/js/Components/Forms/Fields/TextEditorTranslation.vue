@@ -169,7 +169,12 @@ const countWords = (value?: string | null) => {
           </div>
 
           <!-- Content -->
-          <div class="text-sm text-gray-700 whitespace-pre-wrap leading-6 flex-1 bg-gray-50 p-4 rounded-md border"
+          <EditorV2 v-if="fieldData.main" v-model="fieldData.main" :toggle="fieldData.toggle" class="text-sm text-gray-700 whitespace-pre-wrap leading-6 flex-1 bg-gray-50 p-4 rounded-md border" :editable="false">
+            <template #editor-content="{ editor }">
+              <EditorContent :editor="editor" class="focus:outline-none text-sm text-gray-700 whitespace-pre-wrap leading-6 min-h-[5rem]" :readonly="true"/>
+            </template>
+          </EditorV2>
+          <div v-else class="text-sm text-gray-700 whitespace-pre-wrap leading-6 flex-1 bg-gray-50 p-4 rounded-md border"
             v-html="fieldData.main" />
           <div class="h-6 w-6 flex items-center justify-center
            rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
@@ -206,9 +211,9 @@ const countWords = (value?: string | null) => {
 
 
             <button v-if="fieldData.reviewed" type="button" disabled class="
-           h-6 w-6 flex items-center justify-center
-           rounded-md bg-white text-gray-600 button-primary
-           shadow-sm" v-tooltip="trans('already review it by user')">
+              h-6 w-6 flex items-center justify-center
+              rounded-md bg-white text-gray-600 button-primary
+              shadow-sm" v-tooltip="ctrans('Already reviewed by user')">
               <FontAwesomeIcon :icon="faMale" class="h-3.5 w-3.5" />
             </button>
 

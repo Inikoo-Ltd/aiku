@@ -19,6 +19,7 @@ use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
+use App\Http\Resources\Catalogue\FamiliesNeedReviewsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
@@ -320,8 +321,8 @@ class IndexFamiliesInMasterFamilies extends OrgAction
                     : Inertia::optional(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
-                    fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::optional(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
+                    : Inertia::optional(fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
 
                 ProductCategoryTabsEnum::MISSING_GR->value => $this->tab == ProductCategoryTabsEnum::MISSING_GR->value
                     ? fn () => FamiliesResource::collection($this->handle($this->parent, ProductCategoryTabsEnum::MISSING_GR->value, missingGr: true))

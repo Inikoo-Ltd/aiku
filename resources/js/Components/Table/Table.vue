@@ -31,7 +31,8 @@ import TableFrequencyFilter from '@/Components/Table/TableFrequencyFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
 import TableRows from './TableRows.vue'
-library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator,faYinYang)
+import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
+library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy)
 
 const locale = inject('locale', aikuLocaleStructure)
 

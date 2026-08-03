@@ -116,7 +116,7 @@ console.log(props)
     <!-- Sidebar -->
     <aside class="lg:sticky lg:top-10 max-h-[80vh] overflow-y-auto hidden lg:block border-r border-gray-100 pr-6">
       <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
-        Content
+        {{ ctrans("Content") }}
       </div>
 
       <ul class="text-sm no-bullets" v-if="headings.length">
@@ -139,7 +139,7 @@ console.log(props)
       </ul>
 
       <div class="mt-10">
-        <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Latest Posts</div>
+        <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">{{ ctrans("Latest Posts") }}</div>
         <div class="space-y-3">
           <a v-for="post in fieldValue.latest_blogs" :href="post.url"
             class="flex items-center gap-3 group hover:bg-gray-50 p-2 rounded-md transition">
@@ -183,7 +183,7 @@ console.log(props)
 
       <!-- Share Buttons Section -->
 
-      <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Share : </div>
+      <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">{{ ctrans("Share") }}: </div>
       <div class="flex gap-4">
         <a :href="`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`" target="_blank" rel="noopener"
           class="flex items-center justify-center gap-2 w-full py-2 px-4 text-blue-600 rounded-md text-3xl hover:bg-blue-600 hover:text-gray-100 transition">
