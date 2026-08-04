@@ -32,6 +32,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\ApplyNewCompositionToDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
@@ -2533,3 +2534,39 @@ test('quantity required cannot be set through the strict update path the picking
 
     expect((float) $deliveryNoteItem->refresh()->quantity_required)->toBe(12.0);
 })->depends('sync required pick quantity updates delivery note items in place');
+
+test('composition change flags packed items dirty instead of rewriting them', function (DeliveryNoteItem $deliveryNoteItem) {
+    $deliveryNoteItem->transaction->updateQuietly(['model_type' => 'Product']);
+    $deliveryNoteItem->updateQuietly(['state' => DeliveryNoteItemStateEnum::PACKED]);
+
+    DB::table('product_has_org_stocks')
+        ->where('org_stock_id', $deliveryNoteItem->org_stock_id)
+        ->update(['quantity' => 7]);
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($deliveryNoteItem->orgStock);
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(12.0)
+        ->and($deliveryNoteItem->composition_dirty_at)->not->toBeNull()
+        ->and((float) $deliveryNoteItem->composition_dirty_quantity_required)->toBe(28.0);
+
+    return $deliveryNoteItem;
+})->depends('sync required pick quantity updates delivery note items in place');
+
+test('applying the new composition is refused while the physical work stands', function (DeliveryNoteItem $deliveryNoteItem) {
+    expect(fn () => ApplyNewCompositionToDeliveryNoteItem::make()->handle($deliveryNoteItem))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    return $deliveryNoteItem;
+})->depends('composition change flags packed items dirty instead of rewriting them');
+
+test('after rolling back the picking the new composition can be applied and the flag clears', function (DeliveryNoteItem $deliveryNoteItem) {
+    $deliveryNoteItem->updateQuietly(['state' => DeliveryNoteItemStateEnum::HANDLING]);
+
+    ApplyNewCompositionToDeliveryNoteItem::make()->handle($deliveryNoteItem->refresh());
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(28.0)
+        ->and($deliveryNoteItem->composition_dirty_at)->toBeNull()
+        ->and($deliveryNoteItem->composition_dirty_quantity_required)->toBeNull();
+})->depends('composition change flags packed items dirty instead of rewriting them');

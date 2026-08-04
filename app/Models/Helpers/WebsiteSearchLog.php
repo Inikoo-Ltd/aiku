@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $website_id
  * @property int|null $web_user_id
  * @property string $scope
+ * @property string|null $source
  * @property string $query
  * @property string|null $session_id
  * @property int $results_count

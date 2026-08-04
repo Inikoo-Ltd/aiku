@@ -1256,7 +1256,8 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                         :header="column">
                                         <HeaderCell :key="`table-${name}-header-${column.key}`"
                                             :cell="header(column.key)" :type="columnsType[column.key]" :column="column"
-                                            :resource="compResourceData">
+                                            :resource="compResourceData"
+                                            :highlight="queryBuilderProps?.betweenDatesValue?.column === column.key">
                                         </HeaderCell>
                                     </slot>
                                 </tr>
@@ -1329,6 +1330,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                                 ? 'text-right pl-3 pr-9 tabular-nums'
                                                                 : 'px-6',
                                                         props.rowAlignTop ? 'align-top' : '',
+                                                        queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                         { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                         column.className
                                                     ]">
@@ -1404,6 +1406,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                             ? 'text-right pl-3 pr-9 tabular-nums'
                                                             : 'px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
+                                                    queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">
@@ -1474,6 +1477,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                             ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
                                                             : 'px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
+                                                    queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">

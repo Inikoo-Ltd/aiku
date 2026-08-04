@@ -294,7 +294,7 @@ const internalHref = (item) => {
 const onClickSearch = () => {
 	if ((irisLayout as any)?.iris?.iris_search_model === 'internal') {
 		isOpenMenuMobile.value = false
-		openIrisSearchMobile()
+		openIrisSearchMobile('mobile_sidebar')
 		return
 	}
 

@@ -1535,6 +1535,19 @@ test('UI Edit org stock', function () {
     });
 })->depends('create warehouse', 'create org stock');
 
+test('UI Edit org stock warehouse packing', function () {
+    $warehouse = Warehouse::first();
+    $orgStock  = OrgStock::first();
+    $this->withoutExceptionHandling();
+    get(route('grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.composition', [
+        $this->organisation->slug, $warehouse->slug, $orgStock->slug,
+    ]))->assertInertia(function (AssertableInertia $page) {
+        $page->component('Goods/ProductComposition')
+            ->has('formData.blueprint.0.fields.trade_units.productsContext')
+            ->where('formData.args.updateRoute.name', 'grp.models.org_stock.trade_units.update');
+    });
+})->depends('create warehouse', 'create org stock');
+
 test('UI Show org stock procurement tab', function () {
     $warehouse = Warehouse::first();
     $orgStock  = OrgStock::first();
@@ -1584,7 +1597,7 @@ test('UI Index invoices in org stock family', function () {
     $family      = StoreOrgStockFamily::make()->action($this->organisation, $stockFamily, []);
 
     $this->withoutExceptionHandling();
-    get(route('grp.org.warehouses.show.inventory.org_stock_families.show.invoices.index', [
+    get(route('grp.org.warehouses.show.inventory.org_stock_families.invoices', [
         $this->organisation->slug, $warehouse->slug, $family->slug,
     ]))->assertStatus(200);
 })->depends('create warehouse');

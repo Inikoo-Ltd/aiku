@@ -17,7 +17,7 @@ function scheduledEventsById(Schedule $schedule): array
 {
     $events = [];
     foreach ($schedule->events() as $event) {
-        $id = $event->description ?: trim(preg_replace("/^.*artisan'\s*/", '', $event->command), " '");
+        $id          = $event->description ?: trim(preg_replace("/^.*artisan'\s*/", '', $event->command), " '");
         $events[$id] = $event->expression;
     }
 
@@ -26,8 +26,8 @@ function scheduledEventsById(Schedule $schedule): array
 
 function rebuildSchedule(): Schedule
 {
-    $schedule = new Schedule();
-    $kernel = app(Kernel::class);
+    $schedule   = new Schedule();
+    $kernel     = app(Kernel::class);
     $reflection = new ReflectionMethod(Kernel::class, 'schedule');
     $reflection->setAccessible(true);
     $reflection->invoke($kernel, $schedule);
@@ -36,7 +36,7 @@ function rebuildSchedule(): Schedule
 }
 
 test('kernel commands() loads console routes without error', function () {
-    $kernel = app(Kernel::class);
+    $kernel     = app(Kernel::class);
     $reflection = new ReflectionMethod($kernel, 'commands');
     $reflection->setAccessible(true);
 
@@ -81,5 +81,5 @@ test('neither master nor slave schedules register when both flags are disabled',
     config(['app.master' => false, 'app.slave' => false]);
 
     expect(scheduledEventIds(rebuildSchedule()))
-        ->toEqualCanonicalizing(['horizon:snapshot', 'cloudflare:reload', 'search:propose-synonyms']);
+        ->toEqualCanonicalizing(['horizon:snapshot', 'cloudflare:reload', 'nightowl:prune', 'search:propose-synonyms']);
 });

@@ -10,6 +10,7 @@ return [
     'analytics' => [
         'web_visits' => env('ANALYTICS_WEB_VISITS', true),
         'web_users' => env('ANALYTICS_WEB_USERS', true),
+        'live_visitors' => env('ANALYTICS_LIVE_VISITORS', true),
     ],
     'cache' => [
         'varnish'               => env('IRIS_VARNISH_ENABLED', false),

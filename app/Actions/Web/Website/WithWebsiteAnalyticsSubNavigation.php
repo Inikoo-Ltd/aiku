@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Web\Website\Analytics\TrackWebsiteVisitorActivity;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Helpers\WebsiteSearchLog;
 use App\Models\Web\Website;
@@ -22,7 +23,7 @@ trait WithWebsiteAnalyticsSubNavigation
         }
 
 
-        return [
+        return array_values(array_filter([
 
             [
                 "isAnchor" => true,
@@ -37,30 +38,18 @@ trait WithWebsiteAnalyticsSubNavigation
                     "tooltip" => __("Website analytics dashboard"),
                 ],
             ],
-            [
-                "number"   => $website->webStats->number_web_user_requests,
-                "label"    => __("Website User Visits"),
+            $this->showLiveVisitors() ? [
+                "number"   => $this->getLiveVisitorsCount($website),
+                "label"    => __("Live Visitors"),
                 "route"    => [
-                    "name"       => "grp.org.shops.show.web.analytics.web_user_requests.index",
+                    "name"       => "grp.org.shops.show.web.analytics.live_users",
                     "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
                 ],
                 "leftIcon" => [
-                    "icon"    => ["fal", "fa-project-diagram"],
-                    "tooltip" => __("Website User Requests"),
+                    "icon"    => ["fal", "fa-broadcast-tower"],
+                    "tooltip" => __("Visitors on the website right now"),
                 ],
-            ],
-            [
-                "number"   => $website->visitors()->count(),
-                "label"    => __("Website Visitors"),
-                "route"    => [
-                    "name"       => "grp.org.shops.show.web.analytics.visitors.index",
-                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-users"],
-                    "tooltip" => __("Website Visitors"),
-                ],
-            ],
+            ] : null,
             [
                 "number"   => WebsiteSearchLog::where('website_id', $website->id)->count(),
                 "label"    => __("Search"),
@@ -85,7 +74,19 @@ trait WithWebsiteAnalyticsSubNavigation
                 ],
             ],
 
-        ];
+        ]));
+    }
+
+    protected function getLiveVisitorsCount(Website $website): int
+    {
+        $counts = TrackWebsiteVisitorActivity::make()->getCounts($website);
+
+        return $counts['logged_in'] + $counts['logged_out'];
+    }
+
+    protected function showLiveVisitors(): bool
+    {
+        return (bool) config('iris.analytics.live_visitors');
     }
 
     protected function getFulfilmentWebpageNavigation(Website $website): array
@@ -94,7 +95,7 @@ trait WithWebsiteAnalyticsSubNavigation
         $fulfilment = $shop->fulfilment;
 
 
-        return [
+        return array_values(array_filter([
             [
                 "isAnchor" => true,
                 "label"    => __("Dashboard"),
@@ -109,35 +110,18 @@ trait WithWebsiteAnalyticsSubNavigation
                 ],
 
             ],
-            [
-                "number"   => $website->webStats->number_web_user_requests,
-                "label"    => __("Website User Visits"),
+            $this->showLiveVisitors() ? [
+                "number"   => $this->getLiveVisitorsCount($website),
+                "label"    => __("Live Visitors"),
                 "route"    => [
-                    "name"       => "grp.org.fulfilments.show.web.analytics.web_user_requests.index",
+                    "name"       => "grp.org.fulfilments.show.web.analytics.live_users",
                     "parameters" => [$shop->organisation->slug, $fulfilment->slug, $website->slug],
                 ],
                 "leftIcon" => [
-                    "icon"    => ["fal", "fa-project-diagram"],
-                    "tooltip" => __("Website User Requests"),
+                    "icon"    => ["fal", "fa-broadcast-tower"],
+                    "tooltip" => __("Visitors on the website right now"),
                 ],
-            ],
-            [
-                "number"   => $website->visitors()->count(),
-                "label"    => __("Website Visitors"),
-                "route"    => [
-                    "name"       => "grp.org.fulfilments.show.web.analytics.visitors.index",
-                    "parameters" => [$shop->organisation->slug, $fulfilment->slug, $website->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-users"],
-                    "tooltip" => __("Website Visitors"),
-                ],
-            ],
-
-
-
-
-        ];
+            ] : null,
+        ]));
     }
-
 }

@@ -17,11 +17,11 @@ class GuestFactory extends Factory
         return [
             'alias'                    => fake()->lexify(),
             'contact_name'             => fake()->company(),
-            'email'                    => fake()->email,
+            'email'                    => fake()->unique()->email,
             'identity_document_number' => fake('en_GB')->vat(),
             'identity_document_type'   => 'passport',
             'user'                     => [
-                'username' => fake()->userName,
+                'username' => fake()->unique()->userName,
                 'password' => 'password',
             ]
 

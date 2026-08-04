@@ -213,6 +213,7 @@ const productRoute = (item) => {
                                     placeholder="0"
                                     mode="currency"
                                     :currency="item.currency_code"
+                                    :maxFractionDigits="2"
                                     :locale="localeCode"
                                     showButtons buttonLayout="horizontal"
                                     :step="item.unit_price"

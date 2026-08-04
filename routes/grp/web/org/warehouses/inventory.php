@@ -26,6 +26,7 @@ use App\Actions\Inventory\OrganisationStockHistory\UI\ExportShowOrganisationStoc
 use App\Actions\Inventory\OrganisationStockHistory\UI\ShowOrganisationStockHistory;
 use App\Actions\Inventory\OrgStock\ExportOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
+use App\Actions\Inventory\OrgStock\UI\EditOrgStockComposition;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\OrganisationStockHistory\UI\ExportOrganisationStockHistories;
 use App\Actions\Inventory\OrganisationStockHistory\UI\IndexOrganisationStockHistories;
@@ -102,6 +103,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
             Route::get('/edit', EditOrgStock::class)->name('edit');
+            Route::get('/composition', EditOrgStockComposition::class)->name('composition');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');

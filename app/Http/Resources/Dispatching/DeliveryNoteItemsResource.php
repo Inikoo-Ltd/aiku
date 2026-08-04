@@ -105,7 +105,7 @@ class DeliveryNoteItemsResource extends JsonResource
         $isFullyPacked     = round((float)$packedQuantity, 3) >= round((float)$this->quantity_picked, 3);
         $hasAnyPacking     = (int)$this->packings_count > 0;
         $pickingBatchCodes = collect($pickings)
-            ->map(fn($picking) => $picking->batch_code ?? null)
+            ->map(fn ($picking) => $picking->batch_code ?? null)
             ->filter()
             ->unique()
             ->values()
@@ -118,6 +118,13 @@ class DeliveryNoteItemsResource extends JsonResource
             'state_icon'                               => $this->state->stateIcon()[$this->state->value],
             'quantity_required'                        => $this->quantity_required,
             'quantity_required_fractional'             => $requiredFactionalData,
+            'composition_dirty_at'                     => $this->composition_dirty_at,
+            'composition_dirty_quantity_required'      => $this->composition_dirty_quantity_required,
+            'applyNewCompositionRoute'                 => $this->composition_dirty_at ? [
+                'name'       => 'grp.models.delivery_note_item.apply_new_composition',
+                'parameters' => ['deliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ] : null,
             'quantity_dispatched'                      => $this->quantity_dispatched,
             'quantity_dispatched_fractional'           => riseDivisor(divideWithRemainder(findSmallestFactors($quantityDispatched)), $packedIn),
             'quantity_picked'                          => $this->quantity_picked,
