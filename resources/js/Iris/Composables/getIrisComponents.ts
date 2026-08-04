@@ -7,9 +7,39 @@ import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
 /* import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue" */
 
+const RELOADED_KEY = "iris:chunk-reloaded"
+
+const isBrowser = (): boolean => typeof window !== "undefined" && typeof sessionStorage !== "undefined"
+
+// ponytail: a deploy replaces the hashed chunks, so a tab opened before it asks for a file that is gone.
+// One retry covers a flaky network; the reload picks up the new manifest. The flag caps it at one reload
+// per successful streak so a chunk that is genuinely broken cannot loop the page.
+const loadWithRecovery = async (loader: () => Promise<any>): Promise<any> => {
+	try {
+		const module = await loader()
+
+		if (isBrowser()) {
+			sessionStorage.removeItem(RELOADED_KEY)
+		}
+
+		return module
+	} catch {
+		try {
+			return await loader()
+		} catch (error) {
+			if (isBrowser() && !sessionStorage.getItem(RELOADED_KEY)) {
+				sessionStorage.setItem(RELOADED_KEY, "1")
+				window.location.reload()
+			}
+
+			throw error
+		}
+	}
+}
+
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
-		loader,
+		loader: () => loadWithRecovery(loader),
 		delay: 200,
 		timeout: 15000,
 	})
