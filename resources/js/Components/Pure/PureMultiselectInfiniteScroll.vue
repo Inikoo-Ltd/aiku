@@ -137,8 +137,11 @@ onUnmounted(() => {
 const _multiselectRef = ref()
 
 const onOpen = () => {
-    // Ensure search is cleared visually
-    _multiselectRef.value?.clearSearch?.()
+    const isOpenedByTyping = !!_multiselectRef.value?.search
+
+    if (!isOpenedByTyping) {
+        _multiselectRef.value?.clearSearch?.()
+    }
 
     // Get internal input element and trigger input event with empty string
     if (props.clearOnFocus) {

@@ -33,12 +33,19 @@ class OrgStockHydrateSkuValue implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock): void
     {
+        $costPerSku = $this->getCostPerSku($orgStock, Carbon::now());
+
+        if ($costPerSku <= 0) {
+            return;
+        }
+
         $orgStock->update([
-            'sku_value' => $this->getCostPerSku($orgStock, Carbon::now())
+            'sku_value' => $costPerSku
         ]);
 
         if ($orgStock->wasChanged('sku_value')) {
             OrgStockHydrateValueInLocations::dispatch($orgStock);
+            OrgStockHydrateStockValue::dispatch($orgStock);
         }
     }
 }

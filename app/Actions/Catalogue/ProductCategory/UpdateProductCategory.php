@@ -190,6 +190,11 @@ class UpdateProductCategory extends OrgAction
             'state',
             'name_i8n',
             'faq',
+            'description_title',
+            'description_title_i8n',
+            'description',
+            'description_i8n',
+            'description_extra',
         ])) {
             $this->productCategoryHydrators($productCategory);
 

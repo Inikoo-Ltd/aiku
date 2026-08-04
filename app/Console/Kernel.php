@@ -861,6 +861,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('chat:prune-agent-presence')->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'PruneStaleChatAgentPresence',
+                ),
+                name: 'PruneStaleChatAgentPresence',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 
