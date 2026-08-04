@@ -66,7 +66,7 @@ const identifiedVisitors = computed(() =>
             Number(b.status === "ordering") - Number(a.status === "ordering")
             || (b.basket_amount ?? 0) - (a.basket_amount ?? 0)
             || b.last_active - a.last_active)
-        .slice(0, 6)
+        .slice(0, 8)
 )
 
 const totalBasket = computed(() => sumBaskets(allVisitors.value))
@@ -111,36 +111,37 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
             </Link>
         </div>
 
-        <div class="grid grid-cols-2 border-b border-gray-100">
-            <div
-                v-for="pane in [
-                    { key: 'basket', label: trans('In basket'), visitors: inBasket, accent: '#f59e0b' },
-                    { key: 'checkout', label: trans('At checkout'), visitors: inCheckout, accent: '#10b981' },
-                ]"
-                :key="pane.key"
-                class="relative h-28 border-r border-gray-100 last:border-r-0"
-                :style="{ background: `linear-gradient(to bottom, ${pane.accent}0f, transparent)` }"
-            >
-                <div class="absolute top-2 left-3 z-10 flex items-baseline gap-1.5 pointer-events-none">
-                    <span class="text-[11px] font-semibold uppercase tracking-wider" :style="{ color: pane.accent }">
-                        {{ pane.label }}
-                    </span>
-                    <span class="text-sm font-bold text-gray-900 tabular-nums">{{ pane.visitors.length }}</span>
-                </div>
-
-                <LiveVisitorsCanvas
-                    :visitors="pane.visitors"
-                    :highlighted="hoveredSession"
-                    :radius="9"
-                    :show-labels="false"
-                    :on-expire="(sessionId: string) => props.visitors.delete(sessionId)"
-                    @hover="sessionId => hoveredSession = sessionId"
-                />
-            </div>
-        </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-2">
             <div class="flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100">
+                <!-- The two steps before an order, side by side above the browsing crowd -->
+                <div class="grid grid-cols-2 border-b border-gray-100">
+                    <div
+                        v-for="pane in [
+                            { key: 'basket', label: trans('In basket'), visitors: inBasket, accent: '#f59e0b' },
+                            { key: 'checkout', label: trans('At checkout'), visitors: inCheckout, accent: '#10b981' },
+                        ]"
+                        :key="pane.key"
+                        class="relative h-20 border-r border-gray-100 last:border-r-0"
+                        :style="{ background: `linear-gradient(to bottom, ${pane.accent}0f, transparent)` }"
+                    >
+                        <div class="absolute top-1.5 left-3 z-10 flex items-baseline gap-1.5 pointer-events-none">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider" :style="{ color: pane.accent }">
+                                {{ pane.label }}
+                            </span>
+                            <span class="text-sm font-bold text-gray-900 tabular-nums">{{ pane.visitors.length }}</span>
+                        </div>
+
+                        <LiveVisitorsCanvas
+                            :visitors="pane.visitors"
+                            :highlighted="hoveredSession"
+                            :radius="8"
+                            :show-labels="false"
+                            :on-expire="(sessionId: string) => props.visitors.delete(sessionId)"
+                            @hover="sessionId => hoveredSession = sessionId"
+                        />
+                    </div>
+                </div>
+
                 <div class="relative h-56 sm:h-72 bg-gradient-to-b from-slate-50 to-white">
                     <LiveVisitorsCanvas
                         :visitors="browsing"
