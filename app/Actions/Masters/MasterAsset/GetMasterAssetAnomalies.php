@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
@@ -35,7 +36,17 @@ class GetMasterAssetAnomalies
         $masterStocks     = $masterProduct->stocks->pluck('pivot.quantity', 'id');
 
         $anomalies = [];
-        foreach ($masterProduct->products()->with(['shop', 'family', 'organisation', 'currency', 'tradeUnits', 'orgStocks'])->get() as $product) {
+        /*
+         * Discontinued products are excluded: nobody sells them, they outnumber the real
+         * problem by an order of magnitude (16k of 19.5k flagged on aw), and a red block
+         * driven by them sends staff after products that no longer exist.
+         */
+        $products = $masterProduct->products()
+            ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
+            ->with(['shop', 'family', 'organisation', 'currency', 'tradeUnits', 'orgStocks'])
+            ->get();
+
+        foreach ($products as $product) {
             $composition = $this->compositionDeviations($masterProduct, $masterTradeUnits, $masterStocks, $product);
             $pricing     = $this->pricingDeviations($masterProduct, $product);
 

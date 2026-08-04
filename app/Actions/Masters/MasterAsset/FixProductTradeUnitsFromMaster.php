@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Traits\WithVarnishBan;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Events\MasterAssetPricesCascadeProgressEvent;
 use App\Models\Masters\MasterAsset;
 use App\Models\Web\Webpage;
@@ -48,7 +49,10 @@ class FixProductTradeUnitsFromMaster
          * product's not_follow_master_trade_units immediately before running this, and a
          * relation loaded earlier would still carry the old flag and silently skip it.
          */
-        $products = $masterProduct->products()->where('not_follow_master_trade_units', false)->get();
+        $products = $masterProduct->products()
+            ->where('not_follow_master_trade_units', false)
+            ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
+            ->get();
         $total    = $products->count();
 
         $cacheBreaker = BreakProductInWebpagesCache::make();

@@ -483,3 +483,30 @@ test('kill rebel rejects an unknown scope instead of widening it', function () {
     expect($rebel->not_follow_master_trade_units)->toBeTrue()
         ->and($rebel->not_follow_master_prices)->toBeTrue();
 });
+
+test('discontinued products are neither flagged nor fixed', function () {
+    $live         = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 12);
+    $discontinued = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 12);
+    $discontinued->updateQuietly([
+        'status'                        => App\Enums\Catalogue\Product\ProductStatusEnum::DISCONTINUED,
+        'mismatch_with_master_detected' => true,
+    ]);
+
+    $anomalies = App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies::run($this->masterAsset->refresh());
+
+    expect($anomalies)->toHaveKey($live->id)
+        ->and($anomalies)->not->toHaveKey($discontinued->id);
+
+    MasterAssetHydrateMismatch::run($this->masterAsset->refresh());
+    expect($discontinued->refresh()->mismatch_with_master_detected)->toBeFalse();
+
+    App\Actions\Masters\MasterAsset\FixProductTradeUnitsFromMaster::run($this->masterAsset->refresh());
+
+    $discontinuedQuantity = DB::table('model_has_trade_units')
+        ->where('model_type', 'Product')->where('model_id', $discontinued->id)->value('quantity');
+    $liveQuantity = DB::table('model_has_trade_units')
+        ->where('model_type', 'Product')->where('model_id', $live->id)->value('quantity');
+
+    expect((float)$discontinuedQuantity)->toBe(6.0)
+        ->and((float)$liveQuantity)->toBe(3.0);
+});
