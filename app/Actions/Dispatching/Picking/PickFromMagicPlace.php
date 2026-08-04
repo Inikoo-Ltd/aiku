@@ -35,7 +35,7 @@ class PickFromMagicPlace extends OrgAction
     use AutoIgnoreZeroQuantityItems;
 
     private DeliveryNoteItem $deliveryNoteItem;
-    protected User $user;
+    protected ?User $user = null;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
     {
