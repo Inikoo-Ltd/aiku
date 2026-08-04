@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowRight } from "@fal"
 import { useLocaleStore } from "@/Stores/locale"
 import LiveVisitorsCanvas from "@/Components/Web/LiveVisitorsCanvas.vue"
-import { LiveVisitor, liveVisitorColors, liveVisitorStatusLabels } from "@/Composables/useLiveVisitors"
+import { LiveVisitor, dedupeByCustomer, funnelStage, liveVisitorColors, liveVisitorStatusLabels, pagePath, sumBaskets } from "@/Composables/useLiveVisitors"
 
 library.add(faArrowRight)
 
@@ -61,8 +61,7 @@ const legend = computed(() => {
 // The mini table is the "who is signed in right now" view; guests stay in the bubbles only.
 // Whoever is actively building a basket goes to the top — that is the reason to look at all.
 const identifiedVisitors = computed(() =>
-    allVisitors.value
-        .filter(v => v.logged_in || v.customer_name)
+    dedupeByCustomer(allVisitors.value.filter(v => v.logged_in || v.customer_name))
         .sort((a, b) =>
             Number(b.status === "ordering") - Number(a.status === "ordering")
             || (b.basket_amount ?? 0) - (a.basket_amount ?? 0)
@@ -70,12 +69,16 @@ const identifiedVisitors = computed(() =>
         .slice(0, 6)
 )
 
-const totalBasket = computed(() =>
-    allVisitors.value.reduce((sum, v) => sum + (v.basket_amount ?? 0), 0)
-)
+const totalBasket = computed(() => sumBaskets(allVisitors.value))
 
-const placeLabel = (v: LiveVisitor) =>
-    [v.city, v.region].filter(Boolean).join(", ") || countryName(v.country)
+// The last two steps before an order get their own panes; everyone else shares the main one.
+const inBasket = computed(() => allVisitors.value.filter(v => funnelStage(v) === "basket"))
+const inCheckout = computed(() => allVisitors.value.filter(v => funnelStage(v) === "checkout"))
+const browsing = computed(() => allVisitors.value.filter(v => funnelStage(v) === null))
+
+const cityLabel = (v: LiveVisitor) => [v.city, v.region].filter(Boolean).join(", ")
+
+const subtitle = (v: LiveVisitor) => [cityLabel(v), pagePath(v)].filter(Boolean).join(" · ")
 
 const money = (v: LiveVisitor) =>
     v.basket_amount ? locale.currencyFormat(v.currency_code ?? props.currency ?? "", v.basket_amount) : ""
@@ -108,11 +111,39 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
             </Link>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div class="grid grid-cols-2 border-b border-gray-100">
+            <div
+                v-for="pane in [
+                    { key: 'basket', label: trans('In basket'), visitors: inBasket, accent: '#f59e0b' },
+                    { key: 'checkout', label: trans('At checkout'), visitors: inCheckout, accent: '#10b981' },
+                ]"
+                :key="pane.key"
+                class="relative h-28 border-r border-gray-100 last:border-r-0"
+                :style="{ background: `linear-gradient(to bottom, ${pane.accent}0f, transparent)` }"
+            >
+                <div class="absolute top-2 left-3 z-10 flex items-baseline gap-1.5 pointer-events-none">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider" :style="{ color: pane.accent }">
+                        {{ pane.label }}
+                    </span>
+                    <span class="text-sm font-bold text-gray-900 tabular-nums">{{ pane.visitors.length }}</span>
+                </div>
+
+                <LiveVisitorsCanvas
+                    :visitors="pane.visitors"
+                    :highlighted="hoveredSession"
+                    :radius="9"
+                    :show-labels="false"
+                    :on-expire="(sessionId: string) => props.visitors.delete(sessionId)"
+                    @hover="sessionId => hoveredSession = sessionId"
+                />
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2">
             <div class="flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100">
                 <div class="relative h-56 sm:h-72 bg-gradient-to-b from-slate-50 to-white">
                     <LiveVisitorsCanvas
-                        :visitors="allVisitors"
+                        :visitors="browsing"
                         :group-key-of="groupKeyOf"
                         :highlighted="hoveredSession"
                         :radius="10"
@@ -121,8 +152,8 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                         @hover="sessionId => hoveredSession = sessionId"
                     />
 
-                    <div v-if="!allVisitors.length" class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
-                        {{ trans("Nobody on the site right now.") }}
+                    <div v-if="!browsing.length" class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
+                        {{ trans("Nobody browsing right now.") }}
                     </div>
                 </div>
 
@@ -165,9 +196,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                         >
                         <div class="min-w-0 flex-1">
                             <p class="text-sm text-gray-900 truncate">{{ visitor.customer_name ?? trans("Guest") }}</p>
-                            <p class="text-[11px] text-gray-400 truncate">
-                                {{ placeLabel(visitor) }} · {{ visitor.page_title || visitor.page || trans("Home") }}
-                            </p>
+                            <p class="text-[11px] text-gray-400 truncate" :title="visitor.url">{{ subtitle(visitor) }}</p>
                         </div>
                         <span v-if="money(visitor)" class="text-sm font-medium text-gray-900 tabular-nums shrink-0">
                             {{ money(visitor) }}

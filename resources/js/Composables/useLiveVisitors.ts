@@ -32,6 +32,7 @@ export interface LiveVisitor {
     os?: string
     search_engine?: string
     search_term?: string
+    customer_id?: string
     customer_name?: string
     basket_amount?: number
     basket_touched_at?: number
@@ -58,6 +59,65 @@ export const liveVisitorStatusLabels: Record<string, string> = {
     active: "Browsing",
     idle: "Idle",
     bot: "Bot",
+}
+
+/**
+ * The storefront mints a new session id for the same signed-in person many times an hour, so a
+ * customer turns up once per session, each carrying the basket total as it was at that session's
+ * last hit. Collapsing to the newest session per customer is what makes both the list and the
+ * basket total describe people instead of sessions.
+ */
+export const dedupeByCustomer = (visitors: LiveVisitor[]): LiveVisitor[] => {
+    const byKey = new Map<string, LiveVisitor>()
+
+    visitors.forEach(v => {
+        const key = v.customer_id ? `c:${v.customer_id}` : `s:${v.session_id}`
+        const seen = byKey.get(key)
+        if (!seen || v.last_active > seen.last_active) {
+            byKey.set(key, v)
+        }
+    })
+
+    return Array.from(byKey.values())
+}
+
+export const sumBaskets = (visitors: LiveVisitor[]): number =>
+    dedupeByCustomer(visitors).reduce((sum, v) => sum + (v.basket_amount ?? 0), 0)
+
+/**
+ * Page titles are long and get truncated to nothing useful in a narrow column, so the last
+ * segment of the url path is shown instead; the full url stays available as a tooltip.
+ */
+export const pagePath = (v: Pick<LiveVisitor, "url" | "page">): string => {
+    const raw = v.url ?? ""
+
+    try {
+        const path = new URL(raw).pathname.replace(/\/+$/, "")
+        const last = path.split("/").filter(Boolean).pop()
+
+        return last ?? "/"
+    } catch {
+        return v.page || "/"
+    }
+}
+
+/**
+ * /app/basket and /app/checkout are the last two steps before an order is placed, so visitors
+ * sitting on them get their own panes. Matched on whole path segments: a catalogue page such as
+ * "boxes-trays-baskets" contains the word but is not the basket.
+ */
+export const funnelStage = (v: Pick<LiveVisitor, "url">): "basket" | "checkout" | null => {
+    try {
+        const segments = new URL(v.url ?? "").pathname.split("/").filter(Boolean)
+
+        if (segments.includes("checkout")) {
+            return "checkout"
+        }
+
+        return segments[segments.length - 1] === "basket" ? "basket" : null
+    } catch {
+        return null
+    }
 }
 
 export const liveVisitorStatus = (v: Pick<LiveVisitor, "last_active"> & Partial<LiveVisitor>): string => {
@@ -112,6 +172,7 @@ export const useLiveVisitors = (websiteId: number, fallbackCurrency?: string | n
             os: data.os ?? visitor.os,
             search_engine: data.search_engine ?? visitor.search_engine,
             search_term: data.search_term ?? visitor.search_term,
+            customer_id: data.customer_id ?? visitor.customer_id,
             customer_name: data.customer_name ?? visitor.customer_name,
             basket_amount: data.basket_amount === undefined ? visitor.basket_amount : Number(data.basket_amount),
             basket_touched_at: data.basket_touched_at === undefined ? visitor.basket_touched_at : Number(data.basket_touched_at),
