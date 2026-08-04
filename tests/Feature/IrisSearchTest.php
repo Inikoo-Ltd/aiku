@@ -13,6 +13,8 @@ use App\Actions\Search\SearchCatalogue;
 use App\Actions\Search\StoreWebsiteSearchLog;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Enums\Search\WebsiteSearchSourceEnum;
+use App\Events\Web\WebsiteSearchStatsUpdated;
+use Illuminate\Support\Facades\Event;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Helpers\WebsiteSearchLog;
 use Illuminate\Support\Facades\Http;
@@ -61,6 +63,33 @@ test('iris search allows single character queries', function () {
 
     $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=e');
     $response->assertOk();
+});
+
+test('a new search broadcasts the headline stats, a refinement does not', function () {
+    Event::fake([WebsiteSearchStatsUpdated::class]);
+
+    $log = fn (array $extra = []) => StoreWebsiteSearchLog::run(array_merge([
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $this->website->id,
+        'session_id'      => 'live-session',
+        'scope'           => 'catalogue',
+        'query'           => 'tealights',
+        'results_count'   => 3,
+    ], $extra));
+
+    $log();
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 1);
+
+    // keystroke refinement reuses the row, so the totals cannot have moved
+    $log(['query' => 'tealights blue']);
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 1);
+
+    // a different search is a new row and a new number on screen
+    $log(['session_id' => 'other-session', 'query' => 'incense']);
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 2);
 });
 
 test('the search log records which control opened the search, and only known ones', function () {

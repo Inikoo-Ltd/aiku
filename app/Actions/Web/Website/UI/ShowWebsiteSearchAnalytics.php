@@ -118,6 +118,7 @@ class ShowWebsiteSearchAnalytics extends OrgAction
                     'title'         => $title,
                     'subNavigation' => $this->getWebsiteAnalyticsNavigation($this->website),
                 ],
+                'live_website_id'      => $this->website->id,
                 'search_insights'      => GetWebsiteSearchAnalytics::run($this->website),
                 'search_merchandising' => $this->searchMerchandisingProps($this->website, $request->route()->originalParameters()),
                 'zero_query_status' => $this->zeroQueryStatuses($this->website),
