@@ -257,10 +257,8 @@ class ShowIrisWebpage
                 $webpageData = match($webpageData) {
                     'login.sys'         => request()->website->getUrl() . '/app/login',
                     'register.sys'      => request()->website->getUrl() . '/app/register',
-                    'index.php',
-                    'asset_label.php',
-                    'home.sys'          => 
-                        request()->website->storefront->getCanonicalUrl(),
+                    default          => 
+                        request()->website->getUrl(),
                 };
             }
 
