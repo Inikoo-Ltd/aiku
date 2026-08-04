@@ -15,8 +15,10 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -70,7 +72,12 @@ class SendOrderBackToBasket extends OrgAction
             $validator->errors()->add('message', 'Unable to send external shop order back to basket');
         }
 
-        if (!in_array($shop->type, [ShopTypeEnum::DROPSHIPPING])) {
+        $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
+        if ($this->order->platform_id != $platform->id) {
+            $validator->errors()->add('message', 'Unable to send platform order back to basket');
+        }
+
+        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
             $count = Order::where('customer_id', $this->order->customer_id)
                 ->where('state', OrderStateEnum::CREATING)
                 ->count();
