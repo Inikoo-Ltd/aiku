@@ -30,7 +30,7 @@ class SearchIrisCataloguePage extends IrisAction
     /**
      * @param array{q: string, categories?: array<int, int>, page?: int, per_page?: int, sort?: string|null} $modelData
      *
-     * @return array{results: array{products: array<int, array<string, mixed>>, total: int, page: int, last_page: int, per_page: int, facets: array<string, array<int, array<string, mixed>>>, collections: array<int, array<string, mixed>>}}
+     * @return array{results: array{orders: array<int, array<string, mixed>>, products: array<int, array<string, mixed>>, total: int, page: int, last_page: int, per_page: int, facets: array<string, array<int, array<string, mixed>>>, collections: array<int, array<string, mixed>>}}
      */
     public function handle(array $modelData): array
     {
@@ -45,10 +45,12 @@ class SearchIrisCataloguePage extends IrisAction
         $sort        = Arr::get($modelData, 'sort');
 
         $matchedIds = $this->matchedProductIds($query);
+        $orders     = $pageNumber === 1 ? $this->matchedOrders($query) : [];
 
         if (empty($matchedIds)) {
             return [
                 'results' => [
+                    'orders'      => $orders,
                     'products'    => [],
                     'total'       => 0,
                     'page'        => 1,
@@ -109,6 +111,7 @@ class SearchIrisCataloguePage extends IrisAction
 
         return [
             'results' => [
+                'orders'      => $orders,
                 'products'    => $products,
                 'total'       => $total,
                 'page'        => $pageNumber,
@@ -122,6 +125,22 @@ class SearchIrisCataloguePage extends IrisAction
                 'collections' => $this->matchedCollections($query),
             ],
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function matchedOrders(string $query): array
+    {
+        $customerId = $this->signedInCustomerId();
+        if (!$customerId) {
+            return [];
+        }
+
+        return SearchIrisOrders::run($query, [
+            'shop_id'     => $this->shop->id,
+            'customer_id' => $customerId,
+        ]);
     }
 
     /**

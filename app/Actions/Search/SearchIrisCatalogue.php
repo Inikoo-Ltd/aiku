@@ -20,18 +20,25 @@ class SearchIrisCatalogue extends IrisAction
 {
     public function handle(string $query): array
     {
-        $boosts = UpdateWebsiteSearchBoosts::activeBoostIds($this->website);
+        $boosts     = UpdateWebsiteSearchBoosts::activeBoostIds($this->website);
+        $customerId = $this->signedInCustomerId();
 
         $results = Search::run('catalogue', $query, [
-            'shop_id'       => $this->shop->id,
-            'is_in_website' => true,
-            'boosts'        => $boosts,
-            'language'      => $this->shop->language->code,
+            'shop_id'            => $this->shop->id,
+            'is_in_website'      => true,
+            'boosts'             => $boosts,
+            'language'           => $this->shop->language->code,
+            'orders_customer_id' => $customerId,
         ]);
 
         data_set($results, 'results.products', $this->enrichItems(Arr::get($results, 'results.products', []), Product::class, largeImage: true));
         data_set($results, 'results.product_categories', $this->enrichItems(Arr::get($results, 'results.product_categories', []), ProductCategory::class));
         data_set($results, 'results.collections', $this->enrichItems(Arr::get($results, 'results.collections', []), Collection::class));
+
+        // Filter the orders result by the customer id, if present. This is a backstop for a stale Typesense index: the shared index also holds orders not belonging to the customer, which must not leak to the public.
+        if ($customerId) {
+            data_set($results, 'results.orders', SearchIrisOrders::make()->hydrate(Arr::get($results, 'results.orders', []), $query, $customerId, $this->shop->id));
+        }
 
         return $results;
     }

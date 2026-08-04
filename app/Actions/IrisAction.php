@@ -14,6 +14,7 @@ use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Enums\Search\WebsiteSearchSourceEnum;
 use Illuminate\Support\Arr;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
@@ -58,6 +59,21 @@ class IrisAction
         $this->validatedData = $this->validateAttributes();
 
         return $this;
+    }
+
+    /**
+     * Check logged in/logget out user. Return null or id.
+     */
+    protected function signedInCustomerId(): ?int
+    {
+        /** @var WebUser|null $webUser */
+        $webUser = request()->user();
+
+        if (!$webUser || $webUser->website_id !== $this->website->id) {
+            return null;
+        }
+
+        return $webUser->customer_id;
     }
 
     protected function recordWebsiteSearchLog(ActionRequest $request, string $scope, string $query, int $resultsCount): string

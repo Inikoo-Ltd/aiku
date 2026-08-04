@@ -53,6 +53,8 @@ class SearchCatalogue
             $documents = $this->scoutSearch($query, $options);
         }
 
+        $orderDocuments = Arr::pull($documents, 'orders');
+
         $mapCatalogueItem = static fn (array $document) => [
             'id'    => (int)$document['id'],
             'code'  => $document['code'] ?? null,
@@ -60,23 +62,33 @@ class SearchCatalogue
             'image' => json_decode($document['image'] ?? 'null', true),
         ];
 
+        $results = array_map(
+            static fn (array $docs) => array_map($mapCatalogueItem, $docs),
+            $documents
+        );
+
+        if ($orderDocuments !== null) {
+            $results['orders'] = $orderDocuments;
+        }
+
         return [
             'scope'   => 'catalogue',
-            'results' => array_map(
-                static fn (array $docs) => array_map($mapCatalogueItem, $docs),
-                $documents
-            ),
+            'results' => $results,
         ];
     }
 
     /**
-     * All three collections in one HTTP round trip instead of three sequential ones.
+     * All collections in one HTTP round trip instead of sequential ones. The storefront adds
+     * the signed in customer's own orders as a further search, staff scopes never pass
+     * orders_customer_id and so never see it.
      *
      * @return array<string, array<int, array<string, mixed>>>
      */
     private function multiSearch(string $query, array $options): array
     {
         $searches = [];
+        $keys     = array_keys(self::SEARCH_TARGETS);
+
         foreach (self::SEARCH_TARGETS as [$modelClass, $boostType, $limit]) {
             $filters = [];
             if ($shopId = Arr::get($options, 'shop_id')) {
@@ -102,12 +114,17 @@ class SearchCatalogue
             );
         }
 
+        if ($customerId = Arr::get($options, 'orders_customer_id')) {
+            $searches[] = SearchIrisOrders::searchParameters($query, $customerId, Arr::get($options, 'shop_id'));
+            $keys[]     = 'orders';
+        }
+
         $response = $this->typesenseClient()
             ->post($this->typesenseUrl().'/multi_search', ['searches' => $searches])
             ->throw();
 
         $documents = [];
-        foreach (array_keys(self::SEARCH_TARGETS) as $index => $key) {
+        foreach ($keys as $index => $key) {
             if ($error = $response->json("results.$index.error")) {
                 logger()->warning("Typesense multi_search $key failed: $error");
             }
@@ -142,6 +159,12 @@ class SearchCatalogue
             $searchQuery->take($limit);
 
             $documents[$key] = $this->rawDocuments($searchQuery);
+        }
+
+        if ($customerId = Arr::get($options, 'orders_customer_id')) {
+            $documents['orders'] = $this->rawDocuments(
+                SearchIrisOrders::scoutQuery($query, $customerId, Arr::get($options, 'shop_id'))
+            );
         }
 
         return $documents;
