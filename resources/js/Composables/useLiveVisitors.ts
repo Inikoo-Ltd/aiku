@@ -24,6 +24,8 @@ export interface LiveVisitor {
     region?: string
     page?: string
     page_title?: string
+    page_type?: string
+    page_since?: number
     url?: string
     last_active: number
     logged_in: boolean
@@ -120,6 +122,30 @@ export const funnelStage = (v: Pick<LiveVisitor, "url">): "basket" | "checkout" 
     }
 }
 
+export const isHomepage = (v: Pick<LiveVisitor, "url" | "page">): boolean => {
+    try {
+        return new URL(v.url ?? "").pathname.replace(/\/+$/, "") === ""
+    } catch {
+        return false
+    }
+}
+
+/** Compact "3m" / "45s" / "1h 5m" for how long something has been going on. */
+export const shortDuration = (since?: number, nowMs = Date.now()): string => {
+    if (!since) {
+        return ""
+    }
+
+    const seconds = Math.max(0, Math.round(nowMs / 1000 - since))
+    if (seconds < 60) {
+        return `${seconds}s`
+    }
+
+    const minutes = Math.floor(seconds / 60)
+
+    return minutes < 60 ? `${minutes}m` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+}
+
 export const liveVisitorStatus = (v: Pick<LiveVisitor, "last_active"> & Partial<LiveVisitor>): string => {
     const now = Date.now() / 1000
 
@@ -164,6 +190,8 @@ export const useLiveVisitors = (websiteId: number, fallbackCurrency?: string | n
             region: data.region ?? visitor.region,
             page: data.page ?? visitor.page,
             page_title: data.page_title ?? visitor.page_title,
+            page_type: data.page_type ?? visitor.page_type,
+            page_since: data.page_since === undefined ? visitor.page_since : Number(data.page_since),
             url: data.url ?? visitor.url,
             last_active: Number(data.last_active) || Date.now() / 1000,
             logged_in: data.logged_in === "1" || data.logged_in === true,

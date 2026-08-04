@@ -11,12 +11,12 @@ import { trans } from "laravel-vue-i18n"
 import { useIntervalFn } from "@vueuse/core"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faArrowRight } from "@fal"
+import { faArrowRight, faHome, faCube, faFolder, faFolderTree, faFolderDownload, faLayerGroup, faNewspaper, faColumns, faCreditCard, faShoppingBasket, faPlaneArrival, faFileAlt } from "@fal"
 import { useLocaleStore } from "@/Stores/locale"
 import LiveVisitorsCanvas from "@/Components/Web/LiveVisitorsCanvas.vue"
-import { LiveVisitor, dedupeByCustomer, funnelStage, liveVisitorColors, liveVisitorStatusLabels, pagePath, sumBaskets } from "@/Composables/useLiveVisitors"
+import { LiveVisitor, dedupeByCustomer, funnelStage, isHomepage, liveVisitorColors, liveVisitorStatusLabels, pagePath, shortDuration } from "@/Composables/useLiveVisitors"
 
-library.add(faArrowRight)
+library.add(faArrowRight, faHome, faCube, faFolder, faFolderTree, faFolderDownload, faLayerGroup, faNewspaper, faColumns, faCreditCard, faShoppingBasket, faPlaneArrival, faFileAlt)
 
 // The channel subscription is owned by the parent so a page never opens it twice; this component
 // only renders the shared visitor map.
@@ -69,16 +69,46 @@ const identifiedVisitors = computed(() =>
         .slice(0, 8)
 )
 
-const totalBasket = computed(() => sumBaskets(allVisitors.value))
-
 // The last two steps before an order get their own panes; everyone else shares the main one.
 const inBasket = computed(() => allVisitors.value.filter(v => funnelStage(v) === "basket"))
 const inCheckout = computed(() => allVisitors.value.filter(v => funnelStage(v) === "checkout"))
 const browsing = computed(() => allVisitors.value.filter(v => funnelStage(v) === null))
 
-const cityLabel = (v: LiveVisitor) => [v.city, v.region].filter(Boolean).join(", ")
+const pageIcons: Record<string, any> = {
+    storefront: faHome,
+    product: faCube,
+    products: faCube,
+    family: faFolder,
+    department: faFolderTree,
+    sub_department: faFolderDownload,
+    catalogue: faFolderTree,
+    collection: faLayerGroup,
+    blog: faNewspaper,
+    content: faColumns,
+    landing_page: faPlaneArrival,
+    basket: faShoppingBasket,
+    checkout: faCreditCard,
+}
 
-const subtitle = (v: LiveVisitor) => [cityLabel(v), pagePath(v)].filter(Boolean).join(" · ")
+const pageIcon = (v: LiveVisitor) => {
+    const stage = funnelStage(v)
+    if (stage) {
+        return pageIcons[stage]
+    }
+
+    return isHomepage(v) ? faHome : (pageIcons[v.page_type ?? ""] ?? faFileAlt)
+}
+
+const pageLabel = (v: LiveVisitor) => {
+    const stage = funnelStage(v)
+    if (stage) {
+        return stage === "basket" ? trans("Basket") : trans("Checkout")
+    }
+
+    return isHomepage(v) ? trans("Homepage") : pagePath(v)
+}
+
+const timeOnPage = (v: LiveVisitor) => shortDuration(v.page_since, clock.value)
 
 const money = (v: LiveVisitor) =>
     v.basket_amount ? locale.currencyFormat(v.currency_code ?? props.currency ?? "", v.basket_amount) : ""
@@ -168,18 +198,11 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
             </div>
 
             <div class="flex flex-col min-w-0">
-                <div class="flex items-baseline justify-between px-4 pt-3 pb-2">
-                    <span class="text-[11px] uppercase tracking-wider text-gray-400">{{ trans("Signed in now") }}</span>
-                    <span v-if="totalBasket" class="text-sm font-semibold text-gray-900 tabular-nums">
-                        {{ locale.currencyFormat(currency ?? "", totalBasket) }}
-                    </span>
-                </div>
-
                 <ul class="divide-y divide-gray-100 flex-1">
                     <li
                         v-for="visitor in identifiedVisitors"
                         :key="visitor.session_id"
-                        class="px-4 py-2 flex items-center gap-2.5 transition-colors"
+                        class="px-4 py-2 grid grid-cols-[auto_minmax(0,1.1fr)_minmax(0,1fr)_auto_auto] items-center gap-x-3 text-sm text-gray-500 transition-colors"
                         :class="[
                             hoveredSession === visitor.session_id ? 'bg-indigo-50' : 'hover:bg-gray-50',
                             visitor.flash_until > clock ? 'flash' : '',
@@ -191,17 +214,22 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                             v-if="visitor.country && visitor.country !== 'XX'"
                             :src="`/flags/${visitor.country.toLowerCase()}.png`"
                             :alt="visitor.country"
-                            class="h-3 w-auto rounded-[2px] shrink-0"
+                            class="h-3 w-auto rounded-[2px]"
                             loading="lazy"
                             @error="($event.target as HTMLImageElement).style.display = 'none'"
                         >
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm text-gray-900 truncate">{{ visitor.customer_name ?? trans("Guest") }}</p>
-                            <p class="text-[11px] text-gray-400 truncate" :title="visitor.url">{{ subtitle(visitor) }}</p>
-                        </div>
-                        <span v-if="money(visitor)" class="text-sm font-medium text-gray-900 tabular-nums shrink-0">
-                            {{ money(visitor) }}
+                        <span v-else class="w-4" />
+
+                        <span class="truncate" :title="visitor.customer_name">{{ visitor.customer_name ?? trans("Guest") }}</span>
+
+                        <span class="flex items-center gap-1.5 min-w-0" :title="visitor.url">
+                            <FontAwesomeIcon :icon="pageIcon(visitor)" class="text-gray-300 shrink-0" fixed-width />
+                            <span class="truncate">{{ pageLabel(visitor) }}</span>
                         </span>
+
+                        <span class="tabular-nums text-gray-400 text-right w-10">{{ timeOnPage(visitor) }}</span>
+
+                        <span class="tabular-nums text-right">{{ money(visitor) }}</span>
                     </li>
 
                     <li v-if="!identifiedVisitors.length" class="px-4 py-8 text-center text-sm text-gray-400">
