@@ -221,6 +221,19 @@ class FixOrganisationCompositionFromMasters
             ->all();
     }
 
+    private function productsChangedSinceLastHydrate(Organisation $organisation, ?MasterShop $masterShop): int
+    {
+        return Product::whereHas('shop', fn ($shop) => $shop->where('organisation_id', $organisation->id))
+            ->whereHas('masterProduct', function ($master) use ($masterShop) {
+                $master->where('status', true)
+                    ->when($masterShop, fn ($q) => $q->where('master_shop_id', $masterShop->id))
+                    ->whereColumn('master_assets.updated_at', '<', 'products.updated_at');
+            })
+            ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
+            ->where('is_for_sale', true)
+            ->count();
+    }
+
     public function getCommandSignature(): string
     {
         return 'master_product:fix_organisation_composition {organisation} {--master_shop=} {--apply} {--skip-units} {--skip-prices} {--all}';
@@ -238,6 +251,24 @@ class FixOrganisationCompositionFromMasters
 
         if ($withUnits && !$dryRun && !$command->confirm('Aligning units rewrites what existing order lines mean. Continue?')) {
             return 1;
+        }
+
+        /*
+         * Working from the flag is only safe while the flag is newer than the data it
+         * describes. Run against stale flags it once reported four products to fix when
+         * six hundred and ninety two had drifted, which reads as a clean result.
+         */
+        if (!$command->option('all')) {
+            $staleSince = $this->productsChangedSinceLastHydrate($organisation, $masterShop);
+
+            if ($staleSince) {
+                $command->warn($staleSince.' products in this organisation changed after their master was last checked.');
+                $command->warn('Run master_asset:hydrate_mismatch first, or pass --all to compare everything now.');
+
+                if (!$command->confirm('Continue anyway, knowing drift may be missed?', false)) {
+                    return 1;
+                }
+            }
         }
 
         $result = $this->handle($organisation, $dryRun, $withUnits, $masterShop, !$command->option('all'), $withPrices);

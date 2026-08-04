@@ -659,3 +659,29 @@ test('the missing product sweep skips inactive and not for sale masters, but tru
         ->and($codesQueued)->not->toContain($markedOut->code)
         ->and($codesQueued)->not->toContain($notForSale->code);
 });
+
+test('the organisation sweep warns rather than silently under-reporting when the flags are older than the data', function () {
+    $drifted = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 10);
+    $drifted->updateQuietly(['is_for_sale' => true]);
+    $this->masterAsset->updateQuietly(['is_for_sale' => true]);
+
+    MasterAssetHydrateMismatch::run($this->masterAsset->refresh());
+
+    // The product moves after the master was last checked: the flag no longer describes it.
+    $this->masterAsset->updateQuietly(['updated_at' => now()->subDay()]);
+    $drifted->updateQuietly(['updated_at' => now()]);
+
+    $stale = new ReflectionMethod(
+        App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::class,
+        'productsChangedSinceLastHydrate'
+    );
+    $stale->setAccessible(true);
+
+    $count = $stale->invoke(
+        App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::make(),
+        $this->organisation,
+        $this->masterShop
+    );
+
+    expect($count)->toBeGreaterThan(0);
+});
