@@ -244,9 +244,17 @@ class StoreSupplier extends OrgAction
     protected function pullIntoJsonColumn(array $modelData, string $column, array $fields): array
     {
         foreach ($fields as $field) {
-            if (array_key_exists($field, $modelData)) {
-                $modelData[$column][$field] = Arr::pull($modelData, $field);
+            if (!array_key_exists($field, $modelData)) {
+                continue;
             }
+
+            $value = Arr::pull($modelData, $field);
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $modelData[$column][$field] = $value;
         }
 
         return $modelData;
