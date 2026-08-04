@@ -566,7 +566,7 @@ test('the missing product sweep picks the right shops and reports before creatin
 
     $reference = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10);
     $reference->updateQuietly(['is_for_sale' => true]);
-    $this->masterAsset->updateQuietly(['master_family_id' => $this->masterFamily->id]);
+    $this->masterAsset->updateQuietly(['master_family_id' => $this->masterFamily->id, 'is_for_sale' => true]);
 
     $notForSale = StoreMasterAsset::make()->action($this->masterFamily, [
         'code'    => 'MM-NFS',
@@ -589,4 +589,53 @@ test('the missing product sweep picks the right shops and reports before creatin
         ->and(collect($result['changes'])->filter(fn ($change) => str_starts_with($change, $notForSale->code)))->toBeEmpty()
         ->and(App\Models\Catalogue\Product::where('shop_id', $sibling->id)
             ->where('master_product_id', $this->masterAsset->id)->exists())->toBeFalse();
+});
+
+test('the missing product sweep skips masters that are discontinued or not for sale', function () {
+    $sibling = App\Models\Catalogue\Shop::factory()->create([
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'code'            => 'SIB'.substr(uniqid(), -5),
+        'currency_id'     => $this->shop->currency_id,
+        'master_shop_id'  => $this->masterShop->id,
+        'state'           => App\Enums\Catalogue\Shop\ShopStateEnum::OPEN,
+    ]);
+
+    $this->masterAsset->updateQuietly(['master_family_id' => $this->masterFamily->id, 'is_for_sale' => true]);
+    mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10)
+        ->updateQuietly(['is_for_sale' => true]);
+
+    $makeMaster = function (string $code, array $attributes) {
+        $master = StoreMasterAsset::make()->action($this->masterFamily, [
+            'code'    => $code,
+            'name'    => $code,
+            'is_main' => true,
+            'type'    => MasterAssetTypeEnum::PRODUCT,
+            'price'   => 10,
+            'stocks'  => [],
+        ]);
+        $master->updateQuietly(array_merge(['master_family_id' => $this->masterFamily->id], $attributes));
+        mismatchTestProduct($this->shop, $master, $this->tradeUnitId, 3, 10)->updateQuietly(['is_for_sale' => true]);
+
+        return $master;
+    };
+
+    $discontinued = $makeMaster('MM-DISC', ['is_for_sale' => true, 'discontinued_at' => now()]);
+    $markedOut    = $makeMaster('MM-MARK', ['is_for_sale' => true, 'mark_for_discontinued' => true]);
+    $notForSale   = $makeMaster('MM-NFS2', ['is_for_sale' => false]);
+
+    $result = App\Actions\Masters\MasterAsset\CreateMissingOrganisationProductsFromMasters::run(
+        $this->organisation,
+        $this->shop,
+        dryRun: true
+    );
+
+    $codesQueued = collect($result['changes'])
+        ->filter(fn ($change) => str_ends_with($change, ' → '.$sibling->code))
+        ->map(fn ($change) => explode(' → ', $change)[0]);
+
+    expect($codesQueued)->toContain($this->masterAsset->code)
+        ->and($codesQueued)->not->toContain($discontinued->code)
+        ->and($codesQueued)->not->toContain($markedOut->code)
+        ->and($codesQueued)->not->toContain($notForSale->code);
 });

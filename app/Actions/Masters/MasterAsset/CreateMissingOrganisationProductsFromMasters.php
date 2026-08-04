@@ -63,9 +63,17 @@ class CreateMissingOrganisationProductsFromMasters
         $changes  = [];
         $failures = [];
 
+        /*
+         * Active, still sold and not on its way out: 607 aw masters carry a
+         * discontinued_at while their status is still true, and copying those into a
+         * shop that never had them only spreads stock nobody intends to sell again.
+         */
         MasterAsset::where('master_shop_id', $referenceShop->master_shop_id)
             ->where('type', MasterAssetTypeEnum::PRODUCT)
             ->where('status', true)
+            ->where('is_for_sale', true)
+            ->whereNull('discontinued_at')
+            ->where(fn ($query) => $query->whereNull('mark_for_discontinued')->orWhere('mark_for_discontinued', false))
             ->whereHas('products', fn ($query) => $query
                 ->where('shop_id', $referenceShop->id)
                 ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
@@ -151,8 +159,13 @@ class CreateMissingOrganisationProductsFromMasters
          */
         $masterAsset->load('masterFamily.productCategories');
 
+        /*
+         * is_for_sale is passed rather than left to the master: a product must never
+         * arrive in a new shop on sale when its source is not.
+         */
         StoreProductFromMasterProduct::make()->action($masterAsset, [
             'shop_products'     => $shopProducts,
+            'is_for_sale'       => (bool)$masterAsset->is_for_sale,
             'is_minion_variant' => $masterAsset->is_minion_variant,
         ]);
     }
