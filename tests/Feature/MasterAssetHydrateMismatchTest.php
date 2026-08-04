@@ -591,7 +591,7 @@ test('the missing product sweep picks the right shops and reports before creatin
             ->where('master_product_id', $this->masterAsset->id)->exists())->toBeFalse();
 });
 
-test('the missing product sweep skips masters that are discontinued or not for sale', function () {
+test('the missing product sweep skips inactive and not for sale masters, but trusts status over a stale discontinued date', function () {
     $sibling = App\Models\Catalogue\Shop::factory()->create([
         'group_id'        => $this->organisation->group_id,
         'organisation_id' => $this->organisation->id,
@@ -620,9 +620,11 @@ test('the missing product sweep skips masters that are discontinued or not for s
         return $master;
     };
 
-    $discontinued = $makeMaster('MM-DISC', ['is_for_sale' => true, 'discontinued_at' => now()]);
-    $markedOut    = $makeMaster('MM-MARK', ['is_for_sale' => true, 'mark_for_discontinued' => true]);
-    $notForSale   = $makeMaster('MM-NFS2', ['is_for_sale' => false]);
+    $inactive   = $makeMaster('MM-INACT', ['is_for_sale' => true, 'status' => false]);
+    $markedOut  = $makeMaster('MM-MARK', ['is_for_sale' => true, 'mark_for_discontinued' => true]);
+    $notForSale = $makeMaster('MM-NFS2', ['is_for_sale' => false]);
+    // A stale discontinued_at must NOT exclude a master that is still active and selling.
+    $stillSelling = $makeMaster('MM-STALE', ['is_for_sale' => true, 'discontinued_at' => now()->subYear()]);
 
     $result = App\Actions\Masters\MasterAsset\CreateMissingOrganisationProductsFromMasters::run(
         $this->organisation,
@@ -635,7 +637,8 @@ test('the missing product sweep skips masters that are discontinued or not for s
         ->map(fn ($change) => explode(' → ', $change)[0]);
 
     expect($codesQueued)->toContain($this->masterAsset->code)
-        ->and($codesQueued)->not->toContain($discontinued->code)
+        ->and($codesQueued)->toContain($stillSelling->code)
+        ->and($codesQueued)->not->toContain($inactive->code)
         ->and($codesQueued)->not->toContain($markedOut->code)
         ->and($codesQueued)->not->toContain($notForSale->code);
 });

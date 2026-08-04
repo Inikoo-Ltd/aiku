@@ -64,15 +64,15 @@ class CreateMissingOrganisationProductsFromMasters
         $failures = [];
 
         /*
-         * Active, still sold and not on its way out: 607 aw masters carry a
-         * discontinued_at while their status is still true, and copying those into a
-         * shop that never had them only spreads stock nobody intends to sell again.
+         * status and is_for_sale are the signals that hold up: of 28,600 inactive aw
+         * masters only 27 still have a live product. discontinued_at does not — 917
+         * masters carry one while selling, 719 of them sold after that very date — so
+         * it is deliberately not used to exclude anything here.
          */
         MasterAsset::where('master_shop_id', $referenceShop->master_shop_id)
             ->where('type', MasterAssetTypeEnum::PRODUCT)
             ->where('status', true)
             ->where('is_for_sale', true)
-            ->whereNull('discontinued_at')
             ->where(fn ($query) => $query->whereNull('mark_for_discontinued')->orWhere('mark_for_discontinued', false))
             ->whereHas('products', fn ($query) => $query
                 ->where('shop_id', $referenceShop->id)
