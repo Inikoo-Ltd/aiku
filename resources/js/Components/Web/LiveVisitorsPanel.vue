@@ -198,44 +198,62 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
             </div>
 
             <div class="flex flex-col min-w-0">
-                <ul class="divide-y divide-gray-100 flex-1">
-                    <li
-                        v-for="visitor in identifiedVisitors"
-                        :key="visitor.session_id"
-                        class="px-4 py-2 grid grid-cols-[auto_minmax(0,1.1fr)_minmax(0,1fr)_auto_auto] items-center gap-x-3 text-sm text-gray-500 transition-colors"
-                        :class="[
-                            hoveredSession === visitor.session_id ? 'bg-indigo-50' : 'hover:bg-gray-50',
-                            visitor.flash_until > clock ? 'flash' : '',
-                        ]"
-                        @mouseenter="hoveredSession = visitor.session_id"
-                        @mouseleave="hoveredSession = null"
-                    >
-                        <img
-                            v-if="visitor.country && visitor.country !== 'XX'"
-                            :src="`/flags/${visitor.country.toLowerCase()}.png`"
-                            :alt="visitor.country"
-                            class="h-3 w-auto rounded-[2px]"
-                            loading="lazy"
-                            @error="($event.target as HTMLImageElement).style.display = 'none'"
+                <!-- A table rather than per-row grids: rows must share column tracks, otherwise
+                     every line sizes its own columns and nothing lines up down the panel. -->
+                <table class="w-full table-fixed text-sm text-gray-500">
+                    <colgroup>
+                        <col class="w-8">
+                        <col>
+                        <col class="w-[38%]">
+                        <col class="w-12">
+                        <col class="w-24">
+                    </colgroup>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr
+                            v-for="visitor in identifiedVisitors"
+                            :key="visitor.session_id"
+                            class="transition-colors"
+                            :class="[
+                                hoveredSession === visitor.session_id ? 'bg-indigo-50' : 'hover:bg-gray-50',
+                                visitor.flash_until > clock ? 'flash' : '',
+                            ]"
+                            @mouseenter="hoveredSession = visitor.session_id"
+                            @mouseleave="hoveredSession = null"
                         >
-                        <span v-else class="w-4" />
+                            <td class="pl-4 py-2">
+                                <img
+                                    v-if="visitor.country && visitor.country !== 'XX'"
+                                    :src="`/flags/${visitor.country.toLowerCase()}.png`"
+                                    :alt="visitor.country"
+                                    class="h-3 w-auto rounded-[2px]"
+                                    loading="lazy"
+                                    @error="($event.target as HTMLImageElement).style.display = 'none'"
+                                >
+                            </td>
 
-                        <span class="truncate" :title="visitor.customer_name">{{ visitor.customer_name ?? trans("Guest") }}</span>
+                            <td class="py-2 pr-3 truncate" :title="visitor.customer_name">
+                                {{ visitor.customer_name ?? trans("Guest") }}
+                            </td>
 
-                        <span class="flex items-center gap-1.5 min-w-0" :title="visitor.url">
-                            <FontAwesomeIcon :icon="pageIcon(visitor)" class="text-gray-300 shrink-0" fixed-width />
-                            <span class="truncate">{{ pageLabel(visitor) }}</span>
-                        </span>
+                            <td class="py-2 pr-3" :title="visitor.url">
+                                <span class="flex items-center gap-1.5 min-w-0">
+                                    <FontAwesomeIcon :icon="pageIcon(visitor)" class="text-gray-300 shrink-0" fixed-width />
+                                    <span class="truncate">{{ pageLabel(visitor) }}</span>
+                                </span>
+                            </td>
 
-                        <span class="tabular-nums text-gray-400 text-right w-10">{{ timeOnPage(visitor) }}</span>
+                            <td class="py-2 text-right tabular-nums text-gray-400">{{ timeOnPage(visitor) }}</td>
 
-                        <span class="tabular-nums text-right">{{ money(visitor) }}</span>
-                    </li>
+                            <td class="py-2 pr-4 text-right tabular-nums">{{ money(visitor) }}</td>
+                        </tr>
 
-                    <li v-if="!identifiedVisitors.length" class="px-4 py-8 text-center text-sm text-gray-400">
-                        {{ trans("No signed-in visitors right now.") }}
-                    </li>
-                </ul>
+                        <tr v-if="!identifiedVisitors.length">
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-400">
+                                {{ trans("No signed-in visitors right now.") }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
