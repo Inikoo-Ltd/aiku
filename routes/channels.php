@@ -15,6 +15,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\User;
+use App\Models\Web\Website;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('retina.pc-clone.{parentId}', function (int|string $shopifyUserId) {
@@ -191,4 +192,8 @@ Broadcast::channel('chat-list.{shopId}', function ($user, string $shopId) {
     return $handlesShop
         ? ['id' => $user->id, 'name' => $user->contact_name]
         : false;
+});
+
+Broadcast::channel('website.{websiteId}.analytics', function (User $user, int|string $websiteId) {
+    return Website::where('id', $websiteId)->value('group_id') === $user->group_id;
 });

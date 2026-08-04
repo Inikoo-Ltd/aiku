@@ -98,7 +98,8 @@ class SearchIrisCatalogue extends IrisAction
     public function rules(): array
     {
         return [
-            'q' => ['required', 'string', 'max:100'],
+            'q'      => ['required', 'string', 'max:100'],
+            'source' => ['sometimes', 'nullable', 'string', 'max:64'],
         ];
     }
 

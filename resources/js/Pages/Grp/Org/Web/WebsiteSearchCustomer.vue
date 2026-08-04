@@ -123,6 +123,11 @@ const queryBlocks = [
             <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 capitalize">{{ item.scope.replaceAll('_', ' ') }}</span>
         </template>
 
+        <template #cell(source)="{ item }">
+            <span v-if="item.source_label" class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">{{ item.source_label }}</span>
+            <span v-else class="text-gray-300 text-xs">-</span>
+        </template>
+
         <template #cell(device)="{ item }">
             <span class="text-gray-500 text-xs capitalize" v-tooltip="item.browser">{{ item.device ?? '-' }}</span>
         </template>

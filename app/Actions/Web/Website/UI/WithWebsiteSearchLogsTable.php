@@ -8,12 +8,14 @@
 
 namespace App\Actions\Web\Website\UI;
 
+use App\Enums\Search\WebsiteSearchSourceEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\WebsiteSearchLog;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Spatie\QueryBuilder\AllowedFilter;
 
 trait WithWebsiteSearchLogsTable
@@ -26,6 +28,8 @@ trait WithWebsiteSearchLogsTable
         }
 
         $deviceCounts = (clone $base)->whereNotNull('device')->selectRaw('device, count(*) as count')->groupBy('device')->pluck('count', 'device');
+        $sourceCounts = (clone $base)->whereNotNull('source')->selectRaw('source, count(*) as count')->groupBy('source')->pluck('count', 'source');
+        $sourceLabels = WebsiteSearchSourceEnum::labels();
 
         return [
             'clicked' => [
@@ -77,6 +81,13 @@ trait WithWebsiteSearchLogsTable
                     $query->whereIn('website_search_logs.device', $elements);
                 },
             ],
+            'source'  => [
+                'label'    => __('Opened from'),
+                'elements' => $sourceCounts->mapWithKeys(fn ($count, $source) => [$source => [Arr::get($sourceLabels, $source, $source), $count]])->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('website_search_logs.source', $elements);
+                },
+            ],
         ];
     }
 
@@ -116,6 +127,7 @@ trait WithWebsiteSearchLogsTable
                 'website_search_logs.id',
                 'website_search_logs.query',
                 'website_search_logs.scope',
+                'website_search_logs.source',
                 'website_search_logs.device',
                 'website_search_logs.browser',
                 'website_search_logs.results_count',
@@ -125,7 +137,7 @@ trait WithWebsiteSearchLogsTable
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
             ])
-            ->allowedSorts(['query', 'scope', 'device', 'results_count', 'clicked_at', 'created_at', 'customer_name'])
+            ->allowedSorts(['query', 'scope', 'source', 'device', 'results_count', 'clicked_at', 'created_at', 'customer_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -168,6 +180,7 @@ trait WithWebsiteSearchLogsTable
             }
 
             $table
+                ->column(key: 'source', label: __('Opened from'), canBeHidden: false, sortable: true)
                 ->column(key: 'device', label: __('Device'), canBeHidden: false, sortable: true)
                 ->column(key: 'results_count', label: __('Results'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'clicked_at', label: __('Clicked'), canBeHidden: false, sortable: true)

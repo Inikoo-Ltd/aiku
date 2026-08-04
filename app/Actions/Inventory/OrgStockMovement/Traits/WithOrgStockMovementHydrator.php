@@ -5,7 +5,6 @@ namespace App\Actions\Inventory\OrgStockMovement\Traits;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStockMovement;
 
@@ -16,7 +15,6 @@ trait WithOrgStockMovementHydrator
         $orgStock = $orgStockMovement->orgStock;
 
         if ($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE) {
-            OrgStockHydrateStockValue::dispatch($orgStock);//todo do we need to delete this??? maybe yes
             OrgStockHydrateSkuValue::dispatch($orgStock);
         }
 

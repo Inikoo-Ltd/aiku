@@ -218,7 +218,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
                 $data['description_title_updated_at'] = now();
             }
             if ($masterProductCategory->wasChanged('description_extra')) {
-                $data['description_extra_updated_at'] = now();
+                $data['extra_description_updated_at'] = now();
             }
 
             $masterProductCategory->updateQuietly($data);

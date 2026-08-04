@@ -11,6 +11,7 @@ namespace App\Actions;
 use App\Actions\Search\StoreWebsiteSearchLog;
 use App\Actions\Traits\WithTab;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
+use App\Enums\Search\WebsiteSearchSourceEnum;
 use Illuminate\Support\Arr;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
@@ -74,6 +75,7 @@ class IrisAction
             'web_user_id'     => $request->user()?->id,
             'customer_id'     => $request->user()?->customer_id,
             'scope'           => $scope,
+            'source'          => $this->searchSource(),
             'query'           => mb_substr($query, 0, 255),
             'session_id'      => $request->hasSession() ? $request->session()->getId() : null,
             'results_count'   => $resultsCount,
@@ -83,6 +85,18 @@ class IrisAction
         ]);
 
         return $ulid;
+    }
+
+    /**
+     * The storefront tells us which control opened the search; anything the enum does not
+     * know about is discarded rather than stored, so the breakdown cannot be polluted
+     * by a crafted request.
+     */
+    protected function searchSource(): ?string
+    {
+        $source = Arr::get($this->validatedData, 'source');
+
+        return WebsiteSearchSourceEnum::tryFrom((string)$source)?->value;
     }
 
 }

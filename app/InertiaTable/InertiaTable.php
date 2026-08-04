@@ -28,6 +28,7 @@ class InertiaTable
 
     private array $title = [];
     private array $betweenDates = [];
+    private ?array $offerFilter = null;
     private ?DateIntervalEnum $dateInterval;
     private bool $withFrequency = false;
 
@@ -130,6 +131,15 @@ class InertiaTable
         return $this;
     }
 
+    public function offerFilter(?string $label = null): self
+    {
+        $this->offerFilter = [
+            'label' => $label ?: __('Filter by offers'),
+        ];
+
+        return $this;
+    }
+
     public function withFrequency(bool $withFrequency = true): self
     {
         $this->withFrequency = $withFrequency;
@@ -224,6 +234,7 @@ class InertiaTable
             'footerRows'                      => $this->footerRows,
             'betweenDates'                    => $this->betweenDates,
             'betweenDatesValue'               => StickyBetweenDates::resolve($this->betweenDates),
+            'offerFilter'                     => $this->offerFilter,
             'dateInterval'                    => $this->dateInterval,
             'withFrequency'                   => $this->withFrequency,
         ];

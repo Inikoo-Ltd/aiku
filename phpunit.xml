@@ -18,6 +18,7 @@
     <groups>
         <exclude>
             <group>browser</group>
+            <group>integration</group>
         </exclude>
     </groups>
     <source>

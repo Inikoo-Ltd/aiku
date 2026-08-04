@@ -2639,3 +2639,86 @@ test('master products in trade unit index uses time series aggregation', functio
 
     expect(\App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit::make()->handle($tradeUnits[0])->total())->toBeGreaterThanOrEqual(0);
 });
+
+test('AddMissingFamiliesToMaster mirrors every shop family state onto the master', function (
+    \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum $state,
+    bool $expectedStatus,
+    bool $expectedMarkForDiscontinued
+) {
+    $masterShop = createFreshMasterShop();
+    $this->shop->update(['master_shop_id' => $masterShop->id]);
+
+    $department = \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($this->shop, [
+        'code' => 'DEP'.uniqid(),
+        'name' => 'Test department',
+        'type' => \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT,
+    ]);
+
+    $family = \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($department, [
+        'code' => 'FAM'.uniqid(),
+        'name' => 'Test family',
+        'type' => \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY,
+    ]);
+    $family->update(['state' => $state, 'master_product_category_id' => null]);
+
+    \App\Actions\Maintenance\Masters\AddMissingFamiliesToMaster::make()->handle($this->shop, $masterShop);
+
+    $family->refresh();
+    $masterFamily = MasterProductCategory::find($family->master_product_category_id);
+
+    expect($masterFamily)->not->toBeNull()
+        ->and($masterFamily->master_shop_id)->toBe($masterShop->id)
+        ->and($masterFamily->status)->toBe($expectedStatus)
+        ->and($masterFamily->mark_for_discontinued)->toBe($expectedMarkForDiscontinued);
+})->with([
+    'active' => [\App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE, true, false],
+    'discontinuing' => [\App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::DISCONTINUING, false, true],
+    'discontinued' => [\App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::DISCONTINUED, false, false],
+    'inactive' => [\App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::INACTIVE, false, false],
+    'in process' => [\App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::IN_PROCESS, false, false],
+]);
+
+test('MatchAssetsToMaster links an asset once and skips redundant writes', function () {
+    $masterShop = createFreshMasterShop();
+    $this->shop->update(['master_shop_id' => $masterShop->id]);
+
+    createProduct($this->shop);
+    $product = $this->shop->products()->orderBy('id')->first();
+
+    $masterFamily = StoreMasterProductCategory::make()->action(
+        parent: $masterShop,
+        modelData: [
+            'code' => 'MFAM'.uniqid(),
+            'name' => 'Master family',
+            'type' => MasterProductCategoryTypeEnum::FAMILY,
+        ],
+        createChildren: false
+    );
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'  => $product->code,
+        'name'  => $product->name,
+        'type'  => MasterAssetTypeEnum::PRODUCT,
+        'price' => 100,
+        'unit'  => 'piece',
+    ]);
+
+    \App\Actions\Masters\MasterAsset\MatchAssetsToMaster::run($product->asset);
+
+    $product->refresh();
+    $asset = $product->asset->refresh();
+
+    expect($asset->master_asset_id)->toBe($masterAsset->id)
+        ->and($product->master_product_id)->toBe($masterAsset->id);
+
+    $queries = 0;
+    DB::listen(function () use (&$queries) {
+        $queries++;
+    });
+
+    \App\Actions\Masters\MasterAsset\MatchAssetsToMaster::run($asset);
+
+    expect($queries)->toBeLessThan(5)
+        ->and($asset->refresh()->master_asset_id)->toBe($masterAsset->id)
+        ->and($product->refresh()->master_product_id)->toBe($masterAsset->id);
+});

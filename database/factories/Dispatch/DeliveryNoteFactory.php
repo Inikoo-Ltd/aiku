@@ -16,7 +16,7 @@ class DeliveryNoteFactory extends Factory
     public function definition(): array
     {
         return [
-            'reference' => fake()->numberBetween(100, 999),
+            'reference' => fake()->unique()->numberBetween(100, 999999),
             'state'     => DeliveryNoteStateEnum::HANDLING,
             'email'     => fake()->email,
             'date'      => fake()->date

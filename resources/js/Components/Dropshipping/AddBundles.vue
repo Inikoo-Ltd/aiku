@@ -594,12 +594,13 @@ watch(
 <template>
     <div>
         <!-- NEW HEADER STEP 0 -->
-        <div v-if="step.current === 0" class="flex items-start justify-between border-b pb-4 mb-4">
+        <div v-if="step.current === 0"
+            class="flex flex-col gap-4 border-b pb-4 mb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
             <!-- LEFT -->
             <div>
-                <div class="text-xl font-semibold">
+                <div class="text-lg sm:text-xl font-semibold">
                     {{ trans('Create Your Bundle') }}
-                    <FontAwesomeIcon icon="fal fa-layer-group" class="text-xl text-black" fixed-width
+                    <FontAwesomeIcon icon="fal fa-layer-group" class="text-lg sm:text-xl text-black" fixed-width
                         aria-hidden="true" />
                 </div>
 
@@ -609,14 +610,14 @@ watch(
             </div>
 
             <!-- RIGHT SUMMARY -->
-             <div class="relative">
+             <div class="relative w-full sm:w-auto sm:shrink-0">
                 <!-- <button
                     @click="handleClose"
                     class="absolute -top-4 -right-4 text-gray-500 hover:text-red-500"
                     >
                     <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
                 </button> -->
-                <div class="w-[320px] text-sm space-y-2">
+                <div class="w-full sm:w-[320px] text-sm space-y-2">
                     <template v-if="bundle.isSummaryLoading.value">
                         <div v-for="idx in 4" :key="idx" class="flex items-center justify-between border-b pb-1 last:border-b-0">
                             <Skeleton width="9rem" height="0.9rem" />
@@ -625,30 +626,30 @@ watch(
                     </template>
 
                     <template v-else>
-                        <div class="flex justify-between border-b pb-1">
+                        <div class="flex justify-between gap-3 border-b pb-1">
                             <span class="text-gray-500">{{trans('Cost Price (Individual Purchase)')}}</span>
-                            <span class="font-medium">
+                            <span class="font-medium text-right whitespace-nowrap">
                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
                             </span>
                         </div>
 
-                        <div class="flex justify-between border-b pb-1">
+                        <div class="flex justify-between gap-3 border-b pb-1">
                             <span class="text-gray-500">{{trans('Bundle Price')}}</span>
-                            <span class="font-medium text-green-600">
+                            <span class="font-medium text-green-600 text-right whitespace-nowrap">
                                  {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
                             </span>
                         </div>
 
-                        <div class="flex justify-between border-b pb-1">
+                        <div class="flex justify-between gap-3 border-b pb-1">
                             <span class="text-gray-500">{{trans('RRP')}}</span>
-                            <span class="font-medium">
+                            <span class="font-medium text-right whitespace-nowrap">
                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
                             </span>
                         </div>
 
-                        <div class="flex justify-between pt-1">
+                        <div class="flex justify-between gap-3 pt-1">
                             <span class="text-gray-500">{{trans('Profit')}}</span>
-                            <span class="font-semibold text-green-600"> [{{ bundle.summary.value.profit_percentage }}%] {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.profit ?? 0) }}
+                            <span class="font-semibold text-green-600 text-right whitespace-nowrap"> [{{ bundle.summary.value.profit_percentage }}%] {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.profit ?? 0) }}
                                 </span>
                         </div>
                     </template>
@@ -695,12 +696,12 @@ watch(
                     </div>
                 </template>
                 <template #afterInput>
-                    <div class="flex items-center justify-between mt-3">
+                    <div class="flex flex-col gap-3 mt-3 sm:flex-row sm:items-center sm:justify-between">
 
                         <!-- FILTER LIST -->
-                        <div class="flex gap-2 text-sm font-semibold text-gray-500">
+                        <div class="flex gap-2 overflow-x-auto overflow-y-hidden pb-1 text-sm font-semibold text-gray-500 sm:pb-0">
                             <div v-for="list in filterList" @click="selectedList = list"
-                                class="whitespace-nowrap py-2 px-3 cursor-pointer rounded border" :class="selectedList.value === list.value
+                                class="shrink-0 whitespace-nowrap py-2 px-3 cursor-pointer rounded border" :class="selectedList.value === list.value
                                     ? 'bg-gray-800 text-white border-gray-800'
                                     : 'border-gray-300 hover:bg-gray-100'
                                     ">
@@ -710,8 +711,9 @@ watch(
 
                         <!-- NEXT BUTTON -->
                         <Button @click="handleStoreBundle" :loading="bundle.isStoringBundle.value" label="Next"
-                            iconRight="fal fa-arrow-right" :disabled="!bundle.products.value.length" />
-                        
+                            iconRight="fal fa-arrow-right" :disabled="!bundle.products.value.length"
+                            class="w-full justify-center sm:w-auto sm:justify-start" />
+
                     </div>
                 </template>
             </BundlesSelector>
@@ -737,7 +739,7 @@ watch(
 
                             <!-- CENTER: TITLE -->
                             <div class="text-left">
-                                <div class="text-xl font-semibold flex items-center justify-center gap-2">
+                                <div class="text-lg sm:text-xl font-semibold flex items-center justify-start gap-2">
                                     {{trans('Create Your Bundle')}}
 
                                     <FontAwesomeIcon
@@ -757,7 +759,7 @@ watch(
                         <!-- RIGHT: CLOSE BUTTON -->
                         <button
                             @click="handleClose"
-                            class="text-gray-500 hover:text-red-500"
+                            class="shrink-0 text-gray-500 hover:text-red-500"
                         >
                             <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
                         </button>
@@ -775,7 +777,7 @@ watch(
                         <div v-if="bundle.aiDescError" class="text-xs text-red-500 mt-1">
                             {{ bundle.aiDescError }}
                         </div>
-                        <div class="flex justify-between items-center mt-2">
+                        <div class="flex flex-col gap-2 mt-2 sm:flex-row sm:justify-between sm:items-center">
 
                             <div class="text-xs text-gray-400">
                                 Characters {{ bundle.description.value.length }} words
@@ -784,7 +786,8 @@ watch(
                             <Button @click="bundle.generateAIDescription" :loading="bundle.isGeneratingAI.value"
                             icon="fal fa-sparkles"
                             :label="trans('Generate with AI')"
-                                type="primary" :disabled="!bundle.productIds.value.length" />
+                                type="primary" :disabled="!bundle.productIds.value.length"
+                                class="w-full justify-center sm:w-auto sm:justify-start" />
                         </div>
                     </div>
 
@@ -813,14 +816,15 @@ watch(
                             @change="onFileChange" />
 
                         <!-- ACTION -->
-                        <div class="flex gap-2 mt-3">
-                            <Button @click="openExistingMedia" type="secondary">
+                        <div class="flex flex-col gap-2 mt-3 sm:flex-row">
+                            <Button @click="openExistingMedia" type="secondary"
+                                class="w-full justify-center sm:w-auto">
                                 <FontAwesomeIcon :icon="faImages" class="mr-2" fixed-width />
                                 {{trans('Select existing media')}}
                             </Button>
 
                             <Button @click="showGenerateModal = true" type="primary" icon="fal fa-arrow-left"
-                                :disabled="!selectedMedia.length">
+                                :disabled="!selectedMedia.length" class="w-full justify-center sm:w-auto">
                                 <FontAwesomeIcon :icon="faSparkles" class="mr-2" fixed-width />
                                 {{trans('Generate Image AI')}}
                             </Button>
@@ -833,9 +837,9 @@ watch(
                             {{ trans('Bundle media') }}
                         </label>
 
-                        <div class="bg-gray-100 rounded-xl p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[140px]">
-                            <div v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
-                                <Image :key="img.id" :src="img.image" class="h-36 md:h-40 object-contain rounded-xl" />
+                        <div class="bg-gray-100 rounded-xl p-3 sm:p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 min-h-[140px]">
+                            <div v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-28 sm:h-36 md:h-44">
+                                <Image :key="img.id" :src="img.image" class="h-28 sm:h-36 md:h-40 object-contain rounded-xl" />
 
                                 <input type="radio" name="main_image" :checked="img.is_main"
                                     @change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
@@ -844,7 +848,7 @@ watch(
                                     {{trans('MAIN IMAGE')}}
                                 </div>
                                 <button
-                                    class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
+                                    class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100"
                                     @click="removeMedia(img)">
                                     <FontAwesomeIcon icon="fal fa-times" class="text-lg text-red-500" />
                                 </button>
@@ -864,11 +868,12 @@ watch(
                 </div>
                 
                 <!-- Modal Existing media -->
-                <Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }">
+                <Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }"
+                    :breakpoints="{ '768px': '90vw', '576px': '95vw' }">
                     <div v-if="isLoadingMedia" class="py-10 text-center">
                         <LoadingIcon />
                     </div>
-                    <div v-else class="grid grid-cols-4 gap-3">
+                    <div v-else class="grid grid-cols-3 sm:grid-cols-4 gap-3">
                         <template v-if="flatMediaGallery.length">
                             <div v-for="img in flatMediaGallery" :key="img.key"
                                 class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
@@ -889,7 +894,7 @@ watch(
                             </div>
                         </template>
                         <template v-else>
-                            <div class="col-span-4 text-center text-gray-400 py-6">
+                            <div class="col-span-3 sm:col-span-4 text-center text-gray-400 py-6">
                                 No images yet
                             </div>
                         </template>
@@ -904,14 +909,14 @@ watch(
                 </Dialog>
 
                 <Dialog v-model:visible="showGenerateModal" header="Generate AI Image" modal
-                    :style="{ width: '600px' }">
+                    :style="{ width: '600px' }" :breakpoints="{ '768px': '90vw', '576px': '95vw' }">
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-2">
                             {{trans('Select images of products you want to include in generated image')}}
                         </div>
 
-                        <div class="grid grid-cols-4 gap-3">
+                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
 
                             <div v-for="media in selectedMedia" :key="media.key"
                                 class="relative aspect-square rounded-xl overflow-hidden border cursor-pointer group"
@@ -966,6 +971,7 @@ watch(
                     :closeOnEscape="false"
                     :dismissableMask="false"
                     :style="{ width: '420px' }"
+                    :breakpoints="{ '576px': '92vw' }"
                 >
                     <div class="py-6 flex flex-col items-center text-center">
                         <LoadingIcon class="mb-4" />
@@ -979,7 +985,7 @@ watch(
                 </Dialog>
                 <ConfirmDialog>
                     <template #container="{ message, acceptCallback, rejectCallback }">
-                        <div class="p-5 w-[360px]">
+                        <div class="p-5 w-[90vw] max-w-[360px]">
 
                             <!-- ICON -->
                             <div class="flex justify-center mb-3">

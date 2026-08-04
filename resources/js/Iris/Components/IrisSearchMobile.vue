@@ -31,7 +31,7 @@ const internalResults = ref<any>(null)
 const searchLogUlid = ref<string | null>(null)
 const isInternalLoading = ref(false)
 // Shared so other components (the sidebar search field) open the very same overlay
-const { isIrisSearchMobileOpen: isOverlayOpen } = useIrisSearchMobile()
+const { isIrisSearchMobileOpen: isOverlayOpen, irisSearchMobileSource, openIrisSearchMobile } = useIrisSearchMobile()
 const showDropdown = ref(true)
 const inputRef = ref<HTMLInputElement | null>(null)
 let internalAbort: AbortController | null = null
@@ -105,12 +105,16 @@ const onFabTouchEnd = () => {
     }
 }
 
+const onTopBarClick = () => {
+    openIrisSearchMobile('mobile_top_bar')
+}
+
 const onFabClick = () => {
     if (dragMoved) {
         dragMoved = false
         return
     }
-    openOverlay()
+    openIrisSearchMobile('mobile_floating_button')
 }
 
 // Touching the floating button reveals that it can be moved: most people never
@@ -140,10 +144,6 @@ const hideDragHintSoon = () => {
     }, DRAG_HINT_LINGER_MS)
 }
 
-const openOverlay = () => {
-    isOverlayOpen.value = true
-}
-
 const closeOverlay = () => {
     isOverlayOpen.value = false
 }
@@ -171,9 +171,13 @@ const fetchResults = debounce(async (query: string) => {
     internalAbort?.abort()
     internalAbort = new AbortController()
     isInternalLoading.value = true
+    const searchParams: Record<string, string> = { q: query }
+    if (irisSearchMobileSource.value) {
+        searchParams.source = irisSearchMobileSource.value
+    }
     try {
         const { data } = await axios.get(
-            route(searchRoute('catalogue'), { q: query }),
+            route(searchRoute('catalogue'), searchParams),
             { signal: internalAbort.signal }
         )
         if (requestId !== internalRequestId) {
@@ -272,10 +276,7 @@ const visitSearchPage = () => {
             :aria-label="ctrans('Search')"
             class="ml-1 xw-14 xh-14 rounded-full flex items-center justify-center touch-none"
             xstyle="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
-            @click="onFabClick"
-            @touchstart.passive="onFabTouchStart"
-            @touchmove.prevent="onFabTouchMove"
-            @touchend="onFabTouchEnd"
+            @click="onTopBarClick"
         >
             <FontAwesomeIcon icon="far fa-search" class="text-3xl" fixed-width aria-hidden="true" />
         </button>
@@ -284,7 +285,7 @@ const visitSearchPage = () => {
         <!-- Always-present floating search button in the thumb zone; drag it up or down -->
         <div
             v-if="!isOverlayOpen"
-            class="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-40 w-14 h-14"
+            class="fixed right-6 bottom-[calc(env(safe-area-inset-bottom)+13rem)] z-40 w-14 h-14"
             :style="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
         >
             <Transition

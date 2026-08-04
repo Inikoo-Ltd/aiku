@@ -420,6 +420,30 @@ test('web sitemap creation', function () {
 
 // UI
 
+test('UI show website exposes showcase props the component actually reads', function (Website $website) {
+    $response = get(route('grp.org.shops.show.web.websites.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+    ]));
+
+    // These live under the showcase tab payload, not the top level: WebsiteShowcase.vue reads
+    // them as props.data.*, so a key in the wrong array silently reads as undefined.
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Org/Web/Website')
+        ->has(
+            'showcase',
+            fn (AssertableInertia $showcase) => $showcase
+                ->has('migrated')
+                ->has('live_visitors')
+                ->has('live_visitors_enabled')
+                ->has('currency_code')
+                ->has('route_live_users')
+                ->etc()
+        )
+        ->etc());
+})->depends('launch website');
+
 test('UI index websites in organisation', function () {
     $response = get(
         route('grp.org.websites.index', [$this->organisation->slug])
@@ -917,6 +941,8 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
         'grp.org.shops.show.web.websites.restricted_country' => $base,
         'grp.org.shops.show.web.analytics.dashboard'         => $base,
         'grp.org.shops.show.web.analytics.visitors.index'    => $base,
+        'grp.org.shops.show.web.analytics.live_users'        => $base,
+        'grp.org.shops.show.web.analytics.web_user_requests.index' => $base,
         'grp.org.shops.show.web.analytics.search'            => $base,
         'grp.org.shops.show.web.analytics.search.query'      => array_merge($base, ['q' => 'tea']),
         'grp.org.shops.show.web.analytics.search.opportunities' => $base,
@@ -986,6 +1012,8 @@ test('UI smoke fulfilment web GET routes', function (Website $website) {
         'grp.org.fulfilments.show.web.websites.restricted_country' => $base,
         'grp.org.fulfilments.show.web.analytics.dashboard'       => $base,
         'grp.org.fulfilments.show.web.analytics.visitors.index'  => $base,
+        'grp.org.fulfilments.show.web.analytics.live_users'      => $base,
+        'grp.org.fulfilments.show.web.analytics.web_user_requests.index' => $base,
         'grp.org.fulfilments.show.web.banners.index'             => $base,
         'grp.org.fulfilments.show.web.crawls.index'              => $base,
         'grp.org.fulfilments.show.web.redirect.index'            => $base,

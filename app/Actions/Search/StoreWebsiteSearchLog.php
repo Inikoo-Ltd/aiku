@@ -33,6 +33,8 @@ class StoreWebsiteSearchLog
      * refinement of the same query replaces the previous log row instead of stacking rows.
      * An identical query re-fired later in the session (pagination, facets, sorting on the
      * search page) reuses its row too, or it would count as a fresh search every time.
+     * The reused row keeps its original source: the control that started the search is
+     * what the entry point breakdown is after, not the one that refined it.
      */
     protected function refinedLog(array $modelData): ?WebsiteSearchLog
     {
