@@ -166,7 +166,7 @@ class EditAgent extends OrgAction
                                     'type'  => 'select',
                                     'label' => __('Language'),
                                     'placeholder' => __('Select language'),
-                                    'options'  => GetLanguagesOptions::make()->translated(),
+                                    'options'  => GetLanguagesOptions::make()->translatedWithGroupExtras($organisation->group->extra_languages),
                                     'value' => $agent->language_id,
                                 ],
                             ],
