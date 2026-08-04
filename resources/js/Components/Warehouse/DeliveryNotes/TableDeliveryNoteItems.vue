@@ -18,7 +18,7 @@ import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed, watch, onUnmounted } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode } from "@fal";
-import { faSkull, faWandMagic } from "@fas";
+import { faSkull, faWandMagic, faExclamationTriangle } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
@@ -44,7 +44,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
 import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faExclamationTriangle);
 
 
 const props = defineProps<{
@@ -869,6 +869,22 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                 <span v-else>{{ item.quantity_required }}</span>
 
             </span>
+
+            <!-- The SKU composition changed after this was picked/packed: human decides -->
+            <template v-if="item.composition_dirty_at">
+                <span
+                    v-tooltip="ctrans('The SKU packing changed after this item was worked: it may hold the wrong quantity. Roll back the picking, then apply the new composition (required would become :qty).', { qty: item.composition_dirty_quantity_required })"
+                    class="ml-1 text-amber-500 cursor-help">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                </span>
+                <ButtonWithLink
+                    v-if="item.applyNewCompositionRoute && ['unassigned', 'queued', 'handling'].includes(item.state)"
+                    type="secondary" size="xs"
+                    :label="ctrans('Apply new composition (:qty)', { qty: item.composition_dirty_quantity_required })"
+                    icon="fal fa-atom"
+                    :routeTarget="item.applyNewCompositionRoute"
+                    :bindToLink="{ preserveScroll: true }" />
+            </template>
 
             <template v-if="state === 'handling'">
                 <!-- <div v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2 mt-1.5">

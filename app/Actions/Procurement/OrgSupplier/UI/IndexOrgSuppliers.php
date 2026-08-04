@@ -109,10 +109,8 @@ class IndexOrgSuppliers extends OrgAction
                         foreach ($elements as $element) {
                             $query->orWhere(function ($query) use ($element) {
                                 match ($element) {
-                                    'free'          => $query->where('org_suppliers.status', true)
-                                        ->whereNull('org_suppliers.org_agent_id'),
-                                    'through_agent' => $query->where('org_suppliers.status', true)
-                                        ->whereNotNull('org_suppliers.org_agent_id'),
+                                    'free'          => $query->where('org_suppliers.status', true)->whereNull('org_suppliers.org_agent_id'),
+                                    'through_agent' => $query->where('org_suppliers.status', true)->whereNotNull('org_suppliers.org_agent_id'),
                                     'archived'      => $query->where('org_suppliers.status', false),
                                 };
                             });
@@ -167,6 +165,7 @@ class IndexOrgSuppliers extends OrgAction
             'org_supplier_stats.number_purchase_orders',
             'org_supplier_stats.number_stock_deliveries',
             'org_suppliers.status as status',
+            'org_suppliers.org_agent_id',
             'org_suppliers.slug as org_supplier_slug',
         ]);
 

@@ -27,11 +27,13 @@ import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang} from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
+import TableOfferFilter from '@/Components/Table/TableOfferFilter.vue'
 import TableFrequencyFilter from '@/Components/Table/TableFrequencyFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
 import TableRows from './TableRows.vue'
-library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator,faYinYang)
+import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
+library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -1098,6 +1100,11 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                 :tableName="props.name" />
                         </div>
 
+                        <!-- Filter: offers -->
+                        <div v-if="queryBuilderProps?.offerFilter" class="w-fit flex gap-x-2">
+                            <TableOfferFilter :label="queryBuilderProps.offerFilter.label" />
+                        </div>
+
                         <!-- Filter: frequency -->
                         <div v-if="queryBuilderProps?.withFrequency" class="w-fit flex gap-x-2">
                             <TableFrequencyFilter :tableName="props.name" />
@@ -1255,7 +1262,8 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                         :header="column">
                                         <HeaderCell :key="`table-${name}-header-${column.key}`"
                                             :cell="header(column.key)" :type="columnsType[column.key]" :column="column"
-                                            :resource="compResourceData">
+                                            :resource="compResourceData"
+                                            :highlight="queryBuilderProps?.betweenDatesValue?.column === column.key">
                                         </HeaderCell>
                                     </slot>
                                 </tr>
@@ -1328,6 +1336,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                                 ? 'text-right pl-3 pr-9 tabular-nums'
                                                                 : 'px-6',
                                                         props.rowAlignTop ? 'align-top' : '',
+                                                        queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                         { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                         column.className
                                                     ]">
@@ -1403,6 +1412,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                             ? 'text-right pl-3 pr-9 tabular-nums'
                                                             : 'px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
+                                                    queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">
@@ -1473,6 +1483,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                             ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
                                                             : 'px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
+                                                    queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">

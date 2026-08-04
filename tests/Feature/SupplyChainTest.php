@@ -313,41 +313,24 @@ test('UI Index suppliers', function () {
             ->component('SupplyChain/Suppliers')
             ->has('title')
             ->has('pageHead')
-            ->where('pageHead.actions', null)
-            ->has('data')
-            ->has('breadcrumbs', 3);
-    });
-});
-
-test('UI Index free suppliers', function () {
-    $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.supply-chain.suppliers.free'));
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('SupplyChain/Suppliers')
-            ->where('title', 'Free Suppliers')
             ->has('pageHead.actions', 1)
-            ->has('pageHead.subNavigation', 3)
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.suppliers.create')
             ->has('data')
             ->has('breadcrumbs', 3);
     });
 });
 
-test('UI Index suppliers in agents', function () {
+test('UI Index suppliers filtered by type', function (string $element) {
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.supply-chain.suppliers.in_agents'));
+    $response = $this->get(route('grp.supply-chain.suppliers.index', ['elements[type]' => $element]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('SupplyChain/Suppliers')
-            ->where('title', 'Agents Suppliers')
-            ->where('pageHead.actions', null)
-            ->has('pageHead.subNavigation', 3)
             ->has('data')
             ->has('breadcrumbs', 3);
     });
-});
+})->with(['free', 'through_agent', 'archived']);
 
 test('majordomo redirect supplier link', function () {
     $freeSupplier = StoreSupplier::make()->action(

@@ -68,6 +68,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
+        $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
 
         if (config('app.master')) {
             $this->logSchedule(
@@ -847,6 +848,15 @@ class Kernel extends ConsoleKernel
                         monitorSlug: 'OutboxRedoTimeSeries',
                     ),
                 name: 'OutboxRedoTimeSeries',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:prune-agent-presence')->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'PruneStaleChatAgentPresence',
+                ),
+                name: 'PruneStaleChatAgentPresence',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

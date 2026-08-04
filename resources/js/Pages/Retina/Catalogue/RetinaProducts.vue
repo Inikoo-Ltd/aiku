@@ -28,7 +28,6 @@ defineProps<{
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
     <RetinaTableProducts :data="data"/>
 </template>

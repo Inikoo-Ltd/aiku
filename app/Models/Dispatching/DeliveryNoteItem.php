@@ -119,6 +119,7 @@ class DeliveryNoteItem extends Model
         'cancel_state' => DeliveryNoteItemCancelStateEnum::class,
 
         'date'                       => 'datetime',
+        'composition_dirty_at'       => 'datetime',
         'order_submitted_at'         => 'datetime',
         'assigned_at'                => 'datetime',
         'picking_at'                 => 'datetime',

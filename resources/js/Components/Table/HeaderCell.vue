@@ -29,6 +29,7 @@ const props = defineProps<{
         key: string
     }
     resource: any
+    highlight?: boolean
 }>()
 
 function onClick() {
@@ -55,7 +56,8 @@ const isDebug = false   //  True will show the column key in the header
         :class="[
             cell?.type == 'avatar' || cell?.type == 'icon' ? 'thead-avatar px-3 w-1' : 'px-6 w-auto',
             cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms' ? 'text-right' : 'text-left',
-            cell?.className
+            cell?.className,
+            highlight ? 'bg-amber-50 text-amber-800' : ''
         ]"
     >
         <component :is="cell?.sortable ? 'button' : 'div'" class="py-1"

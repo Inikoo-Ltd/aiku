@@ -535,10 +535,12 @@ onMounted(async () => {
     <div class="block sm:hidden px-4 py-6 text-gray-800">
 
         <!-- TITLE -->
-        <p class="text-xl font-bold mb-3">
-            <span v-if="product.units > 1">{{ product.units }}x</span>
-            {{ product.name }}
-        </p>
+        <div class="mb-3">
+            <p class="text-xl font-bold">
+                <span v-if="product.units > 1">{{ product.units }}x</span>
+                {{ product.name }}
+            </p>
+        </div>
 
         <!-- MEDIA -->
         <ImageProducts :images="validImages" :video="videoSetup?.url" />

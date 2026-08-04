@@ -18,7 +18,9 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\UI\Catalogue\MasterProductCategoryTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Masters\MasterFamiliesResource;
@@ -29,11 +31,15 @@ use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexMasterFamilies extends OrgAction
 {
@@ -279,6 +285,64 @@ class IndexMasterFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
             $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
+            $selects[] = DB::raw(
+                "(
+                    SELECT json_agg(last_shop_offers ORDER BY last_shop_offers.shop_code)
+                    FROM (
+                        SELECT DISTINCT ON (offers.shop_id)
+                            shops.code AS shop_code,
+                            shops.name AS shop_name,
+                            shops.slug AS shop_slug,
+                            organisations.slug AS organisation_slug,
+                            offers.slug AS offer_slug,
+                            offers.name AS offer_name,
+                            offers.state AS offer_state,
+                            offers.start_at,
+                            offers.end_at
+                        FROM offers
+                        JOIN product_categories ON product_categories.id = offers.trigger_id
+                        JOIN organisations ON organisations.id = offers.organisation_id
+                        JOIN shops ON shops.id = offers.shop_id
+                        JOIN offer_campaigns ON offer_campaigns.id = offers.offer_campaign_id
+                        WHERE offers.trigger_type = 'ProductCategory'
+                            AND offers.deleted_at IS NULL
+                            AND product_categories.deleted_at IS NULL
+                            AND product_categories.master_product_category_id = master_product_categories.id
+                            AND organisations.type = '".OrganisationTypeEnum::SHOP->value."'
+                            AND offer_campaigns.type != '".OfferCampaignTypeEnum::VOLUME_DISCOUNT->value."'
+                        ORDER BY offers.shop_id, offers.start_at DESC NULLS LAST, offers.id DESC
+                    ) last_shop_offers
+                )::text as last_offers"
+            );
+
+            $queryBuilder->whereOfferFilter(
+                engine: function (QueryBuilder $query, string $presence, ?string $start, ?string $end) {
+                    $existsSql = "SELECT 1
+                        FROM offers
+                        JOIN product_categories ON product_categories.id = offers.trigger_id
+                        JOIN organisations ON organisations.id = offers.organisation_id
+                        JOIN offer_campaigns ON offer_campaigns.id = offers.offer_campaign_id
+                        WHERE offers.trigger_type = 'ProductCategory'
+                        AND offers.deleted_at IS NULL
+                        AND product_categories.deleted_at IS NULL
+                        AND product_categories.master_product_category_id = master_product_categories.id
+                        AND organisations.type = ?
+                        AND offer_campaigns.type != ?";
+                    $bindings  = [
+                        OrganisationTypeEnum::SHOP->value,
+                        OfferCampaignTypeEnum::VOLUME_DISCOUNT->value,
+                    ];
+
+                    if ($start) {
+                        $existsSql .= ' AND offers.start_at BETWEEN ? AND ?';
+                        $bindings[] = $start;
+                        $bindings[] = $end;
+                    }
+
+                    $query->whereRaw(($presence === 'with' ? '' : 'NOT ')."EXISTS ($existsSql)", $bindings);
+                },
+                prefix: $prefix
+            );
         }
 
         $queryBuilder->select($selects);
@@ -300,6 +364,34 @@ class IndexMasterFamilies extends OrgAction
                 'listings',
                 'sold',
                 'health_rank',
+                AllowedSort::custom(
+                    'last_offers',
+                    new class () implements Sort {
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderByRaw(
+                                "(
+                                SELECT MAX(offers.start_at)
+                                FROM offers
+                                JOIN product_categories ON product_categories.id = offers.trigger_id
+                                JOIN organisations ON organisations.id = offers.organisation_id
+                                JOIN offer_campaigns ON offer_campaigns.id = offers.offer_campaign_id
+                                WHERE offers.trigger_type = 'ProductCategory'
+                                AND offers.deleted_at IS NULL
+                                AND product_categories.deleted_at IS NULL
+                                AND product_categories.master_product_category_id = master_product_categories.id
+                                AND organisations.type = ?
+                                AND offer_campaigns.type != ?
+                            ) $direction NULLS LAST",
+                                [
+                                    OrganisationTypeEnum::SHOP->value,
+                                    OfferCampaignTypeEnum::VOLUME_DISCOUNT->value,
+                                ]
+                            );
+                        }
+                    }
+                ),
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -317,6 +409,7 @@ class IndexMasterFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date']);
+                $table->offerFilter();
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -347,6 +440,7 @@ class IndexMasterFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'last_offers', label: __('Last Offer'), canBeHidden: true, sortable: true)
                     ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

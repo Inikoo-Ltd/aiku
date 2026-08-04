@@ -203,6 +203,28 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
+    protected static function booted(): void
+    {
+        static::updated(function (MasterProductCategory $masterProductCategory) {
+            $data = [];
+
+            if ($masterProductCategory->wasChanged('name')) {
+                $data['name_updated_at'] = now();
+            }
+            if ($masterProductCategory->wasChanged('description')) {
+                $data['description_updated_at'] = now();
+            }
+            if ($masterProductCategory->wasChanged('description_title')) {
+                $data['description_title_updated_at'] = now();
+            }
+            if ($masterProductCategory->wasChanged('description_extra')) {
+                $data['extra_description_updated_at'] = now();
+            }
+
+            $masterProductCategory->updateQuietly($data);
+        });
+    }
+
 
     public function stats(): HasOne
     {

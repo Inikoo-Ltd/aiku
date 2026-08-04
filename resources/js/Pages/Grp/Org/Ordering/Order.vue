@@ -1565,6 +1565,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             class="text-sm text-gray-500 cursor-pointer primaryLink">
                             {{ box_stats?.customer.name }} (#{{ box_stats?.customer.reference }})
                         </Link>
+                        <CopyButton :text="box_stats?.customer.name" />
                     </div>
 
 
@@ -2262,6 +2263,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                                             :disabled="get(fieldSummary, ['data', 'engine'], null) !== 'manual'"
                                                             :currency="currency.code" locale="en-GB"
                                                             inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
+                                                            :minFractionDigits="0" :maxFractionDigits="2"
                                                             :min="0" />
                                                         <span
                                                             v-if="get(fieldSummary, ['data', 'engine'], null) === 'manual'"
@@ -2306,7 +2308,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                             :modelValue="get(fieldSummary, ['data', 'shipping_tbc_amount'], null)"
                                             @update:modelValue="(v) => updateShippingTbcAmount(v, get(fieldSummary, ['data', 'shipping_tbc_amount'], null))"
                                             inputId="currency-input" mode="currency" :currency="currency.code"
-                                            locale="en-GB" 
+                                            locale="en-GB"
+                                            :minFractionDigits="0" :maxFractionDigits="2"
                                             :inputClass="[
                                                 'w-20 !px-1.5 !py-0 !text-sm !rounded !text-right',
                                                 ['dispatched'].some((item) => item == props.state) ? '!text-gray-500 !border-none' : ''
@@ -2590,6 +2593,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         :min="0"
                                         mode="currency"
                                         :currency="currency.code"
+                                        :minFractionDigits="0"
+                                        :maxFractionDigits="2"
                                         size="small"
                                         :inputClass="data.isRecentlySuccess ? '!border-green-500' : ''"
                                     />
@@ -2688,7 +2693,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         @input="(val) => (dataNewChargeToAdd.amount = val.value)"
                         :min="0"
                         mode="currency"
-                        :currency="currency.code" class="w-full" size="small" />
+                        :currency="currency.code" :minFractionDigits="0" :maxFractionDigits="2"
+                        class="w-full" size="small" />
                 </div>
             </div>
 

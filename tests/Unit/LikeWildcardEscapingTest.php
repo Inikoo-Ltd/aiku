@@ -6,36 +6,36 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-use App\Models\Catalogue\Product;
+use App\Models\Helpers\Country;
 
 test('a lone wildcard no longer matches every row', function (string $macro) {
-    $everything = Product::count();
+    $everything = Country::count();
 
     expect($everything)->toBeGreaterThan(1);
 
-    $matches = Product::where(fn ($query) => $query->{$macro}('products.name', '%'))->count();
+    $matches = Country::where(fn ($query) => $query->{$macro}('countries.name', '%'))->count();
 
     expect($matches)->toBeLessThan($everything);
 })->with(['whereWith', 'whereStartWith', 'whereEndWith', 'whereAnyWordStartWith']);
 
 test('an underscore matches an underscore, not any character', function () {
-    $product = Product::first();
-    $probe   = mb_substr($product->name, 0, 1).'_'.mb_substr($product->name, 2, 1);
+    $country = Country::first();
+    $probe   = mb_substr($country->name, 0, 1).'_'.mb_substr($country->name, 2, 1);
 
-    $matches = Product::where(fn ($query) => $query->whereWith('products.name', $probe))->count();
+    $matches = Country::where(fn ($query) => $query->whereWith('countries.name', $probe))->count();
 
     expect($matches)->toBe(
-        Product::where('products.name', 'ILIKE', '%'.str_replace('_', '\_', $probe).'%')->count()
+        Country::where('countries.name', 'ILIKE', '%'.str_replace('_', '\_', $probe).'%')->count()
     );
 });
 
 test('ordinary search terms still match', function () {
-    $product = Product::first();
+    $country = Country::first();
 
-    expect($product)->not->toBeNull();
+    expect($country)->not->toBeNull();
 
-    $found = Product::where(fn ($query) => $query->whereWith('products.name', $product->name))
-        ->where('products.id', $product->id)
+    $found = Country::where(fn ($query) => $query->whereWith('countries.name', $country->name))
+        ->where('countries.id', $country->id)
         ->exists();
 
     expect($found)->toBeTrue();

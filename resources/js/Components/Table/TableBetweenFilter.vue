@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, nextTick, ref, watch, computed } from 'vue'
+import { onBeforeMount, nextTick, ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronDown, faCheckSquare, faSquare, faCalendarAlt } from '@fal'
@@ -9,6 +9,7 @@ import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Select from 'primevue/select'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import { useDateIntervals } from '@/Composables/useDateIntervals'
 import { Popover } from 'primevue'
 
 library.add(faChevronDown, faCheckSquare, faSquare, faCalendarAlt)
@@ -36,7 +37,7 @@ const formattedDateRange = (date: string[] | Date[]) => {
 const isLoadingReload = ref(false)
 
 // Watch the datepicker
-const dateFilterValue = ref([new Date(), new Date()])
+const dateFilterValue = ref<Date[] | null>(null)
 const hasBetweenQuery = ref(false)
 watch(dateFilterValue, (newValue) => {
     if (isInitialising) {
@@ -45,7 +46,7 @@ watch(dateFilterValue, (newValue) => {
 
     router.reload(
         {
-            data: { [`between[${selectedPeriodType.value}]`]: formattedDateRange(newValue) },  // Sent to url parameter (?tab=showcase, ?tab=menu)
+            data: { [`between[${selectedPeriodType.value}]`]: newValue?.[0] && newValue?.[1] ? formattedDateRange(newValue) : null },  // Sent to url parameter (?tab=showcase, ?tab=menu)
             onStart: () => {
                 isLoadingReload.value = true
             },
@@ -113,141 +114,7 @@ function formatDate(dateString: string) {
     return `${year}-${month}-${day}`;
 }
 
-// Date interval shortcuts
-interface DateInterval {
-    value: string
-    label: string
-    getDateRange: () => [Date, Date]
-}
-
-const dateIntervals = computed<DateInterval[]>(() => [
-    {
-        value: 'tdy',
-        label: trans('Today'),
-        getDateRange: () => {
-            const now = new Date()
-            return [new Date(now.setHours(0, 0, 0, 0)), new Date(new Date().setHours(23, 59, 59, 999))]
-        }
-    },
-    {
-        value: 'ld',
-        label: trans('Yesterday'),
-        getDateRange: () => {
-            const yesterday = new Date()
-            yesterday.setDate(yesterday.getDate() - 1)
-            return [new Date(yesterday.setHours(0, 0, 0, 0)), new Date(yesterday.setHours(23, 59, 59, 999))]
-        }
-    },
-    {
-        value: 'mtd',
-        label: trans('Month to Date'),
-        getDateRange: () => {
-            const now = new Date()
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-            return [new Date(startOfMonth.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: 'lm',
-        label: trans('Last Month'),
-        getDateRange: () => {
-            const now = new Date()
-            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
-            return [new Date(startOfLastMonth.setHours(0, 0, 0, 0)), new Date(endOfLastMonth.setHours(23, 59, 59, 999))]
-        }
-    },
-    {
-        value: '3d',
-        label: trans('3 Days'),
-        getDateRange: () => {
-            const threeDaysAgo = new Date()
-            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
-            return [new Date(threeDaysAgo.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: '1w',
-        label: trans('1 Week'),
-        getDateRange: () => {
-            const oneWeekAgo = new Date()
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-            return [new Date(oneWeekAgo.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: 'wtd',
-        label: trans('Week to Date'),
-        getDateRange: () => {
-            const now = new Date()
-            const startOfWeek = new Date(now)
-            const day = startOfWeek.getDay()
-            const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1)
-            startOfWeek.setDate(diff)
-            return [new Date(startOfWeek.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: 'lw',
-        label: trans('Last Week'),
-        getDateRange: () => {
-            const now = new Date()
-            const startOfLastWeek = new Date(now)
-            const day = startOfLastWeek.getDay()
-            const diff = startOfLastWeek.getDate() - day - 6
-            startOfLastWeek.setDate(diff)
-            const endOfLastWeek = new Date(startOfLastWeek)
-            endOfLastWeek.setDate(endOfLastWeek.getDate() + 6)
-            return [new Date(startOfLastWeek.setHours(0, 0, 0, 0)), new Date(endOfLastWeek.setHours(23, 59, 59, 999))]
-        }
-    },
-    {
-        value: '1m',
-        label: trans('1 Month'),
-        getDateRange: () => {
-            const oneMonthAgo = new Date()
-            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
-            return [new Date(oneMonthAgo.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: '1q',
-        label: trans('1 Quarter'),
-        getDateRange: () => {
-            const threeMonthsAgo = new Date()
-            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-            return [new Date(threeMonthsAgo.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: 'qtd',
-        label: trans('Quarter to Date'),
-        getDateRange: () => {
-            const now = new Date()
-            const quarter = Math.floor(now.getMonth() / 3)
-            const startOfQuarter = new Date(now.getFullYear(), quarter * 3, 1)
-            return [new Date(startOfQuarter.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: '1y',
-        label: trans('1 Year'),
-        getDateRange: () => {
-            const oneYearAgo = new Date()
-            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-            return [new Date(oneYearAgo.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: 'ytd',
-        label: trans('Year to Date'),
-        getDateRange: () => {
-            const now = new Date()
-            const startOfYear = new Date(now.getFullYear(), 0, 1)
-            return [new Date(startOfYear.setHours(0, 0, 0, 0)), new Date()]
-        }
-    }
-])
+const dateIntervals = useDateIntervals()
 
 const selectedInterval = ref<string | null>(null)
 
@@ -272,9 +139,13 @@ watch(selectedInterval, (newValue) => {
 
 const resetFilter = () => {
     selectedInterval.value = null
-    dateFilterValue.value = [new Date(), new Date()]
+    isInitialising = true
+    dateFilterValue.value = null
     hasBetweenQuery.value = false
-    
+    nextTick(() => {
+        isInitialising = false
+    })
+
     router.reload({
         data: { [`between[${selectedPeriodType.value}]`]: null },
         onStart: () => {
@@ -336,7 +207,7 @@ watch(() => props.appliedValue, (newValue) => {
     if (newValue?.range) {
         assignInitValue(newValue.column, newValue.range)
     } else {
-        dateFilterValue.value = [new Date(), new Date()]
+        dateFilterValue.value = null
         hasBetweenQuery.value = false
     }
 
@@ -354,24 +225,21 @@ const toggle = (event) => {
 
 <template>
     <div class="flex items-center gap-2 rounded-md">
-        <!-- Display selected date range when custom interval is active -->
-        <transition name="slide-fade">
-            <div v-if="hasBetweenQuery && dateFilterValue[0] && dateFilterValue[1]"
-                 class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded text-xs text-indigo-700 whitespace-nowrap">
-                <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
-                <span class="text-indigo-400">-</span>
-                <span class="font-medium">{{ useFormatTime(dateFilterValue[1], { formatTime: 'mdy' }) }}</span>
-            </div>
-        </transition>
 
         <div
             @click="toggle"
             v-tooltip="trans('Filter by dates')"
             class="cursor-pointer group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
         >
-            <div class="h-9 w-9 rounded flex justify-center items-center"
-                :class="true ? 'border border-gray-300 hover:bg-gray-300 text-gray-600 hover:text-xgray-200' : 'bg-gray-600 hover:bg-gray-700 text-white'"
+            <div class="h-9 rounded flex justify-center items-center gap-2 border"
+                :class="hasBetweenQuery ? 'px-2 border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700' : 'w-9 border-gray-300 hover:bg-gray-200 text-gray-600'"
             >
+                <span v-if="hasBetweenQuery && dateFilterValue?.[0] && dateFilterValue?.[1]"
+                    class="flex items-center gap-1.5 text-xs whitespace-nowrap">
+                    <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
+                    <span class="text-amber-400">-</span>
+                    <span class="font-medium">{{ useFormatTime(dateFilterValue[1], { formatTime: 'mdy' }) }}</span>
+                </span>
                 <FontAwesomeIcon v-if="!isLoadingReload" icon='fal fa-calendar-alt' class='cursor-pointer'
                     fixed-width aria-hidden='true' />
                 <LoadingIcon v-else />
@@ -421,14 +289,14 @@ const toggle = (event) => {
                 <div class="text-left px-1.5">
                     <div class="text-gray-400">{{ trans("Since") }}</div>
                     <div class="">
-                        {{ useFormatTime(dateFilterValue[0])}}
+                        {{ dateFilterValue?.[0] ? useFormatTime(dateFilterValue[0]) : '-' }}
                     </div>
                 </div>
 
                 <div class="justify-self-end text-right px-1.5">
                     <div class="text-gray-400">{{ trans("Until") }}</div>
                     <div class="">
-                        {{ useFormatTime(dateFilterValue[1])}}
+                        {{ dateFilterValue?.[1] ? useFormatTime(dateFilterValue[1]) : '-' }}
                     </div>
                 </div>
             </div>

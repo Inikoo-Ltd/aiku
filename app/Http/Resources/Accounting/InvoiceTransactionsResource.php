@@ -36,6 +36,11 @@ class InvoiceTransactionsResource extends JsonResource
         }
 
 
+        $packedInMessage = '';
+        if ($this->model_type === 'Product' && $this->model && $this->model->units > 1) {
+            $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($this->model->units) . ")";
+        }
+
         return [
             'code'          => $this->code,
             'description'   => $description,
@@ -43,7 +48,9 @@ class InvoiceTransactionsResource extends JsonResource
             'net_amount'    => $this->net_amount,
             'currency_code' => $this->currency_code,
             'asset_id'      => $this->asset_id,
-            'is_gift'       => $this->is_gift
+            'is_gift'       => $this->is_gift,
+            'in_process'    => $this->in_process,
+            'packed_in_message' => $packedInMessage,
         ];
     }
 }

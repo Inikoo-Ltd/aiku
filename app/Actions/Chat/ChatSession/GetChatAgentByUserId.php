@@ -60,7 +60,8 @@ class GetChatAgentByUserId
                 ] : null,
 
                 'shop_names' => $shopDetails,
-                'is_online'  => (bool) $chatAgent->is_online,
+                'is_online'  => $chatAgent->isConnected(),
+                'presence_status' => $chatAgent->presenceStatus()->value,
                 'current_chat_count' => $chatAgent->current_chat_count,
             ]
         ]);

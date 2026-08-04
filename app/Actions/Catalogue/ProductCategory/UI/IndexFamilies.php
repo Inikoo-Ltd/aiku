@@ -18,8 +18,10 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
+use App\Http\Resources\Catalogue\FamiliesNeedReviewsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -222,6 +224,47 @@ class IndexFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
             $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
+            $selects[] = DB::raw(
+                "(
+                    SELECT json_build_object(
+                        'slug', o.slug,
+                        'name', o.name,
+                        'state', o.state,
+                        'start_at', o.start_at,
+                        'end_at', o.end_at
+                    )
+                    FROM offers o
+                    JOIN offer_campaigns oc ON oc.id = o.offer_campaign_id
+                    WHERE o.trigger_type = 'ProductCategory'
+                        AND o.trigger_id = product_categories.id
+                        AND o.deleted_at IS NULL
+                        AND oc.type != '".OfferCampaignTypeEnum::VOLUME_DISCOUNT->value."'
+                    ORDER BY o.start_at DESC NULLS LAST, o.id DESC
+                    LIMIT 1
+                )::text as last_offer"
+            );
+
+            $queryBuilder->whereOfferFilter(
+                engine: function (QueryBuilder $query, string $presence, ?string $start, ?string $end) {
+                    $existsSql = "SELECT 1
+                        FROM offers o
+                        JOIN offer_campaigns oc ON oc.id = o.offer_campaign_id
+                        WHERE o.trigger_type = 'ProductCategory'
+                        AND o.trigger_id = product_categories.id
+                        AND o.deleted_at IS NULL
+                        AND oc.type != ?";
+                    $bindings  = [OfferCampaignTypeEnum::VOLUME_DISCOUNT->value];
+
+                    if ($start) {
+                        $existsSql .= ' AND o.start_at BETWEEN ? AND ?';
+                        $bindings[] = $start;
+                        $bindings[] = $end;
+                    }
+
+                    $query->whereRaw(($presence === 'with' ? '' : 'NOT ')."EXISTS ($existsSql)", $bindings);
+                },
+                prefix: $prefix
+            );
         }
 
         $queryBuilder->select($selects);
@@ -246,6 +289,29 @@ class IndexFamilies extends OrgAction
                 'listings',
                 'sold',
                 'health_rank',
+                AllowedSort::custom(
+                    'last_offer',
+                    new class () implements Sort {
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderByRaw(
+                                "(
+                                SELECT o.start_at
+                                FROM offers o
+                                JOIN offer_campaigns oc ON oc.id = o.offer_campaign_id
+                                WHERE o.trigger_type = 'ProductCategory'
+                                AND o.trigger_id = product_categories.id
+                                AND o.deleted_at IS NULL
+                                AND oc.type != ?
+                                ORDER BY o.start_at DESC NULLS LAST, o.id DESC
+                                LIMIT 1
+                            ) $direction NULLS LAST",
+                                [OfferCampaignTypeEnum::VOLUME_DISCOUNT->value]
+                            );
+                        }
+                    }
+                ),
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -294,6 +360,7 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date']);
+                $table->offerFilter();
             }
 
             $table
@@ -334,6 +401,7 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'last_offer', label: __('Last Offer'), canBeHidden: true, sortable: true)
                     ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
@@ -531,8 +599,8 @@ class IndexFamilies extends OrgAction
                     : Inertia::optional(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
-                    fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::optional(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
+                    : Inertia::optional(fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))

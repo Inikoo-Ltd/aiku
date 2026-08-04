@@ -279,8 +279,13 @@ trait IsDeliveryNotesIndex
             ])
             ->allowedFilters($allowedFilters)
             ->withBetweenDates(['date'])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, $this->getRecordsPerPage(), tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function getRecordsPerPage(): ?int
+    {
+        return null;
     }
 
     public function tableStructure(Group|Warehouse|Shop|Order|Customer|CustomerClient $parent, $prefix = null, $bucket = 'all', $shopType = 'all', $isReturn = false): Closure

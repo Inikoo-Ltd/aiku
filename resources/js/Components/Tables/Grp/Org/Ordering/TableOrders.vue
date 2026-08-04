@@ -319,6 +319,12 @@ const setNewMarkerDate = (newVal: Date) => {
             </div>
         </template>
 
+        <template #cell(submitted_at)="{ item: order }">
+            <div class="text-right">
+                {{ order.submitted_at ? useFormatTime(order.submitted_at, { localeCode: locale.language.code, formatTime: "aiku" }) : '-' }}
+            </div>
+        </template>
+
         <template #cell(delivery)="{ item: order }">
 
             <div v-if="order.state === 'cancelled'">

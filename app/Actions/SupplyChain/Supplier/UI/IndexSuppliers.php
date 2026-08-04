@@ -9,11 +9,11 @@
 namespace App\Actions\SupplyChain\Supplier\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Http\Resources\SupplyChain\SuppliersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SupplyChain\Agent;
@@ -30,42 +30,84 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexSuppliers extends OrgAction
 {
-    use WithSupplyChainAuthorisation;
     use WithAgentSubNavigation;
-    private array $elementGroups;
+    use WithSupplyChainAuthorisation;
 
-    private mixed $parent;
+    private Group|Agent $parent;
 
-    private string $bucket = 'all';
-
-    protected function getSElementGroups(Group|Agent $parent): array
+    protected function getSupplierElementGroups(Group|Agent $parent): array
     {
-        if ($parent instanceof Group) {
-            [$numberActiveSuppliers, $numberArchivedSuppliers] = match ($this->bucket) {
-                'free' => [$parent->supplyChainStats->number_active_independent_suppliers, $parent->supplyChainStats->number_archived_independent_suppliers],
-                'in_agents' => [$parent->supplyChainStats->number_active_suppliers_in_agents, $parent->supplyChainStats->number_archived_suppliers_in_agents],
-                default => [$parent->supplyChainStats->number_active_suppliers, $parent->supplyChainStats->number_archived_suppliers],
-            };
+        if ($parent instanceof Agent) {
+            $elements = [
+                'through_agent' => [
+                    __('Through Agent'),
+                    $parent->stats->number_active_suppliers,
+                    null,
+                    [
+                        'icon'  => 'fal fa-people-arrows',
+                        'class' => 'text-blue-500',
+                    ],
+                ],
+                'archived'      => [
+                    __('Archived'),
+                    $parent->stats->number_archived_suppliers,
+                    null,
+                    [
+                        'icon'  => 'fal fa-archive',
+                        'class' => 'text-red-500',
+                    ],
+                ],
+            ];
         } else {
-            $numberActiveSuppliers   = $parent->stats->number_active_suppliers;
-            $numberArchivedSuppliers = $parent->stats->number_archived_suppliers;
+            $elements = [
+                'free'          => [
+                    __('Free'),
+                    $parent->supplyChainStats->number_active_independent_suppliers,
+                    null,
+                    [
+                        'icon'  => 'fal fa-person-dolly',
+                        'class' => 'text-green-500',
+                    ],
+                ],
+                'through_agent' => [
+                    __('Through Agent'),
+                    $parent->supplyChainStats->number_active_suppliers_in_agents,
+                    null,
+                    [
+                        'icon'  => 'fal fa-people-arrows',
+                        'class' => 'text-blue-500',
+                    ],
+                ],
+                'archived'      => [
+                    __('Archived'),
+                    $parent->supplyChainStats->number_archived_suppliers,
+                    null,
+                    [
+                        'icon'  => 'fal fa-archive',
+                        'class' => 'text-red-500',
+                    ],
+                ],
+            ];
         }
 
         return [
-            'status' => [
-                'label'    => __('Status'),
-                'default'  => 'active',
-                'elements' => [
-                    'active'   => [__('Active'), $numberActiveSuppliers],
-                    'archived' => [__('Archived'), $numberArchivedSuppliers]
-                ],
-
-                'engine' => function ($query, $elements) {
-                    $query->where('status', array_pop($elements) === 'active');
-                }
-
+            'type' => [
+                'label'    => __('Type'),
+                'elements' => $elements,
+                'engine'   => function ($query, $elements) {
+                    $query->where(function ($query) use ($elements) {
+                        foreach ($elements as $element) {
+                            $query->orWhere(function ($query) use ($element) {
+                                match ($element) {
+                                    'free'          => $query->where('suppliers.status', true)->whereNull('suppliers.agent_id'),
+                                    'through_agent' => $query->where('suppliers.status', true)->whereNotNull('suppliers.agent_id'),
+                                    'archived'      => $query->where('suppliers.status', false),
+                                };
+                            });
+                        }
+                    });
+                },
             ],
-
         ];
     }
 
@@ -82,55 +124,65 @@ class IndexSuppliers extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(Supplier::class);
+        $queryBuilder = QueryBuilder::for(Supplier::class)
+            ->leftJoin('supplier_stats', 'supplier_stats.supplier_id', 'suppliers.id');
 
-
-        if (class_basename($parent) == 'Agent') {
+        if ($parent instanceof Agent) {
             $queryBuilder->where('suppliers.agent_id', $parent->id);
         } else {
             $queryBuilder->where('suppliers.group_id', $parent->id);
-            if ($this->bucket == 'free') {
-                $queryBuilder->whereNull('suppliers.agent_id');
-            } elseif ($this->bucket == 'in_agents') {
-                $queryBuilder->whereNotNull('suppliers.agent_id');
-            }
         }
 
-
-        foreach ($this->getSElementGroups($parent) as $key => $elementGroup) {
+        foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix,
-                default: $elementGroup['default'] ?? null
+                prefix: $prefix
             );
         }
 
         return $queryBuilder
             ->defaultSort('suppliers.code')
-            ->select(['suppliers.id', 'suppliers.code', 'suppliers.slug', 'suppliers.name', 'suppliers.location as location', 'number_supplier_products', 'number_purchase_orders'])
-            ->leftJoin('supplier_stats', 'supplier_stats.supplier_id', 'suppliers.id')
-            ->allowedSorts(['code', 'name', 'agent_name', 'location', 'number_supplier_products', 'number_purchase_orders'])
+            ->select([
+                'suppliers.id',
+                'suppliers.slug',
+                'suppliers.code',
+                'suppliers.name',
+                'suppliers.location',
+                'suppliers.status',
+                'suppliers.agent_id',
+                'supplier_stats.number_supplier_products',
+                'supplier_stats.number_purchase_orders',
+                'supplier_stats.number_stock_deliveries',
+            ])
+            ->allowedSorts([
+                'code',
+                'name',
+                'location',
+                'number_supplier_products',
+                'number_purchase_orders',
+                'number_stock_deliveries',
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Agent $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Group|Agent $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $canEdit) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
-            foreach ($this->getSElementGroups($parent) as $key => $elementGroup) {
+
+            foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements'],
-                    default: $elementGroup['default'] ?? null
+                    elements: $elementGroup['elements']
                 );
             }
 
@@ -138,71 +190,57 @@ class IndexSuppliers extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Supplier'), __('Suppliers')])
-                ->withEmptyState(
-                    match (class_basename($parent)) {
-                        'Group' => [
-                            'title'       => __('No Suppliers'),
-                            'description' => $canEdit ? __('Get started by creating a new supplier.') : null,
-                            'count'       => $parent->supplyChainStats->number_suppliers,
-                            'action'      => $this->canEdit ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('New Supplier'),
-                                'label'   => __('Supplier'),
-                                'route'   => [
-                                    'name'       => 'grp.supply-chain.suppliers.create',
-                                    'parameters' => []
-                                ]
-                            ] : null
-                        ],
-                        'Agent' => [
-                            'title'       => __("Agent doesn't have any suppliers"),
-                            'description' => $canEdit ? __('Get started by adding a supplier to this agent.') : null,
-                            'count'       => $parent->stats->number_suppliers,
-                            'action'      => $canEdit ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('New Supplier'),
-                                'label'   => __('Supplier'),
-                                'route'   => [
-                                    'name'       => 'grp.supply-chain.agent.show.suppliers.create',
-                                    'parameters' => [$parent->slug]
-                                ]
-                            ] : null
-                        ]
-                    }
-                )
+                ->withEmptyState($this->getEmptyState($parent))
+                ->column(key: 'status', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false)
-                ->column(key: 'number_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
+                ->column(key: 'number_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
                 ->defaultSort('code');
         };
     }
 
+    protected function getEmptyState(Group|Agent $parent): array
+    {
+        if ($parent instanceof Agent) {
+            return [
+                'title'       => __("Agent doesn't have any suppliers"),
+                'description' => $this->canEdit ? __('Get started by adding a supplier to this agent.') : null,
+                'count'       => $parent->stats->number_suppliers,
+                'action'      => $this->canEdit ? [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('New Supplier'),
+                    'label'   => __('Supplier'),
+                    'route'   => [
+                        'name'       => 'grp.supply-chain.agents.show.suppliers.create',
+                        'parameters' => [$parent->slug],
+                    ],
+                ] : null,
+            ];
+        }
+
+        return [
+            'title'       => __('No Suppliers'),
+            'description' => $this->canEdit ? __('Get started by creating a new supplier.') : null,
+            'count'       => $parent->supplyChainStats->number_suppliers,
+            'action'      => $this->canEdit ? [
+                'type'    => 'button',
+                'style'   => 'create',
+                'tooltip' => __('New Supplier'),
+                'label'   => __('Supplier'),
+                'route'   => [
+                    'name'       => 'grp.supply-chain.suppliers.create',
+                    'parameters' => [],
+                ],
+            ] : null,
+        ];
+    }
+
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $group        = app('group');
-        $this->parent = $group;
-        $this->initialisationFromGroup($group, $request);
-
-        return $this->handle($group);
-    }
-
-    public function free(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'free';
-        $group        = app('group');
-        $this->parent = $group;
-        $this->initialisationFromGroup($group, $request);
-
-        return $this->handle($group);
-    }
-
-    public function inAgents(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'in_agents';
         $group        = app('group');
         $this->parent = $group;
         $this->initialisationFromGroup($group, $request);
@@ -225,24 +263,43 @@ class IndexSuppliers extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
-        $subNavigation = null;
-        $title = match ($this->bucket) {
-            'free' => __('Free Suppliers'),
-            'in_agents' => __('Agents Suppliers'),
-            default => __('Suppliers')
-        };
-        if ($this->parent instanceof Group) {
-            $subNavigation = $this->getSuppliersSubNavigation();
-        }
-        $model = '';
-        $icon  = [
+        $title         = __('Suppliers');
+        $icon          = [
             'icon'  => ['fal', 'fa-person-dolly'],
-            'title' => __('Suppliers')
+            'title' => __('Suppliers'),
         ];
-        $afterTitle = null;
-        $iconRight = null;
-        $actions = null;
-        if ($this->bucket == 'free') {
+        $subNavigation = null;
+        $model         = '';
+        $afterTitle    = null;
+        $iconRight     = null;
+        $actions       = null;
+
+        if ($this->parent instanceof Agent) {
+            $title         = $this->parent->organisation->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-people-arrows'],
+                'title' => __('Suppliers'),
+            ];
+            $subNavigation = $this->getAgentNavigation($this->parent);
+            $afterTitle    = [
+                'label' => __('Suppliers'),
+            ];
+            $iconRight     = [
+                'icon' => 'fal fa-person-dolly',
+            ];
+            $actions       = [
+                [
+                    'type'  => 'button',
+                    'style' => 'primary',
+                    'icon'  => 'fal fa-plus',
+                    'label' => __('Create Supplier'),
+                    'route' => [
+                        'name'       => 'grp.supply-chain.agents.show.suppliers.create',
+                        'parameters' => array_values($request->route()->originalParameters()),
+                    ],
+                ],
+            ];
+        } else {
             $actions = [
                 [
                     'type'  => 'button',
@@ -251,36 +308,8 @@ class IndexSuppliers extends OrgAction
                     'label' => __('Supplier'),
                     'route' => [
                         'name'       => 'grp.supply-chain.suppliers.create',
-                        'parameters' => array_values($request->route()->originalParameters())
-                    ]
-                ],
-            ];
-        }
-
-        if ($this->parent instanceof Agent) {
-            $subNavigation = $this->getAgentNavigation($this->parent);
-            $title = $this->parent->organisation->name;
-            $icon  = [
-                'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Suppliers')
-            ];
-            $iconRight    = [
-                'icon' => 'fal fa-person-dolly',
-            ];
-            $afterTitle = [
-
-                'label'     => __('Suppliers')
-            ];
-            $actions = [
-                [
-                    'type'  => 'button',
-                    'style' => 'primary',
-                    'icon'  => 'fal fa-plus',
-                    'label' => __('Create Supplier'),
-                    'route' => [
-                        'name'       => 'grp.supply-chain.agents.show.suppliers.create',
-                        'parameters' => array_values($request->route()->originalParameters())
-                    ]
+                        'parameters' => array_values($request->route()->originalParameters()),
+                    ],
                 ],
             ];
         }
@@ -288,7 +317,10 @@ class IndexSuppliers extends OrgAction
         return Inertia::render(
             'SupplyChain/Suppliers',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
@@ -297,11 +329,9 @@ class IndexSuppliers extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $actions
+                    'actions'       => $actions,
                 ],
                 'data'        => SuppliersResource::collection($suppliers),
-
-
             ]
         )->table($this->tableStructure($this->parent));
     }
@@ -315,13 +345,13 @@ class IndexSuppliers extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'route' => [
-                                'name' => 'grp.supply-chain.suppliers.index'
-                            ],
                             'label' => __('Suppliers'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon'  => 'fal fa-bars',
+                            'route' => [
+                                'name' => 'grp.supply-chain.suppliers.index',
+                            ],
+                        ],
+                    ],
                 ]
             ),
             'grp.overview.procurement.suppliers.index' => array_merge(
@@ -330,13 +360,13 @@ class IndexSuppliers extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'route' => [
-                                'name' => 'grp.overview.procurement.suppliers.index'
-                            ],
                             'label' => __('Suppliers'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                            'icon'  => 'fal fa-bars',
+                            'route' => [
+                                'name' => 'grp.overview.procurement.suppliers.index',
+                            ],
+                        ],
+                    ],
                 ]
             ),
             default => array_merge(
@@ -345,51 +375,16 @@ class IndexSuppliers extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
+                            'label' => __('Suppliers'),
+                            'icon'  => 'fal fa-bars',
                             'route' => [
                                 'name'       => $routeName,
-                                'parameters' => $routeParameters
+                                'parameters' => $routeParameters,
                             ],
-                            'label' => __('Suppliers'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             )
         };
-    }
-
-    public function getSuppliersSubNavigation(): array
-    {
-        return [
-            [
-                'label'  => __('Free'),
-                'root'   => 'grp.supply-chain.suppliers.free',
-                'route'  => [
-                    'name'       => 'grp.supply-chain.suppliers.free',
-                    'parameters' => []
-                ],
-                'number' => $this->group->supplyChainStats->number_independent_suppliers
-            ],
-            [
-                'label'  => __('Agents'),
-                'root'   => 'grp.supply-chain.suppliers.in_agents',
-                'route'  => [
-                    'name'       => 'grp.supply-chain.suppliers.in_agents',
-                    'parameters' => []
-                ],
-                'number' => $this->group->supplyChainStats->number_suppliers_in_agents
-            ],
-            [
-                'label'  => __('All'),
-                'icon'   => 'fal fa-bars',
-                'root'   => 'grp.supply-chain.suppliers.index',
-                'align'  => 'right',
-                'route'  => [
-                    'name'       => 'grp.supply-chain.suppliers.index',
-                    'parameters' => []
-                ],
-                'number' => $this->group->supplyChainStats->number_suppliers
-            ],
-        ];
     }
 }

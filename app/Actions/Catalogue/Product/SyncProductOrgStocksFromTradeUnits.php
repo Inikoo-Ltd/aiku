@@ -14,11 +14,11 @@ use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStockFamily;
-use Lorisleiva\Actions\Concerns\AsObject;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncProductOrgStocksFromTradeUnits
 {
-    use asObject;
+    use AsAction;
 
     /**
      * @throws \Throwable

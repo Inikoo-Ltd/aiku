@@ -185,7 +185,7 @@ const changeValue = (async () => {
             v-if="props.fieldData.reviewed"
             type="button"
             class="absolute right-8 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center bg-white text-gray-600"
-            v-tooltip="trans('already reviewed by user')"
+            v-tooltip="ctrans('Already reviewed by user')"
           >
             <FontAwesomeIcon :icon="faMale" class="h-3.5 w-3.5 button-primary" />
           </button>

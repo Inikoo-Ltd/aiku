@@ -1529,7 +1529,7 @@ const layout = inject("layout", layoutStructure)
 				:count_product_not_synced="count_product_not_synced" />
 		</div>
 	</div>
-	<div v-else-if="currentTab === 'logs'">
+	<div v-else-if="currentTab === 'logs'" class="overflow-x-auto overflow-y-hidden">
 		<TableRetinaPlatformPortfolioLogs :data="logs" :tab="currentTab" />
 	</div>
 	<div v-else-if="currentTab === 'bundles'">
@@ -1568,8 +1568,8 @@ const layout = inject("layout", layoutStructure)
 			</div>
 		</div>
 
-		<RetinaTablePortfoliosBundles
-		v-else
+		<div v-else class="overflow-x-auto overflow-y-hidden">
+			<RetinaTablePortfoliosBundles
 				@showBulkButton="showBulkButton()"
 				@hideBulkButton="hideBulkButton()"
 				:data="props.bundles"
@@ -1586,6 +1586,7 @@ const layout = inject("layout", layoutStructure)
 				:key="key + 'table-bundles'"
 				:routes="props.routes"
 				:count_product_not_synced="count_product_not_synced" />
+		</div>
 	</div>
 
 	<Modal

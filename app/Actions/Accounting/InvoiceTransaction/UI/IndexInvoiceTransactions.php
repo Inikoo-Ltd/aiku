@@ -60,6 +60,7 @@ class IndexInvoiceTransactions extends OrgAction
                 'currencies.id as currency_id'
             ]);
 
+        $queryBuilder->with('model');
 
         return $queryBuilder
             ->allowedFilters([$globalSearch])
