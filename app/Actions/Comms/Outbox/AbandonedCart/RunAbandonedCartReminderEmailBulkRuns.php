@@ -24,7 +24,11 @@ class RunAbandonedCartReminderEmailBulkRuns
     public function handle(): void
     {
         $queryOutbox = QueryBuilder::for(Outbox::class);
-        $queryOutbox->whereIn('code', [OutboxCodeEnum::ABANDONED_CART_REMINDER]);
+        $queryOutbox->whereIn('code', [
+            OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
+        ]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->where('is_applicable', true);
         $queryOutbox->whereNotNull('shop_id');

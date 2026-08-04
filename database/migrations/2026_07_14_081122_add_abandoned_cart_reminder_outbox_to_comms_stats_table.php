@@ -1,9 +1,9 @@
 <?php
 
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
 
 return new class () extends Migration {
     /**
@@ -21,7 +21,9 @@ return new class () extends Migration {
         ];
 
         $columns = [
-            'number_outboxes_type_' . OutboxCodeEnum::ABANDONED_CART_REMINDER->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::ABANDONED_CART_REMINDER_1->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::ABANDONED_CART_REMINDER_2->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::ABANDONED_CART_REMINDER_3->snake(),
         ];
 
         foreach ($tables as $table) {
@@ -57,7 +59,9 @@ return new class () extends Migration {
         ];
 
         $columns = [
-            'number_outboxes_type_' . OutboxCodeEnum::ABANDONED_CART_REMINDER->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::ABANDONED_CART_REMINDER_1->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::ABANDONED_CART_REMINDER_2->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::ABANDONED_CART_REMINDER_3->snake(),
         ];
 
         foreach ($tables as $table) {
