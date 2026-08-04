@@ -43,10 +43,12 @@ class IndexIrisBlogs extends IrisAction
                 'webpages.published_layout',
                 'webpages.live_at',
                 'webpages.last_published_at',
+                'webpages.live_snapshot_id',
             ])
+            ->with('liveSnapshot:id,published_at')
             ->defaultSort('-webpages.live_at')
             ->allowedSorts(['title', 'last_published_at'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, AllowedFilter::exact('sub_type')])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
