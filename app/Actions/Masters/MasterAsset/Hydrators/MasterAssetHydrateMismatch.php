@@ -29,7 +29,7 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
         return $masterAssetID ?? 'empty';
     }
 
-    public function handle(MasterAsset $masterProduct): void
+    public function handle(MasterAsset $masterProduct, bool $hydrateMasterShopStats = true): void
     {
         $anomalies = GetMasterAssetAnomalies::run($masterProduct);
 
@@ -81,7 +81,13 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
             }
         }
 
-        MasterShopHydrateNumberMismatches::run($masterProduct->masterShop);
+        /*
+         * Six counts over the whole master shop, so it is skipped while walking every
+         * master of that shop and run once when the walk is done instead.
+         */
+        if ($hydrateMasterShopStats) {
+            MasterShopHydrateNumberMismatches::run($masterProduct->masterShop);
+        }
     }
 
     public function getCommandSignature(): string
@@ -123,13 +129,18 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
             ->orderBy('id')
             ->chunkById(1000, function ($masterProducts) use ($bar) {
                 foreach ($masterProducts as $masterProduct) {
-                    $this->handle($masterProduct);
+                    $this->handle($masterProduct, hydrateMasterShopStats: false);
                     $bar->advance();
                 }
             });
 
         $bar->finish();
         $command->newLine();
+
+        $masterShops = $masterShop
+            ? collect([$masterShop])
+            : MasterShop::all();
+        $masterShops->each(fn (MasterShop $shop) => MasterShopHydrateNumberMismatches::run($shop));
     }
 
 
