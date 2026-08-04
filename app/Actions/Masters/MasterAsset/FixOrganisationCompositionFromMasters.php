@@ -39,16 +39,28 @@ class FixOrganisationCompositionFromMasters
     /**
      * @return array{checked: int, fixed: int, units_fixed: int, changes: list<string>}
      */
-    public function handle(Organisation $organisation, bool $dryRun = true, bool $withUnits = false, ?MasterShop $masterShop = null): array
+    public function handle(Organisation $organisation, bool $dryRun = true, bool $withUnits = false, ?MasterShop $masterShop = null, bool $onlyFlagged = true): array
     {
         $checked    = 0;
         $fixed      = 0;
         $unitsFixed = 0;
         $changes    = [];
 
+        /*
+         * Only what is still sold: walking every product of every master means 149k
+         * rows on aw's SK organisation, and most of them are discontinued stock or
+         * masters nobody sells, which no one is going to act on.
+         */
         MasterAsset::whereHas('products', fn ($query) => $query->whereHas('shop', fn ($shop) => $shop->where('organisation_id', $organisation->id)))
             ->when($masterShop, fn ($query) => $query->where('master_shop_id', $masterShop->id))
             ->where('status', true)
+            ->where('is_for_sale', true)
+            /*
+             * Driven by the mismatch flag the detector already wrote: comparing every
+             * master again means 149k product comparisons to find the few hundred that
+             * drifted. Pass onlyFlagged false after data has changed under the flag.
+             */
+            ->when($onlyFlagged, fn ($query) => $query->where('mismatch_detected', true))
             ->with('tradeUnits', 'stocks')
             ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, &$checked, &$fixed, &$unitsFixed, &$changes) {
                 foreach ($masterAssets as $masterAsset) {
@@ -72,6 +84,7 @@ class FixOrganisationCompositionFromMasters
                             ->where('organisation_id', $organisation->id)
                             ->where('master_shop_id', $masterAsset->master_shop_id))
                         ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
+                        ->where('is_for_sale', true)
                         ->where('not_follow_master_trade_units', false)
                         ->with('shop', 'tradeUnits', 'orgStocks')
                         ->get();
@@ -137,7 +150,7 @@ class FixOrganisationCompositionFromMasters
 
     public function getCommandSignature(): string
     {
-        return 'master_product:fix_organisation_composition {organisation} {--master_shop=} {--apply} {--with-units}';
+        return 'master_product:fix_organisation_composition {organisation} {--master_shop=} {--apply} {--with-units} {--all}';
     }
 
     public function asCommand(Command $command): int
@@ -153,7 +166,7 @@ class FixOrganisationCompositionFromMasters
             return 1;
         }
 
-        $result = $this->handle($organisation, $dryRun, $withUnits, $masterShop);
+        $result = $this->handle($organisation, $dryRun, $withUnits, $masterShop, !$command->option('all'));
 
         $command->info(($dryRun ? 'DRY RUN — ' : '').
             $result['checked'].' products checked, '.$result['fixed'].' '.($dryRun ? 'would be' : '').' fixed'.

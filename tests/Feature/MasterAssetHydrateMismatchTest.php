@@ -513,14 +513,24 @@ test('discontinued products are neither flagged nor fixed', function () {
 
 test('the organisation composition fixer aligns drifted shops and reports before applying', function () {
     $drifted = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 10);
-    $drifted->updateQuietly(['units' => 6]);
-    $this->masterAsset->updateQuietly(['units' => 3]);
+    $drifted->updateQuietly(['units' => 6, 'is_for_sale' => true]);
+    $this->masterAsset->updateQuietly(['units' => 3, 'is_for_sale' => true]);
 
     $aligned = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10);
-    $aligned->updateQuietly(['units' => 3]);
+    $aligned->updateQuietly(['units' => 3, 'is_for_sale' => true]);
+
+    // Not sold any more: must be left out of the sweep entirely.
+    $discontinued = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 10);
+    $discontinued->updateQuietly([
+        'units'  => 6,
+        'status' => App\Enums\Catalogue\Product\ProductStatusEnum::DISCONTINUED,
+    ]);
 
     $quantityOf = fn ($product) => (float)DB::table('model_has_trade_units')
         ->where('model_type', 'Product')->where('model_id', $product->id)->value('quantity');
+
+    // The sweep works from the flag the detector writes, so run it first.
+    MasterAssetHydrateMismatch::run($this->masterAsset->refresh());
 
     // The suite shares a database, so assert on these products rather than on totals.
     $dry = App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::run($this->organisation, dryRun: true);
@@ -532,6 +542,8 @@ test('the organisation composition fixer aligns drifted shops and reports before
     App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::run($this->organisation, dryRun: false, withUnits: true);
 
     expect($quantityOf($drifted))->toBe(3.0)
+        ->and($quantityOf($discontinued))->toBe(6.0)
+        ->and((float)$discontinued->refresh()->units)->toBe(6.0)
         ->and((float)$drifted->refresh()->units)->toBe(3.0)
         ->and($quantityOf($aligned))->toBe(3.0)
         ->and((float)$aligned->refresh()->units)->toBe(3.0)
