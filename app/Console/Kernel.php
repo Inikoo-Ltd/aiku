@@ -539,7 +539,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(RunAbandonedCartReminderEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                $schedule->job(RunAbandonedCartReminderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'RunAbandonedCartReminderEmailBulkRuns',
                 ),
                 name: 'RunAbandonedCartReminderEmailBulkRuns',

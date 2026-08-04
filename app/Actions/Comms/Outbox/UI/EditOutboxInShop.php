@@ -146,13 +146,13 @@ class EditOutboxInShop extends OrgAction
                 $fields[] = [
                     'title' => '',
                     'fields' => [
-                        'interval' => [
+                        'days_after' => [
                             'type' => 'input_number',
-                            'label' => __('Send After Cart Abandoned (Hours)'),
-                            'placeholder' => __('Hours after the cart was abandoned'),
-                            'information' => __('Number of hours to wait after the cart was abandoned before sending this reminder.'),
+                            'label' => __('Send After Cart Abandoned (Days)'),
+                            'placeholder' => __('Days after the cart was abandoned'),
+                            'information' => __('Number of days to wait after the cart was abandoned before sending this reminder.'),
                             'required' => true,
-                            'value' => $outbox->interval,
+                            'value' => $outbox->days_after
                         ],
                     ]
                 ];

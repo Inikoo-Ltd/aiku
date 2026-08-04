@@ -34,7 +34,7 @@ class RunAbandonedCartReminderEmailBulkRuns
         $queryOutbox->whereNotNull('shop_id');
         $queryOutbox->whereNotNull('interval');
 
-        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at', 'outboxes.interval');
+        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at', 'outboxes.days_after');
         $outboxes = $queryOutbox->get();
 
         /** @var Outbox $outbox */

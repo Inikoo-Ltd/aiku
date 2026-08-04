@@ -32,7 +32,7 @@ class ProcessAbandonedCartReminderPerOutbox
         }
 
         $currentDateTime = Carbon::now()->utc();
-        $compareDate = $currentDateTime->copy()->subHours($outbox->interval);
+        $compareDate = $currentDateTime->copy()->subDays($outbox->days_after)->endOfDay();
 
         $baseQuery = DB::table('checkout_abandonments');
         $baseQuery->join('customers', 'customers.id', '=', 'checkout_abandonments.customer_id');
@@ -45,9 +45,8 @@ class ProcessAbandonedCartReminderPerOutbox
 
         $baseQuery->where('checkout_abandonments.shop_id', $outbox->shop_id);
         $baseQuery->where('checkout_abandonments.state', CheckoutAbandonmentStateEnum::ABANDONED->value);
-        $baseQuery->where('checkout_abandonments.checkout_visited_at', '<=', $compareDate);
+        $baseQuery->whereDate('checkout_abandonments.checkout_visited_at', '=', $compareDate->toDateString());
         $baseQuery->whereNull('checkout_abandonments.recovered_at');
-        $baseQuery->whereNull('checkout_abandonments.email_sent_at');
 
         $baseQuery->select(
             'checkout_abandonments.id',
