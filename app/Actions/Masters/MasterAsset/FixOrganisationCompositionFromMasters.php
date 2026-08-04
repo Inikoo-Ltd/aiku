@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Event;
@@ -38,7 +39,7 @@ class FixOrganisationCompositionFromMasters
     /**
      * @return array{checked: int, fixed: int, units_fixed: int, changes: list<string>}
      */
-    public function handle(Organisation $organisation, bool $dryRun = true, bool $withUnits = false): array
+    public function handle(Organisation $organisation, bool $dryRun = true, bool $withUnits = false, ?MasterShop $masterShop = null): array
     {
         $checked    = 0;
         $fixed      = 0;
@@ -46,6 +47,7 @@ class FixOrganisationCompositionFromMasters
         $changes    = [];
 
         MasterAsset::whereHas('products', fn ($query) => $query->whereHas('shop', fn ($shop) => $shop->where('organisation_id', $organisation->id)))
+            ->when($masterShop, fn ($query) => $query->where('master_shop_id', $masterShop->id))
             ->where('status', true)
             ->with('tradeUnits', 'stocks')
             ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, &$checked, &$fixed, &$unitsFixed, &$changes) {
@@ -59,8 +61,16 @@ class FixOrganisationCompositionFromMasters
                         continue;
                     }
 
+                    /*
+                     * Only shops attached to this master's own master shop: an organisation
+                     * also holds shops that follow a different one (SK carries a dropshipping
+                     * shop on 'ds' and a specialty shop on 'ac'), and those are separate
+                     * catalogues, not drifted copies of this one.
+                     */
                     $products = $masterAsset->products()
-                        ->whereHas('shop', fn ($shop) => $shop->where('organisation_id', $organisation->id))
+                        ->whereHas('shop', fn ($shop) => $shop
+                            ->where('organisation_id', $organisation->id)
+                            ->where('master_shop_id', $masterAsset->master_shop_id))
                         ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
                         ->where('not_follow_master_trade_units', false)
                         ->with('shop', 'tradeUnits', 'orgStocks')
@@ -127,7 +137,7 @@ class FixOrganisationCompositionFromMasters
 
     public function getCommandSignature(): string
     {
-        return 'master_product:fix_organisation_composition {organisation} {--apply} {--with-units}';
+        return 'master_product:fix_organisation_composition {organisation} {--master_shop=} {--apply} {--with-units}';
     }
 
     public function asCommand(Command $command): int
@@ -135,12 +145,15 @@ class FixOrganisationCompositionFromMasters
         $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
         $dryRun       = !$command->option('apply');
         $withUnits    = (bool)$command->option('with-units');
+        $masterShop   = $command->option('master_shop')
+            ? MasterShop::where('slug', $command->option('master_shop'))->firstOrFail()
+            : null;
 
         if ($withUnits && !$dryRun && !$command->confirm('Aligning units rewrites what existing order lines mean. Continue?')) {
             return 1;
         }
 
-        $result = $this->handle($organisation, $dryRun, $withUnits);
+        $result = $this->handle($organisation, $dryRun, $withUnits, $masterShop);
 
         $command->info(($dryRun ? 'DRY RUN — ' : '').
             $result['checked'].' products checked, '.$result['fixed'].' '.($dryRun ? 'would be' : '').' fixed'.
