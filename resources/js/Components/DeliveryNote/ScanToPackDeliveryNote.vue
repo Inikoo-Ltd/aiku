@@ -17,6 +17,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { playNotificationSound } from "@/Composables/useNotificationSound"
 import { routeType } from "@/types/route"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
+import Toggle from "../Pure/Toggle.vue"
 
 library.add(faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle)
 
@@ -329,7 +330,8 @@ onBeforeUnmount(() => {
                     </div>
                     <div class="flex items-center gap-2" v-tooltip="ctrans('Capture scanner input anywhere on this page')">
                         <span class="text-xs text-gray-600">{{ ctrans("Listening") }}</span>
-                        <ToggleSwitch v-model="isListening" />
+                        <!-- <ToggleSwitch v-model="isListening" /> -->
+                        <Toggle v-model="isListening"  />
                     </div>
                 </div>
             </div>
