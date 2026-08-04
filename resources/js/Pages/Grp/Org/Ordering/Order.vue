@@ -1565,6 +1565,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             class="text-sm text-gray-500 cursor-pointer primaryLink">
                             {{ box_stats?.customer.name }} (#{{ box_stats?.customer.reference }})
                         </Link>
+                        <CopyButton :text="box_stats?.customer.name" />
                     </div>
 
 
