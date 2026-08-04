@@ -18,6 +18,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -261,7 +262,7 @@ class ShowIrisWebpage
                     'register.sys'      => request()->website->getUrl() . '/app/register',
                     'index.php',
                     'asset_label.php',
-                    'home.sys'          => 
+                    'home.sys'          =>
                         request()->website->storefront->getCanonicalUrl(),
                 };
             }
@@ -481,6 +482,10 @@ class ShowIrisWebpage
                 $query->whereNull('products.variant_id')
                     ->orWhere('products.is_variant_leader', true);
             })
+            ->where(function ($query) {
+                $query->where('products.is_for_sale', true)
+                    ->orWhere('products.is_variant_leader', true);
+            })
             ->whereHas('webpage', function ($query) use ($webpage) {
                 $query->where('state', WebpageStateEnum::LIVE)
                     ->where('website_id', $webpage->website_id);
@@ -499,8 +504,8 @@ class ShowIrisWebpage
         }
 
         $navigation = [
-            'previous' => $this->getProductNavigationItem($siblings->get($currentIndex - 1)),
-            'next'     => $this->getProductNavigationItem($siblings->get($currentIndex + 1)),
+            'previous' => $this->getProductNavigationItem($siblings, $currentIndex, -1),
+            'next'     => $this->getProductNavigationItem($siblings, $currentIndex, 1),
         ];
 
         if (!$navigation['previous'] && !$navigation['next']) {
@@ -510,16 +515,33 @@ class ShowIrisWebpage
         return $navigation;
     }
 
-    private function getProductNavigationItem(?Product $product): ?array
+    /**
+     * @param EloquentCollection<int, Product> $siblings
+     *
+     * @return array{label: string, url: string}|null
+     */
+    private function getProductNavigationItem(EloquentCollection $siblings, int $currentIndex, int $step): ?array
     {
-        if (!$product || !$product->webpage) {
-            return null;
+        for ($index = $currentIndex + $step; $index >= 0 && $index < $siblings->count(); $index += $step) {
+            $sibling = $siblings->get($index);
+
+            if (!$sibling instanceof Product) {
+                continue;
+            }
+
+            $siblingWebpage = $sibling->webpage;
+
+            if (!$siblingWebpage || $siblingWebpage->state !== WebpageStateEnum::LIVE || !$siblingWebpage->canonical_url) {
+                continue;
+            }
+
+            return [
+                'label' => $sibling->name,
+                'url'   => $this->getEnvironmentUrl($siblingWebpage->canonical_url),
+            ];
         }
 
-        return [
-            'label' => $product->name,
-            'url'   => $this->getEnvironmentUrl($product->webpage->canonical_url),
-        ];
+        return null;
     }
 
     public function getBreadcrumbShortLabel(Webpage $webpage): string
