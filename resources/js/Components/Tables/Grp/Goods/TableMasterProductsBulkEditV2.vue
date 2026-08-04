@@ -4,33 +4,36 @@
 -->
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import Table from "@/Components/Table/Table.vue"
 import Image from "@common/Components/Image.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
 import TaxPresetEditModal from "@/Components/Utils/TaxPresetEditModal.vue"
 import TaxSweepProgressModal from "@/Components/Utils/TaxSweepProgressModal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight } from "@fal"
+import { faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight, faUndoAlt } from "@fal"
 import { taxPresetIcon } from "@/Composables/taxPresets"
 
-library.add(faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight)
+library.add(faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight, faUndoAlt)
 
-// The bulk edit tab: fields that make sense across many rows, tax first. Each row shows a
-// mini version of the preset card; clicking it, or editing a whole selection, opens the
-// same card picker the product edit page uses.
+// The bulk edit tab: fields that make sense across many rows, tax first. Texts and the unit
+// label are edited straight in the cell like a spreadsheet; tax opens the same card picker the
+// product edit page uses, for one row or for the whole selection.
 const props = defineProps<{
     data: any
     tab?: string
     taxPresetOptions?: { value: string; title: string; description?: string }[]
     taxBulkSignal?: number
+    bulkEditSaveSignal?: number
 }>()
 
 const emits = defineEmits<{
     (e: 'selectedRow', value: Record<string, boolean>): void
+    (e: 'bulkEditState', value: { dirty: number; saving: boolean }): void
 }>()
 
 const PRESET_META: Record<string, { icon: any; title: string }> = {
@@ -41,6 +44,149 @@ const PRESET_META: Record<string, { icon: any; title: string }> = {
 }
 
 const presetMeta = (value: string) => PRESET_META[value] ?? PRESET_META.standard
+
+// Every editable cell is an input from the start, spreadsheet style. Nothing is sent until the
+// page-head save button fires; until then a touched field stays amber and keeps its old value
+// one undo away, keyed by product id so edits survive paging away and back.
+type EditableField = 'name' | 'description' | 'description_extra' | 'unit'
+
+const pendingEdits = ref<Record<number, { code: string; fields: Partial<Record<EditableField, any>> }>>({})
+const isSavingEdits = ref(false)
+
+const fieldValue = (item: any, field: EditableField): string =>
+    pendingEdits.value[item.id]?.fields[field] ?? item[field] ?? ''
+
+const isFieldDirty = (item: any, field: EditableField): boolean =>
+    pendingEdits.value[item.id]?.fields[field] !== undefined
+
+const dirtyField = (isDirty: boolean): string => isDirty ? '!bg-amber-50 !ring-amber-400' : ''
+
+const dirtyCount = (item: any): number => Object.keys(pendingEdits.value[item.id]?.fields ?? {}).length
+
+const setFieldValue = (item: any, field: EditableField, value: any) => {
+    const original = item[field] ?? ''
+    const edit = pendingEdits.value[item.id] ?? { code: item.code, fields: {} }
+
+    if (String(value ?? '') === String(original)) {
+        delete edit.fields[field]
+    } else {
+        edit.fields[field] = value
+    }
+
+    if (Object.keys(edit.fields).length) {
+        pendingEdits.value[item.id] = edit
+    } else {
+        delete pendingEdits.value[item.id]
+    }
+}
+
+const EditorV2 = defineAsyncComponent(() => import("@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"))
+
+const RICH_TEXT_FIELDS: EditableField[] = ['description', 'description_extra']
+const RICH_TEXT_TOOLBAR = [
+    'bold', 'italic', 'underline', 'bulletList', 'orderedList',
+    'link', 'alignLeft', 'alignCenter', 'alignRight', 'clear', 'undo', 'redo',
+]
+
+const activeEditorCell = ref<string | null>(null)
+const activeEditor = ref<any>(null)
+
+const cellKey = (item: any, field: EditableField): string => `${item.id}:${field}`
+
+/** The editor stores "<p></p>" for an empty text, which renders to nothing: show the hint instead. */
+const previewHtml = (item: any, field: EditableField): string => {
+    const html = fieldValue(item, field)
+
+    return /<(img|iframe|table|hr)\b/i.test(html) || html.replace(/<[^>]*>|&nbsp;|\s/g, '')
+        ? html
+        : ''
+}
+
+const openEditor = (item: any, field: EditableField) => {
+    if (!isSavingEdits.value) {
+        activeEditorCell.value = cellKey(item, field)
+    }
+}
+
+const bindEditor = (instance: any) => {
+    if (!instance || activeEditor.value === instance) return
+
+    activeEditor.value = instance
+    nextTick(() => instance.editor?.commands.focus('end'))
+}
+
+const revertFields = (item: any, fields: EditableField[]) => {
+    const edit = pendingEdits.value[item.id]
+    if (!edit) return
+
+    for (const field of fields) {
+        delete edit.fields[field]
+        
+        if (activeEditorCell.value === cellKey(item, field)) {
+            activeEditorCell.value = null
+        }
+    }
+
+    if (!Object.keys(edit.fields).length) {
+        delete pendingEdits.value[item.id]
+    }
+}
+
+const saveEdits = async () => {
+    if (isSavingEdits.value) return
+
+    const entries = Object.entries(pendingEdits.value)
+    if (!entries.length) return
+
+    isSavingEdits.value = true
+    const failures: string[] = []
+
+    for (const [id, edit] of entries) {
+        try {
+            await axios.patch(
+                route('grp.models.master_asset.update', { masterAsset: Number(id) }),
+                edit.fields,
+                { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+            )
+
+            const row = props.data?.data?.find((item: any) => item.id === Number(id))
+            if (row) {
+                Object.assign(row, edit.fields)
+            }
+            delete pendingEdits.value[Number(id)]
+        } catch (error: any) {
+            const errors = error?.response?.data?.errors
+            failures.push(`${edit.code}: ${errors ? Object.values(errors).flat().join(' ') : error?.response?.data?.message}`)
+        }
+    }
+
+    isSavingEdits.value = false
+
+    if (failures.length) {
+        notify({
+            title: trans("Something went wrong"),
+            text: failures.join(' · '),
+            type: "error",
+        })
+
+        return
+    }
+
+    notify({
+        title: trans("Success"),
+        text: trans(':count products updated', { count: String(entries.length) }),
+        type: "success",
+    })
+}
+
+watch(() => props.bulkEditSaveSignal, () => saveEdits())
+
+const bulkEditState = computed(() => ({
+    dirty: Object.keys(pendingEdits.value).length,
+    saving: isSavingEdits.value,
+}))
+
+watch(bulkEditState, (state) => emits('bulkEditState', state), { immediate: true })
 
 // Selection via the table's own checkboxes, the pricing pattern.
 const selectedIds = ref<Record<string, boolean>>({})
@@ -136,30 +282,115 @@ const onSave = async (presetValue: string) => {
         checkboxKey="id"
         @onSelectRow="(items: Record<string, boolean>) => { selectedIds = items; emits('selectedRow', items) }">
         <template #cell(code)="{ item }">
-            <span class="whitespace-nowrap font-medium">{{ item.code }}</span>
+            <span class="flex items-center gap-x-1.5 whitespace-nowrap font-medium">
+                <span
+                    v-if="dirtyCount(item)"
+                    class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
+                    v-tooltip="trans(':count unsaved changes', { count: `${dirtyCount(item)}` })" />
+                {{ item.code }}
+            </span>
         </template>
 
         <template #cell(name)="{ item }">
-            <!-- Info: like pricing, minus stock and sales; shops and composition on row two. -->
+            <!-- Info: like pricing, minus stock and sales; shops and composition under the name. -->
             <div class="flex items-start gap-x-2">
                 <Image
                     v-if="item.image_thumbnail"
                     :src="item.image_thumbnail"
                     class="mt-0.5 w-9 aspect-square shrink-0 rounded overflow-hidden shadow"
                 />
-                <div class="flex flex-col gap-y-0.5">
-                    <span class="font-medium">{{ item.name }}</span>
-                    <span class="text-xs text-gray-400">
+                <div class="flex min-w-[14rem] flex-col gap-y-2">
+                    <div class="flex items-start gap-x-2">
+                        <PureInput
+                            class="cell-input"
+                            :class="dirtyField(isFieldDirty(item, 'name'))"
+                            :modelValue="fieldValue(item, 'name')"
+                            :maxLength="250"
+                            :disabled="isSavingEdits"
+                            @update:modelValue="(value: any) => setFieldValue(item, 'name', value)" />
+                        <button
+                            v-if="isFieldDirty(item, 'name')"
+                            type="button"
+                            :disabled="isSavingEdits"
+                            @click="revertFields(item, ['name'])"
+                            v-tooltip="trans('Undo')"
+                            class="mt-1.5 text-amber-600 hover:text-amber-800">
+                            <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
+                        </button>
+                    </div>
+                    <span class="px-1.5 text-xs text-gray-400">
                         {{ trans('In :n shops', { n: `${item.used_in ?? 0}` }) }}
                         <span
                             v-if="item.trade_units_label"
                             class="ml-1 whitespace-nowrap rounded border border-emerald-300 px-1 py-px text-emerald-700 tabular-nums"
                             v-tooltip="trans('Trade units')">
                             {{ item.trade_units_label }}
-                            <span class="text-gray-600">| {{ item.units }} {{ item.unit }}</span>
                         </span>
                     </span>
                 </div>
+            </div>
+        </template>
+
+        <template v-for="field in RICH_TEXT_FIELDS" :key="field" #[`cell(${field})`]="{ item }">
+            <div class="flex items-start gap-x-1">
+                <div
+                    class="w-full min-w-[16rem] rounded-md px-1.5 py-1 ring-1 ring-transparent hover:ring-gray-300"
+                    :class="[
+                        dirtyField(isFieldDirty(item, field)),
+                        activeEditorCell === cellKey(item, field) ? 'ring-indigo-400' : '',
+                    ]">
+                    <EditorV2
+                        v-if="activeEditorCell === cellKey(item, field)"
+                        :ref="bindEditor"
+                        :modelValue="fieldValue(item, field)"
+                        :toggle="RICH_TEXT_TOOLBAR"
+                        :placeholder="trans('Click to write')"
+                        class="min-h-[1.5rem] max-h-40 overflow-y-auto"
+                        @update:modelValue="(value: string) => setFieldValue(item, field, value)" />
+                    <div
+                        v-else
+                        @click="openEditor(item, field)"
+                        class="rich-preview min-h-[1.5rem] max-h-24 cursor-text overflow-y-auto text-sm text-gray-700">
+                        <div v-if="previewHtml(item, field)" v-html="previewHtml(item, field)" />
+                        <span v-else class="text-gray-300">{{ trans('Click to write') }}</span>
+                    </div>
+                </div>
+                <button
+                    v-if="isFieldDirty(item, field)"
+                    type="button"
+                    :disabled="isSavingEdits"
+                    @click="revertFields(item, [field])"
+                    v-tooltip="trans('Undo')"
+                    class="mt-1.5 text-amber-600 hover:text-amber-800">
+                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
+                </button>
+            </div>
+        </template>
+
+        <template #cell(units)="{ item }">
+            <div class="flex items-start gap-x-2">
+                <span
+                    class="mt-1.5 w-10 shrink-0 text-right text-sm tabular-nums text-gray-500"
+                    v-tooltip="trans('Units per outer, edited on the product page')">
+                    {{ Number(item.units) }}
+                </span>
+                <PureInput
+                    class="cell-input !w-24"
+                    :class="dirtyField(isFieldDirty(item, 'unit'))"
+                    :modelValue="fieldValue(item, 'unit')"
+                    :placeholder="trans('unit')"
+                    :disabled="isSavingEdits"
+                    v-tooltip="trans('Unit label, for example piece or ball')"
+                    @update:modelValue="(value: any) => setFieldValue(item, 'unit', value)" />
+                <button
+                    v-if="isFieldDirty(item, 'unit')"
+                    type="button"
+                    :disabled="isSavingEdits"
+                    @click="revertFields(item, ['unit'])"
+                    v-tooltip="trans('Undo')"
+                    class="mt-1.5 text-amber-600 hover:text-amber-800">
+                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
+                </button>
             </div>
         </template>
 
@@ -228,3 +459,23 @@ const onSave = async (presetValue: string) => {
         @progress="sweepProgress = $event"
         @update:running="sweepRunning = $event" />
 </template>
+
+<style scoped>
+/* The row is one line of a spreadsheet, so the fields lose the form-sized padding. */
+.cell-input :deep(input) {
+    @apply py-1 text-sm;
+}
+
+.rich-preview :deep(ul),
+.rich-preview :deep(ol) {
+    @apply ml-4 list-disc;
+}
+
+.rich-preview :deep(ol) {
+    @apply list-decimal;
+}
+
+.rich-preview :deep(p) {
+    @apply m-0;
+}
+</style>

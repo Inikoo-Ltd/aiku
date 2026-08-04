@@ -243,6 +243,15 @@ class IndexMasterProducts extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
 
+        /** The bulk edit tab edits the texts in place, so it needs them in the row. */
+        if ($isBulkEditTab) {
+            array_push(
+                $selects,
+                'master_assets.description',
+                'master_assets.description_extra',
+            );
+        }
+
         $queryBuilder->select($selects);
 
         /** The Info cell shows the trade unit composition, same as the pricing tab. */
@@ -388,6 +397,9 @@ class IndexMasterProducts extends OrgAction
                     ->withGlobalSearch()
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('Info'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'description', label: __('Description'), canBeHidden: false)
+                    ->column(key: 'description_extra', label: __('Extra description'), canBeHidden: false)
+                    ->column(key: 'units', label: __('Units'), canBeHidden: false)
                     ->column(key: 'tax_preset', label: __('Tax'), canBeHidden: false, align: 'right')
                     ->defaultSort('code');
 
