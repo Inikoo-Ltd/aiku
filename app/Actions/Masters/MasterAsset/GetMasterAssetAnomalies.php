@@ -36,7 +36,7 @@ class GetMasterAssetAnomalies
 
         $anomalies = [];
         foreach ($masterProduct->products()->with(['shop', 'family', 'organisation', 'currency', 'tradeUnits', 'orgStocks'])->get() as $product) {
-            $composition = $this->compositionDeviations($masterTradeUnits, $masterStocks, $product);
+            $composition = $this->compositionDeviations($masterProduct, $masterTradeUnits, $masterStocks, $product);
             $pricing     = $this->pricingDeviations($masterProduct, $product);
 
             $issues        = [];
@@ -93,23 +93,33 @@ class GetMasterAssetAnomalies
     /**
      * @return list<string>
      */
-    private function compositionDeviations(Collection $masterTradeUnits, Collection $masterStocks, Product $product): array
+    private function compositionDeviations(MasterAsset $masterProduct, Collection $masterTradeUnits, Collection $masterStocks, Product $product): array
     {
         $deviations = [];
 
         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
         if ($this->quantitiesDiffer($masterTradeUnits, $productTradeUnits)) {
+            /*
+             * Codes, not bare quantities: a product can hold the same quantities of
+             * different trade units, and "2+2+2 vs 2+2+2" tells the reader nothing.
+             */
+            $codes = $masterProduct->tradeUnits->pluck('code', 'id')
+                ->union($product->tradeUnits->pluck('code', 'id'));
+
             $deviations[] = __('Trade unit composition differs from master (:product vs :master)', [
-                'product' => $this->describeQuantities($productTradeUnits),
-                'master'  => $this->describeQuantities($masterTradeUnits),
+                'product' => $this->describeQuantities($productTradeUnits, $codes),
+                'master'  => $this->describeQuantities($masterTradeUnits, $codes),
             ]);
         }
 
         $productStocks = $product->orgStocks->pluck('pivot.quantity', 'stock_id');
         if ($this->quantitiesDiffer($masterStocks, $productStocks)) {
+            $codes = $masterProduct->stocks->pluck('code', 'id')
+                ->union($product->orgStocks->pluck('code', 'stock_id'));
+
             $deviations[] = __('Warehouse picking differs from master (picks :product, master says :master)', [
-                'product' => $this->describeQuantities($productStocks),
-                'master'  => $this->describeQuantities($masterStocks),
+                'product' => $this->describeQuantities($productStocks, $codes),
+                'master'  => $this->describeQuantities($masterStocks, $codes),
             ]);
         }
 
@@ -159,12 +169,17 @@ class GetMasterAssetAnomalies
         return false;
     }
 
-    private function describeQuantities(Collection $quantities): string
+    private function describeQuantities(Collection $quantities, ?Collection $codes = null): string
     {
         if ($quantities->isEmpty()) {
             return __('none');
         }
 
-        return $quantities->map(fn ($quantity) => rtrim(rtrim(number_format((float)$quantity, 4, '.', ''), '0'), '.'))->implode('+');
+        return $quantities->map(function ($quantity, $id) use ($codes) {
+            $amount = rtrim(rtrim(number_format((float)$quantity, 4, '.', ''), '0'), '.');
+            $code   = $codes?->get($id);
+
+            return $code ? $amount.'×'.$code : $amount;
+        })->implode(' + ');
     }
 }
