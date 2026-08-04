@@ -22,9 +22,12 @@ use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Audits\DispatchSimpleAudit;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 
 class StorePicking extends OrgAction
 {
+    use AutoIgnoreZeroQuantityItems;
+
     protected DeliveryNoteItem $deliveryNoteItem;
     private User|null $user = null;
 
@@ -80,6 +83,8 @@ class StorePicking extends OrgAction
             newValue: $newAuditString,
             eventName: 'item_picked'
         );
+        
+        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
         return $picking;
     }

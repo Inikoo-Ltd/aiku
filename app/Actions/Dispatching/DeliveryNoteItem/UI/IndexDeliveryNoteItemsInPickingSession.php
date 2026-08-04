@@ -67,6 +67,8 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
             'org_stocks.packed_in',
         ]);
 
+        $query->where('delivery_note_items.quantity_required', '>', 0);
+
         return $query
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
             ->allowedFilters([$globalSearch])
