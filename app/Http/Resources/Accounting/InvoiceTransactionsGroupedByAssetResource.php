@@ -39,7 +39,7 @@ class InvoiceTransactionsGroupedByAssetResource extends JsonResource
             'asset_id'      => $this->asset_id,
             'code'          => $this->code,
             'description'   => $this->description,
-            'name'          => $this->name, // the DB actually returns 'name', but we should also just pass $this->name. Wait, we don't need to explicitly pass it if the frontend expects it from the raw attributes, but it's safer to pass it.
+            'name'          => $this->name,
             'quantity'      => $this->quantity,
             'net_amount'    => $this->net_amount,
             'currency_code' => $this->currency_code,
