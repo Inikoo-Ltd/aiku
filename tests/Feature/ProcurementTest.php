@@ -220,13 +220,13 @@ test('create independent supplier', function () {
 
     expect($supplier)->toBeInstanceOf(Supplier::class)
         ->and($this->group->supplyChainStats->number_suppliers)->toBe(2)
-        ->and($this->organisation->procurementStats->number_org_suppliers)->toBe(1);
+        ->and($this->organisation->procurementStats->number_org_suppliers)->toBe(2);
 
     return $supplier;
 });
 
-test('attach supplier to organisation', function ($supplier) {
-    $orgSupplier = StoreOrgSupplier::make()->action($this->organisation, $supplier);
+test('a new supplier is propagated to the organisation', function ($supplier) {
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
 
 
     expect($orgSupplier)->toBeInstanceOf(OrgSupplier::class)
@@ -239,7 +239,7 @@ test('create purchase order while no available products', function ($orgSupplier
     expect(function () use ($orgSupplier) {
         StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
     })->toThrow(ValidationException::class);
-})->depends('attach supplier to organisation');
+})->depends('a new supplier is propagated to the organisation');
 
 
 test('create supplier product', function ($supplier) {
@@ -274,7 +274,7 @@ test('attach supplier product to organisation', function (SupplierProduct $suppl
         ->and($orgSupplierProduct->organisation_id)->toBe($this->organisation->id);
 
     return $orgSupplierProduct;
-})->depends('create supplier product', 'attach supplier to organisation');
+})->depends('create supplier product', 'a new supplier is propagated to the organisation');
 
 
 test('create purchase order independent supplier', function (OrgSupplierProduct $orgSupplierProduct) {
@@ -360,7 +360,7 @@ test('delete purchase order', function () {
         parent: $this->group,
         modelData: Supplier::factory()->definition()
     );
-    $orgSupplier = StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
 
     $supplierProductData = [
         'code'             => 'ABC',
@@ -512,7 +512,7 @@ test('create supplier delivery', function (OrgSupplier $orgSupplier) {
         ->and($stockDelivery->reference)->toBeNumeric($arrayData['reference']);
 
     return $stockDelivery;
-})->depends('attach supplier to organisation');
+})->depends('a new supplier is propagated to the organisation');
 
 test('update supplier delivery', function (StockDelivery $stockDelivery) {
     $stockDelivery = UpdateStockDelivery::make()->action($stockDelivery, [
@@ -531,7 +531,7 @@ test('create supplier delivery items', function (StockDelivery $stockDelivery) {
         parent: $this->group,
         modelData: Supplier::factory()->definition()
     );
-    $orgSupplier         = StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $orgSupplier         = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
     $supplierProductData = [
         'code'             => 'ABC',
         'name'             => 'ABC Asset',
@@ -570,7 +570,7 @@ test('update org supplier product', function () {
         parent: $this->group,
         modelData: Supplier::factory()->definition()
     );
-    $orgSupplier         = StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $orgSupplier         = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
     $supplierProductData = [
         'code'             => 'ABC',
         'name'             => 'ABC Asset',
@@ -650,7 +650,7 @@ test('create stock delivery from purchase order', function () {
         parent: $this->group,
         modelData: Supplier::factory()->definition()
     );
-    $orgSupplier = StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
 
     $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
         'code'             => 'PO-SD',
@@ -992,7 +992,7 @@ test('UI edit stock delivery', function () {
 function createStockDeliveryWithItems($test, string $code, array $unitQuantities): StockDelivery
 {
     $supplier    = StoreSupplier::make()->action(parent: $test->group, modelData: Supplier::factory()->definition());
-    $orgSupplier = StoreOrgSupplier::make()->action($test->organisation, $supplier);
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $test->organisation->id)->first();
 
     $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
         'code'             => $code,

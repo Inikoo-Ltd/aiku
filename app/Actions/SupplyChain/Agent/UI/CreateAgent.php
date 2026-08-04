@@ -38,9 +38,9 @@ class CreateAgent extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($routeParameters),
-                'title'       => __('New Agent'),
+                'title'       => __('New agent'),
                 'pageHead'    => [
-                    'title'   => __('New Agent'),
+                    'title'   => __('New agent'),
                     'actions' => [
                         [
                             'type'  => 'button',
