@@ -65,6 +65,9 @@ class StorePicking extends OrgAction
 
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+        $deliveryNoteItem->updateQuietly([
+            'is_dirty'      => false,
+        ]);
         $deliveryNoteItem->refresh();
         $newPickingQuantity = (int)$deliveryNoteItem->quantity_picked;
 

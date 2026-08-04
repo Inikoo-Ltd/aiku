@@ -319,6 +319,12 @@ class ShowIrisWebpage
     {
         if ($path === null) {
             $webpageID = $website->storefront_id;
+        } elseif ($path == 'login.sys') {
+            redirect()->to($webpageData, 301)
+                ->withHeaders([
+                    'Cache-Control'             => 'public, s-maxage=300, max-age=0',
+                    'X-Aiku-Cacheable-Redirect' => 1,
+                ]);
         } else {
             $webpage = Webpage::where('website_id', $website->id)
                 ->where('url', strtolower($path))

@@ -163,6 +163,7 @@ class IndexTransactions extends OrgAction
                 && (
                     (!isset($parent->platform) && $parent->state === OrderStateEnum::CREATING)
                     || (isset($parent->platform) && $parent->platform->type === PlatformTypeEnum::MANUAL)
+                    || (!isset($parent->platform))
                 )
 
             ) {

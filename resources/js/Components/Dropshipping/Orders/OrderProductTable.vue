@@ -54,6 +54,7 @@ const props = defineProps<{
     fetchRoute?: routeType
     routesProductsListModification?: routeType
     is_shop_external: boolean
+    allow_order_modification: boolean
 }>()
 
 const layout = inject("layout", {})
@@ -271,6 +272,20 @@ defineExpose({
 
 })
 
+const updateQuantityOrdered = (item: ProductRow) => {
+    if (item.quantity_ordered == createNewQty[item.id].quantity_ordered) {
+        return;
+    }
+
+    router.patch(route('grp.models.transaction.update_quantity_ordered', {
+        transaction: item.id
+    }), {
+        quantity_ordered: createNewQty[item.id].quantity_ordered
+    });
+    console.log(item);
+}
+
+
 // Section: Discretionary discount
 const selectedItemToEditNetAmount = ref(null)
 const onCloseModalNetAmount = () => {
@@ -435,13 +450,15 @@ const isOffersData = (offersData: any): boolean => {
 
 <template>
     <div>
-        <Table :resource="data" :name="tab" :rowColorFunction="(item) => {
-            if (typeof item.id === 'string' && item.id.startsWith('new')) {
-                return 'bg-yellow-50'
-            }
-            return ''
-        }" :useTopPagination="true">
-
+        <Table 
+            :resource="data" :name="tab" :rowColorFunction="(item) => {
+                if (typeof item.id === 'string' && item.id.startsWith('new')) {
+                    return 'bg-yellow-50'
+                }
+                return ''
+            }" 
+            :useTopPagination="true"
+        >
 
             <template #cell(image)="{ item }">
                 <!-- <pre>{{ item }}</pre> -->
@@ -731,20 +748,36 @@ const isOffersData = (offersData: any): boolean => {
                     </Link>
 
                     <!-- Edit / Cancel -->
-                    <div v-if="state !== 'creating'" class="flex gap-2 items-center">
-                        <button v-if="!editingIds.has(item.id) && layout?.app?.environment === 'local'"
-                                class="h-9 align-bottom text-center" @click="startEdit(item)"
-                                aria-label="Edit Product Order" v-tooltip="'Edit Product Order'">
-                            <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700"
-                                             aria-hidden="true" />
+                    <div v-if="state !== 'creating' && allow_order_modification" class="flex gap-2 items-center">
+                        <button v-if="!editingIds.has(item.id)"
+                            class="h-9 align-bottom text-center" 
+                            aria-label="Edit Product Order" 
+                            v-tooltip="'Edit Product Order'"
+                            @click="startEdit(item)"
+                        >
+                            <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700" aria-hidden="true" />
                         </button>
-
-                        <Button v-else-if="editingIds.has(item.id)" type="negative" v-tooltip="'Cancel edit'"
-                                :icon="faTimes" @click="onCancel(item)" size="sm" aria-label="Cancel edit" />
-
-                        <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative"
+                        <Button 
+                            v-if="editingIds.has(item.id)" 
+                            type="negative" 
+                            v-tooltip="'Cancel edit'"
+                            :icon="faTimes" 
+                            @click="onCancel(item)" 
+                            size="sm" 
+                            aria-label="Cancel edit" 
+                        />
+                        <Button 
+                            v-if="editingIds.has(item.id)" 
+                            :style="'save'" 
+                            :hide_label="true"
+                            v-tooltip="'Save changes'"
+                            size="sm" 
+                            aria-label="Save changes"
+                            @click="updateQuantityOrdered(item)"
+                        />
+                        <!-- <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative"
                                 v-tooltip="'delete'" :icon="faTrashAlt" @click="() => onDeleteNewRow(item.rowIndex)"
-                                size="sm" />
+                                size="sm" /> -->
                     </div>
                 </div>
             </template>
