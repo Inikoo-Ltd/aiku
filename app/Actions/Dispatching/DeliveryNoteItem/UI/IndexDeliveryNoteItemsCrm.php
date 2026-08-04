@@ -34,8 +34,8 @@ class IndexDeliveryNoteItemsCrm extends OrgAction
         $query->where('delivery_note_items.has_waiting_crm', 'true');
         $this->applyDeliveryNoteItemBaseJoins($query);
 
-        $query->where('delivery_note_items.quantity_required', '>=', 0);
-        
+        $query->where('delivery_note_items.quantity_required', '>', 0);
+
         return $query
             ->defaultSort('org_stocks.code')
             ->select($this->getDeliveryNoteItemBaseSelect())

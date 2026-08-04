@@ -66,7 +66,7 @@ class IndexDeliveryNoteItems extends OrgAction
             $query->whereRaw("$packedSoFar >= $pickedTotal");
         }
 
-        $query->where('delivery_note_items.quantity_required', '>=', 0);
+        $query->where('delivery_note_items.quantity_required', '>', 0);
 
         return $query->defaultSort('org_stocks.code')
             ->select(

@@ -40,8 +40,8 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
         if ($deliveryNoteId) {
             $query->where('delivery_notes.id', $deliveryNoteId);
         }
-        
-        $query->where('delivery_note_items.quantity_required', '>=', 0);
+
+        $query->where('delivery_note_items.quantity_required', '>', 0);
 
         return $query
             ->select([

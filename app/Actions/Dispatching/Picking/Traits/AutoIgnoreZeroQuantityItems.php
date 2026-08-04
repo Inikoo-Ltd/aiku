@@ -16,20 +16,18 @@ use App\Models\SysAdmin\User;
 
 trait AutoIgnoreZeroQuantityItems
 {
-    public function ignoreZeroQuantityItems (DeliveryNote $deliveryNote, ?User $user = null): void
+    public function ignoreZeroQuantityItems(DeliveryNote $deliveryNote, ?User $user = null): void
     {
-        foreach (
-            $deliveryNote->deliveryNoteItems()
-                ->where('quantity_required', '<=', 0.000001)
-                ->get() as $ignoredItem
-            ) {
+        $zeroQuantityItems = $deliveryNote->deliveryNoteItems()
+            ->where('quantity_required', '<=', 0)
+            ->whereDoesntHave('pickings', function ($query) {
+                $query->where('pickings.type', PickingTypeEnum::NOT_PICK);
+            })->get();
 
-            if ($ignoredItem->pickings()->where('pickings.type', PickingTypeEnum::NOT_PICK)->exists()) continue;
-
+        foreach ($zeroQuantityItems as $ignoredItem) {
             StoreNotPickPicking::run($ignoredItem, $user, [
-                'quantity'  => 0,
+                'quantity' => 0,
             ]);
         }
-
     }
 }
