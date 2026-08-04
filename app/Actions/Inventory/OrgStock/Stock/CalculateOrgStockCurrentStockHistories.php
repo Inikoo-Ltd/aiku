@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\Stock;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
@@ -70,6 +71,12 @@ class CalculateOrgStockCurrentStockHistories implements ShouldBeUnique
         }
 
         $this->persistOrgStockHistories($orgStock, $date, $orgStockLocationData, $costPerSku, $lastSoldDate, $this->hydrateDelay);
+
+        if ($costPerSku > 0) {
+            $orgStock->update(['sku_value' => $costPerSku]);
+        }
+
+        OrgStockHydrateStockValue::run($orgStock);
 
         return $orgStockLocationData;
     }
