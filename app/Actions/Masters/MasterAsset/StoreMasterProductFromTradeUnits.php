@@ -14,6 +14,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithAttachMediaToModel;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -28,6 +29,7 @@ class StoreMasterProductFromTradeUnits extends OrgAction
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
     use WithAttachMediaToModel;
+    use WithMasterAssetTradeUnits;
 
     /**
      * @var \App\Models\Masters\MasterProductCategory
@@ -45,14 +47,7 @@ class StoreMasterProductFromTradeUnits extends OrgAction
 
         $hasOneTradeUnit = count($tradeUnits) == 1;
 
-        $qtyFinal = 1;
-
-        if ($hasOneTradeUnit) {
-            $arrKeyFirst = array_key_first($tradeUnits);
-            $qtyFinal = $tradeUnits[$arrKeyFirst]['quantity'];
-        }
-
-        data_set($modelData, 'units', $qtyFinal);
+        data_set($modelData, 'units', $this->getUnitsFromTradeUnits($tradeUnits)['units']);
 
         if (!Arr::has($modelData, 'unit') && $hasOneTradeUnit) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
