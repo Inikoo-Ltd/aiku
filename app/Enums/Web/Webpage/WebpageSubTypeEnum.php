@@ -50,6 +50,9 @@ enum WebpageSubTypeEnum: string
     case ARTICLE = 'article';
     case MAILSHOT = 'mailshot';
 
+    case DAVIDS_TRAVEL_BLOG = 'davids_travel_blog';
+    case TIPS = 'tips';
+
 
     public static function labels(): array
     {
@@ -62,6 +65,9 @@ enum WebpageSubTypeEnum: string
             'mailshot'    => __('mailshot'),
             'article'     => __('article'),
             'content'     => __('content'),
+
+            'davids_travel_blog' => __("David's Travel Blog"),
+            'tips'               => __('Tips'),
         ];
     }
 
