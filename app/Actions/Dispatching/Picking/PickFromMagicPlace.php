@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
@@ -31,6 +32,7 @@ class PickFromMagicPlace extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use AutoIgnoreZeroQuantityItems;
 
     private DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
@@ -77,6 +79,9 @@ class PickFromMagicPlace extends OrgAction
 
 
             CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+
+            
+            $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
             return $picking;
 

@@ -274,6 +274,7 @@ const links = computed(() => {
                                 :widget="props.data.search_insights"
                                 :logs-url="searchAnalyticsUrl"
                                 :logs-label="trans('Search analytics')"
+                                :live-website-id="props.data.id"
                                 :query-url="searchAnalyticsUrl ? searchQueryUrl : undefined"
                                 :customer-url="searchAnalyticsUrl ? searchCustomerUrl : undefined"
                                 :page-url="searchAnalyticsUrl ? searchPageUrl : undefined"

@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterAsset\Hydrators;
 
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateNumberMismatches;
 use App\Actions\Traits\WithEnumStats;
+use App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
@@ -28,43 +29,65 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
         return $masterAssetID ?? 'empty';
     }
 
-    public function handle(MasterAsset $masterProduct): void
+    public function handle(MasterAsset $masterProduct, bool $hydrateMasterShopStats = true): void
     {
-        $masterAssetTradeUnits = $masterProduct->tradeUnits->pluck('pivot.quantity', 'id');
+        $anomalies = GetMasterAssetAnomalies::run($masterProduct);
 
-        $products = $masterProduct->products;
-        foreach ($products as $product) {
-            $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
+        /*
+         * Flags are set by two bulk updates rather than by loading every product again:
+         * this runs once per master and the shop wide rehydrate walks 11k of them.
+         */
+        $mismatchedIds = array_keys(array_filter($anomalies, fn ($anomaly) => !empty($anomaly['issues'])));
+        $anyMismatch   = (bool)$mismatchedIds;
 
-            $diffFromMaster  = $masterAssetTradeUnits->diffAssoc($productTradeUnits);
-            $diffFromProduct = $productTradeUnits->diffAssoc($masterAssetTradeUnits);
+        if ($mismatchedIds) {
+            $masterProduct->products()
+                ->whereIn('products.id', $mismatchedIds)
+                ->where(function ($query) {
+                    // never migrated products hold NULL, which no !=  comparison matches
+                    $query->where('mismatch_with_master_detected', '!=', true)
+                        ->orWhereNull('mismatch_with_master_detected');
+                })
+                ->update(['mismatch_with_master_detected' => true]);
+        }
 
-            if ($diffFromMaster->isNotEmpty() || $diffFromProduct->isNotEmpty()) {
-                $masterProduct->updateQuietly([
-                    'mismatch_detected' => true
-                ]);
-                $product->updateQuietly([
-                    'mismatch_with_master_detected' => true
-                ]);
+        $masterProduct->products()
+            ->whereNotIn('products.id', $mismatchedIds)
+            ->where(function ($query) {
+                $query->where('mismatch_with_master_detected', '!=', false)
+                    ->orWhereNull('mismatch_with_master_detected');
+            })
+            ->update(['mismatch_with_master_detected' => false]);
 
-                $masterFamily = $masterProduct->masterfamily;
+        $masterProduct->updateQuietly([
+            'mismatch_detected' => $anyMismatch
+        ]);
 
-                if ($masterFamily && !$masterFamily->mismatch_detected) {
-                    $masterFamily->updateQuietly([
-                        'mismatch_detected' => false
-                    ]);
-                }
-            } else {
-                $masterProduct->updateQuietly([
-                    'mismatch_detected' => false
-                ]);
-                $product->updateQuietly([
-                    'mismatch_with_master_detected' => false
+        /*
+         * Recomputed across the family's masters rather than set to true and left there:
+         * a flag that only ever turns on stops meaning anything after the first mismatch.
+         */
+        $masterFamily = $masterProduct->masterFamily;
+        if ($masterFamily) {
+            $familyHasMismatch = $anyMismatch || $masterFamily->masterAssets()
+                ->where('master_assets.id', '!=', $masterProduct->id)
+                ->where('mismatch_detected', true)
+                ->exists();
+
+            if ($masterFamily->mismatch_detected !== $familyHasMismatch) {
+                $masterFamily->updateQuietly([
+                    'mismatch_detected' => $familyHasMismatch
                 ]);
             }
         }
 
-        MasterShopHydrateNumberMismatches::run($masterProduct->masterShop);
+        /*
+         * Six counts over the whole master shop, so it is skipped while walking every
+         * master of that shop and run once when the walk is done instead.
+         */
+        if ($hydrateMasterShopStats) {
+            MasterShopHydrateNumberMismatches::run($masterProduct->masterShop);
+        }
     }
 
     public function getCommandSignature(): string
@@ -106,13 +129,18 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
             ->orderBy('id')
             ->chunkById(1000, function ($masterProducts) use ($bar) {
                 foreach ($masterProducts as $masterProduct) {
-                    $this->handle($masterProduct);
+                    $this->handle($masterProduct, hydrateMasterShopStats: false);
                     $bar->advance();
                 }
             });
 
         $bar->finish();
         $command->newLine();
+
+        $masterShops = $masterShop
+            ? collect([$masterShop])
+            : MasterShop::all();
+        $masterShops->each(fn (MasterShop $shop) => MasterShopHydrateNumberMismatches::run($shop));
     }
 
 

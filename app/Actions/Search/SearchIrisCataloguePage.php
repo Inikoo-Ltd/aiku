@@ -44,13 +44,14 @@ class SearchIrisCataloguePage extends IrisAction
         $pageNumber  = (int) Arr::get($modelData, 'page', 1);
         $sort        = Arr::get($modelData, 'sort');
 
-        $matchedIds = $this->matchedProductIds($query);
-        $orders     = $pageNumber === 1 ? $this->matchedCustomerDocuments($query, SearchIrisOrders::class) : [];
-        $invoices   = $pageNumber === 1 ? $this->matchedCustomerDocuments($query, SearchIrisInvoices::class) : [];
+        ['ids' => $matchedIds, 'arm_counts' => $armCounts] = $this->matchedProductIds($query);
+        $orders   = $pageNumber === 1 ? $this->matchedCustomerDocuments($query, SearchIrisOrders::class) : [];
+        $invoices = $pageNumber === 1 ? $this->matchedCustomerDocuments($query, SearchIrisInvoices::class) : [];
 
         if (empty($matchedIds)) {
             return [
-                'results' => [
+                'arm_counts' => $armCounts,
+                'results'    => [
                     'orders'      => $orders,
                     'invoices'    => $invoices,
                     'products'    => [],
@@ -112,7 +113,8 @@ class SearchIrisCataloguePage extends IrisAction
         )->resolve();
 
         return [
-            'results' => [
+            'arm_counts' => $armCounts,
+            'results'    => [
                 'orders'      => $orders,
                 'invoices'    => $invoices,
                 'products'    => $products,
@@ -151,13 +153,19 @@ class SearchIrisCataloguePage extends IrisAction
      * Typesense engine runs a single request at its 250 per_page maximum; take(250) or more
      * would switch it to the paginated path capped by scout.typesense.max_total_results (100).
      *
-     * @return array<int, int>
+     * @return array{ids: array<int, int>, arm_counts: array{keyword: int, vector: int}}
      */
     private function matchedProductIds(string $query): array
     {
         $searchQuery = Product::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true);
 
-        return array_values(array_unique(array_map('intval', array_filter(array_column($this->rawDocuments($searchQuery), 'id')))));
+        $hits = $this->rawHits($searchQuery);
+        $ids  = array_column(Arr::pluck($hits, 'document'), 'id');
+
+        return [
+            'ids'        => array_values(array_unique(array_map('intval', array_filter($ids)))),
+            'arm_counts' => $this->armCounts($hits),
+        ];
     }
 
     /**
@@ -369,7 +377,8 @@ class SearchIrisCataloguePage extends IrisAction
             $request,
             'catalogue_page',
             $this->validatedData['q'],
-            (int) Arr::get($results, 'results.total', 0)
+            (int) Arr::get($results, 'results.total', 0),
+            Arr::pull($results, 'arm_counts')
         );
 
         return $results;

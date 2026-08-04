@@ -113,7 +113,15 @@ class SearchIrisCatalogue extends IrisAction
 
         $resultsCount = collect(Arr::get($results, 'results', []))->sum(fn ($items) => is_array($items) ? count($items) : 0);
 
-        $results['search_log_ulid'] = $this->recordWebsiteSearchLog($request, 'catalogue', $this->validatedData['q'], $resultsCount);
+        $armCounts = Arr::pull($results, 'arm_counts');
+
+        $results['search_log_ulid'] = $this->recordWebsiteSearchLog(
+            $request,
+            'catalogue',
+            $this->validatedData['q'],
+            $resultsCount,
+            $armCounts
+        );
 
         return $results;
     }

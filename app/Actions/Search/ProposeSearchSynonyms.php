@@ -36,7 +36,7 @@ class ProposeSearchSynonyms
             ->join('shops', 'shops.id', '=', 'website_search_logs.shop_id')
             ->join('languages', 'languages.id', '=', 'shops.language_id')
             ->where('website_search_logs.created_at', '>=', now()->subDays($days))
-            ->where('website_search_logs.results_count', 0)
+            ->where('website_search_logs.keyword_results_count', 0)
             ->where('website_search_logs.scope', 'catalogue')
             ->selectRaw('languages.code as language, lower(trim(website_search_logs.query)) as q, count(*) as sessions')
             ->groupBy('language', 'q')

@@ -40,6 +40,8 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
         $this->applyDeliveryNoteItemBaseJoins($query);
         $query->with('orgStock.tradeUnits');
 
+        $query->where('delivery_note_items.quantity_required', '>', 0);
+
         return $query->defaultSort('org_stocks.code')
             ->select($this->getDeliveryNoteItemBaseSelect())
             ->addSelect([

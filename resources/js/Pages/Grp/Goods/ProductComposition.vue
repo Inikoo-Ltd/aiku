@@ -7,6 +7,7 @@ import { computed } from "vue"
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import FieldForm from "@/Components/Forms/FieldForm.vue"
+import MasterAnomalyBlocks from "@/Components/Masters/MasterAnomalyBlocks.vue"
 import CompositionTriangle from "@/Components/Goods/CompositionTriangle.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { routeType } from "@/types/route"
@@ -21,6 +22,18 @@ library.add(faAtom, faMoneyBill)
 const props = defineProps<{
     title: string
     pageHead: object
+    anomalies?: {
+        items: {
+            product_id: number
+            shop_code: string
+            shop_slug: string
+            url: string
+            issues: string[]
+            ignored_issues: string[]
+        }[]
+        fixRoute: routeType
+        killRebelRoute: routeType
+    } | null
     formData: {
         blueprint: {
             label: string
@@ -43,6 +56,13 @@ const tradeUnitsField = computed(() => {
 })
 
 const triangleTradeUnits = computed(() => tradeUnitsField.value?.value ?? [])
+
+const triangleMood = computed(() => {
+    const items = props.anomalies?.items ?? []
+    if (items.some(item => item.issues.length)) return 'crying'
+    if (items.some(item => item.ignored_issues.length)) return 'angry'
+    return null
+})
 const triangleProductsCount = computed(() => {
     const context = tradeUnitsField.value?.productsContext
     if (!context) return undefined
@@ -56,6 +76,8 @@ const triangleProductsCount = computed(() => {
 
     <div class="px-4 py-5 sm:px-6 lg:px-8 grid gap-8 xl:grid-cols-[minmax(0,64rem)_minmax(16rem,20rem)]">
         <div class="flex flex-col gap-y-8 min-w-0">
+            <MasterAnomalyBlocks :anomalies="anomalies" />
+
             <section v-for="(section, sectionIdx) in formData.blueprint" :key="sectionIdx"
                 class="rounded-lg border border-gray-200 bg-white">
                 <div class="border-b border-gray-100 px-4 py-3 sm:px-6 flex items-center gap-2">
@@ -80,6 +102,7 @@ const triangleProductsCount = computed(() => {
                     v-if="triangleTradeUnits.length"
                     :tradeUnits="triangleTradeUnits"
                     :productsCount="triangleProductsCount"
+                    :mood="triangleMood"
                 />
             </div>
         </aside>

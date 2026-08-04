@@ -10,18 +10,23 @@ use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Search\GetWebsiteSearchAnalytics;
 use App\Actions\Search\Search;
+use App\Actions\Search\SearchCatalogue;
 use App\Actions\Search\SearchIrisInvoices;
 use App\Actions\Search\SearchIrisOrders;
 use App\Actions\Search\StoreWebsiteSearchLog;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Search\WebsiteSearchSourceEnum;
+use App\Events\Web\WebsiteSearchStatsUpdated;
+use Illuminate\Support\Facades\Event;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\WebsiteSearchLog;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -67,6 +72,33 @@ test('iris search allows single character queries', function () {
 
     $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=e');
     $response->assertOk();
+});
+
+test('a new search broadcasts the headline stats, a refinement does not', function () {
+    Event::fake([WebsiteSearchStatsUpdated::class]);
+
+    $log = fn (array $extra = []) => StoreWebsiteSearchLog::run(array_merge([
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $this->website->id,
+        'session_id'      => 'live-session',
+        'scope'           => 'catalogue',
+        'query'           => 'tealights',
+        'results_count'   => 3,
+    ], $extra));
+
+    $log();
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 1);
+
+    // keystroke refinement reuses the row, so the totals cannot have moved
+    $log(['query' => 'tealights blue']);
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 1);
+
+    // a different search is a new row and a new number on screen
+    $log(['session_id' => 'other-session', 'query' => 'incense']);
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 2);
 });
 
 test('the search log records which control opened the search, and only known ones', function () {
@@ -299,4 +331,87 @@ test('invoice search hydrate never returns another customer\'s invoice', functio
 
     $invoice->update(['in_process' => true]);
     expect(SearchIrisInvoices::make()->hydrate([], 'INV-5508', $customer->id, $this->shop->id))->toBe([]);
+});
+
+test('a query only the vector arm answers is still logged as an assortment gap', function () {
+    config()->set('scout.driver', 'typesense');
+
+    // shungite: nothing in the catalogue matches the word, hybrid answers with
+    // related tumble stones. The customer sees 2 products, the buyers must still
+    // see a query nothing actually matched.
+    Http::fake([
+        '*/multi_search' => Http::response(['results' => [
+            ['hits' => [
+                ['document' => ['id' => '1', 'code' => 'TS-1', 'name' => 'Tumble Stone'], 'vector_distance' => 0.14],
+                ['document' => ['id' => '2', 'code' => 'TS-2', 'name' => 'Tumble Stone L'], 'vector_distance' => 0.15],
+            ]],
+            ['hits' => []],
+            ['hits' => []],
+        ]]),
+    ]);
+
+    $results = SearchCatalogue::run('shungite', ['shop_id' => $this->shop->id, 'is_in_website' => true]);
+
+    expect($results['arm_counts'])->toBe(['keyword' => 0, 'vector' => 2])
+        ->and($results['results']['products'])->toHaveCount(2);
+
+    $log = StoreWebsiteSearchLog::run([
+        'ulid'                  => (string) Str::ulid(),
+        'group_id'              => $this->organisation->group_id,
+        'organisation_id'       => $this->organisation->id,
+        'shop_id'               => $this->shop->id,
+        'website_id'            => $this->website->id,
+        'scope'                 => 'catalogue',
+        'query'                 => 'shungite',
+        'results_count'         => 2,
+        'keyword_results_count' => $results['arm_counts']['keyword'],
+        'vector_results_count'  => $results['arm_counts']['vector'],
+    ]);
+
+    expect($log->results_count)->toBe(2)
+        ->and($log->keyword_results_count)->toBe(0)
+        ->and($log->vector_results_count)->toBe(2);
+
+    $gaps = GetWebsiteSearchAnalytics::run($this->website);
+    expect($gaps['top_zero_queries']->pluck('query')->all())->toContain('shungite');
+});
+
+test('a keyword hit is not counted as a vector rescue', function () {
+    config()->set('scout.driver', 'typesense');
+
+    Http::fake([
+        '*/multi_search' => Http::response(['results' => [
+            ['hits' => [['document' => ['id' => '1', 'code' => 'C-1', 'name' => 'Candle']]]],
+            ['hits' => []],
+            ['hits' => []],
+        ]]),
+    ]);
+
+    $results = SearchCatalogue::run('candles', ['shop_id' => $this->shop->id]);
+
+    expect($results['arm_counts'])->toBe(['keyword' => 1, 'vector' => 0]);
+});
+
+test('the typo tuning reaches every search sent to typesense', function () {
+    config()->set('scout.driver', 'typesense');
+
+    Http::fake([
+        '*/multi_search' => Http::response(['results' => [
+            ['hits' => []], ['hits' => []], ['hits' => []],
+        ]]),
+    ]);
+
+    SearchCatalogue::run('aromcandles', ['shop_id' => $this->shop->id, 'is_in_website' => true]);
+
+    Http::assertSent(function ($request) {
+        expect($request['searches'])->not->toBeEmpty();
+
+        foreach ($request['searches'] as $search) {
+            expect($search)
+                ->toMatchArray(SearchCatalogue::SEARCH_TUNING)
+                ->and($search['min_len_2typo'])->toBe(7);
+        }
+
+        return true;
+    });
 });

@@ -16,6 +16,8 @@ const props = defineProps<{
         packed_in_by_org?: { org_code: string; packed_in: number }[]
     }[]
     productsCount?: number
+    // angry: rebels in the family; crying: anomalies, the eye weeps blood
+    mood?: 'angry' | 'crying' | null
 }>()
 
 const first = computed(() => props.tradeUnits?.[0] ?? {})
@@ -195,6 +197,24 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
 
             <!-- The all-seeing eye -->
             <g :transform="`translate(${CENTER.x}, ${CENTER.y}) scale(1.3)`">
+                <!-- angry brows: rebels in the family -->
+                <g v-if="mood === 'angry'" stroke="#d97706" stroke-width="2" stroke-linecap="round">
+                    <line x1="-16" y1="-16" x2="-4" y2="-11" />
+                    <line x1="16" y1="-16" x2="4" y2="-11" />
+                </g>
+                <!-- sad brows + tears of blood: anomalies -->
+                <g v-if="mood === 'crying'">
+                    <g stroke="#dc2626" stroke-width="2" stroke-linecap="round">
+                        <line x1="-16" y1="-11" x2="-4" y2="-15" />
+                        <line x1="16" y1="-11" x2="4" y2="-15" />
+                    </g>
+                    <g fill="#dc2626">
+                        <path d="M -8 8 q -2 6 0 9 q 2 -3 0 -9 Z" />
+                        <path d="M 8 8 q -2 6 0 9 q 2 -3 0 -9 Z" />
+                        <circle cx="-8" cy="20" r="1.2" opacity="0.7" />
+                        <circle cx="8" cy="22" r="1.2" opacity="0.7" />
+                    </g>
+                </g>
                 <!-- rays: hidden unless the eye is having a moment -->
                 <g stroke="#f59e0b" stroke-width="1.5" :opacity="showRays || hoveredEdge ? 0.7 : 0" class="transition-opacity duration-500">
                     <line v-for="ray in 8" :key="ray"
@@ -216,7 +236,8 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
                             <circle cx="-1.5" cy="-1.5" r="1" fill="white" />
                         </g>
                     </g>
-                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
+                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="none"
+                        :stroke="mood === 'crying' ? '#fca5a5' : mood === 'angry' ? '#fcd34d' : '#cbd5e1'" stroke-width="1.5" />
                 </g>
                 <!-- closed lid line when blinking or sleeping -->
                 <path v-if="isBlinking || attention === 'asleep'" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#cbd5e1" stroke-width="1.5" />

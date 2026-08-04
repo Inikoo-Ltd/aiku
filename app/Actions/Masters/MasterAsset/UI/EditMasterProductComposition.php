@@ -7,6 +7,7 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
@@ -78,6 +79,7 @@ class EditMasterProductComposition extends OrgAction
                     ],
                     'subNavigation' => $this->getMasterProductsSubNavigation($masterAsset),
                 ],
+                'anomalies' => $this->getAnomalies($masterAsset),
                 'formData' => [
                     'blueprint' => $this->getBlueprint($masterAsset),
                     'args'      => [
@@ -91,6 +93,35 @@ class EditMasterProductComposition extends OrgAction
                 ]
             ]
         );
+    }
+
+    /**
+     * @return array{items: list<array{product_id: int, shop_code: string, shop_slug: string, issues: list<string>, ignored_issues: list<string>}>, fixRoute: array{name: string, parameters: array{masterAsset: int}, method: string}, killRebelRoute: array{name: string, parameters: array{masterAsset: int}, method: string}}|null
+     */
+    public function getAnomalies(MasterAsset $masterProduct): ?array
+    {
+        $anomalies = GetMasterAssetAnomalies::run($masterProduct);
+        if (!$anomalies) {
+            return null;
+        }
+
+        return [
+            'items'    => array_values($anomalies),
+            'fixRoute' => [
+                'name'       => 'grp.models.master_asset.fix_anomalies',
+                'parameters' => [
+                    'masterAsset' => $masterProduct->id
+                ],
+                'method'     => 'post',
+            ],
+            'killRebelRoute' => [
+                'name'       => 'grp.models.master_asset.kill_rebel',
+                'parameters' => [
+                    'masterAsset' => $masterProduct->id
+                ],
+                'method'     => 'post',
+            ],
+        ];
     }
 
     public function getBlueprint(MasterAsset $masterProduct): array
