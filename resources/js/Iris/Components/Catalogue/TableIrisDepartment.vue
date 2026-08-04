@@ -90,12 +90,6 @@ defineProps<{
                         </div>
                     </template>
                 </Tag>
-
-                <a v-if="item.public_url" :href="item.public_url" target="_blank"
-                    class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-primary-600"
-                    title="Open public page">
-                    <FontAwesomeIcon :icon="faExternalLink" />
-                </a>
             </div>
         </template>
     </GridProducts>
