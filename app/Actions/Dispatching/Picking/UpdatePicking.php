@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -29,6 +30,7 @@ class UpdatePicking extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use AutoIgnoreZeroQuantityItems;
 
     private Picking $picking;
     private ?User $user = null;
@@ -66,6 +68,8 @@ class UpdatePicking extends OrgAction
 
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+        
+        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
         return $picking;
     }

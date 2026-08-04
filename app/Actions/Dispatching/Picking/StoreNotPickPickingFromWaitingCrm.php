@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreNotPickPickingFromWaitingCrm extends OrgAction
 {
     use WithActionUpdate;
+    use AutoIgnoreZeroQuantityItems;
 
     private DeliveryNoteItem $deliveryNoteItem;
 
@@ -42,6 +44,9 @@ class StoreNotPickPickingFromWaitingCrm extends OrgAction
 
 
         $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $user, $modelData);
+        
+        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $user);
+        
         AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
         return $picking;
     }

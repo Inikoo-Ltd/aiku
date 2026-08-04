@@ -330,7 +330,7 @@ class ShowInvoice extends OrgAction
         }
 
         if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {
-            return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab, $this->parent);
+            return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab, $this->parent->fulfilment);
         }
 
         $subNavigation = [];

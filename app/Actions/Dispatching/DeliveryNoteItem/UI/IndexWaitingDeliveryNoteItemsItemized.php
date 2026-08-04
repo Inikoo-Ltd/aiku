@@ -55,6 +55,8 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             $query->where('shops.type', $shopType);
         }
 
+        $query->where('delivery_note_items.quantity_required', '>=', 0);
+
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select(array_merge(
                 $this->getDeliveryNoteItemBaseSelect(),
