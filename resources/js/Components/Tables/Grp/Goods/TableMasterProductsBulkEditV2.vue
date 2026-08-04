@@ -100,8 +100,8 @@ const EditorV2 = defineAsyncComponent(() => import("@/Components/Forms/Fields/Bu
 
 const RICH_TEXT_FIELDS: EditableField[] = ['description', 'description_extra']
 const RICH_TEXT_TOOLBAR = [
-    'bold', 'italic', 'underline', 'bulletList', 'orderedList',
-    'link', 'alignLeft', 'alignCenter', 'alignRight', 'clear', 'undo', 'redo',
+    'heading1', 'heading2', 'heading3',
+    'bold', 'italic', 'underline', 'fontSize', 'bulletList', 'fontFamily', 'blockquote', 'divider', 'orderedList', 'customLink', 'color', 'highlight', 'link', 'alignLeft', 'alignCenter', 'alignRight', 'clear', 'undo', 'redo',
 ]
 
 const activeEditorCell = ref<string | null>(null)
@@ -168,44 +168,37 @@ const saveEdits = async () => {
     if (!entries.length) return
 
     isSavingEdits.value = true
-    const failures: string[] = []
 
-    for (const [id, edit] of entries) {
-        try {
-            await axios.patch(
-                route('grp.models.master_asset.update', { masterAsset: Number(id) }),
-                edit.fields,
-                { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
-            )
+    try {
+        await axios.patch(
+            route('grp.models.master_asset.bulk_update'),
+            { products: entries.map(([id, edit]) => ({ id: Number(id), ...edit.fields })) },
+            { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+        )
 
-            const row = props.data?.data?.find((item: any) => item.id === Number(id))
-            if (row) {
-                Object.assign(row, edit.fields)
-            }
+        for (const [id, edit] of entries) {
+            Object.assign(props.data?.data?.find((item: any) => item.id === Number(id)) ?? {}, edit.fields)
             delete pendingEdits.value[Number(id)]
-        } catch (error: any) {
-            const errors = error?.response?.data?.errors
-            failures.push(`${edit.code}: ${errors ? Object.values(errors).flat().join(' ') : error?.response?.data?.message}`)
         }
-    }
 
-    isSavingEdits.value = false
+        notify({
+            title: trans("Success"),
+            text: trans(':count products updated', { count: String(entries.length) }),
+            type: "success",
+        })
+    } catch (error: any) {
+        const errors = error?.response?.data?.errors ?? {}
 
-    if (failures.length) {
         notify({
             title: trans("Something went wrong"),
-            text: failures.join(' · '),
+            text: Object.entries(errors)
+                .map(([key, messages]) => `${entries[Number(key.split('.')[1])]?.[1].code}: ${(messages as string[]).join(' ')}`)
+                .join(' · ') || error?.response?.data?.message,
             type: "error",
         })
-
-        return
+    } finally {
+        isSavingEdits.value = false
     }
-
-    notify({
-        title: trans("Success"),
-        text: trans(':count products updated', { count: String(entries.length) }),
-        type: "success",
-    })
 }
 
 watch(() => props.bulkEditSaveSignal, () => saveEdits())
