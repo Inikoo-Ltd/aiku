@@ -9,12 +9,15 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
+use App\Actions\Catalogue\Product\UpdateOrdersInBasketsAfterProductUpdated;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\Concerns\AsAction;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -39,12 +42,14 @@ class FixOrganisationCompositionFromMasters
     /**
      * @return array{checked: int, fixed: int, units_fixed: int, changes: list<string>}
      */
-    public function handle(Organisation $organisation, bool $dryRun = true, bool $withUnits = false, ?MasterShop $masterShop = null, bool $onlyFlagged = true): array
+    public function handle(Organisation $organisation, bool $dryRun = true, bool $withUnits = true, ?MasterShop $masterShop = null, bool $onlyFlagged = true, bool $withPrices = true): array
     {
-        $checked    = 0;
-        $fixed      = 0;
-        $unitsFixed = 0;
-        $changes    = [];
+        $checked        = 0;
+        $fixed          = 0;
+        $unitsFixed     = 0;
+        $pricesFixed    = 0;
+        $changes        = [];
+        $ordersToReview = [];
 
         /*
          * Only what is still sold: walking every product of every master means 149k
@@ -62,7 +67,7 @@ class FixOrganisationCompositionFromMasters
              */
             ->when($onlyFlagged, fn ($query) => $query->where('mismatch_detected', true))
             ->with('tradeUnits', 'stocks')
-            ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, &$checked, &$fixed, &$unitsFixed, &$changes) {
+            ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, $withPrices, &$checked, &$fixed, &$unitsFixed, &$pricesFixed, &$changes, &$ordersToReview) {
                 foreach ($masterAssets as $masterAsset) {
                     $tradeUnitData = $masterAsset->tradeUnits->map(fn ($tradeUnit) => [
                         'id'       => $tradeUnit->id,
@@ -86,28 +91,39 @@ class FixOrganisationCompositionFromMasters
                         ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
                         ->where('is_for_sale', true)
                         ->where('not_follow_master_trade_units', false)
-                        ->with('shop', 'tradeUnits', 'orgStocks')
+                        ->with('shop.currency', 'family', 'tradeUnits', 'orgStocks')
                         ->get();
 
                     foreach ($products as $product) {
                         $checked++;
 
                         $compositionDrifted = !$this->followsMaster($masterAsset, $product);
-                        $unitsDrifted       = (float)$product->units !== (float)$masterAsset->units;
+                        $unitsDrifted       = $withUnits && (float)$product->units !== (float)$masterAsset->units;
+                        $priceDrift         = $withPrices ? $this->priceDrift($masterAsset, $product) : [];
 
-                        if (!$compositionDrifted && !($unitsDrifted && $withUnits)) {
+                        if (!$compositionDrifted && !$unitsDrifted && !$priceDrift) {
                             continue;
                         }
 
+                        $note = [];
                         if ($compositionDrifted) {
                             $fixed++;
+                            $note[] = 'composition';
                         }
-                        if ($unitsDrifted && $withUnits) {
+                        if ($unitsDrifted) {
                             $unitsFixed++;
+                            $note[] = 'units '.(float)$product->units.'→'.(float)$masterAsset->units;
+                        }
+                        if ($priceDrift) {
+                            $pricesFixed++;
+                            $note[] = implode(', ', array_map(
+                                fn ($value, $field) => $field.' '.$product->{$field}.'→'.$value,
+                                $priceDrift,
+                                array_keys($priceDrift)
+                            ));
                         }
 
-                        $changes[] = $masterAsset->code.' @ '.$product->shop->code
-                            .($unitsDrifted ? ' (units '.(float)$product->units.' → '.(float)$masterAsset->units.')' : '');
+                        $changes[] = $masterAsset->code.' @ '.$product->shop->code.' ('.implode('; ', $note).')';
 
                         if ($dryRun) {
                             continue;
@@ -116,19 +132,50 @@ class FixOrganisationCompositionFromMasters
                         if ($compositionDrifted) {
                             SyncProductTradeUnits::run($product, $tradeUnitData);
                         }
-                        if ($unitsDrifted && $withUnits) {
+                        if ($unitsDrifted) {
+                            $ordersToReview = array_merge($ordersToReview, $this->submittedOrdersHolding($product));
                             $this->alignUnits($product, (float)$masterAsset->units);
+                        }
+                        if ($priceDrift) {
+                            UpdateProduct::make()->action($product, $priceDrift);
                         }
                     }
                 }
             });
 
         return [
-            'checked'     => $checked,
-            'fixed'       => $fixed,
-            'units_fixed' => $unitsFixed,
-            'changes'     => $changes,
+            'checked'      => $checked,
+            'fixed'        => $fixed,
+            'units_fixed'  => $unitsFixed,
+            'prices_fixed' => $pricesFixed,
+            'changes'      => $changes,
+            'orders_to_review' => array_values(array_unique($ordersToReview)),
         ];
+    }
+
+    /**
+     * @return array{price?: float, rrp?: float} only the values that actually differ
+     */
+    private function priceDrift(MasterAsset $masterAsset, Product $product): array
+    {
+        $shopFollows = data_get($product->shop->settings, 'catalog.follow_master_pricing', true);
+
+        if (!$shopFollows || $product->not_follow_master_prices || $product->family?->not_follow_master_prices) {
+            return [];
+        }
+
+        $drift       = [];
+        $masterPrice = $masterAsset->getPriceFromCurrency($product->shop->currency);
+        $masterRrp   = $masterAsset->getRrpFromCurrency($product->shop->currency);
+
+        if ($masterPrice && abs((float)$product->price - $masterPrice) > 0.005) {
+            $drift['price'] = $masterPrice;
+        }
+        if ($masterRrp && $product->rrp !== null && abs((float)$product->rrp - $masterRrp) > 0.005) {
+            $drift['rrp'] = $masterRrp;
+        }
+
+        return $drift;
     }
 
     private function followsMaster(MasterAsset $masterAsset, Product $product): bool
@@ -146,18 +193,45 @@ class FixOrganisationCompositionFromMasters
         $product->auditCustomOld = ['units' => $old];
         $product->auditCustomNew = ['units' => $masterUnits];
         Event::dispatch(new AuditCustom($product));
+
+        /*
+         * Baskets hold lines whose meaning just changed, so they are repriced — the
+         * action only touches orders still being built. Orders already submitted are
+         * deliberately left as they were and reported instead.
+         */
+        UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+    }
+
+    /**
+     * Orders past the basket that hold this product: their lines were agreed under the
+     * old units and are not rewritten, but somebody has to know they exist.
+     *
+     * @return list<string>
+     */
+    private function submittedOrdersHolding(Product $product): array
+    {
+        return DB::table('transactions')
+            ->join('orders', 'orders.id', '=', 'transactions.order_id')
+            ->where('transactions.model_type', 'Product')
+            ->where('transactions.model_id', $product->id)
+            ->whereNotIn('orders.state', ['creating', 'cancelled', 'dispatched'])
+            ->distinct()
+            ->pluck('orders.reference')
+            ->map(fn ($reference) => $product->code.' @ '.$product->shop->code.' → order '.$reference)
+            ->all();
     }
 
     public function getCommandSignature(): string
     {
-        return 'master_product:fix_organisation_composition {organisation} {--master_shop=} {--apply} {--with-units} {--all}';
+        return 'master_product:fix_organisation_composition {organisation} {--master_shop=} {--apply} {--skip-units} {--skip-prices} {--all}';
     }
 
     public function asCommand(Command $command): int
     {
         $organisation = Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
         $dryRun       = !$command->option('apply');
-        $withUnits    = (bool)$command->option('with-units');
+        $withUnits    = !$command->option('skip-units');
+        $withPrices   = !$command->option('skip-prices');
         $masterShop   = $command->option('master_shop')
             ? MasterShop::where('slug', $command->option('master_shop'))->firstOrFail()
             : null;
@@ -166,11 +240,11 @@ class FixOrganisationCompositionFromMasters
             return 1;
         }
 
-        $result = $this->handle($organisation, $dryRun, $withUnits, $masterShop, !$command->option('all'));
+        $result = $this->handle($organisation, $dryRun, $withUnits, $masterShop, !$command->option('all'), $withPrices);
 
         $command->info(($dryRun ? 'DRY RUN — ' : '').
-            $result['checked'].' products checked, '.$result['fixed'].' '.($dryRun ? 'would be' : '').' fixed'.
-            ($withUnits ? ', '.$result['units_fixed'].' units aligned' : ''));
+            $result['checked'].' products checked, '.$result['fixed'].' composition '.($dryRun ? 'would be ' : '').'fixed, '.
+            $result['units_fixed'].' units, '.$result['prices_fixed'].' prices');
 
         foreach (array_slice($result['changes'], 0, 40) as $change) {
             $command->line('  '.$change);

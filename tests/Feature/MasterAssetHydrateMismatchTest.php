@@ -535,7 +535,12 @@ test('the organisation composition fixer aligns drifted shops and reports before
     // The suite shares a database, so assert on these products rather than on totals.
     $dry = App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::run($this->organisation, dryRun: true);
 
-    expect($dry['changes'])->toContain($this->masterAsset->code.' @ '.$this->shop->code.' (units 6 → 3)')
+    $reported = collect($dry['changes'])->filter(
+        fn ($change) => str_starts_with($change, $this->masterAsset->code.' @ '.$this->shop->code)
+    )->implode(' | ');
+
+    expect($reported)->toContain('composition')
+        ->and($reported)->toContain('units 6')
         ->and($quantityOf($drifted))->toBe(6.0)
         ->and((float)$drifted->refresh()->units)->toBe(6.0);
 
