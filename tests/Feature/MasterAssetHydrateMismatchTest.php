@@ -510,3 +510,31 @@ test('discontinued products are neither flagged nor fixed', function () {
     expect((float)$discontinuedQuantity)->toBe(6.0)
         ->and((float)$liveQuantity)->toBe(3.0);
 });
+
+test('the organisation composition fixer aligns drifted shops and reports before applying', function () {
+    $drifted = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 10);
+    $drifted->updateQuietly(['units' => 6]);
+    $this->masterAsset->updateQuietly(['units' => 3]);
+
+    $aligned = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10);
+    $aligned->updateQuietly(['units' => 3]);
+
+    $quantityOf = fn ($product) => (float)DB::table('model_has_trade_units')
+        ->where('model_type', 'Product')->where('model_id', $product->id)->value('quantity');
+
+    // The suite shares a database, so assert on these products rather than on totals.
+    $dry = App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::run($this->organisation, dryRun: true);
+
+    expect($dry['changes'])->toContain($this->masterAsset->code.' @ '.$this->shop->code.' (units 6 → 3)')
+        ->and($quantityOf($drifted))->toBe(6.0)
+        ->and((float)$drifted->refresh()->units)->toBe(6.0);
+
+    App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::run($this->organisation, dryRun: false, withUnits: true);
+
+    expect($quantityOf($drifted))->toBe(3.0)
+        ->and((float)$drifted->refresh()->units)->toBe(3.0)
+        ->and($quantityOf($aligned))->toBe(3.0)
+        ->and((float)$aligned->refresh()->units)->toBe(3.0)
+        ->and($drifted->audits()->where('event', 'units_aligned_to_master')->exists())->toBeTrue()
+        ->and($aligned->audits()->where('event', 'units_aligned_to_master')->exists())->toBeFalse();
+});

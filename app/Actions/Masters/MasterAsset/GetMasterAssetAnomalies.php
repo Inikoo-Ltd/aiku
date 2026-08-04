@@ -102,6 +102,20 @@ class GetMasterAssetAnomalies
     }
 
     /**
+     * Whether a single product's trade units and warehouse picking already match its
+     * master, without building the whole master's anomaly report around it.
+     */
+    public function productFollowsComposition(MasterAsset $masterProduct, Product $product): bool
+    {
+        return $this->compositionDeviations(
+            $masterProduct,
+            $masterProduct->tradeUnits->pluck('pivot.quantity', 'id'),
+            $masterProduct->stocks->pluck('pivot.quantity', 'id'),
+            $product
+        ) === [];
+    }
+
+    /**
      * @return list<string>
      */
     private function compositionDeviations(MasterAsset $masterProduct, Collection $masterTradeUnits, Collection $masterStocks, Product $product): array
