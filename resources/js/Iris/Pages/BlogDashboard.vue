@@ -19,7 +19,7 @@ defineProps<{
             </div>
 
             <GridProducts :resource="data" name="blogs" :label="trans('blog')" :preserve-scroll="true"
-                :gridClass="'grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'">
+                :gridClass="'grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5'">
                 <template #card="{ item: post }">
                     <article
                         class="flex h-full flex-col rounded-2xl bg-white shadow-md transition duration-300 overflow-hidden border border-gray-200">

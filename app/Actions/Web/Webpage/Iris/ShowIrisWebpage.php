@@ -12,6 +12,8 @@ use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -257,8 +259,10 @@ class ShowIrisWebpage
                 $webpageData = match($webpageData) {
                     'login.sys'         => request()->website->getUrl() . '/app/login',
                     'register.sys'      => request()->website->getUrl() . '/app/register',
-                    default          => 
-                        request()->website->getUrl(),
+                    'index.php',
+                    'asset_label.php',
+                    'home.sys'          => 
+                        request()->website->storefront->getCanonicalUrl(),
                 };
             }
 
@@ -365,6 +369,10 @@ class ShowIrisWebpage
 
     public function getIrisBreadcrumbs(Webpage $webpage, array $parentPaths): array
     {
+        if ($webpage->type == WebpageTypeEnum::BLOG) {
+            return $this->getIrisBlogBreadcrumbs($webpage);
+        }
+
         $breadcrumbs[] = [
             'type'   => 'simple',
             'simple' => [
@@ -408,6 +416,49 @@ class ShowIrisWebpage
         if (count($breadcrumbs) == 1) {
             return [];
         }
+
+        return $breadcrumbs;
+    }
+
+    private function getIrisBlogBreadcrumbs(Webpage $webpage): array
+    {
+        $breadcrumbs = [
+            [
+                'type'   => 'simple',
+                'simple' => [
+                    'icon' => 'fal fa-home',
+                    'url'  => '/'
+                ]
+            ],
+            [
+                'type'   => 'simple',
+                'simple' => [
+                    'short_label' => __('blog'),
+                    'label'       => __('Blog'),
+                    'url'         => '/blog'
+                ]
+            ],
+        ];
+
+        if ($webpage->sub_type && $webpage->sub_type != WebpageSubTypeEnum::BLOG) {
+            $subTypeLabel  = Arr::get(WebpageSubTypeEnum::labels(), $webpage->sub_type->value, $webpage->sub_type->value);
+            $breadcrumbs[] = [
+                'type'   => 'simple',
+                'simple' => [
+                    'short_label' => $subTypeLabel,
+                    'label'       => $subTypeLabel,
+                ]
+            ];
+        }
+
+        $breadcrumbs[] = [
+            'type'   => 'simple',
+            'simple' => [
+                'short_label' => $this->getBreadcrumbShortLabel($webpage),
+                'label'       => $this->getBreadcrumbLabel($webpage),
+                'url'         => $this->getEnvironmentUrl($webpage->canonical_url)
+            ]
+        ];
 
         return $breadcrumbs;
     }
