@@ -30,6 +30,9 @@ class UpdateBulkMasterProduct extends OrgAction
                 'rrp'  => Arr::get($productData, 'rrp', $product->rrp),
                 'price' => Arr::get($productData, 'price', $product->price),
                 'unit' => Arr::get($productData, 'unit', $product->unit),
+                'name' => Arr::get($productData, 'name', $product->name),
+                'description' => Arr::get($productData, 'description', $product->description),
+                'description_extra' => Arr::get($productData, 'description_extra', $product->description_extra),
             ]);
         }
     }
@@ -43,6 +46,9 @@ class UpdateBulkMasterProduct extends OrgAction
             'products.*.rrp' => ['sometimes', 'numeric'],
             'products.*.price' => ['sometimes', 'numeric'],
             'products.*.unit' => ['sometimes', 'string'],
+            'products.*.name' => ['sometimes', 'string'. 'max:250'],
+            'products.*.description' => ['sometimes', 'string', 'max:1500'],
+            'products.*.description_extra' => ['sometimes', 'string', 'max:65500']
         ];
     }
 
