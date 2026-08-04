@@ -108,32 +108,32 @@ class ShowSupplier extends OrgAction
                     //         'label' => __('Purchase Order')
                     //     ] : false,
                     // ],
-                    'meta'          => [
-                        [
-                            'name'     => trans_choice('Purchases|Sales', $supplier->stats->number_open_purchase_orders),
-                            'number'   => $supplier->stats->number_open_purchase_orders,
-                            'route'     => [
-                                'grp.supply-chain.supplier_products.show',
-                                $supplier->slug
-                            ],
-                            'leftIcon' => [
-                                'icon'    => 'fal fa-person-dolly',
-                                'tooltip' => __('Sales')
-                            ]
-                        ],
-                        [
-                            'name'     => trans_choice('product|products', $supplier->stats->number_supplier_products),
-                            'number'   => $supplier->stats->number_supplier_products,
-                            'route'     => [
-                                'grp.supply-chain.supplier_products.show',
-                                $supplier->slug
-                            ],
-                            'leftIcon' => [
-                                'icon'    => 'fal fa-box-usd',
-                                'tooltip' => __('Products')
-                            ]
-                        ],
-                    ]
+                    // 'meta'          => [
+                    //     [
+                    //         'name'     => trans_choice('Purchases|Sales', $supplier->stats->number_open_purchase_orders),
+                    //         'number'   => $supplier->stats->number_open_purchase_orders,
+                    //         'route'     => [
+                    //             'grp.supply-chain.supplier_products.show',
+                    //             $supplier->slug
+                    //         ],
+                    //         'leftIcon' => [
+                    //             'icon'    => 'fal fa-person-dolly',
+                    //             'tooltip' => __('Sales')
+                    //         ]
+                    //     ],
+                    //     [
+                    //         'name'     => trans_choice('product|products', $supplier->stats->number_supplier_products),
+                    //         'number'   => $supplier->stats->number_supplier_products,
+                    //         'route'     => [
+                    //             'grp.supply-chain.supplier_products.show',
+                    //             $supplier->slug
+                    //         ],
+                    //         'leftIcon' => [
+                    //             'icon'    => 'fal fa-box-usd',
+                    //             'tooltip' => __('Products')
+                    //         ]
+                    //     ],
+                    // ]
                 ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
