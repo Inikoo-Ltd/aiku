@@ -108,6 +108,19 @@ class EditAgent extends OrgAction
                         ],
 
                         [
+                            'label'  => __('Available'),
+                            'title'  => __('Edit Availability'),
+                            'fields' => [
+                                'is_available' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Available'),
+                                    'value'       => (bool) $agent->is_available,
+                                    'information' => __('Turn off to stop new chats being routed to this agent. It does not sign them out, and their current chats stay with them. Being online and under the max chats limit is still required on top of this.'),
+                                ],
+                            ],
+                        ],
+
+                        [
                             'label'  => __('Organisation & Shop'),
                             'title'  => __('Edit Organisation & Shop'),
                             'fields' => [
