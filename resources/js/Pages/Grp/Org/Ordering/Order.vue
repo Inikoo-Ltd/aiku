@@ -286,6 +286,7 @@ const props = defineProps<{
         icon: string
     }
     is_faire_order: boolean
+    allow_order_modification: boolean
 }>()
 
 
@@ -2328,8 +2329,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </BoxStatPallet>
     </div>
 
-    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
-        @update:tab="handleTabUpdate" />
+    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
@@ -2338,6 +2338,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             @update:tab="handleTabUpdate" :ref="(e) => _refComponents = e"
             :routesProductsListModification="routes.products_list_modification"
             :is_shop_external
+            :allow_order_modification
         />
     </div>
 

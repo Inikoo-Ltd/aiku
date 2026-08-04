@@ -79,9 +79,12 @@ class UndoSetAsPickedDeliveryNote extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, ?User $user = null): DeliveryNote
     {
-        $this->user         = $user;
+        if ($user) {
+            // Don't know why we still have this anyway. Didn't use it anywhere
+            $this->user         = $user;
+        }
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, []);
 

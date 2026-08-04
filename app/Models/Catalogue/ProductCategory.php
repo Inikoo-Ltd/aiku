@@ -241,6 +241,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'code',
         'name',
         'description',
+        'description_title',
+        'description_extra',
         'not_follow_master_prices',
         'follow_master_gr',
     ];

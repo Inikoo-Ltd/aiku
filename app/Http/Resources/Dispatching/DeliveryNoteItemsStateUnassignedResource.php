@@ -45,6 +45,15 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             $this->packed_in
         );
 
+        $originalRequiredFractionalData = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->original_quantity_required
+                )
+            ),
+            $this->packed_in
+        );
+
         $packedInMessage = '';
         if ($packedIn == 1) {
             $packedInMessage = '('.__('Individually packed').')';
@@ -53,20 +62,23 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
         }
 
         return [
-            'id'                           => $this->id,
-            'state'                        => $this->state,
-            'state_icon'                   => $this->state->stateIcon()[$this->state->value],
-            'quantity_required'            => $this->quantity_required,
-            'quantity_required_fractional' => $requiredFactionalData,
-            'org_stock_slug'               => $this->org_stock_slug,
-            'org_stock_code'               => $this->org_stock_code,
-            'org_stock_name'               => $this->org_stock_name,
-            'barcode'                      => $this->barcode,
-            'org_stock_id'                 => $this->org_stock_id,
-            'batch_code'                   => $this->batch_code,
-            'expiry_date'                  => $this->expiry_date,
-            'packed_in_message'            => $packedInMessage,
-            'un_numbers'                   => @json_decode($this->un_numbers) ?? null,
+            'id'                                       => $this->id,
+            'state'                                    => $this->state,
+            'state_icon'                               => $this->state->stateIcon()[$this->state->value],
+            'quantity_required'                        => $this->quantity_required,
+            'quantity_required_fractional'             => $requiredFactionalData,
+            'original_quantity_required'               => $this->original_quantity_required,
+            'original_quantity_required_fractional'    => $originalRequiredFractionalData,
+            'org_stock_slug'                           => $this->org_stock_slug,
+            'org_stock_code'                           => $this->org_stock_code,
+            'org_stock_name'                           => $this->org_stock_name,
+            'barcode'                                  => $this->barcode,
+            'org_stock_id'                             => $this->org_stock_id,
+            'batch_code'                               => $this->batch_code,
+            'expiry_date'                              => $this->expiry_date,
+            'packed_in_message'                        => $packedInMessage,
+            'un_numbers'                               => @json_decode($this->un_numbers) ?? null,
+            'is_dirty'                                 => $this->is_dirty,
         ];
     }
 }
