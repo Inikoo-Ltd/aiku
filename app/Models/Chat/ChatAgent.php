@@ -8,6 +8,7 @@
 
 namespace App\Models\Chat;
 
+use App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\Organisation;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -31,6 +33,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property int|null $language_id
+ * @property ChatAgentPresenceStatusEnum $presence_status
+ * @property \Illuminate\Support\Carbon|null $last_heartbeat_at
+ * @property \Illuminate\Support\Carbon|null $last_activity_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Chat\ChatAssignment> $assignments
  * @property-read Language|null $language
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Organisation> $organisations
@@ -63,6 +68,9 @@ class ChatAgent extends Model
         'is_available' => 'integer',
         'specialization' => 'array',
         'language_id'    => 'integer',
+        'presence_status' => ChatAgentPresenceStatusEnum::class,
+        'last_heartbeat_at' => 'datetime',
+        'last_activity_at' => 'datetime',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -148,7 +156,7 @@ class ChatAgent extends Model
 
     public function isAvailableForChat(): bool
     {
-        return $this->is_online
+        return $this->isOnline()
             && $this->is_available
             && $this->current_chat_count < $this->max_concurrent_chats;
     }
@@ -159,10 +167,54 @@ class ChatAgent extends Model
     }
 
 
+    public function hasFreshHeartbeat(): bool
+    {
+        return $this->last_heartbeat_at?->gt(self::heartbeatCutOff()) ?? false;
+    }
+
+
+    public function isConnected(): bool
+    {
+        return $this->presenceStatus() !== ChatAgentPresenceStatusEnum::OFFLINE;
+    }
+
+
+    public function isOnline(): bool
+    {
+        return $this->presence_status === ChatAgentPresenceStatusEnum::ONLINE
+            && $this->hasFreshHeartbeat();
+    }
+
+
+    public function isAway(): bool
+    {
+        return $this->presence_status === ChatAgentPresenceStatusEnum::AWAY
+            && $this->hasFreshHeartbeat();
+    }
+
+
+    public function presenceStatus(): ChatAgentPresenceStatusEnum
+    {
+        return $this->hasFreshHeartbeat()
+            ? $this->presence_status
+            : ChatAgentPresenceStatusEnum::OFFLINE;
+    }
+
+
+    public static function heartbeatCutOff(): Carbon
+    {
+        return now()->subSeconds((int) config('chat.presence.offline_after_seconds'));
+    }
+
 
     public function setOnline(bool $online = true): void
     {
-        $this->update(['is_online' => $online]);
+        $this->update([
+            'is_online'         => $online,
+            'presence_status'   => $online ? ChatAgentPresenceStatusEnum::ONLINE : ChatAgentPresenceStatusEnum::OFFLINE,
+            'last_heartbeat_at' => $online ? now() : null,
+            'last_activity_at'  => $online ? now() : $this->last_activity_at,
+        ]);
     }
 
 
@@ -174,14 +226,15 @@ class ChatAgent extends Model
 
     public function scopeOnline($query)
     {
-        return $query->where('is_online', true);
+        return $query->where('presence_status', ChatAgentPresenceStatusEnum::ONLINE)
+            ->where('last_heartbeat_at', '>', self::heartbeatCutOff());
     }
 
 
     public function scopeAvailable($query)
     {
-        return $query->where('is_available', true)
-            ->where('is_online', true)
+        return $query->online()
+            ->where('is_available', true)
             ->whereColumn('current_chat_count', '<', 'max_concurrent_chats');
     }
 
@@ -230,8 +283,10 @@ class ChatAgent extends Model
             'current_chats' => $this->current_chat_count,
             'max_chats' => $this->max_concurrent_chats,
             'available_slots' => $this->getAvailableSlots(),
-            'is_online' => $this->is_online,
+            'is_online' => $this->isConnected(),
             'is_available' => $this->is_available,
+            'presence_status' => $this->presenceStatus()->value,
+            'last_heartbeat_at' => $this->last_heartbeat_at,
             'specializations' => $this->specialization ?? [],
         ];
     }

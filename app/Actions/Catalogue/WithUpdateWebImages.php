@@ -8,7 +8,10 @@
 
 namespace App\Actions\Catalogue;
 
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Helpers\Images\GetPictureSources;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -52,8 +55,16 @@ trait WithUpdateWebImages
             $model->update([
                 'images_updated_at' => now()
             ]);
-        }
+        } else if($model instanceof ProductCategory && $model->wasChanged('web_images')) {
+            if ($model->webpage) {
+                BreakWebpageCache::run($model->webpage, true);
+            }
 
+            if ($model->webpage_id) {
+                ReindexWebpageLuigiData::dispatch($model->webpage->id)->delay(60);
+                ClearCacheByWildcard::run("irisData:website:{$model->webpage->website_id}:*");
+            }
+        }
 
         $model->refresh();
 

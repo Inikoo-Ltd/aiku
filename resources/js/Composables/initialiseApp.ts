@@ -6,6 +6,7 @@ import { watchEffect } from "vue"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal.js'
 import { useEchoGrpGeneral } from '@/Stores/echo-grp-general.js'
 import { useLiveUsers } from '@/Stores/active-users'
+import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
 
 export const initialiseApp = () => {
@@ -31,6 +32,10 @@ export const initialiseApp = () => {
 
     if (usePage().props?.auth?.user) {
         echoPersonal.subscribe(usePage().props.auth.user.id)
+
+        if (usePage().props.auth.user.agent_id) {
+            useChatAgentPresence().start()  // Chat agent liveness: heartbeat + idle detection
+        }
 
         router.on('navigate', (event) => {
 

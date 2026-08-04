@@ -2,13 +2,13 @@
 
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
+use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateStockValue;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 
 class OrgStockHydrateStockValue implements ShouldBeUnique
 {
-    //todo do we need to delete this??? mybe yes
     use WithHydrateCommand;
 
     public string $commandSignature = 'hydrate:org-stock-stock-value {organisations?*} {--s|slugs=}';
@@ -25,10 +25,18 @@ class OrgStockHydrateStockValue implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock): void
     {
-        $stockValue = ($orgStock->sku_value ?? 0) * ($orgStock->quantity_available ?? 0);
+        $stats = $orgStock->stats;
 
-        $orgStock->stats->update([
-            'stock_value' => $stockValue,
+        if (!$stats) {
+            return;
+        }
+
+        $stats->update([
+            'stock_value' => ($orgStock->sku_value ?? 0) * ($orgStock->quantity_available ?? 0),
         ]);
+
+        if ($stats->wasChanged('stock_value') && $orgStock->org_stock_family_id) {
+            OrgStockFamilyHydrateStockValue::dispatch($orgStock->orgStockFamily);
+        }
     }
 }

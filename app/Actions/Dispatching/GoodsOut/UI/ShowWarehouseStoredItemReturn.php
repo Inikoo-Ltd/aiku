@@ -18,6 +18,7 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseAuthorisation;
+use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
@@ -129,6 +130,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                 $itemCount = (clone $itemsQuery)->count();
                 $hasPendingItems = (clone $itemsQuery)
                     ->where('state', '!=', PalletReturnItemStateEnum::CANCEL->value)
+                    ->whereHas('pallet', fn ($q) => $q->where('state', PalletStateEnum::STORING))
                     ->whereRaw('COALESCE(quantity_picked, 0) + COALESCE(quantity_not_picked, 0) < COALESCE(quantity_ordered, 0)')
                     ->exists();
                 $canSetAsPicked = $itemCount > 0 && !$hasPendingItems;
