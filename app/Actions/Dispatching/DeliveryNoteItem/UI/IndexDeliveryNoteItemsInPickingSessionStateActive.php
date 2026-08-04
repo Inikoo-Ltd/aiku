@@ -45,6 +45,8 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
         $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
+        
+        $query->where('delivery_note_items.quantity_required', '>=', 0);
 
         return $query
             ->defaultSort('locations.sort_code', 'org_stocks.code')
