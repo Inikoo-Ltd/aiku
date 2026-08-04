@@ -35,6 +35,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\ApplyNewCompositionToDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
@@ -2570,3 +2571,60 @@ test('after rolling back the picking the new composition can be applied and the 
         ->and($deliveryNoteItem->composition_dirty_at)->toBeNull()
         ->and($deliveryNoteItem->composition_dirty_quantity_required)->toBeNull();
 })->depends('composition change flags packed items dirty instead of rewriting them');
+
+test('picking an item auto ignores zero quantity items and hides them from the index', function () {
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'ZQ123456',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    $transaction = $this->order->transactions()->first();
+
+    $items = [];
+    foreach ([10, 0] as $quantityRequired) {
+        $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+        $stock    = UpdateStock::make()->action($stock, [
+            'state' => StockStateEnum::ACTIVE
+        ]);
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+        $items[] = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+            'delivery_note_id'  => $deliveryNote->id,
+            'org_stock_id'      => $orgStock->id,
+            'transaction_id'    => $transaction->id,
+            'quantity_required' => $quantityRequired
+        ]);
+    }
+
+    [$normalItem, $zeroItem] = $items;
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(orgStock: $normalItem->orgStock, location: $location, modelData: [
+        'quantity'   => 100,
+        'type'       => LocationStockTypeEnum::PICKING,
+        'fetched_at' => now(),
+    ], strict: false);
+
+    StorePicking::make()->action($normalItem, $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $locationOrgStock->id,
+        'quantity'              => 5,
+    ]);
+
+    $zeroItem->refresh();
+
+    expect($zeroItem->pickings()->where('type', PickingTypeEnum::NOT_PICK)->count())->toBe(1)
+        ->and((float) $zeroItem->quantity_picked)->toBe(0.0);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $visibleItemIds = IndexDeliveryNoteItems::run($deliveryNote)->pluck('id');
+
+    expect($visibleItemIds)->toContain($normalItem->id)
+        ->not->toContain($zeroItem->id);
+});

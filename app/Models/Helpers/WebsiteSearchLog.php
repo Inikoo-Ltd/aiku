@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $query
  * @property string|null $session_id
  * @property int $results_count
+ * @property int $keyword_results_count
+ * @property int $vector_results_count
  * @property string|null $clicked_url
  * @property \Illuminate\Support\Carbon|null $clicked_at
  * @property \Illuminate\Support\Carbon|null $created_at

@@ -19,7 +19,7 @@ trait WithSupplierSubNavigation
         return [
             [
                 "isAnchor" => true,
-                "label"    => __($parent->slug),
+                "label"    => __($parent->code),
 
                 "route"     => [
                     "name"       => "grp.supply-chain.suppliers.show",

@@ -27,9 +27,10 @@ import EditProductPriceAllShop from "@/Components/EditProductPriceAllShop.vue";
 import { cloneDeep } from "lodash-es";
 import { trans } from "laravel-vue-i18n"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
+import MasterAnomalyBlocks from "@/Components/Masters/MasterAnomalyBlocks.vue"
+import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
-import { Message } from "primevue"
 
 const screenType = inject('screenType', ref('desktop'))
 
@@ -63,6 +64,18 @@ const props = defineProps<{
     masterVariant?: {}
     is_variant_leader?: boolean
     mismatch_detected?: boolean
+    anomalies?: {
+        items: {
+            product_id: number
+            shop_code: string
+            shop_slug: string
+            url: string
+            issues: string[]
+            ignored_issues: string[]
+        }[]
+        fixRoute: routeType
+        killRebelRoute: routeType
+    } | null
 }>()
 
 const layout = inject('layout', {});
@@ -210,14 +223,10 @@ onMounted(() => {
                 </div>
             </template>
         </Breadcrumb>
-        <Message v-if="mismatch_detected" :severity="'error'">
-            <FontAwesomeIcon 
-                :icon="faWarning" 
-                class="text-red-500 mr-1" 
-                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
-            />
-            {{ trans("One or more products linked to this master contain mismatched trade unit data. Please correct this by updating the master product's trade units.") }}
-        </Message>
+    </div>
+
+    <div v-if="anomalies?.items?.length" class="px-4 py-4 sm:px-6 lg:px-8">
+        <MasterAnomalyBlocks :anomalies="anomalies" />
     </div>
 
     <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :handleTabUpdate :currency="currency" />

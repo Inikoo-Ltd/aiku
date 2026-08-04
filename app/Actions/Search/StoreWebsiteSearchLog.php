@@ -8,7 +8,9 @@
 
 namespace App\Actions\Search;
 
+use App\Events\Web\WebsiteSearchStatsUpdated;
 use App\Models\Helpers\WebsiteSearchLog;
+use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,12 +22,29 @@ class StoreWebsiteSearchLog
     {
         $refined = $this->refinedLog($modelData);
         if ($refined) {
-            $refined->update(Arr::only($modelData, ['ulid', 'query', 'scope', 'results_count']));
+            $refined->update(Arr::only($modelData, [
+                'ulid', 'query', 'scope',
+                'results_count', 'keyword_results_count', 'vector_results_count',
+            ]));
 
             return $refined;
         }
 
-        return WebsiteSearchLog::create($modelData);
+        $log = WebsiteSearchLog::create($modelData);
+
+        // only a genuinely new search moves the headline numbers; refinements above reuse
+        // their row, so broadcasting there would fire once per keystroke for nothing
+        $this->broadcastStats($log);
+
+        return $log;
+    }
+
+    protected function broadcastStats(WebsiteSearchLog $log): void
+    {
+        $website = Website::find($log->website_id);
+        if ($website) {
+            WebsiteSearchStatsUpdated::dispatch($website);
+        }
     }
 
     /**

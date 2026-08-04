@@ -24,10 +24,7 @@ class GetWebsiteSearchAnalytics
         $base = WebsiteSearchLog::where('website_search_logs.website_id', $website->id)
             ->where('website_search_logs.created_at', '>=', now()->subDays($days));
 
-        $totalSearches   = (clone $base)->count();
-        $clicked         = (clone $base)->whereNotNull('clicked_at')->count();
-        $zeroResults     = (clone $base)->where('results_count', 0)->count();
-        $loggedInSearches = (clone $base)->whereNotNull('web_user_id')->count();
+        $headline = self::headline($website, $days);
 
         $topQueries = $this->groupedQueries(clone $base)
             ->orderByDesc('searches')
@@ -36,7 +33,7 @@ class GetWebsiteSearchAnalytics
             ->limit(10)
             ->get();
 
-        $topZeroQueries = $this->groupedQueries((clone $base)->where('results_count', 0))
+        $topZeroQueries = $this->groupedQueries((clone $base)->where('keyword_results_count', 0))
             ->orderByDesc('searches')
             ->orderBy('query')
             ->limit(10)
@@ -79,11 +76,7 @@ class GetWebsiteSearchAnalytics
         return [
             'sources'            => $this->sources(clone $base),
             'days'               => $days,
-            'total_searches'     => $totalSearches,
-            'logged_in_searches' => $loggedInSearches,
-            'guest_searches'     => $totalSearches - $loggedInSearches,
-            'click_through'      => $totalSearches ? round($clicked / $totalSearches * 100, 1) : 0,
-            'zero_results_rate'  => $totalSearches ? round($zeroResults / $totalSearches * 100, 1) : 0,
+            ...$headline,
             'top_queries'           => $topQueries,
             'top_zero_queries'      => $topZeroQueries,
             'top_abandoned_queries' => $topAbandonedQueries,
@@ -121,6 +114,31 @@ class GetWebsiteSearchAnalytics
             'clicks'   => (int)$row->clicks,
             'share'    => $sourcedSearches ? round($row->searches / $sourcedSearches * 100, 1) : 0,
         ])->all();
+    }
+
+    /**
+     * The headline numbers, kept in one place so the live socket updates and the rendered
+     * page can never drift apart.
+     *
+     * @return array{total_searches: int, logged_in_searches: int, guest_searches: int, click_through: float, zero_results_rate: float}
+     */
+    public static function headline(Website $website, int $days = 30): array
+    {
+        $base = WebsiteSearchLog::where('website_search_logs.website_id', $website->id)
+            ->where('website_search_logs.created_at', '>=', now()->subDays($days));
+
+        $totalSearches    = (clone $base)->count();
+        $clicked          = (clone $base)->whereNotNull('clicked_at')->count();
+        $zeroResults      = (clone $base)->where('keyword_results_count', 0)->count();
+        $loggedInSearches = (clone $base)->whereNotNull('web_user_id')->count();
+
+        return [
+            'total_searches'     => $totalSearches,
+            'logged_in_searches' => $loggedInSearches,
+            'guest_searches'     => $totalSearches - $loggedInSearches,
+            'click_through'      => $totalSearches ? round($clicked / $totalSearches * 100, 1) : 0,
+            'zero_results_rate'  => $totalSearches ? round($zeroResults / $totalSearches * 100, 1) : 0,
+        ];
     }
 
     protected function groupedQueries(Builder $query): Builder

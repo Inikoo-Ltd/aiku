@@ -7,9 +7,16 @@ import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
 /* import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue" */
 
+// ponytail: a dynamic import that loses its request permanently kills the block, and for header-1 that is
+// the site header. One delayed retry covers the transient case. Deliberately no reload: deploys copy the
+// old chunks forward, so a missing file is not the cause, and a forced reload would throw away whatever
+// the customer had typed.
+const retryOnce = (loader: () => Promise<any>): Promise<any> =>
+	loader().catch(() => new Promise((resolve) => setTimeout(resolve, 250)).then(() => loader()))
+
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
-		loader,
+		loader: () => retryOnce(loader),
 		delay: 200,
 		timeout: 15000,
 	})

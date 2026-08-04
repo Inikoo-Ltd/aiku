@@ -9,7 +9,7 @@ import { Head, useForm, usePage } from '@inertiajs/vue3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle, faAsterisk, faChevronDown } from '@fas'
-import { faAddressBook, faFileSignature, faPhone, faSave } from '@fal'
+import { faAddressBook, faFileSignature, faPhone, faSave, faTruck, faShip, faCog, faClock, faCreditCard, faFileInvoiceDollar } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { isArray } from 'lodash-es'
@@ -22,7 +22,7 @@ import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Fieldform list
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 
-library.add(faExclamationCircle, faAsterisk, faCheckCircle, faPhone, faChevronDown, faFileSignature, faAddressBook)
+library.add(faExclamationCircle, faAsterisk, faCheckCircle, faPhone, faChevronDown, faFileSignature, faAddressBook, faTruck, faShip, faCog, faClock, faCreditCard, faFileInvoiceDollar)
 
 const props = defineProps<{
     title: string
@@ -63,6 +63,28 @@ const form = useForm(
         ? { ...fields, [props.formData.submitField]: 'active' } // This part executes if the condition is truthy
         : fields // This part executes if the condition is falsy
 );
+
+const isFieldVisible = (fieldData: any) => {
+    if (fieldData.hidden) {
+        return false
+    }
+
+    if (!fieldData.showIf) {
+        return true
+    }
+
+    return form[fieldData.showIf.field] === fieldData.showIf.value
+}
+
+const fieldLabel = (fieldData: any) => {
+    if (!fieldData.labelFrom) {
+        return fieldData.label
+    }
+
+    const suffix = fieldData.labelFrom.options?.[form[fieldData.labelFrom.field]]
+
+    return suffix ? `${fieldData.label} (${suffix})` : fieldData.label
+}
 
 const isLoading = ref(false)
 const handleFormSubmit = async () => {
@@ -274,7 +296,7 @@ console.log("formdata create", props.formData)
 
                 <template v-for="(sectionData, sectionIdx) in formData['blueprint']" :key="sectionIdx">
                     <!-- If Section: all fields is not hidden -->
-                    <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
+                    <div v-if="Object.values(sectionData.fields).some((field: any) => isFieldVisible(field))"
                         class="relative py-4">
                         <!-- Helper: Section click -->
                         <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`" />
@@ -292,12 +314,12 @@ console.log("formdata create", props.formData)
                         <div class="mt-2 pt-4 sm:pt-5">
                             <template v-for="(fieldData, fieldName, index) in sectionData.fields" :key="index">
                                 <!-- If Field is not hidden = true -->
-                                <dl v-if="!fieldData.hidden" class="mt-1 pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4"
+                                <dl v-if="isFieldVisible(fieldData)" class="mt-1 pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4"
                                     :class="fieldData.full ? '' : 'max-w-3xl'">
                                     <!-- Title of Field -->
                                     <dt class="text-sm font-medium text-gray-500">
                                         <div class="inline-flex items-start leading-none">
-                                            <span>{{ fieldData.label }}</span>
+                                            <span>{{ fieldLabel(fieldData) }}</span>
                                             <!-- Icon: Required -->
                                             <FontAwesomeIcon v-if="fieldData.required" :icon="['fas', 'asterisk']"
                                                 class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
