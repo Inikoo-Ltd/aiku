@@ -324,8 +324,8 @@ const onSave = async (presetValue: string) => {
             <!-- Info: like pricing, minus stock and sales; shops and composition under the name. -->
             <div class="flex items-start gap-x-2">
                 <Image
-                    v-if="item.image_thumbnail"
-                    :src="item.image_thumbnail"
+                    v-if="item.image_thumbnail?.main?.thumbnail"
+                    :src="item.image_thumbnail?.main?.thumbnail ?? ''"
                     class="mt-0.5 w-9 aspect-square shrink-0 rounded overflow-hidden shadow"
                 />
                 <div class="flex w-full min-w-[11rem] flex-col gap-y-2">
