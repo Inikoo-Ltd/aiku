@@ -32,6 +32,11 @@ class RefundInProcessTransactionsResource extends JsonResource
         $totalLastRefund = abs(InvoiceTransaction::where('invoice_id', '!=', $this->refund_id)->where('original_invoice_transaction_id', $this->id)->sum('net_amount'));
         $refundNetAmount = abs(InvoiceTransaction::where('invoice_id', $this->refund_id)->where('original_invoice_transaction_id', $this->id)->sum('net_amount'));
 
+        $packedInMessage = '';
+        if ($this->model_type === 'Product' && $this->model && $this->model->units > 1) {
+            $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($this->model->units) . ")";
+        }
+
         return [
             'asset_id'                       => $this->asset_id,
             'code'                           => $this->code,
@@ -46,6 +51,7 @@ class RefundInProcessTransactionsResource extends JsonResource
             'original_item_net_price'        => $this->quantity != 0 ? $this->net_amount / $this->quantity : $this->net_amount,
             'refund_net_amount'              => $refundNetAmount,
             'total_last_refund'              => $totalLastRefund,
+            'packed_in_message'              => $packedInMessage,
             'refund_route'                   => [
                 'name'       => 'grp.models.refund.refund_transaction.store',
                 'parameters' => [

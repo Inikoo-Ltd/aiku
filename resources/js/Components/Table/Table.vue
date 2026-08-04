@@ -27,6 +27,7 @@ import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang} from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
+import TableOfferFilter from '@/Components/Table/TableOfferFilter.vue'
 import TableFrequencyFilter from '@/Components/Table/TableFrequencyFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
@@ -1097,6 +1098,11 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
                                 :appliedValue="queryBuilderProps?.betweenDatesValue"
                                 :tableName="props.name" />
+                        </div>
+
+                        <!-- Filter: offers -->
+                        <div v-if="queryBuilderProps?.offerFilter" class="w-fit flex gap-x-2">
+                            <TableOfferFilter :label="queryBuilderProps.offerFilter.label" />
                         </div>
 
                         <!-- Filter: frequency -->
