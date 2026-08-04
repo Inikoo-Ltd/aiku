@@ -54,6 +54,14 @@ const props = defineProps<{
             total_amount?: number | string | null
             url: string
         }[]
+        invoices?: {
+            id: number
+            code: string
+            type: string
+            date?: string
+            total_amount?: number | string | null
+            url: string
+        }[]
     } | null
     isLoading: boolean
     query: string
@@ -83,8 +91,9 @@ const formatPrice = (price?: number | string | null) => {
 
 const products = computed(() => props.results?.products?.slice(0, 11) ?? [])
 
-// Only sent by SearchIrisCatalogue when a customer is signed in, and only their own orders
+// Only sent by SearchIrisCatalogue when a customer is signed in, and only their own documents
 const orders = computed(() => props.results?.orders ?? [])
+const invoices = computed(() => props.results?.invoices ?? [])
 
 // Categories and collections share one chip strip, capped to keep it scannable
 const chips = computed(() => [
@@ -176,6 +185,24 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                         <span class="truncate" v-html="order.customer_reference ? highlightMatch(order.customer_reference) : useFormatTime(order.date, { formatTime: 'mdy' })" />
                         <span v-if="formatPrice(order.total_amount)" class="whitespace-nowrap font-semibold text-[var(--theme-color-0)]">{{ formatPrice(order.total_amount) }}</span>
                     </div>
+                </LinkIris>
+            </div>
+
+            <!-- Your invoices: only present for a signed in customer -->
+            <div v-if="invoices.length" class="px-4 pt-4 space-y-2">
+                <p class="text-base font-bold text-[var(--theme-color-0)]">{{ ctrans('Your invoices') }}</p>
+                <LinkIris
+                    v-for="invoice in invoices"
+                    :key="invoice.id"
+                    :href="invoice.url"
+                    class="block rounded-md border border-gray-200 bg-white px-3 py-2.5"
+                    @click="() => { recordClick(invoice.url); model = false }"
+                >
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm font-semibold text-slate-800 truncate" v-html="highlightMatch(invoice.code)" />
+                        <span v-if="formatPrice(invoice.total_amount)" class="whitespace-nowrap text-xs font-semibold text-[var(--theme-color-0)]">{{ formatPrice(invoice.total_amount) }}</span>
+                    </div>
+                    <div class="mt-0.5 text-xs text-gray-500">{{ useFormatTime(invoice.date, { formatTime: 'mdy' }) }}</div>
                 </LinkIris>
             </div>
 

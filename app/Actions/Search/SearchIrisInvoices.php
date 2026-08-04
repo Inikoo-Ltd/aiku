@@ -8,8 +8,7 @@
 namespace App\Actions\Search;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Ordering\Order;
+use App\Models\Accounting\Invoice;
 use Illuminate\Contracts\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Collection;
@@ -18,22 +17,11 @@ use Laravel\Scout\Builder as ScoutBuilder;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class SearchIrisOrders
+class SearchIrisInvoices
 {
     use AsAction;
     use WithRawSearchResults;
     use WithTypesenseApi;
-
-    /**
-     * Two typos from six characters onwards, so a customer who drops the country prefix
-     * ("550706") or mistypes a digit ("GB550707") still reaches their order. Neighbouring
-     * references coming along is accepted: the list is short and always their own.
-     */
-    public const array SEARCH_TUNING = [
-        'typo_tokens_threshold' => 2,
-        'min_len_2typo'         => 6,
-        'num_typos'             => 2,
-    ];
 
     protected const int HITS_LIMIT = 10;
     protected const int RESULTS_LIMIT = 5;
@@ -62,12 +50,9 @@ class SearchIrisOrders
     }
 
     /**
-     * The one search in the storefront multi_search that is not part of the catalogue:
-     * an order number is an identifier rather than a phrase, so synonyms, curation
-     * overrides and any semantic or hybrid layer are switched off explicitly instead
-     * of relying on defaults, and query_by stays a plain keyword match on the two
-     * reference fields. Baskets and cancelled orders are filtered out at the index
-     * so they do not eat into the hits limit.
+     * Same contract as the orders search: an invoice number is an identifier rather than
+     * a phrase, so synonyms, curation overrides and any semantic or hybrid layer are
+     * switched off explicitly and query_by stays a plain keyword match on the reference.
      *
      * @return array<string, mixed>
      */
@@ -77,13 +62,12 @@ class SearchIrisOrders
         if ($shopId) {
             $filters[] = 'shop_id:='.$shopId;
         }
-        $filters[] = 'state:!=['.OrderStateEnum::CREATING->value.','.OrderStateEnum::CANCELLED->value.']';
 
         return array_merge(
             [
-                'collection'             => (new Order())->searchableAs(),
+                'collection'             => (new Invoice())->searchableAs(),
                 'q'                      => $query,
-                'query_by'               => 'reference,customer_reference',
+                'query_by'               => 'reference',
                 'filter_by'              => implode(' && ', $filters),
                 'per_page'               => self::HITS_LIMIT,
                 'page'                   => 1,
@@ -92,7 +76,7 @@ class SearchIrisOrders
                 'enable_synonyms'        => false,
                 'enable_overrides'       => false,
             ],
-            self::SEARCH_TUNING
+            SearchIrisOrders::SEARCH_TUNING
         );
     }
 
@@ -101,29 +85,23 @@ class SearchIrisOrders
      */
     public static function scoutQuery(string $query, int $customerId, ?int $shopId): ScoutBuilder
     {
-        $ordersQuery = Order::search($query)
+        $invoicesQuery = Invoice::search($query)
             ->where('customer_id', $customerId)
-            ->options(self::SEARCH_TUNING)
+            ->options(SearchIrisOrders::SEARCH_TUNING)
             ->take(self::HITS_LIMIT);
 
         if ($shopId) {
-            $ordersQuery->where('shop_id', $shopId);
+            $invoicesQuery->where('shop_id', $shopId);
         }
 
-        return $ordersQuery;
+        return $invoicesQuery;
     }
 
     /**
-     * Index hits and a direct match on the reference are resolved together in one query.
-     *
-     * The index alone is not enough twice over: its hits must be re-checked against the
-     * customer, since a stale document would otherwise expose somebody else's order, and
-     * its candidates for a short prefix are not a superset of the candidates for a longer
-     * one, so "GB5" can miss an order that "GB55" returns. Matching the reference here
-     * as well keeps a broader query from yielding fewer orders, and picks up the
-     * fragments Typesense cannot reach at all ("0706" inside "GB550706").
-     *
-     * Index hits keep their relevance order and lead, direct matches follow by date.
+     * Same safety contract as SearchIrisOrders::hydrate: every index hit is re-checked
+     * against the customer in the database before anything is returned, so a stale
+     * index can never leak another customer's invoice, and the direct reference match
+     * covers fragments the index cannot reach.
      *
      * @param array<int, array<string, mixed>> $documents
      *
@@ -141,25 +119,24 @@ class SearchIrisOrders
             return [];
         }
 
-        $ordersQuery = $this->baseQuery($customerId)
+        $invoicesQuery = $this->baseQuery($customerId)
             ->where(function (QueryBuilder $matchQuery) use ($ids, $like) {
                 if ($ids) {
                     $matchQuery->whereIn('id', $ids);
                 }
                 if ($like) {
-                    $matchQuery->orWhere('reference', 'ilike', $like)
-                        ->orWhere('customer_reference', 'ilike', $like);
+                    $matchQuery->orWhere('reference', 'ilike', $like);
                 }
             });
 
         if ($shopId) {
-            $ordersQuery->where('shop_id', $shopId);
+            $invoicesQuery->where('shop_id', $shopId);
         }
 
-        return $this->mapOrders(
-            $ordersQuery
-                ->with(['shop', 'customerSalesChannel'])
-                ->orderByRaw('array_position(ARRAY['.implode(',', $ids).']::bigint[], orders.id) NULLS LAST')
+        return $this->mapInvoices(
+            $invoicesQuery
+                ->with('shop')
+                ->orderByRaw('array_position(ARRAY['.implode(',', $ids).']::bigint[], invoices.id) NULLS LAST')
                 ->orderByDesc('date')
                 ->limit(self::RESULTS_LIMIT)
                 ->get()
@@ -168,43 +145,40 @@ class SearchIrisOrders
 
     private function baseQuery(int $customerId): EloquentBuilder
     {
-        return Order::query()
+        return Invoice::query()
             ->where('customer_id', $customerId)
-            ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED]);
+            ->where('in_process', false);
     }
 
     /**
-     * @param Collection<int, Order> $orders
+     * @param Collection<int, Invoice> $invoices
      *
      * @return array<int, array<string, mixed>>
      */
-    private function mapOrders(Collection $orders): array
+    private function mapInvoices(Collection $invoices): array
     {
-        return $orders
-            ->map(fn (Order $order) => [
-                'id'                 => $order->id,
-                'code'               => $order->reference,
-                'customer_reference' => $order->customer_reference,
-                'state'              => $order->state->value,
-                'state_label'        => Arr::get(OrderStateEnum::labels(), $order->state->value),
-                'state_icon'         => Arr::get(OrderStateEnum::stateIcon(), $order->state->value),
-                'date'               => $order->date,
-                'total_amount'       => $order->total_amount,
-                'url'                => $this->orderUrl($order),
+        return $invoices
+            ->map(fn (Invoice $invoice) => [
+                'id'           => $invoice->id,
+                'code'         => $invoice->reference,
+                'type'         => $invoice->type->value,
+                'date'         => $invoice->date,
+                'total_amount' => $invoice->total_amount,
+                'url'          => $this->invoiceUrl($invoice),
             ])
             ->all();
     }
 
     /**
-     * Dropshipping storefronts show orders inside their sales channel, ecom ones at the root.
+     * Dropshipping storefronts serve invoices under their own prefix, ecom ones at the root.
      */
-    private function orderUrl(Order $order): string
+    private function invoiceUrl(Invoice $invoice): string
     {
-        if ($order->shop?->type === ShopTypeEnum::DROPSHIPPING && $order->customerSalesChannel) {
-            return '/app/dropshipping/channels/'.$order->customerSalesChannel->slug.'/orders/'.$order->slug;
+        if ($invoice->shop?->type === ShopTypeEnum::DROPSHIPPING) {
+            return '/app/dropshipping/invoices/'.$invoice->slug;
         }
 
-        return '/app/orders/'.$order->slug;
+        return '/app/invoices/'.$invoice->slug;
     }
 
     /**
@@ -217,7 +191,7 @@ class SearchIrisOrders
             ->throw();
 
         if ($error = $response->json('results.0.error')) {
-            logger()->warning("Typesense orders search failed: $error");
+            logger()->warning("Typesense invoices search failed: $error");
 
             return [];
         }

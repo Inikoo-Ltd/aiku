@@ -58,6 +58,14 @@ const props = defineProps<{
             total_amount?: number | string | null
             url: string
         }[]
+        invoices?: {
+            id: number
+            code: string
+            type: string
+            date?: string
+            total_amount?: number | string | null
+            url: string
+        }[]
     } | null
     isLoading: boolean
     query: string
@@ -93,8 +101,9 @@ const gridProducts = computed(() => props.results?.products?.slice(1, 11) ?? [])
 const productCategories = computed(() => props.results?.product_categories?.slice(0, 10) ?? [])
 const collections = computed(() => props.results?.collections?.slice(0, 10) ?? [])
 
-// Only sent by SearchIrisCatalogue when a customer is signed in, and only their own orders
+// Only sent by SearchIrisCatalogue when a customer is signed in, and only their own documents
 const orders = computed(() => props.results?.orders ?? [])
+const invoices = computed(() => props.results?.invoices ?? [])
 
 // "View all results" jumps to the full search page for the current query
 const viewAllUrl = computed(() => `/search?q=${encodeURIComponent(props.query ?? '')}`)
@@ -190,6 +199,26 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                                     <span class="truncate" v-html="order.customer_reference ? highlightMatch(order.customer_reference) : useFormatTime(order.date, { formatTime: 'mdy' })" />
                                     <span v-if="formatPrice(order.total_amount)" class="whitespace-nowrap font-semibold text-[var(--theme-color-0)]">{{ formatPrice(order.total_amount) }}</span>
                                 </div>
+                            </LinkIris>
+                        </div>
+                    </div>
+
+                    <!-- Section: Your invoices -->
+                    <div v-if="invoices.length">
+                        <p class="text-[1.2rem] font-bold text-[var(--theme-color-0)] mb-3">{{ ctrans('Your invoices') }}</p>
+                        <div class="space-y-2">
+                            <LinkIris
+                                v-for="invoice in invoices"
+                                :key="invoice.id"
+                                :href="invoice.url"
+                                class="block rounded-md border border-gray-200 bg-white px-3 py-2 transition-colors hover:border-[var(--theme-color-0)]"
+                                @click="() => { recordClick(invoice.url); model = false }"
+                            >
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-sm font-semibold text-slate-800 truncate" v-html="highlightMatch(invoice.code)" />
+                                    <span v-if="formatPrice(invoice.total_amount)" class="whitespace-nowrap text-xs font-semibold text-[var(--theme-color-0)]">{{ formatPrice(invoice.total_amount) }}</span>
+                                </div>
+                                <div class="mt-0.5 text-xs text-gray-500">{{ useFormatTime(invoice.date, { formatTime: 'mdy' }) }}</div>
                             </LinkIris>
                         </div>
                     </div>

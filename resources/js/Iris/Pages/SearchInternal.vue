@@ -36,6 +36,15 @@ interface InternalOrderItem {
     url: string
 }
 
+interface InternalInvoiceItem {
+    id: number
+    code: string
+    type: string
+    date?: string
+    total_amount?: number | string | null
+    url: string
+}
+
 interface InternalFacetItem {
     id: number
     name: string
@@ -99,8 +108,9 @@ const recordClick = (url?: string | null) => {
 }
 const facets = ref<InternalFacets>(emptyFacets())
 const collections = ref<InternalCatalogueItem[]>([])
-// Only sent by SearchIrisCataloguePage when a customer is signed in, and only their own orders
+// Only sent by SearchIrisCataloguePage when a customer is signed in, and only their own documents
 const orders = ref<InternalOrderItem[]>([])
+const invoices = ref<InternalInvoiceItem[]>([])
 const totalResults = ref(0)
 const currentPage = ref(1)
 const perPage = 15
@@ -123,6 +133,7 @@ const resetResults = () => {
     facets.value = emptyFacets()
     collections.value = []
     orders.value = []
+    invoices.value = []
     totalResults.value = 0
     currentPage.value = 1
 }
@@ -175,6 +186,7 @@ const fetchInternalResults = async ({ pageNumber = 1, append = false, resultsOnl
         }
         if (!append) {
             orders.value = results.orders ?? []
+            invoices.value = results.invoices ?? []
         }
     } catch (error) {
         if (axios.isCancel(error) || requestId !== internalRequestId) {
@@ -471,6 +483,26 @@ const isMobileFilterOpen = ref(false)
                                         <span class="truncate">{{ order.customer_reference || useFormatTime(order.date, { formatTime: 'mdy' }) }}</span>
                                         <span v-if="formatPrice(order.total_amount)" class="whitespace-nowrap font-semibold text-[var(--theme-color-0)]">{{ formatPrice(order.total_amount) }}</span>
                                     </div>
+                                </LinkIris>
+                            </div>
+                        </div>
+
+                        <!-- Your invoices: only present for a signed in customer -->
+                        <div v-if="invoices.length" class="mt-4">
+                            <p class="text-base font-bold text-[var(--theme-color-0)] mb-2.5">{{ ctrans('Your invoices') }}</p>
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <LinkIris
+                                    v-for="invoice in invoices"
+                                    :key="invoice.id"
+                                    :href="invoice.url"
+                                    class="block rounded-md border border-gray-200 bg-white px-3 py-2.5 transition-colors hover:border-[var(--theme-color-0)]"
+                                    @click="() => recordClick(invoice.url)"
+                                >
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-sm font-semibold text-slate-800 truncate">{{ invoice.code }}</span>
+                                        <span v-if="formatPrice(invoice.total_amount)" class="whitespace-nowrap text-xs font-semibold text-[var(--theme-color-0)]">{{ formatPrice(invoice.total_amount) }}</span>
+                                    </div>
+                                    <div class="mt-0.5 text-xs text-gray-500">{{ useFormatTime(invoice.date, { formatTime: 'mdy' }) }}</div>
                                 </LinkIris>
                             </div>
                         </div>
