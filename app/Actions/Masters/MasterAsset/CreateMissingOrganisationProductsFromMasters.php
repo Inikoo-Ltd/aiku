@@ -42,7 +42,7 @@ class CreateMissingOrganisationProductsFromMasters
     /**
      * @return array{masters: int, created: int, changes: list<string>, failures: list<string>}
      */
-    public function handle(Organisation $organisation, Shop $referenceShop, bool $dryRun = true): array
+    public function handle(Organisation $organisation, Shop $referenceShop, bool $dryRun = true, ?int $limit = null, ?callable $report = null): array
     {
         /*
          * Open shops only: creating the shop's copy of a master family is limited to
@@ -79,8 +79,12 @@ class CreateMissingOrganisationProductsFromMasters
                 ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
                 ->where('is_for_sale', true))
             ->with('masterFamily')
-            ->chunkById(200, function ($masterAssets) use ($targetShops, $dryRun, &$masters, &$created, &$changes, &$failures) {
+            ->chunkById(50, function ($masterAssets) use ($targetShops, $dryRun, $limit, $report, &$masters, &$created, &$changes, &$failures) {
                 foreach ($masterAssets as $masterAsset) {
+                    if ($limit && $created >= $limit) {
+                        return false;
+                    }
+
                     if (!$masterAsset->masterFamily) {
                         continue;
                     }
@@ -93,12 +97,14 @@ class CreateMissingOrganisationProductsFromMasters
                     }
 
                     $masters++;
-                    foreach ($missingShops as $shop) {
-                        $created++;
-                        $changes[] = $masterAsset->code.' → '.$shop->code;
-                    }
 
                     if ($dryRun) {
+                        foreach ($missingShops as $shop) {
+                            $created++;
+                            $changes[] = $masterAsset->code.' → '.$shop->code;
+                            $report && $report($masterAsset->code.' → '.$shop->code);
+                        }
+
                         continue;
                     }
 
@@ -111,11 +117,22 @@ class CreateMissingOrganisationProductsFromMasters
                     foreach ($missingShops as $shop) {
                         try {
                             $this->createIn($masterAsset, collect([$shop]));
+                            $created++;
+                            $changes[] = $masterAsset->code.' → '.$shop->code;
+                            $report && $report($masterAsset->code.' → '.$shop->code);
                         } catch (Throwable $exception) {
-                            $created--;
                             $failures[] = $masterAsset->code.' → '.$shop->code.': '.$exception->getMessage();
+                            $report && $report('FAILED '.$masterAsset->code.' → '.$shop->code.': '.$exception->getMessage());
                         }
                     }
+
+                    /*
+                     * Relations are dropped as we go: this walks tens of thousands of
+                     * masters and each one drags its family, its shop copies and every
+                     * product created from it, which is what exhausted memory before.
+                     */
+                    $masterAsset->unsetRelation('masterFamily');
+                    $masterAsset->unsetRelation('products');
                 }
             });
 
@@ -195,7 +212,7 @@ class CreateMissingOrganisationProductsFromMasters
 
     public function getCommandSignature(): string
     {
-        return 'master_product:create_missing_organisation_products {organisation} {--reference_shop=eu} {--apply}';
+        return 'master_product:create_missing_organisation_products {organisation} {--reference_shop=eu} {--apply} {--limit=}';
     }
 
     public function asCommand(Command $command): int
@@ -212,18 +229,32 @@ class CreateMissingOrganisationProductsFromMasters
         }
 
         $dryRun = !$command->option('apply');
-        $result = $this->handle($organisation, $referenceShop, $dryRun);
+        $limit  = $command->option('limit') ? (int)$command->option('limit') : null;
+
+        /*
+         * Reported as it goes, not at the end: an interrupted sweep used to leave no
+         * trace of what it had already done.
+         */
+        $result = $this->handle(
+            $organisation,
+            $referenceShop,
+            $dryRun,
+            $limit,
+            $dryRun ? null : fn (string $line) => $command->line('  '.$line)
+        );
 
         $command->info(($dryRun ? 'DRY RUN — ' : '')
             .$result['created'].' products '.($dryRun ? 'would be ' : '').'created across '
             .$result['masters'].' masters, from '.$referenceShop->code
             .' ('.MasterShop::find($referenceShop->master_shop_id)?->slug.')');
 
-        foreach (array_slice($result['changes'], 0, 40) as $change) {
-            $command->line('  '.$change);
-        }
-        if (count($result['changes']) > 40) {
-            $command->line('  … and '.(count($result['changes']) - 40).' more');
+        if ($dryRun) {
+            foreach (array_slice($result['changes'], 0, 40) as $change) {
+                $command->line('  '.$change);
+            }
+            if (count($result['changes']) > 40) {
+                $command->line('  … and '.(count($result['changes']) - 40).' more');
+            }
         }
 
         if ($result['failures']) {
