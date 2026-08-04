@@ -21,6 +21,7 @@ use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Throwable;
 
 /**
  * Creates the products an organisation's shops are missing, from the masters a
@@ -39,7 +40,7 @@ class CreateMissingOrganisationProductsFromMasters
     use AsAction;
 
     /**
-     * @return array{masters: int, created: int, changes: list<string>}
+     * @return array{masters: int, created: int, changes: list<string>, failures: list<string>}
      */
     public function handle(Organisation $organisation, Shop $referenceShop, bool $dryRun = true): array
     {
@@ -54,12 +55,13 @@ class CreateMissingOrganisationProductsFromMasters
             ->get();
 
         if ($targetShops->isEmpty()) {
-            return ['masters' => 0, 'created' => 0, 'changes' => []];
+            return ['masters' => 0, 'created' => 0, 'changes' => [], 'failures' => []];
         }
 
-        $masters = 0;
-        $created = 0;
-        $changes = [];
+        $masters  = 0;
+        $created  = 0;
+        $changes  = [];
+        $failures = [];
 
         MasterAsset::where('master_shop_id', $referenceShop->master_shop_id)
             ->where('type', MasterAssetTypeEnum::PRODUCT)
@@ -69,7 +71,7 @@ class CreateMissingOrganisationProductsFromMasters
                 ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
                 ->where('is_for_sale', true))
             ->with('masterFamily')
-            ->chunkById(200, function ($masterAssets) use ($targetShops, $dryRun, &$masters, &$created, &$changes) {
+            ->chunkById(200, function ($masterAssets) use ($targetShops, $dryRun, &$masters, &$created, &$changes, &$failures) {
                 foreach ($masterAssets as $masterAsset) {
                     if (!$masterAsset->masterFamily) {
                         continue;
@@ -92,11 +94,24 @@ class CreateMissingOrganisationProductsFromMasters
                         continue;
                     }
 
-                    $this->createIn($masterAsset, $missingShops);
+                    /*
+                     * One shop that cannot take a product — a webpage url already used,
+                     * a family that will not build — must not end a sweep of hundreds:
+                     * it is recorded and the rest continue. Re-running resumes, since
+                     * products that now exist are skipped.
+                     */
+                    foreach ($missingShops as $shop) {
+                        try {
+                            $this->createIn($masterAsset, collect([$shop]));
+                        } catch (Throwable $exception) {
+                            $created--;
+                            $failures[] = $masterAsset->code.' → '.$shop->code.': '.$exception->getMessage();
+                        }
+                    }
                 }
             });
 
-        return ['masters' => $masters, 'created' => $created, 'changes' => $changes];
+        return ['masters' => $masters, 'created' => $created, 'changes' => $changes, 'failures' => $failures];
     }
 
     private function createIn(MasterAsset $masterAsset, $missingShops): void
@@ -196,6 +211,17 @@ class CreateMissingOrganisationProductsFromMasters
         }
         if (count($result['changes']) > 40) {
             $command->line('  … and '.(count($result['changes']) - 40).' more');
+        }
+
+        if ($result['failures']) {
+            $command->newLine();
+            $command->warn(count($result['failures']).' could not be created:');
+            foreach (array_slice($result['failures'], 0, 30) as $failure) {
+                $command->line('  '.$failure);
+            }
+            if (count($result['failures']) > 30) {
+                $command->line('  … and '.(count($result['failures']) - 30).' more');
+            }
         }
 
         return 0;
