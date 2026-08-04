@@ -15,14 +15,14 @@ import TaxSweepProgressModal from "@/Components/Utils/TaxSweepProgressModal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight, faUndoAlt } from "@fal"
+import { faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight, faUndoAlt, faExclamationTriangle } from "@fal"
 import { taxPresetIcon } from "@/Composables/taxPresets"
 
-library.add(faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight, faUndoAlt)
+library.add(faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight, faUndoAlt, faExclamationTriangle)
 
-// The bulk edit tab: fields that make sense across many rows, tax first. Texts and the unit
-// label are edited straight in the cell like a spreadsheet; tax opens the same card picker the
-// product edit page uses, for one row or for the whole selection.
+// The bulk edit tab: fields that make sense across many rows, tax first. Each row shows a
+// mini version of the preset card; clicking it, or editing a whole selection, opens the
+// same card picker the product edit page uses.
 const props = defineProps<{
     data: any
     tab?: string
@@ -45,9 +45,7 @@ const PRESET_META: Record<string, { icon: any; title: string }> = {
 
 const presetMeta = (value: string) => PRESET_META[value] ?? PRESET_META.standard
 
-// Every editable cell is an input from the start, spreadsheet style. Nothing is sent until the
-// page-head save button fires; until then a touched field stays amber and keeps its old value
-// one undo away, keyed by product id so edits survive paging away and back.
+// editable fields
 type EditableField = 'name' | 'description' | 'description_extra' | 'unit'
 
 const pendingEdits = ref<Record<number, { code: string; fields: Partial<Record<EditableField, any>> }>>({})
@@ -79,6 +77,24 @@ const setFieldValue = (item: any, field: EditableField, value: any) => {
         delete pendingEdits.value[item.id]
     }
 }
+
+// Names are not unique in the database, so a clash is only a warning. It is checked over the rows
+const namesOnPage = computed(() => {
+    const codesByName = new Map<string, string[]>()
+
+    for (const item of props.data?.data ?? []) {
+        const name = fieldValue(item, 'name').trim().toLowerCase()
+        if (name) {
+            codesByName.set(name, [...(codesByName.get(name) ?? []), item.code])
+        }
+    }
+
+    return codesByName
+})
+
+const sameNameAs = (item: any): string[] =>
+    (namesOnPage.value.get(fieldValue(item, 'name').trim().toLowerCase()) ?? [])
+        .filter((code) => code !== item.code)
 
 const EditorV2 = defineAsyncComponent(() => import("@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"))
 
@@ -134,6 +150,19 @@ const revertFields = (item: any, fields: EditableField[]) => {
 
 const saveEdits = async () => {
     if (isSavingEdits.value) return
+
+    const clashing = (props.data?.data ?? [])
+        .filter((item: any) => isFieldDirty(item, 'name') && sameNameAs(item).length)
+
+    if (clashing.length) {
+        notify({
+            title: trans("Cannot save"),
+            text: trans("Same name on :codes, fix them first", { codes: clashing.map((item: any) => item.code).join(', ') }),
+            type: "error",
+        })
+
+        return
+    }
 
     const entries = Object.entries(pendingEdits.value)
     if (!entries.length) return
@@ -299,7 +328,7 @@ const onSave = async (presetValue: string) => {
                     :src="item.image_thumbnail"
                     class="mt-0.5 w-9 aspect-square shrink-0 rounded overflow-hidden shadow"
                 />
-                <div class="flex min-w-[14rem] flex-col gap-y-2">
+                <div class="flex w-full min-w-[11rem] flex-col gap-y-2">
                     <div class="flex items-start gap-x-2">
                         <PureInput
                             class="cell-input"
@@ -308,6 +337,11 @@ const onSave = async (presetValue: string) => {
                             :maxLength="250"
                             :disabled="isSavingEdits"
                             @update:modelValue="(value: any) => setFieldValue(item, 'name', value)" />
+                        <FontAwesomeIcon
+                            v-if="sameNameAs(item).length"
+                            :icon="faExclamationTriangle"
+                            class="mt-1.5 h-3 w-3 shrink-0 text-amber-500"
+                            v-tooltip="trans('Same name as :codes', { codes: sameNameAs(item).join(', ') })" />
                         <button
                             v-if="isFieldDirty(item, 'name')"
                             type="button"
@@ -334,7 +368,7 @@ const onSave = async (presetValue: string) => {
         <template v-for="field in RICH_TEXT_FIELDS" :key="field" #[`cell(${field})`]="{ item }">
             <div class="flex items-start gap-x-1">
                 <div
-                    class="w-full min-w-[16rem] rounded-md px-1.5 py-1 ring-1 ring-transparent hover:ring-gray-300"
+                    class="w-full min-w-[11rem] rounded-md px-1.5 py-1 ring-1 ring-transparent hover:ring-gray-300"
                     :class="[
                         dirtyField(isFieldDirty(item, field)),
                         activeEditorCell === cellKey(item, field) ? 'ring-indigo-400' : '',
