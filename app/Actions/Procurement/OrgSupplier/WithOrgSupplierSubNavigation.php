@@ -19,7 +19,7 @@ trait WithOrgSupplierSubNavigation
 
         return [
             [
-                'label'    => $parent->slug,
+                'label'    => $parent->supplier->code,
                 'route'    => [
                     'name'       => 'grp.org.procurement.org_suppliers.show',
                     'parameters' => $routeParameters,

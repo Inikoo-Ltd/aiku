@@ -16,6 +16,7 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQua
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProducts;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePurchaseOrders;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateValueInLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateWeekOfCover;
@@ -44,6 +45,7 @@ class HydrateOrgStock
         OrgStockHydrateMovements::run($orgStock);
         OrgStockHydrateProductsAvailableQuantity::run($orgStock);
         OrgStockHydratePackedIn::run($orgStock);
+        OrgStockHydrateSkuValue::run($orgStock);
         OrgStockHydrateStockValue::run($orgStock);
         OrgStockHydratePurchaseOrders::run($orgStock);
         OrgStockHydrateWeekOfCover::run($orgStock);

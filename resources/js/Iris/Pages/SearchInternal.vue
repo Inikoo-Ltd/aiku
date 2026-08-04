@@ -352,7 +352,7 @@ const isMobileFilterOpen = ref(false)
 </script>
 
 <template>
-    <div class="xmd:py-16 w-full mx-auto px-8">
+    <div class="xmd:py-16 w-full mx-auto px-4 md:px-8">
         <div id="lb-search-element" class="md:mt-4 min-h-44">
             <div v-if="layout.app.environment === 'local'" class="bg-yellow-500 w-full text-center py-1 rounded">
                 Internal search
@@ -544,7 +544,7 @@ const isMobileFilterOpen = ref(false)
 
                         <!-- Section: Results (same product card as the family page) -->
                         <div v-else-if="products.length" xstyle="gridColsVars"
-                            class="xproducts-grid grid-cols-1 lg:grid-cols-4 grid gap-x-4 gap-y-10 transition-opacity bg-gray-100 p-4 rounded-md"
+                            class="xproducts-grid grid-cols-2 lg:grid-cols-4 grid gap-x-6 gap-y-10 transition-opacity bg-gray-100 p-4 rounded-md"
                             :class="isResultsRefreshing ? 'opacity-60 pointer-events-none' : ''">
                             <div v-for="product in products" :key="product.id"
                                 :style="getStyles(fieldValue?.card_product?.properties, screenType)"

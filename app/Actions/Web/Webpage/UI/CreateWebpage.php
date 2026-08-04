@@ -62,6 +62,48 @@ class CreateWebpage extends OrgAction
                 'parameters' => [$this->scope->id, $parent->id]
             ];
         }
+        $isBlog = str_contains($request->route()->getName(), '.blogs.');
+
+        $fields = [
+            'code' => [
+                'type'     => 'input',
+                'label'    => __('Code'),
+                'value'    => '',
+                'required' => true,
+            ],
+            'title' => [
+                'type'     => 'input',
+                'label'    => __('title'),
+                'value'    => '',
+                'required' => true,
+            ],
+            'url' => [
+                'type'      => 'inputWithAddOn',
+                'label'     => __('URL'),
+                'label_no_capitalize' => true,
+                'leftAddOn' => [
+                    'label' => 'https://' . ($parent instanceof Webpage ? $parent->website->domain : $parent->domain) . '/'
+                ],
+                'value'     => '',
+                'required'  => true,
+            ],
+        ];
+
+        if ($isBlog) {
+            $fields['sub_type'] = [
+                'type'        => 'select',
+                'label'       => __('Blog Category'),
+                'placeholder' => __('Select a blog category'),
+                'mode'        => 'single',
+                'options'     => [
+                    ['value' => 'davids_travel_blog', 'label' => __("David's Travel Blog")],
+                    ['value' => 'tips', 'label' => __('Tips')],
+                ],
+                'value'       => '',
+                'required'    => true,
+            ];
+        }
+
         return Inertia::render(
             'CreateModel',
             [
@@ -103,30 +145,7 @@ class CreateWebpage extends OrgAction
                         [
                             'title'  => __('Id'),
                             'icon'   => ['fal', 'fa-fingerprint'],
-                            'fields' => [
-                                'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('Code'),
-                                    'value'    => '',
-                                    'required' => true,
-                                ],
-                                'title' => [
-                                    'type'     => 'input',
-                                    'label'    => __('title'),
-                                    'value'    => '',
-                                    'required' => true,
-                                ],
-                                'url' => [
-                                    'type'      => 'inputWithAddOn',
-                                    'label'     => __('URL'),
-                                    'label_no_capitalize' => true,
-                                    'leftAddOn' => [
-                                        'label' => 'https://' . ($parent instanceof Webpage ? $parent->website->domain : $parent->domain) . '/'
-                                    ],
-                                    'value'     => '',
-                                    'required'  => true,
-                                ],
-                            ]
+                            'fields' => $fields
                         ]
                     ],
                     'route'     => $route,

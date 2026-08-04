@@ -83,6 +83,8 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             foreach ($orgStock->products as $product) {
                 ProductHydrateAvailableQuantity::run($product);
             }
+
+            OrgStockHydrateStockValue::dispatch($orgStock);
         }
 
         if ($orgStock->wasChanged('quantity_in_locations')) {

@@ -155,6 +155,21 @@ class EditWebpage extends OrgAction
             ],
         ];
 
+        if ($isBlog) {
+            $fields['sub_type'] = [
+                'type'        => 'select',
+                'label'       => __('Blog Category'),
+                'placeholder' => __('Select a blog category'),
+                'mode'        => 'single',
+                'options'     => [
+                    ['value' => 'davids_travel_blog', 'label' => __("David's Travel Blog")],
+                    ['value' => 'tips', 'label' => __('Tips')],
+                ],
+                'value'       => $webpage->sub_type?->value ?? '',
+                'required'    => true,
+            ];
+        }
+
         $inVariant = false;
 
         if ($webpage->model_type == 'Product') {
