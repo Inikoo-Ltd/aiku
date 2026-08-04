@@ -55,7 +55,7 @@ class ShowWebsiteSearchAnalytics extends OrgAction
         return QueryBuilder::for(WebsiteSearchLog::class)
             ->where('website_search_logs.website_id', $website->id)
             ->join('customers', 'customers.id', '=', 'website_search_logs.customer_id')
-            ->selectRaw('customers.name as customer_name, customers.slug as customer_slug, count(*) as searches, count(website_search_logs.clicked_at) as clicks, count(*) filter (where website_search_logs.results_count = 0) as zero_results, max(website_search_logs.created_at) as last_searched_at')
+            ->selectRaw('customers.name as customer_name, customers.slug as customer_slug, count(*) as searches, count(website_search_logs.clicked_at) as clicks, count(*) filter (where website_search_logs.keyword_results_count = 0) as zero_results, max(website_search_logs.created_at) as last_searched_at')
             ->groupBy('customers.name', 'customers.slug')
             ->defaultSort('-searches')
             ->allowedSorts(['customer_name', 'searches', 'clicks', 'zero_results', 'last_searched_at'])

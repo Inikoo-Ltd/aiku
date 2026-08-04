@@ -20,7 +20,10 @@ class StoreWebsiteSearchLog
     {
         $refined = $this->refinedLog($modelData);
         if ($refined) {
-            $refined->update(Arr::only($modelData, ['ulid', 'query', 'scope', 'results_count']));
+            $refined->update(Arr::only($modelData, [
+                'ulid', 'query', 'scope',
+                'results_count', 'keyword_results_count', 'vector_results_count',
+            ]));
 
             return $refined;
         }
