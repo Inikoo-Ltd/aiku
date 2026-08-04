@@ -110,22 +110,32 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
             $masterShop = MasterShop::where('slug', $masterShopSlug)->first();
         }
 
-        $total = MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)
-            ->when(
-                $masterShop,
-                fn ($q) => $q->where('master_shop_id', $masterShop->id)
-            )
-            ->count();
+        /*
+         * Inactive masters are cleared in one statement rather than walked: they are 28,598
+         * of aw's 40,436 and nothing reports on them, but a flag left set from before they
+         * closed would keep showing.
+         */
+        $clearedInactive = MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)
+            ->when($masterShop, fn ($q) => $q->where('master_shop_id', $masterShop->id))
+            ->where('status', false)
+            ->where(fn ($q) => $q->where('mismatch_detected', true)->orWhereNull('mismatch_detected'))
+            ->update(['mismatch_detected' => false]);
+
+        if ($clearedInactive) {
+            $command->info($clearedInactive.' inactive masters cleared');
+        }
+
+        $baseQuery = fn () => MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)
+            ->when($masterShop, fn ($q) => $q->where('master_shop_id', $masterShop->id))
+            ->where('status', true);
+
+        $total = $baseQuery()->count();
 
         $bar   = $command->getOutput()->createProgressBar($total);
         $bar->setFormat('debug');
         $bar->start();
 
-        MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)
-            ->when(
-                $masterShop,
-                fn ($q) => $q->where('master_shop_id', $masterShop->id)
-            )
+        $baseQuery()
             ->orderBy('id')
             ->chunkById(1000, function ($masterProducts) use ($bar) {
                 foreach ($masterProducts as $masterProduct) {
