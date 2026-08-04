@@ -69,6 +69,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
+        $schedule->command('chat:prune-agent-presence')->everyMinute()->onOneServer()->withoutOverlapping();
 
         if (config('app.master')) {
             $this->logSchedule(
