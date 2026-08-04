@@ -18,6 +18,7 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\FamiliesNeedReviewsResource;
@@ -233,9 +234,11 @@ class IndexFamilies extends OrgAction
                         'end_at', o.end_at
                     )
                     FROM offers o
+                    JOIN offer_campaigns oc ON oc.id = o.offer_campaign_id
                     WHERE o.trigger_type = 'ProductCategory'
                         AND o.trigger_id = product_categories.id
                         AND o.deleted_at IS NULL
+                        AND oc.type != '".OfferCampaignTypeEnum::VOLUME_DISCOUNT->value."'
                     ORDER BY o.start_at DESC NULLS LAST, o.id DESC
                     LIMIT 1
                 )::text as last_offer"
@@ -270,19 +273,19 @@ class IndexFamilies extends OrgAction
                         public function __invoke(Builder $query, bool $descending, string $property)
                         {
                             $direction = $descending ? 'desc' : 'asc';
-                            $query->orderBy(
-                                DB::raw(
-                                    "(
+                            $query->orderByRaw(
+                                "(
                                 SELECT o.start_at
                                 FROM offers o
+                                JOIN offer_campaigns oc ON oc.id = o.offer_campaign_id
                                 WHERE o.trigger_type = 'ProductCategory'
                                 AND o.trigger_id = product_categories.id
                                 AND o.deleted_at IS NULL
+                                AND oc.type != ?
                                 ORDER BY o.start_at DESC NULLS LAST, o.id DESC
                                 LIMIT 1
-                            )"
-                                ),
-                                $direction
+                            ) $direction NULLS LAST",
+                                [OfferCampaignTypeEnum::VOLUME_DISCOUNT->value]
                             );
                         }
                     }
