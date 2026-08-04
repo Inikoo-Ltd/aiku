@@ -538,3 +538,55 @@ test('the organisation composition fixer aligns drifted shops and reports before
         ->and($drifted->audits()->where('event', 'units_aligned_to_master')->exists())->toBeTrue()
         ->and($aligned->audits()->where('event', 'units_aligned_to_master')->exists())->toBeFalse();
 });
+
+test('the missing product sweep picks the right shops and reports before creating anything', function () {
+    /*
+     * Which shops and masters get picked is the risky part and is asserted here; the
+     * creation itself delegates to StoreProductFromMasterProduct, the same action the
+     * "Add to Other Shop" screen uses. Building a second fully provisioned shop is not
+     * possible in this suite, so the apply path is exercised on staging instead.
+     */
+    $makeShop = fn (string $prefix, ?int $masterShopId) => App\Models\Catalogue\Shop::factory()->create([
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'code'            => $prefix.substr(uniqid(), -5),
+        'currency_id'     => $this->shop->currency_id,
+        'master_shop_id'  => $masterShopId,
+        'state'           => App\Enums\Catalogue\Shop\ShopStateEnum::OPEN,
+    ]);
+
+    $sibling       = $makeShop('SIB', $this->masterShop->id);
+    $otherMaster   = $makeShop('OTH', StoreMasterShop::make()->action($this->group, [
+        'type' => ShopTypeEnum::B2B,
+        'code' => 'OMS'.substr(uniqid(), -6),
+        'name' => 'Other master shop',
+    ])->id);
+    $closedSibling = $makeShop('CLO', $this->masterShop->id);
+    $closedSibling->updateQuietly(['state' => App\Enums\Catalogue\Shop\ShopStateEnum::CLOSED]);
+
+    $reference = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10);
+    $reference->updateQuietly(['is_for_sale' => true]);
+    $this->masterAsset->updateQuietly(['master_family_id' => $this->masterFamily->id]);
+
+    $notForSale = StoreMasterAsset::make()->action($this->masterFamily, [
+        'code'    => 'MM-NFS',
+        'name'    => 'not sold in the reference shop',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $result = App\Actions\Masters\MasterAsset\CreateMissingOrganisationProductsFromMasters::run(
+        $this->organisation,
+        $this->shop,
+        dryRun: true
+    );
+
+    expect($result['changes'])->toContain($this->masterAsset->code.' → '.$sibling->code)
+        ->and($result['changes'])->not->toContain($this->masterAsset->code.' → '.$otherMaster->code)
+        ->and($result['changes'])->not->toContain($this->masterAsset->code.' → '.$closedSibling->code)
+        ->and(collect($result['changes'])->filter(fn ($change) => str_starts_with($change, $notForSale->code)))->toBeEmpty()
+        ->and(App\Models\Catalogue\Product::where('shop_id', $sibling->id)
+            ->where('master_product_id', $this->masterAsset->id)->exists())->toBeFalse();
+});
