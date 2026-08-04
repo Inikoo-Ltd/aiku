@@ -7,39 +7,16 @@ import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
 /* import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue" */
 
-const RELOADED_KEY = "iris:chunk-reloaded"
-
-const isBrowser = (): boolean => typeof window !== "undefined" && typeof sessionStorage !== "undefined"
-
-// ponytail: a deploy replaces the hashed chunks, so a tab opened before it asks for a file that is gone.
-// One retry covers a flaky network; the reload picks up the new manifest. The flag caps it at one reload
-// per successful streak so a chunk that is genuinely broken cannot loop the page.
-const loadWithRecovery = async (loader: () => Promise<any>): Promise<any> => {
-	try {
-		const module = await loader()
-
-		if (isBrowser()) {
-			sessionStorage.removeItem(RELOADED_KEY)
-		}
-
-		return module
-	} catch {
-		try {
-			return await loader()
-		} catch (error) {
-			if (isBrowser() && !sessionStorage.getItem(RELOADED_KEY)) {
-				sessionStorage.setItem(RELOADED_KEY, "1")
-				window.location.reload()
-			}
-
-			throw error
-		}
-	}
-}
+// ponytail: a dynamic import that loses its request permanently kills the block, and for header-1 that is
+// the site header. One delayed retry covers the transient case. Deliberately no reload: deploys copy the
+// old chunks forward, so a missing file is not the cause, and a forced reload would throw away whatever
+// the customer had typed.
+const retryOnce = (loader: () => Promise<any>): Promise<any> =>
+	loader().catch(() => new Promise((resolve) => setTimeout(resolve, 250)).then(() => loader()))
 
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
-		loader: () => loadWithRecovery(loader),
+		loader: () => retryOnce(loader),
 		delay: 200,
 		timeout: 15000,
 	})
