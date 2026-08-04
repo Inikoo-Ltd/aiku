@@ -115,12 +115,37 @@ class CreateMissingOrganisationProductsFromMasters
                      * products that now exist are skipped.
                      */
                     foreach ($missingShops as $shop) {
+                        /*
+                         * Re-checked immediately before creating, not just when the master
+                         * was picked up: creating one product can bring its siblings into
+                         * the same shop, and the stale list then insists on a duplicate.
+                         */
+                        if ($masterAsset->products()->where('shop_id', $shop->id)->exists()) {
+                            continue;
+                        }
+
                         try {
                             $this->createIn($masterAsset, collect([$shop]));
                             $created++;
                             $changes[] = $masterAsset->code.' → '.$shop->code;
                             $report && $report($masterAsset->code.' → '.$shop->code);
                         } catch (Throwable $exception) {
+                            /*
+                             * A shop holding two copies of the same master family — eleven
+                             * pairs do, from code typos like iBackfI against iBackFl — makes
+                             * the creation run twice and the second insert hit the slug
+                             * constraint. The first one worked, so the product is there.
+                             */
+                            $exists = $masterAsset->products()->where('shop_id', $shop->id)->exists();
+
+                            if ($exists) {
+                                $created++;
+                                $changes[] = $masterAsset->code.' → '.$shop->code;
+                                $report && $report($masterAsset->code.' → '.$shop->code.' (created, duplicate family copy in shop)');
+
+                                continue;
+                            }
+
                             $failures[] = $masterAsset->code.' → '.$shop->code.': '.$exception->getMessage();
                             $report && $report('FAILED '.$masterAsset->code.' → '.$shop->code.': '.$exception->getMessage());
                         }
