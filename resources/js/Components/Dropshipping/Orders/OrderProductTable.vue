@@ -274,15 +274,34 @@ defineExpose({
 
 const updateQuantityOrdered = (item: ProductRow) => {
     if (item.quantity_ordered == createNewQty[item.id].quantity_ordered) {
-        return;
+        editingIds.value.delete(item.id)
+        return
     }
 
     router.patch(route('grp.models.transaction.update_quantity_ordered', {
         transaction: item.id
     }), {
         quantity_ordered: createNewQty[item.id].quantity_ordered
-    });
-    console.log(item);
+    }, {
+        preserveScroll: true,
+        onStart: () => (loadingsaveModify.value = true),
+        onFinish: () => (loadingsaveModify.value = false),
+        onSuccess: () => {
+            editingIds.value.delete(item.id)
+            notify({
+                title: trans("Success"),
+                text: trans("Quantity updated, warehouse has been notified"),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: Object.values(errors).join(", ") || trans("Failed to update quantity"),
+                type: "error"
+            })
+        }
+    })
 }
 
 
@@ -768,16 +787,17 @@ const isOffersData = (offersData: any): boolean => {
                         />
                         <Button 
                             v-if="editingIds.has(item.id)" 
-                            :style="'save'" 
+                            :style="'save'"
                             :hide_label="true"
                             v-tooltip="'Save changes'"
-                            size="sm" 
+                            size="sm"
                             aria-label="Save changes"
+                            :loading="loadingsaveModify"
                             @click="updateQuantityOrdered(item)"
                         />
-                        <!-- <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative"
+                        <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative"
                                 v-tooltip="'delete'" :icon="faTrashAlt" @click="() => onDeleteNewRow(item.rowIndex)"
-                                size="sm" /> -->
+                                size="sm" />
                     </div>
                 </div>
             </template>

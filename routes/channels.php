@@ -141,7 +141,7 @@ Broadcast::channel("grp.{organisation}.stock_movement", function () {
     return true;
 });
 
-Broadcast::channel("grp.{order}.transaction_update", function () {
+Broadcast::channel("grp.{order}.transaction_update", function (User $user) {
     return true;
 });
 

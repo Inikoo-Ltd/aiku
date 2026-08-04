@@ -68,10 +68,12 @@ class StorePicking extends OrgAction
 
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
-        $deliveryNoteItem->updateQuietly([
-            'is_dirty'      => false,
-        ]);
         $deliveryNoteItem->refresh();
+        if ($deliveryNoteItem->is_dirty && $deliveryNoteItem->quantity_picked >= $deliveryNoteItem->quantity_required) {
+            $deliveryNoteItem->updateQuietly([
+                'is_dirty' => false,
+            ]);
+        }
         $newPickingQuantity = (int)$deliveryNoteItem->quantity_picked;
 
         $productCode = $deliveryNoteItem->orgStock?->code ?? 'Unknown Item';
@@ -86,7 +88,7 @@ class StorePicking extends OrgAction
             newValue: $newAuditString,
             eventName: 'item_picked'
         );
-        
+
         $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
         return $picking;

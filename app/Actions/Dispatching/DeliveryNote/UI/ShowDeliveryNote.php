@@ -1128,7 +1128,7 @@ class ShowDeliveryNote extends OrgAction
             'allow_waiting'               => $allowWaiting,
             'allow_picker_set_not_picked' => !$allowWaiting || (data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false)),
             'showChangePickerPacker'      => $showChangePickerPacker,
-            'order_slug'                  => $deliveryNote->orders->first()->slug,
+            'order_slug'                  => $deliveryNote->orders->first()?->slug,
 
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))

@@ -11,7 +11,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { Link, router, usePage } from "@inertiajs/vue3";
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { computed, nextTick, onMounted, onUnmounted, ref, Transition, watch, reactive, inject, useSlots } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, Transition, watch, reactive, inject } from 'vue'
 import qs from 'qs'
 import clone from 'lodash-es/clone'
 import filter from 'lodash-es/filter'
@@ -1031,7 +1031,7 @@ const getSeverity = (type?: string) => {
                                     getSeverity(warning.type) === 'error' ? 'text-red-500' :
                                         'text-blue-500'
                         ]" class="text-sm">
-                            <div v-html="warning?.text"/>
+                            {{ warning?.text }}
                         </div>
                     </div>
                 </div>

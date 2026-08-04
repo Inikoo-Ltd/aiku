@@ -241,7 +241,10 @@ class ShowOrder extends OrgAction
             :
             GetEcomOrderActions::run($order, $this->canEdit);
 
-        $allowOrderModification = $this->canEdit && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
+        $allowOrderModification = $this->canEdit
+            && $order->shop->type != ShopTypeEnum::EXTERNAL
+            && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
+            && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
 
         if ($order->state != OrderStateEnum::CANCELLED) {
             $wrapped_actions = [

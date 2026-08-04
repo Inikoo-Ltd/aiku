@@ -696,9 +696,7 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 }
 
 const hasDirtyDeliveryNoteItem = computed(() => {
-    return Object.entries(props.data.data).some(([key, item]) => {
-            return item.is_dirty;
-        });
+    return Object.values(props.data?.data ?? {}).some((item: any) => item.is_dirty);
 });
 
 </script>

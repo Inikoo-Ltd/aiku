@@ -154,7 +154,7 @@ const props = defineProps<{
 	is_faire_order : boolean
 	showChangePickerPacker: boolean
 	is_editable: boolean  // To distinguish DN in Shops and DN in Wwarehouse
-	order_slug: string
+	order_slug?: string
 	consumables?: { code: string, quantity: number }[]
 	scan_to_pack?: {
 		scan_route: routeType
@@ -440,26 +440,26 @@ let socketChannelTwo: any = null
 let socketChannelTwoEvent: string | null = null
 
 const initSocketListener = () => {
-    const socketEvent = `grp.${props.order_slug}.transaction_update`;
 	const socketConfig = selectSocketBasedPlatform(props.delivery_note)
 
     if (!socketConfig) {
         console.warn('Socket config not found for platform:', props.delivery_note.id)
     }
-        
 
-    if (['finalised', 'dispatched', 'cancelled'].includes(props.delivery_note.state)) return; // No need initiate listener if finished finished
+    if (['finalised', 'dispatched', 'cancelled'].includes(props.delivery_note.state)) return; // No need initiate listener if finished
 
-    socketChannel = window.Echo
-		.private(socketEvent)
-		.listen(".transaction_update", async (eventData: any) => {
-			notify({
-				title: eventData.title,
-				text: eventData.body,
-				type: 'warn'
-			})
-        	debReloadPage()
-    });
+    if (props.order_slug) {
+        socketChannel = window.Echo
+            .private(`grp.${props.order_slug}.transaction_update`)
+            .listen(".transaction_update", async (eventData: any) => {
+                notify({
+                    title: eventData.title,
+                    text: eventData.body,
+                    type: 'warn'
+                })
+                debReloadPage()
+            });
+    }
 
 	if (socketConfig) {
 		socketChannelTwoEvent = socketConfig.event

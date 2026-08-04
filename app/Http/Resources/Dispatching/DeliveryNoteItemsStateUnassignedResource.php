@@ -48,7 +48,7 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
         $originalRequiredFractionalData = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
-                    $this->original_quantity_required
+                    $this->original_quantity_required ?? 0
                 )
             ),
             $this->packed_in

@@ -14,56 +14,115 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
-use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Events\BroadcastTransactionUpdated;
 use App\Models\Catalogue\Product;
+use App\Models\Dispatching\DeliveryNote;
+use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Models\SysAdmin\User;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTransactionProductQuantityOrdered extends OrgAction
 {
-    public function handle(Transaction $transaction, array $modelData)
+    use WithOrderingEditAuthorisation;
+
+    /**
+     * @throws \Throwable
+     */
+    public function handle(Transaction $transaction, array $modelData, User $user): Transaction
     {
         if ($transaction->model_type != class_basename(Product::class)) {
             abort(422, __('Unable to modify this transaction (Not a valid product transaction)'));
         }
 
-        $product = $transaction->model()->with('orgStocks')->first();
-        $orgStocks = $product->orgStocks->keyBy('id');
-
-        $deliveryNote = $transaction
-            ->order
-            ->deliveryNotes()
-            ->whereNotIn('state', [
-                DeliveryNoteStateEnum::DISPATCHED,
-                DeliveryNoteStateEnum::CANCELLED,
-                DeliveryNoteStateEnum::FINALISED
-            ])
-            ->first();
-
-        if (!$deliveryNote) {
-            abort(409, __('No editable delivery note available'));
-        }
-
         $order = $transaction->order;
 
-        $user = request()?->user();
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL) {
+            abort(422, __('Orders of external shops follow the external platform data and cannot be modified here'));
+        }
+
+        if ($order->platform && $order->platform->type != PlatformTypeEnum::MANUAL) {
+            abort(422, __('Platform orders cannot be modified here'));
+        }
+
+        if (in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED])) {
+            abort(422, __('This order can no longer be modified'));
+        }
+
+        $product   = $transaction->model()->with('orgStocks')->first();
+        $orgStocks = $product->orgStocks->keyBy('id');
+
+        $transaction = DB::transaction(function () use ($transaction, $modelData, $user, $order, $orgStocks) {
+            $deliveryNotes = $order
+                ->deliveryNotes()
+                ->whereNotIn('state', [
+                    DeliveryNoteStateEnum::DISPATCHED,
+                    DeliveryNoteStateEnum::CANCELLED,
+                    DeliveryNoteStateEnum::FINALISED
+                ])
+                ->lockForUpdate()
+                ->get();
+
+            if ($deliveryNotes->isEmpty() && $order->deliveryNotes()->exists()) {
+                abort(409, __('No editable delivery note available'));
+            }
+
+            $transaction = UpdateTransaction::make()->action($transaction, $modelData);
+            $transaction->refresh();
+
+            if (!$transaction->trashed()) {
+                foreach ($deliveryNotes as $deliveryNote) {
+                    $this->syncDeliveryNote($deliveryNote, $transaction, $orgStocks, $user);
+                }
+            }
+
+            CalculateOrderTotalAmounts::run($order);
+            foreach ($deliveryNotes as $deliveryNote) {
+                CalculateDeliveryNoteTotalAmounts::run($deliveryNote);
+            }
+
+            $this->recordModification($order, $transaction, $modelData, $user);
+
+            return $transaction;
+        });
+
+        BroadcastTransactionUpdated::dispatch($transaction, $order);
+
+        return $transaction;
+    }
+
+    protected function syncDeliveryNote(DeliveryNote $deliveryNote, Transaction $transaction, $orgStocks, User $user): void
+    {
         $goBackToPicking = false;
+        $quantityLowered = false;
 
-        $transaction = UpdateTransaction::make()->action($transaction, $modelData);
-        $transaction->refresh();
+        $deliveryNoteItems = $transaction
+            ->deliveryNoteItems()
+            ->where('delivery_note_id', $deliveryNote->id)
+            ->lockForUpdate()
+            ->get();
 
-        // Ignore 0 quantity anyway, those Delivery Note Items (Including Picking & Packing) will be deleted on UpdateTransaction
-        foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
-            if ($deliveryNoteItem->delivery_note_id !== $deliveryNote->id) continue;
-            
+        foreach ($deliveryNoteItems as $deliveryNoteItem) {
             $orgStock = $orgStocks->get($deliveryNoteItem->org_stock_id);
-            $quantity = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
-            $oldRequiredQuantity = $deliveryNoteItem->quantity_required;
+            if (!$orgStock) {
+                continue;
+            }
+
+            $quantity            = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+            $oldRequiredQuantity = (float)$deliveryNoteItem->quantity_required;
+
+            if (abs($quantity - $oldRequiredQuantity) < 0.000001) {
+                continue;
+            }
 
             $dataToBeUpdated = [
                 'quantity_required' => $quantity,
@@ -76,56 +135,81 @@ class UpdateTransactionProductQuantityOrdered extends OrgAction
 
             $deliveryNoteItem->update($dataToBeUpdated);
 
-            if ($quantity === $oldRequiredQuantity) {
-                continue;
-            }
-
-            // Set go back to picking if have item to pick again
-            if ($quantity > $deliveryNoteItem->quantity_picked) {
+            if (abs($quantity - (float)$deliveryNoteItem->quantity_picked) > 0.000001) {
                 $goBackToPicking = true;
+            }
+            if ($quantity < $oldRequiredQuantity) {
+                $quantityLowered = true;
             }
 
             CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+        }
+
+        if (!$goBackToPicking && !$quantityLowered) {
+            return;
         }
 
         if ($deliveryNote->state == DeliveryNoteStateEnum::PACKED) {
             $deliveryNote = UnpackDeliveryNote::make()->action($deliveryNote, $user);
         }
 
-        // Massive Rollbacks
         if ($goBackToPicking) {
             if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
                 $deliveryNote = UndoPackingDeliveryNote::make()->action($deliveryNote, $user);
             }
             if ($deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
-                $deliveryNote = UndoSetAsPickedDeliveryNote::make()->action($deliveryNote, $user);
+                UndoSetAsPickedDeliveryNote::make()->action($deliveryNote, $user);
             }
         }
+    }
 
-        CalculateOrderTotalAmounts::run($order);
-        CalculateDeliveryNoteTotalAmounts::run($deliveryNote);
+    protected function recordModification(Order $order, Transaction $transaction, array $modelData, User $user): void
+    {
+        $modifications   = $order->post_submit_modification_data ?? [];
+        $modifications[] = [
+            'date_time'   => Carbon::now()->toDateTimeString(),
+            'modified_by' => $user->username,
+            'data'        => [
+                'transaction_id' => $transaction->id,
+                ...$modelData
+            ]
+        ];
 
-        BroadcastTransactionUpdated::dispatch($transaction, $order);
-
-        return $transaction;
+        $order->update([
+            'post_submit_modification_data' => $modifications
+        ]);
     }
 
     public function rules(): array
     {
         return [
-            'units_ordered'       => ['sometimes', 'numeric', 'integer', 'min:0'],
-            'quantity_ordered'    => ['sometimes', 'numeric', 'min:0'],
+            'units_ordered'    => ['sometimes', 'numeric', 'integer', 'min:0'],
+            'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
         ];
     }
 
-    public function asController(Transaction $transaction, ActionRequest $request)
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
         $this->initialisationFromShop($transaction->shop, $request);
 
-        $this->handle($transaction, $this->validatedData);
+        return $this->handle($transaction, $this->validatedData, $request->user());
     }
 
-    public function jsonResponse(Transaction $transaction)
+    /**
+     * @throws \Throwable
+     */
+    public function action(Transaction $transaction, array $modelData, User $user): Transaction
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($transaction->shop, $modelData);
+
+        return $this->handle($transaction, $this->validatedData, $user);
+    }
+
+    public function jsonResponse(Transaction $transaction): Transaction
     {
         return $transaction;
     }
