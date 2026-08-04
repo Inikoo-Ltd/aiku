@@ -317,6 +317,9 @@ class IndexOrders extends OrgAction
                 $table->column(key: 'submitted_at', label: __('Submitted'), sortable: true, type: 'date_hm');
             } else {
                 $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
+                if ($parent instanceof Customer || $parent instanceof CustomerClient) {
+                    $table->column(key: 'submitted_at', label: __('Submitted'), sortable: true, type: 'date');
+                }
             }
 
             if ($bucket == 'in_basket') {
