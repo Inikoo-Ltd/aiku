@@ -14,6 +14,8 @@ use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Ordering\CheckoutAbandonment\CheckoutAbandonmentStateEnum;
 use App\Http\Resources\Ordering\CheckoutAbandonmentsResource;
 use App\InertiaTable\InertiaTable;
@@ -287,6 +289,12 @@ class IndexCheckoutAbandonments extends OrgAction
         $title         = __('Abandoned checkouts');
         $subNavigation = null;
 
+        $outboxStateActive = (bool) $this->shop?->outboxes()
+            ->where('code', OutboxCodeEnum::ABANDONED_CART_REMINDER_1)
+            ->where('state', OutboxStateEnum::ACTIVE)
+            ->where('is_applicable', true)
+            ->exists();
+
         if ($this->parent instanceof Customer) {
             if ($this->parent->is_dropshipping) {
                 $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
@@ -305,8 +313,9 @@ class IndexCheckoutAbandonments extends OrgAction
                     'title'         => $title,
                     'subNavigation' => $subNavigation,
                 ],
-                'stats'       => $this->getStats($this->parent),
-                'data'        => CheckoutAbandonmentsResource::collection($abandonments),
+                'stats'               => $this->getStats($this->parent),
+                'outbox_state_active' => $outboxStateActive,
+                'data'                => CheckoutAbandonmentsResource::collection($abandonments),
             ]
         )->table($this->tableStructure($this->parent));
     }

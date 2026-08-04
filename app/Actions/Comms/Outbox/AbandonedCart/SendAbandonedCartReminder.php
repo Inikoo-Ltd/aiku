@@ -48,7 +48,7 @@ class SendAbandonedCartReminder extends OrgAction
         $previousLocale = app()->getLocale();
         app()->setLocale($customer->shop->language->code);
 
-        [$emailHtmlBody, $dispatchedEmail] = $this->getEmailBody($customer, OutboxCodeEnum::ABANDONED_CART);
+        [$emailHtmlBody, $dispatchedEmail] = $this->getEmailBody($customer, OutboxCodeEnum::ABANDONED_CART_REMINDER_1);
         if (!$emailHtmlBody || !$dispatchedEmail) {
             app()->setLocale($previousLocale);
 

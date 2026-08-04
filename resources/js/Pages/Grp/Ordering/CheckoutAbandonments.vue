@@ -17,6 +17,7 @@ defineProps<{
     title: string
     pageHead: object
     stats: { label: string; value: number | string }[]
+    outbox_state_active: boolean
 }>()
 
 function orderRoute(row: any) {
@@ -77,6 +78,8 @@ function sendReminder(row: any) {
                 size="xs"
                 icon="fal fa-paper-plane"
                 :label="trans('Send reminder')"
+                :disabled="!outbox_state_active"
+                :tooltip="!outbox_state_active ? trans('Email not configure yet') : undefined"
                 @click="sendReminder(row)"
             />
             <span v-else class="text-gray-400">—</span>
