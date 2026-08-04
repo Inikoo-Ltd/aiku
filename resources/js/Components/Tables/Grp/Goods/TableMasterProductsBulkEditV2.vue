@@ -296,6 +296,7 @@ const onSave = async (presetValue: string) => {
 </script>
 
 <template>
+    <div class="overflow-x-auto">
     <Table
         :resource="data"
         :name="tab"
@@ -322,9 +323,9 @@ const onSave = async (presetValue: string) => {
                     class="mt-0.5 w-9 aspect-square shrink-0 rounded overflow-hidden shadow"
                 />
                 <div class="flex w-full min-w-[11rem] flex-col gap-y-2">
-                    <div class="flex items-start gap-x-2">
+                    <div class="flex items-start gap-x-2">                        
                         <PureInput
-                            class="cell-input"
+                            classInput="!h-7 !text-sm"
                             :class="dirtyField(isFieldDirty(item, 'name'))"
                             :modelValue="fieldValue(item, 'name')"
                             :maxLength="250"
@@ -395,14 +396,14 @@ const onSave = async (presetValue: string) => {
         </template>
 
         <template #cell(units)="{ item }">
-            <div class="flex items-start gap-x-2">
+            <div class="flex items-start justify-center gap-x-2">
                 <span
                     class="mt-1.5 w-10 shrink-0 text-right text-sm tabular-nums text-gray-500"
                     v-tooltip="trans('Units per outer, edited on the product page')">
                     {{ Number(item.units) }}
                 </span>
                 <PureInput
-                    class="cell-input !w-24"
+                    classInput="!h-7 !text-sm !w-24"
                     :class="dirtyField(isFieldDirty(item, 'unit'))"
                     :modelValue="fieldValue(item, 'unit')"
                     :placeholder="trans('unit')"
@@ -465,6 +466,7 @@ const onSave = async (presetValue: string) => {
             </div>
         </template>
     </Table>
+    </div>
 
     <TaxPresetEditModal
         :isOpen="!!editingItems.length"
@@ -488,11 +490,6 @@ const onSave = async (presetValue: string) => {
 </template>
 
 <style scoped>
-/* The row is one line of a spreadsheet, so the fields lose the form-sized padding. */
-.cell-input :deep(input) {
-    @apply py-1 text-sm;
-}
-
 .rich-preview :deep(ul),
 .rich-preview :deep(ol) {
     @apply ml-4 list-disc;
