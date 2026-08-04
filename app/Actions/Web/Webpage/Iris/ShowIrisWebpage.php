@@ -122,6 +122,8 @@ class ShowIrisWebpage
     {
         if ($path == 'robots.txt') {
             return 'robots';
+        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys'])) {
+            return $path;
         }
 
 
@@ -251,8 +253,16 @@ class ShowIrisWebpage
                     'Content-Type'  => 'text/plain; charset=UTF-8',
                     'Cache-Control' => 'public, max-age=3600',
                 ]);
+            } elseif (in_array($webpageData, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys'])) {
+                $webpageData = match($webpageData) {
+                    'login.sys'         => request()->website->getUrl() . '/app/login',
+                    'register.sys'      => request()->website->getUrl() . '/app/register',
+                    'index.php',
+                    'asset_label.php',
+                    'home.sys'          => 
+                        request()->website->storefront->getCanonicalUrl(),
+                };
             }
-
 
             $queryParameters = Arr::except(request()->query(), [
                 'favicons',
