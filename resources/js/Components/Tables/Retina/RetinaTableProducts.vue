@@ -16,7 +16,11 @@ import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
 import Icon from "@/Components/Icon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
-import { Link } from "@inertiajs/vue3"
+import { GridProducts } from "@/Components/Product"
+import { faExternalLink } from "@far";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+
 library.add(fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle)
 
 
@@ -43,7 +47,7 @@ console.log("RetinaTableProducts.vue", layout)
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5 hidden md:block">
         <template #cell(image)="{ item: product }">
             <div class="flex justify-center">
                 <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
@@ -91,4 +95,27 @@ console.log("RetinaTableProducts.vue", layout)
         </template>
 
     </Table>
+
+
+    <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 md:hidden" :name="tab"
+        :gridClass="'grid grid-cols-1'">
+        <template #card="{ item }">
+            <div
+                class="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-primary-300 hover:shadow-sm">
+                <Image
+                    :src="item.image_thumbnail ?? item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="h-12 w-12 rounded-full object-cover shadow-sm flex-shrink-0" />
+
+                <div class="min-w-0 flex-1">
+                      <a :href="item.iris_url" class="primaryLink whitespace-nowrap">
+                        {{ item.code }}
+                      </a>
+
+                    <p class="mt-2 p-1 truncate text-sm text-gray-500">
+                        {{ item.name }}
+                    </p>
+                </div>
+            </div>
+        </template>
+    </GridProducts>
 </template>
