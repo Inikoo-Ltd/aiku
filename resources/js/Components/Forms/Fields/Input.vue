@@ -28,6 +28,7 @@ const props = defineProps<{
         readonly?: boolean
         copyButton: boolean
         maxLength?: number
+        uppercase?: boolean
         additional_instructions?: string
     }
 }>()
@@ -53,6 +54,11 @@ const getNestedValue = (obj: Object, keys: Array) => {
 const value = ref(setFormValue(props.form, props.fieldName));
 
 watch(value, (newValue) => {
+    if (props.fieldData?.uppercase && typeof newValue === 'string' && newValue !== newValue.toUpperCase()) {
+        value.value = newValue.toUpperCase()
+        return
+    }
+
     // Update the form field value when the value ref changes
     updateFormValue(newValue);
     props.form.errors[props.fieldName] = ''
