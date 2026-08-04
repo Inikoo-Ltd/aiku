@@ -314,6 +314,35 @@ class IndexMasterFamilies extends OrgAction
                     ) last_shop_offers
                 )::text as last_offers"
             );
+
+            $queryBuilder->whereOfferFilter(
+                engine: function (QueryBuilder $query, string $presence, ?string $start, ?string $end) {
+                    $existsSql = "SELECT 1
+                        FROM offers
+                        JOIN product_categories ON product_categories.id = offers.trigger_id
+                        JOIN organisations ON organisations.id = offers.organisation_id
+                        JOIN offer_campaigns ON offer_campaigns.id = offers.offer_campaign_id
+                        WHERE offers.trigger_type = 'ProductCategory'
+                        AND offers.deleted_at IS NULL
+                        AND product_categories.deleted_at IS NULL
+                        AND product_categories.master_product_category_id = master_product_categories.id
+                        AND organisations.type = ?
+                        AND offer_campaigns.type != ?";
+                    $bindings  = [
+                        OrganisationTypeEnum::SHOP->value,
+                        OfferCampaignTypeEnum::VOLUME_DISCOUNT->value,
+                    ];
+
+                    if ($start) {
+                        $existsSql .= ' AND offers.start_at BETWEEN ? AND ?';
+                        $bindings[] = $start;
+                        $bindings[] = $end;
+                    }
+
+                    $query->whereRaw(($presence === 'with' ? '' : 'NOT ')."EXISTS ($existsSql)", $bindings);
+                },
+                prefix: $prefix
+            );
         }
 
         $queryBuilder->select($selects);
@@ -380,6 +409,7 @@ class IndexMasterFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date']);
+                $table->offerFilter();
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {

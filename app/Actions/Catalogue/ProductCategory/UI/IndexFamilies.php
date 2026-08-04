@@ -243,6 +243,28 @@ class IndexFamilies extends OrgAction
                     LIMIT 1
                 )::text as last_offer"
             );
+
+            $queryBuilder->whereOfferFilter(
+                engine: function (QueryBuilder $query, string $presence, ?string $start, ?string $end) {
+                    $existsSql = "SELECT 1
+                        FROM offers o
+                        JOIN offer_campaigns oc ON oc.id = o.offer_campaign_id
+                        WHERE o.trigger_type = 'ProductCategory'
+                        AND o.trigger_id = product_categories.id
+                        AND o.deleted_at IS NULL
+                        AND oc.type != ?";
+                    $bindings  = [OfferCampaignTypeEnum::VOLUME_DISCOUNT->value];
+
+                    if ($start) {
+                        $existsSql .= ' AND o.start_at BETWEEN ? AND ?';
+                        $bindings[] = $start;
+                        $bindings[] = $end;
+                    }
+
+                    $query->whereRaw(($presence === 'with' ? '' : 'NOT ')."EXISTS ($existsSql)", $bindings);
+                },
+                prefix: $prefix
+            );
         }
 
         $queryBuilder->select($selects);
@@ -338,6 +360,7 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date']);
+                $table->offerFilter();
             }
 
             $table
