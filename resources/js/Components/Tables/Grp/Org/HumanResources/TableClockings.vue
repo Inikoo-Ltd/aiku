@@ -9,6 +9,7 @@ import { router } from "@inertiajs/vue3";
 import { ref, computed } from "vue";
 import { format } from "date-fns";
 import Table from "@/Components/Table/Table.vue";
+import PrimeImage from "primevue/image";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
@@ -124,6 +125,12 @@ const submitNotes = async () => {
     <div>
         <Table :resource="data" :name="tab" class="mt-5">
             <template #cell(media_slug)="{ item }">
+                <PrimeImage
+                    v-if="item.photo"
+                    :src="item.photo.original"
+                    preview
+                    imageClass="rounded-md h-10 w-10 object-cover cursor-pointer shadow"
+                />
             </template>
 
             <template #cell(clocked_at)="{ item }">

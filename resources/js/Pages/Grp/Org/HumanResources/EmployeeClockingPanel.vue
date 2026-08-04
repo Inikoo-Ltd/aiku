@@ -2,14 +2,15 @@
 import { computed, ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faQrcode, faHashtag, faBarcode } from "@fal"
+import { faQrcode, faHashtag, faBarcode, faCamera } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ScanQrUser from "./ScanQrUser.vue"
 import ShowMyPin from "./ShowMyPin.vue"
 import ShowMyBarcode from "./ShowMyBarcode.vue"
+import ShowMyQr from "./ShowMyQr.vue"
 import ClockingStatusSummary from "@/Components/HumanResources/ClockingStatusSummary.vue"
 
-library.add(faQrcode, faHashtag, faBarcode)
+library.add(faQrcode, faHashtag, faBarcode, faCamera)
 
 interface ClockingRecord {
 	id: number
@@ -47,6 +48,7 @@ const methodDefinitions: Record<string, { label: string; icon: any; component: a
 	qr_code: { label: trans("QR Code"), icon: faQrcode, component: ScanQrUser },
 	pin: { label: trans("PIN"), icon: faHashtag, component: ShowMyPin },
 	barcode: { label: trans("Barcode"), icon: faBarcode, component: ShowMyBarcode },
+	camera_qr: { label: trans("Camera QR"), icon: faCamera, component: ShowMyQr },
 }
 
 const availableMethods = computed(() => props.availableMethods ?? [])

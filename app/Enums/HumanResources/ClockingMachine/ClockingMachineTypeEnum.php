@@ -21,6 +21,7 @@ enum ClockingMachineTypeEnum: string
     case QR_CODE         = 'qr-code';
     case PIN             = 'pin';
     case BARCODE_SCANNER = 'barcode-scanner';
+    case CAMERA_QR       = 'camera-qr';
 
     public static function labels(): array
     {
@@ -32,6 +33,7 @@ enum ClockingMachineTypeEnum: string
             'qr-code'         => __('QR Code'),
             'pin'             => __('PIN'),
             'barcode-scanner' => __('Barcode Scanner'),
+            'camera-qr'       => __('Camera QR Scanner'),
         ];
     }
 

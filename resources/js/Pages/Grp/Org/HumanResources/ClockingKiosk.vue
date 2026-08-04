@@ -2,8 +2,9 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { computed, onMounted, onUnmounted, ref } from "vue"
-import { faExpand, faCompress, faBackspace, faCheckCircle, faTimesCircle, faBarcode } from "@fortawesome/free-solid-svg-icons"
+import { faExpand, faCompress, faBackspace, faCheckCircle, faTimesCircle, faBarcode, faCamera } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { QrcodeStream } from "vue-qrcode-reader"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
@@ -15,7 +16,7 @@ const props = defineProps<{
 	title: string
 	machineName: string
 	kioskToken: string
-	mode: "pin" | "barcode"
+	mode: "pin" | "barcode" | "camera_qr"
 	pinCharacterSet?: {
 		letters: string[]
 		numbers: string[]
@@ -36,6 +37,14 @@ const barcodeValue = ref("")
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 const result = ref<{ alias: string; actionType: string | null; clockedAt: string } | null>(null)
+
+const scannerContainer = ref<HTMLElement | null>(null)
+const cameraActive = ref(false)
+const cameraError = ref<string | null>(null)
+const isDetecting = ref(false)
+const recentCodeCooldownMs = 8000
+let lastProcessedCode: string | null = null
+let lastProcessedAt = 0
 
 let idleTimer: ReturnType<typeof setTimeout> | null = null
 let resultTimer: ReturnType<typeof setTimeout> | null = null
@@ -152,6 +161,89 @@ const handleGlobalKeydown = (event: KeyboardEvent) => {
 	}
 }
 
+const startCamera = () => {
+	cameraError.value = null
+	cameraActive.value = true
+}
+
+const stopCamera = () => {
+	cameraActive.value = false
+}
+
+const captureSnapshot = (): string | null => {
+	const videoEl = scannerContainer.value?.querySelector("video") as HTMLVideoElement | null
+	if (!videoEl || !videoEl.videoWidth) return null
+
+	const maxWidth = 640
+	const scale = Math.min(1, maxWidth / videoEl.videoWidth)
+	const canvas = document.createElement("canvas")
+	canvas.width = Math.round(videoEl.videoWidth * scale)
+	canvas.height = Math.round(videoEl.videoHeight * scale)
+
+	const ctx = canvas.getContext("2d")
+	if (!ctx) return null
+
+	ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height)
+
+	return canvas.toDataURL("image/jpeg", 0.7)
+}
+
+const onCameraDetect = async (detectedCodes: { rawValue: string }[]) => {
+	if (isSubmitting.value || isDetecting.value || result.value) return
+
+	const code = detectedCodes[0]?.rawValue?.trim()
+	if (!code) return
+
+	const now = Date.now()
+	if (code === lastProcessedCode && now - lastProcessedAt < recentCodeCooldownMs) return
+
+	isDetecting.value = true
+	isSubmitting.value = true
+	errorMessage.value = null
+
+	try {
+		let snapshot: string | null = null
+		try {
+			snapshot = captureSnapshot()
+		} catch (snapshotError) {
+			console.error("Snapshot capture failed:", snapshotError)
+		}
+
+		const res = await axios.post(route("grp.kiosk.camera-qr.submit", { kioskToken: props.kioskToken }), {
+			code,
+			snapshot,
+		})
+
+		lastProcessedCode = code
+		lastProcessedAt = Date.now()
+
+		applyResult(res.data)
+	} catch (error: any) {
+		errorMessage.value = error?.response?.data?.message || trans("Invalid QR code.")
+	} finally {
+		isSubmitting.value = false
+		isDetecting.value = false
+	}
+}
+
+const onCameraError = (err: any) => {
+	console.error("Camera error:", err)
+
+	if (err?.name === "NotAllowedError") {
+		cameraError.value = trans("Camera permission denied. Please enable camera access in browser settings.")
+	} else if (err?.name === "NotFoundError") {
+		cameraError.value = trans("No camera found")
+	} else if (err?.name === "NotReadableError") {
+		cameraError.value = trans("Camera already in use")
+	} else if (err?.name === "NotSupportedError") {
+		cameraError.value = trans("HTTPS is required for camera access")
+	} else {
+		cameraError.value = trans("Camera error occurred")
+	}
+
+	cameraActive.value = false
+}
+
 const toggleFullscreen = async () => {
 	if (!kioskContainer.value) return
 
@@ -210,7 +302,9 @@ onUnmounted(() => {
 						{{
 							mode === "pin"
 								? trans("Enter your PIN to clock in or out")
-								: trans("Scan your barcode to clock in or out")
+								: mode === "barcode"
+									? trans("Scan your barcode to clock in or out")
+									: trans("Show your QR code to the camera to clock in or out")
 						}}
 					</p>
 					<span
@@ -332,6 +426,39 @@ onUnmounted(() => {
 									:aria-label="trans('Scanned barcode')"
 									class="w-full max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3 text-center text-base sm:text-lg tracking-widest text-gray-700"
 									:placeholder="trans('Waiting for scan…')" />
+							</div>
+						</template>
+
+						<template v-else-if="mode === 'camera_qr'">
+							<div
+								ref="scannerContainer"
+								class="relative overflow-hidden rounded-xl border border-dashed border-gray-300 bg-gray-50">
+								<div
+									v-if="!cameraActive"
+									class="flex flex-col items-center gap-3 sm:gap-4 px-3 py-10 sm:px-4 sm:py-16">
+									<font-awesome-icon :icon="faCamera" class="text-4xl sm:text-5xl text-gray-400" />
+									<p class="text-sm sm:text-base font-medium text-gray-600">
+										{{ trans("Start the camera so employees can clock in or out by showing their QR code") }}
+									</p>
+									<p v-if="cameraError" class="text-xs sm:text-sm text-red-600">{{ cameraError }}</p>
+									<Button :label="trans('Start Camera')" type="primary" size="l" @click="startCamera" />
+								</div>
+
+								<div v-else class="relative aspect-video w-full bg-black">
+									<QrcodeStream
+										@detect="onCameraDetect"
+										@error="onCameraError"
+										:formats="['qr_code']"
+										class="h-full w-full" />
+
+									<div
+										class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/50 px-3 py-2">
+										<span class="text-xs sm:text-sm font-medium text-white">
+											{{ isSubmitting ? trans("Checking...") : trans("Show your QR code to the camera") }}
+										</span>
+										<Button :label="trans('Stop')" type="secondary" size="xs" @click="stopCamera" />
+									</div>
+								</div>
 							</div>
 						</template>
 					</template>

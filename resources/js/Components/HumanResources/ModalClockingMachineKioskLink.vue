@@ -19,7 +19,9 @@ const props = defineProps<{
 
 const kioskDescription = props.clockingMachine.type === 'barcode-scanner'
     ? trans('Open this link on the tablet used at this clocking machine so employees can clock in and out by scanning their barcode.')
-    : trans('Open this link on the tablet used at this clocking machine so employees can clock in and out with their PIN.')
+    : props.clockingMachine.type === 'camera-qr'
+        ? trans('Open this link on the tablet used at this clocking machine so its camera can clock employees in and out by scanning the QR code on their phone.')
+        : trans('Open this link on the tablet used at this clocking machine so employees can clock in and out with their PIN.')
 
 const isModalOpen = ref(false)
 const isSubmitting = ref(false)

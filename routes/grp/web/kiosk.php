@@ -15,6 +15,7 @@
 
 use App\Actions\HumanResources\ClockingMachine\UI\ShowClockingKiosk;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskBarcode;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskCameraQr;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin;
 use Illuminate\Support\Facades\Route;
 
@@ -22,4 +23,5 @@ Route::middleware('throttle:kiosk')->prefix('clocking-kiosk')->group(function ()
     Route::get('{kioskToken}', ShowClockingKiosk::class)->name('show');
     Route::post('{kioskToken}/pin', ValidateClockingKioskPin::class)->name('pin.submit');
     Route::post('{kioskToken}/barcode', ValidateClockingKioskBarcode::class)->name('barcode.submit');
+    Route::post('{kioskToken}/camera-qr', ValidateClockingKioskCameraQr::class)->name('camera-qr.submit');
 });

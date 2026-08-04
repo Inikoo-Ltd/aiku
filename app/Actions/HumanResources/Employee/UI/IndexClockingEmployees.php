@@ -433,6 +433,13 @@ class IndexClockingEmployees extends OrgAction
             $methods[] = 'barcode';
         }
 
+        if ($clockingMachines->contains(
+            fn (ClockingMachine $machine) => $machine->type === ClockingMachineTypeEnum::CAMERA_QR->value
+                && data_get($machine->config, 'camera_qr.enable', false)
+        )) {
+            $methods[] = 'camera_qr';
+        }
+
         return $methods;
     }
 

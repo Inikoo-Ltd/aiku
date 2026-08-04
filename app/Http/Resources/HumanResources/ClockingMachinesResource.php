@@ -33,6 +33,7 @@ class ClockingMachinesResource extends JsonResource
         'qr-code'         => 'qr',
         'pin'             => 'pin',
         'barcode-scanner' => 'barcode',
+        'camera-qr'       => 'camera_qr',
     ];
 
     public function toArray($request): array|Arrayable|JsonSerializable

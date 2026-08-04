@@ -1121,6 +1121,99 @@ test('kiosk endpoint 404s when using the wrong mode for the machine', function (
     ])->assertNotFound();
 });
 
+// CLOCKING KIOSK CAMERA QR
+
+test('can clock in via kiosk camera qr', function () {
+    $suffix = 'I'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Camera QR Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::CAMERA_QR->value,
+    ]);
+    $clockingMachine->update([
+        'kiosk_token' => 'kiosk-token-'.$clockingMachine->id.'-'.$suffix,
+        'config'      => ['camera_qr' => ['enable' => true]],
+    ]);
+
+    $code = 'IJ'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+    $employee->workplaces()->attach($workplace->id);
+
+    // The QR encodes the employee's own pin verbatim, same as the barcode flow.
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskCameraQr::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    expect($clocking)->toBeInstanceOf(Clocking::class)
+        ->and($clocking->subject_id)->toBe($employee->id)
+        ->and($clocking->clocking_machine_id)->toBe($clockingMachine->id);
+
+    return [$clockingMachine, $employee];
+});
+
+test('wrong kiosk camera qr code is rejected', function (array $context) {
+    [$clockingMachine] = $context;
+
+    \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskCameraQr::make()->handle($clockingMachine, 'WRONG');
+})->depends('can clock in via kiosk camera qr')->throws(\Exception::class, 'Invalid QR code.');
+
+test('kiosk camera qr snapshot is stored as the clocking image', function () {
+    $suffix = 'J'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Camera QR Snapshot Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::CAMERA_QR->value,
+    ]);
+    $clockingMachine->update(['config' => ['camera_qr' => ['enable' => true]]]);
+
+    $code = 'KL'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+
+    $pixel = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=');
+    $snapshot = 'data:image/png;base64,'.base64_encode($pixel);
+
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskCameraQr::make()
+        ->handle($clockingMachine, $code, $snapshot)['clocking'];
+
+    expect($clocking->fresh()->image_id)->not->toBeNull();
+});
+
+test('kiosk endpoint 404s when camera qr mode is disabled', function () {
+    $suffix = 'K'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Disabled Camera QR Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::CAMERA_QR->value,
+    ]);
+    $clockingMachine->update(['kiosk_token' => 'kiosk-token-disabled-'.$clockingMachine->id.'-'.$suffix]);
+
+    \Pest\Laravel\postJson(route('grp.kiosk.camera-qr.submit', ['kioskToken' => $clockingMachine->kiosk_token]), [
+        'code' => 'AB12',
+    ])->assertNotFound();
+});
+
 test('can adjust employee leave balance creating a new balance', function () {
     $employee = Employee::factory()->create([
         'organisation_id' => $this->organisation->id,

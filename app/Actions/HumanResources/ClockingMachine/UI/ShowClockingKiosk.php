@@ -25,9 +25,11 @@ class ShowClockingKiosk
     {
         $clockingMachine = $this->resolveKioskMachine($kioskToken);
 
-        $mode = $clockingMachine->type === ClockingMachineTypeEnum::BARCODE_SCANNER->value
-            ? 'barcode'
-            : 'pin';
+        $mode = match ($clockingMachine->type) {
+            ClockingMachineTypeEnum::BARCODE_SCANNER->value => 'barcode',
+            ClockingMachineTypeEnum::CAMERA_QR->value       => 'camera_qr',
+            default                                         => 'pin',
+        };
 
         $this->assertKioskModeEnabled($clockingMachine, $mode);
 

@@ -136,6 +136,20 @@ class EditClockingMachine extends OrgAction
             ];
         }
 
+        if ($clockingMachine->type === ClockingMachineTypeEnum::CAMERA_QR->value) {
+            $blueprint[] = [
+                'title'  => __('Camera QR Configuration'),
+                'label'  => __('Camera QR Settings'),
+                'fields' => [
+                    'config.camera_qr.enable' => [
+                        'type'  => 'toggle',
+                        'label' => __('Enable Camera QR Scanner'),
+                        'value' => (bool) data_get($clockingMachine->config, 'camera_qr.enable', false),
+                    ],
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
