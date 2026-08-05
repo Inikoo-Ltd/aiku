@@ -153,9 +153,17 @@ class EditMasterProductComposition extends OrgAction
 
         $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn, $packedInByOrg) {
             /** @var MorphPivot $pivot */
-            $pivot            = $tradeUnit->getRelationValue('pivot');
-            $quantity         = $pivot->getAttribute('quantity');
-            $packedInQuantity = Arr::get($packedIn, $tradeUnit->id, 1);
+            $pivot    = $tradeUnit->getRelationValue('pivot');
+            $quantity = $pivot->getAttribute('quantity');
+
+            /*
+             * The warehouses' own packing wins over the group stock's when they all agree:
+             * a product of 4 units packed in 4s picks 1 SKO, whatever the group stock says.
+             */
+            $orgPackings      = ($packedInByOrg->get($tradeUnit->id) ?? collect())->pluck('quantity')->map(fn ($packing) => (float) $packing)->unique();
+            $packedInQuantity = $orgPackings->count() === 1 && $orgPackings->first() > 0
+                ? $orgPackings->first()
+                : Arr::get($packedIn, $tradeUnit->id, 1);
             $fraction         = $quantity / $packedInQuantity;
 
             return array_merge(

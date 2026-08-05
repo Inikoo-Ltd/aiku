@@ -104,7 +104,8 @@ const updateFormValue = (newValue) => {
 <template>
     <div class="relative">
         <div v-if="fieldData?.unitsPreview && !isEditing" class="flex items-center gap-3">
-            <span :class="pendingUnits ? 'line-through text-gray-400' : ''">
+            <!-- Pink is the units colour, matching the TU—P edge of the composition triangle -->
+            <span :class="pendingUnits ? 'line-through text-gray-400' : 'text-pink-600 font-medium'">
                 {{ fieldData.unitsPreview }}x {{ value || fieldData?.placeholder }}
             </span>
             <span v-if="pendingUnits" class="font-medium text-amber-600">

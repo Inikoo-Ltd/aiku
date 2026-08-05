@@ -434,10 +434,10 @@ defineExpose({
                                         @click.stop.prevent="openPackedInDialog(item)"
                                         v-tooltip="trans('Click to edit how each warehouse packs this SKU')"
                                         class="cursor-pointer underline decoration-dotted underline-offset-2"
-                                        :class="orgPackedInSummary(item)!.diverges ? 'text-amber-600' : 'text-teal-600/60'">
+                                        :class="orgPackedInSummary(item)!.diverges ? 'text-amber-600' : 'text-sky-600/70'">
                                         {{ orgPackedInSummary(item)!.label }}
                                     </span>
-                                    <span v-else class="text-teal-600/60">{{ trans('(SKO packed in :packs)', { packs: (Number(item.packed_in) || 1) + 's' }) }}</span>
+                                    <span v-else class="text-sky-600/70">{{ trans('(SKO packed in :packs)', { packs: (Number(item.packed_in) || 1) + 's' }) }}</span>
                                 </div>
 
                                 </template>
