@@ -1,13 +1,8 @@
 <?php
 
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 14 May 2025 14:48:48 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
-
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Iris\Blog\IndexIrisBlogs;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\BlogsIrisResource;
 use App\Models\Web\Website;
@@ -16,16 +11,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Actions\Iris\Blog\IndexIrisBlogs;
 
-class ShowIrisBlogDashboard
+class ShowIrisDavidsTravelBlogDashboard
 {
     use AsAction;
 
-    private const SUB_TYPES = [
-        WebpageSubTypeEnum::BLOG,
-        WebpageSubTypeEnum::TIPS,
-    ];
+    private const SUB_TYPES = [WebpageSubTypeEnum::DAVIDS_TRAVEL_BLOG];
 
     public function handle(Website $website): LengthAwarePaginator
     {
@@ -48,7 +39,8 @@ class ShowIrisBlogDashboard
         return Inertia::render(
             'BlogDashboard',
             [
-                'data' => BlogsIrisResource::collection($blogs),
+                'title' => __("David's Travel Blog"),
+                'data'  => BlogsIrisResource::collection($blogs),
             ]
         )->table(IndexIrisBlogs::make()->tableStructure($website, IndexIrisBlogs::PREFIX, self::SUB_TYPES));
     }
