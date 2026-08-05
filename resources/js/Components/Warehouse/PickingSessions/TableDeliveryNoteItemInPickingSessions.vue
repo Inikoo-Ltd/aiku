@@ -16,7 +16,7 @@ import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { ref, onMounted, reactive, inject, onUnmounted, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faHourglassHalf, faBox } from "@fal"
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faHourglassHalf, faBox, faBarcodeRead } from "@fal"
 import { faSkull, faStickyNote, faPeopleArrows} from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
@@ -47,7 +47,7 @@ import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStock
 
 const screenType = inject('screenType', ref('desktop'))
 
-library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox)
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faBarcodeRead)
 
 
 const props = defineProps<{
@@ -413,6 +413,13 @@ onUnmounted(() => {
             <Link :href="showOrgStockRoute(item)" class="secondaryLink">
             {{ item.org_stock_code }}
             </Link>
+            <FontAwesomeIcon
+                v-if="item.barcode"
+                v-tooltip="item.barcode"
+                :icon="faBarcodeRead"
+                class="ml-1 text-gray-500"
+                fixed-width
+                aria-hidden="true" />
         </template>
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
@@ -551,7 +558,15 @@ onUnmounted(() => {
                     <div>
                         <Link :href="showOrgStockRoute(deliveryItem)" class="secondaryLink">
                         {{ deliveryItem.org_stock_code }}
-                        </Link> <span class="opacity-70">{{ deliveryItem.org_stock_name}} <span class="italic">{{ deliveryItem.packed_in_message}}</span></span>
+                        </Link>
+                        <FontAwesomeIcon
+                            v-if="deliveryItem.barcode"
+                            v-tooltip="deliveryItem.barcode"
+                            :icon="faBarcodeRead"
+                            class="ml-1 mr-1 text-gray-500"
+                            fixed-width
+                            aria-hidden="true" />
+                        <span class="opacity-70">{{ deliveryItem.org_stock_name}} <span class="italic">{{ deliveryItem.packed_in_message}}</span></span>
                     </div>
 
                     <template v-if="deliveryItem.quantity_to_pick > 0 && deliveryItem.state == 'handling'">
