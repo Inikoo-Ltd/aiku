@@ -130,7 +130,7 @@ class EditVariant extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit Master Variant'),
+                'title'       => __('Edit Variant'),
                 'breadcrumbs' => ShowVariant::make()->getBreadcrumbs(
                     $variant,
                     preg_replace('/edit$/', 'show', $request->route()->getName()),
@@ -138,7 +138,7 @@ class EditVariant extends OrgAction
                     '(editing)'
                 ),
                 'pageHead'    => [
-                    'title'     => __('Edit master variant'),
+                    'title'     => __('Edit variant'),
                     'actions'   => [
                         [
                             'type'  => 'button',
