@@ -39,18 +39,6 @@ class MasterShopResource extends JsonResource
                 "color" => "#df1c1cff",
                 'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
             ],
-            [
-                'label'           => __('Orphan Master Products'),
-                'is_negative'     => true,
-                'route'           => [
-                    'name'       => 'grp.masters.master_shops.show.master_products_orphan',
-                    'parameters' => [$masterShop->slug]
-                ],
-                'icon'            => 'fal fa-cube',
-                'backgroundColor' => '#ff000011',
-                'color'           => '#df1c1cff',
-                'value'           => $masterShop->stats->number_master_products_no_master_family,
-            ],
         ];
 
         if ($masterShop->stats->number_mismatched_master_families) {
@@ -72,6 +60,42 @@ class MasterShopResource extends JsonResource
                 'value'           => $masterShop->stats->number_mismatched_master_families_active,
             ];
         }
+
+        if ($masterShop->stats->number_missing_images_master_families || true) {
+            $additionalStats[] = [
+                'label'           => __('Master Families with No Image'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_family.missing_image.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug,
+                        '_query'     => [
+                            'index_elements[status]' => 'active'
+                        ]
+                    ]
+                ],
+                'icon'            => 'fal fa-folder',
+                'backgroundColor' => "#e879f91d",
+                "color"           => "#df1c1cff",
+                'value'           => $masterShop->stats->number_mismatched_master_families_active,
+            ];
+        }
+
+        array_push(
+            $additionalStats,
+            [
+                'label'           => __('Orphan Master Products'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_products_orphan',
+                    'parameters' => [$masterShop->slug]
+                ],
+                'icon'            => 'fal fa-cube',
+                'backgroundColor' => '#ff000011',
+                'color'           => '#df1c1cff',
+                'value'           => $masterShop->stats->number_master_products_no_master_family,
+            ]
+        );
 
         if ($masterShop->stats->number_mismatched_master_products) {
             $additionalStats[] = [
@@ -126,6 +150,27 @@ class MasterShopResource extends JsonResource
                 'backgroundColor' => "#fa582761",
                 "color"           => "#df1c1cff",
                 'value'           => $masterShop->stats->number_current_master_assets_missing_price_or_rrp,
+            ];
+        }
+
+
+        if ($masterShop->stats->number_missing_images_master_asset || true) {
+            $additionalStats[] = [
+                'label' => __('Master Products with No Image'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_products_no_image',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug,
+                        '_query'     => [
+                            'index_elements[status]' => 'active'
+                        ]
+                    ]
+                ],
+                'icon'            => 'fal fa-cube',
+                'backgroundColor' => "#fa582761",
+                "color"           => "#df1c1cff",
+                'value'           => $masterShop->stats->number_missing_images_master_asset,
             ];
         }
 
