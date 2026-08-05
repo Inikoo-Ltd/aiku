@@ -30,6 +30,7 @@ const props = defineProps<{
         maxLength?: number
         uppercase?: boolean
         additional_instructions?: string
+        unitsPreview?: number
     }
 }>()
 
@@ -52,6 +53,20 @@ const getNestedValue = (obj: Object, keys: Array) => {
 };
 
 const value = ref(setFormValue(props.form, props.fieldName));
+const isEditing = ref(false)
+
+const originalValue = value.value
+
+const cancelEdit = () => {
+    value.value = originalValue
+    isEditing.value = false
+}
+
+watch(() => props.form.recentlySuccessful, (isSuccessful) => {
+    if (isSuccessful) {
+        isEditing.value = false
+    }
+})
 
 watch(value, (newValue) => {
     if (props.fieldData?.uppercase && typeof newValue === 'string' && newValue !== newValue.toUpperCase()) {
@@ -76,7 +91,14 @@ const updateFormValue = (newValue) => {
 </script>
 <template>
     <div class="relative">
-        <div class="relative">
+        <div v-if="fieldData?.unitsPreview && !isEditing" class="flex items-center gap-3">
+            <span>{{ fieldData.unitsPreview }}x {{ value || fieldData?.placeholder }}</span>
+            <button type="button" class="text-indigo-600 hover:underline" @click="isEditing = true">
+                {{ trans('Edit') }}
+            </button>
+        </div>
+
+        <div v-else class="relative">
             <PureInput
                 v-model="value"
                 :inputName="fieldName"
@@ -101,8 +123,18 @@ const updateFormValue = (newValue) => {
                     </div>
                 </template>
             </PureInput>
+
+            <div v-if="fieldData?.unitsPreview" class="flex items-center gap-3 pt-1">
+                <span class="text-gray-500">{{ fieldData.unitsPreview }}x {{ value || fieldData?.placeholder }}</span>
+                <button type="button" class="text-indigo-600 hover:underline" :disabled="form.processing" @click="emits('submit')">
+                    {{ trans('Update') }}
+                </button>
+                <button type="button" class="text-gray-500 hover:underline" @click="cancelEdit">
+                    {{ trans('Cancel') }}
+                </button>
+            </div>
         </div>
-        
+
         <div v-if="props.fieldData?.additional_instructions" class="text-xs italic text-gray-500 pt-1">
             <span class="text-red-500">*</span> {{ props.fieldData?.additional_instructions }}
         </div>
