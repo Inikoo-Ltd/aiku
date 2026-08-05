@@ -87,7 +87,7 @@ class FixOrganisationCompositionFromMasters
         $onMasterDone && $onMasterDone(0, $total);
 
         $masterQuery()
-            ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, $withPrices, $withPrices, $report, $onMasterDone, &$checked, &$fixed, &$unitsFixed, &$pricesFixed, &$pricesFixed, &$changes, &$ordersToReview, &$ordersToReview) {
+            ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, $withPrices, $report, $onMasterDone, &$checked, &$fixed, &$unitsFixed, &$pricesFixed, &$changes, &$ordersToReview) {
                 foreach ($masterAssets as $masterAsset) {
                     $tradeUnitData = $masterAsset->tradeUnits->map(fn ($tradeUnit) => [
                         'id'       => $tradeUnit->id,
