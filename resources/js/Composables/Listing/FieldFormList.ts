@@ -75,6 +75,7 @@ import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue
 import FileUpload from '@/Components/Forms/Fields/FileUpload.vue'
 import InputJsonByForm from '@/Components/Forms/Fields/InputJsonByForm.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
+import VariantOption from '@/Components/Forms/Fields/VariantOption.vue'
 import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
 import PasskeysManager from '@/Components/Forms/Fields/PasskeysManager.vue'
@@ -178,6 +179,7 @@ export const componentsList: { [key: string]: Component } = {
     'trade-units-for-stock': TradeUnitsForStock,
     'file_upload': FileUpload,
     'input-variant' : VariantsField,
+    'variant_field' : VariantOption,
     'editOffer' : EditOffer,
     'offer_fields'  : OfferFields,
     'vol_discount' : InputVolDiscount,
