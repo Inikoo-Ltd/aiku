@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\TrafficSource;
 
 use App\Models\CRM\Customer;
+use App\Models\CRM\Prospect;
 use App\Models\Ordering\Order;
 use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -18,8 +19,8 @@ class RecalculateTrafficSourceAttribution
     use AsAction;
 
     /**
-     * Rebuilds the traffic-source attribution pivot rows for a single Customer or Order from its raw
-     * touch history, using the requested attribution model.
+     * Rebuilds the traffic-source attribution pivot rows for a single Customer, Prospect or Order from
+     * its raw touch history, using the requested attribution model.
      *
      * This is deliberately idempotent and safe to rerun: every previously attached traffic source
      * (regardless of which model attached it) is detached before reattaching, so switching models or
@@ -27,8 +28,8 @@ class RecalculateTrafficSourceAttribution
      */
     public function handle(Model $model, string $attributionModel = ProcessTrafficSourceShare::ATTRIBUTION_LINEAR): void
     {
-        if (!$model instanceof Customer && !$model instanceof Order) {
-            throw new \InvalidArgumentException('RecalculateTrafficSourceAttribution only supports Customer and Order models.');
+        if (!$model instanceof Customer && !$model instanceof Order && !$model instanceof Prospect) {
+            throw new \InvalidArgumentException('RecalculateTrafficSourceAttribution only supports Customer, Prospect and Order models.');
         }
 
         $rawTouchesData = $model->traffic_sources;

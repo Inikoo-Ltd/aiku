@@ -11,6 +11,7 @@ namespace App\Actions\CRM\TrafficSource;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Customer;
+use App\Models\CRM\Prospect;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Support\Carbon;
@@ -31,12 +32,15 @@ class RecordEmailClickTouchpoint
      * When a `Mailshot` is provided, the touch is stamped with a campaign reference derived from
      * the mailshot's id, matching the same `<traffic_source_id>+reference` campaign-matching used
      * for UTM-based touches, so newsletter revenue can be broken down per mailshot.
+     *
+     * Accepts either a `Customer` or a `Prospect` recipient, since a mailshot may be dispatched to
+     * either before a prospect has converted into a customer.
      */
-    public function handle(Customer $customer, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null): void
+    public function handle(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null): void
     {
         $occurredAt = $occurredAt ?? now();
 
-        $touches = ParseTrafficSourceTouches::run($customer->traffic_sources);
+        $touches = ParseTrafficSourceTouches::run($recipient->traffic_sources);
 
         $campaignRef = $mailshot ? (string) $mailshot->id : null;
 
@@ -51,25 +55,25 @@ class RecordEmailClickTouchpoint
         }
 
         if ($mailshot) {
-            $this->ensureCampaignExists($customer, $mailshot, $campaignRef);
+            $this->ensureCampaignExists($recipient, $mailshot, $campaignRef);
         }
 
         $abbr     = TrafficSourcesTypeEnum::NEWSLETTER->abbr()[TrafficSourcesTypeEnum::NEWSLETTER->value];
         $newTouch = $occurredAt->getTimestamp() . $abbr . ($campaignRef ?? '');
 
-        $customer->update([
-            'traffic_sources' => $customer->traffic_sources
-                ? $customer->traffic_sources . '|' . $newTouch
+        $recipient->update([
+            'traffic_sources' => $recipient->traffic_sources
+                ? $recipient->traffic_sources . '|' . $newTouch
                 : $newTouch,
         ]);
 
-        RecalculateTrafficSourceAttribution::run($customer->fresh());
+        RecalculateTrafficSourceAttribution::run($recipient->fresh());
     }
 
-    private function ensureCampaignExists(Customer $customer, Mailshot $mailshot, string $campaignRef): void
+    private function ensureCampaignExists(Customer|Prospect $recipient, Mailshot $mailshot, string $campaignRef): void
     {
         /** @var TrafficSource|null $trafficSource */
-        $trafficSource = TrafficSource::where('shop_id', $customer->shop_id)
+        $trafficSource = TrafficSource::where('shop_id', $recipient->shop_id)
             ->where('type', TrafficSourcesTypeEnum::NEWSLETTER->value)
             ->first();
 

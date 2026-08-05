@@ -9,10 +9,12 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Comms\Mailshot\StoreMailshot;
+use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Comms\Mailshot;
+use App\Models\CRM\Prospect;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Support\Carbon;
@@ -107,6 +109,28 @@ it('does not record a duplicate touch for a repeat click on the same mailshot on
     RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 18:00:00'), $mailshot);
 
     $touches = explode('|', $this->customer->fresh()->traffic_sources);
+
+    expect($touches)->toHaveCount(1);
+});
+
+it('also records an email click as a newsletter touch for a prospect', function () {
+    $prospect = StoreProspect::make()->action($this->shop, Prospect::factory()->definition());
+
+    RecordEmailClickTouchpoint::run($prospect, Carbon::parse('2026-01-01 10:00:00'));
+
+    $trafficSources = $prospect->fresh()->trafficSources()->get();
+
+    expect($trafficSources)->toHaveCount(1);
+    expect($trafficSources->first()->type)->toBe(TrafficSourcesTypeEnum::NEWSLETTER->value);
+});
+
+it('does not record a duplicate touch for a prospect clicking again on the same day', function () {
+    $prospect = StoreProspect::make()->action($this->shop, Prospect::factory()->definition());
+
+    RecordEmailClickTouchpoint::run($prospect, Carbon::parse('2026-01-01 10:00:00'));
+    RecordEmailClickTouchpoint::run($prospect->fresh(), Carbon::parse('2026-01-01 18:00:00'));
+
+    $touches = explode('|', $prospect->fresh()->traffic_sources);
 
     expect($touches)->toHaveCount(1);
 });

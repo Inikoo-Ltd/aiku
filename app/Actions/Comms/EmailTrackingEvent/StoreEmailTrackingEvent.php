@@ -35,6 +35,10 @@ class StoreEmailTrackingEvent extends OrgAction
             foreach ($dispatchedEmail->customers as $customer) {
                 RecordEmailClickTouchpoint::run($customer, $emailTrackingEvent->created_at ?? now(), $dispatchedEmail->mailshot);
             }
+
+            foreach ($dispatchedEmail->prospects as $prospect) {
+                RecordEmailClickTouchpoint::run($prospect, $emailTrackingEvent->created_at ?? now(), $dispatchedEmail->mailshot);
+            }
         } elseif ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::OPENED) {
             DispatchedEmailHydrateReads::run($dispatchedEmail);
         }
