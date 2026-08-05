@@ -19,16 +19,18 @@ class GetVariantAndProducts extends IrisAction
 {
     public function handle(Variant $variant): array
     {
-        // TODO HIDE allProduct, use allProductForSale
         $variant->loadMissing('allProduct');
-        // $variant->loadMissing('allProductForSale');
+
+        $data = $variant->data;
+        $excludedProducts = collect(data_get($variant->data, 'products'))->reject(fn ($product) => isset($product['is_hide']) ? $product['is_hide'] : false);
+        $products   = $variant->allProduct()->whereIn('id', $excludedProducts->keys())->get();
+
+        data_set($data, 'products', $excludedProducts);
 
         return [
-            'variant_data' => $variant->data,
-            'products' => ProductOfVariantResource::collection(
-                // TODO HIDE allProduct, use allProductForSale
-                $variant->allProduct
-                // $variant->allProductForSale
+            'variant_data'  => $data,
+            'products'      => ProductOfVariantResource::collection(
+                $products
             )->resolve(),
         ];
     }
