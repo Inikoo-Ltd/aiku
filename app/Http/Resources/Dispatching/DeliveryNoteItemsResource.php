@@ -149,6 +149,7 @@ class DeliveryNoteItemsResource extends JsonResource
                     'orgStock'     => $this->org_stock_id,
                 ],
             ],
+            'packed_in'                                => $packedIn,
             'packed_in_message'                        => $packedInMessage,
             'is_done_packing'                          => $hasAnyPacking && $isFullyPacked,
             'is_partially_packed'                      => $hasAnyPacking && !$isFullyPacked,

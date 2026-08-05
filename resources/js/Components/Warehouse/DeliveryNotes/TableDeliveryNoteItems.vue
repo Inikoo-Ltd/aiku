@@ -376,15 +376,20 @@ const GetQuantityToPickFractional = (item) => {
     }else return item.quantity_to_pick_fractional
 }
 
+/*
+ * A part of an outer can be left waiting by any shop now that ecom replaces a product in part, not
+ * only by dropshipping, so what decides the fraction is the pack the item comes in. An item packed
+ * individually has nothing to cut and reads as a plain count.
+ */
 const GetWaitingWarehouseFractional = (item) => {
-    if (props.shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_warehouse_fractional_ds
     }
     return null
 }
 
 const GetWaitingCrmFractional = (item) => {
-    if (props.shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_crm_fractional_ds
     }
     return null
@@ -920,13 +925,19 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
             </span> -->
 
             <!-- Number: waiting warehouse -->
-            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="urlItemsWaitingWarehouse" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
-                {{ Number(item.quantity_waiting_warehouse) }}
+            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="urlItemsWaitingWarehouse" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2"
+                :class="GetWaitingWarehouseFractional(item) ? 'pb-1.5' : ''"
+            >
+                <FractionDisplay v-if="GetWaitingWarehouseFractional(item)" :fractionData="GetWaitingWarehouseFractional(item)" />
+                <template v-else>{{ Number(item.quantity_waiting_warehouse) }}</template>
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </Link>
-            <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
-                {{ Number(item.quantity_waiting_warehouse) }}
+            <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2"
+                :class="GetWaitingWarehouseFractional(item) ? 'pb-1.5' : ''"
+            >
+                <FractionDisplay v-if="GetWaitingWarehouseFractional(item)" :fractionData="GetWaitingWarehouseFractional(item)" />
+                <template v-else>{{ Number(item.quantity_waiting_warehouse) }}</template>
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </span>
@@ -936,10 +947,11 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
                 :href="urlItemsWaitingCrm"
+                v-tooltip="ctrans('Waiting for customer services')" 
+                class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2"
             >
-                <span v-tooltip="ctrans('Waiting for customer services')"  class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2">
-                    {{ Number(item.quantity_waiting_crm) }}
-                </span>
+                <FractionDisplay v-if="GetWaitingCrmFractional(item)" :fractionData="GetWaitingCrmFractional(item)" />
+                <template v-else>{{ Number(item.quantity_waiting_crm) }}</template>
             </Link>
 
 
