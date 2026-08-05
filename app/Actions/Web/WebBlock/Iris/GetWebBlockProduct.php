@@ -55,7 +55,11 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
 
         if ($variant) {
-            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant->only(['id', 'data']));
+            $variant = $variant->only(['id', 'data']);
+            $excludedProducts = collect(data_get($variant, 'data.products'))->reject(fn ($product) => isset($product['is_hide']) ? $product['is_hide'] : false);
+
+            data_set($variant, 'data.products', $excludedProducts);
+            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant);
         }
 
         return [

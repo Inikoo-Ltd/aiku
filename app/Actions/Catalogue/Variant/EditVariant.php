@@ -115,7 +115,7 @@ class EditVariant extends OrgAction
                 'label'   => __('Variants'),
                 'icon'    => 'fa-light fa-shapes',
                 'fields'  => [
-                    'variant' => [
+                    'variants' => [
                         'type'               => 'variant_field',
                         'label'              => __('Variants'),
                         'value'              => $this->getVariantFieldValue($variant, $masterVariant),

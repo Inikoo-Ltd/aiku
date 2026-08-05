@@ -562,8 +562,8 @@ const noLeader = computed(() => {
 
                     <!-- Hidden -->
                     <td v-if="withIsHide" class="px-4 text-center">
-                      <input v-if="!node.children" type="checkbox" :disabled="!node.product" :checked="node.is_hide"
-                        v-tooltip="trans('Hide this product from the variant selector in the website')"
+                      <input v-if="!node.children && !node.is_leader" type="checkbox" :disabled="!node.product" :checked="node.is_hide"
+                        v-tooltip="ctrans('Hide this product from the variant selector in the website')"
                         @change="setHidden(node, $event.target.checked)"
                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
@@ -645,8 +645,8 @@ const noLeader = computed(() => {
 
                     <!-- Hidden -->
                     <td v-if="withIsHide" class="px-4 text-center">
-                      <input type="checkbox" :disabled="!child.product" :checked="child.is_hide"
-                        v-tooltip="trans('Hide this product from the variant selector in the website')"
+                      <input v-if="!child.is_leader" type="checkbox" :disabled="!child.product" :checked="child.is_hide"
+                        v-tooltip="ctrans('Hide this product from the variant selector in the website')"
                         @change="setHidden(child, $event.target.checked)"
                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
