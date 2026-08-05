@@ -462,7 +462,10 @@ const isOffersData = (offersData: any): boolean => {
             <!-- Column: Name / Stock -->
             <template #cell(asset_name)="{ item }">
                 <div>
-                    <div xclass="item.offers_data ? 'text-pink-600' : ''">{{ item.asset_name }}</div>
+                    <div xclass="item.offers_data ? 'text-pink-600' : ''">
+                        <span v-if="Number(item.units) !== 1">[{{ item.units }}x]</span>
+                        {{ item.asset_name }}
+                    </div>
                     <div v-if="item.units_changed_to"
                         v-tooltip="ctrans('This line was ordered and priced at :ordered per pack, the product is now sold as :now per pack. Check what the warehouse should ship.', { ordered: item.product_units, now: item.units_changed_to })"
                         class="text-xs text-amber-600"

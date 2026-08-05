@@ -252,6 +252,7 @@ const submitSendBackWarehouse = () => {
                         <div>
                             <span class="font-semibold">{{ subItem.org_stock_code }}</span>
                             <span class="ml-1.5 text-gray-600 italic opacity-80">{{ subItem.org_stock_name }}</span>
+                            <span class="ml-1.5 italic opacity-80">{{ subItem.packed_in_message }}</span>
                         </div>
                         <div class="tabular-nums text-sm text-gray-500">
                             {{ Number(subItem.quantity_waiting_crm) }} {{ ctrans("items") }}
