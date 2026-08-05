@@ -96,7 +96,7 @@ class MasterProductsResource extends JsonResource
             'trade_units_label'                 => $this->trade_units_label ?? null,
             'price'                             => $this->price,
             'rrp'                               => $this->rrp,
-            'master_prices'                      => $this->master_prices,
+            'master_prices'                     => $this->master_prices,
             'master_rrp'                        => $this->master_rrps,
             'status'                            => $this->status,
             'currency_code'                     => $this->currency_code,
@@ -109,7 +109,7 @@ class MasterProductsResource extends JsonResource
             'dropshippers'                      => $this->dropshippers ?? 0,
             'listings'                          => $this->listings ?? 0,
             'sold'                              => $this->sold ?? 0,
-            'image_thumbnail'                   => $this->web_images,
+            'image_thumbnail'                   => Arr::get($this->web_images, 'main.thumbnail'),
             'status_icon'                       => $this->status ? [
                 'tooltip' => __('Active'),
                 'icon'    => 'fas fa-check-circle',

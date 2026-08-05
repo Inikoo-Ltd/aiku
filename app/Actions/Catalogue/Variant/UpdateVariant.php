@@ -160,11 +160,18 @@ class UpdateVariant extends OrgAction
             return $variant;
         });
 
+        $leader = $variant->leaderProduct;
+
         return $variant;
     }
 
     public function prepareForValidation(): void
     {
+        if (!$this->asAction) {
+            $this->data = $this->variants;
+            unset($this->variants);
+        }
+
         $this->prepareForVariantUpdate();
     }
 

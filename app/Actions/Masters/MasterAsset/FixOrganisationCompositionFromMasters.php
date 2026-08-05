@@ -267,7 +267,7 @@ class FixOrganisationCompositionFromMasters
             $organisation,
             $dryRun,
             $withUnits,
-            $masterShop, !$command->option('all'), $withPrices,
+            $masterShop,
             (bool)$command->option('flagged'),
             $withPrices,
             function (string $line) use ($command, &$bar) {

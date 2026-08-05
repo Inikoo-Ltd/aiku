@@ -437,8 +437,8 @@ class IndexMasterProducts extends OrgAction
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: !$sortByIndex, type: 'icon');
             } else {
                 $table
-                    ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'status_icon', label: '', type: 'icon')
+                    ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'code', label: __('Code'), sortable: !$sortByIndex);
                 $table->column(key: 'variant_slug', label: 'Variant', sortable: !$sortByIndex);
 
@@ -711,7 +711,12 @@ class IndexMasterProducts extends OrgAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index', 'grp.masters.master_shops.show.master_families.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_family.missing_image.families',
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
                 ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(

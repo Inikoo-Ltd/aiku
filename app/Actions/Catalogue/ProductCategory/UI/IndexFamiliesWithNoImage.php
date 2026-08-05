@@ -1,10 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 19-06-2025-09h-08m
- * github: https://github.com/KirinZero0
- * copyright 2025
+ * Author Louis Perez
+ * Created on 05-08-2026-11h-38m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
 */
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
@@ -29,7 +29,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexFamiliesWithNoDepartment extends OrgAction
+class IndexFamiliesWithNoImage extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
@@ -68,7 +68,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
         $queryBuilder->where('product_categories.shop_id', $shop->id);
-        $queryBuilder->whereNull('product_categories.department_id');
+        $queryBuilder->whereNull('product_categories.image_id');
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
@@ -78,6 +78,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                 'product_categories.code',
                 'product_categories.name',
                 'product_categories.state',
+                'product_categories.web_images',
                 'product_categories.description',
                 'product_categories.created_at',
                 'product_categories.image_id',
@@ -124,9 +125,12 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                     ]
                 )
                 ->withGlobalSearch();
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+            $table
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'number_current_products', label: __('Current products'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -139,7 +143,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
     {
         $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR, ProductCategoryTabsEnum::SALES, ProductCategoryTabsEnum::NEED_REVIEW]);
 
-        $title     = __('Stray families');
+        $title     = __('Families with No Image');
         $model     = '';
         $icon      = [
             'icon'  => ['fal', 'fa-folder'],
@@ -170,7 +174,6 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
-
                 'routes'                              => [
                     'departments_route' => [
                         'name'       => 'grp.json.shop.departments',
@@ -183,7 +186,6 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                         'parameters' => []
                     ]
                 ],
-                'is_orphan_families'                  => true,
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => FamiliesResource::collection($families)
                     : Inertia::optional(fn () => FamiliesResource::collection($families)),
@@ -208,14 +210,14 @@ class IndexFamiliesWithNoDepartment extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.families.no_department.index' => array_merge(
+            'grp.org.shops.show.catalogue.families.no_image.index' => array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    $suffix
+                    trim('('.__('Missing Image').') '.$suffix)
                 )
             ),
             default => []
