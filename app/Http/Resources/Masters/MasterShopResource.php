@@ -77,7 +77,7 @@ class MasterShopResource extends JsonResource
                 'icon'            => 'fal fa-folder',
                 'backgroundColor' => "#e879f91d",
                 "color"           => "#df1c1cff",
-                'value'           => $masterShop->stats->number_mismatched_master_families_active,
+                'value'           => $masterShop->stats->number_missing_images_master_families,
             ];
         }
 
