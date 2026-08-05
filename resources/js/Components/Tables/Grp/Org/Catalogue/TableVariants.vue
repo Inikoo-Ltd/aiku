@@ -14,7 +14,7 @@ import { trans } from 'laravel-vue-i18n'
 import { inject, ref } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Modal from '@/Components/Utils/Modal.vue'
-import { faCheck, faTimes } from '@fal'
+import { faCheck, faTimes, faCheckDouble, faSkull } from '@fal'
 
 library.add(faCircle, faDoNotEnter)
 
@@ -87,6 +87,20 @@ const linkRedirectAsset = (item) => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+      <template #cell(status)="{ item }">
+            <FontAwesomeIcon 
+                v-if="!item.status"
+                v-tooltip="ctrans('Variant is disabled')"
+                :icon="faSkull"
+                class="text-red-500"
+            />
+            <FontAwesomeIcon 
+              v-else
+              v-tooltip="ctrans('Variant is enabled')"
+              :icon="faCheckDouble"
+              class="text-green-500"
+            />
+      </template>
       <template #cell(code)="{ item }">
         <Link :href="getVariantRoute(item)" class="primaryLink">
           {{ item.code }}

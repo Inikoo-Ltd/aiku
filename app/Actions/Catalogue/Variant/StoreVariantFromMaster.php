@@ -22,6 +22,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
+use App\Models\Web\Redirect;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Facades\DB;
@@ -76,8 +77,10 @@ class StoreVariantFromMaster extends OrgAction
                 ]);
 
             foreach ($productsInVariant as $product) {
-                if ($product->id == $leader->id) continue; // Skip if leader
-                
+                if ($product->id == $leader->id) {
+                    continue;
+                } // Skip if leader
+
                 $product->updateQuietly([
                     'variant_id'        => $variant->id,
                     'is_for_sale'       => true,
@@ -104,10 +107,18 @@ class StoreVariantFromMaster extends OrgAction
                             'to_webpage_id' => $leader->webpage->id,
                         ]);
                     } else {
-                        StoreRedirectFromWebsite::make()->action($website, [
-                            'from_url'     => strtolower($product->code),
-                            'to_url'       => $leader->webpage->id,
-                        ]);
+                        $redirect = Redirect::where('from_path', strtolower($product->code))->first();
+
+                        if ($redirect) {
+                            UpdateRedirect::make()->action($redirect, [
+                                'to_webpage_id' => $leader->webpage->id,
+                            ]);
+                        } else {
+                            StoreRedirectFromWebsite::make()->action($website, [
+                                'from_url'     => strtolower($product->code),
+                                'to_url'       => $leader->webpage->id,
+                            ]);
+                        }
                     }
                 }
             }
