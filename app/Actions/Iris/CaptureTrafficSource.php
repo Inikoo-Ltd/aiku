@@ -88,14 +88,10 @@ class CaptureTrafficSource
     {
         $routeName = request()->route() ? request()->route()->getName() : null;
 
-        // Allow only if the route name starts with 'iris' or is one of the specified retina routes
-        $allowedRoutes = [
-            'retina.register',
-            'retina.register_standalone',
-            'retina.register_from_google',
-        ];
-
-        if (!($routeName && (str_starts_with($routeName, 'iris') || in_array($routeName, $allowedRoutes)))) {
+        // Allow only if the route name starts with 'iris' or 'retina', these are the storefront and
+        // customer-portal routes served behind Varnish, where CaptureTrafficSourceMiddleWare cannot run,
+        // so this action is invoked directly from the AJAX first-hit endpoints and registration actions instead.
+        if (!($routeName && (str_starts_with($routeName, 'iris') || str_starts_with($routeName, 'retina')))) {
             return false;
         }
         $website = request()->input('website');
