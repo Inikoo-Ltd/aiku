@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 05 Aug 2026 10:12:44 Central Indonesia Time, Bali, Indonesia
- * Copyright (c) 2026, Raul A Perusquia Flores
+ * Author: stewicca <stewicalf@gmail.com>
+ * Created: Wed, 05 Aug 2026, Bali, Indonesia
+ * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
 namespace App\Actions\Procurement\OrgSupplierProducts;
