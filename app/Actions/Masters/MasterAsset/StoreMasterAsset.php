@@ -60,15 +60,12 @@ class StoreMasterAsset extends OrgAction
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
-        $numberOfTradeUnits = count($tradeUnits);
-        if ($numberOfTradeUnits > 1) {
-            data_set($modelData, 'units', 1);
-            data_set($modelData, 'unit', 'bundle');
-        } elseif ($numberOfTradeUnits === 1) {
-            $single = Arr::first($tradeUnits);
-            data_set($modelData, 'units', $single['quantity'] ?? 1);
-        } else {
-            data_set($modelData, 'units', '1');
+        $unitsFromTradeUnits = $this->getUnitsFromTradeUnits($tradeUnits);
+        if (!Arr::get($modelData, 'has_independent_units', false)) {
+            data_set($modelData, 'units', $unitsFromTradeUnits['units'] ?? Arr::get($modelData, 'units', 1));
+        }
+        if (count($tradeUnits) > 1) {
+            data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
         }
 
         data_set($modelData, 'group_id', $masterFamily->group_id);
@@ -191,6 +188,8 @@ class StoreMasterAsset extends OrgAction
             'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)],
             'shop_products'            => ['sometimes', 'array'],
             'units'                    => ['sometimes'],
+
+            'has_independent_units'    => ['sometimes', 'boolean'],
             'description_title'        => ['sometimes', 'string', 'nullable', 'max:300'],
             'description_extra'        => ['sometimes', 'string', 'nullable', 'max:15000'],
             'marketing_weight'         => ['sometimes', 'numeric', 'min:0'],

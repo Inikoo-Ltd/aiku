@@ -659,3 +659,29 @@ test('the missing product sweep skips inactive and not for sale masters, but tru
         ->and($codesQueued)->not->toContain($markedOut->code)
         ->and($codesQueued)->not->toContain($notForSale->code);
 });
+
+test('the organisation sweep compares everything by default and only trusts the flag when asked', function () {
+    $drifted = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 10);
+    $drifted->updateQuietly(['is_for_sale' => true]);
+    $this->masterAsset->updateQuietly(['is_for_sale' => true, 'mismatch_detected' => false]);
+
+    // Flag says clean, data says drifted: the default must not believe the flag.
+    $full = App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::run(
+        $this->organisation,
+        dryRun: true
+    );
+
+    $flagged = App\Actions\Masters\MasterAsset\FixOrganisationCompositionFromMasters::run(
+        $this->organisation,
+        dryRun: true,
+        withUnits: true,
+        masterShop: null,
+        onlyFlagged: true
+    );
+
+    $mentions = fn (array $result) => collect($result['changes'])
+        ->contains(fn ($change) => str_starts_with($change, $this->masterAsset->code.' @ '.$this->shop->code));
+
+    expect($mentions($full))->toBeTrue()
+        ->and($mentions($flagged))->toBeFalse();
+});
