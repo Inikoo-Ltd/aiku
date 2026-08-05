@@ -13,7 +13,8 @@ import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
-import { ref, watch } from "vue"
+import { ref, watch, computed } from "vue"
+import { pendingCompositionUnits } from "@/Composables/usePendingCompositionUnits"
 import { trans } from "laravel-vue-i18n"
 
 defineOptions({ inheritAttrs: false })
@@ -79,6 +80,17 @@ watch(value, (newValue) => {
     props.form.errors[props.fieldName] = ''
 });
 
+/*
+ * The trade units being edited in their own form imply new units before they are
+ * saved; the trade-units field publishes the change through the shared ref.
+ */
+const pendingUnits = computed(() => {
+    if (!props.fieldData?.unitsPreview || !pendingCompositionUnits.value) {
+        return null
+    }
+    return pendingCompositionUnits.value.to
+})
+
 const updateFormValue = (newValue) => {
     let target = props.form;
     if (Array.isArray(props.fieldName)) {
@@ -92,7 +104,12 @@ const updateFormValue = (newValue) => {
 <template>
     <div class="relative">
         <div v-if="fieldData?.unitsPreview && !isEditing" class="flex items-center gap-3">
-            <span>{{ fieldData.unitsPreview }}x {{ value || fieldData?.placeholder }}</span>
+            <span :class="pendingUnits ? 'line-through text-gray-400' : ''">
+                {{ fieldData.unitsPreview }}x {{ value || fieldData?.placeholder }}
+            </span>
+            <span v-if="pendingUnits" class="font-medium text-amber-600">
+                → {{ pendingUnits }}x {{ value || fieldData?.placeholder }} ({{ trans('after save') }})
+            </span>
             <button type="button" class="text-indigo-600 hover:underline" @click="isEditing = true">
                 {{ trans('Edit') }}
             </button>
