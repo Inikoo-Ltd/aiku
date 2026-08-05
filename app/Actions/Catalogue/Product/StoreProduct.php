@@ -19,8 +19,8 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTra
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
+use App\Actions\Catalogue\Shop\External\Faire\StoreFaireProduct;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
-use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
@@ -31,6 +31,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Models\Catalogue\Product;
@@ -169,6 +170,10 @@ class StoreProduct extends OrgAction
         }
 
         $this->productHydrators($product);
+
+        if (!$product->marketplace_id && $shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::FAIRE) {
+            StoreFaireProduct::dispatch($product);
+        }
 
 
         //todo create an action to add this product to a existing variant as minion or a leader (check master product to see id applicable)

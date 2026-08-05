@@ -47,7 +47,7 @@ trait WithFaireApi
                 return $response->body();
             }
 
-            return $response->json();
+            return $response->json() ?? [];
         }
 
         return [
@@ -123,5 +123,41 @@ trait WithFaireApi
         return $this->buildRequest('PATCH', "product-inventory/by-product-variant-ids", data: [
             'inventories' => $inventories
         ]);
+    }
+
+
+    public function createFaireProduct(array $attributes): array
+    {
+        return $this->buildRequest('POST', 'products', data: $attributes);
+    }
+
+
+    public function updateFaireProduct(string $productId, array $attributes): array
+    {
+        return $this->buildRequest('PATCH', "products/$productId", data: $attributes);
+    }
+
+
+    public function deleteFaireProduct(string $productId): array
+    {
+        return $this->buildRequest('DELETE', "products/$productId");
+    }
+
+
+    public function createFaireProductVariant(string $productId, array $attributes): array
+    {
+        return $this->buildRequest('POST', "products/$productId/variants", data: $attributes);
+    }
+
+
+    public function updateFaireProductVariant(string $productId, string $variantId, array $attributes): array
+    {
+        return $this->buildRequest('PATCH', "products/$productId/variants/$variantId", data: $attributes);
+    }
+
+
+    public function deleteFaireProductVariant(string $productId, string $variantId): array
+    {
+        return $this->buildRequest('DELETE', "products/$productId/variants/$variantId");
     }
 }

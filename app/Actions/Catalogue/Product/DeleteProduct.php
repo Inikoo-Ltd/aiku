@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Shop\External\Faire\DeleteFaireProduct;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProducts;
 use App\Actions\OrgAction;
@@ -16,6 +17,8 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProducts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateAssets;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProducts;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use Exception;
 use Illuminate\Console\Command;
@@ -29,6 +32,10 @@ class DeleteProduct extends OrgAction
 
     public function handle(Product $product, array $deletedData = [], bool $skipHydrate = false): Product
     {
+        $faireProductId = $product->marketplace_second_id;
+        $faireVariantId = $product->marketplace_id;
+        $isFaireProduct = $product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE;
+
         $product->delete();
         $product->asset->delete();
         $product->productVariants()->delete();
@@ -43,6 +50,11 @@ class DeleteProduct extends OrgAction
         OrganisationHydrateAssets::dispatch($product->organisation)->delay(2);
         ShopHydrateProducts::dispatch($product->shop)->delay(2);
         ShopHydrateAssets::dispatch($product->shop)->delay(2);
+
+        if ($isFaireProduct && $faireProductId) {
+            DeleteFaireProduct::dispatch($product, $faireProductId, $faireVariantId);
+        }
+
         return $product;
     }
 
