@@ -44,13 +44,20 @@ class FixOrganisationCompositionFromMasters
      */
     public function handle(Organisation $organisation, bool $dryRun = true, bool $withUnits = true, ?MasterShop $masterShop = null, bool $onlyFlagged = false, bool $withPrices = true, ?callable $report = null, ?callable $onMasterDone = null): array
     {
-        $checked        = 0;
-        $fixed          = 0;
+        $checked            = 0;
+        $fixed              = 0;
         $unitsFixed     = 0;
+        $pricesFixed        = 0;
         $pricesFixed    = 0;
         $changes        = [];
+        $ordersToReview     = [];
         $ordersToReview = [];
 
+        /*
+         * Only what is still sold: walking every product of every master means 149k
+         * rows on aw's SK organisation, and most of them are discontinued stock or
+         * masters nobody sells, which no one is going to act on.
+         */
         /*
          * Only what is still sold: walking every product of every master means 149k
          * rows on aw's SK organisation, and most of them are discontinued stock or
@@ -59,6 +66,13 @@ class FixOrganisationCompositionFromMasters
         $masterQuery = fn () => MasterAsset::whereHas('products', fn ($query) => $query->whereHas('shop', fn ($shop) => $shop->where('organisation_id', $organisation->id)))
             ->when($masterShop, fn ($query) => $query->where('master_shop_id', $masterShop->id))
             ->where('status', true)
+            ->where('is_for_sale', true)
+            /*
+             * Driven by the mismatch flag the detector already wrote: comparing every
+             * master again means 149k product comparisons to find the few hundred that
+             * drifted. Pass onlyFlagged false after data has changed under the flag.
+             */
+            ->when($onlyFlagged, fn ($query) => $query->where('mismatch_detected', true))
             ->where('is_for_sale', true)
             /*
              * Everything is compared unless --flagged is asked for. The flag is only as
@@ -73,7 +87,7 @@ class FixOrganisationCompositionFromMasters
         $onMasterDone && $onMasterDone(0, $total);
 
         $masterQuery()
-            ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, $withPrices, $report, $onMasterDone, &$checked, &$fixed, &$unitsFixed, &$pricesFixed, &$changes, &$ordersToReview) {
+            ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, $withPrices, $withPrices, $report, $onMasterDone, &$checked, &$fixed, &$unitsFixed, &$pricesFixed, &$pricesFixed, &$changes, &$ordersToReview, &$ordersToReview) {
                 foreach ($masterAssets as $masterAsset) {
                     $tradeUnitData = $masterAsset->tradeUnits->map(fn ($tradeUnit) => [
                         'id'       => $tradeUnit->id,
@@ -129,9 +143,7 @@ class FixOrganisationCompositionFromMasters
                             ));
                         }
 
-                        $line      = $masterAsset->code.' @ '.$product->shop->code.' ('.implode('; ', $note).')';
-                        $changes[] = $line;
-                        $report && $report($line);
+                        $changes[] = $masterAsset->code.' @ '.$product->shop->code.' ('.implode('; ', $note).')';
 
                         if ($dryRun) {
                             continue;
@@ -255,7 +267,7 @@ class FixOrganisationCompositionFromMasters
             $organisation,
             $dryRun,
             $withUnits,
-            $masterShop,
+            $masterShop, !$command->option('all'), $withPrices,
             (bool)$command->option('flagged'),
             $withPrices,
             function (string $line) use ($command, &$bar) {
