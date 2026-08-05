@@ -44,7 +44,6 @@ import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
 import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStockHandlingNotes.vue"
-import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 
 const screenType = inject('screenType', ref('desktop'))
 
@@ -420,8 +419,7 @@ onUnmounted(() => {
                 :icon="faBarcodeRead"
                 class="ml-1 text-gray-500"
                 fixed-width
-                aria-hidden="true" />
-            <BarcodeDisplay :value="item.barcode" />
+                aria-hidden="true" />            
         </template>
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
