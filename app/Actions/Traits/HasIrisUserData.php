@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Iris\CaptureTrafficSource;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
@@ -88,10 +89,10 @@ trait HasIrisUserData
                 'cart_amount_gross'    => $grossAmount, // order total amount gross (before discount)
                 'cart_products_amount' => $cardItemsAmountAfterDiscount,  // order total items amount after discount
             ],
-            'gr_data'      => $grData,
-            // 'traffic_source_cookies' => CaptureTrafficSource::run(),
-            'offer_meters' => $offerMeters,
-            'offer_data'   => $offerData, // this is used in the top bar
+            'gr_data'                => $grData,
+            'traffic_source_cookies' => CaptureTrafficSource::run(),
+            'offer_meters'           => $offerMeters,
+            'offer_data'             => $offerData, // this is used in the top bar
         ];
     }
 }
