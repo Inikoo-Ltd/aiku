@@ -9,8 +9,10 @@
 namespace App\Models\Comms;
 
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
+use App\Models\CRM\Customer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -86,5 +88,8 @@ class DispatchedEmail extends Model
         return $this->hasOne(EmailCopy::class);
     }
 
-
+    public function customers(): BelongsToMany
+    {
+        return $this->belongsToMany(Customer::class, 'customer_has_dispatched_emails');
+    }
 }
