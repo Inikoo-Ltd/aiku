@@ -40,10 +40,14 @@ const pickLabel = computed(() => {                                           // 
 })
 const isPartialPick = computed(() => !!pickLabel.value && !Number.isInteger(sellQty.value! / packedQty.value!))
 
-// No anomalies, no rebels, whole picks, every quantity known: the triangle is at peace
-const isNirvana = computed(() =>
-    !props.mood && !isPartialPick.value && !!sellQty.value && !!packedQty.value && !!pickLabel.value
-)
+// No anomalies, no rebels, whole picks, every quantity known: the triangle is at peace.
+// Full enlightenment is picking exactly one outer; any other whole pick is the lower path.
+const nirvana = computed(() => {
+    if (props.mood || isPartialPick.value || !sellQty.value || !packedQty.value || !pickLabel.value) {
+        return null
+    }
+    return sellQty.value / packedQty.value === 1 ? '🧘' : '🙏'
+})
 
 // Per-warehouse packing, the SKO corner's fine print; amber when warehouses disagree
 const orgPacking = computed(() => {
@@ -230,8 +234,10 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
             <!-- The all-seeing eye -->
             <g :transform="`translate(${CENTER.x}, ${CENTER.y}) scale(1.3)`">
                 <!-- nirvana: nothing wrong anywhere, the triangle is at peace -->
-                <text v-if="isNirvana" y="-24" text-anchor="middle" class="text-[14px]"
-                    style="filter: grayscale(1); opacity: 0.55">🙏</text>
+                <text v-if="nirvana" y="-28" text-anchor="middle" class="text-[26px]"
+                    style="filter: grayscale(1); opacity: 0.55">{{ nirvana }}</text>
+                <!-- anomalies: the family is on fire, full colour on purpose -->
+                <text v-if="mood === 'crying'" y="-28" text-anchor="middle" class="text-[26px]">🔥</text>
                 <!-- angry brows: rebels in the family -->
                 <g v-if="mood === 'angry'" stroke="#d97706" stroke-width="2" stroke-linecap="round">
                     <line x1="-16" y1="-16" x2="-4" y2="-11" />
