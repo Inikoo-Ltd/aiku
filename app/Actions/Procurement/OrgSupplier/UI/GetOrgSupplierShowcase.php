@@ -25,6 +25,7 @@ class GetOrgSupplierShowcase
                 'created_at' => $supplier->created_at,
                 'company'    => $supplier->company_name,
                 'contact'    => $supplier->contact_name,
+                'website'    => $supplier->contact_website,
                 'location'   => $supplier->location,
                 'email'      => $supplier->email,
                 'phone'      => $supplier->phone,
