@@ -21,6 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrgSupplierProduct extends OrgAction
 {
+    public bool $skipHydrators = false;
+
     public function handle(OrgSupplier $orgSupplier, SupplierProduct $supplierProduct, $modelData = []): OrgSupplierProduct
     {
         data_set($modelData, 'group_id', $orgSupplier->group_id);
@@ -43,10 +45,12 @@ class StoreOrgSupplierProduct extends OrgAction
         $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->create($modelData);
         $orgSupplierProduct->stats()->create();
 
-        OrganisationHydrateOrgSupplierProducts::dispatch($orgSupplier->organisation);
-        OrgSupplierHydrateOrgSupplierProducts::dispatch($orgSupplier);
-        if ($orgSupplierProduct->org_agent_id) {
-            OrgAgentHydrateOrgSupplierProducts::dispatch($orgSupplierProduct->orgAgent);
+        if (!$this->skipHydrators) {
+            OrganisationHydrateOrgSupplierProducts::dispatch($orgSupplier->organisation)->delay($this->hydratorsDelay);
+            OrgSupplierHydrateOrgSupplierProducts::dispatch($orgSupplier)->delay($this->hydratorsDelay);
+            if ($orgSupplierProduct->org_agent_id) {
+                OrgAgentHydrateOrgSupplierProducts::dispatch($orgSupplierProduct->orgAgent)->delay($this->hydratorsDelay);
+            }
         }
 
 
@@ -61,10 +65,11 @@ class StoreOrgSupplierProduct extends OrgAction
         ];
     }
 
-    public function action(OrgSupplier $orgSupplier, SupplierProduct $supplierProduct, $modelData = [], $hydratorsDelay = 0): OrgSupplierProduct
+    public function action(OrgSupplier $orgSupplier, SupplierProduct $supplierProduct, $modelData = [], $hydratorsDelay = 0, bool $skipHydrators = false): OrgSupplierProduct
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
+        $this->skipHydrators  = $skipHydrators;
         $this->initialisation($orgSupplier->organisation, $modelData);
 
         return $this->handle($orgSupplier, $supplierProduct, $this->validatedData);

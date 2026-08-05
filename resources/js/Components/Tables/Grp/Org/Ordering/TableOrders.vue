@@ -83,6 +83,7 @@ function orderRoute(order: Order) {
         case "grp.org.shops.show.catalogue.products.discontinued_products.show":
         case "grp.org.shops.show.catalogue.products.in_process_products.show":
         case "grp.org.shops.show.catalogue.products.not_online_products.show":
+        case "grp.org.shops.show.catalogue.products.no_image_product.show":
         case "grp.org.shops.show.catalogue.products.current_products.show":
         case "grp.org.shops.show.catalogue.products.orphan_products.show":
         case "grp.org.shops.show.catalogue.products.all_products.show":

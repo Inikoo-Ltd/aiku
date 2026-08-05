@@ -1,10 +1,10 @@
 <?php
 
 /*
- * author Louis Perez
- * created on 09-03-2026-12h-58m
- * github: https://github.com/louis-perez
- * copyright 2026
+ * Author Louis Perez
+ * Created on 05-08-2026-13h-20m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
 */
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
@@ -34,7 +34,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterFamiliesWithMismatch extends OrgAction
+class IndexMasterFamiliesWithNoImage extends OrgAction
 {
     use WithMastersAuthorisation;
     use WithMasterCatalogueSubNavigation;
@@ -148,6 +148,8 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
                 prefix: $prefix
             );
         }
+
+        // Parent Filter (ONLY affects data scope)
         $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
 
         $selects = [
@@ -176,8 +178,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
 
         $queryBuilder->select($selects);
 
-        $queryBuilder->where('master_product_categories.mismatch_detected', true);
-        $queryBuilder->addSelect('master_product_categories.mismatch_detected');
+        $queryBuilder->whereNull('master_product_categories.image_id');
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
@@ -232,8 +233,6 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'master_department_code', label: __('M. Department'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'products', label: __('Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
         };
@@ -257,7 +256,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
             'title' => __('Master shop')
         ];
         $afterTitle      = [
-            'label' => __('Master Families') . ' ('.__('Has mismatch').')'
+            'label' => __('Master Families'). ' ('.__('Missing Image').')'
         ];
         $iconRight       = [
             'icon' => 'fal fa-folder-tree',
@@ -266,7 +265,6 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
 
         $subNavigation = $this->getMasterShopNavigation($this->parent);
         $masterShop    = $this->parent;
-
         $baseData = [
             'breadcrumbs' => $this->getBreadcrumbs(
                 $this->parent,
@@ -274,7 +272,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
                 $request->route()->originalParameters()
             ),
             'navigation'  => $modelNavigation,
-            'title'       => __('Master Families') . ' ('.__('Has mismatch').')',
+            'title'       => __('Master Families (Missing Image)'),
             'pageHead'    => [
                 'title'         => $title,
                 'is_negative'   => true,
@@ -357,13 +355,13 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
                         'label' => __('Master families'),
                         'icon'  => 'fal fa-bars'
                     ],
-                    'suffix' => trim('('.__('Has mismatch').') '.$suffix)
+                    'suffix' => trim('('.__('Missing Image').') '.$suffix)
                 ]
             ];
         };
 
         return match ($routeName) {
-            'grp.masters.master_shops.show.master_family.mismatch_detected.index' =>
+            'grp.masters.master_shops.show.master_family.missing_image.index' =>
                 array_merge(
                     ShowMasterShop::make()->getBreadcrumbs($parent),
                     $headCrumb(
