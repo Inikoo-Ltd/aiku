@@ -86,6 +86,10 @@ function familyRoute(masterFamily: MasterFamily) {
                 masterShop: (routeParams as RouteParams).masterShop,
                 masterFamily: masterFamily.slug
             });
+    } else if (routeCurrent == "grp.masters.master_shops.show.master_family.missing_image.index") {
+        return route(
+            "grp.masters.master_shops.show.master_family.missing_image.show",
+            { ...routeParams, masterFamily: masterFamily.slug });
     } else if (routeCurrent == "grp.masters.master_shops.show.master_family.mismatch_detected.index") {
         return route(
             "grp.masters.master_shops.show.master_family.mismatch_detected.show",

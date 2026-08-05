@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\SupplierProduct;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgSupplierProducts\SyncOrgSupplierProducts;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\HistoricSupplierProduct\StoreHistoricSupplierProduct;
@@ -65,6 +66,7 @@ class StoreSupplierProduct extends OrgAction
             return $supplierProduct;
         });
 
+        SyncOrgSupplierProducts::make()->fromSupplierProduct($supplierProduct, $this->hydratorsDelay);
 
         GroupHydrateSupplierProducts::dispatch($supplier->group)->delay($this->hydratorsDelay);
         SupplierHydrateSupplierProducts::dispatch($supplier)->delay($this->hydratorsDelay);

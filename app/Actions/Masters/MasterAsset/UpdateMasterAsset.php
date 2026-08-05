@@ -177,13 +177,13 @@ class UpdateMasterAsset extends OrgAction
             /** @var MasterAsset $masterAsset */
             if (!empty($tradeUnits)) {
                 $this->processTradeUnits($masterAsset, $tradeUnits);
-                if (count($tradeUnits) == 1) {
-                    data_set($modelData, 'units', $tradeUnits[0]['quantity']);
-                    data_set($modelData, 'unit', $tradeUnits[0]['type']);
-                } else {
-                    data_set($modelData, 'units', 1);
-                    data_set($modelData, 'unit', 'bundle');
+                $hasIndependentUnits = Arr::get($modelData, 'has_independent_units', $masterAsset->has_independent_units);
+
+                $unitsFromTradeUnits = $this->getUnitsFromTradeUnits($tradeUnits);
+                if (!$hasIndependentUnits && $unitsFromTradeUnits['units'] !== null) {
+                    data_set($modelData, 'units', $unitsFromTradeUnits['units']);
                 }
+                data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
 
                 foreach ($masterAsset->products()->whereNot('products.not_follow_master_trade_units', true)->get() as $product) {
                     SyncProductTradeUnits::run($product, $tradeUnits);
@@ -227,7 +227,7 @@ class UpdateMasterAsset extends OrgAction
         }
 
         if ($masterAsset->wasChanged('units')) {
-            foreach ($masterAsset->products as $product) {
+            foreach ($masterAsset->products()->where('has_independent_units', false)->get() as $product) {
                 UpdateProduct::run($product, [
                     'units' => $masterAsset->units,
                 ]);
@@ -428,6 +428,8 @@ class UpdateMasterAsset extends OrgAction
             'data'                         => ['sometimes', 'array'],
             'status'                       => ['sometimes', 'required', 'boolean'],
             'units'                        => ['sometimes', 'numeric', 'min:0'],
+
+            'has_independent_units' => ['sometimes', 'boolean'],
             'master_family_id'             => [
                 'sometimes',
                 'nullable',

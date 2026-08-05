@@ -439,6 +439,8 @@ class UpdateProduct extends OrgAction
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
             'units'                     => ['sometimes', 'numeric'],
+
+            'has_independent_units'     => ['sometimes', 'boolean'],
             'unit'                      => ['sometimes', 'string'],
             'exclusive_for_customer_id' => [
                 'sometimes',

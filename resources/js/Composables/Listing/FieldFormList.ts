@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 import { defineAsyncComponent } from 'vue'
 import Input from '@/Components/Forms/Fields/Input.vue'
 import FieldInputNumber from '@/Components/Forms/Fields/FieldInputNumber.vue'
+import FieldCompositionUnits from '@/Components/Forms/Fields/FieldCompositionUnits.vue'
 import Select from '@/Components/Forms/Fields/Select.vue'
 import SelectBillingCycle from '@/Components/Forms/Fields/SelectBillingCycle.vue'
 import Phone from '@/Components/Forms/Fields/Phone.vue'
@@ -107,6 +108,7 @@ export const componentsList: { [key: string]: Component } = {
     'input': Input,
     'input_with_warning': InputWithWarning,
     'input_number': FieldInputNumber,
+    'composition_units': FieldCompositionUnits,
     'inputWithAddOn': InputWithAddOn,
     'phone': Phone,
     'date': Date,
