@@ -57,3 +57,7 @@ it('keeps component sets, which carry a real pack size', function () {
         ->and($this->repair->isAssortment(assortmentCandidate('LinCST-01', 2)))->toBeFalse()
         ->and($this->repair->isAssortment(assortmentCandidate('QSalt-12X', 3)))->toBeFalse();
 });
+
+it('passes a null name through', function () {
+    expect($this->repair->stripUnitsPrefixFromName(null, 6))->toBeNull();
+});

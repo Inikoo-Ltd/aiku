@@ -292,6 +292,7 @@ class Product extends Model implements Auditable, HasMedia
         'web_images'                    => 'array',
         'marketing_dimensions'          => 'array',
         'variant_is_visible'            => 'boolean',
+        'has_independent_units'         => 'boolean',
         'state'                         => ProductStateEnum::class,
         'status'                        => ProductStatusEnum::class,
         'trade_config'                  => ProductTradeConfigEnum::class,

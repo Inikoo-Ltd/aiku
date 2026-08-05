@@ -11,6 +11,7 @@ use App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Goods\TradeUnit;
@@ -32,6 +33,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditMasterProductComposition extends OrgAction
 {
     use WithUnitsChangeConfirmation;
+    use WithMasterAssetTradeUnits;
     use WithMasterProductSubNavigation;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
@@ -209,7 +211,7 @@ class EditMasterProductComposition extends OrgAction
             [
                 'label'  => __('Trade units'),
                 'icon'   => 'fa-light fa-atom',
-                'fields' => [
+                'fields' => array_filter([
                     'trade_units' => [
                         'label'            => __('Trade units'),
                         'saveConfirmation' => $this->getUnitsChangeConfirmation($masterProduct),
@@ -257,7 +259,8 @@ class EditMasterProductComposition extends OrgAction
                         ])),
                         'value' => $tradeUnits,
                     ],
-                ],
+                    'units' => $this->getUnitsField($masterProduct, $this->getUnitsChangeConfirmation($masterProduct)),
+                ]),
             ],
             [
                 'label'  => __('Pricing'),

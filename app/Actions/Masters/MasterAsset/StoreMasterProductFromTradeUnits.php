@@ -47,7 +47,13 @@ class StoreMasterProductFromTradeUnits extends OrgAction
 
         $hasOneTradeUnit = count($tradeUnits) == 1;
 
-        data_set($modelData, 'units', $this->getUnitsFromTradeUnits($tradeUnits)['units']);
+        if (!Arr::get($modelData, 'has_independent_units', false)) {
+            data_set(
+                $modelData,
+                'units',
+                $this->getUnitsFromTradeUnits($tradeUnits)['units'] ?? Arr::get($modelData, 'units', 1)
+            );
+        }
 
         if (!Arr::has($modelData, 'unit') && $hasOneTradeUnit) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));

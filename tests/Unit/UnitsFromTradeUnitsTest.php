@@ -22,11 +22,11 @@ it('takes the shared quantity when every trade unit packs the same', function ()
     ]))->toBe(['units' => 6.0, 'unit' => 'bundle']);
 });
 
-it('falls back to one when the trade unit quantities differ', function () use ($resolver) {
+it('claims no units when the trade unit quantities differ, leaving a hand set value alone', function () use ($resolver) {
     expect($resolver->getUnitsFromTradeUnits([
         ['id' => 1, 'quantity' => 6, 'type' => 'piece'],
         ['id' => 2, 'quantity' => 12, 'type' => 'piece'],
-    ]))->toBe(['units' => 1.0, 'unit' => 'bundle']);
+    ]))->toBe(['units' => null, 'unit' => 'bundle']);
 });
 
 it('claims no pack size for a discovery pack of one of each', function () use ($resolver) {

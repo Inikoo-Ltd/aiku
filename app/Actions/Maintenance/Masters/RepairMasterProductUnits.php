@@ -134,8 +134,12 @@ class RepairMasterProductUnits extends OrgAction
      * is a duplicate, so it goes. Only a leading prefix matching the units is touched, dimensions
      * such as "45x45cm" or "17x22cm" stay.
      */
-    public function stripUnitsPrefixFromName(string $name, float $units): string
+    public function stripUnitsPrefixFromName(?string $name, float $units): ?string
     {
+        if ($name === null) {
+            return null;
+        }
+
         $quantity = rtrim(rtrim(sprintf('%.3f', $units), '0'), '.');
 
         return preg_replace('/^\s*'.preg_quote($quantity, '/').'\s*x\s+/i', '', $name) ?? $name;

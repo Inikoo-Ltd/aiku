@@ -82,9 +82,10 @@ const unitPrice = computed(() => {
         />
 
         <div class="relative w-full">
+            <!-- A currency with no price is empty, not free: never show it as a 0 -->
             <PureInputNumber
                 v-model="displayValue"
-                :placeholder="placeholder"
+                :placeholder="placeholder ?? '—'"
                 :readonly="readonly"
                 :required="required"
                 :disabled="disabled"
