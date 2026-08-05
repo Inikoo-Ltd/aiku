@@ -242,9 +242,7 @@ console.log('props',props)
     </template>
   </ConfirmDialog>
 
-  <EditorBlogWorkshop v-if="webpage_sub_type === 'blog'" v-bind="props"/>
-
-  <Beefree
+   <Beefree
     v-if="webpage_sub_type === 'mailshot'"
     :snapshot="webpage.layout.web_blocks[0].web_block.layout.data.fieldValue.beefree.json"
     :mergeTags="webpage.mergeTags ?? []"
@@ -257,6 +255,10 @@ console.log('props',props)
     @onSave="onBeefreeSave"
     @ready="isBeefreeReady = $event"
   />
+
+  <EditorBlogWorkshop v-else v-bind="props"/>
+
+ 
 </template>
 
 <style lang="scss" scoped>
