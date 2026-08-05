@@ -89,6 +89,7 @@ class SearchCatalogue
     private function multiSearch(string $query, array $options): array
     {
         $searches = [];
+
         foreach (self::SEARCH_TARGETS as [$modelClass, $boostType, $limit]) {
             $filters = [];
             if ($shopId = Arr::get($options, 'shop_id')) {
