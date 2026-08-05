@@ -334,7 +334,6 @@ const getSeverity = (type?: string) => {
                 </div>
             </div>
         </Message>
-
     </div>
     <!-- If overflow-hidden, affect to Multiselect on Address -->
     <div class="rounded-lg shadow">
