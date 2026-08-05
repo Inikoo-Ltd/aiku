@@ -395,6 +395,24 @@ const GetWaitingCrmFractional = (item) => {
     return null
 }
 
+const GetQuantityToPackFractional = (item) => {
+    if (Number(item?.packed_in) > 1) {
+        return item?.quantity_to_pack_fractional
+    }
+    return null
+}
+
+/*
+ * The count sits inside the sentence, so the translated sentence is split around its placeholder and
+ * the fraction rendered into the gap. Translating the words on either side as their own keys would
+ * fix the English word order onto every other language.
+ */
+const packLabelAroundCount = computed(() => {
+    return ctrans('Pack :countToPack items')
+        .split(':countToPack')
+        .map(part => part.trim())
+})
+
 // Dropshipping items are picked in fractions (e.g. 1/3), so the picking input must
 // step by 1/packed_in instead of whole units. Non-dropshipping keeps whole-unit steps.
 const GetPickingDenominator = (item) => {
@@ -1331,7 +1349,7 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
-                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_to_pack ?? item.quantity_picked) })"
+                        :label="GetQuantityToPackFractional(item) ? undefined : ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_to_pack ?? item.quantity_picked) })"
                         type="secondary"
                         xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
@@ -1344,7 +1362,15 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                                 deliveryNoteItem: item.id
                             }
                         }"
-                    />
+                    >
+                        <template v-if="GetQuantityToPackFractional(item)" #label>
+                            <span class="inline-flex items-center gap-x-1">
+                                {{ packLabelAroundCount[0] }}
+                                <FractionDisplay :fractionData="GetQuantityToPackFractional(item)" />
+                                {{ packLabelAroundCount[1] }}
+                            </span>
+                        </template>
+                    </ButtonWithLink>
                     <ButtonWithLink
                         v-if="item.is_done_packing || item.is_partially_packed"
                         v-tooltip="item.is_partially_packed ? ctrans('Undo all packing on this item') : ctrans('Undo packing')"
