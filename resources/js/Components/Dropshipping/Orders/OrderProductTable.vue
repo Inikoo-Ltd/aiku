@@ -11,7 +11,7 @@ import { faBarcode, faGift, faRepeat, faTrash, faUndo } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { debounce, get, set } from "lodash-es"
+import { debounce, get, set, toInteger } from "lodash-es"
 import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelectorAutoSelect.vue"
 import { ulid } from "ulid"
@@ -483,6 +483,8 @@ const isOffersData = (offersData: any): boolean => {
                         </span>
                         <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>
                         <div v-if="item.upcoming_transaction_private_notes">{{ item.upcoming_transaction_private_notes }}</div>
+
+                        <div>Units/SKO: {{ toInteger(item.product_units) }}</div>
                     </div>
                     <Discount 
                         v-if="isOffersData(item.offers_data)" 
