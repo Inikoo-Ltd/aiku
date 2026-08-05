@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\OrgSupplier;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgSupplierProducts\SyncOrgSupplierProducts;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
@@ -26,13 +27,15 @@ class StoreOrgSupplierFromFreeSupplier extends OrgAction
         }
 
         foreach ($this->getOrganisations($supplier) as $organisation) {
-            StoreOrgSupplier::make()->action(
+            $orgSupplier = StoreOrgSupplier::make()->action(
                 $organisation,
                 $supplier,
                 $modelData,
                 hydratorsDelay: $this->hydratorsDelay,
                 strict: $this->strict
             );
+
+            SyncOrgSupplierProducts::run($orgSupplier, $this->hydratorsDelay);
         }
     }
 
