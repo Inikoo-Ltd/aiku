@@ -435,6 +435,14 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.registration.marketing_opt_in_default", Arr::pull($modelData, 'marketing_opt_in_default'));
         }
 
+        if (Arr::exists($modelData, 'whatsapp_newsletter_label')) {
+            data_set($modelData, "settings.registration.whatsapp_newsletter_label", Arr::pull($modelData, 'whatsapp_newsletter_label'));
+        }
+
+        if (Arr::exists($modelData, 'whatsapp_newsletter_default')) {
+            data_set($modelData, "settings.registration.whatsapp_newsletter_default", Arr::pull($modelData, 'whatsapp_newsletter_default'));
+        }
+
         if (Arr::exists($modelData, 'stand_alone_invoice_numbers')) {
             data_set($modelData, "settings.invoicing.stand_alone_invoice_numbers", Arr::pull($modelData, 'stand_alone_invoice_numbers'));
         }
@@ -772,6 +780,8 @@ class UpdateShop extends OrgAction
             'required_phone_number'                                   => ['sometimes', 'boolean'],
             'marketing_opt_in_default'                                => ['sometimes', 'boolean'],
             'marketing_opt_in_label'                                  => ['sometimes', 'string'],
+            'whatsapp_newsletter_default'                             => ['sometimes', 'boolean'],
+            'whatsapp_newsletter_label'                               => ['sometimes', 'string'],
             'invoice_footer'                                          => ['sometimes', 'string', 'max:10000'],
             'download_pdf_columns'                                    => ['sometimes', 'array'],
             'extra_languages'                                         => ['sometimes', 'array', 'nullable'],

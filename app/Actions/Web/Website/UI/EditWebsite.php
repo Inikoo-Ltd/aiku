@@ -389,6 +389,17 @@ class EditWebsite extends OrgAction
                         'label' => __('Marketing opt-in set as checked'),
                         'value' => Arr::get($website->shop->settings, 'registration.marketing_opt_in_default', false),
                     ],
+                    'whatsapp_newsletter_label' => [
+                        'type'  => 'input',
+                        'label' => __('WhatsApp newsletter opt-in label'),
+                        'placeholder'   => 'Opt in to receive our newsletter and offers via WhatsApp.',
+                        'value' => Arr::get($website->shop->settings, 'registration.whatsapp_newsletter_label', ''),
+                    ],
+                    'whatsapp_newsletter_default' => [
+                        'type'  => 'toggle',
+                        'label' => __('WhatsApp newsletter opt-in set as checked'),
+                        'value' => Arr::get($website->shop->settings, 'registration.whatsapp_newsletter_default', false),
+                    ],
                     'company_name_label' => [
                         'type'  => 'input',
                         'label' => __('Company name label'),

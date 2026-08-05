@@ -52,6 +52,14 @@ class UpdateWebsite extends OrgAction
             data_set($shopUpdateData, "settings.registration.marketing_opt_in_default", Arr::pull($modelData, 'marketing_opt_in_default'));
         }
 
+        if (Arr::has($modelData, "whatsapp_newsletter_label")) {
+            data_set($shopUpdateData, "settings.registration.whatsapp_newsletter_label", Arr::pull($modelData, 'whatsapp_newsletter_label'));
+        }
+
+        if (Arr::has($modelData, "whatsapp_newsletter_default")) {
+            data_set($shopUpdateData, "settings.registration.whatsapp_newsletter_default", Arr::pull($modelData, 'whatsapp_newsletter_default'));
+        }
+
         if (Arr::has($modelData, "required_phone_number")) {
             data_set($shopUpdateData, "settings.registration.require_phone_number", Arr::pull($modelData, 'required_phone_number'));
         }
@@ -260,6 +268,8 @@ class UpdateWebsite extends OrgAction
             'favicon'                                    => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
             'marketing_opt_in_label'                     => ['sometimes', 'string'],
             'marketing_opt_in_default'                   => ['sometimes', 'boolean'],
+            'whatsapp_newsletter_label'                  => ['sometimes', 'string'],
+            'whatsapp_newsletter_default'                => ['sometimes', 'boolean'],
             'script_website'                             => ['sometimes', 'nullable', 'string'],
             'llms_txt'                                   => ['sometimes', 'nullable', File::types(['txt'])->max(50)], // 50KB max
             'enable_chat'                                => ['sometimes', 'boolean'],

@@ -349,6 +349,7 @@ class StoreCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_whatsapp_newsletter' => ['sometimes', 'boolean'],
             'traffic_sources'                                       => ['sometimes', 'nullable'],
             'tax_number'                                            => ['sometimes', 'nullable', 'array'],
             'is_re'                                                 => ['sometimes', 'boolean'],

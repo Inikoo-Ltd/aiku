@@ -35,6 +35,10 @@ class RegisterFulfilmentCustomer extends OrgAction
         data_set($modelData, 'registered_at', now());
         data_set($modelData, 'status', CustomerStatusEnum::PENDING_APPROVAL);
 
+        if (Arr::pull($modelData, 'is_whatsapp_newsletter_opt_in', false)) {
+            data_set($modelData, 'email_subscriptions.is_subscribed_to_whatsapp_newsletter', true);
+        }
+
 
         $customer = StoreCustomer::make()->action($fulfilment->shop, $modelData);
 
