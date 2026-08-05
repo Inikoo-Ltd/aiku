@@ -100,8 +100,8 @@ const EditorV2 = defineAsyncComponent(() => import("@/Components/Forms/Fields/Bu
 
 const RICH_TEXT_FIELDS: EditableField[] = ['description', 'description_extra']
 const RICH_TEXT_TOOLBAR = [
-    'bold', 'italic', 'underline', 'bulletList', 'orderedList',
-    'link', 'alignLeft', 'alignCenter', 'alignRight', 'clear', 'undo', 'redo',
+    'heading1', 'heading2', 'heading3',
+    'bold', 'italic', 'underline', 'fontSize', 'bulletList', 'fontFamily', 'blockquote', 'divider', 'orderedList', 'customLink', 'color', 'highlight', 'link', 'alignLeft', 'alignCenter', 'alignRight', 'clear', 'undo', 'redo',
 ]
 
 const activeEditorCell = ref<string | null>(null)
@@ -168,44 +168,37 @@ const saveEdits = async () => {
     if (!entries.length) return
 
     isSavingEdits.value = true
-    const failures: string[] = []
 
-    for (const [id, edit] of entries) {
-        try {
-            await axios.patch(
-                route('grp.models.master_asset.update', { masterAsset: Number(id) }),
-                edit.fields,
-                { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
-            )
+    try {
+        await axios.patch(
+            route('grp.models.master_asset.bulk_update'),
+            { products: entries.map(([id, edit]) => ({ id: Number(id), ...edit.fields })) },
+            { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+        )
 
-            const row = props.data?.data?.find((item: any) => item.id === Number(id))
-            if (row) {
-                Object.assign(row, edit.fields)
-            }
+        for (const [id, edit] of entries) {
+            Object.assign(props.data?.data?.find((item: any) => item.id === Number(id)) ?? {}, edit.fields)
             delete pendingEdits.value[Number(id)]
-        } catch (error: any) {
-            const errors = error?.response?.data?.errors
-            failures.push(`${edit.code}: ${errors ? Object.values(errors).flat().join(' ') : error?.response?.data?.message}`)
         }
-    }
 
-    isSavingEdits.value = false
+        notify({
+            title: trans("Success"),
+            text: trans(':count products updated', { count: String(entries.length) }),
+            type: "success",
+        })
+    } catch (error: any) {
+        const errors = error?.response?.data?.errors ?? {}
 
-    if (failures.length) {
         notify({
             title: trans("Something went wrong"),
-            text: failures.join(' · '),
+            text: Object.entries(errors)
+                .map(([key, messages]) => `${entries[Number(key.split('.')[1])]?.[1].code}: ${(messages as string[]).join(' ')}`)
+                .join(' · ') || error?.response?.data?.message,
             type: "error",
         })
-
-        return
+    } finally {
+        isSavingEdits.value = false
     }
-
-    notify({
-        title: trans("Success"),
-        text: trans(':count products updated', { count: String(entries.length) }),
-        type: "success",
-    })
 }
 
 watch(() => props.bulkEditSaveSignal, () => saveEdits())
@@ -303,6 +296,7 @@ const onSave = async (presetValue: string) => {
 </script>
 
 <template>
+    <div class="overflow-x-auto">
     <Table
         :resource="data"
         :name="tab"
@@ -329,9 +323,9 @@ const onSave = async (presetValue: string) => {
                     class="mt-0.5 w-9 aspect-square shrink-0 rounded overflow-hidden shadow"
                 />
                 <div class="flex w-full min-w-[11rem] flex-col gap-y-2">
-                    <div class="flex items-start gap-x-2">
+                    <div class="flex items-start gap-x-2">                        
                         <PureInput
-                            class="cell-input"
+                            classInput="!h-7 !text-sm"
                             :class="dirtyField(isFieldDirty(item, 'name'))"
                             :modelValue="fieldValue(item, 'name')"
                             :maxLength="250"
@@ -402,14 +396,14 @@ const onSave = async (presetValue: string) => {
         </template>
 
         <template #cell(units)="{ item }">
-            <div class="flex items-start gap-x-2">
+            <div class="flex items-start justify-center gap-x-2">
                 <span
                     class="mt-1.5 w-10 shrink-0 text-right text-sm tabular-nums text-gray-500"
                     v-tooltip="trans('Units per outer, edited on the product page')">
                     {{ Number(item.units) }}
                 </span>
                 <PureInput
-                    class="cell-input !w-24"
+                    classInput="!h-7 !text-sm !w-24"
                     :class="dirtyField(isFieldDirty(item, 'unit'))"
                     :modelValue="fieldValue(item, 'unit')"
                     :placeholder="trans('unit')"
@@ -472,6 +466,7 @@ const onSave = async (presetValue: string) => {
             </div>
         </template>
     </Table>
+    </div>
 
     <TaxPresetEditModal
         :isOpen="!!editingItems.length"
@@ -495,11 +490,6 @@ const onSave = async (presetValue: string) => {
 </template>
 
 <style scoped>
-/* The row is one line of a spreadsheet, so the fields lose the form-sized padding. */
-.cell-input :deep(input) {
-    @apply py-1 text-sm;
-}
-
 .rich-preview :deep(ul),
 .rich-preview :deep(ol) {
     @apply ml-4 list-disc;
