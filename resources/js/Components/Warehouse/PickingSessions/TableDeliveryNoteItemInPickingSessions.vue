@@ -555,19 +555,22 @@ onUnmounted(() => {
                 :key="deliveryItem.id || index" class="space-y-2">
 
                 <div class="flex justify-between items-center">
-                    <div>
+                    <div class="space-x-1">
                         <Link :href="showOrgStockRoute(deliveryItem)" class="secondaryLink">
                         {{ deliveryItem.org_stock_code }}
                         </Link>
-                        <FontAwesomeIcon
-                            v-if="deliveryItem.barcode"
-                            v-tooltip="deliveryItem.barcode"
-                            :icon="faBarcodeRead"
-                            class="ml-1 mr-1 text-gray-500"
-                            fixed-width
-                            aria-hidden="true" />
-                        <span class="opacity-70">{{ deliveryItem.org_stock_name}} <span class="italic">{{ deliveryItem.packed_in_message}}</span></span>
-                        <BarcodeDisplay :value="deliveryItem.barcode" />
+                        <span class="opacity-70">
+                            {{ deliveryItem.org_stock_name}}
+                            <span class="italic">{{ deliveryItem.packed_in_message}}</span>
+                            <FontAwesomeIcon
+                                v-if="deliveryItem.barcode"
+                                v-tooltip="deliveryItem.barcode"
+                                :icon="faBarcodeRead"
+                                class="ml-2 text-gray-500"
+                                fixed-width
+                                aria-hidden="true" />
+                        </span>
+                        
                     </div>
 
                     <template v-if="deliveryItem.quantity_to_pick > 0 && deliveryItem.state == 'handling'">
