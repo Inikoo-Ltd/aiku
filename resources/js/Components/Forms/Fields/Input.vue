@@ -6,13 +6,14 @@
 
 <script setup lang="ts">
 import PureInput from "@/Components/Pure/PureInput.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
-import { faCopy } from '@fal'
+import { faCopy, faLanguage } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
-library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy, faLanguage)
 import { ref, watch, computed } from "vue"
 import { pendingCompositionUnits } from "@/Composables/usePendingCompositionUnits"
 import { trans } from "laravel-vue-i18n"
@@ -31,7 +32,12 @@ const props = defineProps<{
         maxLength?: number
         uppercase?: boolean
         additional_instructions?: string
+        /** Show the value read-only with an Edit link, instead of a permanently open input */
+        collapsible?: boolean
+        /** Prefixes the collapsed value with "Nx", for the unit label */
         unitsPreview?: number
+        /** Warning shown while editing, before the save confirmation is reached */
+        cascadeNote?: string
     }
 }>()
 
@@ -80,6 +86,13 @@ watch(value, (newValue) => {
     props.form.errors[props.fieldName] = ''
 });
 
+const isCollapsible = computed(() => !!props.fieldData?.collapsible || !!props.fieldData?.unitsPreview)
+const isCollapsed = computed(() => isCollapsible.value && !isEditing.value)
+const collapsedValue = computed(() => {
+    const text = value.value || props.fieldData?.placeholder
+    return props.fieldData?.unitsPreview ? `${props.fieldData.unitsPreview}x ${text}` : text
+})
+
 /*
  * The trade units being edited in their own form imply new units before they are
  * saved; the trade-units field publishes the change through the shared ref.
@@ -103,10 +116,10 @@ const updateFormValue = (newValue) => {
 </script>
 <template>
     <div class="relative">
-        <div v-if="fieldData?.unitsPreview && !isEditing" class="flex items-center gap-3">
-            <!-- Pink is the units colour, matching the TU—P edge of the composition triangle -->
+        <div v-if="isCollapsed" class="flex items-center gap-3">
+            <!-- Pink is the sell colour, matching the TU—P edge of the composition triangle -->
             <span :class="pendingUnits ? 'line-through text-gray-400' : 'text-pink-600 font-medium'">
-                {{ fieldData.unitsPreview }}x {{ value || fieldData?.placeholder }}
+                {{ collapsedValue }}
             </span>
             <span v-if="pendingUnits" class="font-medium text-amber-600">
                 → {{ pendingUnits }}x {{ value || fieldData?.placeholder }} ({{ trans('after save') }})
@@ -142,14 +155,18 @@ const updateFormValue = (newValue) => {
                 </template>
             </PureInput>
 
-            <div v-if="fieldData?.unitsPreview" class="flex items-center gap-3 pt-1">
-                <span class="text-gray-500">{{ fieldData.unitsPreview }}x {{ value || fieldData?.placeholder }}</span>
-                <button type="button" class="text-indigo-600 hover:underline" :disabled="form.processing" @click="emits('submit')">
-                    {{ trans('Update') }}
-                </button>
-                <button type="button" class="text-gray-500 hover:underline" @click="cancelEdit">
-                    {{ trans('Cancel') }}
-                </button>
+            <div v-if="isCollapsible" class="flex items-center gap-2 pt-2">
+                <!-- Only worth echoing when the preview adds something the input does not show -->
+                <span v-if="fieldData?.unitsPreview" class="text-gray-500 mr-1">{{ collapsedValue }}</span>
+                <Button :label="trans('Update')" type="save" size="xs"
+                    :disabled="form.processing" :loading="form.processing" @click="emits('submit')" />
+                <Button :label="trans('Cancel')" type="tertiary" size="xs" @click="cancelEdit" />
+            </div>
+
+            <!-- Said before the click, not only in the confirmation dialog -->
+            <div v-if="fieldData?.cascadeNote" class="flex items-start gap-1.5 pt-2 text-xs text-amber-700">
+                <FontAwesomeIcon icon="fal fa-language" class="mt-0.5" fixed-width aria-hidden="true" />
+                <span>{{ fieldData.cascadeNote }}</span>
             </div>
         </div>
 

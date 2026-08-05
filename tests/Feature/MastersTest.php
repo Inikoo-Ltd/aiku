@@ -1383,8 +1383,11 @@ test('UI Edit Master Product Composition', function (MasterAsset $masterAsset) {
                 fn (AssertableInertia $form) => $form
                     ->has('blueprint.0.fields.trade_units.priceContext')
                     ->where('blueprint.0.fields.trade_units.type', 'list-selector-trade-unit')
-                    ->has('blueprint.1.fields.master_prices')
-                    ->has('blueprint.1.fields.master_rrps')
+                    ->where('blueprint.1.accent', 'pink')
+                    ->has('blueprint.1.fields.name')
+                    ->has('blueprint.1.fields.unit')
+                    ->has('blueprint.2.fields.master_prices')
+                    ->has('blueprint.2.fields.master_rrps')
                     ->etc()
             );
     });
