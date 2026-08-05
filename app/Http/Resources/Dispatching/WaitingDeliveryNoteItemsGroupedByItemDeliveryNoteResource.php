@@ -52,6 +52,16 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
             $packedInMessage = '('.__('Pack of').": $packedIn".')';
         }
 
+        $waitingWarehouseFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_warehouse ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_warehouse ?? 0) == ($this->quantity_waiting_warehouse ?? 0) && $packedIn > 1) {
+            $waitingWarehouseFractionalDS = [0, [($this->quantity_waiting_warehouse ?? 0) * $packedIn, $packedIn]];
+        }
+
+        $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_crm ?? 0) == ($this->quantity_waiting_crm ?? 0) && $packedIn > 1) {
+            $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
+        }
+
         $pickingLocations = DB::table('location_org_stocks')
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
             ->where('org_stock_id', $this->org_stock_id)
@@ -107,7 +117,9 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
             'quantity_packed'                   => $this->quantity_packed,
             'quantity_dispatched'               => $this->quantity_dispatched,
             'quantity_waiting_warehouse'        => $this->quantity_waiting_warehouse,
+            'quantity_waiting_warehouse_fractional_ds' => $waitingWarehouseFractionalDS,
             'quantity_waiting_crm'              => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds'       => $waitingCrmFractionalDS,
             'trolley_names'                     => $deliveryNote->trolleys?->pluck('name')->join(', ') ?: null,
 
             'is_handled'                        => $this->is_handled,

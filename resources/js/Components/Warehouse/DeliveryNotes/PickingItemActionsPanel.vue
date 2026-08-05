@@ -49,8 +49,13 @@ const findLocation = (locationsList: any[], selectedCode: string) => {
 const selectedLocationCode = ref<string>(props.item.selectedRadioLocationCode ?? "")
 const currentLocation = computed(() => findLocation(props.item.locations, selectedLocationCode.value))
 
+/*
+ * A part of an outer can be left waiting by any shop now that ecom replaces a product in part, not
+ * only by dropshipping, so what decides the fraction is the pack the item comes in. An item packed
+ * individually has nothing to cut and reads as a plain count.
+ */
 const waitingWarehouseFractional = computed(() => {
-    if (props.item?.delivery_note_shop_type == "dropshipping") {
+    if (Number(props.item?.packed_in) > 1) {
         return props.item?.quantity_waiting_warehouse_fractional_ds
     }
     return null

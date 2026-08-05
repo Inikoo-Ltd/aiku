@@ -64,15 +64,20 @@ const generateLocationRoute = (location: any) => {
     ])
 }
 
+/*
+ * A part of an outer can be left waiting by any shop now that ecom replaces a product in part, not
+ * only by dropshipping, so what decides the fraction is the pack the item comes in. An item packed
+ * individually has nothing to cut and reads as a plain count.
+ */
 const getWaitingWarehouseFractional = (item: any) => {
-    if (item?.delivery_note_shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_warehouse_fractional_ds
     }
     return null
 }
 
 const getWaitingCrmFractional = (item: any) => {
-    if (item?.delivery_note_shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_crm_fractional_ds
     }
     return null
