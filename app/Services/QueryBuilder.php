@@ -332,6 +332,8 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             $filters = request()->input('between', []);
         }
 
+        $filters = StickyBetweenDates::apply($filters, ['from', 'date'], 'date');
+
         $hasDateFilter = false;
         $startDate = null;
         $endDate = null;
