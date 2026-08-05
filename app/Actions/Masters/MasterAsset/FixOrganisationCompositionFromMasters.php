@@ -42,7 +42,7 @@ class FixOrganisationCompositionFromMasters
     /**
      * @return array{checked: int, fixed: int, units_fixed: int, changes: list<string>}
      */
-    public function handle(Organisation $organisation, bool $dryRun = true, bool $withUnits = true, ?MasterShop $masterShop = null, bool $onlyFlagged = true, bool $withPrices = true): array
+    public function handle(Organisation $organisation, bool $dryRun = true, bool $withUnits = true, ?MasterShop $masterShop = null, bool $onlyFlagged = false, bool $withPrices = true, ?callable $report = null, ?callable $onMasterDone = null): array
     {
         $checked        = 0;
         $fixed          = 0;
@@ -56,18 +56,24 @@ class FixOrganisationCompositionFromMasters
          * rows on aw's SK organisation, and most of them are discontinued stock or
          * masters nobody sells, which no one is going to act on.
          */
-        MasterAsset::whereHas('products', fn ($query) => $query->whereHas('shop', fn ($shop) => $shop->where('organisation_id', $organisation->id)))
+        $masterQuery = fn () => MasterAsset::whereHas('products', fn ($query) => $query->whereHas('shop', fn ($shop) => $shop->where('organisation_id', $organisation->id)))
             ->when($masterShop, fn ($query) => $query->where('master_shop_id', $masterShop->id))
             ->where('status', true)
             ->where('is_for_sale', true)
             /*
-             * Driven by the mismatch flag the detector already wrote: comparing every
-             * master again means 149k product comparisons to find the few hundred that
-             * drifted. Pass onlyFlagged false after data has changed under the flag.
+             * Everything is compared unless --flagged is asked for. The flag is only as
+             * fresh as the last hydrate, and trusting a stale one once reported four
+             * products to fix when six hundred and ninety two had drifted.
              */
             ->when($onlyFlagged, fn ($query) => $query->where('mismatch_detected', true))
             ->with('tradeUnits', 'stocks')
-            ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, $withPrices, &$checked, &$fixed, &$unitsFixed, &$pricesFixed, &$changes, &$ordersToReview) {
+        ;
+
+        $total = $masterQuery()->count();
+        $onMasterDone && $onMasterDone(0, $total);
+
+        $masterQuery()
+            ->chunkById(200, function ($masterAssets) use ($organisation, $dryRun, $withUnits, $withPrices, $report, $onMasterDone, &$checked, &$fixed, &$unitsFixed, &$pricesFixed, &$changes, &$ordersToReview) {
                 foreach ($masterAssets as $masterAsset) {
                     $tradeUnitData = $masterAsset->tradeUnits->map(fn ($tradeUnit) => [
                         'id'       => $tradeUnit->id,
@@ -123,7 +129,9 @@ class FixOrganisationCompositionFromMasters
                             ));
                         }
 
-                        $changes[] = $masterAsset->code.' @ '.$product->shop->code.' ('.implode('; ', $note).')';
+                        $line      = $masterAsset->code.' @ '.$product->shop->code.' ('.implode('; ', $note).')';
+                        $changes[] = $line;
+                        $report && $report($line);
 
                         if ($dryRun) {
                             continue;
@@ -140,6 +148,7 @@ class FixOrganisationCompositionFromMasters
                             UpdateProduct::make()->action($product, $priceDrift);
                         }
                     }
+                    $onMasterDone && $onMasterDone(1, null);
                 }
             });
 
@@ -221,22 +230,9 @@ class FixOrganisationCompositionFromMasters
             ->all();
     }
 
-    private function productsChangedSinceLastHydrate(Organisation $organisation, ?MasterShop $masterShop): int
-    {
-        return Product::whereHas('shop', fn ($shop) => $shop->where('organisation_id', $organisation->id))
-            ->whereHas('masterProduct', function ($master) use ($masterShop) {
-                $master->where('status', true)
-                    ->when($masterShop, fn ($q) => $q->where('master_shop_id', $masterShop->id))
-                    ->whereColumn('master_assets.updated_at', '<', 'products.updated_at');
-            })
-            ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
-            ->where('is_for_sale', true)
-            ->count();
-    }
-
     public function getCommandSignature(): string
     {
-        return 'master_product:fix_organisation_composition {organisation} {--master_shop=} {--apply} {--skip-units} {--skip-prices} {--all}';
+        return 'master_product:fix_organisation_composition {organisation} {--master_shop=} {--apply} {--skip-units} {--skip-prices} {--flagged}';
     }
 
     public function asCommand(Command $command): int
@@ -253,35 +249,47 @@ class FixOrganisationCompositionFromMasters
             return 1;
         }
 
-        /*
-         * Working from the flag is only safe while the flag is newer than the data it
-         * describes. Run against stale flags it once reported four products to fix when
-         * six hundred and ninety two had drifted, which reads as a clean result.
-         */
-        if (!$command->option('all')) {
-            $staleSince = $this->productsChangedSinceLastHydrate($organisation, $masterShop);
+        $bar = null;
 
-            if ($staleSince) {
-                $command->warn($staleSince.' products in this organisation changed after their master was last checked.');
-                $command->warn('Run master_asset:hydrate_mismatch first, or pass --all to compare everything now.');
+        $result = $this->handle(
+            $organisation,
+            $dryRun,
+            $withUnits,
+            $masterShop,
+            (bool)$command->option('flagged'),
+            $withPrices,
+            function (string $line) use ($command, &$bar) {
+                // The bar owns the last line, so it steps aside while a change is printed.
+                $bar?->clear();
+                $command->line('  '.$line);
+                $bar?->display();
+            },
+            function (int $advance, ?int $total) use ($command, &$bar) {
+                if ($total !== null) {
+                    $bar = $command->getOutput()->createProgressBar($total);
+                    $bar->setFormat('debug');
+                    $bar->start();
 
-                if (!$command->confirm('Continue anyway, knowing drift may be missed?', false)) {
-                    return 1;
+                    return;
                 }
-            }
-        }
 
-        $result = $this->handle($organisation, $dryRun, $withUnits, $masterShop, !$command->option('all'), $withPrices);
+                $bar?->advance($advance);
+            }
+        );
+
+        $bar?->finish();
+        $command->newLine(2);
 
         $command->info(($dryRun ? 'DRY RUN — ' : '').
             $result['checked'].' products checked, '.$result['fixed'].' composition '.($dryRun ? 'would be ' : '').'fixed, '.
             $result['units_fixed'].' units, '.$result['prices_fixed'].' prices');
 
-        foreach (array_slice($result['changes'], 0, 40) as $change) {
-            $command->line('  '.$change);
-        }
-        if (count($result['changes']) > 40) {
-            $command->line('  … and '.(count($result['changes']) - 40).' more');
+        if ($result['orders_to_review']) {
+            $command->newLine();
+            $command->warn(count($result['orders_to_review']).' submitted orders hold a product whose units changed and were left untouched:');
+            foreach (array_slice($result['orders_to_review'], 0, 40) as $line) {
+                $command->line('  '.$line);
+            }
         }
 
         return 0;
