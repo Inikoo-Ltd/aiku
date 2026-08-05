@@ -247,20 +247,33 @@ class CalculateOrderShipping
         return [null, null];
     }
 
+    public function isToBeConfirmed(Order $order, ShippingZone $shippingZone): bool
+    {
+        $this->getShippingAmountFromShippingZone($order, $shippingZone);
+
+        return $this->toBeConfirmed;
+    }
+
     private function getShippingAmountFromShippingZone(Order $order, ShippingZone $shippingZone)
     {
         $pricingType = Arr::get($shippingZone->price, 'type');
         if ($pricingType == 'Step Order Items Net Amount') {
-            return $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($shippingZone->price, 'steps'));
+            $price = $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($shippingZone->price, 'steps'));
         } elseif ($pricingType == 'Step Order Estimated Weight') {
-            return $this->getPriceBlanketFromAmount($order->estimated_weight / 1000, Arr::get($shippingZone->price, 'steps'));
+            $price = $this->getPriceBlanketFromAmount($order->estimated_weight / 1000, Arr::get($shippingZone->price, 'steps'));
         } elseif ($pricingType == 'TBC') {
+            $price = 'TBC';
+        } else {
+            return null;
+        }
+
+        if ($price === 'TBC') {
             $this->toBeConfirmed = true;
 
             return null;
         }
 
-        return null;
+        return $price;
     }
 
     private function getPriceBlanketFromAmount($amount, array $priceBlankets)

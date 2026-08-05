@@ -1897,15 +1897,12 @@ test('invoice totals from a part picked order keep net plus tax equal to the tot
         ->and($totals['net_amount'] + $totals['tax_amount'])->toBe($totals['total_amount']);
 });
 
-test('shipping zone with territories wins over a catch all zone placed above it', function ($transaction) {
-    $order = $transaction->order;
-    $order->deliveryAddress->update(['country_code' => 'FR', 'postal_code' => '75001']);
-
-    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($order->shop, [
+test('shipping zone with territories wins over a catch all zone placed above it', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'catch all on top schema',
     ]);
 
-    StoreShippingZone::make()->action($shippingZoneSchema, [
+    $franceZone = StoreShippingZone::make()->action($shippingZoneSchema, [
         'code'        => 'ZONE-FR',
         'name'        => 'France',
         'status'      => true,
@@ -1930,11 +1927,40 @@ test('shipping zone with territories wins over a catch all zone placed above it'
         'is_failover' => false,
     ]);
 
-    $order->shop->update(['shipping_zone_schema_id' => $shippingZoneSchema->id]);
-    $order->refresh();
+    $this->shop->update(['shipping_zone_schema_id' => $shippingZoneSchema->id]);
 
-    $order = CalculateOrderShipping::make()->handle($order);
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
 
-    expect($order->shipping_zone_id)->not->toBe($restOfTheWorld->id)
-        ->and($order->is_shipping_tbc)->toBeFalse();
-})->depends('create transaction from charge');
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->deliveryAddress->update(['country_code' => 'FR', 'postal_code' => '75001']);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+    $order = CalculateOrderShipping::make()->handle($order->refresh());
+
+    expect($order->shipping_zone_id)->toBe($franceZone->id)
+        ->and($order->shipping_zone_id)->not->toBe($restOfTheWorld->id)
+        ->and($order->is_shipping_tbc)->toBeFalse()
+        ->and((float)$order->shipping_amount)->toBe(12.5);
+
+    return $order;
+});
+
+test('a step priced TBC leaves the shipping to be confirmed instead of free', function (Order $order) {
+    UpdateShippingZone::make()->action(ShippingZone::find($order->shipping_zone_id), [
+        'price' => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 'TBC'],
+            ],
+        ],
+    ]);
+
+    $order = CalculateOrderShipping::make()->handle($order->refresh());
+
+    $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
+
+    expect($order->is_shipping_tbc)->toBeTrue()
+        ->and((float)$shippingTransaction->net_amount)->toBe(0.0);
+})->depends('shipping zone with territories wins over a catch all zone placed above it');
