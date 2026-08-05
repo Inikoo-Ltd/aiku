@@ -260,6 +260,13 @@ class EditMasterProductComposition extends OrgAction
                         'value' => $tradeUnits,
                     ],
                     'units' => $this->getUnitsField($masterProduct, $this->getUnitsChangeConfirmation($masterProduct)),
+                    'unit'  => [
+                        'type'        => 'input',
+                        'label'       => __('Unit label'),
+                        'value'       => $masterProduct->unit,
+                        'placeholder' => __('piece'),
+                        'information' => __('What one unit is called, shown to customers. Saving it copies it to the English shops.'),
+                    ],
                 ]),
             ],
             [
