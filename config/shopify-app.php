@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 17 Jul 2025 20:11:17 British Summer Time, Trnava, Slovakia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -11,6 +17,7 @@ return [
     */
 
     'debug' => (bool) env('SHOPIFY_DEBUG', false),
+    'my_shopify_domain' => env('SHOPIFY_MYSHOPIFY_DOMAIN', 'myshopify.com'),
 
     /*
     |--------------------------------------------------------------------------
@@ -23,7 +30,7 @@ return [
     |
     */
 
-    'manual_migrations' => (bool) env('SHOPIFY_MANUAL_MIGRATIONS', false),
+    'manual_migrations' => (bool) env('SHOPIFY_MANUAL_MIGRATIONS', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -36,7 +43,8 @@ return [
     |
     */
 
-    'domain' => env('SHOPIFY_DOMAIN'),
+    'domain' => env('SHOPIFY_DOMAIN', 'pupil'),
+
     /*
     |--------------------------------------------------------------------------
     | Manual routes
@@ -55,7 +63,7 @@ return [
     |
     */
 
-    'manual_routes' => env('SHOPIFY_MANUAL_ROUTES', false),
+    'manual_routes' => env('SHOPIFY_MANUAL_ROUTES', 'home,authenticate,authenticate.token'),
 
     /*
     |--------------------------------------------------------------------------
@@ -68,9 +76,9 @@ return [
     */
 
     'route_names' => [
-        'home' => env('SHOPIFY_ROUTE_NAME_HOME', 'home'),
-        'authenticate' => env('SHOPIFY_ROUTE_NAME_AUTHENTICATE', 'authenticate'),
-        'authenticate.token' => env('SHOPIFY_ROUTE_NAME_AUTHENTICATE_TOKEN', 'authenticate.token'),
+        'home' => env('SHOPIFY_ROUTE_NAME_HOME', 'pupil.home'),
+        'authenticate' => env('SHOPIFY_ROUTE_NAME_AUTHENTICATE', 'pupil.authenticate'),
+        'authenticate.token' => env('SHOPIFY_ROUTE_NAME_AUTHENTICATE_TOKEN', 'pupil.authenticate.token'),
         'billing' => env('SHOPIFY_ROUTE_NAME_BILLING', 'billing'),
         'billing.process' => env('SHOPIFY_ROUTE_NAME_BILLING_PROCESS', 'billing.process'),
         'billing.usage_charge' => env('SHOPIFY_ROUTE_NAME_BILLING_USAGE_CHARGE', 'billing.usage_charge'),
@@ -85,7 +93,7 @@ return [
     | This option allows you to override auth guard used by package middlewares
     |
     */
-    'shop_auth_guard' => env('SHOPIFY_SHOP_AUTH_GUARD', null),
+    'shop_auth_guard' => env('SHOPIFY_SHOP_AUTH_GUARD', 'pupil'),
 
     /*
     |--------------------------------------------------------------------------
@@ -96,7 +104,7 @@ return [
     | If you need to keep User model intact, add custom auth provider and route middlewares for it
     |
     */
-    'shop_auth_provider' => env('SHOPIFY_SHOP_AUTH_PROVIDER', 'users'),
+    'shop_auth_provider' => env('SHOPIFY_SHOP_AUTH_PROVIDER', 'pupil'),
 
     /*
     |--------------------------------------------------------------------------
@@ -146,7 +154,7 @@ return [
     |
     */
 
-    'app_name' => env('SHOPIFY_APP_NAME', 'Shopify App'),
+    'app_name' => env('SHOPIFY_APP_NAME', 'Pupil'),
 
     /*
     |--------------------------------------------------------------------------
@@ -160,7 +168,7 @@ return [
     |
     */
 
-    'api_version' => env('SHOPIFY_API_VERSION', '2024-04'),
+    'api_version' => env('SHOPIFY_API_VERSION', '2025-07'),
 
     /*
     |--------------------------------------------------------------------------
@@ -193,7 +201,10 @@ return [
     |
     */
 
-    'api_scopes' => env('SHOPIFY_API_SCOPES', 'read_products,write_products,read_themes'),
+    'api_scopes' => env(
+        'SHOPIFY_API_SCOPES',
+        'read_customers,write_customers,read_products,write_products,write_orders,read_orders,customer_read_orders,customer_read_customers,read_themes,read_fulfillments,write_fulfillments,read_assigned_fulfillment_orders,write_assigned_fulfillment_orders,read_third_party_fulfillment_orders,write_third_party_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_merchant_managed_fulfillment_orders,read_locations,write_inventory,read_inventory'
+    ),
 
     /*
     |--------------------------------------------------------------------------
@@ -423,7 +434,7 @@ return [
 
     'listen' => [
         \Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent::class => [
-            // \App\Listeners\MyListener::class,
+            \App\Listeners\ShopifyAppInstalledListener::class,
         ],
         \Osiset\ShopifyApp\Messaging\Events\ShopAuthenticatedEvent::class => [
             // \App\Listeners\MyListener::class,
@@ -593,17 +604,17 @@ return [
         /*
         * The table name for Charge model.
         */
-        'charges' => 'charges',
+        'charges' => 'charges_shopify',
 
         /*
         * The table name for Plan model.
         */
-        'plans' => 'plans',
+        'plans' => 'shopify_plans',
 
         /*
          * The table name for the Shop.
          */
-        'shops' => 'users',
+        'shops' => 'shopify_users',
     ],
 
     /*
@@ -659,7 +670,7 @@ return [
     | For example, if you use SPA, you do not need to be redirected to a separate page to get the JWT token.
     |
     */
-    'frontend_type' => env('SHOPIFY_FRONTEND_TYPE', 'MPA'),
+    'frontend_type' => env('SHOPIFY_FRONTEND_TYPE', 'SPA'),
 
     'iframe_ancestors' => '',
 
