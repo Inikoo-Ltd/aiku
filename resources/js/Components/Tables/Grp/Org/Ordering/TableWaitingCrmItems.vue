@@ -579,11 +579,10 @@ const submitSendBackWarehouse = () => {
                         </div>
                         <div class="shrink-0 text-right">
                             <div class="tabular-nums font-semibold flex justify-end">
-                                <FractionDisplay
-                                    v-if="selectedItem?.quantity_waiting_crm_fractional_ds"
-                                    :fractionData="selectedItem.quantity_waiting_crm_fractional_ds"
+                                <FractionDisplayFE
+                                    :numerator="packsToUnits(waitingQuantity, replacePackedIn)"
+                                    :denominator="replacePackedIn"
                                 />
-                                <template v-else>{{ Number(selectedItem?.quantity_waiting_crm) }}</template>
                                 <span class="ml-1">{{ ctrans("items") }}</span>
                             </div>
                             <div v-if="selectedItem?.net_amount" class="tabular-nums text-xs opacity-70 mt-0.5">
@@ -636,7 +635,7 @@ const submitSendBackWarehouse = () => {
                     />
 
                     <span class="text-sm text-gray-500">
-                        {{ isCutViewReplace ? ctrans('of :max items', { max: String(maxQuantityToReplace) }) : ctrans('of :max packs', { max: String(maxQuantityToReplace) }) }}
+                        {{ isCutViewReplace ? ctrans('of :max items', { max: String(maxQuantityToReplace) }) : ctrans('of :max outers', { max: String(maxQuantityToReplace) }) }}
                     </span>
                 </div>
 
