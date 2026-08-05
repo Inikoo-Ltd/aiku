@@ -44,6 +44,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
 import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStockHandlingNotes.vue"
+import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 
 const screenType = inject('screenType', ref('desktop'))
 
@@ -420,6 +421,7 @@ onUnmounted(() => {
                 class="ml-1 text-gray-500"
                 fixed-width
                 aria-hidden="true" />
+            <BarcodeDisplay :value="item.barcode" />
         </template>
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
@@ -567,6 +569,7 @@ onUnmounted(() => {
                             fixed-width
                             aria-hidden="true" />
                         <span class="opacity-70">{{ deliveryItem.org_stock_name}} <span class="italic">{{ deliveryItem.packed_in_message}}</span></span>
+                        <BarcodeDisplay :value="deliveryItem.barcode" />
                     </div>
 
                     <template v-if="deliveryItem.quantity_to_pick > 0 && deliveryItem.state == 'handling'">
