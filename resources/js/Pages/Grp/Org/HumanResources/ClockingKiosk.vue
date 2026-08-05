@@ -28,7 +28,7 @@ const props = defineProps<{
 // 6-character generated code. Cap generously rather than silently swallowing taps.
 const maxPinLength = 16
 const idleClearMs = 20000
-const resultDisplayMs = 3500
+const resultDisplayMs = 4000
 
 const kioskContainer = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
@@ -42,12 +42,20 @@ const scannerContainer = ref<HTMLElement | null>(null)
 const cameraActive = ref(false)
 const cameraError = ref<string | null>(null)
 const isDetecting = ref(false)
-const recentCodeCooldownMs = 8000
+// Kept equal to resultDisplayMs so the camera becomes scan-ready again at the exact moment
+// the success/error message disappears, instead of staying idle for an extra stretch after.
+const recentCodeCooldownMs = resultDisplayMs
 let lastProcessedCode: string | null = null
 let lastProcessedAt = 0
 
+
+const scannerCycle = ref(0)
+const freezeFrame = ref<string | null>(null)
+
 let idleTimer: ReturnType<typeof setTimeout> | null = null
 let resultTimer: ReturnType<typeof setTimeout> | null = null
+let scannerRemountTimer: ReturnType<typeof setTimeout> | null = null
+let freezeFrameFallbackTimer: ReturnType<typeof setTimeout> | null = null
 
 const pinDisplay = computed(() => enteredPin.value.join(" "))
 const canSubmit = computed(() => enteredPin.value.length > 0 && !isSubmitting.value)
@@ -168,6 +176,15 @@ const startCamera = () => {
 
 const stopCamera = () => {
 	cameraActive.value = false
+	if (scannerRemountTimer) {
+		clearTimeout(scannerRemountTimer)
+		scannerRemountTimer = null
+	}
+	if (freezeFrameFallbackTimer) {
+		clearTimeout(freezeFrameFallbackTimer)
+		freezeFrameFallbackTimer = null
+	}
+	freezeFrame.value = null
 }
 
 const captureSnapshot = (): string | null => {
@@ -223,7 +240,40 @@ const onCameraDetect = async (detectedCodes: { rawValue: string }[]) => {
 	} finally {
 		isSubmitting.value = false
 		isDetecting.value = false
+
+		if (scannerRemountTimer) clearTimeout(scannerRemountTimer)
+		scannerRemountTimer = setTimeout(() => {
+			scannerRemountTimer = null
+			remountScanner()
+		}, resultDisplayMs)
 	}
+}
+
+// Remounting itself takes a moment to reacquire the camera hardware, which would otherwise
+// show as a black flash. A still frame is shown in its place until the fresh stream reports
+// it's actually playing again (or a fallback timeout, in case that event never arrives).
+const remountScanner = () => {
+	try {
+		freezeFrame.value = captureSnapshot()
+	} catch (snapshotError) {
+		console.error("Freeze frame capture failed:", snapshotError)
+	}
+
+	scannerCycle.value++
+
+	if (freezeFrameFallbackTimer) clearTimeout(freezeFrameFallbackTimer)
+	freezeFrameFallbackTimer = setTimeout(() => {
+		freezeFrameFallbackTimer = null
+		freezeFrame.value = null
+	}, 2000)
+}
+
+const onCameraOn = () => {
+	if (freezeFrameFallbackTimer) {
+		clearTimeout(freezeFrameFallbackTimer)
+		freezeFrameFallbackTimer = null
+	}
+	freezeFrame.value = null
 }
 
 const onCameraError = (err: any) => {
@@ -274,6 +324,8 @@ onUnmounted(() => {
 	if (props.mode === "barcode") window.removeEventListener("keydown", handleGlobalKeydown)
 	if (idleTimer) clearTimeout(idleTimer)
 	if (resultTimer) clearTimeout(resultTimer)
+	if (scannerRemountTimer) clearTimeout(scannerRemountTimer)
+	if (freezeFrameFallbackTimer) clearTimeout(freezeFrameFallbackTimer)
 })
 </script>
 
@@ -315,7 +367,7 @@ onUnmounted(() => {
 
 				<div class="px-4 py-4 sm:px-10 sm:py-8 text-center space-y-3.5 sm:space-y-5">
 					<div
-						v-if="result"
+						v-if="result && mode !== 'camera_qr'"
 						class="flex flex-col items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-6 sm:py-10">
 						<font-awesome-icon :icon="faCheckCircle" class="text-4xl sm:text-5xl text-green-500" />
 						<div class="text-lg sm:text-xl font-semibold text-gray-800 break-all">
@@ -335,7 +387,7 @@ onUnmounted(() => {
 
 					<template v-else>
 						<div
-							v-if="errorMessage"
+							v-if="errorMessage && mode !== 'camera_qr'"
 							class="flex items-center justify-center gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-xs sm:px-4 sm:py-3 sm:text-sm text-red-700">
 							<font-awesome-icon :icon="faTimesCircle" />
 							{{ errorMessage }}
@@ -446,10 +498,44 @@ onUnmounted(() => {
 
 								<div v-else class="relative aspect-video w-full bg-black">
 									<QrcodeStream
+										:key="scannerCycle"
 										@detect="onCameraDetect"
 										@error="onCameraError"
+										@camera-on="onCameraOn"
 										:formats="['qr_code']"
 										class="h-full w-full" />
+
+									<img
+										v-if="freezeFrame"
+										:src="freezeFrame"
+										class="absolute inset-0 h-full w-full object-cover"
+										alt="" />
+
+									<div
+										v-if="result"
+										class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-green-50/95 px-4 py-6">
+										<font-awesome-icon :icon="faCheckCircle" class="text-4xl sm:text-5xl text-green-500" />
+										<div class="text-lg sm:text-xl font-semibold text-gray-800 break-all">
+											{{ result.alias }}
+										</div>
+										<div class="text-2xl sm:text-3xl font-bold text-green-700">
+											{{
+												result.actionType === "clock_in"
+													? trans("Clocked In")
+													: result.actionType === "clock_out"
+														? trans("Clocked Out")
+														: trans("Clocked")
+											}}
+										</div>
+										<div class="text-sm sm:text-base text-gray-500">{{ formattedClockedAt }}</div>
+									</div>
+
+									<div
+										v-else-if="errorMessage"
+										class="absolute inset-x-0 top-0 flex items-center justify-center gap-2 bg-red-50/95 px-3 py-2.5 text-xs sm:px-4 sm:py-3 sm:text-sm text-red-700">
+										<font-awesome-icon :icon="faTimesCircle" />
+										{{ errorMessage }}
+									</div>
 
 									<div
 										class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/50 px-3 py-2">
