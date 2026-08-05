@@ -103,6 +103,7 @@ class CreateBlogWebpage extends OrgAction
                                     'placeholder' => __('Select a blog category'),
                                     'mode'        => 'single',
                                     'options'     => [
+                                        ['value' => 'blog', 'label' => __('Blog')],
                                         ['value' => 'davids_travel_blog', 'label' => __("David's Travel Blog")],
                                         ['value' => 'tips', 'label' => __('Tips')],
                                     ],
