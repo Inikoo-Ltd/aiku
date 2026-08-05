@@ -378,7 +378,10 @@ onUnmounted(() => {
 										<!-- Price -->
 										<div class="font-bold text-right text-sm tabular-nums"
 											:class="priceStep.price === 0 ? 'text-green-600' : ''">
-											<span v-if="priceStep.price === 0">
+											<span v-if="priceStep.price === 'TBC'" class="text-gray-500 italic font-normal">
+												{{ ctrans('TBC') }}
+											</span>
+											<span v-else-if="priceStep.price === 0">
 												Free
 											</span>
 											<span v-else-if="typeof priceStep.price == 'number'"> {{

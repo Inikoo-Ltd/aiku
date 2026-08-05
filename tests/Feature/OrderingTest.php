@@ -45,6 +45,7 @@ use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\HydrateOrders;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
@@ -1964,3 +1965,70 @@ test('a step priced TBC leaves the shipping to be confirmed instead of free', fu
     expect($order->is_shipping_tbc)->toBeTrue()
         ->and((float)$shippingTransaction->net_amount)->toBe(0.0);
 })->depends('shipping zone with territories wins over a catch all zone placed above it');
+
+test('repricing a basket picks up a shipping price that changed since it was created', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
+        'name' => 'stale basket schema',
+    ]);
+
+    $shippingZone = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-STALE',
+        'name'        => 'France',
+        'status'      => true,
+        'price'       => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 5],
+            ],
+        ],
+        'territories' => [['country_code' => 'FR']],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+
+    $this->shop->update(['shipping_zone_schema_id' => $shippingZoneSchema->id]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->deliveryAddress->update(['country_code' => 'FR', 'postal_code' => '75001']);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+    CalculateOrderShipping::make()->handle($order->refresh());
+
+    expect((float)$order->transactions()->where('model_type', 'ShippingZone')->first()->net_amount)->toBe(5.0);
+
+    UpdateShippingZone::make()->action($shippingZone, [
+        'price' => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 25],
+            ],
+        ],
+    ]);
+
+    CalculateOrderTotalAmounts::run($order->refresh(), forceRecalculate: true, onlyIfInBasket: true);
+
+    expect((float)$order->refresh()->transactions()->where('model_type', 'ShippingZone')->first()->net_amount)->toBe(25.0);
+
+    return $order;
+});
+
+test('repricing skips an order that is no longer a basket', function (Order $order) {
+    SubmitOrder::make()->action($order);
+
+    UpdateShippingZone::make()->action(ShippingZone::find($order->shipping_zone_id), [
+        'price' => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 99],
+            ],
+        ],
+    ]);
+
+    CalculateOrderTotalAmounts::run($order->refresh(), forceRecalculate: true, onlyIfInBasket: true);
+
+    expect((float)$order->refresh()->transactions()->where('model_type', 'ShippingZone')->first()->net_amount)->toBe(25.0);
+})->depends('repricing a basket picks up a shipping price that changed since it was created');
