@@ -42,8 +42,7 @@ const scannerContainer = ref<HTMLElement | null>(null)
 const cameraActive = ref(false)
 const cameraError = ref<string | null>(null)
 const isDetecting = ref(false)
-// Kept equal to resultDisplayMs so the camera becomes scan-ready again at the exact moment
-// the success/error message disappears, instead of staying idle for an extra stretch after.
+
 const recentCodeCooldownMs = resultDisplayMs
 let lastProcessedCode: string | null = null
 let lastProcessedAt = 0
