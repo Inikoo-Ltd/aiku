@@ -44,6 +44,7 @@ use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
+use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\HydrateOrders;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
@@ -1895,3 +1896,45 @@ test('invoice totals from a part picked order keep net plus tax equal to the tot
         ->and($totals['total_amount'])->toBe(319.94)
         ->and($totals['net_amount'] + $totals['tax_amount'])->toBe($totals['total_amount']);
 });
+
+test('shipping zone with territories wins over a catch all zone placed above it', function ($transaction) {
+    $order = $transaction->order;
+    $order->deliveryAddress->update(['country_code' => 'FR', 'postal_code' => '75001']);
+
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($order->shop, [
+        'name' => 'catch all on top schema',
+    ]);
+
+    StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-FR',
+        'name'        => 'France',
+        'status'      => true,
+        'price'       => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 12.5],
+            ],
+        ],
+        'territories' => [['country_code' => 'FR']],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+
+    $restOfTheWorld = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-ROW',
+        'name'        => 'Rest of the world',
+        'status'      => true,
+        'price'       => ['type' => 'TBC'],
+        'territories' => [],
+        'position'    => 2,
+        'is_failover' => false,
+    ]);
+
+    $order->shop->update(['shipping_zone_schema_id' => $shippingZoneSchema->id]);
+    $order->refresh();
+
+    $order = CalculateOrderShipping::make()->handle($order);
+
+    expect($order->shipping_zone_id)->not->toBe($restOfTheWorld->id)
+        ->and($order->is_shipping_tbc)->toBeFalse();
+})->depends('create transaction from charge');

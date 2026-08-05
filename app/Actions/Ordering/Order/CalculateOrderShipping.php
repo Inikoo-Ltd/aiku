@@ -229,7 +229,12 @@ class CalculateOrderShipping
 
     private function getShippingAmountAndShippingZone(Order $order, ShippingZoneSchema $shippingZoneSchema): array
     {
-        $shippingZones = $shippingZoneSchema->shippingZones()->where('status', true)->orderBy('position', 'desc')->get();
+        $shippingZones = $shippingZoneSchema->shippingZones()
+            ->where('status', true)
+            ->orderBy('position', 'desc')
+            ->get()
+            ->sortBy(fn (ShippingZone $shippingZone) => empty($shippingZone->territories) ? 1 : 0)
+            ->values();
 
         foreach ($shippingZones as $shippingZone) {
             if ($this->matchTerritories($order, $shippingZone)) {
