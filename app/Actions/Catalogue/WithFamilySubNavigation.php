@@ -94,6 +94,10 @@ trait WithFamilySubNavigation
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.products.index',
                     'parameters' => $routeParameters
                 ];
+                $salesRoute   = [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.products.sales',
+                    'parameters' => $routeParameters
+                ];
             } else {
                 $familyRoute  = [
                     'name'       => 'grp.org.shops.show.catalogue.families.show',
@@ -103,7 +107,10 @@ trait WithFamilySubNavigation
                     'name'       => 'grp.org.shops.show.catalogue.families.show.products.index',
                     'parameters' => $routeParameters
                 ];
-
+                $salesRoute   = [
+                    'name'       => 'grp.org.shops.show.catalogue.families.show.products.sales',
+                    'parameters' => $routeParameters
+                ];
             }
         } elseif ($parent instanceof Shop) {
             $familyRoute  = [
@@ -112,6 +119,10 @@ trait WithFamilySubNavigation
             ];
             $productRoute = [
                 'name'       => 'grp.org.shops.show.catalogue.families.show.products.index',
+                'parameters' => $routeParameters
+            ];
+            $salesRoute   = [
+                'name'       => 'grp.org.shops.show.catalogue.families.show.products.sales',
                 'parameters' => $routeParameters
             ];
         }
@@ -137,9 +148,14 @@ trait WithFamilySubNavigation
                 ]
             ],
 
-
-
-
+            [
+                'label'    => __('Sales'),
+                'route'     => $salesRoute,
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-money-bill-wave'],
+                    'tooltip' => __('products sales')
+                ]
+            ],
         ];
     }
 

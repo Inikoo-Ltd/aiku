@@ -25,7 +25,6 @@ use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\OffersResource;
-use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Http\Resources\Catalogue\VariantsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -60,7 +59,7 @@ class ShowFamily extends OrgAction
     {
         $this->parent = $department;
 
-        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::valuesExcept([FamilyTabsEnum::SALES]));
 
         return $this->handle($family);
     }
@@ -69,7 +68,7 @@ class ShowFamily extends OrgAction
     public function inShop(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): ProductCategory
     {
         $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::valuesExcept([FamilyTabsEnum::SALES]));
 
         return $this->handle($family);
     }
@@ -79,7 +78,7 @@ class ShowFamily extends OrgAction
     {
         $this->parent = $subDepartment;
 
-        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::valuesExcept([FamilyTabsEnum::SALES]));
 
         return $this->handle($family);
     }
@@ -89,7 +88,7 @@ class ShowFamily extends OrgAction
     {
         $this->parent = $subDepartment;
 
-        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::valuesExcept([FamilyTabsEnum::SALES]));
 
         return $this->handle($family);
     }
@@ -173,10 +172,6 @@ class ShowFamily extends OrgAction
         }
 
         $tabs = [
-            FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
-                fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))
-                : Inertia::optional(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))),
-
             FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                 fn () => GetProductCategoryShowcase::run($family)
                 : Inertia::optional(fn () => GetProductCategoryShowcase::run($family)),
@@ -280,7 +275,7 @@ class ShowFamily extends OrgAction
                 'url_master'       => $urlMaster,
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => FamilyTabsEnum::navigation(),
+                    'navigation' => FamilyTabsEnum::navigationExcept([FamilyTabsEnum::SALES]),
                 ],
                 'shop_data' => [
                     'id'       => $family->shop->id,
@@ -302,7 +297,6 @@ class ShowFamily extends OrgAction
         ->table(IndexMailshots::make()->tableStructure(parent: $family))
         ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
         ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
-        ->table(IndexProductCategoryTimeSeries::make()->tableStructure(prefix: FamilyTabsEnum::SALES->value))
         ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
         ->table(IndexReviews::make()->tableStructure(prefix: FamilyTabsEnum::REVIEWS->value));
     }
