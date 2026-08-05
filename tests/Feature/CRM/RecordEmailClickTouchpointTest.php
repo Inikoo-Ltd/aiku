@@ -8,8 +8,13 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Models\Comms\Mailshot;
+use App\Models\CRM\TrafficSource;
+use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 
@@ -71,4 +76,37 @@ it('preserves earlier touches and layers the newsletter click on top for attribu
         TrafficSourcesTypeEnum::ORGANIC_GOOGLE->value,
         TrafficSourcesTypeEnum::NEWSLETTER->value,
     ]);
+});
+
+it('links the touch to a traffic source campaign matching the mailshot', function () {
+    $outbox   = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+
+    RecordEmailClickTouchpoint::run($this->customer, Carbon::parse('2026-01-01 10:00:00'), $mailshot);
+
+    $trafficSource = TrafficSource::where('shop_id', $this->shop->id)
+        ->where('type', TrafficSourcesTypeEnum::NEWSLETTER->value)
+        ->first();
+
+    $campaign = TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)
+        ->where('reference', (string) $mailshot->id)
+        ->first();
+
+    expect($campaign)->not->toBeNull();
+
+    $pivot = $this->customer->fresh()->trafficSources()->wherePivot('traffic_source_campaign_id', $campaign->id)->first();
+
+    expect($pivot)->not->toBeNull();
+});
+
+it('does not record a duplicate touch for a repeat click on the same mailshot on the same day', function () {
+    $outbox   = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+
+    RecordEmailClickTouchpoint::run($this->customer, Carbon::parse('2026-01-01 10:00:00'), $mailshot);
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 18:00:00'), $mailshot);
+
+    $touches = explode('|', $this->customer->fresh()->traffic_sources);
+
+    expect($touches)->toHaveCount(1);
 });
