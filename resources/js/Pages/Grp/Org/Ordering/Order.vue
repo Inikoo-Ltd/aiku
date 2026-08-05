@@ -235,6 +235,7 @@ const props = defineProps<{
         products_list: routeType
         delivery_note: routeType
         rollback_dispatch: routeType
+        redispatch?: routeType
     }
     // nonProductItems: {}
     transactions?: {}
@@ -667,6 +668,33 @@ const updateCollectionNotes = () => {
     )
 }
 // end: collection feature
+
+const onRedispatch = () => {
+    if (!props.routes.redispatch) {
+        return
+    }
+
+    router.patch(
+        route(props.routes.redispatch.name, props.routes.redispatch.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => {
+                isLoadingButton.value = 'redispatch'
+            },
+            onFinish: () => {
+                isLoadingButton.value = false
+            },
+            onError: () => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to dispatch the order"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
 
 const replacementLoading = ref<boolean>(false)
 const onCreateReplacement = (action: any) => {
@@ -1443,6 +1471,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         </Button>
                     </template>
                 </ModalConfirmationDelete>
+
+                <!-- Button: Dispatch -->
+                <Button v-if="routes.redispatch" @click="onRedispatch"
+                    type="save"
+                    :loading="isLoadingButton === 'redispatch'"
+                    :tooltip="ctrans('Dispatch the order')"
+                    :label="ctrans('Dispatch')"
+                    icon="fal fa-truck"
+                    full />
 
                 <!-- Button: Proforma Invoice -->
                 <Button

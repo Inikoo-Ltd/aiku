@@ -516,6 +516,18 @@ test('update order state to submitted', function (Order $order) {
     return $order;
 })->depends('create order');
 
+test('customer cannot update basket transaction on submitted order', function (Order $order) {
+    $webUser = new \App\Models\CRM\WebUser();
+    $webUser->setRelation('customer', $order->customer);
+    $transaction = $order->transactions()->first();
+
+    $request = Mockery::mock(\Lorisleiva\Actions\ActionRequest::class);
+    $request->shouldReceive('user')->andReturn($webUser);
+
+    expect(fn () => \App\Actions\Iris\Basket\UpdateEcomBasketTransaction::make()->asController($transaction, $request))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class, 'Order can not be modified after submission');
+})->depends('update order state to submitted');
+
 test('update order state to in warehouse', function (Order $order) {
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
     $order->refresh();
