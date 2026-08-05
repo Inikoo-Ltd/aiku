@@ -557,7 +557,7 @@ class IndexMasterProducts extends OrgAction
                     'icon' => 'fal fa-cube',
                 ];
                 $modelNavigation = GetMasterFamilyNavigation::run($this->parent, $request);
-                $exception       = [];
+                $exception       = [MasterProductsTabsEnum::SALES];
             }
             $shopsData = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         }

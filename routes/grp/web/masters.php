@@ -10,6 +10,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoicesInProduct;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
 use App\Actions\Catalogue\Shop\StoreShopFromMaster;
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
+use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProductSales;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInMasterDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInMasterFamilies;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartmentsInMasterSubDepartment;
@@ -304,6 +305,7 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('{masterProduct}/composition', EditMasterProductComposition::class)->name('composition');
                 Route::get('{masterProduct}/invoices', [IndexInvoicesInProduct::class, 'inMaster'])->name('invoices');
                 Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMaster'])->name('products');
+                Route::get('{masterProduct}/sales', IndexProductsInMasterProductSales::class)->name('show.sales');
 
             });
 
