@@ -115,7 +115,7 @@ onBeforeUnmount(() => {
 
     <!-- VARIANT LIST -->
     <!-- DESKTOP -->
-    <div class="hidden md:flex gap-2 mt-2 flex-nowrap overflow-x-auto">
+    <div class="hidden md:flex flex-wrap gap-2 mt-2 max-w-[180px] md:max-w-[200px] lg:max-w-[260px]">
         <button v-for="(variant, index) in variants" :key="index" type="button" @click="selectVariant(variant, index)"
             class="relative border px-3 py-2 text-sm font-medium shrink-0 transition overflow-hidden" :class="[
                 isActive(index) && variant.stock > 0
