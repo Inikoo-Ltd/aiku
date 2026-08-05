@@ -21,7 +21,6 @@ class DeleteClockingMachine extends OrgAction
 
     public function handle(ClockingMachine $clockingMachine): ClockingMachine
     {
-        $clockingMachine->clockings()->delete();
         $clockingMachine->delete();
 
         return $clockingMachine;
