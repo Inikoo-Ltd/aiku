@@ -24,12 +24,17 @@ class SearchCatalogue
     /**
      * Typo-recovery tuning driven by the real no-result queries in the search logs:
      * split_join_tokens rescues glued words ("aromcandles" -> "arom candles") and
-     * min_len_2typo 6 lets shorter words carry two typos ("auaura" -> "aura").
+     * min_len_2typo 7 lets shorter words carry two typos ("auaura" -> "aura").
+     *
+     * min_len_2typo was 6; 7 was measured against the 696 real trending queries in
+     * devops/search/trending/aw.csv and cost nothing - no query lost its results and
+     * no top hit moved - while halving the junk served to no-result queries. 8 starts
+     * costing real traffic.
      */
     public const array SEARCH_TUNING = [
         'split_join_tokens'     => 'always',
         'typo_tokens_threshold' => 2,
-        'min_len_2typo'         => 6,
+        'min_len_2typo'         => 7,
     ];
 
     /**
@@ -45,12 +50,12 @@ class SearchCatalogue
     {
         if (config('scout.driver') === 'typesense') {
             try {
-                $documents = $this->multiSearch($query, $options);
+                $hits = $this->multiSearch($query, $options);
             } catch (Throwable) {
-                $documents = $this->scoutSearch($query, $options);
+                $hits = $this->scoutSearch($query, $options);
             }
         } else {
-            $documents = $this->scoutSearch($query, $options);
+            $hits = $this->scoutSearch($query, $options);
         }
 
         $mapCatalogueItem = static fn (array $document) => [
@@ -61,11 +66,18 @@ class SearchCatalogue
         ];
 
         return [
-            'scope'   => 'catalogue',
-            'results' => array_map(
-                static fn (array $docs) => array_map($mapCatalogueItem, $docs),
-                $documents
+            'scope'       => 'catalogue',
+            'results'     => array_map(
+                static fn (array $collectionHits) => array_map(
+                    $mapCatalogueItem,
+                    Arr::pluck($collectionHits, 'document')
+                ),
+                $hits
             ),
+            'arm_counts'  => $this->sumArmCounts(array_map(
+                fn (array $collectionHits) => $this->armCounts($collectionHits),
+                $hits
+            )),
         ];
     }
 
@@ -106,15 +118,15 @@ class SearchCatalogue
             ->post($this->typesenseUrl().'/multi_search', ['searches' => $searches])
             ->throw();
 
-        $documents = [];
+        $hits = [];
         foreach (array_keys(self::SEARCH_TARGETS) as $index => $key) {
             if ($error = $response->json("results.$index.error")) {
                 logger()->warning("Typesense multi_search $key failed: $error");
             }
-            $documents[$key] = Arr::pluck($response->json("results.$index.hits", []), 'document');
+            $hits[$key] = $response->json("results.$index.hits", []);
         }
 
-        return $documents;
+        return $hits;
     }
 
     /**
@@ -124,7 +136,7 @@ class SearchCatalogue
      */
     private function scoutSearch(string $query, array $options): array
     {
-        $documents = [];
+        $hits = [];
         foreach (self::SEARCH_TARGETS as $key => [$modelClass, $boostType, $limit]) {
             $searchQuery = $modelClass::search($query);
 
@@ -141,10 +153,10 @@ class SearchCatalogue
             ));
             $searchQuery->take($limit);
 
-            $documents[$key] = $this->rawDocuments($searchQuery);
+            $hits[$key] = $this->rawHits($searchQuery);
         }
 
-        return $documents;
+        return $hits;
     }
 
     /**

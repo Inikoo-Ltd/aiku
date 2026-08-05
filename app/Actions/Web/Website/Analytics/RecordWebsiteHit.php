@@ -57,6 +57,7 @@ class RecordWebsiteHit
                     'country'     => $request->header('CF-IPCountry') ?? 'XX',
                     'city'        => $request->header('CF-IPCity'),
                     'region'      => $request->header('CF-Region'),
+                    'webpage_id'  => $request->input('webpage_id'),
                     'web_user_id' => $webUser instanceof WebUser ? $webUser->id : null,
                 ]
             );

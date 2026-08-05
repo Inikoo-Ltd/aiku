@@ -60,8 +60,19 @@ class IrisAction
         return $this;
     }
 
-    protected function recordWebsiteSearchLog(ActionRequest $request, string $scope, string $query, int $resultsCount): string
-    {
+    /**
+     * $armCounts splits the hits by which arm of a hybrid search found them. The gap
+     * reporting keys off the keyword count, not what the customer ended up seeing.
+     *
+     * @param array{keyword: int, vector: int}|null $armCounts
+     */
+    protected function recordWebsiteSearchLog(
+        ActionRequest $request,
+        string $scope,
+        string $query,
+        int $resultsCount,
+        ?array $armCounts = null
+    ): string {
         $ulid = (string)Str::ulid();
 
         $browserInfo = $request->userAgent() ? GetBrowserInfo::run($request->userAgent()) : [];
@@ -78,7 +89,9 @@ class IrisAction
             'source'          => $this->searchSource(),
             'query'           => mb_substr($query, 0, 255),
             'session_id'      => $request->hasSession() ? $request->session()->getId() : null,
-            'results_count'   => $resultsCount,
+            'results_count'         => $resultsCount,
+            'keyword_results_count' => Arr::get($armCounts, 'keyword', $resultsCount),
+            'vector_results_count'  => Arr::get($armCounts, 'vector', 0),
             'device'          => Arr::get($browserInfo, 'device'),
             'browser'         => Arr::get($browserInfo, 'browser'),
             'os'              => Arr::get($browserInfo, 'os'),

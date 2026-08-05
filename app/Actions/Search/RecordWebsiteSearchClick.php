@@ -8,7 +8,9 @@
 
 namespace App\Actions\Search;
 
+use App\Events\Web\WebsiteSearchStatsUpdated;
 use App\Models\Helpers\WebsiteSearchLog;
+use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -27,6 +29,11 @@ class RecordWebsiteSearchClick
             'clicked_url' => $url,
             'clicked_at'  => now(),
         ]);
+
+        $website = Website::find($searchLog->website_id);
+        if ($website) {
+            WebsiteSearchStatsUpdated::dispatch($website);
+        }
     }
 
     public function rules(): array

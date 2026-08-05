@@ -11,7 +11,6 @@
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
-use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\SupplyChain\Agent\DeleteAgent;
 use App\Actions\SupplyChain\Agent\StoreAgent;
@@ -256,11 +255,8 @@ test('update org-agent', function ($orgAgent) {
     return $updatedOrgAgent;
 })->depends('create org-agent');
 
-test('create org-supplier', function ($supplier) {
-    $orgSupplier = StoreOrgSupplier::make()->action(
-        $this->organisation,
-        $supplier
-    );
+test('the independent supplier is propagated as an org-supplier', function ($supplier) {
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
 
     expect($orgSupplier)->toBeInstanceOf(OrgSupplier::class)
         ->and($orgSupplier->stats)->toBeInstanceOf(OrgSupplierStats::class);
@@ -280,7 +276,7 @@ test('update org-supplier', function ($orgSupplier) {
         ->and($updatedOrgSupplier->status)->toBeFalse();
 
     return $updatedOrgSupplier;
-})->depends('create org-supplier');
+})->depends('the independent supplier is propagated as an org-supplier');
 
 test('delete agent', function () {
     /** @var Agent $agent */

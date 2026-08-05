@@ -41,6 +41,10 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             $query->where('delivery_notes.id', $deliveryNoteId);
         }
 
+        $query->whereHas('deliveryNoteItems', function ($query) {
+            $query->where('quantity_required', '>', 0);
+        });
+
         return $query
             ->select([
                 'delivery_notes.slug as delivery_note_slug',

@@ -15,7 +15,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useLocaleStore } from "@/Stores/locale"
 import LiveVisitorsCanvas from "@/Components/Web/LiveVisitorsCanvas.vue"
-import { LiveVisitor, liveVisitorColors, liveVisitorStatusLabels, useLiveVisitors } from "@/Composables/useLiveVisitors"
+import { LiveVisitor, funnelStage, liveVisitorColors, liveVisitorStatusLabels, pagePath, sumBaskets, useLiveVisitors } from "@/Composables/useLiveVisitors"
 import { faDesktop, faMobile, faTabletAlt, faShoppingBasket, faFileAlt, faRobot, faSearch } from "@fal"
 
 library.add(faDesktop, faMobile, faTabletAlt, faShoppingBasket, faFileAlt, faRobot, faSearch)
@@ -77,8 +77,7 @@ const deviceIcon = (v: LiveVisitor) => {
     return faDesktop
 }
 
-const pageIcon = (v: LiveVisitor) =>
-    `${v.page ?? ''} ${v.page_title ?? ''}`.toLowerCase().includes('basket') ? faShoppingBasket : faFileAlt
+const pageIcon = (v: LiveVisitor) => (funnelStage(v) ? faShoppingBasket : faFileAlt)
 
 const groupKeyOf = (v: LiveVisitor): string => {
     switch (currentGrouping.value) {
@@ -113,9 +112,7 @@ const visibleVisitors = computed(() =>
         .sort((a, b) => b.last_active - a.last_active)
 )
 
-const totalBasket = computed(() =>
-    visibleVisitors.value.reduce((sum, v) => sum + (v.basket_amount ?? 0), 0)
-)
+const totalBasket = computed(() => sumBaskets(visibleVisitors.value))
 
 const legend = computed(() => {
     const present = new Set(visibleVisitors.value.map(v => v.status))
@@ -300,9 +297,7 @@ const sinceLabel = (v: LiveVisitor) => {
                         <td class="px-3 py-2">
                             <span class="flex items-center gap-2 text-gray-600 min-w-0">
                                 <FontAwesomeIcon :icon="pageIcon(visitor)" class="text-gray-400 shrink-0" />
-                                <span class="truncate" :title="visitor.url">
-                                    {{ visitor.page_title || visitor.page || trans('Home') }}
-                                </span>
+                                <span class="truncate" :title="visitor.url">{{ pagePath(visitor) }}</span>
                             </span>
                         </td>
                         <td class="px-3 py-2 text-right text-xs text-gray-400 tabular-nums">

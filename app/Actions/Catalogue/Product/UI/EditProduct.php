@@ -273,6 +273,9 @@ class EditProduct extends OrgAction
                 'value'     => $product->not_follow_master_prices,
                 'information' => __('Enabling this would allow product price to be editable and it will stop following master'),
                 'warningText' => __('Modifying this setting would cause the product to either diverge/follow master').'. '.__('Are you sure you want to do this?'),
+                /* Confirming the warning is the decision: leaving it to a separate save reads as already saved. */
+                'noSaveButton'    => true,
+                'submitOnConfirm' => true,
             ]
         ];
 
@@ -686,7 +689,10 @@ class EditProduct extends OrgAction
                             'type'  => 'toggle',
                             'label' => __('Do not follow master trade units'),
                             'value' => $product->not_follow_master_trade_units,
-                            'information' => __('Would set product to have standalone trade units (Differs from master)')
+                            'information' => __('Would set product to have standalone trade units (Differs from master)'),
+                            'warningText'     => __('Modifying this setting would cause the product to either diverge/follow master').'. '.__('Are you sure you want to do this?'),
+                            'noSaveButton'    => true,
+                            'submitOnConfirm' => true,
                         ] : [],
                         /*
                          * Composition, packing and the price they imply are one decision

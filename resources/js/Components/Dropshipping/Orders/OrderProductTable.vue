@@ -11,7 +11,7 @@ import { faBarcode, faGift, faRepeat, faTrash, faUndo } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { debounce, get, set } from "lodash-es"
+import { debounce, get, set, toInteger } from "lodash-es"
 import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelectorAutoSelect.vue"
 import { ulid } from "ulid"
@@ -462,7 +462,10 @@ const isOffersData = (offersData: any): boolean => {
             <!-- Column: Name / Stock -->
             <template #cell(asset_name)="{ item }">
                 <div>
-                    <div xclass="item.offers_data ? 'text-pink-600' : ''">{{ item.asset_name }}</div>
+                    <div xclass="item.offers_data ? 'text-pink-600' : ''">
+                        <span v-if="Number(item.units) !== 1">[{{ item.units }}x]</span>
+                        {{ item.asset_name }}
+                    </div>
                     <div v-if="item.units_changed_to"
                         v-tooltip="ctrans('This line was ordered and priced at :ordered per pack, the product is now sold as :now per pack. Check what the warehouse should ship.', { ordered: item.product_units, now: item.units_changed_to })"
                         class="text-xs text-amber-600"
@@ -483,6 +486,8 @@ const isOffersData = (offersData: any): boolean => {
                         </span>
                         <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>
                         <div v-if="item.upcoming_transaction_private_notes">{{ item.upcoming_transaction_private_notes }}</div>
+
+                        <div>Units/SKO: {{ toInteger(item.product_units) }}</div>
                     </div>
                     <Discount 
                         v-if="isOffersData(item.offers_data)" 

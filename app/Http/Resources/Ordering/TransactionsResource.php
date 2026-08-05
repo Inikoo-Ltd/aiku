@@ -132,6 +132,7 @@ class TransactionsResource extends JsonResource
             'asset_code'                     => $this->asset_code,
             'asset_name'                     => $this->asset_name,
             'asset_type'                     => $this->asset_type,
+            'units'                          => trimDecimalZeros($this->product_units),
             'image'                          => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
             'product_slug'                   => $this->product_slug,
             'created_at'                     => $this->created_at,

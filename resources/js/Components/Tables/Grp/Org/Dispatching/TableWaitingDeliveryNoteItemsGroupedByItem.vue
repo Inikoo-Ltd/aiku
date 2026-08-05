@@ -49,7 +49,7 @@ const routeToDeliveryNote = (slug: string) => {
         <template #cell(org_stock_code)="{ item }">
             <div class="min-w-40">
                 <div class="font-bold tabular-nums">{{ item.org_stock_code }}</div>
-                <div class="opacity-75 text-sm">{{ item.org_stock_name }}</div>
+                <div class="opacity-75 text-sm">{{ item.org_stock_name }} <span class="italic opacity-80">{{ item.packed_in_message }}</span></div>
                 <div v-if="item.warehouse_area" class="text-xs text-gray-400 mt-0.5">{{ item.warehouse_area }}</div>
             </div>
         </template>

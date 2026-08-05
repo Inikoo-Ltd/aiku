@@ -49,14 +49,14 @@ trait WithWebsiteSearchLogsTable
             'results' => [
                 'label'    => __('Results'),
                 'elements' => [
-                    'with_results' => [__('With results'), (clone $base)->where('results_count', '>', 0)->count()],
-                    'no_results'   => [__('No results'), (clone $base)->where('results_count', 0)->count()],
+                    'with_results' => [__('With results'), (clone $base)->where('keyword_results_count', '>', 0)->count()],
+                    'no_results'   => [__('Nothing matched'), (clone $base)->where('keyword_results_count', 0)->count()],
                 ],
                 'engine'   => function ($query, $elements) {
                     if (count($elements) === 1) {
                         array_pop($elements) === 'with_results'
-                            ? $query->where('website_search_logs.results_count', '>', 0)
-                            : $query->where('website_search_logs.results_count', 0);
+                            ? $query->where('website_search_logs.keyword_results_count', '>', 0)
+                            : $query->where('website_search_logs.keyword_results_count', 0);
                     }
                 },
             ],
