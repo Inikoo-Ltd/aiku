@@ -108,6 +108,15 @@ enum TrafficSourcesTypeEnum: string
         return self::tryFrom($typeValue);
     }
 
+    /**
+     * Paid traffic types are the ones an advertiser is actually billed for (the `-ads` types),
+     * as opposed to the `organic-*` types. Used by the last-paid-touch attribution model.
+     */
+    public function isPaid(): bool
+    {
+        return str_ends_with($this->value, '-ads');
+    }
+
 
 
 

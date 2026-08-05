@@ -15,9 +15,17 @@ class ProcessTrafficSourceShare
 {
     use AsAction;
 
-    public const ATTRIBUTION_FIRST_TOUCH = 'first_touch';
-    public const ATTRIBUTION_LAST_TOUCH  = 'last_touch';
-    public const ATTRIBUTION_LINEAR      = 'linear';
+    public const ATTRIBUTION_FIRST_TOUCH      = 'first_touch';
+    public const ATTRIBUTION_LAST_TOUCH       = 'last_touch';
+    public const ATTRIBUTION_LAST_NON_DIRECT  = 'last_non_direct_touch';
+    public const ATTRIBUTION_LAST_PAID_TOUCH  = 'last_paid_touch';
+    public const ATTRIBUTION_LINEAR           = 'linear';
+
+    /**
+     * Bumped whenever the calculation logic for an attribution model changes, so that pivot rows
+     * (and any future dedicated attribution table) can be traced back to the logic that produced them.
+     */
+    public const ATTRIBUTION_VERSION = 1;
 
     /**
      * Calculates the attribution credit share for a list of chronologically ordered marketing touches.
@@ -33,10 +41,64 @@ class ProcessTrafficSourceShare
         }
 
         return match ($attributionModel) {
-            self::ATTRIBUTION_FIRST_TOUCH => $this->firstTouch($touches),
-            self::ATTRIBUTION_LAST_TOUCH  => $this->lastTouch($touches),
-            default                       => $this->linear($touches),
+            self::ATTRIBUTION_FIRST_TOUCH     => $this->firstTouch($touches),
+            self::ATTRIBUTION_LAST_TOUCH,
+            self::ATTRIBUTION_LAST_NON_DIRECT => $this->lastTouch($touches),
+            self::ATTRIBUTION_LAST_PAID_TOUCH => $this->lastPaidTouch($touches),
+            default                            => $this->linear($touches),
         };
+    }
+
+    /**
+     * Gives 100% credit to the latest touch coming from a paid (`-ads`) traffic source. Returns an
+     * empty result when the journey has no paid touch at all, since crediting an unpaid source would
+     * misrepresent paid-channel reporting.
+     *
+     * @param array<int, array{timestamp: int|null, abbr: string, type: TrafficSourcesTypeEnum, campaign_ref: string|null}> $touches
+     *
+     * @return array<int, array{type: TrafficSourcesTypeEnum, campaign_ref: string|null, share: float, is_first_touch: bool}>
+     */
+    private function lastPaidTouch(array $touches): array
+    {
+        $paidTouches = array_values(array_filter($touches, fn (array $touch) => $touch['type']->isPaid()));
+
+        if (empty($paidTouches)) {
+            return [];
+        }
+
+        $lastPaidTouch = $paidTouches[count($paidTouches) - 1];
+        $firstKey      = $this->touchKey($touches[0]);
+
+        return [$this->buildResult($lastPaidTouch, 1.0, $this->touchKey($lastPaidTouch) === $firstKey)];
+    }
+
+    /**
+     * Identifies which unique touches in a journey assisted the conversion without receiving the
+     * final credit under the given attribution model (i.e. every eligible touch except the one(s)
+     * that ended up with credit). Used to report assisted vs primary conversions/revenue.
+     *
+     * @param array<int, array{timestamp: int|null, abbr: string, type: TrafficSourcesTypeEnum, campaign_ref: string|null}> $touches
+     *
+     * @return array<int, array{type: TrafficSourcesTypeEnum, campaign_ref: string|null}>
+     */
+    public function assistingTouches(array $touches, string $attributionModel = self::ATTRIBUTION_LINEAR): array
+    {
+        $credited = collect($this->handle($touches, $attributionModel))
+            ->map(fn (array $share) => $this->touchKey(['type' => $share['type'], 'campaign_ref' => $share['campaign_ref']]))
+            ->all();
+
+        $assisting = [];
+
+        foreach ($this->uniqueTouches($touches) as $key => $touch) {
+            if (!in_array($key, $credited, true)) {
+                $assisting[] = [
+                    'type'         => $touch['type'],
+                    'campaign_ref' => $touch['campaign_ref'],
+                ];
+            }
+        }
+
+        return $assisting;
     }
 
     /**
