@@ -13,9 +13,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
-use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
-use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
-use App\Models\CRM\TrafficSource;
+use App\Actions\CRM\TrafficSource\AttachTrafficSourcesToModel;
+use App\Actions\CRM\TrafficSource\ParseTrafficSourceTouches;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
 use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -222,67 +221,13 @@ class StoreCustomer extends OrgAction
             return;
         }
 
-        $abbreviations = $this->extractTrafficSourceAbbreviations($trafficSourcesData);
+        $touches = ParseTrafficSourceTouches::run($trafficSourcesData);
 
-        if (empty($abbreviations)) {
+        if (empty($touches)) {
             return;
         }
 
-        $typeValues = [];
-
-        foreach ($abbreviations as $abbreviation) {
-            $enum = TrafficSourcesTypeEnum::fromAbbr($abbreviation);
-            if ($enum !== null) {
-                $typeValues[] = $enum->value;
-            }
-        }
-
-        $typeValues = array_unique($typeValues);
-
-        if (empty($typeValues)) {
-            return;
-        }
-
-        $trafficSources = TrafficSource::where('shop_id', $customer->shop_id)
-            ->whereIn('type', $typeValues)
-            ->get();
-
-        if ($trafficSources->isEmpty()) {
-            return;
-        }
-
-        $share = round(1 / $trafficSources->count(), 2);
-
-        foreach ($trafficSources as $trafficSource) {
-            $customer->trafficSources()->syncWithoutDetaching([
-                $trafficSource->id => ['share' => $share],
-            ]);
-            TrafficSourceHydrateCustomers::dispatch($trafficSource);
-        }
-    }
-
-    private function extractTrafficSourceAbbreviations(string $data): array
-    {
-        $segments      = preg_split('/[|,]/', $data);
-        $abbreviations = [];
-
-        foreach ($segments as $segment) {
-            $segment = trim($segment);
-
-            if (blank($segment)) {
-                continue;
-            }
-
-            $withoutTimestamp = ltrim($segment, '0123456789');
-
-            if (strlen($withoutTimestamp) === 0) {
-                continue;
-            }
-
-            $abbreviations[] = $withoutTimestamp[0];
-        }
-
-        return $abbreviations;
+        AttachTrafficSourcesToModel::run($customer, $customer->shop_id, $touches);
     }
 
     public function rules(): array

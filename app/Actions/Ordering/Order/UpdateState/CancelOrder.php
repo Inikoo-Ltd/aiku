@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order\UpdateState;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dropshipping\Allegro\Order\CancelFulfillOrderAllegro;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
@@ -138,7 +139,26 @@ class CancelOrder extends OrgAction
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::CANCELLED);
 
+        $this->refreshTrafficSourceStats($order);
+
         return $order;
+    }
+
+    /**
+     * Cancelling an order changes the revenue attributed to any traffic source that was
+     * credited for it, so those traffic sources' cached statistics need to be refreshed.
+     * The pivot attribution rows themselves are preserved as an audit trail of what
+     * originally acquired the order.
+     */
+    private function refreshTrafficSourceStats(Order $order): void
+    {
+        $trafficSources = $order->trafficSources
+            ->merge($order->customer?->trafficSources ?? [])
+            ->unique('id');
+
+        foreach ($trafficSources as $trafficSource) {
+            TrafficSourceHydrateCustomers::dispatch($trafficSource);
+        }
     }
 
     public function afterValidator(Validator $validator): void
