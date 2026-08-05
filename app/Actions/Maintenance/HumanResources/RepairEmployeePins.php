@@ -25,7 +25,7 @@ class RepairEmployeePins
 
     public function asCommand(): void
     {
-        Employee::whereNotNull('pin')->orderBy('id')->chunkById(500, function ($employees) {
+        Employee::orderBy('id')->chunkById(500, function ($employees) {
             foreach ($employees as $employee) {
                 $this->handle($employee);
             }
