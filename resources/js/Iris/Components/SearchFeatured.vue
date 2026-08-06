@@ -131,7 +131,8 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
                         </div>
 
                         <div class="min-w-0">
-                            <p class="text-sm font-medium text-slate-800 leading-tight line-clamp-2 group-hover:underline">{{ getProductName(product) }}</p>
+                            <p class="text-xs font-bold">{{ product.code }}</p>
+                            <p class="text-sm font-medium leading-tight line-clamp-2 group-hover:underline text-justify">{{ getProductName(product) }}</p>
 
                             <p v-if="formatRrp(product.rrp_per_unit, product.unit)" class="text-xxs text-gray-500 mt-0.5">
                                 {{ ctrans('RRP') }}: {{ formatRrp(product.rrp_per_unit, product.unit) }}
@@ -148,10 +149,12 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
 
                             <!-- Offers the customer can already claim on this product -->
                             <div v-if="product.product_offers_data?.number_offers" class="mt-1 flex flex-wrap items-center gap-1">
-                                <span v-if="product.discounted_percentage" class="rounded-full bg-[var(--theme-color-0)] px-2 py-0.5 text-xxs font-semibold text-[var(--theme-color-1)]">
+                                <!-- <span v-if="product.discounted_percentage" class="rounded-full bg-[var(--theme-color-0)] px-2 py-0.5 text-xxs font-semibold text-[var(--theme-color-1)]">
                                     {{ product.discounted_percentage }} {{ ctrans('OFF') }}
-                                </span>
-                                <DiscountByType :offers_data="product.product_offers_data" template="products_triggers_label" />
+                                </span> -->
+
+                                <!-- Offer: was cached even the product is ordered above the min qty -->
+                                <!-- <DiscountByType :offers_data="product.product_offers_data" template="products_triggers_label" /> -->
                             </div>
                         </div>
                     </LinkIris>
