@@ -326,6 +326,8 @@ class ShowDeliveryNote extends OrgAction
         $showCancel = (bool)request()->user()?->authTo([
             "supervisor-dispatching.$deliveryNote->warehouse_id",
             "org-admin.$deliveryNote->organisation_id",
+            "orders.$deliveryNote->shop_id.edit",
+            "crm.$deliveryNote->shop_id.edit",
         ]);
 
         if (in_array($deliveryNote->state, [

@@ -1834,6 +1834,17 @@ test('only dispatch supervisors can cancel a delivery note', function () {
     actingAs($user->refresh());
 });
 
+test('cancelling an order cancels its delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders->first();
+
+    actingAs($this->adminGuest->getUser());
+    patch(route('grp.models.order.state.cancelled', $order->id))->assertSessionHasNoErrors();
+
+    expect($order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
+});
+
 test('UI show delivery note richer states and tabs', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);

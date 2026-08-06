@@ -154,9 +154,15 @@ class CancelDeliveryNote extends OrgAction
 
         $deliveryNote = $request->route('deliveryNote');
 
+        if (!$deliveryNote instanceof DeliveryNote) {
+            return true;
+        }
+
         return $request->user()->authTo([
             "supervisor-dispatching.$deliveryNote->warehouse_id",
             "org-admin.$deliveryNote->organisation_id",
+            "orders.$deliveryNote->shop_id.edit",
+            "crm.$deliveryNote->shop_id.edit",
         ]);
     }
 
@@ -175,6 +181,7 @@ class CancelDeliveryNote extends OrgAction
      */
     public function action(DeliveryNote $deliveryNote, ?User $user, $modifyOrder = true): DeliveryNote
     {
+        $this->asAction = true;
         $this->initialisationFromShop($deliveryNote->shop, []);
 
         return $this->handle($deliveryNote, $user, $modifyOrder);
@@ -215,6 +222,7 @@ class CancelDeliveryNote extends OrgAction
 
         $modifyOrder = (bool)$command->option('modifyOrder');
 
+        $this->asAction = true;
         $this->initialisationFromShop($deliveryNote->shop, []);
         $this->handle($deliveryNote, null, $modifyOrder);
 
