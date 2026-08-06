@@ -271,6 +271,13 @@ const generateRouteDeliveryNote = (id: string) => {
 						class="text-yellow-500"
 						fixed-width
 						aria-hidden="true" />
+					<FontAwesomeIcon
+						v-if="Number(deliveryNote.number_items_composition_dirty) > 0"
+						v-tooltip="trans('The packing of :count item(s) changed after this note was worked — check the quantities before dispatching', { count: deliveryNote.number_items_composition_dirty })"
+						icon="fas fa-triangle-exclamation"
+						class="text-red-600"
+						fixed-width
+						aria-hidden="true" />
 					<NotesDisplay :item="deliveryNote" reference-field="reference" />
 					<WaitingOppositeCountBadge
 						v-if="Number(deliveryNote.waiting_warehouse_count) > 0"

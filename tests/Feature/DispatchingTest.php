@@ -2669,3 +2669,46 @@ test('waiting quantities never exceed what is still unpicked', function () {
     expect(fn () => \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 5]))
         ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
+
+test('a redefined pack does not change what an already sold box means', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $transaction = $item->transaction;
+    $product     = $transaction->model;
+
+    // Sold as a 3 piece box; the delivery note item was built from that.
+    $product->update(['units' => 3]);
+    $historicAsset = \App\Models\Catalogue\HistoricAsset::create([
+        'group_id'        => $product->group_id,
+        'organisation_id' => $product->organisation_id,
+        'asset_id'        => $product->asset_id,
+        'status'          => true,
+        'model_type'      => 'Product',
+        'model_id'        => $product->id,
+        'code'            => $product->code,
+        'name'            => $product->name,
+        'price'           => $product->price,
+        'unit'            => $product->unit,
+        'units'           => 3,
+    ]);
+    $transaction->update(['historic_asset_id' => $historicAsset->id, 'quantity_ordered' => 3]);
+
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $item->org_stock_id],
+        ['quantity' => 3]
+    );
+
+    $required = \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
+        ->getQuantityRequired($item->orgStock, $item->refresh());
+    expect(floatval($required))->toBe(9.0);
+
+    // The product is redefined as a 6 piece box picking 6: the sold box must still mean 3.
+    $product->update(['units' => 6]);
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')
+        ->where('product_id', $product->id)->where('org_stock_id', $item->org_stock_id)
+        ->update(['quantity' => 6]);
+
+    $required = \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
+        ->getQuantityRequired($item->orgStock, $item->refresh());
+    expect(floatval($required))->toBe(9.0);
+});

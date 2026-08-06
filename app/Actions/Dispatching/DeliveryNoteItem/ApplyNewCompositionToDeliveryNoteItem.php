@@ -6,6 +6,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateCompositionDirtyItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementEditAuthorisation;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -42,6 +43,8 @@ class ApplyNewCompositionToDeliveryNoteItem extends OrgAction
             'composition_dirty_at'                => null,
             'composition_dirty_quantity_required' => null,
         ]);
+
+        DeliveryNoteHydrateCompositionDirtyItems::run($deliveryNoteItem->delivery_note_id);
 
         return $deliveryNoteItem;
     }
