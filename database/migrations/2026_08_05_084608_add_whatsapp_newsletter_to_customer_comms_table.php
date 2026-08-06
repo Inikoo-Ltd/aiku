@@ -13,21 +13,21 @@ return new class () extends Migration {
     public function up()
     {
         Schema::table('customer_comms', function (Blueprint $table) {
-            $outboxField = 'whatsapp_newsletter';
+            $field = 'whatsapp_newsletter';
 
             // Add subscription boolean field
-            $table->boolean('is_subscribed_to_' . $outboxField)->default(false)->index();
+            $table->boolean('is_subscribed_to_' . $field)->default(false)->index();
 
             // Add unsubscribe tracking fields
-            $table->dateTimeTz($outboxField . '_unsubscribed_at')->nullable()->index();
-            $table->string($outboxField . '_unsubscribed_author_type')->nullable()->comment('Customer|User');
-            $table->string($outboxField . '_unsubscribed_author_id')->nullable();
-            $table->string($outboxField . '_unsubscribed_origin_type')->nullable()->comment('EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)');
-            $table->string($outboxField . '_unsubscribed_origin_id')->nullable();
+            $table->dateTimeTz($field . '_unsubscribed_at')->nullable()->index();
+            $table->string($field . '_unsubscribed_author_type')->nullable()->comment('Customer|User');
+            $table->string($field . '_unsubscribed_author_id')->nullable();
+            $table->string($field . '_unsubscribed_origin_type')->nullable();
+            $table->string($field . '_unsubscribed_origin_id')->nullable();
 
             // Add indexes for author and origin tracking
-            $table->index([$outboxField . '_unsubscribed_author_type', $outboxField . '_unsubscribed_author_id']);
-            $table->index([$outboxField . '_unsubscribed_origin_type', $outboxField . '_unsubscribed_origin_id']);
+            $table->index([$field . '_unsubscribed_author_type', $field . '_unsubscribed_author_id']);
+            $table->index([$field . '_unsubscribed_origin_type', $field . '_unsubscribed_origin_id']);
         });
     }
 
@@ -39,19 +39,19 @@ return new class () extends Migration {
     public function down()
     {
         Schema::table('customer_comms', function (Blueprint $table) {
-            $outboxField = 'whatsapp_newsletter';
+            $field = 'whatsapp_newsletter';
 
             // Drop indexes first
-            $table->dropIndex([$outboxField . '_unsubscribed_author_type', $outboxField . '_unsubscribed_author_id']);
-            $table->dropIndex([$outboxField . '_unsubscribed_origin_type', $outboxField . '_unsubscribed_origin_id']);
+            $table->dropIndex([$field . '_unsubscribed_author_type', $field . '_unsubscribed_author_id']);
+            $table->dropIndex([$field . '_unsubscribed_origin_type', $field . '_unsubscribed_origin_id']);
 
             // Drop columns
-            $table->dropColumn('is_subscribed_to_' . $outboxField);
-            $table->dropColumn($outboxField . '_unsubscribed_at');
-            $table->dropColumn($outboxField . '_unsubscribed_author_type');
-            $table->dropColumn($outboxField . '_unsubscribed_author_id');
-            $table->dropColumn($outboxField . '_unsubscribed_origin_type');
-            $table->dropColumn($outboxField . '_unsubscribed_origin_id');
+            $table->dropColumn('is_subscribed_to_' . $field);
+            $table->dropColumn($field . '_unsubscribed_at');
+            $table->dropColumn($field . '_unsubscribed_author_type');
+            $table->dropColumn($field . '_unsubscribed_author_id');
+            $table->dropColumn($field . '_unsubscribed_origin_type');
+            $table->dropColumn($field . '_unsubscribed_origin_id');
         });
     }
 };
