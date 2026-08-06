@@ -108,18 +108,24 @@ trait HasIrisUserData
      */
     private function syncDeviceTrafficSources(): void
     {
-        $deviceTouches = (string) request()->cookie('aiku_tsd', '');
+        /* Attribution bookkeeping on the storefront hot path: nothing here may ever break a
+           customer's page. A failed queue dispatch is a lost sync, not a lost page view. */
+        try {
+            $deviceTouches = (string) request()->cookie('aiku_tsd', '');
 
-        $customer = $this->customer ?? null;
+            $customer = $this->customer ?? null;
 
-        if (blank($deviceTouches) || !$customer instanceof \App\Models\CRM\Customer) {
-            return;
-        }
+            if (blank($deviceTouches) || !$customer instanceof \App\Models\CRM\Customer) {
+                return;
+            }
 
-        $merged = MergeTrafficSourceTouchHistories::run($customer->traffic_sources, $deviceTouches);
+            $merged = MergeTrafficSourceTouchHistories::run($customer->traffic_sources, $deviceTouches);
 
-        if ($merged !== $customer->traffic_sources) {
-            SyncCustomerTrafficSourcesFromDevice::dispatch($customer, $deviceTouches);
+            if ($merged !== $customer->traffic_sources) {
+                SyncCustomerTrafficSourcesFromDevice::dispatch($customer, $deviceTouches);
+            }
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 }
