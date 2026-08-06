@@ -12,20 +12,23 @@ use App\Actions\CRM\TrafficSource\ProcessTrafficSourceShare;
 use App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
-use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 
 class RecalculateTrafficSourceAttributionCommand extends Command
 {
+    /**
+     * Customers only. Orders are deliberately not recalculable: none carries a touch history of its
+     * own, so an order's attribution is the snapshot ProcessOrderTrafficSource takes from the customer
+     * when the order is submitted, and there is nothing here to rebuild it from.
+     */
     protected $signature = 'traffic-source:recalculate-attribution
                            {--shop= : Only recalculate for a specific shop slug}
-                           {--type=both : Recalculate "customers", "orders" or "both"}
                            {--model=linear : Attribution model: first_touch, last_touch, last_non_direct_touch, last_paid_touch, linear}
                            {--from= : Only records created on/after this date (Y-m-d)}
                            {--to= : Only records created on/before this date (Y-m-d)}
                            {--dry-run : Count records without making changes}';
 
-    protected $description = 'Recalculate traffic source attribution pivot rows from raw touch history for customers and/or orders';
+    protected $description = 'Recalculate customer traffic source attribution pivot rows from raw touch history';
 
     public function handle(): int
     {
@@ -55,24 +58,14 @@ class RecalculateTrafficSourceAttributionCommand extends Command
             }
         }
 
-        $type = $this->option('type');
-
-        if (in_array($type, ['customers', 'both'], true)) {
-            $this->recalculate(Customer::class, $shop, $model);
-        }
-
-        if (in_array($type, ['orders', 'both'], true)) {
-            $this->recalculate(Order::class, $shop, $model);
-        }
+        $this->recalculate($shop, $model);
 
         return Command::SUCCESS;
     }
 
-    private function recalculate(string $modelClass, ?Shop $shop, string $attributionModel): void
+    private function recalculate(?Shop $shop, string $attributionModel): void
     {
-        $label = class_basename($modelClass);
-
-        $query = $modelClass::query()
+        $query = Customer::query()
             ->whereNotNull('traffic_sources')
             ->where('traffic_sources', '!=', '');
 
@@ -90,7 +83,7 @@ class RecalculateTrafficSourceAttributionCommand extends Command
 
         $total = $query->count();
 
-        $this->info("{$label}: {$total} record(s) matched (model: {$attributionModel}).");
+        $this->info("Customers: {$total} record(s) matched (model: {$attributionModel}).");
 
         if ($total === 0 || $this->option('dry-run')) {
             return;
@@ -110,6 +103,6 @@ class RecalculateTrafficSourceAttributionCommand extends Command
 
         $bar->finish();
         $this->newLine();
-        $this->info("{$label}: recalculated {$processed} record(s).");
+        $this->info("Customers: recalculated {$processed} record(s).");
     }
 }

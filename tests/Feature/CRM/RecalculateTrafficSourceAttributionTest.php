@@ -80,7 +80,6 @@ it('recalculates customers via the artisan command', function () {
 
     Artisan::call('traffic-source:recalculate-attribution', [
         '--shop'  => $this->shop->slug,
-        '--type'  => 'customers',
         '--model' => ProcessTrafficSourceShare::ATTRIBUTION_FIRST_TOUCH,
     ]);
 
@@ -94,7 +93,6 @@ it('does not modify records when the artisan command runs in dry-run mode', func
 
     Artisan::call('traffic-source:recalculate-attribution', [
         '--shop'    => $this->shop->slug,
-        '--type'    => 'customers',
         '--model'   => ProcessTrafficSourceShare::ATTRIBUTION_FIRST_TOUCH,
         '--dry-run' => true,
     ]);
