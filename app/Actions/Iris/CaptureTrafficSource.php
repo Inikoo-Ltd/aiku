@@ -34,12 +34,30 @@ class CaptureTrafficSource
     public function getCookies(): array
     {
         $cookies = [];
+        $referer = request()->headers->get('referer', '');
 
         // Check both referer and current full URL
         $trafficSourceData = GetTrafficSourceFromUrl::run(request()->fullUrl());
 
+        /* When this runs from the first-hit AJAX endpoint the ad click ids are not on the request URL,
+           they are on the storefront page that issued the fetch, which is exactly what the browser
+           puts in the Referer header. Without this the paid capture is silently a no-op behind Varnish,
+           where the AJAX endpoint is the only capture path left. */
         if ($trafficSourceData === null) {
-            $trafficSourceData = GetTrafficSourceFromRefererHeader::run(request()->headers->get('referer', ''));
+            $trafficSourceData = GetTrafficSourceFromUrl::run($referer);
+        }
+
+        /* Organic traffic has no click id to read, only the referring domain, and that domain is
+           gone by the time this AJAX call is made: its Referer is the storefront page itself. The
+           client forwards document.referrer in X-Original-Referer precisely so it survives. Varnish
+           also fills this header in from the real Referer on the cached page request, so the same
+           lookup keeps working if capture ever runs outside the AJAX endpoint again. */
+        if ($trafficSourceData === null) {
+            $trafficSourceData = GetTrafficSourceFromRefererHeader::run(request()->headers->get('X-Original-Referer', ''));
+        }
+
+        if ($trafficSourceData === null) {
+            $trafficSourceData = GetTrafficSourceFromRefererHeader::run($referer);
         }
 
         if ($trafficSourceData) {
@@ -88,14 +106,10 @@ class CaptureTrafficSource
     {
         $routeName = request()->route() ? request()->route()->getName() : null;
 
-        // Allow only if the route name starts with 'iris' or is one of the specified retina routes
-        $allowedRoutes = [
-            'retina.register',
-            'retina.register_standalone',
-            'retina.register_from_google',
-        ];
-
-        if (!($routeName && (str_starts_with($routeName, 'iris') || in_array($routeName, $allowedRoutes)))) {
+        // Allow only if the route name starts with 'iris' or 'retina', these are the storefront and
+        // customer-portal routes served behind Varnish, where CaptureTrafficSourceMiddleWare cannot run,
+        // so this action is invoked directly from the AJAX first-hit endpoints and registration actions instead.
+        if (!($routeName && (str_starts_with($routeName, 'iris') || str_starts_with($routeName, 'retina')))) {
             return false;
         }
         $website = request()->input('website');

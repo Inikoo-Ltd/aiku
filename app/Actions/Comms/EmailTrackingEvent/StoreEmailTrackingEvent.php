@@ -11,6 +11,7 @@ namespace App\Actions\Comms\EmailTrackingEvent;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateClicks;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateEmailTracking;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateReads;
+use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
@@ -30,6 +31,16 @@ class StoreEmailTrackingEvent extends OrgAction
         DispatchedEmailHydrateEmailTracking::run($dispatchedEmail);
         if ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::CLICKED) {
             DispatchedEmailHydrateClicks::run($dispatchedEmail);
+
+            $clickedAt = $emailTrackingEvent->created_at ?? now();
+
+            foreach ($dispatchedEmail->customers as $customer) {
+                RecordEmailClickTouchpoint::dispatch($customer, $clickedAt, $dispatchedEmail->mailshot);
+            }
+
+            foreach ($dispatchedEmail->prospects as $prospect) {
+                RecordEmailClickTouchpoint::dispatch($prospect, $clickedAt, $dispatchedEmail->mailshot);
+            }
         } elseif ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::OPENED) {
             DispatchedEmailHydrateReads::run($dispatchedEmail);
         }
