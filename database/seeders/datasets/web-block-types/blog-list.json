@@ -1,0 +1,30 @@
+{
+	"slug": "blog-list",
+    "code": "blog-list",
+    "name": "Blog List",
+    "scope": "webpage",
+    "category": "block",
+    "icon": ["fal", "rectangle-wide"],
+    "website_type": ["b2b", "b2c", "dropshipping", "fulfilment"],
+    "shop_availability": ["uk"],
+    "is_in_test": false,
+	"data": {
+		"fieldValue": {
+			"title": "Read The Blog: David's AW News",
+			"number_of_posts": 5,
+			"show_published_date": true,
+			"show_cta": true,
+			"cta_label": "Read More",
+			"show_view_all": false,
+			"view_all_label": "View all posts",
+			"card": {
+				"container": {
+					"properties": null
+				}
+			},
+			"container": {
+				"properties": null
+			}
+		}
+	}
+}

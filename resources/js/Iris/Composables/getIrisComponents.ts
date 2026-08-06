@@ -121,6 +121,7 @@ const RelatedProductcategoryFormMaster = async(() => import("@/Iris/Components/I
 const TabsIris = async(() => import("@/Iris/Components/IrisBlocks/TabsIris.vue"))
 const FaqDepartment = async(() => import("@/Iris/Components/IrisBlocks/FaqDepartment.vue"))
 const TopFamiliesIris = async(() => import("@/Iris/Components/IrisBlocks/TopFamiliesIris.vue"))
+const BlogListIris = async(() => import("@/Iris/Components/IrisBlocks/BlogListIris.vue"))
 
 interface IrisComponentOptions {
 	search_model?: string // 'luigi' | 'internal'
@@ -236,7 +237,8 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		'recommendation-product-category-from-master' : RelatedProductcategoryFormMaster,
 		'tabs' : TabsIris,
 		'faq-department' : FaqDepartment,
-		'top-families' : TopFamiliesIris
+		'top-families' : TopFamiliesIris,
+		'blog-list' : BlogListIris
 	}
 }
 
