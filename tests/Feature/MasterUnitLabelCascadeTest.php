@@ -8,6 +8,7 @@
 
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
@@ -113,4 +114,34 @@ test('a composition saved on its own still names the unit', function () {
 
     expect($this->masterAsset->refresh()->unit)->toBe('bundle')
         ->and((float) $this->masterAsset->units)->toBe(4.0);
+});
+
+test('the unit label is translated for shops in another language that follow the master', function () {
+    Translate::mock()->shouldReceive('handle')->andReturn('bouteille');
+
+    $french = Language::where('code', 'fr')->first();
+    $this->shop->updateQuietly([
+        'language_id' => $french->id,
+        'settings'    => array_merge($this->shop->settings ?? [], [
+            'catalog' => ['product_follow_master' => true],
+        ]),
+    ]);
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['unit' => 'bottle']);
+
+    expect($this->product->refresh()->unit)->toBe('bouteille');
+});
+
+test('a shop that does not follow the master keeps its own unit label', function () {
+    $french = Language::where('code', 'fr')->first();
+    $this->shop->updateQuietly([
+        'language_id' => $french->id,
+        'settings'    => array_merge($this->shop->settings ?? [], [
+            'catalog' => ['product_follow_master' => false],
+        ]),
+    ]);
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['unit' => 'bottle']);
+
+    expect($this->product->refresh()->unit)->toBe('piece');
 });

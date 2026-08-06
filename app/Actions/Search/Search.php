@@ -27,6 +27,8 @@ class Search extends OrgAction
 
     public function handle(string $scope, string $query, array $options = []): array
     {
+        $ordersCustomerId = Arr::pull($options, 'orders_customer_id');
+
         $actions = [
             'sysadmin'     => static fn () => SearchSysAdmin::run($query),
             'goods'        => static fn () => SearchGoods::run($query),
@@ -58,10 +60,24 @@ class Search extends OrgAction
         if (mb_strlen($query) <= 2) {
             $cacheKey = 'search:'.$scope.':'.md5(json_encode($options)).':'.mb_strtolower($query);
 
-            return cache()->remember($cacheKey, 30, $actions[$scope]);
+            $results = cache()->remember($cacheKey, 30, $actions[$scope]);
+        } else {
+            $results = $actions[$scope]();
         }
 
-        return $actions[$scope]();
+        // The signed in customer's own orders and invoices are searched after and outside
+        // the shared catalogue search: customer-specific data must never enter the cache
+        // above, where another visitor could be served it.
+        if ($ordersCustomerId && $scope === 'catalogue') {
+            $customerOptions = [
+                'customer_id' => $ordersCustomerId,
+                'shop_id'     => Arr::get($options, 'shop_id'),
+            ];
+            data_set($results, 'results.orders', SearchIrisOrders::run($query, $customerOptions));
+            data_set($results, 'results.invoices', SearchIrisInvoices::run($query, $customerOptions));
+        }
+
+        return $results;
     }
 
     public function rules(): array

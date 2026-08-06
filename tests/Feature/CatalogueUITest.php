@@ -612,7 +612,7 @@ test('UI edit product composition', function () {
             ->component('Goods/ProductComposition')
             ->has('title')
             ->has('pageHead')
-            ->has('formData.blueprint.0.fields.units')
+            ->has('formData.blueprint.0.fields.trade_units')
             ->has('breadcrumbs');
     });
 });

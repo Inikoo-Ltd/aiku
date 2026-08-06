@@ -221,16 +221,30 @@ class UpdateMasterAsset extends OrgAction
             $english = Language::where('code', 'en')->first();
 
             /**
-             * The unit is a label a customer reads, so it only cascades to shops that speak the
-             * language it was written in; the others keep their translation. How many trade units
-             * the master is built from says nothing about that, so it does not gate the cascade.
+             * The unit is a label a customer reads, so it rides the same rails as the name:
+             * copied verbatim to shops that speak the language it was written in, machine
+             * translated for the rest. A shop that has opted out of following the master
+             * keeps whatever it set, in any language. How many trade units the master is
+             * built from says nothing about that, so it does not gate the cascade.
              */
             foreach ($masterAsset->products as $product) {
-                if ($product->shop->language_id == $english->id) {
+                $shop = $product->shop;
+
+                if ($shop->language_id == $english->id) {
                     UpdateProduct::run($product, [
                         'unit' => $masterAsset->unit,
                     ]);
+
+                    continue;
                 }
+
+                if (!data_get($shop->settings, 'catalog.product_follow_master') || !$masterAsset->unit) {
+                    continue;
+                }
+
+                UpdateProduct::run($product, [
+                    'unit' => Translate::run($masterAsset->unit, $english, $shop->language, 'gpt-5-nano'),
+                ]);
             }
         }
 
