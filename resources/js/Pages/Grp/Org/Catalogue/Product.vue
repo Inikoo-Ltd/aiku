@@ -17,7 +17,7 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import Breadcrumb from 'primevue/breadcrumb'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { FontAwesomeIcon, FontAwesomeLayers } from '@fortawesome/vue-fontawesome'
 import type { PageHeadingTypes } from '@/types/PageHeading'
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
@@ -138,6 +138,7 @@ const props = defineProps<{
     product_id: number
     product_units?: number
     product_unit?: string
+    not_follow_master_media?: boolean
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -279,7 +280,21 @@ const saveProductReview = async () => {
                 :icon="faHatCowboy"
                 class="text-red-500 cursor-pointer"
             />
-            <!-- TODO PLEASE CHANGE TO HAVE LINK TO VARIANT -->
+
+            <FontAwesomeLayers 
+                v-tooltip="ctrans('Product has independent media settings')"
+                class="flex items-center justify-center w-[2rem]"
+            >
+                <FontAwesomeIcon 
+                    :icon="faHatCowboy"
+                    :class="'text-red-500 text-[17px] !top-[-93%] !right-[-50%] !rotate-[17deg]'"
+                />
+                <FontAwesomeIcon 
+                    :icon="faCameraRetro"
+                    :class="'text-red-500'"
+                />
+            </FontAwesomeLayers>
+
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
                 <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
             </Link>

@@ -504,6 +504,7 @@ class UpdateProduct extends OrgAction
             'marketplace_id'                => ['sometimes'],
             'not_follow_master_trade_units' => ['sometimes', 'boolean'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
+            'not_follow_master_media'       => ['sometimes', 'boolean'],
         ];
 
 
