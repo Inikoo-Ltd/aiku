@@ -16,6 +16,7 @@ use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RecordEmailClickTouchpoint implements ShouldBeUnique
@@ -97,9 +98,15 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
         $abbr     = TrafficSourcesTypeEnum::NEWSLETTER->abbr()[TrafficSourcesTypeEnum::NEWSLETTER->value];
         $newTouch = $occurredAt->getTimestamp() . $abbr . ($campaignRef ?? '');
 
-        $recipient->update([
-            'traffic_sources' => $this->appendTouch($recipient->traffic_sources, $newTouch),
-        ]);
+        /* Appended under a row lock: the device-cookie sync merges into the same column from
+           another queue, and appending onto a stale read would let its write erase this click. */
+        DB::transaction(function () use ($recipient, $newTouch) {
+            $locked = $recipient->newQuery()->lockForUpdate()->find($recipient->getKey());
+
+            $locked?->update([
+                'traffic_sources' => $this->appendTouch($locked->traffic_sources, $newTouch),
+            ]);
+        });
 
         RecalculateTrafficSourceAttribution::run($recipient->fresh());
     }

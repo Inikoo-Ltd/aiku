@@ -109,10 +109,10 @@ it('keeps a row per campaign with the source credit summing to one', function ()
     expect(round($rows->sum(fn ($row) => (float) $row->pivot->share), 2))->toBe(1.0);
 });
 
-it('creates the campaign from a touch when the reference is new', function () {
+it('creates the campaign from a touch when the reference looks like an ad platform id', function () {
     createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
-    $reference = 'auto-'.uniqid();
+    $reference = (string) random_int(10000000000, 99999999999);
 
     $customer = StoreCustomer::make()->action(
         $this->shop,
@@ -125,6 +125,25 @@ it('creates the campaign from a touch when the reference is new', function () {
 
     expect($campaign)->not->toBeNull();
     expect($customer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($campaign->id);
+});
+
+it('refuses to mint a campaign from a non-numeric reference', function () {
+    createTrafficSource($this->shop, 'google-ads', 'Google Ads');
+
+    $reference = 'crafted-'.uniqid();
+
+    $customer = StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(Customer::factory()->definition(), [
+            'traffic_sources' => '1700000000b'.$reference,
+        ])
+    );
+
+    expect(TrafficSourceCampaign::where('reference', $reference)->exists())->toBeFalse();
+
+    $pivot = $customer->trafficSources()->first()->pivot;
+    expect($pivot->traffic_source_campaign_id)->toBeNull();
+    expect((float) $pivot->share)->toBe(1.0);
 });
 
 it('does not attach anything when the abbreviation does not match a known traffic source type', function () {

@@ -10,6 +10,7 @@ namespace App\Actions\CRM\TrafficSource;
 
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncCustomerTrafficSourcesFromDevice implements ShouldBeUnique
@@ -34,14 +35,55 @@ class SyncCustomerTrafficSourcesFromDevice implements ShouldBeUnique
      */
     public function handle(Customer $customer, string $deviceTouches): void
     {
-        $merged = MergeTrafficSourceTouchHistories::run($customer->traffic_sources, $deviceTouches);
+        $deviceTouches = self::sanitize($deviceTouches);
 
-        if ($merged === $customer->traffic_sources) {
+        if (blank($deviceTouches)) {
             return;
         }
 
-        $customer->update(['traffic_sources' => $merged]);
+        /* Read-merge-write under a row lock: RecordEmailClickTouchpoint appends to the same column
+           from another queue, and merging against a stale read would silently erase its click. */
+        $changed = DB::transaction(function () use ($customer, $deviceTouches): bool {
+            $locked = Customer::lockForUpdate()->find($customer->id);
 
-        RecalculateTrafficSourceAttribution::run($customer->fresh());
+            if (!$locked) {
+                return false;
+            }
+
+            $merged = MergeTrafficSourceTouchHistories::run($locked->traffic_sources, $deviceTouches);
+
+            if ($merged === $locked->traffic_sources) {
+                return false;
+            }
+
+            $locked->update(['traffic_sources' => $merged]);
+
+            return true;
+        });
+
+        if ($changed) {
+            RecalculateTrafficSourceAttribution::run($customer->fresh());
+        }
+    }
+
+    /**
+     * The cookie is raw client data and this job writes it into server-side attribution state, so
+     * only touches that would survive parsing get through, and only with credible timestamps: a
+     * forged epoch-zero segment would otherwise claim the permanent first-touch slot, and garbage
+     * would sit in the customer's history forever. The touch string is rebuilt from the parsed form,
+     * never passed through verbatim.
+     */
+    public static function sanitize(?string $deviceTouches): ?string
+    {
+        $floor   = 1577836800; // 2020-01-01, comfortably before any touch this system could have made
+        $ceiling = now()->addDay()->timestamp;
+
+        $segments = collect(ParseTrafficSourceTouches::run($deviceTouches))
+            ->filter(fn (array $touch) => $touch['timestamp'] !== null
+                && $touch['timestamp'] >= $floor
+                && $touch['timestamp'] <= $ceiling)
+            ->map(fn (array $touch) => $touch['timestamp'].$touch['abbr'].($touch['campaign_ref'] ?? ''));
+
+        return $segments->isEmpty() ? null : $segments->implode('|');
     }
 }

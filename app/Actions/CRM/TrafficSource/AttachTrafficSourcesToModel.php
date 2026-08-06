@@ -88,6 +88,23 @@ class AttachTrafficSourcesToModel
     private function resolveCampaignId(TrafficSource $trafficSource, string $reference): ?int
     {
         try {
+            $campaignId = TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)
+                ->where('reference', $reference)
+                ->value('id');
+
+            if ($campaignId) {
+                return $campaignId;
+            }
+
+            /* Touch strings originate in client-controlled cookies, so auto-creation is limited to
+               references shaped like the numeric campaign ids ad platforms actually issue. Anything
+               else (including the mailshot-N refs, which the click pipeline creates server-side with
+               a proper name) must already exist to be credited; otherwise a visitor cycling made-up
+               references could mint unlimited campaign rows named whatever they like. */
+            if (!preg_match('/^\d{1,20}$/', $reference)) {
+                return null;
+            }
+
             return TrafficSourceCampaign::firstOrCreate(
                 [
                     'traffic_source_id' => $trafficSource->id,

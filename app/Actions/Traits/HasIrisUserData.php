@@ -111,7 +111,12 @@ trait HasIrisUserData
         /* Attribution bookkeeping on the storefront hot path: nothing here may ever break a
            customer's page. A failed queue dispatch is a lost sync, not a lost page view. */
         try {
-            $deviceTouches = (string) request()->cookie('aiku_tsd', '');
+            /* Sanitized here too, with the same rules the job applies, so the dispatch decision and
+               the job's outcome agree - comparing raw cookie against sanitized state would re-queue
+               a job forever for any visitor whose cookie holds rejected segments. */
+            $deviceTouches = SyncCustomerTrafficSourcesFromDevice::sanitize(
+                (string) request()->cookie('aiku_tsd', '')
+            );
 
             $customer = $this->customer ?? null;
 
