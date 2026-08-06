@@ -36,13 +36,17 @@ class RepairOrgStockMissingLocationIds implements ShouldBeUnique
             return;
         }
 
-        $locationOrgStock = $orgStock->locationOrgStocks->where('picking_priority', 1)->first();
-        if ($locationOrgStock) {
-            $orgStock->update([
-                'picking_location_id'              => $locationOrgStock->location_id,
-                'picking_dropshipping_location_id' => $locationOrgStock->location_id,
-            ]);
-        }
+        $locationOrgStocks = $orgStock->locationOrgStocks;
+
+        $pickLocationId = fn (string $defaultFlag) => (
+            $locationOrgStocks->firstWhere($defaultFlag, true)
+            ?? $locationOrgStocks->sortBy(fn ($locationOrgStock) => $locationOrgStock->picking_priority ?? PHP_INT_MAX)->first()
+        )?->location_id;
+
+        $orgStock->update([
+            'picking_location_id'              => $pickLocationId('default_wholesale_picking_location') ?? $orgStock->picking_location_id,
+            'picking_dropshipping_location_id' => $pickLocationId('default_dropshipping_picking_location') ?? $orgStock->picking_dropshipping_location_id,
+        ]);
     }
 
 
@@ -59,11 +63,13 @@ class RepairOrgStockMissingLocationIds implements ShouldBeUnique
         $bar->start();
 
         OrgStock::orderBy('id')
-            ->whereNull('picking_location_id')
-            ->orWhereNull('picking_dropshipping_location_id')
+            ->where(function ($query) {
+                $query->whereNull('picking_location_id')
+                    ->orWhereNull('picking_dropshipping_location_id');
+            })
             ->chunk(100, function (Collection $models) use ($bar) {
                 foreach ($models as $model) {
-                    $this->handle($model);
+                    $this->handle($model->id);
                     $bar->advance();
                 }
             });
