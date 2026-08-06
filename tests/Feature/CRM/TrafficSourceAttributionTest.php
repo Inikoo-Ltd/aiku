@@ -10,7 +10,6 @@
 
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Models\CRM\Customer;
-use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Support\Facades\Artisan;
 
@@ -29,13 +28,7 @@ beforeEach(function () {
 });
 
 it('attaches a single traffic source without a campaign to a newly registered customer', function () {
-    $trafficSource = TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'organic-google',
-        'name'            => 'Organic Google',
-    ]);
+    $trafficSource = createTrafficSource($this->shop, 'organic-google', 'Organic Google');
 
     $customer = StoreCustomer::make()->action(
         $this->shop,
@@ -53,21 +46,9 @@ it('attaches a single traffic source without a campaign to a newly registered cu
 });
 
 it('splits credit across multiple distinct traffic sources on registration', function () {
-    TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'organic-google',
-        'name'            => 'Organic Google',
-    ]);
+    createTrafficSource($this->shop, 'organic-google', 'Organic Google');
 
-    TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'google-ads',
-        'name'            => 'Google Ads',
-    ]);
+    createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
     $customer = StoreCustomer::make()->action(
         $this->shop,
@@ -83,13 +64,7 @@ it('splits credit across multiple distinct traffic sources on registration', fun
 });
 
 it('links the matching campaign reference to the pivot record', function () {
-    $trafficSource = TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'google-ads',
-        'name'            => 'Google Ads',
-    ]);
+    $trafficSource = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
     $campaign = TrafficSourceCampaign::create([
         'traffic_source_id' => $trafficSource->id,
@@ -110,13 +85,7 @@ it('links the matching campaign reference to the pivot record', function () {
 });
 
 it('keeps the full credit on the source when two of its campaigns are both credited', function () {
-    $trafficSource = TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'google-ads',
-        'name'            => 'Google Ads',
-    ]);
+    $trafficSource = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
     $campaigns = collect(['spring', 'summer'])->map(fn (string $season) => TrafficSourceCampaign::create([
         'traffic_source_id' => $trafficSource->id,

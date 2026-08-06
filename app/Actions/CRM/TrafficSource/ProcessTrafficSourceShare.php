@@ -22,12 +22,6 @@ class ProcessTrafficSourceShare
     public const ATTRIBUTION_LINEAR           = 'linear';
 
     /**
-     * Bumped whenever the calculation logic for an attribution model changes, so that pivot rows
-     * (and any future dedicated attribution table) can be traced back to the logic that produced them.
-     */
-    public const ATTRIBUTION_VERSION = 1;
-
-    /**
      * Calculates the attribution credit share for a list of chronologically ordered marketing touches.
      *
      * @param array<int, array{timestamp: int|null, abbr: string, type: TrafficSourcesTypeEnum, campaign_ref: string|null}> $touches

@@ -10,7 +10,6 @@
 
 use App\Actions\CRM\TrafficSource\ProcessTrafficSourceShare;
 use App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution;
-use App\Models\CRM\TrafficSource;
 use Illuminate\Support\Facades\Artisan;
 
 beforeAll(function () {
@@ -31,21 +30,9 @@ beforeEach(function () {
     $this->customer->trafficSources()->detach();
     $this->customer->update(['traffic_sources' => null]);
 
-    TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'organic-google',
-        'name'            => 'Organic Google',
-    ]);
+    createTrafficSource($this->shop, 'organic-google', 'Organic Google');
 
-    TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'google-ads',
-        'name'            => 'Google Ads',
-    ]);
+    createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 });
 
 it('rebuilds attribution for a customer under the requested model', function () {

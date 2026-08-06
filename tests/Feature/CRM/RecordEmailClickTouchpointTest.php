@@ -10,6 +10,8 @@
 
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\CRM\Prospect\StoreProspect;
+use App\Actions\CRM\TrafficSource\ProcessTrafficSourceShare;
+use App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution;
 use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
@@ -91,7 +93,7 @@ it('links the touch to a traffic source campaign matching the mailshot', functio
         ->first();
 
     $campaign = TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)
-        ->where('reference', (string) $mailshot->id)
+        ->where('reference', RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshot->id)
         ->first();
 
     expect($campaign)->not->toBeNull();
@@ -111,6 +113,35 @@ it('does not record a duplicate touch for a repeat click on the same mailshot on
     $touches = explode('|', $this->customer->fresh()->traffic_sources);
 
     expect($touches)->toHaveCount(1);
+});
+
+it('caps the touch history, keeping the first touch and dropping the oldest of the rest', function () {
+    $history = collect(range(1, RecordEmailClickTouchpoint::MAX_TOUCHES))
+        ->map(fn (int $i) => (1700000000 + $i).'a')
+        ->implode('|');
+
+    $this->customer->update(['traffic_sources' => $history]);
+
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 10:00:00'));
+
+    $touches = explode('|', $this->customer->fresh()->traffic_sources);
+
+    expect($touches)->toHaveCount(RecordEmailClickTouchpoint::MAX_TOUCHES);
+    expect($touches[0])->toBe('1700000001a');
+    expect($touches[1])->toBe('1700000003a');
+});
+
+it('keeps the attribution model already stamped on the record when recording a click', function () {
+    $this->customer->update(['traffic_sources' => '1700000000a']);
+
+    RecalculateTrafficSourceAttribution::run($this->customer->fresh(), ProcessTrafficSourceShare::ATTRIBUTION_FIRST_TOUCH);
+
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 10:00:00'));
+
+    $trafficSources = $this->customer->fresh()->trafficSources()->get();
+
+    expect($trafficSources->pluck('pivot.attribution_model')->unique()->all())
+        ->toBe([ProcessTrafficSourceShare::ATTRIBUTION_FIRST_TOUCH]);
 });
 
 it('also records an email click as a newsletter touch for a prospect', function () {

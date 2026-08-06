@@ -145,10 +145,16 @@ class CancelOrder extends OrgAction
     }
 
     /**
-     * Cancelling an order changes the revenue attributed to any traffic source that was
-     * credited for it, so those traffic sources' cached statistics need to be refreshed.
-     * The pivot attribution rows themselves are preserved as an audit trail of what
-     * originally acquired the order.
+     * TrafficSourceHydrateCustomers re-sums `customer_stats` across every customer a traffic source is
+     * credited with, and cancelling this order changes this customer's totals, so every source crediting
+     * either the order or the customer holds a stale revenue figure until it is rehydrated.
+     *
+     * The pivot attribution rows themselves are preserved as an audit trail of what originally
+     * acquired the order.
+     *
+     * ponytail: the extra delay is what keeps this from reading `customer_stats` before the order
+     * hydrators above have written it. Chain it after CustomerHydrateOrderStats if queue depth ever
+     * makes a fixed offset unreliable.
      */
     private function refreshTrafficSourceStats(Order $order): void
     {
@@ -157,7 +163,7 @@ class CancelOrder extends OrgAction
             ->unique('id');
 
         foreach ($trafficSources as $trafficSource) {
-            TrafficSourceHydrateCustomers::dispatch($trafficSource);
+            TrafficSourceHydrateCustomers::dispatch($trafficSource)->delay($this->hydratorsDelay + 120);
         }
     }
 

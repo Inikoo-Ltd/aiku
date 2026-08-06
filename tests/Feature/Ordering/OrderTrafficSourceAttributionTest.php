@@ -14,7 +14,6 @@ use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
-use App\Models\CRM\TrafficSource;
 use Illuminate\Support\Facades\Artisan;
 
 beforeAll(function () {
@@ -57,13 +56,7 @@ it('exposes a traffic sources relationship on the order model', function () {
 });
 
 it('attributes an order from the customer touch history when the order has none of its own', function () {
-    TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'google-ads',
-        'name'            => 'Google Ads',
-    ]);
+    createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
     $this->customer->update(['traffic_sources' => '1700000000b']);
 
@@ -74,21 +67,9 @@ it('attributes an order from the customer touch history when the order has none 
 });
 
 it('prefers the order own touch history over the customer one when present', function () {
-    TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'organic-google',
-        'name'            => 'Organic Google',
-    ]);
+    createTrafficSource($this->shop, 'organic-google', 'Organic Google');
 
-    TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'google-ads',
-        'name'            => 'Google Ads',
-    ]);
+    createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
     $this->customer->update(['traffic_sources' => '1700000000a']);
     $this->order->update(['traffic_sources' => '1700000100b']);
@@ -107,13 +88,7 @@ it('does nothing when there is no touch history at all', function () {
 });
 
 it('attributes the order automatically when it is submitted', function () {
-    TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'meta-ads',
-        'name'            => 'Meta Ads',
-    ]);
+    createTrafficSource($this->shop, 'meta-ads', 'Meta Ads');
 
     $this->customer->update(['traffic_sources' => '1700000000f']);
 
@@ -124,13 +99,7 @@ it('attributes the order automatically when it is submitted', function () {
 });
 
 it('refreshes the traffic source stats but keeps the attribution audit trail when an order is cancelled', function () {
-    $trafficSource = TrafficSource::create([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'type'            => 'meta-ads',
-        'name'            => 'Meta Ads',
-    ]);
+    $trafficSource = createTrafficSource($this->shop, 'meta-ads', 'Meta Ads');
 
     $this->customer->update(['traffic_sources' => '1700000000f']);
 

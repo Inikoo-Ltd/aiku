@@ -18,6 +18,12 @@ class ProcessOrderTrafficSource implements ShouldBeUnique
 {
     use AsAction;
 
+    /**
+     * Bounded so a worker that dies without releasing the lock cannot leave an order permanently
+     * unattributable.
+     */
+    public int $jobUniqueFor = 3600;
+
     public function getJobUniqueId(Order $order): string
     {
         return (string) $order->id;
