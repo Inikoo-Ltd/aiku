@@ -78,6 +78,15 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 $this->packed_in
             );
 
+        $originalRequiredFractionalData = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->original_quantity_required ?? 0
+                )
+            ),
+            $this->packed_in
+        );
+
         /** @var DeliveryNoteItem $deliveryNoteItem */
         $deliveryNoteItem = $this->resource;
 
@@ -156,6 +165,9 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'state'                                    => $this->state,
             'state_icon'                               => $this->state->stateIcon()[$this->state->value],
             'quantity_required'                        => $this->quantity_required,
+            'quantity_required_fractional'             => $requiredFactionalData,
+            'original_quantity_required'               => $this->original_quantity_required,
+            'original_quantity_required_fractional'    => $originalRequiredFractionalData,
             'quantity_to_pick'                         => $quantityToPick,
             'quantity_to_pick_fractional'              => $quantityToPickFractional,
             'quantity_to_pick_fractional_ds'           => $quantityToPickFractionalDS,
@@ -181,7 +193,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'warning'                                  => $fullWarning,
             'is_handled'                               => $this->is_handled,
             'is_packed'                                => $isPacked,
-            'quantity_required_fractional'             => $requiredFactionalData,
             'warehouse_area'                           => $warehouseArea,
             'batch_code'                               => $this->batch_code,
             'batch_code_id'                            => $this->batch_code_id,
@@ -248,6 +259,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                     'organisation' => $this->organisation_slug
                 ]
             ],
+            'is_dirty'                                 => $this->is_dirty,
         ];
     }
 }

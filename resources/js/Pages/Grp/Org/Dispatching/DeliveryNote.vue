@@ -36,7 +36,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
-import { computed, provide, ref, watch, onMounted, inject } from "vue";
+import { computed, provide, ref, watch, onMounted, onUnmounted, inject } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
@@ -64,6 +64,7 @@ import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
+import axios from "axios";
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
@@ -153,6 +154,7 @@ const props = defineProps<{
 	is_faire_order : boolean
 	showChangePickerPacker: boolean
 	is_editable: boolean  // To distinguish DN in Shops and DN in Wwarehouse
+	order_slug?: string
 	consumables?: { code: string, quantity: number }[]
 	scan_to_pack?: {
 		scan_route: routeType
@@ -417,19 +419,11 @@ const selectSocketBasedPlatform = (porto) => {
 }
 
 onMounted(() => {
-    const socketConfig = selectSocketBasedPlatform(props.delivery_note)
+    initSocketListener();
+})
 
-    if (!socketConfig) {
-        console.warn('Socket config not found for platform:', props.delivery_note.id)
-        return
-    }
-
-    const channel = window.Echo
-        .private(socketConfig.event)
-        .listen(socketConfig.action, (eventData: any) => {
-            debReloadPage()
-        })
-    console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
+onUnmounted(() => {
+    stopSocketListener();
 })
 
 
@@ -440,6 +434,56 @@ watch(
 	},
 	{ immediate: true }
 );
+
+let socketChannel: any = null
+let socketChannelTwo: any = null
+let socketChannelTwoEvent: string | null = null
+
+const initSocketListener = () => {
+	const socketConfig = selectSocketBasedPlatform(props.delivery_note)
+
+    if (!socketConfig) {
+        console.warn('Socket config not found for platform:', props.delivery_note.id)
+    }
+
+    if (['finalised', 'dispatched', 'cancelled'].includes(props.delivery_note.state)) return; // No need initiate listener if finished
+
+    if (props.order_slug) {
+        socketChannel = window.Echo
+            .private(`grp.${props.order_slug}.transaction_update`)
+            .listen(".transaction_update", async (eventData: any) => {
+                notify({
+                    title: eventData.title,
+                    text: eventData.body,
+                    type: 'warn'
+                })
+                debReloadPage()
+            });
+    }
+
+	if (socketConfig) {
+		socketChannelTwoEvent = socketConfig.event
+		socketChannelTwo = window.Echo
+		.private(socketConfig.event)
+		.listen(socketConfig.action, (eventData: any) => {
+            debReloadPage()
+        });
+	}
+}
+
+const stopSocketListener = () => {
+    if (socketChannel) {
+        socketChannel.stopListening(".transaction_update");
+		window.Echo.leave(`grp.${props.order_slug}.transaction_update`);
+		socketChannel = null;
+	}
+
+	if (socketChannelTwo && socketChannelTwoEvent) {
+		window.Echo.leave(socketChannelTwoEvent);
+		socketChannelTwo = null;
+		socketChannelTwoEvent = null;
+	}
+}
 
 </script>
 
@@ -755,6 +799,7 @@ watch(
 			:shop_type="shop_type"
 			:allowWaiting="allow_waiting"
 			:allowPickerSetNotPicked="allow_picker_set_not_picked"
+			:order_slug="order_slug"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError" />
 	</div>

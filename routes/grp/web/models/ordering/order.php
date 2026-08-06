@@ -49,11 +49,13 @@ use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderDiscretionaryDiscount;
+use App\Actions\Ordering\Transaction\UpdateTransactionProductQuantityOrdered;
 use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
 
 Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
     Route::delete('', DeleteTransaction::class)->name('delete');
     Route::patch('', UpdateTransaction::class)->name('update');
+    Route::patch('update-quantity-ordered', UpdateTransactionProductQuantityOrdered::class)->name('update_quantity_ordered');
     Route::patch('units', UpdateTransactionUnits::class)->name('update_units');
     Route::patch('update-discretionary-discount', UpdateTransactionDiscretionaryDiscount::class)->name('update_discretionary_discount');
     Route::patch('remove-discount', RemoveTransactionDiscount::class)->name('remove_discount');
