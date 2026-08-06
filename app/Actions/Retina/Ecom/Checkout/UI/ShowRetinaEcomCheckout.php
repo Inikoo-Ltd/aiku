@@ -115,6 +115,15 @@ class ShowRetinaEcomCheckout extends RetinaAction
                     'by_other'   => $toPayByOther
 
                 ],
+                'whatsapp_newsletter' => [
+                    'is_subscribed' => (bool) $this->customer->comms?->is_subscribed_to_whatsapp_newsletter,
+                    'label'         => Arr::get($this->shop->settings, 'registration.whatsapp_newsletter_label')
+                        ?? __('Opt in to receive our newsletter and offers via WhatsApp.'),
+                    'update_route'  => [
+                        'name'       => 'retina.models.customer_comms.update',
+                        'parameters' => ['customerComms' => $this->customer->comms?->id],
+                    ],
+                ],
                 'routes'         => [
                     'pay_with_balance' => [
                         'name'       => 'retina.models.order.pay_with_balance',

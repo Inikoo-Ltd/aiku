@@ -34,6 +34,7 @@ class UpdateRetinaCustomerComms extends RetinaAction
             'is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
             'is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
             'is_subscribed_to_price_change_notification' => ['sometimes', 'boolean'],
+            'is_subscribed_to_whatsapp_newsletter' => ['sometimes', 'boolean'],
         ];
     }
 
