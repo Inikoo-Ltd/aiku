@@ -169,6 +169,36 @@ it('credits the mailshot channel with the registration when a prospect converts'
     expect($performance['mailshots'][0]['prospects_registered'])->toBe(1);
 });
 
+it('serves honest share-weighted numbers through the sql views', function () {
+    $mailshot = makeMailshot($this->shop);
+    $mailshot->stats()->update(['number_dispatched_emails' => 100]);
+
+    $this->customer->update(['traffic_sources' => '1700000000b']);
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 10:00:00'), $mailshot);
+
+    DB::table('customer_stats')->where('customer_id', $this->customer->id)->update(['sales_all' => 1000]);
+    TrafficSourceHydrateCustomers::run($this->googleAds);
+    TrafficSourceHydrateCustomers::run($this->newsletter);
+
+    $channels = collect(DB::select(
+        'SELECT * FROM marketing_channel_performance WHERE shop_id = ?',
+        [$this->shop->id]
+    ))->keyBy('type');
+
+    expect((float) $channels['google-ads']->revenue)->toBe(500.0);
+    expect((float) $channels['newsletter']->revenue)->toBe(500.0);
+    expect((float) $channels['google-ads']->registrations)->toBe(0.5);
+
+    $mailshotRow = collect(DB::select(
+        'SELECT * FROM marketing_mailshot_performance WHERE mailshot_id = ?',
+        [$mailshot->id]
+    ))->first();
+
+    expect((int) $mailshotRow->sent)->toBe(100);
+    expect((float) $mailshotRow->attributed_revenue)->toBe(500.0);
+    expect((float) $mailshotRow->attributed_customers)->toBe(0.5);
+});
+
 it('counts prospects who clicked a mailshot and later registered', function () {
     $mailshot = makeMailshot($this->shop);
     $mailshot->stats()->update(['number_dispatched_emails' => 50]);
