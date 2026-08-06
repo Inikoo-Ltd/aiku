@@ -96,6 +96,9 @@ const roasIsGood = computed(() => (props.overview.totals.roas ?? 0) >= 1)
 
 const pct = (part: number, whole: number) => whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : '—'
 
+/* Registrations are share-weighted, so a channel can legitimately hold 12.5 of them. */
+const fmtShare = (value: number) => Number.isInteger(value) ? locale.number(value) : value.toFixed(1)
+
 const typeLabel: Record<string, string> = {
     newsletter: trans('Newsletter'),
     marketing: trans('Mailshot'),
@@ -184,7 +187,12 @@ const typeLabel: Record<string, string> = {
                     class="relative grid grid-cols-[8rem_1fr_4.5rem] md:grid-cols-[11rem_1fr_5rem] items-center gap-x-3 rounded-lg px-2 py-2 hover:bg-gray-50"
                     @mouseenter="hoveredChannel = channel.type" @mouseleave="hoveredChannel = null">
 
-                    <div class="text-sm text-gray-700 truncate">{{ channel.name }}</div>
+                    <div class="min-w-0">
+                        <div class="text-sm text-gray-700 truncate">{{ channel.name }}</div>
+                        <div v-if="channel.registrations > 0" class="text-xs text-gray-400 tabular-nums">
+                            {{ fmtShare(channel.registrations) }} {{ trans('registrations') }}
+                        </div>
+                    </div>
 
                     <div class="space-y-0.5">
                         <div class="flex items-center gap-2">
@@ -208,7 +216,7 @@ const typeLabel: Record<string, string> = {
 
                     <div v-if="hoveredChannel === channel.type"
                         class="absolute left-2 -top-9 z-10 rounded-md bg-gray-900 px-2.5 py-1.5 text-xs text-white shadow-lg pointer-events-none whitespace-nowrap">
-                        {{ channel.name }} · {{ locale.number(channel.registrations) }} {{ trans('customers') }}
+                        {{ channel.name }} · {{ fmtShare(channel.registrations) }} {{ trans('registrations') }}
                         · {{ trans('spend') }} {{ money(channel.spend) }} · {{ trans('revenue') }} {{ money(channel.revenue) }}
                     </div>
                 </Link>

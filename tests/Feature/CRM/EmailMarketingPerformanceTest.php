@@ -132,6 +132,43 @@ it('attributes only the newsletter share of a customer other channels also touch
     expect($performance['mailshots'][0]['attributed_customers'])->toBe(0.5);
 });
 
+it('credits the mailshot channel with the registration when a prospect converts', function () {
+    createTrafficSource($this->shop, 'organic-google', 'Organic Google');
+
+    $mailshot = makeMailshot($this->shop);
+    $mailshot->stats()->update(['number_dispatched_emails' => 50]);
+
+    $prospect = \App\Actions\CRM\Prospect\StoreProspect::make()->action(
+        $this->shop,
+        array_merge(\App\Models\CRM\Prospect::factory()->definition(), [
+            'email' => 'converting-'.uniqid().'@example.com',
+        ])
+    );
+
+    RecordEmailClickTouchpoint::run($prospect, Carbon::parse('2026-01-01 10:00:00'), $mailshot);
+
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(\App\Models\CRM\Customer::factory()->definition(), [
+            'email'           => $prospect->email,
+            'traffic_sources' => '1735689600a',
+        ])
+    );
+
+    // StoreCustomer only runs the prospect match on is_aiku shops; invoke it directly here.
+    \App\Actions\CRM\Customer\MatchCustomerProspects::run($customer);
+
+    expect($customer->fresh()->traffic_sources)->toContain('pmailshot-'.$mailshot->id);
+    expect($customer->fresh()->traffic_sources)->toContain('1735689600a');
+
+    $types = $customer->trafficSources()->pluck('type')->all();
+    expect($types)->toContain('newsletter');
+    expect($types)->toContain('organic-google');
+
+    $performance = GetShopEmailMarketingPerformance::run($this->shop);
+    expect($performance['mailshots'][0]['prospects_registered'])->toBe(1);
+});
+
 it('counts prospects who clicked a mailshot and later registered', function () {
     $mailshot = makeMailshot($this->shop);
     $mailshot->stats()->update(['number_dispatched_emails' => 50]);
