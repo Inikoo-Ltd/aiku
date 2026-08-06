@@ -39,7 +39,11 @@ export const initialiseIrisVarnish = async (layoutStore) => {
   const currentUrl = new URL(window.location.href)
   const headers = {
     "X-Traffic-Sources": currentUrl.search?.replace(/^\?/, "") || "", //todo: review this because this headers are no set anymore use url queries instead
-    "X-Original-Referer": currentUrl.origin + currentUrl.pathname, //todo: review this because this headers are no set anymore use url queries instead
+    // The page HTML comes from Varnish, so the backend never sees the click that landed the visitor
+    // here and this fetch's own Referer is just the storefront. document.referrer is the only place
+    // the external referrer survives, so forward it or organic traffic can never be attributed.
+    // Paid clicks are handled separately: their click ids ride along in this request's Referer.
+    "X-Original-Referer": document.referrer || "",
     "X-Requested-With": "XMLHttpRequest"
   }
 
@@ -149,7 +153,11 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
   const currentUrl = new URL(window.location.href)
   const headers = {
     "X-Traffic-Sources": currentUrl.search?.replace(/^\?/, "") || "", //todo: review this because this headers are no set anymore use url queries instead
-    "X-Original-Referer": currentUrl.origin + currentUrl.pathname, //todo: review this because this headers are no set anymore use url queries instead
+    // The page HTML comes from Varnish, so the backend never sees the click that landed the visitor
+    // here and this fetch's own Referer is just the storefront. document.referrer is the only place
+    // the external referrer survives, so forward it or organic traffic can never be attributed.
+    // Paid clicks are handled separately: their click ids ride along in this request's Referer.
+    "X-Original-Referer": document.referrer || "",
     "X-Requested-With": "XMLHttpRequest"
   }
 
