@@ -77,6 +77,7 @@ class IndexOrgSupplierProducts extends OrgAction
 
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id');
+        $queryBuilder->leftJoin('currencies', 'supplier_products.currency_id', 'currencies.id');
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -108,6 +109,8 @@ class IndexOrgSupplierProducts extends OrgAction
             'org_supplier_products.slug',
             'supplier_products.code',
             'supplier_products.name',
+            'supplier_products.cost',
+            'currencies.code as currency_code',
         ]);
 
         if ($organisationAgent) {
@@ -118,7 +121,7 @@ class IndexOrgSupplierProducts extends OrgAction
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -152,6 +155,7 @@ class IndexOrgSupplierProducts extends OrgAction
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
             }
 
+            $table->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency');
             $table->defaultSort('code');
         };
     }
