@@ -1498,16 +1498,28 @@ test('picking upsert pick all split and delete', function () {
 
     $item->update(['locked_at' => null]);
     \App\Actions\Dispatching\Picking\PickAllItem::run($item->refresh(), ['location_org_stock_id' => $los->id]);
-    expect(intval($item->refresh()->quantity_picked))->toBeGreaterThanOrEqual(intval($item->quantity_required));
+    expect(intval($item->refresh()->quantity_picked))->toBe(intval($item->quantity_required));
 
-    $picking = StorePicking::make()->action($item->refresh(), $this->user, [
+    expect(fn () => StorePicking::make()->action($item->refresh(), $this->user, [
         'picker_user_id'        => $this->user->id,
         'location_org_stock_id' => $los->id,
         'quantity'              => 2,
+    ]))->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    $item->update(['quantity_required' => $item->quantity_required + 2]);
+    $picking = StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $los->id,
+        'quantity'              => 5,
     ]);
+    expect(floatval($picking->quantity))->toBe(2.0)
+        ->and(floatval($item->refresh()->quantity_picked))->toBe(floatval($item->quantity_required));
 
     $split = \App\Actions\Dispatching\Picking\SplitPicking::run($picking, 1.0);
     expect(floatval($split->quantity))->toBe(1.0);
+
+    $clamped = UpdatePicking::make()->action($split, ['quantity' => 99]);
+    expect(floatval($clamped->quantity))->toBe(1.0);
 
     \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking->refresh(), $this->user);
     expect(Picking::find($picking->id))->toBeNull();
@@ -1558,7 +1570,8 @@ test('picking upsert from waiting warehouse and magic place', function () {
     $this->organisation->update(['settings' => $settings]);
 
     [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
-    $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
+    // Helper already picked 10 of 10, so give the waiting quantity real headroom.
+    $item->update(['quantity_required' => 15, 'has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
 
     \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1, 'location_org_stock_id' => $los->id]);
     expect($item->refresh()->pickings()->exists())->toBeTrue();
@@ -2079,6 +2092,7 @@ test('UI pallet returns index with real data', function () {
 
 test('fetch single delivery note item with pickings', function () {
     [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
+    $item->update(['quantity_required' => 13]);
     StorePicking::make()->action($item->refresh(), $this->user, [
         'picker_user_id'        => $this->user->id,
         'location_org_stock_id' => $los->id,
@@ -2241,9 +2255,10 @@ test('ial01 org stock retirement is blocked until boms are clear and labels are 
         ['code' => 'IAL01', 'name' => 'Import Address Labels']
     )));
 
-    /** @var DeliveryNoteItem $deliveryNoteItem */
-    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('org_stock_id')->firstOrFail();
-    $labelOrgStock    = $deliveryNoteItem->orgStock;
+    // A fresh note and org stock: firstOrFail() has no order and can grab an item whose
+    // org stock is shared with a replacement note, throwing the unpicked count off.
+    [, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $labelOrgStock        = $deliveryNoteItem->orgStock;
 
     $labelOrgStock->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
     $labelOrgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
