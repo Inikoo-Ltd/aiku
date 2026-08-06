@@ -47,6 +47,7 @@ use App\Actions\Ordering\Adjustment\UpdateAdjustment;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\HydrateOrders;
+use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -334,6 +335,28 @@ test('delete previous transaction', function (Order $order) {
     return $order;
 })->depends('get order products');
 
+
+test('import transactions in order from spreadsheet', function (Order $order) {
+    $path = tempnam(sys_get_temp_dir(), 'order-transactions').'.csv';
+    file_put_contents($path, "code,quantity\n".$this->product->code.",7\n");
+    $file = new \Illuminate\Http\UploadedFile($path, 'transactions.csv', 'text/csv', null, true);
+
+    $upload = ImportTransactionInOrder::make()->action($order, ['file' => $file]);
+    $order->refresh();
+
+    $transaction = $order->transactions()->where('historic_asset_id', $this->product->historicAsset->id)->first();
+
+    expect($upload->number_success)->toBe(1)
+        ->and($upload->number_fails)->toBe(0)
+        ->and($transaction->quantity_ordered)->toEqual(7)
+        ->and($transaction->data['bulk_import']['id'])->toBe($upload->id);
+
+    DeleteTransaction::make()->action($transaction);
+    $order->refresh();
+    expect($order->transactions()->count())->toBe(0);
+
+    return $order;
+})->depends('delete previous transaction');
 
 test('create transaction', function ($order) {
     $transactionData = Transaction::factory()->definition();
