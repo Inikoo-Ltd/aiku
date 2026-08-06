@@ -100,7 +100,10 @@ class StoreCustomer extends OrgAction
         );
 
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
-        $trafficSourcesData     = Arr::pull($modelData, 'traffic_sources');
+        /* Deliberately get, not pull: the raw touch history must persist on the customer row. It is
+           the source of truth every attribution recalculation rebuilds from - pivots built here but
+           never backed by the column would be silently destroyed by the first recalculation. */
+        $trafficSourcesData     = Arr::get($modelData, 'traffic_sources');
 
         $customer = DB::transaction(function () use ($shop, $modelData, $contactAddressData, $deliveryAddressData, $taxNumberData, $emailSubscriptionsData) {
             /** @var Customer $customer */
@@ -179,7 +182,14 @@ class StoreCustomer extends OrgAction
         }
 
         if ($trafficSourcesData) {
-            $this->processTrafficSources($customer, $trafficSourcesData);
+            /* Attribution is bookkeeping; it must never fail a registration. The customer row is
+               already committed, so an exception here would 500 the response and the retry would
+               hit "email already taken". */
+            try {
+                $this->processTrafficSources($customer, $trafficSourcesData);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
 
         if ($customer->shop->is_aiku) {

@@ -140,7 +140,9 @@ export const initialiseIrisVarnish = async (layoutStore) => {
   if (varnish?.traffic_source_cookies) {
     for (const [key, cookieData] of Object.entries(varnish.traffic_source_cookies)) {
       if (cookieData?.value) {
-        Cookies.set(key, cookieData.value, cookieData.duration)
+        // js-cookie's third argument is an attributes object; a bare number is silently ignored and
+        // the cookie dies with the session. duration arrives in minutes, expires wants days.
+        Cookies.set(key, cookieData.value, { expires: cookieData.duration / (60 * 24) })
       }
     }
   }

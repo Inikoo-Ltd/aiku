@@ -116,6 +116,7 @@ class Prospect extends Model implements Auditable
     use HasAddresses;
     use HasHistory;
     use HasSearch;
+    protected array $auditExclude = ['traffic_sources'];
 
     protected $casts = [
         'data'                    => 'array',

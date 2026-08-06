@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\CRM\TrafficSource\AttachTrafficSourcesToModel;
 use App\Actions\CRM\TrafficSource\ParseTrafficSourceTouches;
+use App\Actions\CRM\TrafficSource\ProcessTrafficSourceShare;
 use App\Models\Ordering\Order;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -49,6 +50,11 @@ class ProcessOrderTrafficSource implements ShouldBeUnique
             return;
         }
 
-        AttachTrafficSourcesToModel::run($order, $order->shop_id, $touches);
+        /* Attribute the order under the same model its customer is on, so order-level and
+           customer-level numbers cannot silently disagree for anyone moved off the default. */
+        $attributionModel = $order->customer?->trafficSources()->first()?->pivot->attribution_model
+            ?? ProcessTrafficSourceShare::ATTRIBUTION_LINEAR;
+
+        AttachTrafficSourcesToModel::run($order, $order->shop_id, $touches, $attributionModel);
     }
 }

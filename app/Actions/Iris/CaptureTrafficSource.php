@@ -115,7 +115,7 @@ class CaptureTrafficSource
         $website = request()->input('website');
 
 
-        if (auth()->check() && $website->type == WebsiteTypeEnum::DROPSHIPPING) {
+        if (auth()->check() && $website?->type == WebsiteTypeEnum::DROPSHIPPING) {
             return false;
         }
 
@@ -123,9 +123,14 @@ class CaptureTrafficSource
         return true;
     }
 
+    /**
+     * The cookie is pipe-joined; splitting on the wrong separator here used to return the whole
+     * history as one segment and slice it to nothing, wiping the visitor's touches the moment the
+     * cookie hit its size cap.
+     */
     public function trimOldestTrafficSource($trafficSourceData): string
     {
-        $trafficSourceData = explode(',', $trafficSourceData);
+        $trafficSourceData = preg_split('/[|,]/', $trafficSourceData) ?: [];
         $trafficSourceData = array_slice($trafficSourceData, 1);
 
         return implode('|', $trafficSourceData);

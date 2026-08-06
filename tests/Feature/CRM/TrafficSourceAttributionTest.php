@@ -84,7 +84,7 @@ it('links the matching campaign reference to the pivot record', function () {
     expect($pivot->traffic_source_campaign_id)->toBe($campaign->id);
 });
 
-it('keeps the full credit on the source when two of its campaigns are both credited', function () {
+it('keeps a row per campaign with the source credit summing to one', function () {
     $trafficSource = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
     $campaigns = collect(['spring', 'summer'])->map(fn (string $season) => TrafficSourceCampaign::create([
@@ -101,11 +101,49 @@ it('keeps the full credit on the source when two of its campaigns are both credi
         ])
     );
 
-    expect($customer->trafficSources()->count())->toBe(1);
+    $rows = $customer->trafficSources()->get();
+
+    expect($rows)->toHaveCount(2);
+    expect($rows->pluck('pivot.traffic_source_campaign_id')->sort()->values()->all())
+        ->toBe([$campaigns[0]->id, $campaigns[1]->id]);
+    expect(round($rows->sum(fn ($row) => (float) $row->pivot->share), 2))->toBe(1.0);
+});
+
+it('creates the campaign from a touch when the reference looks like an ad platform id', function () {
+    createTrafficSource($this->shop, 'google-ads', 'Google Ads');
+
+    $reference = (string) random_int(10000000000, 99999999999);
+
+    $customer = StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(Customer::factory()->definition(), [
+            'traffic_sources' => '1700000000b'.$reference,
+        ])
+    );
+
+    $campaign = TrafficSourceCampaign::where('reference', $reference)->first();
+
+    expect($campaign)->not->toBeNull();
+    expect($customer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($campaign->id);
+});
+
+it('refuses to mint a campaign from a non-numeric reference', function () {
+    createTrafficSource($this->shop, 'google-ads', 'Google Ads');
+
+    $reference = 'crafted-'.uniqid();
+
+    $customer = StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(Customer::factory()->definition(), [
+            'traffic_sources' => '1700000000b'.$reference,
+        ])
+    );
+
+    expect(TrafficSourceCampaign::where('reference', $reference)->exists())->toBeFalse();
 
     $pivot = $customer->trafficSources()->first()->pivot;
-    expect((float) $pivot->share)->toBe(1.0);
     expect($pivot->traffic_source_campaign_id)->toBeNull();
+    expect((float) $pivot->share)->toBe(1.0);
 });
 
 it('does not attach anything when the abbreviation does not match a known traffic source type', function () {
