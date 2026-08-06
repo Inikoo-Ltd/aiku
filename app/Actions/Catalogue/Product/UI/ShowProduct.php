@@ -470,6 +470,7 @@ class ShowProduct extends OrgAction
                 ],
                 'is_external_shop'          => $isExternalShop,
                 'is_dependent_trade_unit'   => $product->not_follow_master_trade_units,
+                'not_follow_master_media'   => $product->not_follow_master_media,
                 'family_slug'               => $product->family->slug ?? null,
                 'product_state'             => $product->state->value,
                 'webpage_canonical_url'     => $product->webpage?->canonical_url,

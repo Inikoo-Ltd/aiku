@@ -25,6 +25,7 @@ use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
 use App\Actions\Retina\UI\Auth\ShowForgotPasswordForm;
 use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
+use App\Actions\Search\GetIrisSearchFeaturedItems;
 use App\Actions\Search\RecordWebsiteSearchClick;
 use App\Actions\Search\SearchIrisCatalogue;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,7 @@ Route::prefix('json')->name('json.')->group(function () {
     Route::middleware(['iris-relax-auth:retina', 'throttle:iris-search'])->group(function () {
         Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue');
         Route::post('search/click', RecordWebsiteSearchClick::class)->name('search.click');
+        Route::get('search/featured-items', GetIrisSearchFeaturedItems::class)->name('search.featured_items');
     });
 });
 

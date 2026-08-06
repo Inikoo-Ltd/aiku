@@ -67,6 +67,10 @@ trait CanCloneImages
 
     protected function syncProductImages(TradeUnit|MasterAsset|Model $source, Product $product): void
     {
+        if ($product->not_follow_master_media) {
+            return;
+        }
+
         $this->cloneImages($source, $product);
 
         $product->update([

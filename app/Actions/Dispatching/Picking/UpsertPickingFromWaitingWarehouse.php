@@ -39,10 +39,12 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
             $requestedQuantity = (float) Arr::get($modelData, 'quantity', 0);
 
             $alreadyPickedInLocation = 0.0;
+            $currentPickingQuantity  = 0.0;
             if ($pickingID = Arr::get($modelData, 'picking_id')) {
                 $alreadyPickedInLocation = (float) (Picking::where('id', $pickingID)
                     ->where('location_id', $locationOrgStock?->location_id)
                     ->value('quantity') ?? 0);
+                $currentPickingQuantity  = (float) (Picking::where('id', $pickingID)->value('quantity') ?? 0);
             }
 
             $availableInLocation = (float) ($locationOrgStock?->quantity ?? 0) + $alreadyPickedInLocation;
@@ -59,7 +61,8 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
             $waitingWarehouseQuantity = $deliveryNoteItem->quantity_required
                 - Arr::get($modelData, 'quantity', 0)
                 - $deliveryNoteItem->quantity_waiting_crm
-                - $deliveryNoteItem->quantity_not_picked;
+                - $deliveryNoteItem->quantity_not_picked
+                - ((float) $deliveryNoteItem->quantity_picked - $currentPickingQuantity);
 
             if ($waitingWarehouseQuantity < 0) {
                 $waitingWarehouseQuantity = 0;

@@ -46,6 +46,25 @@ class StorePicking extends OrgAction
         data_set($modelData, 'engine', PickingEngineEnum::AIKU, false);
         data_set($modelData, 'type', PickingTypeEnum::PICK, false);
 
+        $type = $modelData['type'] instanceof PickingTypeEnum ? $modelData['type'] : PickingTypeEnum::from($modelData['type']);
+        if (in_array($type, [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK], true)) {
+            /*
+             * Same clamp as SetAsWaitingWarehouse: a pick can never take the total picked
+             * past what the delivery note item still needs, box splits go through
+             * SplitPicking which keeps the total constant.
+             */
+            $outstanding = (float)$deliveryNoteItem->quantity_required
+                - (float)$deliveryNoteItem->quantity_picked
+                - (float)$deliveryNoteItem->quantity_waiting_warehouse
+                - (float)$deliveryNoteItem->quantity_waiting_crm;
+
+            if ($outstanding <= 0) {
+                abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
+            }
+
+            $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding);
+        }
+
         /** @var Picking $picking */
         $picking = $deliveryNoteItem->pickings()->create($modelData);
         $picking->refresh();
@@ -83,7 +102,7 @@ class StorePicking extends OrgAction
             newValue: $newAuditString,
             eventName: 'item_picked'
         );
-        
+
         $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
         return $picking;

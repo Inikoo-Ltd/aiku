@@ -45,7 +45,7 @@
     "http-interop/http-factory-guzzle": "^1.2",
     "inertiajs/inertia-laravel": "^2.0",
     "jubaer/zoom-laravel": "^1.3",
-    "kyon147/laravel-shopify": "24.0.0",
+    "kyon147/laravel-shopify": "^27.1",
     "laravel-notification-channels/fcm": "^5.1",
     "laravel/framework": "^12.0",
     "laravel/horizon": "^5",
