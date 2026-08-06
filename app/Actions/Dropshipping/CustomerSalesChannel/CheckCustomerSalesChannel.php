@@ -65,8 +65,7 @@ class CheckCustomerSalesChannel extends OrgAction
         CustomerSalesChannel::where('platform_status', false)
             ->whereNull('closed_at')
             ->whereNotNull('platform_user_id')
-            ->limit(10)
-            ->chunkById(100, function ($inactiveCustomerSalesChannels) use (&$success, &$failed, &$lostAccount) {
+            ->chunkById(50, function ($inactiveCustomerSalesChannels) use (&$success, &$failed, &$lostAccount) {
                 foreach ($inactiveCustomerSalesChannels as $customerSalesChannel) {
 
                     if(!$customerSalesChannel->user) {
