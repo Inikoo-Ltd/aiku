@@ -96,7 +96,7 @@ const keyRender = ref(1)
 </script>
 
 <template>
-  <div v-if="blueprint.label" class="w-full my-2 py-1 border-b border-gray-300 text-sm select-none">
+  <div v-if="blueprint.label" class="w-full my-1 py-0.5 border-b border-gray-300 text-xs select-none">
     <div class="flex items-center justify-between">
       <div class="flex items-center font-semibold text-start">
         {{ trans(blueprint.label) }}
