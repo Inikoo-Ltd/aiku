@@ -109,6 +109,36 @@ it('links the matching campaign reference to the pivot record', function () {
     expect($pivot->traffic_source_campaign_id)->toBe($campaign->id);
 });
 
+it('keeps the full credit on the source when two of its campaigns are both credited', function () {
+    $trafficSource = TrafficSource::create([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'type'            => 'google-ads',
+        'name'            => 'Google Ads',
+    ]);
+
+    $campaigns = collect(['spring', 'summer'])->map(fn (string $season) => TrafficSourceCampaign::create([
+        'traffic_source_id' => $trafficSource->id,
+        'reference'         => $season.'-'.uniqid(),
+        'name'              => ucfirst($season).' Sale',
+        'type'              => 'search',
+    ]));
+
+    $customer = StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(Customer::factory()->definition(), [
+            'traffic_sources' => '1700000000b'.$campaigns[0]->reference.'|1700000100b'.$campaigns[1]->reference,
+        ])
+    );
+
+    expect($customer->trafficSources()->count())->toBe(1);
+
+    $pivot = $customer->trafficSources()->first()->pivot;
+    expect((float) $pivot->share)->toBe(1.0);
+    expect($pivot->traffic_source_campaign_id)->toBeNull();
+});
+
 it('does not attach anything when the abbreviation does not match a known traffic source type', function () {
     $customer = StoreCustomer::make()->action(
         $this->shop,

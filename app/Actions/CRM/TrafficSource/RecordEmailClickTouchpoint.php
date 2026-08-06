@@ -14,12 +14,26 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RecordEmailClickTouchpoint
+class RecordEmailClickTouchpoint implements ShouldBeUnique
 {
     use AsAction;
+
+    public int $jobUniqueFor = 600;
+
+    /**
+     * Bots, prefetchers and link scanners fire every link in an email at once, so the clicks of a single
+     * recipient on a single mailshot arrive as a burst. Collapsing that burst into one job keeps the
+     * concurrent workers from racing each other on the recipient's touch history, which is a
+     * read-append-write. Different mailshots keep their own key so a genuine second click is never dropped.
+     */
+    public function getJobUniqueId(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null): string
+    {
+        return $recipient->getMorphClass().'-'.$recipient->id.'-'.($mailshot?->id ?? 'no-mailshot');
+    }
 
     /**
      * Records a real (non-duplicate) email click as a `newsletter` marketing touch on the customer's
