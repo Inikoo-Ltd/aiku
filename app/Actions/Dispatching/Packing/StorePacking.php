@@ -59,6 +59,7 @@ class StorePacking extends OrgAction
     {
         return [
             'quantity' => ['sometimes', 'numeric'],
+            'data'     => ['sometimes', 'array'],
             'packer_user_id'       => [
                 'required',
                 Rule::Exists('users', 'id')->where('group_id', $this->shop->group_id)
