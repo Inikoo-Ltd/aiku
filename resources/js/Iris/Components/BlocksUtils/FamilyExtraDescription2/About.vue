@@ -4,8 +4,6 @@ import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
 import Dialog from 'primevue/dialog'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage } from "@far"
 
 const props = defineProps<{
     fieldValue: any
@@ -122,6 +120,36 @@ const hasImage = (image: any) => {
     return image?.original && String(image?.original).trim() !== ""
 }
 
+const mainImage = computed(() => displayImages.value[0])
+const sideImages = computed(() => displayImages.value.slice(1, 3).filter(hasImage))
+const wideImage = computed(() => displayImages.value[3])
+
+const hasMainImage = computed(() => hasImage(mainImage.value))
+const hasWideImage = computed(() => hasImage(wideImage.value))
+const hasSplitColumns = computed(() => hasMainImage.value && sideImages.value.length > 0)
+const hasTopRow = computed(() => hasMainImage.value || sideImages.value.length > 0)
+const hasAnyImage = computed(() => hasTopRow.value || hasWideImage.value)
+
+const imageGridClass = computed(() => [
+    hasSplitColumns.value
+        ? "md:grid-cols-[1.35fr_1fr] lg:grid-cols-[1.45fr_1fr]"
+        : "md:grid-cols-1",
+    hasTopRow.value && hasWideImage.value
+        ? "md:grid-rows-[260px_220px] lg:grid-rows-[360px_210px] xl:grid-rows-[400px_230px] 2xl:grid-rows-[440px_260px]"
+        : "md:grid-rows-[300px] lg:grid-rows-1 lg:h-full",
+])
+
+const sideColumnClass = computed(() => sideImages.value.length > 1
+    ? "grid-cols-2 h-[180px] md:grid-cols-1 md:grid-rows-2 md:h-full"
+    : "grid-cols-1 h-[180px] md:grid-rows-1 md:h-full")
+
+const wideImageClass = computed(() => hasTopRow.value
+    ? [
+        hasSplitColumns.value ? "md:col-span-2" : "",
+        "h-[220px] md:h-[220px] lg:h-[210px] xl:h-[230px] 2xl:h-[260px]",
+    ]
+    : "h-[220px] md:h-[300px] lg:h-full")
+
 const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.container?.properties)))
 
 const descriptionRef = ref<HTMLElement | null>(null)
@@ -175,7 +203,8 @@ onBeforeUnmount(() => {
 
 <template>
     <!-- CONTENT -->
-    <div class="grid grid-cols-1 lg:grid-cols-[53%_46%] lg:gap-4 gap-0 items-stretch" :style="containerStyle">
+    <div class="grid grid-cols-1 gap-0 items-stretch"
+        :class="hasAnyImage ? 'lg:grid-cols-[53%_46%] lg:gap-4' : 'lg:grid-cols-1'" :style="containerStyle">
         <!-- LEFT -->
         <div class="order-2 lg:order-1 flex flex-col py-5 md:py-6 lg:py-8 text-center md:text-left"
             :class="isDescriptionExpanded ? 'lg:h-auto' : 'lg:h-[700px] 2xl:h-[780px]'">
@@ -225,97 +254,33 @@ onBeforeUnmount(() => {
 
 
         <!-- RIGHT -->
-        <div class="order-1 lg:order-2 flex py-5 md:py-6 lg:py-8">
-            <div class="
-            grid
-            w-full
-            gap-3
-            grid-cols-1
-            auto-rows-[220px]
-            md:grid-cols-[1.35fr_1fr]
-            md:grid-rows-[260px_220px]
-            lg:grid-cols-[1.45fr_1fr]
-            lg:grid-rows-[360px_210px]
-            xl:grid-rows-[400px_230px]
-            2xl:grid-rows-[440px_260px]
-        ">
+        <div v-if="hasAnyImage" class="order-1 lg:order-2 flex py-5 md:py-6 lg:py-8">
+            <div class="relative grid w-full gap-3 grid-cols-1 auto-rows-[220px]" :class="imageGridClass">
                 <!-- TOP LEFT LARGE IMAGE -->
-                <div class="
-                overflow-hidden
-                rounded-[8px]
-                h-full
-            ">
-                    <template v-if="hasImage(displayImages[0])">
-                        <Image :src="displayImages[0]?.original" :srcset="displayImages[0]?.srcset"
-                            sizes="(min-width: 1024px) 42vw, (min-width: 768px) 55vw, 95vw" :image-cover="true" class="w-full h-full object-cover"
-                            :alt="fieldValue?.family?.name" />
-                    </template>
-
-                    <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                        <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
-                    </div>
+                <div v-if="hasMainImage" class="overflow-hidden rounded-[8px] h-full">
+                    <Image :src="mainImage?.original" :srcset="mainImage?.srcset"
+                        sizes="(min-width: 1024px) 42vw, (min-width: 768px) 55vw, 95vw" :image-cover="true"
+                        class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
                 </div>
 
                 <!-- RIGHT COLUMN -->
-                <div class="
-                grid
-                gap-3
-                grid-cols-2
-                h-[180px]
-                md:grid-cols-1
-                md:grid-rows-2
-                md:h-full
-            ">
-                    <!-- TOP RIGHT -->
-                    <div class="overflow-hidden rounded-[8px] h-full">
-                        <template v-if="hasImage(displayImages[1])">
-                            <Image :src="displayImages[1]?.original" :srcset="displayImages[1]?.srcset"
-                                sizes="(min-width: 1024px) 22vw, (min-width: 768px) 40vw, 50vw" :image-cover="true"
-                                class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
-                        </template>
-
-                        <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                            <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
-                        </div>
-                    </div>
-
-                    <!-- BOTTOM RIGHT -->
-                    <div class="overflow-hidden rounded-[8px] h-full">
-                        <template v-if="hasImage(displayImages[2])">
-                            <Image :src="displayImages[2]?.original" :srcset="displayImages[2]?.srcset"
-                                sizes="(min-width: 1024px) 22vw, (min-width: 768px) 40vw, 50vw" :image-cover="true"
-                                class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
-                        </template>
-
-                        <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                            <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
-                        </div>
+                <div v-if="sideImages.length" class="grid gap-3" :class="sideColumnClass">
+                    <div v-for="(image, index) in sideImages" :key="index"
+                        class="overflow-hidden rounded-[8px] h-full">
+                        <Image :src="image?.original" :srcset="image?.srcset"
+                            sizes="(min-width: 1024px) 22vw, (min-width: 768px) 40vw, 50vw" :image-cover="true"
+                            class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
                     </div>
                 </div>
 
                 <!-- BOTTOM WIDE IMAGE -->
-                <div class="
-                relative
-                overflow-hidden
-                rounded-[8px]
-                h-[220px]
-                md:col-span-2
-                md:h-[220px]
-                lg:h-[210px]
-                xl:h-[230px]
-                2xl:h-[260px]
-            ">
-                    <template v-if="hasImage(displayImages[3])">
-                        <Image :src="displayImages[3]?.original" :srcset="displayImages[3]?.srcset"
-                            sizes="(min-width: 1024px) 45vw, 95vw" :image-cover="true" class="w-full h-full object-cover"
-                            :alt="fieldValue?.family?.name" />
-                    </template>
+                <div v-if="hasWideImage" class="overflow-hidden rounded-[8px]" :class="wideImageClass">
+                    <Image :src="wideImage?.original" :srcset="wideImage?.srcset"
+                        sizes="(min-width: 1024px) 45vw, 95vw" :image-cover="true" class="w-full h-full object-cover"
+                        :alt="fieldValue?.family?.name" />
+                </div>
 
-                    <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                        <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
-                    </div>
-
-                    <button @click="openGallery(0)" class="
+                <button v-if="galleryImages.length" @click="openGallery(0)" class="
                     absolute
                     bottom-4
                     right-4
@@ -327,9 +292,8 @@ onBeforeUnmount(() => {
                     text-gray-700
                     shadow
                 ">
-                        {{ ctrans('Image Gallery') }}
-                    </button>
-                </div>
+                    {{ ctrans('Image Gallery') }}
+                </button>
             </div>
         </div>
     </div>
@@ -356,7 +320,7 @@ onBeforeUnmount(() => {
            h-[300px]
            md:h-[500px]
            lg:h-[500px]">
-                <Image :src="galleryImages[selectedIndex].original" :alt="`Image ${selectedIndex + 1}`"
+                <Image :src="galleryImages[selectedIndex]?.original" :alt="`Image ${selectedIndex + 1}`"
                     class="w-full h-full object-contain flex justify-center" :image-cover="false" />
             </div>
 
