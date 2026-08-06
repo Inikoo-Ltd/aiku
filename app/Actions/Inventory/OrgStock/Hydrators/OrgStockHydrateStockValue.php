@@ -32,10 +32,11 @@ class OrgStockHydrateStockValue implements ShouldBeUnique
         }
 
         $stats->update([
-            'stock_value' => ($orgStock->sku_value ?? 0) * ($orgStock->quantity_available ?? 0),
+            'stock_value'            => ($orgStock->sku_value ?? 0) * ($orgStock->quantity_available ?? 0),
+            'stock_commercial_value' => ($orgStock->sku_commercial_value ?? 0) * ($orgStock->quantity_available ?? 0),
         ]);
 
-        if ($stats->wasChanged('stock_value') && $orgStock->org_stock_family_id) {
+        if ($stats->wasChanged(['stock_value', 'stock_commercial_value']) && $orgStock->org_stock_family_id) {
             OrgStockFamilyHydrateStockValue::dispatch($orgStock->orgStockFamily);
         }
     }
