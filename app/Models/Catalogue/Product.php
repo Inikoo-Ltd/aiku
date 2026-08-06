@@ -179,6 +179,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_variant_leader
  * @property bool $is_minion_variant
  * @property bool $has_live_webpage
+ * @property bool $is_golden_product
  * @property bool $is_in_website live webpage + sellable, mirrored into the search index
  * @property string|null $marketplace_id
  * @property numeric|null $margin
@@ -315,6 +316,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_prices'      => 'boolean',
         'not_follow_master_trade_units' => 'boolean',
         'not_follow_master_media'       => 'boolean',
+        'is_golden_product'             => 'boolean',
     ];
 
     protected $attributes = [
@@ -389,6 +391,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_prices',
         'not_follow_master_media',
         'not_follow_master_trade_units',
+        'is_golden_product',
     ];
 
     public function getRouteKeyName(): string

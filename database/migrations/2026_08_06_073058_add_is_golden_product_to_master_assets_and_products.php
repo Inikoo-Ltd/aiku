@@ -14,11 +14,11 @@ return new class extends Migration
     public function up()
     {
         Schema::table('master_assets', function (Blueprint $table) {
-            $table->boolean('is_golden_product')->default(false);
+            $table->boolean('is_golden_product')->default(false)->index();
         });
 
         Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_golden_product')->default(false);
+            $table->boolean('is_golden_product')->default(false)->index();
         });
     }
 
@@ -30,11 +30,15 @@ return new class extends Migration
     public function down()
     {
         Schema::table('master_assets', function (Blueprint $table) {
-            $table->boolean('is_golden_product')->default(false);
+            $table->dropColumn([
+                'is_golden_product'
+            ]);
         });
 
         Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_golden_product')->default(false);
+            $table->dropColumn([
+                'is_golden_product'
+            ]);
         });
     }
 };
