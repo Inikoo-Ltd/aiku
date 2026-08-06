@@ -505,6 +505,10 @@ test('update order', function ($order) {
     $order = UpdateOrder::make()->action($order, Order::factory()->definition());
 
     $this->assertModelExists($order);
+
+    $order = UpdateOrder::make()->action($order, ['is_re' => true]);
+    expect($order->is_re)->toBeTrue()
+        ->and($order->tax_category_id)->not->toBeNull();
 })->depends('create order');
 
 test('update order state to submitted', function (Order $order) {
@@ -652,6 +656,8 @@ test('create invoice from order', function (Order $order) {
         ->and($this->shop->orderingStats->number_invoices)->toBe(3)
         ->and($invoiceTransaction)->toBeInstanceOf(InvoiceTransaction::class);
 
+    expect(fn () => UpdateOrder::make()->action($order, ['is_re' => false]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
 
     return $invoice;
 })->depends('create order', 'update invoice from customer');
