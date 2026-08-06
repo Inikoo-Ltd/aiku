@@ -2599,6 +2599,54 @@ test('minor currency with increment rounds converted prices and rrps up to the s
     expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe(37.84);
 });
 
+test('master asset prices update when stored minor currency has no independent flag', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'PLN' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 4.3],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'NOINDDEP-'.uniqid(),
+        'name' => 'No Independent Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'NOINDFAM-'.uniqid(),
+        'name' => 'No Independent Family',
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'NOINDAST-'.uniqid(),
+        'name'    => 'No Independent Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 5.97,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 5.97, 'independent' => false],
+            'PLN' => ['value' => 25.67],
+        ],
+        'master_rrps'   => [
+            'EUR' => ['value' => 19.98, 'independent' => false],
+            'PLN' => ['value' => 85.91],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => ['EUR' => ['value' => 8.8, 'independent' => false]],
+        'master_rrps'   => ['EUR' => ['value' => 29.9, 'independent' => false]],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'EUR.value'))->toBe(8.8)
+        ->and(data_get($masterAsset->master_rrps, 'EUR.value'))->toBe(29.9);
+});
+
 test('master shop currencies rate can restrict to open shops only', function () {
     $masterShop = createFreshMasterShop();
     $masterShop->update(['price_exchanges' => [
