@@ -63,6 +63,7 @@ class StorePicking extends OrgAction
             }
 
             $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding);
+            data_set($modelData, 'last_picked_at', now());
         }
 
         /** @var Picking $picking */

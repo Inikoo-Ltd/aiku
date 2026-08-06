@@ -449,7 +449,8 @@ test('store picking', function (DeliveryNote $deliveryNote) {
         ->and(intval($picking->quantity))->toBe(5)
         ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
         ->and($picking->deliveryNoteItem->is_handled)->toBeFalse()
-        ->and($picking->location_id)->toBe($locationOrgStock->location_id);
+        ->and($picking->location_id)->toBe($locationOrgStock->location_id)
+        ->and($picking->last_picked_at)->not->toBeNull();
 
     $picking->refresh();
 
@@ -483,7 +484,12 @@ test('pack item', function (Picking $picking) {
 
     expect($packing)->toBeInstanceOf(Packing::class)
         ->and(intval($packing->quantity))->toBe(10)
-        ->and(intval($packing->deliveryNoteItem->quantity_packed))->toBe(10);
+        ->and(intval($packing->deliveryNoteItem->quantity_packed))->toBe(10)
+        ->and($packing->queued_at)->not->toBeNull()
+        ->and($packing->packing_at)->not->toBeNull()
+        ->and($packing->done_at)->not->toBeNull()
+        ->and($packing->done_at->gte($packing->packing_at))->toBeTrue()
+        ->and($packing->packing_at->gte($packing->queued_at))->toBeTrue();
 
     $packing->refresh();
 
@@ -1594,7 +1600,8 @@ test('picking upsert from waiting warehouse and magic place', function () {
     expect($magicPicking)->toBeInstanceOf(Picking::class)
         ->and($magicPicking->type)->toBe(PickingTypeEnum::MAGIC_PICK)
         ->and($magicPicking->location_id)->toBeNull()
-        ->and(floatval($magicPicking->quantity))->toBe(3.0);
+        ->and(floatval($magicPicking->quantity))->toBe(3.0)
+        ->and($magicPicking->last_picked_at)->not->toBeNull();
 });
 
 test('picking and delivery note item repairs and reindex', function () {
