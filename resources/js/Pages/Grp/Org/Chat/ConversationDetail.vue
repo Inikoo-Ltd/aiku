@@ -791,7 +791,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
 
                         <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">
-                                Slack Channels <span class="text-red-500">*</span>
+                                Slack Channels / User ID Slack<span class="text-red-500">*</span>
                             </label>
                             <div class="rounded-lg border border-gray-200 focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-300">
                                 <TagsInput
