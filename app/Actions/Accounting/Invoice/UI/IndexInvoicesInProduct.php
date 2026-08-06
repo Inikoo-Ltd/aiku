@@ -192,6 +192,7 @@ class IndexInvoicesInProduct extends OrgAction
             'grp.org.shops.show.catalogue.products.out_of_stock_products.invoices',
             'grp.org.shops.show.catalogue.products.orphan_products.invoices',
             'grp.org.shops.show.catalogue.products.no_image_product.invoices',
+            'grp.org.shops.show.catalogue.products.mismatched_families.invoices',
             'grp.org.shops.show.catalogue.products.independent_products.discontinued.invoices',
             'grp.org.shops.show.catalogue.products.independent_products.in_process.invoices',
             'grp.org.shops.show.catalogue.products.independent_products.current.invoices',
