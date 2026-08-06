@@ -66,7 +66,7 @@ class IndexIrisBlogs extends IrisAction
     /**
      * @param  array<int, WebpageSubTypeEnum>|null  $subTypes
      */
-    public function handle(Website $website, ?string $prefix = null, ?array $subTypes = null, ?int $perPage = null): LengthAwarePaginator
+    public function handle(Website $website, ?string $prefix = null, ?array $subTypes = null): LengthAwarePaginator
     {
         $subTypes = $subTypes ?? self::SUB_TYPES;
 
@@ -111,7 +111,7 @@ class IndexIrisBlogs extends IrisAction
             ->defaultSort('-webpages.live_at')
             ->allowedSorts(['title', 'last_published_at'])
             ->allowedFilters([$globalSearch, AllowedFilter::exact('sub_type')])
-            ->withPaginator($prefix, $perPage, tableName: request()->route()?->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 

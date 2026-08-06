@@ -102,21 +102,6 @@ const layoutGroup = {
 	],
 }
 
-export const layoutBlueprint = [
-	idField,
-	titleField,
-	{
-		label: "Posts per page",
-		key: ["number_of_posts"],
-		type: "number",
-		props_data: {},
-		information: "How many posts each page of the blog index shows.",
-	},
-	...presentationFields,
-	cardGroup,
-	layoutGroup,
-]
-
 export default {
 	blueprint: [
 		idField,
