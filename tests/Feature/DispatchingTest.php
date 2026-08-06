@@ -2242,7 +2242,9 @@ test('repair ial01 org stock consumables dry run writes nothing', function () {
 
 test('ial01 bom removal is blocked until a consumable replaces the instruction', function () {
     /** @var DeliveryNoteItem $deliveryNoteItem */
-    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')
+        ->whereHas('transaction', fn ($query) => $query->where('model_type', 'Product'))
+        ->firstOrFail();
     $orgStock         = $deliveryNoteItem->orgStock;
     $product          = $deliveryNoteItem->transaction->model;
 
