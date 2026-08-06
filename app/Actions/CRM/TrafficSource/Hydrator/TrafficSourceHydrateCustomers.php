@@ -41,10 +41,16 @@ class TrafficSourceHydrateCustomers implements ShouldBeUnique
             ->select(DB::raw('SUM(number_orders_state_dispatched) as total'))
             ->first()->total ?? 0;
 
-        $stats['total_customer_revenue'] = DB::table('customer_stats')
+        $revenue = DB::table('customer_stats')
             ->whereIn('customer_id', $customerIds)
-            ->select(DB::raw('SUM(sales_all) as total'))
-            ->first()->total ?? 0;
+            ->select(
+                DB::raw('SUM(sales_all) as total'),
+                DB::raw('SUM(sales_org_currency_all) as org_total')
+            )
+            ->first();
+
+        $stats['total_customer_revenue']     = $revenue->total ?? 0;
+        $stats['org_total_customer_revenue'] = $revenue->org_total ?? 0;
 
         $trafficSource->stats()->updateOrCreate(
             ['traffic_source_id' => $trafficSource->id],
