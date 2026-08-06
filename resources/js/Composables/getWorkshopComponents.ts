@@ -1,227 +1,171 @@
-import type { Component } from 'vue'
+import { defineAsyncComponent, type AsyncComponentLoader, type Component } from 'vue'
 
-import WowsbarBanner from '@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerWorkshop.vue'
-import Text from '@/Components/CMS/Webpage/Text/TextContentWorkshop.vue'
-
-import CTA from '@/Components/CMS/Webpage/Cta1/Cta1Workshop.vue'
-import ImageWorkshop from '@/Components/CMS/Webpage/Image/ImageWorkshop.vue'
-import CTA2 from '@/Components/CMS/Webpage/Cta2/Cta2Workshop.vue'
-import CTA3 from '@/Components/CMS/Webpage/Cta3/Cta3Workshop.vue'
-import Gallery from '@/Components/CMS/Webpage/Gallery/GalleryWorkshop.vue'
-import Pricing from '@/Components/CMS/Webpage/Pricing/PricingWorkshop.vue'
-import Timeline from '@/Components/CMS/Webpage/Timeline/TimelineWorkshop.vue'
-import Iframe from '@/Components/CMS/Webpage/Iframe/IframeWorkshop.vue'
-import BentoGrid from '@/Components/CMS/Webpage/BentoGrid/BentoGridWorksop.vue'
-import Overview from '@/Components/CMS/Webpage/Overview/OverviewWorkshop.vue'
-import Script from '@/Components/CMS/Webpage/Script/ScriptWorkShop.vue'
-import  CtaAurora1 from "@/Components/CMS/Webpage/CtaAurora1/CtaAurora1Workshop.vue"
-import Overview2 from "@/Components/CMS/Webpage/Overview2/Overview2Workshop.vue"
-import Footer1 from '@/Components/CMS/Website/Footers/footerTheme1/Footer1Workshop.vue'
-import Topbar1 from '@/Components/CMS/Website/TopBars/Template/Topbar1/Topbar1Workshop.vue'
-import Topbar2 from '@/Components/CMS/Website/TopBars/Template/Topbar2/Topbar2Workshop.vue'
-
-import Header1 from '@/Components/CMS/Website/Headers/Header1/Header1Workshop.vue'
-import Header2 from '@/Components/CMS/Website/Headers/Header2/Header2Workshop.vue'
-import Menu1 from '@/Components/CMS/Website/Menus/Menu1Workshop.vue'
-import TextColumn from '@/Components/CMS/Webpage/TextColumn/TextColumnWorkshop.vue'
-import Topbar1Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Topbar1FulfilmentWorkshop.vue'
-import Topbar2Fulfilment from '@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Topbar2FulfilmentWorkshop.vue' 
-
-import Button from "@/Components/CMS/Webpage/Button/ButtonWorkshop.vue"
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
-import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
-import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
-import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Workshop.vue'
-import FamilyIris2 from '@/Components/CMS/Webpage/Family2/family2Workshop.vue'
-import FamilyIris3 from '@/Components/CMS/Webpage/Family3/family3Workshop.vue'
-import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
-import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
-import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Dropshipping/Product1Workshop.vue'
-import SubDepartmentWorkshop1 from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
-import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
-import Families2Workshop from '@/Components/CMS/Webpage/Families2/Families2Workshop.vue'
-import Families3Workshop from '@/Components/CMS/Webpage/Families3/Families3Workshop.vue'
 
-import CTAVideo1Workshop from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'
-import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
-import UserSubscribeWorkshop from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'
-import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Workshop.vue'
-import SeeAlso1Workshop from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Workshop.vue'
-import BlogWorkshop from '@/Components/CMS/Webpage/Blog/BlogWorkshop.vue'
-import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme1/EditFooter1Translation.vue'
-import CarouselCtaWorkshop from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaWorkshop.vue'
-import CarouselImageBackground from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundWorkshop.vue'
-import SubDepartmentWorkshop2 from '@/Components/CMS/Webpage/SubDepartment2/SubDepartmentWorkshop.vue'
-import SubDepartmentWorkshop3 from '@/Components/CMS/Webpage/SubDepartment3/SubDepartment3Workshop.vue'
+const asyncComponentCache = new Map<string, Component>()
 
-import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'
-import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'
-import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Workshop.vue'
-
-import RecommendationCRB1Workshop from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCRB1Workshop.vue'
-import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'
-import TimelineWorkshop2 from '@/Components/CMS/Webpage/Step2/Step2Workshop.vue'
-import ListProductWorkshop from '@/Components/CMS/Webpage/Products/Dropshipping/ListProductsWorkshop.vue'
-import ListProductsEcomWorkshop from '@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomWorkshop.vue'
-import RenderDropshippingProductWorkshop from '@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductWorkshop.vue'
-import RenderEcommerceProductWorkshop from '@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductWorkshop.vue'
-import Product1WorkshopEcom from '@/Components/CMS/Webpage/Product1/Ecommerce/Product1WorkshopEcom.vue'
-import Product2WorkshopEcom from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
-import Column3Workshop from '@/Components/CMS/Webpage/Column3/Column3Workshop.vue'
-import Column4Workshop from '@/Components/CMS/Webpage/Column4/Column4Workshop.vue'
-import Slider1Workshop from '@/Components/CMS/Webpage/Slider-1/Slider1Workshop.vue'
-import CollectionDescriptionWorkshop from '@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionWorkshop.vue'
-import DepartmentDescriptionWorkshop from '@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionWorkshop.vue'
-import DepartmentDescriptionWorkshop2 from '@/Components/CMS/Webpage/DepartmentDescription2/DepartmentDescription2Workshop.vue'
-import SubDepartmentDescriptionWorkshop from '../Components/CMS/Webpage/SubDepartmentDescription/SubDepartmentDescriptionWorkshop.vue'
-import Family2ExtraDescriptionWorkshop from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue'
-import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Families1OverviewWorkshop.vue'
-import RecommendationFromMasterWorkshop from '../Components/CMS/Webpage/RecommendationFromMaster/RecommendationFromMasterWorkshop.vue'
-import RelatedProductCategoryWorkshop from '@/Components/CMS/Webpage/RelatedProductCategory/RealatedProductCategoryWorkshop.vue'
-import Tabs from '@/Components/CMS/Webpage/Tabs/TabsWorkshop.vue'
-import RecommendationProductCategoryFromMasterWorkshop from '@/Components/CMS/Webpage/RecommendationProductCategoryFromMaster/RecommendationProductCategoryFromMasterWorkshop.vue'
-import FaqDepartmentWorkshop from '@/Components/CMS/Webpage/FaqDepartment/FaqDepartmentWorkshop.vue'
-import TopFamiliesWorkshop from '@/Components/CMS/Webpage/TopFamilies/TopFamiliesWorkshop.vue'
-
-const components = (shop_type?: string): Record<string, Component> => {
-    return {
-        //topbar
-        'top-bar-1': Topbar1,
-        'top-bar-2': Topbar2,
-        'top-bar-1-fulfilment': Topbar1Fulfilment,
-        'top-bar-2-fulfilment': Topbar2Fulfilment,
-
-        //header
-        'header-1': Header1,
-        'header-2': Header2,
-
-        //menu 
-        'menu-1': Menu1,
-
-        //footer
-        'footer-1': Footer1,
-
-        //description catalouge
-        'collection-description-1' : CollectionDescriptionWorkshop,
-        'department-description-1' : DepartmentDescriptionWorkshop,
-        'department-description-2' : DepartmentDescriptionWorkshop2,
-        'sub-department-description-1' : SubDepartmentDescriptionWorkshop,
-
-        //sub-department
-        'sub-departments-1' : SubDepartmentWorkshop1,
-        'sub-departments-2' : SubDepartmentWorkshop2,
-        'sub-departments-3' : SubDepartmentWorkshop3,
-
-        //family
-        'families-1' : Families1Workshop,
-        'families-2' : Families2Workshop,
-        'families-3' : Families3Workshop,
-
-        //family
-        "families-1-overview": Families1Overview,
-
-        // family-description
-        'family-1': FamilyIris1,
-        'family-2': FamilyIris2,
-        'family-3': FamilyIris3,
-
-        //family-extra-description
-        'family-2-extra-description' : Family2ExtraDescriptionWorkshop ,
-        'family-3-extra-description' : Family2ExtraDescriptionWorkshop ,
-
-
-        //product
-        'product-1': shop_type == 'b2b' ? RenderEcommerceProductWorkshop : RenderDropshippingProductWorkshop,
-        'product-2': RenderEcommerceProductWorkshop,
-
-        //product list
-        'products-1' : shop_type == 'b2b' ? ListProductsEcomWorkshop : ListProductWorkshop,
-        'products-2' : ListProductsEcomWorkshop,
-
-        //see-also
-        'see-also-1' : SeeAlso1Workshop,
-
-        // Luigi
-        'luigi-trends-1' : LuigiTrends1Workshop,
-        'luigi-last-seen-1' : LuigiLastSeen1Workshop,
-        'luigi-item-alternatives-1' : LuigiItemAlternatives1Workshop,
-        'recommendation-customer-recently-bought-1': RecommendationCRB1Workshop,
-
-        "cta-image-background" : CtaImageBackroundWorkshop,
-        'banner': WowsbarBanner,
-        "bento-grid-1": BentoGrid,
-        "bricks": Gallery,
-        'cta1': CTA,
-        'cta2': CTA2,
-        'cta3': CTA3,
-        "iframe": Iframe,
-        'images': ImageWorkshop,
-        "overview_aurora": Overview,
-        "script": Script,
-        'text': Text,
-        'cta_aurora_1' : CtaAurora1,
-        'overview_2' : Overview2, 
-        'text-column' : TextColumn,
-        'pricing': Pricing,
-        'button' : Button,
-        'column-layout-2': ColumnWorkshop,
-        'column-layout-3': Column3Workshop,
-        'column-layout-4': Column4Workshop,
-        'disclosure': DisclosureWorkshop,
-        'timeline' : Timeline,
-        'step-1' : Step2Workshop,
-        'carousel-1' : Carousel1Workshop,
-        'cta-video-1' : CTAVideo1Workshop,
-        'video-1': Video1Workshop,
-        "user-subscribe": UserSubscribeWorkshop,
-        'cta4' :Cta4,
-        'blog' : BlogWorkshop,
-        'carousel-cta' : CarouselCtaWorkshop,
-        'carousel-image-background' : CarouselImageBackground,
-        'step-2' : TimelineWorkshop2,
-        'slider-1' : Slider1Workshop,
-        'recommendation-from-master' : RecommendationFromMasterWorkshop,
-        'relatedProductCategory' : RelatedProductCategoryWorkshop,
-        'recommendation-product-category-from-master' : RecommendationProductCategoryFromMasterWorkshop,
-        'tabs' : Tabs,
-        'faq-department' : FaqDepartmentWorkshop,
-        'top-families' : TopFamiliesWorkshop
+/**
+ * Wraps a dynamic import in an async component, memoised by key so every render
+ * resolves to the very same component identity and never remounts the block.
+ */
+const lazy = (key: string, loader: AsyncComponentLoader): Component => {
+    const cached = asyncComponentCache.get(key)
+    if (cached) {
+        return cached
     }
+
+    const component = defineAsyncComponent(loader)
+    asyncComponentCache.set(key, component)
+
+    return component
+}
+
+/**
+ * @type {Record<string, AsyncComponentLoader>}
+ * Keys suffixed with `@b2b` are the b2b variant of the unsuffixed key.
+ */
+const workshopLoaders: Record<string, AsyncComponentLoader> = {
+    //topbar
+    'top-bar-1': () => import('@/Components/CMS/Website/TopBars/Template/Topbar1/Topbar1Workshop.vue'),
+    'top-bar-2': () => import('@/Components/CMS/Website/TopBars/Template/Topbar2/Topbar2Workshop.vue'),
+    'top-bar-1-fulfilment': () => import('@/Components/CMS/Website/TopBars/Template/Topbar1Fulfilment/Topbar1FulfilmentWorkshop.vue'),
+    'top-bar-2-fulfilment': () => import('@/Components/CMS/Website/TopBars/Template/Topbar2Fulfilment/Topbar2FulfilmentWorkshop.vue'),
+
+    //header
+    'header-1': () => import('@/Components/CMS/Website/Headers/Header1/Header1Workshop.vue'),
+    'header-2': () => import('@/Components/CMS/Website/Headers/Header2/Header2Workshop.vue'),
+
+    //menu
+    'menu-1': () => import('@/Components/CMS/Website/Menus/Menu1Workshop.vue'),
+
+    //footer
+    'footer-1': () => import('@/Components/CMS/Website/Footers/footerTheme1/Footer1Workshop.vue'),
+
+    //description catalouge
+    'collection-description-1': () => import('@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionWorkshop.vue'),
+    'department-description-1': () => import('@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionWorkshop.vue'),
+    'department-description-2': () => import('@/Components/CMS/Webpage/DepartmentDescription2/DepartmentDescription2Workshop.vue'),
+    'sub-department-description-1': () => import('@/Components/CMS/Webpage/SubDepartmentDescription/SubDepartmentDescriptionWorkshop.vue'),
+
+    //sub-department
+    'sub-departments-1': () => import('@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'),
+    'sub-departments-2': () => import('@/Components/CMS/Webpage/SubDepartment2/SubDepartmentWorkshop.vue'),
+    'sub-departments-3': () => import('@/Components/CMS/Webpage/SubDepartment3/SubDepartment3Workshop.vue'),
+
+    //family
+    'families-1': () => import('@/Components/CMS/Webpage/Families1/Families1Workshop.vue'),
+    'families-2': () => import('@/Components/CMS/Webpage/Families2/Families2Workshop.vue'),
+    'families-3': () => import('@/Components/CMS/Webpage/Families3/Families3Workshop.vue'),
+
+    //family
+    'families-1-overview': () => import('@/Components/CMS/Webpage/Families1Overview/Families1OverviewWorkshop.vue'),
+
+    // family-description
+    'family-1': () => import('@/Components/CMS/Webpage/Family-1/family1Workshop.vue'),
+    'family-2': () => import('@/Components/CMS/Webpage/Family2/family2Workshop.vue'),
+    'family-3': () => import('@/Components/CMS/Webpage/Family3/family3Workshop.vue'),
+
+    //family-extra-description
+    'family-2-extra-description': () => import('@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue'),
+    'family-3-extra-description': () => import('@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue'),
+
+    //product
+    'product-1': () => import('@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductWorkshop.vue'),
+    'product-1@b2b': () => import('@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductWorkshop.vue'),
+    'product-2': () => import('@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductWorkshop.vue'),
+
+    //product list
+    'products-1': () => import('@/Components/CMS/Webpage/Products/Dropshipping/ListProductsWorkshop.vue'),
+    'products-1@b2b': () => import('@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomWorkshop.vue'),
+    'products-2': () => import('@/Components/CMS/Webpage/Products/Ecommerce/ListProductsEcomWorkshop.vue'),
+
+    //see-also
+    'see-also-1': () => import('@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Workshop.vue'),
+
+    // Luigi
+    'luigi-trends-1': () => import('@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'),
+    'luigi-last-seen-1': () => import('@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'),
+    'luigi-item-alternatives-1': () => import('@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Workshop.vue'),
+    'recommendation-customer-recently-bought-1': () => import('@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCRB1Workshop.vue'),
+
+    'cta-image-background': () => import('@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'),
+    'banner': () => import('@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerWorkshop.vue'),
+    'bento-grid-1': () => import('@/Components/CMS/Webpage/BentoGrid/BentoGridWorksop.vue'),
+    'bricks': () => import('@/Components/CMS/Webpage/Gallery/GalleryWorkshop.vue'),
+    'cta1': () => import('@/Components/CMS/Webpage/Cta1/Cta1Workshop.vue'),
+    'cta2': () => import('@/Components/CMS/Webpage/Cta2/Cta2Workshop.vue'),
+    'cta3': () => import('@/Components/CMS/Webpage/Cta3/Cta3Workshop.vue'),
+    'iframe': () => import('@/Components/CMS/Webpage/Iframe/IframeWorkshop.vue'),
+    'images': () => import('@/Components/CMS/Webpage/Image/ImageWorkshop.vue'),
+    'overview_aurora': () => import('@/Components/CMS/Webpage/Overview/OverviewWorkshop.vue'),
+    'script': () => import('@/Components/CMS/Webpage/Script/ScriptWorkShop.vue'),
+    'text': () => import('@/Components/CMS/Webpage/Text/TextContentWorkshop.vue'),
+    'cta_aurora_1': () => import('@/Components/CMS/Webpage/CtaAurora1/CtaAurora1Workshop.vue'),
+    'overview_2': () => import('@/Components/CMS/Webpage/Overview2/Overview2Workshop.vue'),
+    'text-column': () => import('@/Components/CMS/Webpage/TextColumn/TextColumnWorkshop.vue'),
+    'pricing': () => import('@/Components/CMS/Webpage/Pricing/PricingWorkshop.vue'),
+    'button': () => import('@/Components/CMS/Webpage/Button/ButtonWorkshop.vue'),
+    'column-layout-2': () => import('@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'),
+    'column-layout-3': () => import('@/Components/CMS/Webpage/Column3/Column3Workshop.vue'),
+    'column-layout-4': () => import('@/Components/CMS/Webpage/Column4/Column4Workshop.vue'),
+    'disclosure': () => import('@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'),
+    'timeline': () => import('@/Components/CMS/Webpage/Timeline/TimelineWorkshop.vue'),
+    'step-1': () => import('@/Components/CMS/Webpage/Step1/Step1Workshop.vue'),
+    'carousel-1': () => import('@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'),
+    'cta-video-1': () => import('@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'),
+    'video-1': () => import('@/Components/CMS/Webpage/Video/Video1Workshop.vue'),
+    'user-subscribe': () => import('@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'),
+    'cta4': () => import('@/Components/CMS/Webpage/Cta4/Cta4Workshop.vue'),
+    'blog': () => import('@/Components/CMS/Webpage/Blog/BlogWorkshop.vue'),
+    'carousel-cta': () => import('@/Components/CMS/Webpage/CarouselCta/CarouselCtaWorkshop.vue'),
+    'carousel-image-background': () => import('@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundWorkshop.vue'),
+    'step-2': () => import('@/Components/CMS/Webpage/Step2/Step2Workshop.vue'),
+    'slider-1': () => import('@/Components/CMS/Webpage/Slider-1/Slider1Workshop.vue'),
+    'recommendation-from-master': () => import('@/Components/CMS/Webpage/RecommendationFromMaster/RecommendationFromMasterWorkshop.vue'),
+    'relatedProductCategory': () => import('@/Components/CMS/Webpage/RelatedProductCategory/RealatedProductCategoryWorkshop.vue'),
+    'recommendation-product-category-from-master': () => import('@/Components/CMS/Webpage/RecommendationProductCategoryFromMaster/RecommendationProductCategoryFromMasterWorkshop.vue'),
+    'tabs': () => import('@/Components/CMS/Webpage/Tabs/TabsWorkshop.vue'),
+    'faq-department': () => import('@/Components/CMS/Webpage/FaqDepartment/FaqDepartmentWorkshop.vue'),
+    'top-families': () => import('@/Components/CMS/Webpage/TopFamilies/TopFamiliesWorkshop.vue'),
+}
+
+const translationLoaders: Record<string, AsyncComponentLoader> = {
+    'footer-1': () => import('@/Components/CMS/Website/Footers/footerTheme1/EditFooter1Translation.vue'),
+}
+
+const productRenderB2bLoaders: Record<string, AsyncComponentLoader> = {
+    'product-1': () => import('@/Components/CMS/Webpage/Product1/Ecommerce/Product1WorkshopEcom.vue'),
+    'product-2': () => import('@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'),
+}
+
+const productRenderDropshippingLoaders: Record<string, AsyncComponentLoader> = {
+    'product-1': () => import('@/Components/CMS/Webpage/Product1/Dropshipping/Product1Workshop.vue'),
 }
 
 export const getComponent = (componentName: string, options?: {
     shop_type?: string // 'b2b' | 'dropshipping'
-}) => {
-    return components(options?.shop_type)[componentName] ?? NotFoundComponents
+}): Component => {
+    const b2bKey = `${componentName}@b2b`
+    const key = options?.shop_type === 'b2b' && workshopLoaders[b2bKey] ? b2bKey : componentName
+    const loader = workshopLoaders[key]
+
+    return loader ? lazy(key, loader) : NotFoundComponents
 }
 
-export const getTranslationComponent = (componentName: string) => {
-    const components: Component = {
-        'footer-1': EditFooter1Translation,
-    }
+export const getTranslationComponent = (componentName: string): Component => {
+    const loader = translationLoaders[componentName]
 
-    return components[componentName] ?? NotFoundComponents
-}
-export const getProductRenderB2bComponent = (
-    componentName: string,
-    options: Record<string, any> = {}
-) => {
-    const components: Record<string, any> = {
-        "product-1": Product1WorkshopEcom,
-        "product-2": Product2WorkshopEcom,
-    }
-
-    return components[componentName] ?? null
+    return loader ? lazy(`translation:${componentName}`, loader) : NotFoundComponents
 }
 
+export const getProductRenderB2bComponent = (componentName: string): Component | null => {
+    const loader = productRenderB2bLoaders[componentName]
 
-export const getProductRenderDropshippingComponentWorkshop  = (
-    componentName: string,
-    options: Record<string, any> = {}
-) => {
-    const components: Record<string, any> = {
-        "product-1": ProductWorkshop1,
-    }
+    return loader ? lazy(`product-b2b:${componentName}`, loader) : null
+}
 
-    return components[componentName] ?? null
+export const getProductRenderDropshippingComponentWorkshop = (componentName: string): Component | null => {
+    const loader = productRenderDropshippingLoaders[componentName]
+
+    return loader ? lazy(`product-dropshipping:${componentName}`, loader) : null
 }
