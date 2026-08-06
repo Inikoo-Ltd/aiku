@@ -29,6 +29,15 @@ class MergeTrafficSourceTouchHistories
             ->sortBy(fn (string $segment) => (int) $segment)
             ->values();
 
+        /* Same budget as a recorded click: keep the first touch (first-touch attribution survives)
+           and the most recent of the rest. Device cookies are client-controlled, so without this a
+           crafted cookie could grow the stored history without bound. */
+        if ($segments->count() > RecordEmailClickTouchpoint::MAX_TOUCHES) {
+            $segments = $segments->take(1)->concat(
+                $segments->slice(1)->take(-(RecordEmailClickTouchpoint::MAX_TOUCHES - 1))
+            )->values();
+        }
+
         return $segments->isEmpty() ? null : $segments->implode('|');
     }
 }

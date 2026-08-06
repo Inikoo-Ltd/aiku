@@ -8,6 +8,8 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\CRM\TrafficSource\MergeTrafficSourceTouchHistories;
+use App\Actions\CRM\TrafficSource\SyncCustomerTrafficSourcesFromDevice;
 use App\Actions\Iris\CaptureTrafficSource;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -22,6 +24,8 @@ trait HasIrisUserData
     public function getIrisUserData(): array
     {
         $webUser = $this->webUser;
+
+        $this->syncDeviceTrafficSources();
 
         $cartCount                    = 0;
         $cartAmount                   = 0;
@@ -94,5 +98,28 @@ trait HasIrisUserData
             'offer_meters'           => $offerMeters,
             'offer_data'             => $offerData, // this is used in the top bar
         ];
+    }
+
+    /**
+     * The touch cookie is per browser, but the customer browses on several: fold this device's
+     * cookie into the customer's server-side history so the ad clicked on the phone and the search
+     * made on the desktop meet in one journey. Inline work is a string merge and comparison, only a
+     * genuinely new touch dispatches the (unique, low-priority) sync job.
+     */
+    private function syncDeviceTrafficSources(): void
+    {
+        $deviceTouches = (string) request()->cookie('aiku_tsd', '');
+
+        $customer = $this->customer ?? null;
+
+        if (blank($deviceTouches) || !$customer instanceof \App\Models\CRM\Customer) {
+            return;
+        }
+
+        $merged = MergeTrafficSourceTouchHistories::run($customer->traffic_sources, $deviceTouches);
+
+        if ($merged !== $customer->traffic_sources) {
+            SyncCustomerTrafficSourcesFromDevice::dispatch($customer, $deviceTouches);
+        }
     }
 }

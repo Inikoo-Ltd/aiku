@@ -199,6 +199,37 @@ it('serves honest share-weighted numbers through the sql views', function () {
     expect((float) $mailshotRow->attributed_customers)->toBe(0.5);
 });
 
+it('folds a second device cookie into the customer journey', function () {
+    createTrafficSource($this->shop, 'organic-google', 'Organic Google');
+
+    // Desktop: registered from a google-ads click.
+    $this->customer->update(['traffic_sources' => '1700000000b']);
+    \App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution::run($this->customer->fresh());
+
+    // Phone: an organic visit this browser saw but the server never did.
+    \App\Actions\CRM\TrafficSource\SyncCustomerTrafficSourcesFromDevice::run(
+        $this->customer->fresh(),
+        '1700000000b|1700000100a'
+    );
+
+    $customer = $this->customer->fresh();
+    expect($customer->traffic_sources)->toBe('1700000000b|1700000100a');
+
+    $shares = $customer->trafficSources()->get();
+    expect($shares)->toHaveCount(2);
+    expect(round($shares->sum(fn ($row) => (float) $row->pivot->share), 2))->toBe(1.0);
+});
+
+it('does nothing when the device cookie holds nothing new', function () {
+    $this->customer->update(['traffic_sources' => '1700000000b']);
+    \App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution::run($this->customer->fresh());
+    $updatedAt = $this->customer->fresh()->updated_at;
+
+    \App\Actions\CRM\TrafficSource\SyncCustomerTrafficSourcesFromDevice::run($this->customer->fresh(), '1700000000b');
+
+    expect($this->customer->fresh()->updated_at->eq($updatedAt))->toBeTrue();
+});
+
 it('keeps repeat clickers visible to every mailshot they clicked', function () {
     $first  = makeMailshot($this->shop);
     $second = makeMailshot($this->shop);
