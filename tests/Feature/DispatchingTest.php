@@ -1520,6 +1520,9 @@ test('picking waiting warehouse and crm flow', function () {
 
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
+    // The helper picks all 10 of 10; waiting only applies to unpicked quantity, so free some up.
+    $item->update(['quantity_picked' => 6]);
+
     $waiting = \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
     expect($waiting->has_waiting_warehouse)->toBeTrue()
         ->and(intval($waiting->quantity_waiting_warehouse))->toBe(2);
@@ -1536,8 +1539,11 @@ test('picking waiting warehouse and crm flow', function () {
     $undone = \App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse::run($item->refresh());
     expect($undone->has_waiting_warehouse)->toBeFalse();
 
+    // Waiting is only possible for what is not yet in the tote, so free some quantity up first.
+    $item->update(['quantity_picked' => 5, 'quantity_waiting_crm' => 0]);
     $crm = \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
-    expect($crm->has_waiting_crm)->toBeTrue();
+    expect($crm->has_waiting_crm)->toBeTrue()
+        ->and(intval($crm->quantity_waiting_crm))->toBe(2);
 
     \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingCrm::run($item->refresh(), $this->user, ['quantity' => 1]);
 
@@ -2627,4 +2633,24 @@ test('picking an item auto ignores zero quantity items and hides them from the i
 
     expect($visibleItemIds)->toContain($normalItem->id)
         ->not->toContain($zeroItem->id);
+});
+
+test('waiting quantities never exceed what is still unpicked', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    // 10 required, 4 already in the tote: only 6 can wait, however much the caller asks for.
+    $item->update(['quantity_picked' => 4, 'quantity_waiting_crm' => 0, 'quantity_waiting_warehouse' => 0]);
+
+    $crm = \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($item->refresh(), $this->user, ['quantity' => 10]);
+
+    expect(floatval($crm->quantity_waiting_crm))->toBe(6.0)
+        ->and(floatval($crm->quantity_waiting_warehouse))->toBeGreaterThanOrEqual(0.0);
+
+    // Everything is now picked or with CRM: nothing left to park anywhere.
+    expect(fn () => \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 5]))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 });

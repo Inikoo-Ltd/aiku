@@ -44,9 +44,24 @@ class SetAsWaitingWarehouse extends OrgAction
             abort(403, 'Waiting is not enabled for this organisation');
         }
 
+        /*
+         * Same clamp as SetAsWaitingCrm: only what is neither picked nor already parked
+         * with CRM can wait for the warehouse, or a partial pick makes the buckets claim
+         * more than the order holds.
+         */
+        $outstanding = (float)$deliveryNoteItem->quantity_required
+            - (float)$deliveryNoteItem->quantity_picked
+            - (float)$deliveryNoteItem->quantity_waiting_crm;
+
+        $quantityToMove = min((float)$modelData['quantity'], max($outstanding, 0));
+
+        if ($quantityToMove <= 0) {
+            abort(422, 'Nothing left to set as waiting: the remaining quantity is already picked or waiting for CRM');
+        }
+
         $dataToUpdate = [
             'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
-            'quantity_waiting_warehouse' => $modelData['quantity'],
+            'quantity_waiting_warehouse' => $quantityToMove,
             'has_waiting_warehouse'      => true,
         ];
         if (Arr::has($modelData, 'note')) {
