@@ -9,11 +9,13 @@
 namespace App\Actions\Ordering\WaitingCrmItem;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
@@ -112,10 +114,12 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
 
                             $replacementDeliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNoteItem->deliveryNote, $deliveryNoteItemData);
                             $replacementDeliveryNoteItem->update([
+                                'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
                                 'quantity_waiting_warehouse' => $quantity,
                                 'has_waiting_warehouse'      => true,
                             ]);
                             DeliveryNoteHydrateWaitingItems::run($replacementDeliveryNoteItem->delivery_note_id);
+                            CalculateDeliveryNoteItemTotalPicked::run($replacementDeliveryNoteItem);
                         }
                     }
                 }
