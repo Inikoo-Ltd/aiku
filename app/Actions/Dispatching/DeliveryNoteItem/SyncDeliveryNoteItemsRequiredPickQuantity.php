@@ -46,7 +46,7 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
     public function handle(OrgStock $orgStock): void
     {
         $deliveryNoteItems = $orgStock->deliveryNoteItems()
-            ->with('transaction')
+            ->with('transaction.historicAsset', 'transaction.model')
             ->whereIn('state', collect(self::SYNCED_STATES)->merge(self::DIRTY_STATES)->map(fn ($state) => $state->value))
             ->get();
 
@@ -60,8 +60,14 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
                 continue;
             }
 
+            /*
+             * Compared at the precision both columns can hold: a pick in twelfths differs
+             * from itself in the last decimal otherwise and stays flagged forever.
+             */
+            $unchanged = abs($quantityRequired - (float)$deliveryNoteItem->quantity_required) < 0.000001;
+
             if (in_array($deliveryNoteItem->state, self::DIRTY_STATES)) {
-                if ($quantityRequired == $deliveryNoteItem->quantity_required) {
+                if ($unchanged) {
                     if ($deliveryNoteItem->composition_dirty_at) {
                         $deliveryNoteItem->update([
                             'composition_dirty_at'                => null,
@@ -78,7 +84,7 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
                 continue;
             }
 
-            if ($quantityRequired == $deliveryNoteItem->quantity_required) {
+            if ($unchanged) {
                 if ($deliveryNoteItem->composition_dirty_at) {
                     $deliveryNoteItem->update([
                         'composition_dirty_at'                => null,
