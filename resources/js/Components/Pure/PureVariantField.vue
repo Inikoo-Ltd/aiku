@@ -23,7 +23,6 @@ type Node = {
   product: any | null
   is_leader?: boolean
   is_hide?: boolean
-  all_child_has_webpage?: boolean
   children?: Node[]
 }
 
@@ -153,11 +152,6 @@ const buildNodes = computed<Node[]>(() => {
       Object.keys(keyObj).every(k => p[k] === keyObj[k])
     )?.product ?? null
 
-  const getChildHasWebpage = (keyObj: Record<string, string>) =>
-    Object.values(model.value.products).find(p =>
-      Object.keys(keyObj).every(k => p[k] === keyObj[k])
-    )?.all_child_has_webpage ?? false
-
   const getIsHide = (keyObj: Record<string, string>) =>
     Object.values(model.value.products).find(p =>
       Object.keys(keyObj).every(k => p[k] === keyObj[k])
@@ -175,7 +169,6 @@ const buildNodes = computed<Node[]>(() => {
         product: getProduct(keyObj),
         is_leader: isLeaderByKey(keyObj),
         is_hide: getIsHide(keyObj),
-        all_child_has_webpage: getChildHasWebpage(keyObj),
       }
     })
   }
@@ -209,7 +202,6 @@ const buildNodes = computed<Node[]>(() => {
           product: getProduct(keyObj),
           is_leader: isLeaderByKey(keyObj),
           is_hide: getIsHide(keyObj),
-          all_child_has_webpage: getChildHasWebpage(keyObj),
         }
       })
     }
@@ -250,7 +242,6 @@ const setProduct = (node: Node, val: any | null) => {
       slug: val.slug
     },
     is_leader: false,
-    all_child_has_webpage: val.allChildHasWebpage,
   }
 }
 
@@ -555,7 +546,6 @@ const noLeader = computed(() => {
                     <!-- Leader -->
                     <td class="px-4 text-center">
                       <input v-if="!node.children" type="checkbox" :disabled="!node.product || lockStructure" :checked="node.is_leader"
-                        v-tooltip="!node.product ? '' : (!node.all_child_has_webpage ? trans(`One or more of it's child in a shop has no webpage. Choosing this product as a leader would create webpage under said shop`) : '')"
                         @change="setLeader(node, $event.target.checked)"
                         class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
@@ -590,7 +580,7 @@ const noLeader = computed(() => {
                         :placeholder="trans('Select Product')">
                         <template #singlelabel="{ value }">
                           <div class="flex items-center gap-3 p-2">
-                            <Image v-if="value.image_thumbnail?.main?.original" :src="value.image_thumbnail.main.original"
+                            <Image v-if="value.image_thumbnail?.main?.original" :src="value.image_thumbnail?.main?.original"
                               class="w-12 h-12 rounded object-cover" />
                             <div>
                               <div class="font-medium leading-none">{{ value.code }}</div>
@@ -604,7 +594,7 @@ const noLeader = computed(() => {
                         </template>
                          <template #option="{ isSelected, isPointed, option }">
                           <div class="flex items-center gap-3 p-2">
-                            <Image v-if="option.image_thumbnail?.main?.original" :src="option.image_thumbnail.main.original"
+                            <Image v-if="option.image_thumbnail?.main?.original" :src="option?.image_thumbnail?.main?.original"
                               class="w-12 h-12 rounded object-cover" />
                             <div>
                               <div class="font-medium leading-none">{{ option.code }}</div>
@@ -636,10 +626,9 @@ const noLeader = computed(() => {
                     <td class="px-4 text-center">
                       <input
                         type="checkbox"
-                        :disabled="!child.product || !child.all_child_has_webpage || lockStructure"
+                        :disabled="!child.product || lockStructure"
                         :checked="child.is_leader"
                         @change="setLeader(child, $event.target.checked)"
-                         v-tooltip="!child.all_child_has_webpage ? trans(`Unable to set this product as a leader. One or more of it's child has no webpage. A leader product is required to have webpage`) : ''"
                          class="w-4 h-4 accent-blue-600 disabled:opacity-40 cursor-pointer" />
                     </td>
 
@@ -673,7 +662,7 @@ const noLeader = computed(() => {
                         :placeholder="trans('Select Product')">
                         <template #singlelabel="{ value }">
                           <div class="flex items-center gap-3 p-2">
-                            <Image v-if="value.image_thumbnail?.main?.original" :src="value.image_thumbnail.main.original"
+                            <Image v-if="value.image_thumbnail?.main?.original" :src="value?.image_thumbnail?.main?.original"
                               class="w-12 h-12 rounded object-cover" />
                             <div>
                               <div class="font-medium leading-none">{{ value.code }}</div>
@@ -688,7 +677,7 @@ const noLeader = computed(() => {
 
                         <template #option="{ isSelected, isPointed, option }">
                           <div class="flex items-center gap-3 p-2">
-                            <Image v-if="option.image_thumbnail" :src="option.image_thumbnail.main.original"
+                            <Image v-if="option?.image_thumbnail" :src="option?.image_thumbnail?.main?.original"
                               class="w-12 h-12 rounded object-cover" />
                             <div>
                               <div class="font-medium leading-none">{{ option.code }}</div>

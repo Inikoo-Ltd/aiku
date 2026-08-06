@@ -76,15 +76,15 @@ class StoreMasterVariant extends OrgAction
                     StoreProductFromMasterProduct::make()->action(
                         $masterProducts[$productCode],
                         [
-                                'shop_products' => [
-                                    $shop->id => [
-                                        'price'          => $masterProducts[$productCode]->price,
-                                        'rrp'            => $masterProducts[$productCode]->rrp,
-                                        'create_webpage' => false,
-                                        'create_in_shop' => 'Yes'
-                                    ]
-                                ],
+                            'shop_products' => [
+                                $shop->id => [
+                                    'price'          => $masterProducts[$productCode]->price,
+                                    'rrp'            => $masterProducts[$productCode]->rrp,
+                                    'create_webpage' => false,
+                                    'create_in_shop' => 'Yes'
+                                ]
                             ],
+                        ],
                         generateVariant: false
                     );
                 }
