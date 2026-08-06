@@ -208,11 +208,14 @@ onBeforeUnmount(() => {
 			:style="textColumnStyle">
 			<div
 				ref="descriptionRef"
-				class="relative flex-1 overflow-hidden max-w-full lg:max-w-[700px] 2xl:max-w-[860px] text-[13px] md:text-[14px] 2xl:text-[16px] leading-[1.8] text-[#334155]"
-				:class="{
-					'after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-24 after:bg-gradient-to-t  after:to-transparent':
-						isDescriptionOverflowing && !isDescriptionExpanded,
-				}"
+				class="relative flex-1 overflow-hidden w-full text-[13px] md:text-[14px] 2xl:text-[16px] leading-[1.8] text-[#334155]"
+				:class="[
+					hasAnyImage ? 'max-w-full lg:max-w-[700px] 2xl:max-w-[860px]' : 'max-w-none',
+					{
+						'after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-24 after:bg-gradient-to-t  after:to-transparent':
+							isDescriptionOverflowing && !isDescriptionExpanded,
+					},
+				]"
 				v-html="cleanedDescription" />
 
 			<div v-if="isDescriptionOverflowing || isDescriptionExpanded" class="mt-4">
