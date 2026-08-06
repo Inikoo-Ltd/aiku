@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Maintenance\Dispatching;
+namespace App\Actions\Inventory\OrgStock;
 
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
@@ -14,7 +14,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RepairOrgStockMissingLocationIds implements ShouldBeUnique
+class SetOrgStockPickingLocation implements ShouldBeUnique
 {
     use AsAction;
 
