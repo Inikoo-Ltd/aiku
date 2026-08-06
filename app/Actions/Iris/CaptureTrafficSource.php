@@ -47,6 +47,15 @@ class CaptureTrafficSource
             $trafficSourceData = GetTrafficSourceFromUrl::run($referer);
         }
 
+        /* Organic traffic has no click id to read, only the referring domain, and that domain is
+           gone by the time this AJAX call is made: its Referer is the storefront page itself. The
+           client forwards document.referrer in X-Original-Referer precisely so it survives. Varnish
+           also fills this header in from the real Referer on the cached page request, so the same
+           lookup keeps working if capture ever runs outside the AJAX endpoint again. */
+        if ($trafficSourceData === null) {
+            $trafficSourceData = GetTrafficSourceFromRefererHeader::run(request()->headers->get('X-Original-Referer', ''));
+        }
+
         if ($trafficSourceData === null) {
             $trafficSourceData = GetTrafficSourceFromRefererHeader::run($referer);
         }

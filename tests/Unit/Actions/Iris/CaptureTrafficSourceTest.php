@@ -9,15 +9,21 @@
 use App\Actions\Iris\CaptureTrafficSource;
 use Illuminate\Http\Request;
 
-function irisAjaxRequest(string $referer, array $cookies = []): Request
+function irisAjaxRequest(string $referer, array $cookies = [], ?string $originalReferer = null): Request
 {
+    $server = ['HTTP_REFERER' => $referer];
+
+    if ($originalReferer !== null) {
+        $server['HTTP_X_ORIGINAL_REFERER'] = $originalReferer;
+    }
+
     $request = Request::create(
         'https://ecom.test/json/first-hit',
         'GET',
         [],
         $cookies,
         [],
-        ['HTTP_REFERER' => $referer]
+        $server
     );
 
     app()->instance('request', $request);
@@ -49,6 +55,42 @@ it('still falls back to organic detection when the referrer is an external searc
     $cookies = CaptureTrafficSource::make()->getCookies();
 
     expect($cookies['aiku_lts']['value'])->toBe('a');
+});
+
+it('captures an organic search visit from the forwarded document.referrer', function () {
+    irisAjaxRequest('https://ecom.test/products/candles', [], 'https://www.google.com/');
+
+    $cookies = CaptureTrafficSource::make()->getCookies();
+
+    expect($cookies['aiku_lts']['value'])->toBe('a');
+});
+
+it('captures an organic social visit from the forwarded document.referrer', function () {
+    irisAjaxRequest('https://ecom.test/', [], 'https://www.instagram.com/');
+
+    expect(CaptureTrafficSource::make()->getCookies()['aiku_lts']['value'])->toBe('e');
+});
+
+it('ignores a forwarded referrer that is the storefront itself', function () {
+    irisAjaxRequest('https://ecom.test/products/candles', [], 'https://ecom.test/');
+
+    expect(CaptureTrafficSource::make()->getCookies())->toBe([]);
+});
+
+it('ignores an empty forwarded referrer from a direct visit', function () {
+    irisAjaxRequest('https://ecom.test/', [], '');
+
+    expect(CaptureTrafficSource::make()->getCookies())->toBe([]);
+});
+
+it('prefers a paid click id over the forwarded organic referrer', function () {
+    irisAjaxRequest(
+        'https://ecom.test/?gad_source=1&gad_campaignid=99887766&gclid=ABC123',
+        [],
+        'https://www.google.com/'
+    );
+
+    expect(CaptureTrafficSource::make()->getCookies()['aiku_lts']['value'])->toBe('b99887766');
 });
 
 it('captures nothing for a plain visit with no ad params and no external referrer', function () {
