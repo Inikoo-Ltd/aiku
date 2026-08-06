@@ -25,6 +25,7 @@ use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
 use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderReCalculateVAT;
 use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsAuto;
@@ -64,6 +65,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
 
     Route::post('pay-with-balance', PayOrderWithCustomerBalance::class)->name('pay_order_with_balance');
+    Route::post('write-off-shortfall', WriteOffOrderShortfall::class)->name('write_off_shortfall');
 
     Route::patch('update', UpdateOrder::class)->name('update');
     Route::post('update-faire', UpdateFaireOrder::class)->name('update_faire');

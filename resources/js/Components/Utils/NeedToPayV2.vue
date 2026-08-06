@@ -23,6 +23,10 @@ const props = defineProps<{
     currencyCode: string
     isPaidOff?: boolean
     balance: number
+    writeOff?: {
+        amount: number
+        route: routeType
+    } | null
     toBePaidBy: {
         value: string
         label: string
@@ -45,6 +49,30 @@ const props = defineProps<{
 
 
 const locale = inject('locale', aikuLocaleStructure)
+
+const isLoadingWriteOff = ref(false)
+const onWriteOff = () => {
+    router.post(
+        route(props.writeOff?.route.name, props.writeOff?.route.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => {
+                isLoadingWriteOff.value = true
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to write off the outstanding amount"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingWriteOff.value = false
+            },
+        }
+    )
+}
 
 const isLoadingPayWithBalance = ref(false)
 const onPayWithBalance = () => {
@@ -144,6 +172,17 @@ const onPayWithBalance = () => {
                     <div class="opacity-70">
                         Need to pay {{ locale.currencyFormat(currencyCode, Number(payAmount)) }} of {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
                     </div>
+
+                    <Button
+                        v-if="writeOff"
+                        class="mt-2"
+                        size="xxs"
+                        type="tertiary"
+                        :label="trans('Write off :amount', { amount: locale.currencyFormat(currencyCode, Number(writeOff.amount)) })"
+                        v-tooltip="trans('Settle this small difference instead of asking the customer to pay it')"
+                        :loading="isLoadingWriteOff"
+                        @click="() => onWriteOff()"
+                    />
                 </div>
             </div>
     

@@ -137,6 +137,8 @@ class ShowInvoice extends OrgAction
      */
     public function getInvoiceSummary(Invoice $invoice): array
     {
+        $adjustmentsNet = $invoice->invoiceTransactions()->where('model_type', 'Adjustment')->sum('net_amount');
+
         return [
             array_values(
                 array_filter(
@@ -171,6 +173,13 @@ class ShowInvoice extends OrgAction
                     'label'       => __('Insurance'),
                     'price_total' => $invoice->insurance_amount
                 ],
+                ...($adjustmentsNet != 0 ? [
+                    [
+                        'label'       => __('Adjustments'),
+                        'information' => __('Small differences settled by the shop, not charged to the customer'),
+                        'price_total' => $adjustmentsNet
+                    ],
+                ] : []),
             ],
             [
                 [
