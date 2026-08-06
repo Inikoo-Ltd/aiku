@@ -25,6 +25,7 @@ import {
     faShareSquare,
     faEye,
     faEyeSlash,
+    faShieldCheck,
 } from '@fal'
 import { faSlack } from '@fortawesome/free-brands-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -32,7 +33,8 @@ import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
 
 library.add(
     faComments, faUser, faRobot, faHeadset, faCog, faPaperclip,
-    faTag, faChartLine, faLongArrowLeft, faCopy, faCheck, faShareSquare, faEye, faEyeSlash, faSlack
+    faTag, faChartLine, faLongArrowLeft, faCopy, faCheck, faShareSquare, faEye, faEyeSlash, faSlack,
+    faShieldCheck
 )
 
 type SidePanelTab = 'profile' | 'statistics' | 'timeline' | 'log'
@@ -86,6 +88,10 @@ interface MessageProp {
     file_mime: string | null
     download_route: { url: string } | null
     created_at: string
+    is_ai_generated: boolean | null
+    is_validated: boolean | null
+    is_verifiable_image: boolean
+    ai_verification: { model_verdict: boolean; confidence: number; reasoning: string } | null
 }
 
 const props = defineProps<{
@@ -283,6 +289,15 @@ function senderLabel(msg: MessageProp): string {
     return props.chatSession.contact_name || 'Customer'
 }
 
+function imageValidation(msg: MessageProp): { is_ai_generated: boolean | null; is_validated: boolean | null } {
+    return { is_ai_generated: msg.is_ai_generated, is_validated: msg.is_validated }
+}
+
+function needsImageVerification(msg: MessageProp): boolean {
+    return msg.message_type === 'image' && !!msg.is_verifiable_image && imageValidation(msg).is_validated == null
+}
+
+
 function formatTimestamp(raw: string): string {
     return new Date(raw).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
@@ -450,6 +465,37 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                     imageClass="rounded-lg max-w-full max-h-64 object-contain cursor-pointer"
                                     class="mt-1"
                                 />
+
+                                <div
+                                    v-if="imageValidation(msg).is_validated === true"
+                                    class="mt-1"
+                                    :title="msg.ai_verification?.reasoning ?? ''"
+                                >
+                                    <span
+                                        v-if="imageValidation(msg).is_ai_generated"
+                                        class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700"
+                                    >
+                                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-[10px]" />
+                                        AI generated
+                                    </span>
+                                    <span
+                                        v-else
+                                        class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700"
+                                    >
+                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" />
+                                        Verified
+                                    </span>
+                                </div>
+
+                                <div v-else-if="needsImageVerification(msg)" class="mt-1">
+                                    <span
+                                        class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500"
+                                        :class="isFromAgent(msg) ? 'text-white/70 bg-white/10' : ''"
+                                    >
+                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" />
+                                        Not verified yet
+                                    </span>
+                                </div>
                             </template>
 
                             <template v-else-if="msg.message_type === 'file' && msg.download_route">

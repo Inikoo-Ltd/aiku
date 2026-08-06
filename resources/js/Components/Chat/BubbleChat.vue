@@ -2,7 +2,7 @@
 import { inject, computed, ref, onMounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faCheckDouble, faLanguage } from "@far"
+import { faCheck, faCheckDouble, faLanguage, faRobot, faShieldCheck } from "@far"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import Image from "primevue/image"
@@ -34,6 +34,14 @@ interface Message {
     original?: Translation
     translations?: Translation[]
     edited_at?: string | null
+    is_ai_generated?: boolean | null
+    is_validated?: boolean | null
+    is_verifiable_image?: boolean
+    ai_verification?: {
+        model_verdict: boolean
+        confidence: number
+        reasoning: string
+    } | null
 }
 
 interface Translation {
@@ -258,6 +266,44 @@ const translateMessage = async () => {
     }
 }
 
+// feature verify image
+const isVerifyingImage = ref(false)
+
+const canVerifyImage = computed(() =>
+    props.viewerType === "agent" &&
+    props.message.message_type === "image" &&
+    !!props.message.is_verifiable_image &&
+    activeMessage.value.is_validated == null
+)
+
+const verifyImage = async () => {
+    if (!props.message.id || isVerifyingImage.value) return
+
+    isVerifyingImage.value = true
+
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.post(
+            route("grp.org.chat.agents.messages.verify_image", [organisation, props.message.id])
+        )
+
+        if (data?.data) {
+            localMessage.value = {
+                ...props.message,
+                is_ai_generated: data.data.is_ai_generated,
+                is_validated: data.data.is_validated,
+                ai_verification: data.data.ai_verification ?? null,
+            }
+        }
+    } catch (e) {
+        console.error("Verify image failed", e)
+    } finally {
+        isVerifyingImage.value = false
+    }
+}
+
+const verificationReasoning = computed(() => activeMessage.value.ai_verification?.reasoning ?? "")
+
 onMounted(() => {
     if (canTranslate.value) fetchLanguages()
 })
@@ -316,6 +362,29 @@ watch(selectedLanguage, async (val) => {
 
             <Image v-if="message.message_type === 'image' && message.media_url" :src="message.media_url.webp" preview
                 imageClass="rounded-lg max-w-full cursor-pointer" class="mt-1" />
+
+            <div v-if="viewerType === 'agent' && message.message_type === 'image' && activeMessage.is_validated === true"
+                class="mt-1" :title="verificationReasoning">
+                <span v-if="activeMessage.is_ai_generated"
+                    class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                    <FontAwesomeIcon :icon="faRobot" class="text-[10px]" />
+                    {{ trans("AI generated") }}
+                </span>
+                <span v-else
+                    class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                    <FontAwesomeIcon :icon="faShieldCheck" class="text-[10px]" />
+                    {{ trans("Verified") }}
+                </span>
+            </div>
+
+            <div v-if="canVerifyImage" class="mt-1">
+                <button type="button" :disabled="isVerifyingImage" @click="verifyImage"
+                    class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
+                    <LoadingIcon v-if="isVerifyingImage" />
+                    <FontAwesomeIcon v-else :icon="faShieldCheck" class="text-[10px]" />
+                    {{ isVerifyingImage ? trans("Verifying…") : trans("Verify image") }}
+                </button>
+            </div>
 
             <div v-if="isFile && message.media_url" @click="openFile"
                 class="mt-1 flex items-center gap-3 p-3 rounded-lg border bg-white max-w-xs transition" :class="isOpening
