@@ -11,7 +11,6 @@ namespace App\Actions\HumanResources\ClockingMachine;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\ClockingMachine;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,9 +27,9 @@ class DeleteClockingMachine extends OrgAction
         return $clockingMachine;
     }
 
-    public function asController(Organisation $organisation, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
+    public function asController(ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($clockingMachine->organisation, $request);
 
         return $this->handle($clockingMachine);
     }
