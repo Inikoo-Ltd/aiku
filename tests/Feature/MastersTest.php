@@ -1383,8 +1383,11 @@ test('UI Edit Master Product Composition', function (MasterAsset $masterAsset) {
                 fn (AssertableInertia $form) => $form
                     ->has('blueprint.0.fields.trade_units.priceContext')
                     ->where('blueprint.0.fields.trade_units.type', 'list-selector-trade-unit')
-                    ->has('blueprint.1.fields.master_prices')
-                    ->has('blueprint.1.fields.master_rrps')
+                    ->where('blueprint.1.accent', 'pink')
+                    ->has('blueprint.1.fields.name')
+                    ->has('blueprint.1.fields.unit')
+                    ->has('blueprint.2.fields.master_prices')
+                    ->has('blueprint.2.fields.master_rrps')
                     ->etc()
             );
     });
@@ -2721,4 +2724,26 @@ test('MatchAssetsToMaster links an asset once and skips redundant writes', funct
     expect($queries)->toBeLessThan(5)
         ->and($asset->refresh()->master_asset_id)->toBe($masterAsset->id)
         ->and($product->refresh()->master_product_id)->toBe($masterAsset->id);
+});
+
+test('warehouse packing change recomputes product pick quantity', function () {
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits()->first();
+    $product->tradeUnits()->updateExistingPivot($tradeUnit->id, ['quantity' => 2]);
+
+    $stock = $tradeUnit->stocks()->first();
+    if (!$stock) {
+        $stock = $this->group->stocks()->first();
+        $tradeUnit->stocks()->attach($stock->id, ['quantity' => 1]);
+    }
+    $orgStock = $stock->orgStocks()->where('organisation_id', $product->organisation_id)->first();
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 4]]);
+
+    \App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits::run($product->refresh());
+
+    $row = DB::table('product_has_org_stocks')
+        ->where('product_id', $product->id)->where('org_stock_id', $orgStock->id)->first();
+    expect((float) $row->quantity)->toBe(0.5)
+        ->and((int) $row->dividend)->toBe(4)
+        ->and((int) $row->divisor)->toBe(1);
 });

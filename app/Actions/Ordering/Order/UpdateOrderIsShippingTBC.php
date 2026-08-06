@@ -11,7 +11,6 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Models\Ordering\Order;
-use Illuminate\Support\Arr;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -38,7 +37,7 @@ class UpdateOrderIsShippingTBC extends OrgAction
         if ($order->shipping_engine == OrderShippingEngineEnum::AUTO) {
             $shippingZone = $order->shippingZone;
             if ($shippingZone) {
-                return Arr::get($shippingZone->price, 'type') === 'TBC';
+                return CalculateOrderShipping::make()->isToBeConfirmed($order, $shippingZone);
             }
         }
 

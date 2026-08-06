@@ -13,7 +13,7 @@ library.add(faInfinity, faPlus, faTrash)
 const props = withDefaults(defineProps<{
   modelValue: {
     type: string
-    steps: Array<{ from: number, to: number | string, price: number }>
+    steps: Array<{ from: number, to: number | string, price: number | string }>
   }
   currency : {
     code : string
@@ -143,14 +143,31 @@ function removeStep(index: number) {
         </div>
 
         <!-- Price -->
-        <div class="col-span-4">
+        <div class="col-span-4 flex items-center gap-2">
+          <div
+            v-if="item.price === 'TBC'"
+            class="flex-1 flex items-center h-full px-3 py-2 border border-gray-300 rounded-md text-gray-600 italic"
+          >
+            {{ trans('To be confirmed') }}
+          </div>
           <InputNumber
+            v-else
             :modelValue="item.price"
             @update:modelValue="val => updateStep(index, 'price', val)"
             inputClass="w-full"
-            mode="currency" 
+            class="flex-1"
+            mode="currency"
             :currency="currency.code"
           />
+
+          <div
+            class="text-xs font-medium px-2 py-1 rounded border cursor-pointer select-none"
+            :class="item.price === 'TBC' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-500 hover:text-gray-700'"
+            :title="trans('To be confirmed: the price is decided later, it is not free')"
+            @click="updateStep(index, 'price', item.price === 'TBC' ? 0 : 'TBC')"
+          >
+            TBC
+          </div>
         </div>
 
         <!-- Action -->

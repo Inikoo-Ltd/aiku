@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Describe the Aiku database schema: list tables matching a name, or get columns, types, foreign keys and the observed values of enum-like columns (type, state, status) for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
+#[Description('Describe the Aiku database schema (or the NightOwl telemetry schema with database: nightowl): list tables matching a name, or get columns, types, foreign keys and the observed values of enum-like columns (type, state, status) for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
 #[IsReadOnly]
 class DescribeTablesTool extends Tool
 {
@@ -33,13 +33,16 @@ class DescribeTablesTool extends Tool
     public function handle(Request $request): Response
     {
         $request->validate([
-            'tables' => ['sometimes', 'array', 'max:10'],
-            'search' => ['sometimes', 'string', 'max:64'],
+            'tables'   => ['sometimes', 'array', 'max:10'],
+            'search'   => ['sometimes', 'string', 'max:64'],
+            'database' => ['sometimes', 'string', 'in:aiku,nightowl'],
         ]);
 
         if ($denied = $this->deniedSqlAccess($request)) {
             return $denied;
         }
+
+        $connection = $this->resolveSqlConnection($request);
 
         $tables = $request->get('tables', []);
 
@@ -50,7 +53,7 @@ class DescribeTablesTool extends Tool
                 return Response::error('Provide either tables (array of table names) or search (text to match table names).');
             }
 
-            $matches = DB::connection('aiku_read_only')
+            $matches = DB::connection($connection)
                 ->table('information_schema.tables')
                 ->where('table_schema', 'public')
                 ->where('table_name', 'like', '%'.$search.'%')
@@ -64,7 +67,7 @@ class DescribeTablesTool extends Tool
             ]);
         }
 
-        $columns = DB::connection('aiku_read_only')
+        $columns = DB::connection($connection)
             ->table('information_schema.columns')
             ->whereIn('table_name', $tables)
             ->where('table_schema', 'public')
@@ -72,7 +75,7 @@ class DescribeTablesTool extends Tool
             ->orderBy('ordinal_position')
             ->get(['table_name', 'column_name', 'data_type', 'is_nullable']);
 
-        $foreignKeys = DB::connection('aiku_read_only')->select("
+        $foreignKeys = DB::connection($connection)->select("
             SELECT tc.table_name, kcu.column_name, ccu.table_name AS references_table
             FROM information_schema.table_constraints tc
             JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
@@ -88,7 +91,7 @@ class DescribeTablesTool extends Tool
                 'nullable' => $column->is_nullable === 'YES',
             ];
         }
-        $enumStats = DB::connection('aiku_read_only')->select("
+        $enumStats = DB::connection($connection)->select("
             SELECT tablename, attname, array_to_json(most_common_vals::text::text[]) AS vals
             FROM pg_stats
             WHERE schemaname = 'public' AND tablename = ANY(?)
@@ -113,8 +116,9 @@ class DescribeTablesTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'tables' => $schema->array()->description('Table names to describe, max 10')->items($schema->string()),
-            'search' => $schema->string()->description('Text to match against table names when you do not know the exact name'),
+            'tables'   => $schema->array()->description('Table names to describe, max 10')->items($schema->string()),
+            'search'   => $schema->string()->description('Text to match against table names when you do not know the exact name'),
+            'database' => $schema->string()->enum(['aiku', 'nightowl'])->description('Database to inspect: aiku (default, commerce data) or nightowl (telemetry: requests, exceptions, queries, jobs)'),
         ];
     }
 }

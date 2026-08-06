@@ -13,6 +13,17 @@ use Laravel\Mcp\Response;
 
 trait WithMcpSqlAccess
 {
+    /** @var array<string, string> */
+    protected array $sqlDatabases = [
+        'aiku'     => 'aiku_read_only',
+        'nightowl' => 'nightowl',
+    ];
+
+    protected function resolveSqlConnection(Request $request): string
+    {
+        return $this->sqlDatabases[$request->string('database', 'aiku')->toString()];
+    }
+
     protected function deniedSqlAccess(Request $request): ?Response
     {
         if (blank(config('mcp.sql_read_only_user'))) {

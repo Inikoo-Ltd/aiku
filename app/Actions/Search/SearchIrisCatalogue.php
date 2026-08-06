@@ -20,13 +20,15 @@ class SearchIrisCatalogue extends IrisAction
 {
     public function handle(string $query): array
     {
-        $boosts = UpdateWebsiteSearchBoosts::activeBoostIds($this->website);
+        $boosts     = UpdateWebsiteSearchBoosts::activeBoostIds($this->website);
+        $customerId = $this->signedInCustomerId();
 
         $results = Search::run('catalogue', $query, [
-            'shop_id'       => $this->shop->id,
-            'is_in_website' => true,
-            'boosts'        => $boosts,
-            'language'      => $this->shop->language->code,
+            'shop_id'            => $this->shop->id,
+            'is_in_website'      => true,
+            'boosts'             => $boosts,
+            'language'           => $this->shop->language->code,
+            'orders_customer_id' => $customerId,
         ]);
 
         data_set($results, 'results.products', $this->enrichItems(Arr::get($results, 'results.products', []), Product::class, largeImage: true));

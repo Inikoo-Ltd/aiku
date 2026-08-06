@@ -43,7 +43,7 @@ class GetMasterAssetAnomalies
          */
         $products = $masterProduct->products()
             ->where('products.status', '!=', ProductStatusEnum::DISCONTINUED)
-            ->with(['shop', 'family', 'organisation', 'currency', 'tradeUnits', 'orgStocks'])
+            ->with(['shop', 'family', 'organisation', 'currency', 'tradeUnits', 'orgStocks.tradeUnits'])
             ->get();
 
         foreach ($products as $product) {
@@ -137,14 +137,15 @@ class GetMasterAssetAnomalies
             ]);
         }
 
-        $productStocks = $product->orgStocks->pluck('pivot.quantity', 'stock_id');
-        if ($this->quantitiesDiffer($masterStocks, $productStocks)) {
+        $productStocks  = $product->orgStocks->pluck('pivot.quantity', 'stock_id');
+        $expectedStocks = $this->expectedStockPicks($masterProduct, $masterStocks, $product);
+        if ($this->quantitiesDiffer($expectedStocks, $productStocks)) {
             $codes = $masterProduct->stocks->pluck('code', 'id')
                 ->union($product->orgStocks->pluck('code', 'stock_id'));
 
             $deviations[] = __('Warehouse picking differs from master (picks :product, master says :master)', [
                 'product' => $this->describeQuantities($productStocks, $codes),
-                'master'  => $this->describeQuantities($masterStocks, $codes),
+                'master'  => $this->describeQuantities($expectedStocks, $codes),
             ]);
         }
 
@@ -177,6 +178,27 @@ class GetMasterAssetAnomalies
         }
 
         return $deviations;
+    }
+
+    /**
+     * What SyncProductOrgStocksFromTradeUnits would write for this product: master units
+     * divided by the organisation's own packing (OS-TU pivot), falling back to the group
+     * stock's packing. Comparing against the raw master stock quantity flags every
+     * warehouse whose packing differs from the group default as a false anomaly.
+     */
+    private function expectedStockPicks(MasterAsset $masterProduct, Collection $masterStocks, Product $product): Collection
+    {
+        $expected = collect($masterStocks);
+        foreach ($masterProduct->tradeUnits as $tradeUnit) {
+            foreach ($tradeUnit->stocks as $stock) {
+                $orgStock  = $product->orgStocks->firstWhere('stock_id', $stock->id);
+                $orgPacked = $orgStock?->tradeUnits->firstWhere('id', $tradeUnit->id)?->pivot->quantity
+                    ?? $stock->pivot->quantity;
+                $expected->put($stock->id, $tradeUnit->pivot->quantity / ($orgPacked ?: 1));
+            }
+        }
+
+        return $expected;
     }
 
     private function quantitiesDiffer(Collection $master, Collection $product): bool

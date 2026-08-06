@@ -6,14 +6,16 @@
 
 <script setup lang="ts">
 import PureInput from "@/Components/Pure/PureInput.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
-import { faCopy } from '@fal'
+import { faCopy, faLanguage } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
-library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
-import { ref, watch } from "vue"
+library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy, faLanguage)
+import { ref, watch, computed } from "vue"
+import { pendingCompositionUnits } from "@/Composables/usePendingCompositionUnits"
 import { trans } from "laravel-vue-i18n"
 
 defineOptions({ inheritAttrs: false })
@@ -30,6 +32,12 @@ const props = defineProps<{
         maxLength?: number
         uppercase?: boolean
         additional_instructions?: string
+        /** Show the value read-only with an Edit link, instead of a permanently open input */
+        collapsible?: boolean
+        /** Prefixes the collapsed value with "Nx", for the unit label */
+        unitsPreview?: number
+        /** Warning shown while editing, before the save confirmation is reached */
+        cascadeNote?: string
     }
 }>()
 
@@ -52,6 +60,20 @@ const getNestedValue = (obj: Object, keys: Array) => {
 };
 
 const value = ref(setFormValue(props.form, props.fieldName));
+const isEditing = ref(false)
+
+const originalValue = value.value
+
+const cancelEdit = () => {
+    value.value = originalValue
+    isEditing.value = false
+}
+
+watch(() => props.form.recentlySuccessful, (isSuccessful) => {
+    if (isSuccessful) {
+        isEditing.value = false
+    }
+})
 
 watch(value, (newValue) => {
     if (props.fieldData?.uppercase && typeof newValue === 'string' && newValue !== newValue.toUpperCase()) {
@@ -63,6 +85,24 @@ watch(value, (newValue) => {
     updateFormValue(newValue);
     props.form.errors[props.fieldName] = ''
 });
+
+const isCollapsible = computed(() => !!props.fieldData?.collapsible || !!props.fieldData?.unitsPreview)
+const isCollapsed = computed(() => isCollapsible.value && !isEditing.value)
+const collapsedValue = computed(() => {
+    const text = value.value || props.fieldData?.placeholder
+    return props.fieldData?.unitsPreview ? `${props.fieldData.unitsPreview}x ${text}` : text
+})
+
+/*
+ * The trade units being edited in their own form imply new units before they are
+ * saved; the trade-units field publishes the change through the shared ref.
+ */
+const pendingUnits = computed(() => {
+    if (!props.fieldData?.unitsPreview || !pendingCompositionUnits.value) {
+        return null
+    }
+    return pendingCompositionUnits.value.to
+})
 
 const updateFormValue = (newValue) => {
     let target = props.form;
@@ -76,7 +116,20 @@ const updateFormValue = (newValue) => {
 </script>
 <template>
     <div class="relative">
-        <div class="relative">
+        <div v-if="isCollapsed" class="flex items-center gap-3">
+            <!-- Pink is the sell colour, matching the TU—P edge of the composition triangle -->
+            <span :class="pendingUnits ? 'line-through text-gray-400' : 'text-pink-600 font-medium'">
+                {{ collapsedValue }}
+            </span>
+            <span v-if="pendingUnits" class="font-medium text-amber-600">
+                → {{ pendingUnits }}x {{ value || fieldData?.placeholder }} ({{ trans('after save') }})
+            </span>
+            <button type="button" class="text-indigo-600 hover:underline" @click="isEditing = true">
+                {{ trans('Edit') }}
+            </button>
+        </div>
+
+        <div v-else class="relative">
             <PureInput
                 v-model="value"
                 :inputName="fieldName"
@@ -101,8 +154,22 @@ const updateFormValue = (newValue) => {
                     </div>
                 </template>
             </PureInput>
+
+            <div v-if="isCollapsible" class="flex items-center gap-2 pt-2">
+                <!-- Only worth echoing when the preview adds something the input does not show -->
+                <span v-if="fieldData?.unitsPreview" class="text-gray-500 mr-1">{{ collapsedValue }}</span>
+                <Button :label="trans('Update')" type="save" size="xs"
+                    :disabled="form.processing" :loading="form.processing" @click="emits('submit')" />
+                <Button :label="trans('Cancel')" type="tertiary" size="xs" @click="cancelEdit" />
+            </div>
+
+            <!-- Said before the click, not only in the confirmation dialog -->
+            <div v-if="fieldData?.cascadeNote" class="flex items-start gap-1.5 pt-2 text-xs text-amber-700">
+                <FontAwesomeIcon icon="fal fa-language" class="mt-0.5" fixed-width aria-hidden="true" />
+                <span>{{ fieldData.cascadeNote }}</span>
+            </div>
         </div>
-        
+
         <div v-if="props.fieldData?.additional_instructions" class="text-xs italic text-gray-500 pt-1">
             <span class="text-red-500">*</span> {{ props.fieldData?.additional_instructions }}
         </div>

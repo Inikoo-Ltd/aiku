@@ -7,15 +7,24 @@
  */
 
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Search\GetWebsiteSearchAnalytics;
 use App\Actions\Search\Search;
 use App\Actions\Search\SearchCatalogue;
+use App\Actions\Search\SearchIrisInvoices;
+use App\Actions\Search\SearchIrisOrders;
 use App\Actions\Search\StoreWebsiteSearchLog;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Search\WebsiteSearchSourceEnum;
 use App\Events\Web\WebsiteSearchStatsUpdated;
 use Illuminate\Support\Facades\Event;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Accounting\Invoice;
+use App\Models\CRM\Customer;
+use App\Models\Helpers\Address;
 use App\Models\Helpers\WebsiteSearchLog;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
@@ -257,6 +266,71 @@ test('iris search only returns hits flagged is_in_website', function () {
     $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$product->code.'&v=3');
     $response->assertOk();
     expect($response->json('results.products'))->toBe([]);
+});
+
+test('order search hydrate never returns another customer\'s order', function () {
+    $customer      = createCustomer($this->shop);
+    $otherCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $order = StoreOrder::make()->action($customer, [
+        'reference'        => 'GB550706',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ]);
+    $order->update(['state' => OrderStateEnum::SUBMITTED]);
+
+    $otherOrder = StoreOrder::make()->action($otherCustomer, [
+        'reference'        => 'GB550707',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ]);
+    $otherOrder->update(['state' => OrderStateEnum::SUBMITTED]);
+
+    // a stale or poisoned index handing over the other customer's order id must be dropped
+    $staleIndexDocuments = [
+        ['id' => (string)$order->id],
+        ['id' => (string)$otherOrder->id],
+    ];
+    $results = SearchIrisOrders::make()->hydrate($staleIndexDocuments, 'GB5507', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$order->id])
+        ->and($results[0]['url'])->toBe('/app/orders/'.$order->slug);
+
+    // the direct reference match is scoped to the customer too, even when it matches both references
+    $results = SearchIrisOrders::make()->hydrate([], 'GB5507', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$order->id]);
+
+    // orders still in basket state never surface
+    $order->update(['state' => OrderStateEnum::CREATING]);
+    expect(SearchIrisOrders::make()->hydrate([], 'GB5507', $customer->id, $this->shop->id))->toBe([]);
+});
+
+test('invoice search hydrate never returns another customer\'s invoice', function () {
+    $customer      = createCustomer($this->shop);
+    $otherCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $invoiceData = Invoice::factory()->definition();
+    data_set($invoiceData, 'reference', 'INV-550801');
+    $invoice = StoreInvoice::make()->action($customer, $invoiceData);
+
+    $otherInvoiceData = Invoice::factory()->definition();
+    data_set($otherInvoiceData, 'reference', 'INV-550802');
+    $otherInvoice = StoreInvoice::make()->action($otherCustomer, $otherInvoiceData);
+
+    $staleIndexDocuments = [
+        ['id' => (string)$invoice->id],
+        ['id' => (string)$otherInvoice->id],
+    ];
+    $results = SearchIrisInvoices::make()->hydrate($staleIndexDocuments, 'INV-5508', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$invoice->id])
+        ->and($results[0]['url'])->toBe('/app/invoices/'.$invoice->slug);
+
+    $results = SearchIrisInvoices::make()->hydrate([], 'INV-5508', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$invoice->id]);
+
+    $invoice->update(['in_process' => true]);
+    expect(SearchIrisInvoices::make()->hydrate([], 'INV-5508', $customer->id, $this->shop->id))->toBe([]);
 });
 
 test('a query only the vector arm answers is still logged as an assortment gap', function () {
