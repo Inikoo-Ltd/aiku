@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution;
 use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
@@ -96,6 +97,19 @@ it('attributes the order automatically when it is submitted', function () {
 
     expect($order->state)->toBe(OrderStateEnum::SUBMITTED);
     expect($order->trafficSources()->count())->toBe(1);
+});
+
+it('leaves the submit time attribution intact when an order without its own touch history is recalculated', function () {
+    createTrafficSource($this->shop, 'meta-ads', 'Meta Ads');
+
+    $this->customer->update(['traffic_sources' => '1700000000f']);
+
+    ProcessOrderTrafficSource::run($this->order->fresh());
+    expect($this->order->trafficSources()->count())->toBe(1);
+
+    RecalculateTrafficSourceAttribution::run($this->order->fresh());
+
+    expect($this->order->trafficSources()->count())->toBe(1);
 });
 
 it('refreshes the traffic source stats but keeps the attribution audit trail when an order is cancelled', function () {

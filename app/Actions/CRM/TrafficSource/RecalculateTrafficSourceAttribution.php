@@ -32,6 +32,11 @@ class RecalculateTrafficSourceAttribution
      * customer's history here: that fallback belongs to ProcessOrderTrafficSource at submit time, and
      * applying it on every recalculation would rewrite a historical order's attribution snapshot with
      * whatever the customer's journey happens to look like today.
+     *
+     * Because of that, an Order with no touch history of its own is left completely untouched rather
+     * than detached. No order in production carries one (checkout does not persist a per-order cookie),
+     * so their attribution is entirely the submit-time snapshot taken from the customer, and detaching
+     * would destroy the only attribution they have without being able to rebuild anything.
      */
     public function handle(Model $model, ?string $attributionModel = null): void
     {
@@ -43,6 +48,10 @@ class RecalculateTrafficSourceAttribution
             ?? ProcessTrafficSourceShare::ATTRIBUTION_LINEAR;
 
         $rawTouchesData = $model->traffic_sources;
+
+        if ($model instanceof Order && blank($rawTouchesData)) {
+            return;
+        }
 
         $model->trafficSources()->detach();
 
