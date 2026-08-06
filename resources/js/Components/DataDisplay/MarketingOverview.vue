@@ -32,7 +32,33 @@ const props = defineProps<{
             roas: number | null
         }[]
         spend_by_day: { date: string, amount: number }[]
+        email: {
+            totals: {
+                sent: number
+                opened: number
+                clicked: number
+                unsubscribed: number
+                estimated_cost: number
+                attributed_revenue: number
+                attributed_customers: number
+            }
+            mailshots: {
+                id: number
+                subject: string
+                type: string
+                sent_at: string | null
+                sent: number
+                opened: number
+                clicked: number
+                unsubscribed: number
+                estimated_cost: number
+                attributed_revenue: number
+                attributed_customers: number
+                prospects_registered: number
+            }[]
+        }
         traffic_sources_route: routeType
+        mailshots_route: routeType
     }
 }>()
 
@@ -67,6 +93,14 @@ const sparkline = computed(() => {
 })
 
 const roasIsGood = computed(() => (props.overview.totals.roas ?? 0) >= 1)
+
+const pct = (part: number, whole: number) => whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : '—'
+
+const typeLabel: Record<string, string> = {
+    newsletter: trans('Newsletter'),
+    marketing: trans('Mailshot'),
+    invite: trans('Prospects'),
+}
 </script>
 
 <template>
@@ -185,6 +219,94 @@ const roasIsGood = computed(() => (props.overview.totals.roas ?? 0) >= 1)
                 <div class="mt-1 text-xs text-gray-400">
                     {{ trans('Attribution fills this in as visitors register and ad spend is imported') }}
                 </div>
+            </div>
+        </div>
+
+        <!-- Email marketing: does what we send earn sales, or just unsubscribes? -->
+        <div v-if="overview.email" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-sm font-medium text-gray-800">{{ trans('Email marketing') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">{{ trans('recent mailshots · cost estimated from SES') }}</span>
+                </div>
+                <Link :href="route(overview.mailshots_route.name, overview.mailshots_route.parameters)"
+                    class="text-xs text-gray-500 hover:text-gray-800">{{ trans('All mailshots') }} →</Link>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-x-8 gap-y-2">
+                <div>
+                    <span class="text-xs text-gray-500">{{ trans('Sent') }}</span>
+                    <div class="text-sm text-gray-800 tabular-nums">{{ locale.number(overview.email.totals.sent) }}</div>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500">{{ trans('Opened') }}</span>
+                    <div class="text-sm text-gray-800 tabular-nums">{{ pct(overview.email.totals.opened, overview.email.totals.sent) }}</div>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500">{{ trans('Clicked') }}</span>
+                    <div class="text-sm text-gray-800 tabular-nums">{{ pct(overview.email.totals.clicked, overview.email.totals.sent) }}</div>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500">{{ trans('Unsubscribed') }}</span>
+                    <div class="text-sm text-gray-800 tabular-nums">{{ locale.number(overview.email.totals.unsubscribed) }}</div>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500">{{ trans('Est. cost') }}</span>
+                    <div class="text-sm text-gray-800 tabular-nums">{{ money(overview.email.totals.estimated_cost) }}</div>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500">{{ trans('Attributed revenue') }}</span>
+                    <div class="text-sm tabular-nums"
+                        :class="overview.email.totals.attributed_revenue >= overview.email.totals.estimated_cost ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                        {{ money(overview.email.totals.attributed_revenue) }}
+                    </div>
+                </div>
+            </div>
+
+            <table v-if="overview.email.mailshots.length" class="mt-4 w-full text-xs">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-100">
+                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Mailshot') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Sent') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Opened') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Clicked') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Unsub') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Est. cost') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Result') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="mailshot in overview.email.mailshots" :key="mailshot.id"
+                        class="border-b border-gray-50 text-gray-600">
+                        <td class="py-2 pr-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="truncate max-w-[16rem] text-gray-700">{{ mailshot.subject }}</span>
+                                <span class="shrink-0 rounded px-1.5 py-px bg-gray-100 text-gray-500">{{ typeLabel[mailshot.type] ?? mailshot.type }}</span>
+                            </div>
+                            <div v-if="mailshot.sent_at" class="text-gray-400">{{ mailshot.sent_at }}</div>
+                        </td>
+                        <td class="text-right px-2 tabular-nums">{{ locale.number(mailshot.sent) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ pct(mailshot.opened, mailshot.sent) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ pct(mailshot.clicked, mailshot.sent) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ mailshot.unsubscribed > 0 ? locale.number(mailshot.unsubscribed) : '—' }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ money(mailshot.estimated_cost) }}</td>
+                        <td class="text-right pl-2 tabular-nums whitespace-nowrap">
+                            <template v-if="mailshot.type === 'invite'">
+                                {{ mailshot.prospects_registered }} {{ trans('registered') }}
+                            </template>
+                            <template v-else-if="mailshot.attributed_revenue > 0">
+                                {{ money(mailshot.attributed_revenue) }}
+                            </template>
+                            <template v-else>
+                                <span class="text-gray-300">—</span>
+                            </template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div v-else class="mt-4 py-6 text-center text-xs text-gray-400">
+                {{ trans('No mailshots sent yet') }}
             </div>
         </div>
     </div>

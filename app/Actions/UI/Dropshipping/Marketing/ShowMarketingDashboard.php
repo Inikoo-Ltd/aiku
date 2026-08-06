@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Dropshipping\Marketing;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\CRM\TrafficSource\GetShopEmailMarketingPerformance;
 use App\Actions\CRM\TrafficSource\GetShopMarketingOverview;
 use App\Actions\OrgAction;
 use App\Enums\UI\Marketing\MarketingDashboardTabsEnum;
@@ -77,8 +78,13 @@ class ShowMarketingDashboard extends OrgAction
                 'marketing_overview' => array_merge(
                     GetShopMarketingOverview::run($this->shop),
                     [
+                        'email'                 => GetShopEmailMarketingPerformance::run($this->shop),
                         'traffic_sources_route' => [
                             'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        'mailshots_route'       => [
+                            'name'       => 'grp.org.shops.show.marketing.mailshots.index',
                             'parameters' => $request->route()->originalParameters()
                         ],
                     ]
