@@ -31,8 +31,9 @@ return [
         'region'            => env('AWS_DEFAULT_REGION', 'eu-west-1'),
         'configuration_set' => env('AWS_CONFIGURATION_SET'),
 
-        /* SES bills per message sent, in USD. Used to estimate what a mailshot cost. */
-        'cost_per_thousand_usd' => env('SES_COST_PER_THOUSAND_USD', 0.10),
+        /* Average billed cost per thousand messages in USD, SNS event notifications included.
+           Used to estimate what a mailshot cost. */
+        'cost_per_thousand_usd' => env('SES_COST_PER_THOUSAND_USD', 0.1023),
     ],
 
     'tiktok'    => [
