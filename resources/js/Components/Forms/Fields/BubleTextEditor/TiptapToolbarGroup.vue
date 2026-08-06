@@ -1,7 +1,5 @@
 <template>
-    <div
-      class="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-0 px-1 sm:px-0"
-    >
+    <div class="flex flex-nowrap items-center gap-0.5">
       <slot />
     </div>
   </template>
