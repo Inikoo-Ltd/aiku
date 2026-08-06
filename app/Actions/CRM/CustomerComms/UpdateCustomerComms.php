@@ -35,6 +35,7 @@ class UpdateCustomerComms extends OrgAction
                 'is_subscribed_to_reorder_reminder',
                 'is_subscribed_to_basket_low_stock',
                 'is_subscribed_to_basket_reminder',
+                'is_subscribed_to_whatsapp_newsletter',
             ])
             && $customerComms->customer->shop->is_aiku
             && $updateAurora) {

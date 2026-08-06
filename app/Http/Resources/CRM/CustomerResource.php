@@ -89,6 +89,13 @@ class CustomerResource extends JsonResource
                 'is_subscribed'   => $comms->is_subscribed_to_basket_reminder,
                 'unsubscribed_at' => $comms->basket_reminder_unsubscribed_at
             ];
+
+            $subscriptions['whatsapp_newsletter'] = [
+                'label'           => __('WhatsApp Newsletter'),
+                'field'           => 'is_subscribed_to_whatsapp_newsletter',
+                'is_subscribed'   => $comms->is_subscribed_to_whatsapp_newsletter,
+                'unsubscribed_at' => $comms->whatsapp_newsletter_unsubscribed_at
+            ];
         }
 
         if ($shop?->type == ShopTypeEnum::DROPSHIPPING) {
@@ -97,6 +104,13 @@ class CustomerResource extends JsonResource
                 'field'           => 'is_subscribed_to_price_change_notification',
                 'is_subscribed'   => $comms->is_subscribed_to_price_change_notification,
                 'unsubscribed_at' => $comms->price_change_notification_unsubscribed_at
+            ];
+
+            $subscriptions['whatsapp_newsletter'] = [
+                'label'           => __('WhatsApp Newsletter'),
+                'field'           => 'is_subscribed_to_whatsapp_newsletter',
+                'is_subscribed'   => $comms->is_subscribed_to_whatsapp_newsletter,
+                'unsubscribed_at' => $comms->whatsapp_newsletter_unsubscribed_at
             ];
         }
 
