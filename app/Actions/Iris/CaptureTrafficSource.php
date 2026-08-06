@@ -34,12 +34,21 @@ class CaptureTrafficSource
     public function getCookies(): array
     {
         $cookies = [];
+        $referer = request()->headers->get('referer', '');
 
         // Check both referer and current full URL
         $trafficSourceData = GetTrafficSourceFromUrl::run(request()->fullUrl());
 
+        /* When this runs from the first-hit AJAX endpoint the ad click ids are not on the request URL,
+           they are on the storefront page that issued the fetch, which is exactly what the browser
+           puts in the Referer header. Without this the paid capture is silently a no-op behind Varnish,
+           where the AJAX endpoint is the only capture path left. */
         if ($trafficSourceData === null) {
-            $trafficSourceData = GetTrafficSourceFromRefererHeader::run(request()->headers->get('referer', ''));
+            $trafficSourceData = GetTrafficSourceFromUrl::run($referer);
+        }
+
+        if ($trafficSourceData === null) {
+            $trafficSourceData = GetTrafficSourceFromRefererHeader::run($referer);
         }
 
         if ($trafficSourceData) {
