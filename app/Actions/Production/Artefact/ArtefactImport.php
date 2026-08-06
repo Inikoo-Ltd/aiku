@@ -48,7 +48,7 @@ class ArtefactImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
         ]);
 
         try {
-            StoreArtefact::run(
+            StoreArtefact::make()->action(
                 $this->scope,
                 $modelData
             );
