@@ -107,7 +107,7 @@ class StoreVariantFromMaster extends OrgAction
                             'to_webpage_id' => $leader->webpage->id,
                         ]);
                     } else {
-                        $redirect = Redirect::where('from_path', strtolower($product->code))->first();
+                        $redirect = Redirect::where('from_path', strtolower($product->code))->where('shop_id', $leader->shop_id)->first();
 
                         if ($redirect) {
                             UpdateRedirect::make()->action($redirect, [
