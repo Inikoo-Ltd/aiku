@@ -16,7 +16,6 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\HumanResources\Workplace\WorkplaceTypeEnum;
 use App\Http\Resources\HumanResources\WorkplaceResource;
 use App\Models\HumanResources\Workplace;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
@@ -79,7 +78,7 @@ class UpdateWorkplace extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, Workplace $workplace, ActionRequest $request): Workplace
+    public function asController(Workplace $workplace, ActionRequest $request): Workplace
     {
         $this->workplace = $workplace;
         $this->initialisation($workplace->organisation, $request);

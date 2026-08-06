@@ -25,7 +25,6 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Inventory\Warehouse;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -112,7 +111,7 @@ class StorePalletDelivery extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): PalletDelivery
+    public function asController(FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): PalletDelivery
     {
         $this->fulfilmentCustomer = $fulfilmentCustomer;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
