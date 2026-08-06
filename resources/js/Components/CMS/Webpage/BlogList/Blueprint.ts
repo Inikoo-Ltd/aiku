@@ -12,6 +12,22 @@ const titleField = {
 	information: "Heading shown above the list. Leave empty to hide it.",
 }
 
+const categoriesField = {
+	label: "Categories",
+	key: ["categories"],
+	type: "select",
+	props_data: {
+		mode: "multiple",
+		placeholder: "All blog categories",
+		options: [
+			{ label: "David's Travel Blog", value: "davids_travel_blog" },
+			{ label: "Tips", value: "tips" },
+			{ label: "Blog", value: "blog" },
+		],
+	},
+	information: "Only posts in the selected categories are listed. Leave empty to show them all.",
+}
+
 const presentationFields = [
 	{
 		label: "Show publication date",
@@ -106,6 +122,7 @@ export default {
 	blueprint: [
 		idField,
 		titleField,
+		categoriesField,
 		{
 			label: "Number of posts",
 			key: ["number_of_posts"],

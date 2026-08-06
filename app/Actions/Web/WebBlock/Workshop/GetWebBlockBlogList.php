@@ -22,7 +22,11 @@ class GetWebBlockBlogList
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.blogs',
-            $this->getBlogList($webpage, $this->getNumberOfPosts($webBlock))
+            $this->getBlogList(
+                $webpage,
+                $this->getNumberOfPosts($webBlock),
+                $this->getCategories($webBlock)
+            )
         );
         data_set($webBlock, 'web_block.layout.data.fieldValue.blog_index_url', $this->getBlogIndexUrl($webpage));
 

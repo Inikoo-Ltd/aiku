@@ -9,6 +9,7 @@ namespace App\Actions\Web\WebBlock\Traits;
 
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
@@ -33,15 +34,33 @@ trait WithBlogListQuery
     }
 
     /**
+     * @return array<int, string>
+     */
+    public function getCategories(array $webBlock): array
+    {
+        $allowed    = WebpageSubTypeEnum::blogCategoryValues();
+        $categories = Arr::get($webBlock, 'web_block.layout.data.fieldValue.categories');
+
+        if (!is_array($categories)) {
+            $categories = array_filter([$categories]);
+        }
+
+        $categories = array_values(array_intersect($categories, $allowed));
+
+        return $categories ?: $allowed;
+    }
+
+    /**
      * @return array<int, array{id: int, title: string, image_src: ?string, image_alt: ?string, third_party_image_preview: ?string, url: ?string, published_at: ?string}>
      */
-    public function getBlogList(Webpage $webpage, int $numberOfPosts): array
+    public function getBlogList(Webpage $webpage, int $numberOfPosts, array $categories): array
     {
         $blogs = DB::table('webpages')
             ->select('id', 'title', 'published_layout', 'canonical_url', 'live_at', 'last_published_at')
             ->where('website_id', $webpage->website_id)
             ->where('type', WebpageTypeEnum::BLOG)
             ->where('state', WebpageStateEnum::LIVE)
+            ->whereIn('sub_type', $categories)
             ->where('id', '!=', $webpage->id)
             ->whereNull('deleted_at')
             ->latest('live_at')

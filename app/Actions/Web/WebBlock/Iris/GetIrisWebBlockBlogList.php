@@ -19,7 +19,11 @@ class GetIrisWebBlockBlogList
 
     public function handle(Webpage $webpage, array $webBlock): ?array
     {
-        $blogs = $this->getBlogList($webpage, $this->getNumberOfPosts($webBlock));
+        $blogs = $this->getBlogList(
+            $webpage,
+            $this->getNumberOfPosts($webBlock),
+            $this->getCategories($webBlock)
+        );
 
         if (empty($blogs)) {
             return null;
