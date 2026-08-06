@@ -87,3 +87,27 @@ test('multiple statements are rejected', function () {
 
     $response->assertHasErrors(['Only a single statement is allowed.']);
 });
+
+test('database parameter selects the nightowl connection', function () {
+    $this->user->update(['can_use_mcp_sql' => true]);
+
+    config(['database.connections.nightowl' => config('database.connections.'.config('database.default'))]);
+
+    $response = AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
+        'sql'      => 'select 1 as one',
+        'database' => 'nightowl',
+    ]);
+
+    $response->assertOk();
+});
+
+test('unknown database is rejected', function () {
+    $this->user->update(['can_use_mcp_sql' => true]);
+
+    $response = AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
+        'sql'      => 'select 1',
+        'database' => 'prod',
+    ]);
+
+    $response->assertHasErrors();
+});

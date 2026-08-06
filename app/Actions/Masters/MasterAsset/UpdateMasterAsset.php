@@ -183,7 +183,10 @@ class UpdateMasterAsset extends OrgAction
                 if (!$hasIndependentUnits && $unitsFromTradeUnits['units'] !== null) {
                     data_set($modelData, 'units', $unitsFromTradeUnits['units']);
                 }
-                data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
+                /** A label typed in this same save wins over the one the composition suggests. */
+                if (!Arr::has($modelData, 'unit')) {
+                    data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
+                }
 
                 foreach ($masterAsset->products()->whereNot('products.not_follow_master_trade_units', true)->get() as $product) {
                     SyncProductTradeUnits::run($product, $tradeUnits);
@@ -217,12 +220,31 @@ class UpdateMasterAsset extends OrgAction
         if ($masterAsset->wasChanged('unit')) {
             $english = Language::where('code', 'en')->first();
 
+            /**
+             * The unit is a label a customer reads, so it rides the same rails as the name:
+             * copied verbatim to shops that speak the language it was written in, machine
+             * translated for the rest. A shop that has opted out of following the master
+             * keeps whatever it set, in any language. How many trade units the master is
+             * built from says nothing about that, so it does not gate the cascade.
+             */
             foreach ($masterAsset->products as $product) {
-                if ($product->is_single_trade_unit && $product->shop->language_id == $english->id) {
+                $shop = $product->shop;
+
+                if ($shop->language_id == $english->id) {
                     UpdateProduct::run($product, [
                         'unit' => $masterAsset->unit,
                     ]);
+
+                    continue;
                 }
+
+                if (!data_get($shop->settings, 'catalog.product_follow_master') || !$masterAsset->unit) {
+                    continue;
+                }
+
+                UpdateProduct::run($product, [
+                    'unit' => Translate::run($masterAsset->unit, $english, $shop->language, 'gpt-5-nano'),
+                ]);
             }
         }
 

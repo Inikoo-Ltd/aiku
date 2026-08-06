@@ -234,9 +234,46 @@ const orgPackedInSummary = (item: any): { label: string; diverges: boolean } | n
         return { label: trans('(SKO packed in :packs)', { packs: distinct[0] + 's' }), diverges: false }
     }
     return {
-        label: '(' + orgs.map(org => `${org.org_code} ${Number(org.packed_in)}s`).join(' · ') + ')',
+        label: '(' + groupOrgsByValue(orgs, org => Number(org.packed_in) + 's') + ')',
         diverges: true,
     }
+}
+
+/** "AW 2s · ES, SK 1s" — orgs sharing a value collapse into one entry. */
+const groupOrgsByValue = (orgs: OrgPackedIn[], valueOf: (org: OrgPackedIn) => string): string => {
+    const groups = new Map<string, string[]>()
+    for (const org of orgs) {
+        const value = valueOf(org)
+        groups.set(value, [...(groups.get(value) || []), org.org_code])
+    }
+    return [...groups].map(([value, codes]) => `${codes.join(', ')} ${value}`).join(' · ')
+}
+
+/** When warehouses pack differently there is no single pick number: show one per org. */
+const orgPicksSummary = (item: any): string | null => {
+    const orgs: OrgPackedIn[] = item.packed_in_by_org || []
+    const distinct = [...new Set(orgs.map(org => Number(org.packed_in)))]
+    if (distinct.length < 2) {
+        return null
+    }
+    const quantity = Number(item[props.key_quantity]) || 1
+    return groupOrgsByValue(orgs, org => String(Number((quantity / (Number(org.packed_in) || 1)).toFixed(2))))
+}
+
+/** Orgs whose packing doesn't divide the quantity — the real partial-pack anomalies. */
+const partialPackOrgs = (item: any): string | null => {
+    const quantity = Number(item[props.key_quantity]) || 1
+    const orgs: OrgPackedIn[] = item.packed_in_by_org || []
+    if (!orgs.length) {
+        return Number(item.packed_in) > 1 && quantity % Number(item.packed_in) !== 0
+            ? String(item.packed_in)
+            : null
+    }
+    const offenders = orgs.filter(org => Number(org.packed_in) > 1 && quantity % Number(org.packed_in) !== 0)
+    if (!offenders.length) {
+        return null
+    }
+    return groupOrgsByValue(offenders, org => Number(org.packed_in) + 's')
 }
 
 const openPackedInDialog = (item: any) => {
@@ -259,6 +296,12 @@ const savePackedIn = async () => {
             original.packed_in = Number(edit.packed_in)
         }
         notify({ title: trans('Success'), text: trans('Warehouse packing updated'), type: 'success' })
+
+        const distinct = [...new Set(item.packed_in_by_org.map((org: OrgPackedIn) => Number(org.packed_in)))]
+        if (distinct.length === 1) {
+            item.packed_in = distinct[0]
+            updatePickFractional(item)
+        }
         packedInDialogItem.value = null
     } catch (error: any) {
         notify({
@@ -280,10 +323,21 @@ const listData = computed(() => {
 
 console.log(route().params)
 
+/** item.packed_in can lag behind the per-org reality; trust packed_in_by_org when it agrees. */
+const effectivePackedIn = (item: any): number => {
+    const orgs: OrgPackedIn[] = item.packed_in_by_org || []
+    const distinct = [...new Set(orgs.map(org => Number(org.packed_in)))]
+    if (distinct.length === 1) {
+        return distinct[0] || 1
+    }
+    return Number(item.packed_in) || 1
+}
+
 const updatePickFractional = async (item: any) => {
+    const packedIn = effectivePackedIn(item)
     await axios.get(route('grp.json.product.get-pick-fractional', {
-        numerator: (Number(item.quantity) / Number(item.packed_in)),
-        denominator: item.packed_in,
+        numerator: (Number(item.quantity) / packedIn),
+        denominator: packedIn,
     })).then((result) => {
         const index = committedProducts.value.findIndex(
             (p: any) => p.id === item.id
@@ -349,12 +403,12 @@ defineExpose({
                         </slot>
 
                         <!-- Warning: partial pack, the classic sign one side of the composition is wrong -->
-                        <div v-if="item.packed_in > 1 && (Number(item[props.key_quantity]) || 1) % Number(item.packed_in) !== 0"
-                            v-tooltip="trans('This quantity is not a whole number of warehouse packs of :packed_in. Either this quantity or the SKU packing is wrong, check both before saving.', { packed_in: item.packed_in })"
+                        <div v-if="partialPackOrgs(item)"
+                            v-tooltip="trans('This quantity is not a whole number of warehouse packs of :packed_in. Either this quantity or the SKU packing is wrong, check both before saving.', { packed_in: partialPackOrgs(item) })"
                             class="text-xs text-amber-600 whitespace-nowrap"
                         >
                             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500 mr-1" fixed-width aria-hidden="true" />
-                            {{ trans('Partial pack') }}: {{ item[props.key_quantity] || 1 }} / {{ item.packed_in }}
+                            {{ trans('Partial pack') }}: {{ item[props.key_quantity] || 1 }} / {{ partialPackOrgs(item) }}
                         </div>
 
                         <!-- Quantity + Delete -->
@@ -371,7 +425,8 @@ defineExpose({
                                 <div v-tooltip="trans('The warehouse stores this as packs of :packed_in (SKO). Selling :quantity means the picker takes :quantity of a :packed_in-pack.', { packed_in: Number(item.packed_in) || 1, quantity: item[props.key_quantity] || 1 })"
                                     class="text-sm px-3 text-teal-600 whitespace-nowrap w-full flex items-baseline gap-1">
                                     <span>{{ trans('Picks') }}</span>
-                                    <span class="font-bold">
+                                    <span v-if="orgPicksSummary(item)" class="font-bold">{{ orgPicksSummary(item) }}</span>
+                                    <span v-else class="font-bold">
                                         <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
                                     </span>
                                     <span>{{ trans('SKO') }}</span>
@@ -379,10 +434,10 @@ defineExpose({
                                         @click.stop.prevent="openPackedInDialog(item)"
                                         v-tooltip="trans('Click to edit how each warehouse packs this SKU')"
                                         class="cursor-pointer underline decoration-dotted underline-offset-2"
-                                        :class="orgPackedInSummary(item)!.diverges ? 'text-amber-600' : 'text-teal-600/60'">
+                                        :class="orgPackedInSummary(item)!.diverges ? 'text-amber-600' : 'text-sky-600/70'">
                                         {{ orgPackedInSummary(item)!.label }}
                                     </span>
-                                    <span v-else class="text-teal-600/60">{{ trans('(SKO packed in :packs)', { packs: (Number(item.packed_in) || 1) + 's' }) }}</span>
+                                    <span v-else class="text-sky-600/70">{{ trans('(SKO packed in :packs)', { packs: (Number(item.packed_in) || 1) + 's' }) }}</span>
                                 </div>
 
                                 </template>

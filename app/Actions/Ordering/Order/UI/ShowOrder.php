@@ -289,6 +289,17 @@ class ShowOrder extends OrgAction
             $deliveryNoteResource = DeliveryNotesResource::make($firstDeliveryNote);
         }
 
+        $redispatchRoute = null;
+        if ($firstDeliveryNote && $firstDeliveryNote->state == DeliveryNoteStateEnum::FINALISED) {
+            $redispatchRoute = [
+                'method'     => 'patch',
+                'name'       => 'grp.models.delivery_note.state.dispatched',
+                'parameters' => [
+                    'deliveryNote' => $firstDeliveryNote->id
+                ]
+            ];
+        }
+
         $platform = $order->platform;
         if (!$platform && $this->shop->type === ShopTypeEnum::DROPSHIPPING) {
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
@@ -376,6 +387,7 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
+                    'redispatch'                 => $redispatchRoute,
                     'products_list'              => [
                         'name'       => 'grp.json.order.products',
                         'parameters' => [

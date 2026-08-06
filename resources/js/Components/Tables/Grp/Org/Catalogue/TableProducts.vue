@@ -244,6 +244,14 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).shop,
                     product.slug
                 ])
+        case "grp.org.shops.show.catalogue.products.no_image_product.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.no_image_product.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ])
         case "grp.org.shops.show.catalogue.products.orphan_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.orphan_products.show",

@@ -685,3 +685,34 @@ test('the organisation sweep compares everything by default and only trusts the 
     expect($mentions($full))->toBeTrue()
         ->and($mentions($flagged))->toBeFalse();
 });
+
+test('a warehouse packing that divides the picks is not an anomaly', function () {
+    $stocks = createStocks($this->group);
+    $stock  = $stocks[0];
+    [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+
+    DB::table('master_asset_has_stocks')->updateOrInsert(
+        ['master_asset_id' => $this->masterAsset->id, 'stock_id' => $stock->id],
+        ['quantity' => 8, 'created_at' => now(), 'updated_at' => now()]
+    );
+    $this->masterAsset->tradeUnits()->updateExistingPivot($this->tradeUnitId, ['quantity' => 8]);
+    DB::table('model_has_trade_units')->insert([
+        'model_type'    => 'Stock',
+        'model_id'      => $stock->id,
+        'trade_unit_id' => $this->tradeUnitId,
+        'quantity'      => 1,
+        'created_at'    => now(),
+        'updated_at'    => now(),
+    ]);
+    $orgStock->tradeUnits()->sync([$this->tradeUnitId => ['quantity' => 4]]);
+
+    $product = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 8, 10);
+    DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $orgStock->id],
+        ['quantity' => 2]
+    );
+
+    $anomalies = App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies::run($this->masterAsset->refresh());
+
+    expect($anomalies)->not->toHaveKey($product->id);
+});

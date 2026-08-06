@@ -702,6 +702,25 @@ class ShowProduct extends OrgAction
                     ' ('.__('In process').')'
                 )
             ),
+            'grp.org.shops.show.catalogue.products.no_image_product.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Missing Image').')'
+                )
+            ),
             'grp.org.shops.show.catalogue.products.orphan_products.show' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),

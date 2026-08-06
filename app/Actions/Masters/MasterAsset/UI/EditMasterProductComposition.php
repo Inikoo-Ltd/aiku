@@ -153,9 +153,17 @@ class EditMasterProductComposition extends OrgAction
 
         $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn, $packedInByOrg) {
             /** @var MorphPivot $pivot */
-            $pivot            = $tradeUnit->getRelationValue('pivot');
-            $quantity         = $pivot->getAttribute('quantity');
-            $packedInQuantity = Arr::get($packedIn, $tradeUnit->id, 1);
+            $pivot    = $tradeUnit->getRelationValue('pivot');
+            $quantity = $pivot->getAttribute('quantity');
+
+            /*
+             * The warehouses' own packing wins over the group stock's when they all agree:
+             * a product of 4 units packed in 4s picks 1 SKO, whatever the group stock says.
+             */
+            $orgPackings      = ($packedInByOrg->get($tradeUnit->id) ?? collect())->pluck('quantity')->map(fn ($packing) => (float) $packing)->unique();
+            $packedInQuantity = $orgPackings->count() === 1 && $orgPackings->first() > 0
+                ? $orgPackings->first()
+                : Arr::get($packedIn, $tradeUnit->id, 1);
             $fraction         = $quantity / $packedInQuantity;
 
             return array_merge(
@@ -261,6 +269,38 @@ class EditMasterProductComposition extends OrgAction
                     ],
                     'units' => $this->getUnitsField($masterProduct, $this->getUnitsChangeConfirmation($masterProduct)),
                 ]),
+            ],
+            [
+                /* What the customer is sold: the TU—P edge of the triangle, pink on both */
+                'label'  => __('How we sell'),
+                'icon'   => 'fa-light fa-tag',
+                'accent'  => 'pink',
+                'compact' => true,
+                'fields'  => [
+                    'name' => [
+                        'type'             => 'input',
+                        'label'            => __('Name'),
+                        'value'            => $masterProduct->name,
+                        'collapsible'      => true,
+                        'compact'          => true,
+                        'noSaveButton'     => true,
+                        'information'      => __('The name customers read. Saving it renames and re-translates every shop product that follows this master.'),
+                        'cascadeNote'      => $this->getCascadeAndTranslateNote($masterProduct),
+                        'saveConfirmation' => $this->getCascadeAndTranslateConfirmation($masterProduct, __('name')),
+                    ],
+                    'unit' => [
+                        'type'             => 'input',
+                        'label'            => __('Units'),
+                        'value'            => $masterProduct->unit,
+                        'placeholder'      => __('piece'),
+                        'compact'          => true,
+                        'unitsPreview'     => (float) $masterProduct->units,
+                        'noSaveButton'     => true,
+                        'information'      => __('What one unit is called, shown to customers. Saving it relabels and re-translates every shop product that follows this master.'),
+                        'cascadeNote'      => $this->getCascadeAndTranslateNote($masterProduct),
+                        'saveConfirmation' => $this->getCascadeAndTranslateConfirmation($masterProduct, __('unit label')),
+                    ],
+                ],
             ],
             [
                 'label'  => __('Pricing'),

@@ -39,8 +39,10 @@ class GetCatalogueShowcase
 
             $stats['additionalStatBox'] = [
                 $this->buildStrayFamiliesStat($orgSlug, $shopSlug),
+                $this->buildFamiliesWithMissingImageStat($shop, $orgSlug, $shopSlug),
                 $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug),
+                $this->buildProductsWithMissingImageStat($shop, $orgSlug, $shopSlug),
                 $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
                 $this->buildMissingDescriptionProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildProductsNotOnlineStat($shop, $orgSlug, $shopSlug),
@@ -381,6 +383,36 @@ class GetCatalogueShowcase
             'icon'            => 'fal fa-folder',
             'backgroundColor' => '#ff000011',
             'value'           => app()->make(Shop::class)->stats->number_families_no_department ?? 0,
+        ];
+    }
+
+    private function buildFamiliesWithMissingImageStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Families with Missing Image'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.families.no_image.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-folder',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->stats->number_families_no_images ?? 0,
+        ];
+    }
+
+    private function buildProductsWithMissingImageStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products with Missing Image'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-cube',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->stats->number_products_no_images ?? 0,
         ];
     }
 

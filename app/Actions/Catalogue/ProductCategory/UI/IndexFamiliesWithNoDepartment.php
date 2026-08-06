@@ -137,10 +137,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $families, ActionRequest $request): Response
     {
-        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
-
-        unset($navigation[ProductCategoryTabsEnum::SALES->value]);
-
+        $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR, ProductCategoryTabsEnum::SALES, ProductCategoryTabsEnum::NEED_REVIEW]);
 
         $title     = __('Stray families');
         $model     = '';
