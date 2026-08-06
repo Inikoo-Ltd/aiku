@@ -281,7 +281,8 @@ const saveProductReview = async () => {
                 class="text-red-500 cursor-pointer"
             />
 
-            <FontAwesomeLayers 
+            <FontAwesomeLayers
+                v-if="not_follow_master_media"
                 v-tooltip="ctrans('Product has independent media settings')"
                 class="flex items-center justify-center w-[2rem]"
             >
