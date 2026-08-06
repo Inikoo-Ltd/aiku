@@ -973,7 +973,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
         <!--suppress HtmlUnknownAttribute -->
         <fieldset v-else ref="tableFieldset" :key="`table-${name}`" :dusk="`table-${name}`" class="min-w-0"
             :class="{ 'opacity-75': isVisiting || isParentLoading }">
-            <div class="py-2 sm:py-0 my-0">
+            <div class="py-2 sm:py-0 my-0 min-w-0">
                 <!-- Wrapper -->
 
                 <!-- Filter: Checkbox element -->
@@ -1236,9 +1236,10 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
 
                     <slot name="table">
                         <div ref="virtualContainerRef"
+                            class="overflow-x-auto w-0 min-w-full"
                             @scroll="virtualScroll ? onVirtualScroll() : undefined"
                             :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
-                        <table class="divide-y divide-gray-200 bg-white w-full">
+                        <table class="divide-y divide-gray-200 bg-white min-w-full">
                             <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
                                 <tr
                                     class="border-t border-gray-200 divide-x divide-gray-200"
@@ -1329,12 +1330,12 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                 <td v-for="(column, index) in queryBuilderProps.columns"
                                                     v-show="show(column.key)"
                                                     :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                    class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                    class="text-sm py-2 text-gray-600 h-full" :class="[
                                                         column.type === 'avatar' || column.type === 'icon'
-                                                            ? 'text-center min-w-fit px-3'
+                                                            ? 'text-center min-w-fit px-3 whitespace-nowrap'
                                                             : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                                ? 'text-right pl-3 pr-9 tabular-nums'
-                                                                : 'px-6',
+                                                                ? 'text-right pl-3 pr-9 tabular-nums whitespace-nowrap'
+                                                                : 'px-6 whitespace-normal',
                                                         props.rowAlignTop ? 'align-top' : '',
                                                         queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                         { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
@@ -1405,12 +1406,12 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-sm py-2 text-gray-600 h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'
+                                                        ? 'text-center min-w-fit px-3 whitespace-nowrap'
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'
-                                                            : 'px-6',
+                                                            ? 'text-right pl-3 pr-9 tabular-nums whitespace-nowrap'
+                                                            : 'px-6 whitespace-normal',
                                                     props.rowAlignTop ? 'align-top' : '',
                                                     queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
@@ -1476,12 +1477,12 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-sm py-2 text-gray-600 h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'  // if type = icon
+                                                        ? 'text-center min-w-fit px-3 whitespace-nowrap'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
-                                                            : 'px-6',
+                                                            ? 'text-right pl-3 pr-9 tabular-nums whitespace-nowrap'  // if the value is number
+                                                            : 'px-6 whitespace-normal',
                                                     props.rowAlignTop ? 'align-top' : '',
                                                     queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
@@ -1524,12 +1525,12 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`footerRows-rows-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-500 whitespace-normal h-full" :class="[
+                                                class="text-sm py-2 text-gray-500 h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'  // if type = icon
+                                                        ? 'text-center min-w-fit px-3 whitespace-nowrap'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
-                                                            : 'px-6',
+                                                            ? 'text-right pl-3 pr-9 tabular-nums whitespace-nowrap'  // if the value is number
+                                                            : 'px-6 whitespace-normal',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">
