@@ -85,6 +85,7 @@ class IndexSupplierProducts extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(SupplierProduct::class);
+        $queryBuilder->leftJoin('currencies', 'supplier_products.currency_id', 'currencies.id');
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -103,6 +104,8 @@ class IndexSupplierProducts extends OrgAction
                 'supplier_products.code',
                 'supplier_products.slug',
                 'supplier_products.name',
+                'supplier_products.cost',
+                'currencies.code as currency_code',
             ])
             ->leftJoin('supplier_product_stats', 'supplier_product_stats.supplier_product_id', 'supplier_products.id')
             ->when($parent, function ($query) use ($parent) {
@@ -121,7 +124,7 @@ class IndexSupplierProducts extends OrgAction
                     }
                 }
             })
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -152,6 +155,7 @@ class IndexSupplierProducts extends OrgAction
                 ->withLabelRecord([__('Supplier Product'), __('Supplier Products')])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency')
                 ->defaultSort('code');
         };
     }
