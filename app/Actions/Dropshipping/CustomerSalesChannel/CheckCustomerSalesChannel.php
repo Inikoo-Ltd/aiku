@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 
 class CheckCustomerSalesChannel extends OrgAction
@@ -53,5 +54,32 @@ class CheckCustomerSalesChannel extends OrgAction
         return $this->handle($customerSalesChannel);
     }
 
+    public string $commandSignature = 'customer-sales-channel:check';
 
+    public function asCommand(Command $command): int
+    {
+        $success = 0;
+        $failed  = 0;
+
+        CustomerSalesChannel::where('platform_status', false)
+            ->chunkById(100, function ($inactiveCustomerSalesChannels) use (&$success, &$failed) {
+                foreach ($inactiveCustomerSalesChannels as $customerSalesChannel) {
+                    $result = $this->handle($customerSalesChannel);
+
+                    $result->refresh();
+                    if ($result->platform_status) {
+                        $success++;
+                    } else {
+                        $failed++;
+                    }
+                }
+            });
+
+        $command->table(['Customer Sales Channel', 'Status'], [
+            ['Inactive', $failed],
+            ['Active', $success]
+        ]);
+
+        return 0;
+    }
 }
