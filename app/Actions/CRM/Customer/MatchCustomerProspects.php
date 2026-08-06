@@ -71,14 +71,20 @@ class MatchCustomerProspects extends OrgAction
                merging them into the customer's history here, the mailshot that produced this
                registration would get no credit for it. */
             if (filled($prospect->traffic_sources)) {
-                $customer->update([
-                    'traffic_sources' => MergeTrafficSourceTouchHistories::run(
-                        $prospect->traffic_sources,
-                        $customer->traffic_sources
-                    ),
-                ]);
+                /* Runs synchronously inside the registration request; attribution bookkeeping must
+                   never be the reason a registration fails. */
+                try {
+                    $customer->update([
+                        'traffic_sources' => MergeTrafficSourceTouchHistories::run(
+                            $prospect->traffic_sources,
+                            $customer->traffic_sources
+                        ),
+                    ]);
 
-                RecalculateTrafficSourceAttribution::run($customer->fresh());
+                    RecalculateTrafficSourceAttribution::run($customer->fresh());
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             }
         }
 

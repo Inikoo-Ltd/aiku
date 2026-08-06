@@ -158,8 +158,8 @@ const typeLabel: Record<string, string> = {
             <div class="bg-white p-5">
                 <div class="text-xs text-gray-500">{{ trans('Attributed customers') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">
-                    {{ locale.number(overview.totals.registrations) }}
-                    <span class="text-sm text-gray-400">· {{ locale.number(overview.totals.purchases) }} {{ trans('orders') }}</span>
+                    {{ fmtShare(overview.totals.registrations) }}
+                    <span class="text-sm text-gray-400">· {{ fmtShare(overview.totals.purchases) }} {{ trans('orders') }}</span>
                 </div>
             </div>
         </div>

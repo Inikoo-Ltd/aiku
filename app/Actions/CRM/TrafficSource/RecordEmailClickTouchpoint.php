@@ -24,6 +24,10 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
 
     public int $jobUniqueFor = 600;
 
+    /* Mailshot click bursts belong with the rest of the SES event work, not on the default queue
+       where they would compete with order processing. */
+    public string $jobQueue = 'ses-analytics';
+
     /**
      * Newsletter campaign references are namespaced because `traffic_source_campaigns.reference` is
      * unique across the whole table, not per traffic source: a bare mailshot id would collide with a

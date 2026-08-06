@@ -182,7 +182,14 @@ class StoreCustomer extends OrgAction
         }
 
         if ($trafficSourcesData) {
-            $this->processTrafficSources($customer, $trafficSourcesData);
+            /* Attribution is bookkeeping; it must never fail a registration. The customer row is
+               already committed, so an exception here would 500 the response and the retry would
+               hit "email already taken". */
+            try {
+                $this->processTrafficSources($customer, $trafficSourcesData);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
 
         if ($customer->shop->is_aiku) {

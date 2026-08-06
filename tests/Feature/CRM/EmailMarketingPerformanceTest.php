@@ -199,6 +199,24 @@ it('serves honest share-weighted numbers through the sql views', function () {
     expect((float) $mailshotRow->attributed_customers)->toBe(0.5);
 });
 
+it('keeps repeat clickers visible to every mailshot they clicked', function () {
+    $first  = makeMailshot($this->shop);
+    $second = makeMailshot($this->shop);
+    $first->stats()->update(['number_dispatched_emails' => 10]);
+    $second->stats()->update(['number_dispatched_emails' => 10]);
+
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 10:00:00'), $first);
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-02 10:00:00'), $second);
+
+    DB::table('customer_stats')->where('customer_id', $this->customer->id)->update(['sales_all' => 1000]);
+
+    $performance = collect(GetShopEmailMarketingPerformance::run($this->shop)['mailshots'])->keyBy('id');
+
+    expect($performance[$first->id]['attributed_revenue'])->toBe(500.0);
+    expect($performance[$second->id]['attributed_revenue'])->toBe(500.0);
+    expect($performance[$first->id]['attributed_customers'])->toBe(0.5);
+});
+
 it('counts prospects who clicked a mailshot and later registered', function () {
     $mailshot = makeMailshot($this->shop);
     $mailshot->stats()->update(['number_dispatched_emails' => 50]);

@@ -237,6 +237,9 @@ class Customer extends Model implements HasMedia, Auditable
     use Notifiable;
     use HasSearchableText;
     use HasSearch;
+    /* A recorded marketing touch is telemetry, not an edit someone made; auditing it would write an
+       audit row for every tracked email click. */
+    protected array $auditExclude = ['traffic_sources'];
 
     protected $casts = [
         'data'                        => 'array',

@@ -20,13 +20,18 @@ class AttachTrafficSourcesToModel
     use AsAction;
 
     /**
-     * Resolves the parsed marketing touches into shop traffic sources and campaigns and syncs the
-     * calculated attribution share onto the given model's `trafficSources` morph-to-many relationship.
+     * Resolves the parsed marketing touches into shop traffic sources and campaigns and writes the
+     * calculated attribution shares onto the model's `trafficSources` pivot, one row per
+     * (source, campaign) pair, so a customer who engaged with two campaigns of the same source keeps
+     * both credited separately and per-campaign reporting sees them. Shares across all rows of a
+     * model still sum to 1.0.
      *
-     * `model_has_traffic_sources` holds at most one row per (model, traffic source), so the per-campaign
-     * shares returned by the attribution model are summed back up per traffic source before being written.
-     * Without this the second campaign of a source would overwrite the first and the model would end up
-     * carrying only a fraction of the credit it was actually awarded.
+     * A campaign reference seen in a touch with no matching campaign row creates one, so the campaign
+     * ids that ad platforms put in landing URLs become reportable entities the moment the first
+     * visitor arrives with one, and cost imports have something to match against.
+     *
+     * Every caller runs against a model with no pivot rows for these touches (fresh registration,
+     * order submit, or a recalculation that detached first), so rows are inserted, never merged.
      *
      * @param array<int, array{timestamp: int|null, abbr: string, type: \App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum, campaign_ref: string|null}> $touches
      */
@@ -54,7 +59,7 @@ class AttachTrafficSourcesToModel
             return;
         }
 
-        $pivots = [];
+        $touchedSourceIds = [];
 
         foreach ($shares as $share) {
             /** @var TrafficSource|null $trafficSource */
@@ -64,38 +69,40 @@ class AttachTrafficSourcesToModel
                 continue;
             }
 
-            $campaignId = null;
-            if ($share['campaign_ref']) {
-                $campaignId = TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)
-                    ->where('reference', $share['campaign_ref'])
-                    ->value('id');
-            }
+            $model->trafficSources()->attach($trafficSource->id, [
+                'share'                      => round($share['share'], 2),
+                'traffic_source_campaign_id' => $share['campaign_ref']
+                    ? $this->resolveCampaignId($trafficSource, $share['campaign_ref'])
+                    : null,
+                'attribution_model'          => $attributionModel,
+            ]);
 
-            if (!isset($pivots[$trafficSource->id])) {
-                $pivots[$trafficSource->id] = [
-                    'share'                      => 0.0,
-                    'traffic_source_campaign_id' => $campaignId,
-                    'attribution_model'          => $attributionModel,
-                ];
-            } elseif ($pivots[$trafficSource->id]['traffic_source_campaign_id'] !== $campaignId) {
-                $pivots[$trafficSource->id]['traffic_source_campaign_id'] = null;
-            }
-
-            $pivots[$trafficSource->id]['share'] += $share['share'];
+            $touchedSourceIds[$trafficSource->id] = true;
         }
 
-        if (empty($pivots)) {
-            return;
-        }
-
-        foreach ($pivots as $trafficSourceId => $pivot) {
-            $pivots[$trafficSourceId]['share'] = round($pivot['share'], 2);
-        }
-
-        $model->trafficSources()->syncWithoutDetaching($pivots);
-
-        foreach ($trafficSources->whereIn('id', array_keys($pivots)) as $trafficSource) {
+        foreach ($trafficSources->whereIn('id', array_keys($touchedSourceIds)) as $trafficSource) {
             TrafficSourceHydrateCustomers::dispatch($trafficSource);
+        }
+    }
+
+    private function resolveCampaignId(TrafficSource $trafficSource, string $reference): ?int
+    {
+        try {
+            return TrafficSourceCampaign::firstOrCreate(
+                [
+                    'traffic_source_id' => $trafficSource->id,
+                    'reference'         => $reference,
+                ],
+                [
+                    'name' => $reference,
+                    'type' => $trafficSource->type,
+                ]
+            )->id;
+        } catch (\Throwable) {
+            /* `reference` is globally unique: the same ad-platform campaign id appearing under a
+               different shop's source cannot create a second row. The touch keeps its source-level
+               share; only the campaign breakdown is unavailable for it. */
+            return null;
         }
     }
 }

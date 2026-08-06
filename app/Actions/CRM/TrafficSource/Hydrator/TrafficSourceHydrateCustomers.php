@@ -19,6 +19,10 @@ class TrafficSourceHydrateCustomers implements ShouldBeUnique
 {
     use AsAction;
 
+    /* Fired from every registration, order cancel and email-click recalculation; the numbers it
+       refreshes are dashboard statistics, so it must never compete with order processing. */
+    public string $jobQueue = 'low-priority';
+
     public function getJobUniqueId(TrafficSource $trafficSource): string
     {
         return $trafficSource->id;

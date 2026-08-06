@@ -32,14 +32,20 @@ class StoreEmailTrackingEvent extends OrgAction
         if ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::CLICKED) {
             DispatchedEmailHydrateClicks::run($dispatchedEmail);
 
-            $clickedAt = $emailTrackingEvent->created_at ?? now();
+            /* Only mailshot clicks are marketing touches. Transactional sends (order confirmations,
+               dispatch notices, invoices) reach the same CLICKED state, and recording those would
+               hand the newsletter channel a share of every engaged customer's revenue for clicks
+               that are post-purchase service, not acquisition. */
+            if ($dispatchedEmail->mailshot) {
+                $clickedAt = $emailTrackingEvent->created_at ?? now();
 
-            foreach ($dispatchedEmail->customers as $customer) {
-                RecordEmailClickTouchpoint::dispatch($customer, $clickedAt, $dispatchedEmail->mailshot);
-            }
+                foreach ($dispatchedEmail->customers as $customer) {
+                    RecordEmailClickTouchpoint::dispatch($customer, $clickedAt, $dispatchedEmail->mailshot);
+                }
 
-            foreach ($dispatchedEmail->prospects as $prospect) {
-                RecordEmailClickTouchpoint::dispatch($prospect, $clickedAt, $dispatchedEmail->mailshot);
+                foreach ($dispatchedEmail->prospects as $prospect) {
+                    RecordEmailClickTouchpoint::dispatch($prospect, $clickedAt, $dispatchedEmail->mailshot);
+                }
             }
         } elseif ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::OPENED) {
             DispatchedEmailHydrateReads::run($dispatchedEmail);

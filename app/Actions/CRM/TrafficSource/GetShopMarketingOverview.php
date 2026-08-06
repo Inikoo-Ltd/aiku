@@ -26,7 +26,7 @@ class GetShopMarketingOverview
      * All figures are in the shop's currency: total_customer_revenue is summed from
      * customer_stats.sales_all (shop currency) and total_cost is converted to shop currency on import.
      *
-     * @return array{currency_code: string, totals: array{spend: float, revenue: float, registrations: int, purchases: int, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: int, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     * @return array{currency_code: string, totals: array{spend: float, revenue: float, registrations: float, purchases: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
      */
     public function handle(Shop $shop): array
     {
@@ -45,7 +45,10 @@ class GetShopMarketingOverview
 
         $spend         = round($rows->sum('spend'), 2);
         $revenue       = round($rows->sum('revenue'), 2);
-        $registrations = (int) $rows->sum('registrations');
+
+        /* Share-weighted, so kept fractional: truncating per-channel figures to integers would break
+           the guarantee that channels sum to the shop's real totals. */
+        $registrations = round($rows->sum('registrations'), 2);
 
         $channels = $rows
             ->filter(fn ($row) => $row->spend > 0 || $row->revenue > 0 || $row->registrations > 0)
@@ -56,7 +59,7 @@ class GetShopMarketingOverview
                 'type'          => $row->type,
                 'spend'         => round((float) $row->spend, 2),
                 'revenue'       => round((float) $row->revenue, 2),
-                'registrations' => (int) $row->registrations,
+                'registrations' => round((float) $row->registrations, 2),
                 'roas'          => $row->spend > 0 ? round($row->revenue / $row->spend, 2) : null,
             ])
             ->all();
@@ -79,7 +82,7 @@ class GetShopMarketingOverview
                 'spend'         => $spend,
                 'revenue'       => $revenue,
                 'registrations' => $registrations,
-                'purchases'     => (int) $rows->sum('purchases'),
+                'purchases'     => round($rows->sum('purchases'), 2),
                 'roas'          => $spend > 0 ? round($revenue / $spend, 2) : null,
                 'cac'           => ($spend > 0 && $registrations > 0) ? round($spend / $registrations, 2) : null,
             ],
