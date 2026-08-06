@@ -60,10 +60,20 @@ class CheckCustomerSalesChannel extends OrgAction
     {
         $success = 0;
         $failed  = 0;
+        $lostAccount  = 0;
 
         CustomerSalesChannel::where('platform_status', false)
-            ->chunkById(100, function ($inactiveCustomerSalesChannels) use (&$success, &$failed) {
+            ->whereNull('closed_at')
+            ->whereNotNull('platform_user_id')
+            ->limit(10)
+            ->chunkById(100, function ($inactiveCustomerSalesChannels) use (&$success, &$failed, &$lostAccount) {
                 foreach ($inactiveCustomerSalesChannels as $customerSalesChannel) {
+
+                    if(!$customerSalesChannel->user) {
+                        $lostAccount++;
+                        continue;
+                    }
+
                     $result = $this->handle($customerSalesChannel);
 
                     $result->refresh();
@@ -75,9 +85,10 @@ class CheckCustomerSalesChannel extends OrgAction
                 }
             });
 
-        $command->table(['Customer Sales Channel', 'Status'], [
+        $command->table(['Status', 'Count'], [
             ['Inactive', $failed],
-            ['Active', $success]
+            ['Active', $success],
+            ['Lost Account', $lostAccount]
         ]);
 
         return 0;
