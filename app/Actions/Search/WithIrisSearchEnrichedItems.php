@@ -95,6 +95,7 @@ trait WithIrisSearchEnrichedItems
         [, , , , , $discountedPricePerUnit]   = $this->getPriceMetrics($product->rrp, (1 - $bestPercentageOff) * $price, $product->units);
 
         return [
+            'family_id'                 => $product->family_id,
             'rrp'                       => $product->rrp,
             'rrp_per_unit'              => $rrpPerUnit,
             'price_per_unit'            => $pricePerUnit,

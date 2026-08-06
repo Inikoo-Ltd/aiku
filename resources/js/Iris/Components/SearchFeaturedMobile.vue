@@ -7,32 +7,43 @@ import { useLocaleStore } from '@/Stores/locale'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Image as ImgTS } from '@/types/Image'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import MemberPriceLabel from '@/Iris/Components/Offer/MemberPriceLabel.vue'
+import { getBestOffer } from '@/Composables/useOffers'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faSpinnerThird } from '@fas'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import LoadingOverlay2 from '@/Components/Utils/LoadingOverlay2.vue'
+
+library.add(faSpinnerThird)
 
 // Shown while the search field is still empty: the items the shop merchandises, framed as a
 // centred card so nobody mistakes them for the results of a query they have not typed yet
 
 const model = defineModel<boolean>('open')
 
+interface FeaturedProduct {
+    id: number
+    code: string
+    name: string
+    image: ImgTS
+    family_id?: number | null
+    price?: number | string | null
+    price_per_unit?: number | null
+    rrp?: number | string | null
+    rrp_per_unit?: number | null
+    discounted_price?: number | null
+    discounted_price_per_unit?: number | null
+    discounted_percentage?: string | null
+    product_offers_data?: any
+    stock?: number | null
+    units?: number | string | null
+    unit?: string | null
+    url?: string
+}
+
 const props = defineProps<{
     results: {
-        products: {
-            id: number
-            code: string
-            name: string
-            image: ImgTS
-            price?: number | string | null
-            price_per_unit?: number | null
-            rrp?: number | string | null
-            rrp_per_unit?: number | null
-            discounted_price?: number | null
-            discounted_price_per_unit?: number | null
-            discounted_percentage?: string | null
-            product_offers_data?: any
-            stock?: number | null
-            units?: number | string | null
-            unit?: string | null
-            url?: string
-        }[]
+        products: FeaturedProduct[]
         product_categories: {
             id: number
             code: string
@@ -62,6 +73,23 @@ const chips = computed(() => [
     ...(props.results?.collections ?? []).map((item) => ({ ...item, key: `collection-${item.id}` })),
 ])
 
+const isGoldRewardMember = computed(() => Boolean(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr))
+
+const getOffer = (product: FeaturedProduct): any => getBestOffer(product.product_offers_data) ?? undefined
+
+const isIntervalOffer = (product: FeaturedProduct): boolean => getOffer(product)?.type === 'Category Quantity Ordered Order Interval'
+
+// The member price is already earned once the family has been ordered past the offer trigger
+const hasMemberPrice = (product: FeaturedProduct): boolean => {
+    if (isGoldRewardMember.value) return true
+
+    const trigger = getOffer(product)?.category_qty_trigger
+    if (trigger == null || product.family_id == null) return false
+
+    return Number(trigger) <= Number(layout?.family_quantity_ordered?.[product.family_id] ?? 0)
+}
+
+
 const getProductName = (product: { name: string; units?: number | string | null }): string => {
     const units = Number(product.units) || 1
     return units === 1 ? product.name : `[${units}x] ${product.name}`
@@ -78,13 +106,13 @@ const formatRrp = (rrpPerUnit?: number | null, unit?: string | null): string | n
     return unit ? `${rrp}/${unit}` : rrp
 }
 
-// Only worth showing on outers: for a single unit it repeats the price above
-const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_price_per_unit?: number | null; unit?: string | null; units?: number | string | null }): string | null => {
-    if ((Number(product.units) || 1) === 1) return null
-    const price = formatPrice(product.discounted_price_per_unit ?? product.price_per_unit)
-    if (!price) return null
-    return product.unit ? `${price}/${product.unit}` : price
+const getUnitPrice = (price: number | string | null | undefined, unit?: string | null): string | null => {
+    const formatted = formatPrice(price)
+    if (!formatted) return null
+    return unit ? `${formatted}/${unit}` : formatted
 }
+
+const isOuter = (product: FeaturedProduct): boolean => (Number(product.units) || 1) !== 1
 </script>
 
 <template>
@@ -112,42 +140,72 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
                         v-for="product in products"
                         :key="product.id"
                         :href="product.url"
-                        class="flex items-center gap-3 min-w-0 py-2.5 first:pt-0 last:pb-0"
+                        class="relative flex items-start gap-3 min-w-0 py-2.5 first:pt-0 last:pb-0"
                         @success="() => model = false"
                     >
-                        <div class="w-12 h-12 shrink-0 rounded-xl bg-white overflow-hidden flex items-center justify-center">
-                            <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover" />
-                            <span v-else class="text-[10px] text-gray-300 font-bold uppercase">{{ product.code?.slice(0, 3) }}</span>
-                        </div>
+                        <template #default="{ isLoading: isVisiting }">
+                            <LoadingOverlay2 v-if="isVisiting" class="z-10 rounded"/>
 
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-bold text-slate-700 leading-snug line-clamp-2">{{ product.code }}</p>
-                            <p class="text-sm text-slate-700 leading-snug line-clamp-2 opacity-70">{{ getProductName(product) }}</p>
-
-                            <p v-if="formatRrp(product.rrp_per_unit, product.unit)" class="text-xxs text-gray-500 mt-0.5">
-                                {{ ctrans('RRP') }}: {{ formatRrp(product.rrp_per_unit, product.unit) }}
-                            </p>
-
-                            <p v-if="formatPrice(product.price)" class="text-sm font-bold mt-0.5 text-[var(--theme-color-0)]">
-                                <template v-if="product.discounted_price">
-                                    <span class="mr-1.5 text-xs font-normal text-gray-400 line-through">{{ formatPrice(product.price) }}</span>
-                                    <span class="text-[var(--theme-color-0)]">{{ formatPrice(product.discounted_price) }}</span>
-                                </template>
-                                <template v-else>{{ formatPrice(product.price) }}</template>
-                                <span v-if="getPricePerUnit(product)" class="ml-1 text-xs font-normal opacity-70">({{ getPricePerUnit(product) }})</span>
-                            </p>
-
-                            <!-- Offers the customer can already claim on this product -->
-                            <div v-if="product.product_offers_data?.number_offers" class="mt-1 flex flex-wrap items-center gap-1">
-                                <span v-if="product.discounted_percentage" class="rounded-full bg-[var(--theme-color-0)] px-2 py-0.5 text-xxs font-semibold text-white">
-                                    {{ product.discounted_percentage }} {{ ctrans('OFF') }}
-                                </span>
-                                <DiscountByType :offers_data="product.product_offers_data" template="products_triggers_label" />
+                            <div class="w-12 h-12 shrink-0 rounded bg-white overflow-hidden flex items-center justify-center shadow">
+                                <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover" />
+                                <span v-else class="text-[10px] text-gray-300 font-bold uppercase">{{ product.code?.slice(0, 3) }}</span>
                             </div>
-                        </div>
+
+                            <div class="min-w-0 flex-1">
+                                <!-- Section: code and label GR -->
+                                <div class="flex justify-between items-center">
+                                    <p class="text-sm font-bold text-slate-700 leading-snug line-clamp-2">
+                                        {{ product.code }} <span v-if="formatRrp(product.rrp_per_unit, product.unit)" class="text-xxs font-semibold text-[#E87928]">
+                                            {{ ctrans('RRP') }}: {{ formatRrp(product.rrp_per_unit, product.unit) }}
+                                        </span>
+                                    </p>
+                                </div>
+
+                                <!-- Section: product name -->
+                                <p class="text-sm text-slate-700 leading-snug line-clamp-2 opacity-70 text-justify">{{ getProductName(product) }}</p>
+
+                                <!-- Section: pricing information -->
+                                <div v-if="formatPrice(product.price)" class="flex justify-between mt-1 border-t border-[color-mix(in_srgb,var(--theme-color-0)_15%,transparent)] border-dashed pt-1.5 text-xxs tabular-nums leading-none">
+                                    <div class="flex flex-col">
+                                        <span class="min-w-0 truncate text-right font-semibold text-slate-700">
+                                            <template v-if="isOuter(product)">
+                                                {{ formatPrice(product.price) }}
+                                                <template v-if="getUnitPrice(product.price_per_unit, product.unit)">
+                                                    ({{ getUnitPrice(product.price_per_unit, product.unit) }})
+                                                </template>
+                                            </template>
+                                            <template v-else>{{ getUnitPrice(product.price, product.unit) }}</template>
+                                        </span>
+                                    </div>
+
+                                    <div class="flex items-end gap-1 flex-col">
+                                        <!-- Gold Reward: the member price this product already qualifies for -->
+                                        <div v-if="product.discounted_price" class="flex items-center justify-between gap-2">
+                                            <!-- Price: discount -->
+                                            <span class="min-w-0 truncate text-right font-semibold text-[#E87928]">
+                                                <template v-if="isOuter(product)">
+                                                    {{ formatPrice(product.discounted_price) }}
+                                                    <template v-if="getUnitPrice(product.discounted_price_per_unit, product.unit)">
+                                                        ({{ getUnitPrice(product.discounted_price_per_unit, product.unit) }})
+                                                    </template>
+                                                </template>
+                                                <template v-else>{{ getUnitPrice(product.discounted_price, product.unit) }}</template>
+                                            </span>
+                                        </div>
+                                
+                                        <MemberPriceLabel
+                                            v-if="product.discounted_price && isIntervalOffer(product)"
+                                            :offer="getOffer(product)"
+                                            :active="hasMemberPrice(product)"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </LinkIris>
                 </div>
 
+                <!-- Section: list of product categories -->
                 <div v-if="chips.length" class="mt-4 flex flex-wrap justify-center gap-2">
                     <LinkIris
                         v-for="chip in chips"
@@ -156,7 +214,10 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
                         class="max-w-full truncate rounded-full border border-[var(--theme-color-0)] text-[var(--theme-color-0)] text-xs px-3 py-1 active:bg-[color-mix(in_srgb,var(--theme-color-0)_15%,transparent)]"
                         @success="() => model = false"
                     >
-                        {{ chip.name }}
+                        <template #default="{ isLoading: isVisiting }">
+                            <FontAwesomeIcon v-if="isVisiting" :icon="faSpinnerThird" spin class="mr-1" fixed-width aria-hidden="true" />
+                            {{ chip.name }}
+                        </template>
                     </LinkIris>
                 </div>
             </template>
@@ -167,3 +228,21 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
         </div>
     </div>
 </template>
+
+<style scoped>
+.offer :deep(.offer-max-discount) {
+    @apply flex min-w-0 max-w-[6rem] items-center rounded-sm border border-red-900 bg-[#A80000] px-1 py-0.5 text-[10px] text-gray-100;
+}
+
+.offer :deep(.offer-label) {
+    @apply flex min-w-0 max-w-full items-center gap-1;
+}
+
+.offer :deep(.label-text) {
+    @apply min-w-0 truncate leading-none;
+}
+
+.discount :deep(.offer-trigger-label) {
+    @apply rounded-md border border-b-4 border-[#E87928] bg-gray-50 px-2 py-1 text-xxs leading-3 text-[#E87928];
+}
+</style>
