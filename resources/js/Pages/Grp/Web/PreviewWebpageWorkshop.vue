@@ -40,7 +40,9 @@ const activeBlock = ref<number | null>(null)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const key = ref(ulid())
 const blockRefs = new Map<number, HTMLElement>()
-const defaultCurrency = {
+const isActiveBlockNearTop = ref(false)
+
+const DEFAULT_CURRENCY = {
   code: "GBP",
   symbol: "£",
   name: "British Pound"
@@ -48,10 +50,9 @@ const defaultCurrency = {
 
 // Update iris layout state
 const updateIrisLayout = () => {
-  const isLoggedIn = filterBlock.value === "logged-in"
   layout.iris = {
-    currency: defaultCurrency,
-    is_logged_in: isLoggedIn,
+    currency: DEFAULT_CURRENCY,
+    is_logged_in: filterBlock.value === "logged-in",
     luigisbox_tracker_id: props.luigisbox_tracker_id
   }
 }
@@ -72,72 +73,71 @@ const checkScreenType = () => {
 }
 
 const updateData = (val: any) => {
-  sendMessageToParent("autosave", JSON.parse(JSON.stringify(val)))
+  sendMessageToParent("autosave", val)
 }
 
-
 const debouncedSetWebpage = debounce((value: any) => {
-  console.log("Setting webpage data from parent")
   data.value = value
 }, 1000)
 
+const onResize = debounce(checkScreenType, 150)
 
 const handleMessage = (event: MessageEvent) => {
-  const { key, value } = event.data
-  if (key === "isPreviewLoggedIn") filterBlock.value = value
-  if (key === "isPreviewMode") isPreviewMode.value = value
-  if (key === "activeBlock") {
-    activeBlock.value = value
-    const el = document.querySelector(`[data-block-id="${value}"]`)
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
-  }
-  if (key === "reload") reloadPage()
-  if (key === "setWebpage") debouncedSetWebpage(value)
-  if (key === "layoutSetup") {
-     layout = {...layout, ...value}
+  const { key: messageKey, value } = event.data
+
+  switch (messageKey) {
+    case "isPreviewLoggedIn":
+      filterBlock.value = value
+      return
+    case "isPreviewMode":
+      isPreviewMode.value = value
+      return
+    case "activeBlock": {
+      const el = blockRefs.get(Number(value))
+      // Measured before the toolbar renders so it never flips position mid-frame
+      isActiveBlockNearTop.value = el ? el.getBoundingClientRect().top < 80 : false
+      activeBlock.value = value
+      el?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
+    }
+    case "reload":
+      reloadPage()
+      return
+    case "setWebpage":
+      debouncedSetWebpage(value)
+      return
+    case "layoutSetup":
+      layout = { ...layout, ...value }
   }
 }
 
 const reloadPage = (withkey = false) => {
-  console.log("Reloading webpage preview")
   router.reload({ only: ["webpage"] })
   if (withkey) key.value = ulid()
 }
 
-
-
 const setBlockRef = (el: HTMLElement | null, idx: number) => {
-  if (!el) return
-  blockRefs.set(idx, el)
+  if (el) blockRefs.set(idx, el)
+  else blockRefs.delete(idx)
 }
-
-const isNeedBottom = (idx:number) => {
-  const el = blockRefs.get(idx)
-  if (!el) return false
-
-  const rect = el.getBoundingClientRect()
-
-  // jika terlalu dekat top viewport
-  if (rect.top < 80) return true
-
-  return false
-}
-
 
 provide("reloadPage", reloadPage)
 
 onMounted(() => {
-  if(props.layout?.color) layout.app.theme = props.layout?.color,
-  layout.app.webpage_layout = props.layout
-  updateIrisLayout()
+  if (props.layout?.color) {
+    layout.app.theme = props.layout.color
+    layout.app.webpage_layout = props.layout
+  }
   window.addEventListener("message", handleMessage)
-  window.addEventListener("resize", checkScreenType)
+  window.addEventListener("resize", onResize, { passive: true })
   checkScreenType()
   setColorStyleRoot(props.layout?.color)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener("resize", checkScreenType)
+  onResize.cancel()
+  debouncedSetWebpage.cancel()
+  window.removeEventListener("resize", onResize)
   window.removeEventListener("message", handleMessage)
 })
 
@@ -145,9 +145,7 @@ watch(() => props.webpage, (val) => {
   data.value = val ? { ...val } : undefined
 })
 
-watch(filterBlock, () => {
-  updateIrisLayout()
-}, { immediate: true });
+watch(filterBlock, updateIrisLayout, { immediate: true })
 
 </script>
 
@@ -156,54 +154,55 @@ watch(filterBlock, () => {
     <div class="shadow-xl px-1 py-1">
       <div>
         <div v-if="data?.layout?.web_blocks?.length">
-          <TransitionGroup tag="div" name="list" class="relative"> 
-            <template v-for="(block, idx) in data.layout.web_blocks" :key="block.id">
-              <section v-show="showWebpage(block)" :data-block-id="idx"   :ref="el => setBlockRef(el, idx)" class="w-full min-h-[10px] relative"
-                :class="{ 'border-4 active-block': activeBlock === idx }"
-                :style="activeBlock === idx ? { borderColor: layout?.app?.theme?.[0] } : {}"
-                @click="() => sendMessageToParent('activeBlock', idx)">
-                <!-- Toolbar Controls -->
-                <div v-if="activeBlock === idx" class="trapezoid-button"
-                  :class="{ 'trapezoid-bottom': isNeedBottom(idx) }" @click.stop>
-                  <div class="flex" v-if="editable">
-                    <div v-tooltip="trans('Add Block Before')"
-                      class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition"
-                      @click="() => sendMessageToParent('addBlock', { type: 'before', parentIndex: idx })">
-                      <FontAwesomeIcon :icon="faSendBackward" fixed-width />
-                    </div>
+          <TransitionGroup tag="div" name="list" class="relative">
+            <section v-for="(block, idx) in data.layout.web_blocks" :key="block.id"
+              v-show="showWebpage(block)"
+              :data-block-id="idx"
+              :ref="el => setBlockRef(el, idx)"
+              class="w-full min-h-[10px] relative"
+              :class="{ 'border-4 active-block': activeBlock === idx }"
+              :style="activeBlock === idx ? { borderColor: layout?.app?.theme?.[0] } : {}"
+              @click="sendMessageToParent('activeBlock', idx)">
+              <!-- Toolbar Controls -->
+              <div v-if="activeBlock === idx" class="trapezoid-button"
+                :class="{ 'trapezoid-bottom': isActiveBlockNearTop }" @click.stop>
+                <div class="flex" v-if="editable">
+                  <div v-tooltip="trans('Add Block Before')"
+                    class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition"
+                    @click="sendMessageToParent('addBlock', { type: 'before', parentIndex: idx })">
+                    <FontAwesomeIcon :icon="faSendBackward" fixed-width />
+                  </div>
 
-                    <div v-tooltip="trans('Add Block After')"
-                      class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition md:block hidden"
-                      @click="() => sendMessageToParent('addBlock', { type: 'after', parentIndex: idx })">
-                      <FontAwesomeIcon :icon="faBringForward" fixed-width />
-                    </div>
+                  <div v-tooltip="trans('Add Block After')"
+                    class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition md:block hidden"
+                    @click="sendMessageToParent('addBlock', { type: 'after', parentIndex: idx })">
+                    <FontAwesomeIcon :icon="faBringForward" fixed-width />
+                  </div>
 
-                    <div v-tooltip="trans('Delete')"
-                      class="py-1 px-2 cursor-pointer hover:bg-red-100 hover:text-red-600 transition"
-                      @click="() => sendMessageToParent('deleteBlock', block)">
-                      <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
-                    </div>
+                  <div v-tooltip="trans('Delete')"
+                    class="py-1 px-2 cursor-pointer hover:bg-red-100 hover:text-red-600 transition"
+                    @click="sendMessageToParent('deleteBlock', block)">
+                    <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
                   </div>
                 </div>
+              </div>
 
-                <!-- Dynamic Block -->
-                 <div :class="!editable ? 'pointer-events-none select-none' : ''">
-                  <component 
-                    :code="block.type" 
-                    :is="getComponent(block.type,{shop_type: layout?.retina?.type})" 
-                    class="w-full" 
-                    :webpageData="data" 
-                    :blockData="block"
-                    :index-block="idx" 
-                    :key="key" 
-                    v-model="block.web_block.layout.data.fieldValue"
-                    :screenType="screenType"
-                    @autoSave="() => updateData(block)"
-                  />
-                 </div>
-            
-              </section>
-            </template>
+              <!-- Dynamic Block -->
+              <div :class="!editable ? 'pointer-events-none select-none' : ''">
+                <component
+                  :code="block.type"
+                  :is="getComponent(block.type, { shop_type: layout?.retina?.type })"
+                  class="w-full"
+                  :webpageData="data"
+                  :blockData="block"
+                  :index-block="idx"
+                  :key="key"
+                  v-model="block.web_block.layout.data.fieldValue"
+                  :screenType="screenType"
+                  @autoSave="updateData(block)"
+                />
+              </div>
+            </section>
           </TransitionGroup>
         </div>
 
