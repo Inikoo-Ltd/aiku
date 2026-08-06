@@ -70,7 +70,8 @@ import {
     faBullseyePointer,
     faClock,
     faCalendarCheck,
-    faPercent
+    faPercent,
+    faCameraRetro
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
