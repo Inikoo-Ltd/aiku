@@ -428,6 +428,8 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return [
             'hasDateFilter' => $hasDateFilter,
             'selectRaw' => $selectRaw,
+            'alias' => $alias,
+            'days' => $hasDateFilter ? (int) $startDate->diffInDays($endDate) + 1 : null,
         ];
     }
 }
