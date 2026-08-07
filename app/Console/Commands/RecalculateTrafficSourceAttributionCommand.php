@@ -23,7 +23,7 @@ class RecalculateTrafficSourceAttributionCommand extends Command
      */
     protected $signature = 'traffic-source:recalculate-attribution
                            {--shop= : Only recalculate for a specific shop slug}
-                           {--model=linear : Attribution model: first_touch, last_touch, last_non_direct_touch, last_paid_touch, linear}
+                           {--model=linear : Attribution model: first_touch, last_touch, last_paid_touch, linear}
                            {--from= : Only records created on/after this date (Y-m-d)}
                            {--to= : Only records created on/before this date (Y-m-d)}
                            {--dry-run : Count records without making changes}';
@@ -37,7 +37,6 @@ class RecalculateTrafficSourceAttributionCommand extends Command
         if (!in_array($model, [
             ProcessTrafficSourceShare::ATTRIBUTION_FIRST_TOUCH,
             ProcessTrafficSourceShare::ATTRIBUTION_LAST_TOUCH,
-            ProcessTrafficSourceShare::ATTRIBUTION_LAST_NON_DIRECT,
             ProcessTrafficSourceShare::ATTRIBUTION_LAST_PAID_TOUCH,
             ProcessTrafficSourceShare::ATTRIBUTION_LINEAR,
         ], true)) {
