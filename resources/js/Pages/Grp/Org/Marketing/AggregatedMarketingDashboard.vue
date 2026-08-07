@@ -37,12 +37,14 @@ const props = defineProps<{
             type: string
             spend: number
             spend_is_estimated?: boolean
+            visits: number
             revenue: number
             pending: number
             registrations: number
             orders: number
             roas: number | null
         }[]
+        attribution_started_at: string | null
         baseline: {
             registrations: number
             orders: number
@@ -85,6 +87,9 @@ const changePeriod = (event: Event) => {
 
     <div class="px-4 py-4 space-y-4">
         <div class="flex items-start justify-between gap-4">
+            <p v-if="overview.attribution_started_at" class="text-xs text-gray-400 max-w-3xl order-last">
+                {{ trans('Attribution has only been recording since') }} {{ overview.attribution_started_at }}{{ trans('. Comparisons below start from then, not from the beginning of the period.') }}
+            </p>
             <p class="text-xs text-gray-500 max-w-3xl">
                 {{ trans('Everything here counts only what marketing brought in: sales and sign-ups from visitors who arrived through an ad, a search, a mailshot or a link from another site, credited to that channel. It is not the shop\'s total trade.') }}
                 <span class="text-gray-400">{{ trans('All figures in') }} {{ overview.currency_code }}.</span>
@@ -143,6 +148,7 @@ const changePeriod = (event: Event) => {
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
                         <th class="text-left font-normal py-1.5 pr-2">{{ trans('Channel') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Visits') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Pending') }}</th>
@@ -155,6 +161,11 @@ const changePeriod = (event: Event) => {
                     <tr v-for="channel in overview.channels" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 text-gray-700">{{ channel.name }}</td>
+                        <!-- People it sent us. Large with nothing beside it means we paid for clicks that went nowhere. -->
+                        <td class="text-right px-2 tabular-nums"
+                            :class="channel.visits > 0 && channel.orders === 0 ? 'text-amber-600' : ''">
+                            {{ channel.visits > 0 ? locale.number(channel.visits) : '—' }}
+                        </td>
                         <td class="text-right px-2 tabular-nums">
                             {{ money(channel.spend) }}
                             <span v-if="channel.spend_is_estimated" class="text-gray-400" :title="trans('Estimated from emails sent, at the SES per-message price')">{{ trans('est.') }}</span>

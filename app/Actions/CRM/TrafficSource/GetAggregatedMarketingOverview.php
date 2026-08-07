@@ -53,12 +53,14 @@ class GetAggregatedMarketingOverview
         /* Sending is not free and nobody invoices us for it; without this the newsletter channel
            reports a spend of zero and an infinite return. */
         $emailCost     = GetEstimatedEmailCost::run($shops->pluck('id'), $from, $parent->currency);
+        $visits        = $this->visitsByType($shops, $from);
 
         $channels = collect(array_unique(array_merge(
             $revenue->keys()->all(),
             $registrations->keys()->all(),
             $orders->keys()->all(),
             $spend->keys()->all(),
+            $visits->keys()->all(),
             $emailCost > 0 ? [\App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::NEWSLETTER->value] : [],
         )))
             ->map(fn (string $type) => [
@@ -71,12 +73,19 @@ class GetAggregatedMarketingOverview
                 'registrations' => round((float) ($registrations[$type] ?? 0), 2),
                 'orders'        => round((float) ($orders[$type] ?? 0), 2),
                 'pending'       => round((float) ($pending[$type] ?? 0), 2),
+                'visits'        => (int) ($visits[$type] ?? 0),
             ])
             ->map(fn (array $channel) => $channel + [
-                'roas' => $channel['spend'] > 0 ? round($channel['revenue'] / $channel['spend'], 2) : null,
+                /* A channel that has spent money and taken orders that are not invoiced yet has not
+                   returned 0.00x, it has not finished being measured. Zero is only honest once there
+                   is nothing pending. */
+                'roas' => ($channel['spend'] > 0 && ($channel['revenue'] > 0 || $channel['pending'] <= 0))
+                    ? round($channel['revenue'] / $channel['spend'], 2)
+                    : null,
             ])
             ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0
-                || $channel['registrations'] > 0 || $channel['orders'] > 0 || $channel['pending'] > 0)
+                || $channel['registrations'] > 0 || $channel['orders'] > 0 || $channel['pending'] > 0
+                || $channel['visits'] > 0)
             ->sortByDesc(fn (array $channel) => max($channel['spend'], $channel['revenue']))
             ->values()
             ->all();
@@ -84,6 +93,7 @@ class GetAggregatedMarketingOverview
         $totalSpend         = round(array_sum(array_column($channels, 'spend')), 2);
         $totalRevenue       = round(array_sum(array_column($channels, 'revenue')), 2);
         $totalRegistrations = round(array_sum(array_column($channels, 'registrations')), 2);
+        $totalPending       = round(array_sum(array_column($channels, 'pending')), 2);
 
         return [
             'period'        => $period->value,
@@ -95,8 +105,10 @@ class GetAggregatedMarketingOverview
                 'revenue'       => $totalRevenue,
                 'registrations' => $totalRegistrations,
                 'orders'        => round(array_sum(array_column($channels, 'orders')), 2),
-                'pending'       => round(array_sum(array_column($channels, 'pending')), 2),
-                'roas'          => $totalSpend > 0 ? round($totalRevenue / $totalSpend, 2) : null,
+                'pending'       => $totalPending,
+                'roas'          => ($totalSpend > 0 && ($totalRevenue > 0 || $totalPending <= 0))
+                    ? round($totalRevenue / $totalSpend, 2)
+                    : null,
                 'cac'           => ($totalSpend > 0 && $totalRegistrations > 0)
                     ? round($totalSpend / $totalRegistrations, 2)
                     : null,
@@ -105,6 +117,7 @@ class GetAggregatedMarketingOverview
                "nothing happened": 0 registrations out of 4 is noise, 0 out of 300 means every ad and
                every mailshot in the period earned us nobody. The remainder is the trade that arrives
                whether we advertise or not. */
+            'attribution_started_at' => GetAttributionStartedAt::run()?->toDateTimeString(),
             'baseline'      => $this->baseline($shops, $from, $revenueColumn),
             'channels'      => $channels,
             'children'      => $this->children($parent, $from, $revenueColumn),
@@ -119,8 +132,26 @@ class GetAggregatedMarketingOverview
      *
      * @return array{registrations: float, orders: float, revenue: float}
      */
+    /**
+     * The baseline exists so the attributed figure can be read as a share of it, which only works if
+     * both cover the same stretch of time. Attribution has only been recording since its first touch,
+     * so a 30-day baseline against half a day of tracking reports "marketing achieved 0%" when the
+     * true statement is "we were not recording for most of that window".
+     */
+    private function clipToAttributionStart(?Carbon $from): ?Carbon
+    {
+        $startedAt = GetAttributionStartedAt::run();
+
+        if (!$startedAt) {
+            return $from;
+        }
+
+        return $from && $from->isAfter($startedAt) ? $from : $startedAt;
+    }
+
     private function baseline(Collection $shops, ?Carbon $from, string $revenueColumn): array
     {
+        $from    = $this->clipToAttributionStart($from);
         $shopIds = $shops->pluck('id');
 
         return [
@@ -325,6 +356,23 @@ class GetAggregatedMarketingOverview
         }
 
         return $best;
+    }
+
+    /**
+     * People each channel actually sent us, converted or not — the ones attribution never sees,
+     * because they never logged in or registered.
+     *
+     * @param Collection<int, Shop> $shops
+     */
+    private function visitsByType(Collection $shops, ?Carbon $from): Collection
+    {
+        return DB::table('traffic_source_visits as v')
+            ->join('traffic_sources as ts', 'ts.id', '=', 'v.traffic_source_id')
+            ->whereIn('v.shop_id', $shops->pluck('id'))
+            ->when($from, fn ($query) => $query->where('v.date', '>=', $from->toDateString()))
+            ->groupBy('ts.type')
+            ->select('ts.type', DB::raw('SUM(v.visits) as visits'))
+            ->pluck('visits', 'type');
     }
 
     /**

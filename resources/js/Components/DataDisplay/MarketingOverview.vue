@@ -35,6 +35,7 @@ const props = defineProps<{
             type: string
             spend: number
             spend_is_estimated?: boolean
+            visits: number
             revenue: number
             registrations: number
             roas: number | null

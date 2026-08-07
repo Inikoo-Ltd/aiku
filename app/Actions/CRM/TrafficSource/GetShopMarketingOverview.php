@@ -53,6 +53,7 @@ class GetShopMarketingOverview
         /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
            spend of zero and an infinite return. Estimated from the emails actually dispatched. */
         $emailCost     = GetEstimatedEmailCost::run([$shop->id], $from, $shop->currency);
+        $visits        = $this->visitsBySource($shop, $from);
 
         $channels = $sources
             ->map(fn ($source) => [
@@ -61,15 +62,21 @@ class GetShopMarketingOverview
                 'spend'         => round((float) ($spend[$source->id] ?? 0)
                     + ($source->type === TrafficSourcesTypeEnum::NEWSLETTER->value ? $emailCost : 0), 2),
                 'spend_is_estimated' => $source->type === TrafficSourcesTypeEnum::NEWSLETTER->value && $emailCost > 0,
+                'visits'        => (int) ($visits[$source->id] ?? 0),
                 'revenue'       => round((float) ($revenue[$source->id]->amount ?? 0), 2),
                 'pending'       => round((float) ($pending[$source->id] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$source->id] ?? 0), 2),
             ])
             ->map(fn (array $channel) => $channel + [
-                'roas' => $channel['spend'] > 0 ? round($channel['revenue'] / $channel['spend'], 2) : null,
+                /* A channel that has spent money and taken orders that are not invoiced yet has not
+                   returned 0.00x, it has not finished being measured. Zero is only honest once there
+                   is nothing pending. */
+                'roas' => ($channel['spend'] > 0 && ($channel['revenue'] > 0 || $channel['pending'] <= 0))
+                    ? round($channel['revenue'] / $channel['spend'], 2)
+                    : null,
             ])
             ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0
-                || $channel['registrations'] > 0 || $channel['pending'] > 0)
+                || $channel['registrations'] > 0 || $channel['pending'] > 0 || $channel['visits'] > 0)
             ->sortByDesc(fn (array $channel) => max($channel['spend'], $channel['revenue']))
             ->values()
             ->all();
@@ -77,6 +84,7 @@ class GetShopMarketingOverview
         $totalSpend         = round(array_sum(array_column($channels, 'spend')), 2);
         $totalRevenue       = round(array_sum(array_column($channels, 'revenue')), 2);
         $totalRegistrations = round(array_sum(array_column($channels, 'registrations')), 2);
+        $totalPending       = round(array_sum(array_column($channels, 'pending')), 2);
 
         return [
             'period'        => $period->value,
@@ -87,9 +95,11 @@ class GetShopMarketingOverview
                 'spend'         => $totalSpend,
                 'revenue'       => $totalRevenue,
                 'registrations' => $totalRegistrations,
-                'pending'       => round(array_sum(array_column($channels, 'pending')), 2),
+                'pending'       => $totalPending,
                 'invoices'      => round(collect($revenue)->sum('invoices'), 2),
-                'roas'          => $totalSpend > 0 ? round($totalRevenue / $totalSpend, 2) : null,
+                'roas'          => ($totalSpend > 0 && ($totalRevenue > 0 || $totalPending <= 0))
+                    ? round($totalRevenue / $totalSpend, 2)
+                    : null,
                 'cac'           => ($totalSpend > 0 && $totalRegistrations > 0)
                     ? round($totalSpend / $totalRegistrations, 2)
                     : null,
@@ -97,6 +107,7 @@ class GetShopMarketingOverview
             /* The denominator: 0 attributed registrations out of 4 is noise, 0 out of 300 means every
                ad and mailshot in the period earned us nobody. The remainder is the trade that arrives
                whether we advertise or not. */
+            'attribution_started_at' => GetAttributionStartedAt::run()?->toDateTimeString(),
             'baseline'      => $this->baseline($shop, $from),
             'channels'      => $channels,
             'campaigns'     => $this->campaigns($shop, $from),
@@ -201,8 +212,27 @@ class GetShopMarketingOverview
      *
      * @return array{registrations: float, orders: float, revenue: float}
      */
+    /**
+     * The baseline exists so the attributed figure can be read as a share of it, which only works if
+     * both cover the same stretch of time. Attribution has only been recording since its first touch,
+     * so a 30-day baseline against half a day of tracking reports "marketing achieved 0%" when the
+     * true statement is "we were not recording for most of that window".
+     */
+    private function clipToAttributionStart(?Carbon $from): ?Carbon
+    {
+        $startedAt = GetAttributionStartedAt::run();
+
+        if (!$startedAt) {
+            return $from;
+        }
+
+        return $from && $from->isAfter($startedAt) ? $from : $startedAt;
+    }
+
     private function baseline(Shop $shop, ?Carbon $from): array
     {
+        $from = $this->clipToAttributionStart($from);
+
         return [
             'registrations' => (float) DB::table('customers')
                 ->where('shop_id', $shop->id)
@@ -222,6 +252,21 @@ class GetShopMarketingOverview
                 ->when($from, fn ($query) => $query->where('date', '>=', $from))
                 ->sum('net_amount'), 2),
         ];
+    }
+
+    /**
+     * People the channel actually sent us, converted or not. Attribution only ever sees the ones who
+     * log in or register, so without this a channel we pay for that sends visitors who all leave is
+     * simply absent from the report - which is precisely the case worth seeing.
+     */
+    private function visitsBySource(Shop $shop, ?Carbon $from)
+    {
+        return DB::table('traffic_source_visits')
+            ->where('shop_id', $shop->id)
+            ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
+            ->groupBy('traffic_source_id')
+            ->select('traffic_source_id', DB::raw('SUM(visits) as visits'))
+            ->pluck('visits', 'traffic_source_id');
     }
 
     private function spendBySource(Shop $shop, ?Carbon $from)

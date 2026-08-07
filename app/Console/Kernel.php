@@ -68,6 +68,9 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
+        /* Hourly rather than daily: the counters expire after 8 days, and folding them in often means
+           today's visits are already reportable on the dashboard. */
+        $schedule->command('traffic-source:collect-visits')->hourly()->onOneServer()->withoutOverlapping();
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
 

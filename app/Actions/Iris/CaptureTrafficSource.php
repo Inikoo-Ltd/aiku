@@ -10,6 +10,7 @@ namespace App\Actions\Iris;
 
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromRefererHeader;
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromUrl;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -73,6 +74,9 @@ class CaptureTrafficSource
 
         if ($lastTrafficSource == $trafficSourceData) {
             $this->recordCaptureOutcome('repeat');
+            /* A repeat visit from the same channel is still a visit: no new touch, but the channel
+               did send somebody again. */
+            $this->recordVisit($trafficSourceData);
 
             return $cookies;
         }
@@ -104,6 +108,7 @@ class CaptureTrafficSource
         ];
 
         $this->recordCaptureOutcome('matched');
+        $this->recordVisit($trafficSourceData);
 
         return $cookies;
     }
@@ -131,6 +136,34 @@ class CaptureTrafficSource
                linking to another, would otherwise read as unrecognised traffic worth chasing. */
             return GetTrafficSourceFromRefererHeader::normaliseHost(parse_url($candidate, PHP_URL_HOST)) !== null;
         }));
+    }
+
+    /**
+     * A visit from a named channel, counted per shop and day whether or not the visitor ever becomes
+     * a customer. Attribution only ever sees the ones who log in or register, so without this a
+     * channel that sends hundreds of people who all leave is simply absent from every report - and a
+     * channel we pay for that sends people who never buy is the single most useful thing to know.
+     *
+     * Counter only; `traffic-source:collect-visits` folds these into the table.
+     */
+    private function recordVisit(string $trafficSourceData): void
+    {
+        try {
+            $abbr = substr($trafficSourceData, 0, 1);
+            $type = TrafficSourcesTypeEnum::fromAbbr($abbr);
+            $shop = request()->input('website')?->shop_id;
+
+            if (!$type || !$shop) {
+                return;
+            }
+
+            $key = 'traffic_visits:'.now()->toDateString().':'.$shop.':'.$type->value;
+
+            Cache::add($key, 0, now()->addDays(8));
+            Cache::increment($key);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
