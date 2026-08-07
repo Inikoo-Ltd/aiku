@@ -11,23 +11,43 @@ import { trans } from "laravel-vue-i18n"
 const props = defineProps<{
     tradeUnits: {
         code?: string
+        type?: string
         quantity?: number | string
         packed_in?: number | string
         packed_in_by_org?: { org_code: string; packed_in: number }[]
     }[]
     productsCount?: number
+    // angry: rebels in the family; crying: anomalies, the eye weeps blood
+    mood?: 'angry' | 'crying' | null
 }>()
 
 const first = computed(() => props.tradeUnits?.[0] ?? {})
 
 const sellQty = computed(() => Number(first.value.quantity) || null)          // TU—P: how we sell
-const packedQty = computed(() => Number(first.value.packed_in) || null)      // TU—SKO: how is packed
+const packedQty = computed(() => {                                            // TU—SKO: how is packed
+    /* packed_in can lag behind the per-org reality; trust packed_in_by_org when it agrees */
+    const orgs = first.value.packed_in_by_org ?? []
+    const distinct = [...new Set(orgs.map(org => Number(org.packed_in)))]
+    if (distinct.length === 1 && distinct[0]) {
+        return distinct[0]
+    }
+    return Number(first.value.packed_in) || null
+})
 const pickLabel = computed(() => {                                           // SKO—P: how we pick
     if (!sellQty.value || !packedQty.value) return null
     const packs = sellQty.value / packedQty.value
     return Number.isInteger(packs) ? `${packs}` : packs.toFixed(2)
 })
 const isPartialPick = computed(() => !!pickLabel.value && !Number.isInteger(sellQty.value! / packedQty.value!))
+
+// No anomalies, no rebels, whole picks, every quantity known: the triangle is at peace.
+// Full enlightenment is picking exactly one outer; any other whole pick is the lower path.
+const nirvana = computed(() => {
+    if (props.mood || isPartialPick.value || !sellQty.value || !packedQty.value || !pickLabel.value) {
+        return null
+    }
+    return sellQty.value / packedQty.value === 1 ? '🧘' : '🙏'
+})
 
 // Per-warehouse packing, the SKO corner's fine print; amber when warehouses disagree
 const orgPacking = computed(() => {
@@ -118,6 +138,12 @@ onBeforeUnmount(() => {
     if (sleepTimer) clearTimeout(sleepTimer)
 })
 
+// Each edge wears the colour it has elsewhere in the page: pink for the units the
+// customer buys (TU—P, the Units field), teal for the picks line (SKO—P).
+const SELL_PINK = '#db2777'
+const PICK_TEAL = '#0d9488'
+const PACKED_SKY = '#0284c7'
+
 const edges = computed(() => [
     {
         key: 'packed',
@@ -125,6 +151,8 @@ const edges = computed(() => [
         label: trans('how is packed'),
         value: packedQty.value ? `${packedQty.value}` : '?',
         partial: false,
+        accent: PACKED_SKY,
+        unit: null,
     },
     {
         key: 'sell',
@@ -132,6 +160,8 @@ const edges = computed(() => [
         label: trans('how we sell'),
         value: sellQty.value ? `${sellQty.value}` : '?',
         partial: false,
+        accent: SELL_PINK,
+        unit: first.value.type ?? null,
     },
     {
         key: 'pick',
@@ -139,6 +169,8 @@ const edges = computed(() => [
         label: trans('how we pick'),
         value: pickLabel.value ?? '?',
         partial: isPartialPick.value,
+        accent: PICK_TEAL,
+        unit: trans('SKO/Outer'),
     },
 ])
 
@@ -158,15 +190,21 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
                 <line :x1="edge.from.x" :y1="edge.from.y" :x2="edge.to.x" :y2="edge.to.y"
                     stroke="transparent" stroke-width="22" />
                 <line :x1="edge.from.x" :y1="edge.from.y" :x2="edge.to.x" :y2="edge.to.y"
-                    :stroke="edge.partial ? '#d97706' : (hoveredEdge === edge.key ? '#0d9488' : '#e2e8f0')"
+                    :stroke="edge.partial ? '#d97706' : (hoveredEdge === edge.key ? '#0d9488' : (edge.accent ?? '#e2e8f0'))"
                     :stroke-width="hoveredEdge === edge.key ? 3 : 2"
                     class="transition-all duration-150" />
 
-                <!-- Quantity, always visible -->
+                <!-- Quantity, always visible; the units edge names its unit underneath -->
                 <g :transform="`translate(${midpoint(edge).x}, ${midpoint(edge).y})`">
-                    <circle r="13" fill="white" :stroke="edge.partial ? '#d97706' : '#e2e8f0'" stroke-width="1" />
+                    <circle r="13" fill="white" :stroke="edge.partial ? '#d97706' : (edge.accent ?? '#e2e8f0')" stroke-width="1" />
                     <text text-anchor="middle" dominant-baseline="central" class="text-[11px] font-bold"
-                        :fill="edge.partial ? '#d97706' : '#64748b'">{{ edge.value }}</text>
+                        :fill="edge.partial ? '#d97706' : (edge.accent ?? '#64748b')">{{ edge.value }}</text>
+                    <!-- Beside the bubble, except on the horizontal edge where the line would strike it through -->
+                    <text v-if="edge.unit"
+                        :x="edge.key === 'pick' ? 0 : 18" :y="edge.key === 'pick' ? 26 : 0"
+                        :text-anchor="edge.key === 'pick' ? 'middle' : 'start'"
+                        :dominant-baseline="edge.key === 'pick' ? 'auto' : 'central'"
+                        class="text-[10px]" :fill="edge.accent ?? '#64748b'">{{ edge.unit }}</text>
                 </g>
 
                 <!-- Handwritten label, on hover -->
@@ -195,6 +233,29 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
 
             <!-- The all-seeing eye -->
             <g :transform="`translate(${CENTER.x}, ${CENTER.y}) scale(1.3)`">
+                <!-- nirvana: nothing wrong anywhere, the triangle is at peace -->
+                <text v-if="nirvana" y="-28" text-anchor="middle" class="text-[26px]"
+                    style="filter: grayscale(1); opacity: 0.55">{{ nirvana }}</text>
+                <!-- anomalies: the family is on fire, full colour on purpose -->
+                <text v-if="mood === 'crying'" y="-28" text-anchor="middle" class="text-[26px]">🔥</text>
+                <!-- angry brows: rebels in the family -->
+                <g v-if="mood === 'angry'" stroke="#d97706" stroke-width="2" stroke-linecap="round">
+                    <line x1="-16" y1="-16" x2="-4" y2="-11" />
+                    <line x1="16" y1="-16" x2="4" y2="-11" />
+                </g>
+                <!-- sad brows + tears of blood: anomalies -->
+                <g v-if="mood === 'crying'">
+                    <g stroke="#dc2626" stroke-width="2" stroke-linecap="round">
+                        <line x1="-16" y1="-11" x2="-4" y2="-15" />
+                        <line x1="16" y1="-11" x2="4" y2="-15" />
+                    </g>
+                    <g fill="#dc2626">
+                        <path d="M -8 8 q -2 6 0 9 q 2 -3 0 -9 Z" />
+                        <path d="M 8 8 q -2 6 0 9 q 2 -3 0 -9 Z" />
+                        <circle cx="-8" cy="20" r="1.2" opacity="0.7" />
+                        <circle cx="8" cy="22" r="1.2" opacity="0.7" />
+                    </g>
+                </g>
                 <!-- rays: hidden unless the eye is having a moment -->
                 <g stroke="#f59e0b" stroke-width="1.5" :opacity="showRays || hoveredEdge ? 0.7 : 0" class="transition-opacity duration-500">
                     <line v-for="ray in 8" :key="ray"
@@ -216,7 +277,8 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
                             <circle cx="-1.5" cy="-1.5" r="1" fill="white" />
                         </g>
                     </g>
-                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
+                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="none"
+                        :stroke="mood === 'crying' ? '#fca5a5' : mood === 'angry' ? '#fcd34d' : '#cbd5e1'" stroke-width="1.5" />
                 </g>
                 <!-- closed lid line when blinking or sleeping -->
                 <path v-if="isBlinking || attention === 'asleep'" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#cbd5e1" stroke-width="1.5" />

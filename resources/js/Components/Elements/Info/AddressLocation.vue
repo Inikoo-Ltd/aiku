@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import { computed } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 
 const props = withDefaults(defineProps<{
@@ -14,14 +15,11 @@ const props = withDefaults(defineProps<{
     use_flag: true
 })
 
-const countryCode = props.data?.[0]
-const countryName = props.data?.[1]
-const addressLocation = props.data?.[2] ?? ''
+const countryCode = computed(() => props.data?.[0])
+const countryName = computed(() => props.data?.[1])
+const addressLocation = computed(() => props.data?.[2] ?? '')
 
-let flag = null
-if (countryCode) {
-    flag = '/flags/' + countryCode.toLowerCase() + '.png'
-}
+const flag = computed(() => countryCode.value ? '/flags/' + countryCode.value.toLowerCase() + '.png' : null)
 
 </script>
 

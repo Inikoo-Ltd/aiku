@@ -251,6 +251,7 @@ class ShowMasterProduct extends OrgAction
                     ],
                     'subNavigation'        => $this->getMasterProductsSubNavigation($masterAsset),
                 ],
+                'anomalies'            => EditMasterProductComposition::make()->getAnomalies($masterAsset),
                 'masterAsset'          => $masterAsset,
                 'currency'             => $masterAsset->group->currency,
                 'shopsData'            => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),

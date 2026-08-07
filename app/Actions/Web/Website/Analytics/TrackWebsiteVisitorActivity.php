@@ -14,7 +14,9 @@ use App\Events\Web\WebsiteVisitorCountUpdated;
 use App\Events\Web\WebsiteVisitorHit;
 use App\Models\CRM\WebUser;
 use App\Models\Ordering\Order;
+use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -55,7 +57,7 @@ class TrackWebsiteVisitorActivity
 
         $now = time();
 
-        $metadata = $this->buildMetadata($website, $hit, $now);
+        $metadata = $this->buildMetadata($website, $hit, $now, $this->pageEnteredAt($website, $sessionId, $hit, $now));
 
         $keyLoggedIn  = $this->key($website, 'visitors:logged_in');
         $keyLoggedOut = $this->key($website, 'visitors:logged_out');
@@ -199,12 +201,37 @@ class TrackWebsiteVisitorActivity
     }
 
     /**
+     * Time on the current page is measured from the first hit that landed on it, so the stamp is
+     * carried over while the visitor stays put and reset the moment the page changes.
+     */
+    protected function pageEnteredAt(Website $website, string $sessionId, array $hit, int $now): int
+    {
+        $previous = Redis::hmget($this->dataKey($website, $sessionId), ['page', 'page_since']);
+        $samePage = ($previous[0] ?? null) !== null && $previous[0] === ($hit['page'] ?? null);
+
+        return $samePage && !empty($previous[1]) ? (int) $previous[1] : $now;
+    }
+
+    protected function pageType(?int $webpageId): ?string
+    {
+        if (!$webpageId) {
+            return null;
+        }
+
+        return Cache::remember(
+            'webpage_sub_type:'.$webpageId,
+            now()->addDay(),
+            fn () => Webpage::where('id', $webpageId)->value('sub_type')?->value
+        );
+    }
+
+    /**
      * Redis hashes only hold strings, so booleans are written as '1'/'0' and nulls are dropped
      * rather than becoming indistinguishable empty strings.
      *
      * @return array<string, string>
      */
-    protected function buildMetadata(Website $website, array $hit, int $now): array
+    protected function buildMetadata(Website $website, array $hit, int $now, int $pageSince): array
     {
         $userAgent = $hit['user_agent'] ?? null;
         $browser   = $userAgent ? GetBrowserInfo::run($userAgent) : [];
@@ -226,6 +253,8 @@ class TrackWebsiteVisitorActivity
                 'search_engine' => $search['engine'],
                 'search_term'   => $search['term'],
                 'last_active'   => (string) $now,
+                'page_since'    => (string) $pageSince,
+                'page_type'     => $this->pageType($hit['webpage_id'] ?? null),
             ],
             $this->getBasket($website, $webUserId)
         );

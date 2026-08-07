@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Iris\CRM\StoreIrisProductLastSeen;
 use App\Actions\Retina\Dropshipping\Bundle\UI\RedirectIrisToRetinaBundle;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +20,7 @@ use App\Actions\Helpers\Media\UI\DownloadAttachment;
 use App\Actions\Web\Webpage\Iris\ShowIrisSubSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpagesList;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
+use App\Actions\Web\Webpage\Iris\ShowIrisDavidsTravelBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
@@ -99,6 +99,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
+        Route::get('/davids-travel-blog', ShowIrisDavidsTravelBlogDashboard::class)->name('iris_davids_travel_blog');
 
         // LLMs.txt for AI crawlers
         Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');

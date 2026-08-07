@@ -37,12 +37,27 @@ class FetchAuroraSupplierProducts extends FetchAuroraAction
 
         if ($supplierProduct) {
             $supplierProduct->refresh();
-            $organisation = $organisationSource->getOrganisation();
 
-            $orgSupplierProduct = OrgSupplierProduct::where('organisation_id', $organisation->id)->where('supplier_product_id', $supplierProduct->id)->first();
+            $orgSupplier = $supplierProductData['orgSupplier'];
+
+            if ($supplierProduct->supplier_id != $orgSupplier->supplier_id) {
+                $this->recordError(
+                    $organisationSource,
+                    new Exception("Supplier product {$supplierProduct->id} belongs to supplier {$supplierProduct->supplier_id}, not to org supplier {$orgSupplier->id} supplier {$orgSupplier->supplier_id}"),
+                    $supplierProductData['supplierProduct'],
+                    'OrgSupplierProduct',
+                    'store'
+                );
+
+                return $supplierProduct;
+            }
+
+            $orgSupplierProduct = OrgSupplierProduct::where('org_supplier_id', $orgSupplier->id)
+                ->where('supplier_product_id', $supplierProduct->id)
+                ->first();
             if (!$orgSupplierProduct) {
                 StoreOrgSupplierProduct::make()->action(
-                    orgSupplier: $supplierProductData['orgSupplier'],
+                    orgSupplier: $orgSupplier,
                     supplierProduct: $supplierProduct,
                     modelData: [
                         'source_id' => $supplierProductData['supplierProduct']['source_id']
@@ -86,15 +101,22 @@ class FetchAuroraSupplierProducts extends FetchAuroraAction
             }
 
             if (!$supplierProduct) {
-                $supplierProduct = SupplierProduct::withTrashed()->whereJsonContains('sources->supplier_parts', $supplierProductData['supplierProduct']['source_id'])->first();
+                $supplierProduct = SupplierProduct::withTrashed()
+                    ->where('supplier_id', $supplierProductData['supplier']->id)
+                    ->whereJsonContains('sources->supplier_parts', $supplierProductData['supplierProduct']['source_id'])
+                    ->first();
             }
             if (!$supplierProduct) {
-                $supplierProduct = SupplierProduct::withTrashed()->where('source_slug', $supplierProductData['supplierProduct']['source_slug'])->first();
+                $supplierProduct = SupplierProduct::withTrashed()
+                    ->where('supplier_id', $supplierProductData['supplier']->id)
+                    ->where('source_slug', $supplierProductData['supplierProduct']['source_slug'])
+                    ->first();
             }
 
             if (!$supplierProduct) {
-                $supplierProduct = SupplierProduct::whereRaw('LOWER(code)=? ', [trim(strtolower($supplierProductData['supplierProduct']['code']))])->first();
-
+                $supplierProduct = SupplierProduct::where('supplier_id', $supplierProductData['supplier']->id)
+                    ->whereRaw('LOWER(code)=? ', [trim(strtolower($supplierProductData['supplierProduct']['code']))])
+                    ->first();
             }
 
 

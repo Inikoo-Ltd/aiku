@@ -101,6 +101,8 @@ class UpdateWebsiteSearchBoosts extends OrgAction
         data_set($settings, 'search_boosts', $validBoosts);
         $website->update(['settings' => $settings]);
 
+        BreakWebsiteIrisCache::run($website);
+
         return $website;
     }
 

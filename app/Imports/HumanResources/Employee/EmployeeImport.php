@@ -10,6 +10,8 @@ namespace App\Imports\HumanResources\Employee;
 
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Imports\WithImport;
 use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Organisation;
@@ -115,7 +117,9 @@ class EmployeeImport implements ToCollection, WithHeadingRow, SkipsOnFailure, Wi
             'username'       => ['sometimes', 'unique:users', 'alpha_dash:ascii'],
             'password'       => ['sometimes', 'string', 'min:8', 'max:64'],
             'reset_password' => ['sometimes', 'boolean'],
-            'state'          => ['required', new Enum(EmployeeStateEnum::class)]
+            'state'           => ['required', new Enum(EmployeeStateEnum::class)],
+            'type'            => ['required', new Enum(EmployeeTypeEnum::class)],
+            'employment_type' => ['required', new Enum(EmploymentTypeEnum::class)],
         ];
     }
 

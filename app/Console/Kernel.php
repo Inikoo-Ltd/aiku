@@ -418,6 +418,12 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
+            $this->logSchedule(
+                $schedule->command('shopify-app:refresh-expiring-offline-tokens')->daily()->withoutOverlapping()->onOneServer()->sentryMonitor(),
+                name: 'UpdateShopifyAccessTokens',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
 
             $this->logSchedule(
                 $schedule->job(UpdateShopifyInventory::makeJob())->everySixHours()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(

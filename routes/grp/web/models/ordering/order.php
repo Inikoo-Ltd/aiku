@@ -25,6 +25,7 @@ use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
 use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderReCalculateVAT;
 use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsAuto;
@@ -48,11 +49,13 @@ use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderDiscretionaryDiscount;
+use App\Actions\Ordering\Transaction\UpdateTransactionProductQuantityOrdered;
 use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
 
 Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
     Route::delete('', DeleteTransaction::class)->name('delete');
     Route::patch('', UpdateTransaction::class)->name('update');
+    Route::patch('update-quantity-ordered', UpdateTransactionProductQuantityOrdered::class)->name('update_quantity_ordered');
     Route::patch('units', UpdateTransactionUnits::class)->name('update_units');
     Route::patch('update-discretionary-discount', UpdateTransactionDiscretionaryDiscount::class)->name('update_discretionary_discount');
     Route::patch('remove-discount', RemoveTransactionDiscount::class)->name('remove_discount');
@@ -64,6 +67,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
 
     Route::post('pay-with-balance', PayOrderWithCustomerBalance::class)->name('pay_order_with_balance');
+    Route::post('write-off-shortfall', WriteOffOrderShortfall::class)->name('write_off_shortfall');
 
     Route::patch('update', UpdateOrder::class)->name('update');
     Route::post('update-faire', UpdateFaireOrder::class)->name('update_faire');

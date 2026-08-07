@@ -19,6 +19,7 @@ const props = defineProps<{
     title: string
     search_insights: any
     search_merchandising: any
+    live_website_id?: number
     zero_query_status?: Record<string, 'unpublished' | 'not_stocked'>
     drilldown: { query: string, customer: string, opportunities?: string, params: Record<string, any> }
     data: any
@@ -65,6 +66,7 @@ const opportunitiesUrl = props.drilldown.opportunities
             :page-url="pageUrl"
             :zero-query-status="zero_query_status"
             :opportunities-url="opportunitiesUrl"
+            :live-website-id="live_website_id"
         />
         <SearchTrendChart :trend="search_insights?.trend" />
     </div>

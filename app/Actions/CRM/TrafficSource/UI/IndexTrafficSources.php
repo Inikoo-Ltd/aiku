@@ -14,6 +14,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -57,14 +58,32 @@ class IndexTrafficSources extends OrgAction
         });
 
 
+        /* Both figures have to be in the currency this screen labels them with: the organisation-scoped
+           listing joins the organisation's currency, the shop-scoped one the shop's. Picking the wrong
+           pair would not just mislabel them, it would make the return on ad spend below a ratio between
+           two different currencies. */
+        $costField    = $parent instanceof Organisation ? 'org_total_cost' : 'total_cost';
+        $revenueField = $parent instanceof Organisation ? 'org_total_customer_revenue' : 'total_customer_revenue';
+
         $selectFields = [
             'traffic_sources.id',
             'traffic_sources.slug',
             'traffic_sources.name',
             'traffic_source_stats.number_customers',
             'traffic_source_stats.number_customer_purchases',
-            'traffic_source_stats.total_customer_revenue',
+            "traffic_source_stats.{$revenueField} as total_customer_revenue",
+            "traffic_source_stats.{$costField} as cost",
             'currencies.code as currency_code',
+
+            /* Guarded against the no-spend case, which is every source until costs are imported and
+               permanently the case for organic ones: a null reads as "not applicable" in the table,
+               where a zero would read as "this campaign returned nothing". */
+            DB::raw("CASE WHEN traffic_source_stats.{$costField} > 0
+                        THEN ROUND(traffic_source_stats.{$revenueField} / traffic_source_stats.{$costField}, 2)
+                    END as roas"),
+            DB::raw("CASE WHEN traffic_source_stats.number_customers > 0 AND traffic_source_stats.{$costField} > 0
+                        THEN ROUND(traffic_source_stats.{$costField} / traffic_source_stats.number_customers, 2)
+                    END as cac"),
         ];
 
         $groupByFields = [
@@ -83,6 +102,9 @@ class IndexTrafficSources extends OrgAction
             'number_customers',
             'number_customer_purchases',
             'total_customer_revenue',
+            'cost',
+            'roas',
+            'cac',
         ];
 
         return $queryBuilder
@@ -110,8 +132,10 @@ class IndexTrafficSources extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customers', label: __('Registrations'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customer_purchases', label: __('Orders'), canBeHidden: false, sortable: true)
-                ->column(key: 'cost', label: __('Cost'), canBeHidden: false)
-                ->column(key: 'total_customer_revenue', label: __('Revenue'), canBeHidden: false, sortable: true, type: 'currency');
+                ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency')
+                ->column(key: 'total_customer_revenue', label: __('Revenue'), canBeHidden: false, sortable: true, type: 'currency')
+                ->column(key: 'roas', label: __('ROAS'), canBeHidden: true, sortable: true)
+                ->column(key: 'cac', label: __('CAC'), canBeHidden: true, sortable: true, type: 'currency');
         };
     }
 

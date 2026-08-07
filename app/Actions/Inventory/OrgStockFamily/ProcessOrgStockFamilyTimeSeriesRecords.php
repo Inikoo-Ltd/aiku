@@ -14,6 +14,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\OrgStockFamilyTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use App\Traits\BuildsOrgStockCogsQuery;
 use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,7 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
+    use BuildsOrgStockCogsQuery;
     use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
@@ -65,7 +67,11 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
+        $this->joinDispatchedQuantity($query);
+
+        $selects = [...$this->pivotBasedSelects(), ...$this->cogsSelects()];
+
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $selects)->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -90,6 +96,8 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
+                    'cogs_org_currency'           => $result->cogs_org_currency,
+                    'cogs_grp_currency'           => $result->cogs_grp_currency,
                 ]
             ];
 
@@ -128,6 +136,8 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => 0,
                     'refunds'                     => 0,
                     'orders'                      => 0,
+                    'cogs_org_currency'           => 0,
+                    'cogs_grp_currency'           => 0,
                 ]
             ];
         }

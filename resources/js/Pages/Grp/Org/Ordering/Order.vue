@@ -235,6 +235,7 @@ const props = defineProps<{
         products_list: routeType
         delivery_note: routeType
         rollback_dispatch: routeType
+        redispatch?: routeType
     }
     // nonProductItems: {}
     transactions?: {}
@@ -286,6 +287,7 @@ const props = defineProps<{
         icon: string
     }
     is_faire_order: boolean
+    allow_order_modification: boolean
 }>()
 
 
@@ -667,6 +669,33 @@ const updateCollectionNotes = () => {
     )
 }
 // end: collection feature
+
+const onRedispatch = () => {
+    if (!props.routes.redispatch) {
+        return
+    }
+
+    router.patch(
+        route(props.routes.redispatch.name, props.routes.redispatch.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => {
+                isLoadingButton.value = 'redispatch'
+            },
+            onFinish: () => {
+                isLoadingButton.value = false
+            },
+            onError: () => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to dispatch the order"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
 
 const replacementLoading = ref<boolean>(false)
 const onCreateReplacement = (action: any) => {
@@ -1444,6 +1473,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </template>
                 </ModalConfirmationDelete>
 
+                <!-- Button: Dispatch -->
+                <Button v-if="routes.redispatch" @click="onRedispatch"
+                    type="save"
+                    :loading="isLoadingButton === 'redispatch'"
+                    :tooltip="ctrans('Dispatch the order')"
+                    :label="ctrans('Dispatch')"
+                    icon="fal fa-truck"
+                    full />
+
                 <!-- Button: Proforma Invoice -->
                 <Button
                     v-if="proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))"
@@ -1775,6 +1813,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
+                                    :writeOff="box_stats.products.payment.write_off"
                                     :balance="box_stats?.customer?.balance" :payments="payments_data"
                                     :currencyCode="currency.code" :toBePaidBy="data?.data?.to_be_paid_by"
                                     :order="data?.data" :handleTabUpdate="handleTabUpdate">
@@ -2328,8 +2367,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </BoxStatPallet>
     </div>
 
-    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
-        @update:tab="handleTabUpdate" />
+    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
@@ -2338,6 +2376,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             @update:tab="handleTabUpdate" :ref="(e) => _refComponents = e"
             :routesProductsListModification="routes.products_list_modification"
             :is_shop_external
+            :allow_order_modification
         />
     </div>
 

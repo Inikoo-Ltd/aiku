@@ -22,9 +22,12 @@ use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Audits\DispatchSimpleAudit;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 
 class StorePicking extends OrgAction
 {
+    use AutoIgnoreZeroQuantityItems;
+
     protected DeliveryNoteItem $deliveryNoteItem;
     private User|null $user = null;
 
@@ -42,6 +45,26 @@ class StorePicking extends OrgAction
 
         data_set($modelData, 'engine', PickingEngineEnum::AIKU, false);
         data_set($modelData, 'type', PickingTypeEnum::PICK, false);
+
+        $type = $modelData['type'] instanceof PickingTypeEnum ? $modelData['type'] : PickingTypeEnum::from($modelData['type']);
+        if (in_array($type, [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK], true)) {
+            /*
+             * Same clamp as SetAsWaitingWarehouse: a pick can never take the total picked
+             * past what the delivery note item still needs, box splits go through
+             * SplitPicking which keeps the total constant.
+             */
+            $outstanding = (float)$deliveryNoteItem->quantity_required
+                - (float)$deliveryNoteItem->quantity_picked
+                - (float)$deliveryNoteItem->quantity_waiting_warehouse
+                - (float)$deliveryNoteItem->quantity_waiting_crm;
+
+            if ($outstanding <= 0) {
+                abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
+            }
+
+            $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding);
+            data_set($modelData, 'last_picked_at', now());
+        }
 
         /** @var Picking $picking */
         $picking = $deliveryNoteItem->pickings()->create($modelData);
@@ -66,6 +89,11 @@ class StorePicking extends OrgAction
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
         $deliveryNoteItem->refresh();
+        if ($deliveryNoteItem->is_dirty && $deliveryNoteItem->quantity_picked >= $deliveryNoteItem->quantity_required) {
+            $deliveryNoteItem->updateQuietly([
+                'is_dirty' => false,
+            ]);
+        }
         $newPickingQuantity = (int)$deliveryNoteItem->quantity_picked;
 
         $productCode = $deliveryNoteItem->orgStock?->code ?? 'Unknown Item';
@@ -80,6 +108,8 @@ class StorePicking extends OrgAction
             newValue: $newAuditString,
             eventName: 'item_picked'
         );
+
+        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
         return $picking;
     }

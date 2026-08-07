@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\BlogsIrisResource;
 use App\Models\Web\Website;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -21,9 +22,14 @@ class ShowIrisBlogDashboard
 {
     use AsAction;
 
+    private const SUB_TYPES = [
+        WebpageSubTypeEnum::BLOG,
+        WebpageSubTypeEnum::TIPS,
+    ];
+
     public function handle(Website $website): LengthAwarePaginator
     {
-        return IndexIrisBlogs::make()->handle($website, IndexIrisBlogs::PREFIX);
+        return IndexIrisBlogs::make()->handle($website, IndexIrisBlogs::PREFIX, self::SUB_TYPES);
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
@@ -34,13 +40,16 @@ class ShowIrisBlogDashboard
         return $this->handle($website);
     }
 
-    public function htmlResponse(LengthAwarePaginator $blogs): Response
+    public function htmlResponse(LengthAwarePaginator $blogs, ActionRequest $request): Response
     {
+        /** @var Website $website */
+        $website = $request->input('website');
+
         return Inertia::render(
             'BlogDashboard',
             [
                 'data' => BlogsIrisResource::collection($blogs),
             ]
-        )->table(IndexIrisBlogs::make()->tableStructure(IndexIrisBlogs::PREFIX));
+        )->table(IndexIrisBlogs::make()->tableStructure($website, IndexIrisBlogs::PREFIX, self::SUB_TYPES));
     }
 }

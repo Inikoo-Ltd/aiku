@@ -35,6 +35,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\ApplyNewCompositionToDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
@@ -448,7 +449,8 @@ test('store picking', function (DeliveryNote $deliveryNote) {
         ->and(intval($picking->quantity))->toBe(5)
         ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
         ->and($picking->deliveryNoteItem->is_handled)->toBeFalse()
-        ->and($picking->location_id)->toBe($locationOrgStock->location_id);
+        ->and($picking->location_id)->toBe($locationOrgStock->location_id)
+        ->and($picking->last_picked_at)->not->toBeNull();
 
     $picking->refresh();
 
@@ -482,7 +484,12 @@ test('pack item', function (Picking $picking) {
 
     expect($packing)->toBeInstanceOf(Packing::class)
         ->and(intval($packing->quantity))->toBe(10)
-        ->and(intval($packing->deliveryNoteItem->quantity_packed))->toBe(10);
+        ->and(intval($packing->deliveryNoteItem->quantity_packed))->toBe(10)
+        ->and($packing->queued_at)->not->toBeNull()
+        ->and($packing->packing_at)->not->toBeNull()
+        ->and($packing->done_at)->not->toBeNull()
+        ->and($packing->done_at->gte($packing->packing_at))->toBeTrue()
+        ->and($packing->packing_at->gte($packing->queued_at))->toBeTrue();
 
     $packing->refresh();
 
@@ -1497,16 +1504,28 @@ test('picking upsert pick all split and delete', function () {
 
     $item->update(['locked_at' => null]);
     \App\Actions\Dispatching\Picking\PickAllItem::run($item->refresh(), ['location_org_stock_id' => $los->id]);
-    expect(intval($item->refresh()->quantity_picked))->toBeGreaterThanOrEqual(intval($item->quantity_required));
+    expect(intval($item->refresh()->quantity_picked))->toBe(intval($item->quantity_required));
 
-    $picking = StorePicking::make()->action($item->refresh(), $this->user, [
+    expect(fn () => StorePicking::make()->action($item->refresh(), $this->user, [
         'picker_user_id'        => $this->user->id,
         'location_org_stock_id' => $los->id,
         'quantity'              => 2,
+    ]))->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    $item->update(['quantity_required' => $item->quantity_required + 2]);
+    $picking = StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $los->id,
+        'quantity'              => 5,
     ]);
+    expect(floatval($picking->quantity))->toBe(2.0)
+        ->and(floatval($item->refresh()->quantity_picked))->toBe(floatval($item->quantity_required));
 
     $split = \App\Actions\Dispatching\Picking\SplitPicking::run($picking, 1.0);
     expect(floatval($split->quantity))->toBe(1.0);
+
+    $clamped = UpdatePicking::make()->action($split, ['quantity' => 99]);
+    expect(floatval($clamped->quantity))->toBe(1.0);
 
     \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking->refresh(), $this->user);
     expect(Picking::find($picking->id))->toBeNull();
@@ -1518,6 +1537,9 @@ test('picking waiting warehouse and crm flow', function () {
     $this->organisation->update(['settings' => $settings]);
 
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    // The helper picks all 10 of 10; waiting only applies to unpicked quantity, so free some up.
+    $item->update(['quantity_picked' => 6]);
 
     $waiting = \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
     expect($waiting->has_waiting_warehouse)->toBeTrue()
@@ -1535,8 +1557,11 @@ test('picking waiting warehouse and crm flow', function () {
     $undone = \App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse::run($item->refresh());
     expect($undone->has_waiting_warehouse)->toBeFalse();
 
+    // Waiting is only possible for what is not yet in the tote, so free some quantity up first.
+    $item->update(['quantity_picked' => 5, 'quantity_waiting_crm' => 0]);
     $crm = \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($item->refresh(), $this->user, ['quantity' => 2]);
-    expect($crm->has_waiting_crm)->toBeTrue();
+    expect($crm->has_waiting_crm)->toBeTrue()
+        ->and(intval($crm->quantity_waiting_crm))->toBe(2);
 
     \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingCrm::run($item->refresh(), $this->user, ['quantity' => 1]);
 
@@ -1551,7 +1576,8 @@ test('picking upsert from waiting warehouse and magic place', function () {
     $this->organisation->update(['settings' => $settings]);
 
     [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
-    $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
+    // Helper already picked 10 of 10, so give the waiting quantity real headroom.
+    $item->update(['quantity_required' => 15, 'has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
 
     \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1, 'location_org_stock_id' => $los->id]);
     expect($item->refresh()->pickings()->exists())->toBeTrue();
@@ -1574,7 +1600,8 @@ test('picking upsert from waiting warehouse and magic place', function () {
     expect($magicPicking)->toBeInstanceOf(Picking::class)
         ->and($magicPicking->type)->toBe(PickingTypeEnum::MAGIC_PICK)
         ->and($magicPicking->location_id)->toBeNull()
-        ->and(floatval($magicPicking->quantity))->toBe(3.0);
+        ->and(floatval($magicPicking->quantity))->toBe(3.0)
+        ->and($magicPicking->last_picked_at)->not->toBeNull();
 });
 
 test('picking and delivery note item repairs and reindex', function () {
@@ -1812,6 +1839,17 @@ test('only dispatch supervisors can cancel a delivery note', function () {
     setPermissionsTeamId($user->group_id);
     $user->syncRoles($originalRoles);
     actingAs($user->refresh());
+});
+
+test('cancelling an order cancels its delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders->first();
+
+    actingAs($this->adminGuest->getUser());
+    patch(route('grp.models.order.state.cancelled', $order->id))->assertSessionHasNoErrors();
+
+    expect($order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
 });
 
 test('UI show delivery note richer states and tabs', function () {
@@ -2072,6 +2110,7 @@ test('UI pallet returns index with real data', function () {
 
 test('fetch single delivery note item with pickings', function () {
     [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
+    $item->update(['quantity_required' => 13]);
     StorePicking::make()->action($item->refresh(), $this->user, [
         'picker_user_id'        => $this->user->id,
         'location_org_stock_id' => $los->id,
@@ -2149,7 +2188,10 @@ test('marks record as failed with a clear message when sku is not found', functi
 
 test('org stock notes and consumables reach the picking screen', function () {
     /** @var DeliveryNoteItem $deliveryNoteItem */
-    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')
+        ->where('quantity_required', '>', 0)
+        ->whereHas('deliveryNote', fn ($query) => $query->has('deliveryNoteItems', '=', 1))
+        ->firstOrFail();
 
     UpdateOrgStock::make()->action(
         orgStock: $deliveryNoteItem->orgStock,
@@ -2200,7 +2242,9 @@ test('repair ial01 org stock consumables dry run writes nothing', function () {
 
 test('ial01 bom removal is blocked until a consumable replaces the instruction', function () {
     /** @var DeliveryNoteItem $deliveryNoteItem */
-    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')
+        ->whereHas('transaction', fn ($query) => $query->where('model_type', 'Product'))
+        ->firstOrFail();
     $orgStock         = $deliveryNoteItem->orgStock;
     $product          = $deliveryNoteItem->transaction->model;
 
@@ -2234,9 +2278,10 @@ test('ial01 org stock retirement is blocked until boms are clear and labels are 
         ['code' => 'IAL01', 'name' => 'Import Address Labels']
     )));
 
-    /** @var DeliveryNoteItem $deliveryNoteItem */
-    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('org_stock_id')->firstOrFail();
-    $labelOrgStock    = $deliveryNoteItem->orgStock;
+    // A fresh note and org stock: firstOrFail() has no order and can grab an item whose
+    // org stock is shared with a replacement note, throwing the unpicked count off.
+    [, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $labelOrgStock        = $deliveryNoteItem->orgStock;
 
     $labelOrgStock->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
     $labelOrgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
@@ -2570,3 +2615,123 @@ test('after rolling back the picking the new composition can be applied and the 
         ->and($deliveryNoteItem->composition_dirty_at)->toBeNull()
         ->and($deliveryNoteItem->composition_dirty_quantity_required)->toBeNull();
 })->depends('composition change flags packed items dirty instead of rewriting them');
+
+test('picking an item auto ignores zero quantity items and hides them from the index', function () {
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'ZQ123456',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    $transaction = $this->order->transactions()->first();
+
+    $items = [];
+    foreach ([10, 0] as $quantityRequired) {
+        $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+        $stock    = UpdateStock::make()->action($stock, [
+            'state' => StockStateEnum::ACTIVE
+        ]);
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+        $items[] = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+            'delivery_note_id'  => $deliveryNote->id,
+            'org_stock_id'      => $orgStock->id,
+            'transaction_id'    => $transaction->id,
+            'quantity_required' => $quantityRequired
+        ]);
+    }
+
+    [$normalItem, $zeroItem] = $items;
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(orgStock: $normalItem->orgStock, location: $location, modelData: [
+        'quantity'   => 100,
+        'type'       => LocationStockTypeEnum::PICKING,
+        'fetched_at' => now(),
+    ], strict: false);
+
+    StorePicking::make()->action($normalItem, $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $locationOrgStock->id,
+        'quantity'              => 5,
+    ]);
+
+    $zeroItem->refresh();
+
+    expect($zeroItem->pickings()->where('type', PickingTypeEnum::NOT_PICK)->count())->toBe(1)
+        ->and((float) $zeroItem->quantity_picked)->toBe(0.0);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $visibleItemIds = IndexDeliveryNoteItems::run($deliveryNote)->pluck('id');
+
+    expect($visibleItemIds)->toContain($normalItem->id)
+        ->not->toContain($zeroItem->id);
+});
+
+test('waiting quantities never exceed what is still unpicked', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    // 10 required, 4 already in the tote: only 6 can wait, however much the caller asks for.
+    $item->update(['quantity_picked' => 4, 'quantity_waiting_crm' => 0, 'quantity_waiting_warehouse' => 0]);
+
+    $crm = \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($item->refresh(), $this->user, ['quantity' => 10]);
+
+    expect(floatval($crm->quantity_waiting_crm))->toBe(6.0)
+        ->and(floatval($crm->quantity_waiting_warehouse))->toBeGreaterThanOrEqual(0.0);
+
+    // Everything is now picked or with CRM: nothing left to park anywhere.
+    expect(fn () => \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 5]))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+});
+
+test('a redefined pack does not change what an already sold box means', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $transaction = $item->transaction;
+    $product     = $transaction->model;
+
+    // Sold as a 3 piece box; the delivery note item was built from that.
+    $product->update(['units' => 3]);
+    $historicAsset = \App\Models\Catalogue\HistoricAsset::create([
+        'group_id'        => $product->group_id,
+        'organisation_id' => $product->organisation_id,
+        'asset_id'        => $product->asset_id,
+        'status'          => true,
+        'model_type'      => 'Product',
+        'model_id'        => $product->id,
+        'code'            => $product->code,
+        'name'            => $product->name,
+        'price'           => $product->price,
+        'unit'            => $product->unit,
+        'units'           => 3,
+    ]);
+    $transaction->update(['historic_asset_id' => $historicAsset->id, 'quantity_ordered' => 3]);
+
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $item->org_stock_id],
+        ['quantity' => 3]
+    );
+
+    $required = \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
+        ->getQuantityRequired($item->orgStock, $item->refresh());
+    expect(floatval($required))->toBe(9.0);
+
+    // The product is redefined as a 6 piece box picking 6: the sold box must still mean 3.
+    $product->update(['units' => 6]);
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')
+        ->where('product_id', $product->id)->where('org_stock_id', $item->org_stock_id)
+        ->update(['quantity' => 6]);
+
+    $required = \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
+        ->getQuantityRequired($item->orgStock, $item->refresh());
+    expect(floatval($required))->toBe(9.0);
+});

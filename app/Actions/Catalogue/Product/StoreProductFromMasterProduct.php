@@ -89,7 +89,7 @@ class StoreProductFromMasterProduct extends OrgAction
                         data_set($data, 'family_id', $productCategory->id);
                         data_set($data, 'trade_units', $tradeUnits);
 
-                        $this->updateFoundProduct($product, $data, ($isMain && !$ignoreCreateWebpage));
+                        $this->updateFoundProduct($product, $data, ($isMain && !$ignoreCreateWebpage), $generateVariant);
 
                         continue;
                     }
@@ -164,12 +164,12 @@ class StoreProductFromMasterProduct extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage): void
+    public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage, bool $generateVariant = true): void
     {
         $product = UpdateProduct::run($product, $modelData);
         CloneProductImagesFromTradeUnits::run($product);
         $product->refresh();
-        if ($product->masterProduct) {
+        if ($product->masterProduct && $generateVariant) {
             $this->setVariantData($product, $product->masterProduct);
         }
         if ($createWebpage && $product->webpage === null) {

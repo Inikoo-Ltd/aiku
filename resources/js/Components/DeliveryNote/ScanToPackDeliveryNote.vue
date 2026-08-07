@@ -17,6 +17,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { playNotificationSound } from "@/Composables/useNotificationSound"
 import { routeType } from "@/types/route"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
+import Toggle from "../Pure/Toggle.vue"
 
 library.add(faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle)
 
@@ -31,6 +32,8 @@ const emits = defineEmits<{
 
 type ScanStatus = "packed" | "already_packed" | "nothing_to_pack" | "not_found" | "wrong_state" | "error"
 
+// delivery_note and picking_session_state only come back when the panel is packing a whole picking
+// session, where the packer has to be told which box the scan just went into.
 type ScanOutcome = {
     status: ScanStatus
     message: string
@@ -43,8 +46,14 @@ type ScanOutcome = {
         quantity_packed: number
         quantity_to_pack: number
     } | null
+    delivery_note?: {
+        id: number
+        reference: string
+        state: string
+    } | null
     row: Record<string, any> | null
     delivery_note_state: string
+    picking_session_state?: string
     remaining_to_pack: number
 }
 
@@ -329,7 +338,8 @@ onBeforeUnmount(() => {
                     </div>
                     <div class="flex items-center gap-2" v-tooltip="ctrans('Capture scanner input anywhere on this page')">
                         <span class="text-xs text-gray-600">{{ ctrans("Listening") }}</span>
-                        <ToggleSwitch v-model="isListening" />
+                        <!-- <ToggleSwitch v-model="isListening" /> -->
+                        <Toggle v-model="isListening"  />
                     </div>
                 </div>
             </div>
@@ -339,6 +349,12 @@ onBeforeUnmount(() => {
                 class="mt-3 flex items-center gap-3 rounded-md border-l-4 px-3 py-2"
                 :class="lastOutcomeStyle.wrapper">
                 <FontAwesomeIcon :icon="lastOutcomeStyle.icon" :class="lastOutcomeStyle.iconClass" class="text-xl" fixed-width aria-hidden="true" />
+                <div
+                    v-if="lastOutcome.delivery_note?.reference"
+                    v-tooltip="ctrans('Put it in this box')"
+                    class="whitespace-nowrap rounded bg-white/70 px-2 py-1 font-mono text-base font-bold">
+                    {{ lastOutcome.delivery_note.reference }}
+                </div>
                 <div class="min-w-0">
                     <div class="font-semibold truncate">{{ lastOutcome.message }}</div>
                     <div v-if="lastOutcome.item?.name" class="text-xs opacity-80 truncate">

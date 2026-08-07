@@ -122,7 +122,7 @@ const getWaitingCrmFractional = (item: any) => {
                     {{ item.org_stock_code }}
                 </div>
                 <div class="opacity-75 text-justify">
-                    {{ item.org_stock_name }}
+                    {{ item.org_stock_name }} <span class="italic opacity-80">{{ item.packed_in_message }}</span>
                 </div>
             </div>
         </template>

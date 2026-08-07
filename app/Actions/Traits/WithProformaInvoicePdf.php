@@ -2,6 +2,8 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Ordering\Order;
 use Carbon\Carbon;
 use Exception;
@@ -27,6 +29,31 @@ trait WithProformaInvoicePdf
 
             $transactionModel = $order->transactions->where('model_type', 'Product');
 
+            /** A delivery note with shortfalls means the order will be invoiced on what was
+             * actually picked, so the proforma shows picked quantities and amounts, not the
+             * submitted ones */
+            $deliveryNote         = $order->deliveryNotes()->whereNot('state', DeliveryNoteStateEnum::CANCELLED)->orderByDesc('id')->first();
+            $taxBreakdownOverride = null;
+
+            if ($deliveryNote) {
+                $invoiceGenerator = GenerateInvoiceFromOrder::make();
+
+                foreach ($transactionModel as $transaction) {
+                    $totals                        = $invoiceGenerator->recalculateTransactionTotals($transaction, $deliveryNote);
+                    $transaction->quantity_ordered = $totals['quantity'];
+                    $transaction->gross_amount     = round($totals['gross_amount'], 2);
+                    $transaction->net_amount       = round($totals['net_amount'], 2);
+                }
+
+                $orderTotals          = $invoiceGenerator->recalculateTotals($order, $deliveryNote);
+                $taxBreakdownOverride = $orderTotals['tax_breakdown'];
+
+                $order->net_amount   = $orderTotals['net_amount'];
+                $order->total_amount = $orderTotals['total_amount'];
+                $order->tax_amount   = $orderTotals['tax_amount'];
+                $order->goods_amount = $orderTotals['goods_amount'];
+                $order->gross_amount = $orderTotals['gross_amount'];
+            }
 
             $transactions = $transactionModel->map(function ($transaction) {
                 if (!empty($transaction->data['date'])) {
@@ -54,6 +81,7 @@ trait WithProformaInvoicePdf
                 'shop'                 => $order->shop,
                 'order'                => $order,
                 'transactions'         => $transactions,
+                'taxBreakdownOverride' => $taxBreakdownOverride,
                 'totalItemsNet'        => $totalItemsNet,
                 'totalShipping'        => $totalShipping,
                 'totalNet'             => $totalNet,

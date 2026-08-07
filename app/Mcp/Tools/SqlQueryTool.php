@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tool;
 use Throwable;
 
-#[Description('Run a read-only SQL SELECT against the Aiku PostgreSQL database. Only available to users with SQL access enabled. Use describe-tables-tool to discover schema. Always add your own LIMIT. Gotchas: never guess the values of enum-like columns (type, state, status) — describe-tables-tool reports their actual values; the legacy *_intervals tables were dropped — use *_time_series and *_time_series_records instead; filter suppliers by country via their address country_id, not by matching location text. Read the aiku data guide resource before writing revenue queries.')]
+#[Description('Run a read-only SQL SELECT against the Aiku PostgreSQL database, or against the NightOwl telemetry database (requests, exceptions, queries, jobs, logs) by passing database: nightowl. Only available to users with SQL access enabled. Use describe-tables-tool to discover schema. Always add your own LIMIT. Gotchas: never guess the values of enum-like columns (type, state, status) — describe-tables-tool reports their actual values; the legacy *_intervals tables were dropped — use *_time_series and *_time_series_records instead; filter suppliers by country via their address country_id, not by matching location text. Read the aiku data guide resource before writing revenue queries.')]
 #[IsReadOnly]
 class SqlQueryTool extends Tool
 {
@@ -34,7 +34,8 @@ class SqlQueryTool extends Tool
     public function handle(Request $request): Response
     {
         $request->validate([
-            'sql' => ['required', 'string'],
+            'sql'      => ['required', 'string'],
+            'database' => ['sometimes', 'string', 'in:aiku,nightowl'],
         ]);
 
         if ($denied = $this->deniedSqlAccess($request)) {
@@ -51,7 +52,7 @@ class SqlQueryTool extends Tool
             return Response::error('Only SELECT statements are allowed.');
         }
 
-        $connection = DB::connection('aiku_read_only');
+        $connection = DB::connection($this->resolveSqlConnection($request));
 
         try {
             $rows = $connection->transaction(function () use ($connection, $sql) {
@@ -79,7 +80,8 @@ class SqlQueryTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'sql' => $schema->string()->description('A single read-only SQL SELECT statement')->required(),
+            'sql'      => $schema->string()->description('A single read-only SQL SELECT statement')->required(),
+            'database' => $schema->string()->enum(['aiku', 'nightowl'])->description('Database to query: aiku (default, commerce data) or nightowl (telemetry: requests, exceptions, queries, jobs)'),
         ];
     }
 }

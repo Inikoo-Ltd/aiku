@@ -13,7 +13,6 @@ use App\Actions\Dispatching\WaitingItems\GetCrmReturnedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
-use App\Actions\Masters\MasterAsset\GetMasterUpdatedBadgeData;
 use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Http\Resources\SysAdmin\NotificationsResource;
 use App\Models\DevOps\AppDeployment;
@@ -62,7 +61,6 @@ class GetFirstLoadProps
         data_set($props, 'dispatching_waiting_count', $user ? GetDispatchingWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_waiting_count', $user ? GetCrmWaitingBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'crm_return_count', $user ? GetCrmReturnedBadgeData::make()->totalCount($user) : 0);
-        data_set($props, 'master_updated_count', $user ? GetMasterUpdatedBadgeData::make()->totalCount($user) : 0);
         data_set($props, 'ziggy', new Ziggy('grp')->toArray());
         data_set($props, 'last_deployment_at', $lastDeployment?->created_at);
         data_set($props, 'last_deployment_hash', $lastDeployment?->commit_hash);

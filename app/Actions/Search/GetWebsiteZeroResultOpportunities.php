@@ -43,7 +43,7 @@ class GetWebsiteZeroResultOpportunities
     {
         $terms = WebsiteSearchLog::where('website_id', $website->id)
             ->where('created_at', '>=', now()->subDays($days))
-            ->where('results_count', 0)
+            ->where('keyword_results_count', 0)
             ->whereRaw('char_length(query) between 3 and 40')
             ->selectRaw('lower(query) as query, count(*) as searches, count(distinct customer_id) as customers, max(created_at) as last_searched_at')
             ->groupByRaw('lower(query)')

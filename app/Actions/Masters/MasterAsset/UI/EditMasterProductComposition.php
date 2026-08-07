@@ -7,9 +7,11 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Goods\TradeUnit;
@@ -31,6 +33,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditMasterProductComposition extends OrgAction
 {
     use WithUnitsChangeConfirmation;
+    use WithMasterAssetTradeUnits;
     use WithMasterProductSubNavigation;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
@@ -78,6 +81,7 @@ class EditMasterProductComposition extends OrgAction
                     ],
                     'subNavigation' => $this->getMasterProductsSubNavigation($masterAsset),
                 ],
+                'anomalies' => $this->getAnomalies($masterAsset),
                 'formData' => [
                     'blueprint' => $this->getBlueprint($masterAsset),
                     'args'      => [
@@ -91,6 +95,35 @@ class EditMasterProductComposition extends OrgAction
                 ]
             ]
         );
+    }
+
+    /**
+     * @return array{items: list<array{product_id: int, shop_code: string, shop_slug: string, issues: list<string>, ignored_issues: list<string>}>, fixRoute: array{name: string, parameters: array{masterAsset: int}, method: string}, killRebelRoute: array{name: string, parameters: array{masterAsset: int}, method: string}}|null
+     */
+    public function getAnomalies(MasterAsset $masterProduct): ?array
+    {
+        $anomalies = GetMasterAssetAnomalies::run($masterProduct);
+        if (!$anomalies) {
+            return null;
+        }
+
+        return [
+            'items'    => array_values($anomalies),
+            'fixRoute' => [
+                'name'       => 'grp.models.master_asset.fix_anomalies',
+                'parameters' => [
+                    'masterAsset' => $masterProduct->id
+                ],
+                'method'     => 'post',
+            ],
+            'killRebelRoute' => [
+                'name'       => 'grp.models.master_asset.kill_rebel',
+                'parameters' => [
+                    'masterAsset' => $masterProduct->id
+                ],
+                'method'     => 'post',
+            ],
+        ];
     }
 
     public function getBlueprint(MasterAsset $masterProduct): array
@@ -120,9 +153,17 @@ class EditMasterProductComposition extends OrgAction
 
         $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn, $packedInByOrg) {
             /** @var MorphPivot $pivot */
-            $pivot            = $tradeUnit->getRelationValue('pivot');
-            $quantity         = $pivot->getAttribute('quantity');
-            $packedInQuantity = Arr::get($packedIn, $tradeUnit->id, 1);
+            $pivot    = $tradeUnit->getRelationValue('pivot');
+            $quantity = $pivot->getAttribute('quantity');
+
+            /*
+             * The warehouses' own packing wins over the group stock's when they all agree:
+             * a product of 4 units packed in 4s picks 1 SKO, whatever the group stock says.
+             */
+            $orgPackings      = ($packedInByOrg->get($tradeUnit->id) ?? collect())->pluck('quantity')->map(fn ($packing) => (float) $packing)->unique();
+            $packedInQuantity = $orgPackings->count() === 1 && $orgPackings->first() > 0
+                ? $orgPackings->first()
+                : Arr::get($packedIn, $tradeUnit->id, 1);
             $fraction         = $quantity / $packedInQuantity;
 
             return array_merge(
@@ -178,7 +219,7 @@ class EditMasterProductComposition extends OrgAction
             [
                 'label'  => __('Trade units'),
                 'icon'   => 'fa-light fa-atom',
-                'fields' => [
+                'fields' => array_filter([
                     'trade_units' => [
                         'label'            => __('Trade units'),
                         'saveConfirmation' => $this->getUnitsChangeConfirmation($masterProduct),
@@ -225,6 +266,39 @@ class EditMasterProductComposition extends OrgAction
                             ],
                         ])),
                         'value' => $tradeUnits,
+                    ],
+                    'units' => $this->getUnitsField($masterProduct, $this->getUnitsChangeConfirmation($masterProduct)),
+                ]),
+            ],
+            [
+                /* What the customer is sold: the TU—P edge of the triangle, pink on both */
+                'label'  => __('How we sell'),
+                'icon'   => 'fa-light fa-tag',
+                'accent'  => 'pink',
+                'compact' => true,
+                'fields'  => [
+                    'name' => [
+                        'type'             => 'input',
+                        'label'            => __('Name'),
+                        'value'            => $masterProduct->name,
+                        'collapsible'      => true,
+                        'compact'          => true,
+                        'noSaveButton'     => true,
+                        'information'      => __('The name customers read. Saving it renames and re-translates every shop product that follows this master.'),
+                        'cascadeNote'      => $this->getCascadeAndTranslateNote($masterProduct),
+                        'saveConfirmation' => $this->getCascadeAndTranslateConfirmation($masterProduct, __('name')),
+                    ],
+                    'unit' => [
+                        'type'             => 'input',
+                        'label'            => __('Units'),
+                        'value'            => $masterProduct->unit,
+                        'placeholder'      => __('piece'),
+                        'compact'          => true,
+                        'unitsPreview'     => (float) $masterProduct->units,
+                        'noSaveButton'     => true,
+                        'information'      => __('What one unit is called, shown to customers. Saving it relabels and re-translates every shop product that follows this master.'),
+                        'cascadeNote'      => $this->getCascadeAndTranslateNote($masterProduct),
+                        'saveConfirmation' => $this->getCascadeAndTranslateConfirmation($masterProduct, __('unit label')),
                     ],
                 ],
             ],

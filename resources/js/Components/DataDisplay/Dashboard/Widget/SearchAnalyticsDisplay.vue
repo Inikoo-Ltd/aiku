@@ -2,6 +2,7 @@
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { Link } from '@inertiajs/vue3'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { faMousePointer, faArrowRight } from '@fal'
 
 library.add(faMousePointer, faArrowRight)
@@ -42,7 +43,45 @@ const props = defineProps<{
     pageUrl?: (clickedUrl: string) => string
     zeroQueryStatus?: Record<string, 'unpublished' | 'not_stocked'>
     opportunitiesUrl?: string
+    liveWebsiteId?: number
 }>()
+
+// Headline numbers arrive over the same website analytics channel the live visitor
+// counters use; the lists stay as rendered, they are far heavier to rebuild per search
+type Headline = {
+    total_searches: number
+    logged_in_searches: number
+    guest_searches: number
+    click_through: number
+    zero_results_rate: number
+}
+
+const liveHeadline = ref<Headline | null>(null)
+const justUpdated = ref(false)
+let flashTimer: ReturnType<typeof setTimeout> | null = null
+
+const stats = computed(() => ({ ...(props.widget ?? {}), ...(liveHeadline.value ?? {}) }) as any)
+
+onMounted(() => {
+    if (!props.liveWebsiteId || !(window as any).Echo) {
+        return
+    }
+
+    ;(window as any).Echo.private(`website.${props.liveWebsiteId}.analytics`)
+        .listen('.App\\Events\\Web\\WebsiteSearchStatsUpdated', (event: Headline) => {
+            liveHeadline.value = event
+            justUpdated.value = true
+            if (flashTimer) clearTimeout(flashTimer)
+            flashTimer = setTimeout(() => (justUpdated.value = false), 1200)
+        })
+})
+
+onUnmounted(() => {
+    if (flashTimer) clearTimeout(flashTimer)
+    if (props.liveWebsiteId && (window as any).Echo) {
+        ;(window as any).Echo.leave(`website.${props.liveWebsiteId}.analytics`)
+    }
+})
 
 // The full path is unreadable in a narrow column; the last segment is the webpage url
 const pagePath = (url: string) => {
@@ -90,18 +129,21 @@ const searcherHref = (searcher: SearcherStat): string | null => {
         <template v-if="widget">
             <div class="flex gap-10 mb-4">
                 <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
-                    <p class="text-4xl font-bold">{{ widget.total_searches.toLocaleString() }}</p>
-                    <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("Searches") }}</p>
-                    <p v-if="widget.logged_in_searches !== undefined" class="text-xs text-gray-400">
-                        {{ ctrans(":logged logged in · :guest guests", { logged: String(widget.logged_in_searches), guest: String(widget.guest_searches ?? 0) }) }}
+                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated && 'text-indigo-600'">{{ stats.total_searches.toLocaleString() }}</p>
+                    <p class="text-sm text-gray-600 group-hover:underline">
+                        {{ ctrans("Searches") }}
+                        <span v-if="liveWebsiteId" class="inline-block w-1.5 h-1.5 rounded-full align-middle" :class="justUpdated ? 'bg-indigo-500' : 'bg-green-400'" v-tooltip="ctrans('Updating live')" />
+                    </p>
+                    <p v-if="stats.logged_in_searches !== undefined" class="text-xs text-gray-400">
+                        {{ ctrans(":logged logged in · :guest guests", { logged: String(stats.logged_in_searches), guest: String(stats.guest_searches ?? 0) }) }}
                     </p>
                 </component>
                 <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
-                    <p class="text-4xl font-bold">{{ widget.click_through }}%</p>
+                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated && 'text-indigo-600'">{{ stats.click_through }}%</p>
                     <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("Click-through") }}</p>
                 </component>
                 <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
-                    <p class="text-4xl font-bold">{{ widget.zero_results_rate }}%</p>
+                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated && 'text-indigo-600'">{{ stats.zero_results_rate }}%</p>
                     <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("No results") }}</p>
                 </component>
             </div>

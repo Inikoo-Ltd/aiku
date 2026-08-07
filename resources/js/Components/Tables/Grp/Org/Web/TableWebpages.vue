@@ -16,6 +16,7 @@ import { faCheckSquare } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from '@/Components/Icon.vue';
 import { computed } from 'vue';
+import { toLower, upperFirst } from 'lodash-es';
 
 library.add(
     faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam
@@ -383,6 +384,10 @@ const onCheckedAll = ({ data, allChecked }: { data: WebpageRow[], allChecked: bo
         <template #cell(type)="{ item: webpage }">
             <!-- <FontAwesomeIcon :icon="webpage.typeIcon.icon" class="" /> -->
             <Icon :data="webpage.typeIcon" class="px-1" />
+        </template>
+
+         <template #cell(sub_type)="{ item: webpage }">
+           <span>{{ upperFirst(toLower(String(webpage.sub_type ?? '').replace(/_/g, ' '))) }}</span>
         </template>
 
         <template #cell(action)="{ item: webpage }">

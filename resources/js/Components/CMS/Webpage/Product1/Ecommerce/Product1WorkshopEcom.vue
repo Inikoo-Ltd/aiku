@@ -55,7 +55,7 @@ const props = withDefaults(defineProps<{
     templateEdit?: TemplateType
     indexBlock?: number
     screenType: "mobile" | "tablet" | "desktop"
-    currency: {
+    currency?: {
         code: string
         name: string
     }
@@ -63,7 +63,7 @@ const props = withDefaults(defineProps<{
         url: string
     }
     validImages: object
-    listProducts: ProductResource[]
+    listProducts?: ProductResource[]
 }>(), {
     templateEdit: 'webpage'
 })

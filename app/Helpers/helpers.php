@@ -6,7 +6,9 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
+use Illuminate\Support\Arr;
 use App\Models\Web\Webpage;
 use Illuminate\Support\MessageBag;
 
@@ -966,5 +968,22 @@ if (!function_exists('getIsoLocale')) {
 
         return $map[$lang] ?? $languageCode;
 
+    }
+}
+
+if (!function_exists('paymentSettlementTolerance')) {
+    /**
+     * Largest shortfall (in the shop currency) that is written off instead of chased,
+     * capped at one currency unit.
+     */
+    function paymentSettlementTolerance(?Shop $shop = null): float
+    {
+        $tolerance = Arr::get($shop?->settings ?? [], 'accounting.payment_settlement_tolerance');
+
+        if ($tolerance === null) {
+            $tolerance = config('app.payment_settlement_tolerance');
+        }
+
+        return min(max((float)$tolerance, 0), 1);
     }
 }

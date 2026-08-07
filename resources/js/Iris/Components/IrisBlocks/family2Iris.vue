@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage } from "@far"
 import { getBestOffer } from "@/Composables/useOffers"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+import type { Image as TypeImage } from "@/types/Image"
 
 interface ImageFormats {
 	original?: string
@@ -20,11 +21,17 @@ interface FamilyImage {
 	alt?: string
 }
 
+interface FamilyTag {
+	name?: string
+	web_image?: TypeImage | null
+}
+
 interface FamilyData {
 	name?: string
 	description?: string
 	description_image?: Record<string, FamilyImage>
 	offers_data: object
+	tags?: FamilyTag[]
 }
 
 interface FieldValue {
@@ -69,6 +76,12 @@ const bestOffer = computed(() => {
 	return getBestOffer(props.fieldValue?.family?.offers_data)
 })
 
+const MAX_VISIBLE_TAGS = 3
+
+const visibleTags = computed(() =>
+	(props.fieldValue?.family?.tags ?? []).slice(0, MAX_VISIBLE_TAGS)
+)
+
 const isLcpBlock = computed(() => Number(props.indexBlock) === 0)
 
 const secondaryImageAttributes = computed(() =>
@@ -108,8 +121,7 @@ const COLLAPSED_HEIGHTS = [
 	{ minWidth: 0, height: 260 },
 ]
 
-const READ_MORE_ROW_HEIGHT = 26
-const MIN_COLLAPSED_HEIGHT = 120
+const MIN_COLLAPSED_HEIGHT = 250
 
 const getFallbackCollapsedHeight = (): number => {
 	const width = window.innerWidth
@@ -127,7 +139,7 @@ const getCollapsedHeight = (): number => {
 
 	const siblingsHeight = [offersRef, titleRef, truncatedTitleRef, actionsRef].reduce(
 		(total, element) => total + (element.value?.offsetHeight ?? 0),
-		READ_MORE_ROW_HEIGHT
+		0
 	)
 
 	return Math.max(MIN_COLLAPSED_HEIGHT, imagesRef.value!.offsetHeight - siblingsHeight)
@@ -427,31 +439,20 @@ const contentClass = computed(() =>
 							<!-- Fade overlay -->
 							<div
 								v-if="!expanded && showReadMore"
-								class="absolute bottom-0 left-0 right-0 h-6 pointer-events-none bg-gradient-to-t" />
+								class="absolute bottom-0 left-0 right-0 h-8 pointer-events-none bg-gradient-to-t from-white to-transparent lg:h-6" />
 						</div>
-					</div>
-
-					<!-- Description fills remaining space -->
-
-					<div v-if="showReadMore" class="mt-2 flex justify-end">
-						<button
-							type="button"
-							class="text-xs italic underline"
-							@click="expanded = !expanded">
-							{{ expanded ? ctrans("Read Less") : ctrans("Read More") }}
-						</button>
 					</div>
 
 					<!-- Always bottom -->
 					<div
 						ref="actionsRef"
-						class="mt-auto pt-1 flex items-center gap-4 flex-wrap 2xl:pt-8 justify-center lg:justify-start">
+						class="mt-auto px-3 pt-3 flex flex-nowrap items-center gap-x-2 gap-y-2 lg:px-0 lg:pt-1 lg:flex-wrap lg:gap-4 lg:justify-start 2xl:pt-8">
 						<a
 							v-if="fieldValue.family.description_extra || layout?.iris?.is_logged_in"
 							href="#family-2-extra-description"
 							class="shrink-0">
 							<button
-								class="h-[30px] rounded-xl border border-[#333] px-8 text-sm font-medium transition hover:bg-gray-50 2xl:h-[48px] 2xl:px-12 2xl:text-base"
+								class="h-[38px] rounded-xl border border-[#333] px-4 text-sm font-medium transition hover:bg-gray-50 sm:px-6 lg:h-[30px] lg:px-8 2xl:h-[48px] 2xl:px-12 2xl:text-base"
 								:style="{
 									...getStyles(
 										fieldValue?.button?.container?.properties,
@@ -463,22 +464,33 @@ const contentClass = computed(() =>
 						</a>
 
 						<div
-							v-for="data in fieldValue.family.tags"
-							:key="data.name"
-							class="flex items-center gap-2 px-3 py-1.5 sm:px-2 lg:px-2 lg:py-2 2xl:px-6 2xl:py-2.5">
-							<Image
-								:src="data.web_image"
-								sizes="20px"
-								width="20"
-								height="20"
-								class="h-4 w-4 shrink-0 2xl:h-5 2xl:w-5"
-								image-class="object-contain" />
+							class="tags-row flex min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:flex-none lg:gap-4 lg:overflow-visible">
+							<div
+								v-for="data in visibleTags"
+								:key="data.name"
+								class="flex shrink-0 items-center gap-1.5 px-1 py-1 sm:px-2 lg:gap-2 lg:px-2 lg:py-2 2xl:px-6 2xl:py-2.5">
+								<Image
+									:src="data.web_image"
+									sizes="20px"
+									width="20"
+									height="20"
+									class="h-4 w-4 shrink-0 2xl:h-5 2xl:w-5"
+									image-class="object-contain" />
 
-							<span
-								class="whitespace-nowrap text-[11px] font-medium text-[#555] sm:text-xs lg:text-sm 2xl:text-base">
-								{{ data.name }}
-							</span>
+								<span
+									class="whitespace-nowrap text-[11px] font-medium text-[#555] sm:text-xs lg:text-sm 2xl:text-base">
+									{{ data.name }}
+								</span>
+							</div>
 						</div>
+
+						<button
+							v-if="showReadMore"
+							type="button"
+							class="ml-auto shrink-0 py-1 text-xs italic underline"
+							@click="expanded = !expanded">
+							{{ expanded ? ctrans("Read Less") : ctrans("Read More") }}
+						</button>
 					</div>
 				</div>
 			</div>
@@ -513,6 +525,15 @@ const contentClass = computed(() =>
 		font-size: 2.5rem;
 		/* 2xl */
 	}
+}
+
+.tags-row {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.tags-row::-webkit-scrollbar {
+	display: none;
 }
 
 .title {

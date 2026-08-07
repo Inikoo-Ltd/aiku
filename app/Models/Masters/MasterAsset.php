@@ -141,6 +141,7 @@ use App\Models\Traits\HasSearch;
  * @property int|null $master_variant_id
  * @property bool $is_variant_leader
  * @property bool $is_minion_variant
+ * @property bool $is_golden_product
  * @property bool $follow_trade_unit_media
  * @property bool $mismatch_detected Have a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
  * @property HealthRankEnum|null $health_rank
@@ -215,16 +216,17 @@ class MasterAsset extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'type'                 => MasterAssetTypeEnum::class,
-        'health_rank'          => HealthRankEnum::class,
-        'marketing_dimensions' => 'array',
-        'variant_ratio'        => 'decimal:3',
-        'price'                => 'decimal:2',
-        'rrp'                  => 'decimal:2',
-        'data'                 => 'array',
-        'status'               => 'boolean',
-        'variant_is_visible'   => 'boolean',
-
+        'type'                    => MasterAssetTypeEnum::class,
+        'health_rank'             => HealthRankEnum::class,
+        'marketing_dimensions'    => 'array',
+        'variant_ratio'           => 'decimal:3',
+        'price'                   => 'decimal:2',
+        'rrp'                     => 'decimal:2',
+        'data'                    => 'array',
+        'status'                  => 'boolean',
+        'has_independent_units'   => 'boolean',
+        'variant_is_visible'      => 'boolean',
+        'is_golden_product'       => 'boolean',
         'fetched_at'              => 'datetime',
         'last_fetched_at'         => 'datetime',
         'discontinued_at'         => 'datetime',
@@ -268,7 +270,8 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'is_main',
         'barcode',
         'is_for_sale',
-        'follow_trade_unit_media'
+        'follow_trade_unit_media',
+        'is_golden_product',
     ];
 
     public function getRouteKeyName(): string

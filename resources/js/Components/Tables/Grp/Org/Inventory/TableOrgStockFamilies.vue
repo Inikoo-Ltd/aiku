@@ -12,6 +12,7 @@ import { RouteParams } from "@/types/route-params";
 import { inject } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { trans } from "laravel-vue-i18n";
 import { faEquals, faMinus, faTriangle } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -34,6 +35,13 @@ const getIntervalChangesIcon = (isPositive: boolean) => {
 
 const getIntervalStateColor = (isPositive: boolean) => {
     return isPositive ? "text-green-500" : "text-red-500"
+}
+
+const stockTurnColor = (stockTurn: number) => {
+    if (stockTurn >= 4) return "text-green-500"
+    if (stockTurn >= 2.5) return "text-blue-500"
+    if (stockTurn >= 1.5) return "text-amber-500"
+    return "text-red-500"
 }
 
 const routeParams = route().params as RouteParams
@@ -71,24 +79,25 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
             {{ stockFamily["name"] }}
         </template>
         <template #cell(number_current_org_stocks)="{ item: stockFamily }">
-            <Link :href="orgStockFamilyOrgStocksRoute(stockFamily)" class="secondaryLink">
-                {{ stockFamily["number_current_org_stocks"] }}
-            </Link>
-        </template>
-        <template #cell(number_out_of_stock_org_stocks)="{ item: stockFamily }">
-            <span class="tabular-nums">
-                {{ stockFamily["number_out_of_stock_org_stocks"] }}
-                <span class="text-gray-400">({{ stockFamily["number_current_org_stocks"] }})</span>
+            <span class="tabular-nums whitespace-nowrap">
+                <Link :href="orgStockFamilyOrgStocksRoute(stockFamily)" class="secondaryLink">
+                    {{ stockFamily["number_current_org_stocks"] }}
+                </Link>
+                <span
+                    v-if="stockFamily['number_out_of_stock_org_stocks'] > 0"
+                    v-tooltip="trans('SKOs out of stock')"
+                    class="text-gray-400 cursor-help">
+                    ({{ stockFamily["number_out_of_stock_org_stocks"] }})
+                </span>
             </span>
-        </template>
-
-        <template #cell(woc)="{ item }">
-            <span v-if="item.woc !== null" class="tabular-nums">{{ item.woc }}w</span>
-            <span v-else class="text-gray-400">-</span>
         </template>
 
         <template #cell(stock_value)="{ item }">
             <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.stock_value) }}</span>
+        </template>
+
+        <template #cell(potential_sales)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.potential_sales) }}</span>
         </template>
 
         <template #cell(on_the_way_po_value)="{ item }">
@@ -98,25 +107,39 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
             </span>
         </template>
 
-        <template #cell(sales_grp_currency_external)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_grp_currency_external) }}</span>
+        <template #cell(gross_profit)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.gross_profit) }}</span>
         </template>
 
-        <template #cell(sales_grp_currency_external_delta)="{ item }">
-            <div v-if="item.sales_grp_currency_external_delta">
-                <span>{{ item.sales_grp_currency_external_delta.formatted }}</span>
+        <template #cell(stock_turn)="{ item }">
+            <span v-if="item.stock_turn !== null" class="tabular-nums" :class="stockTurnColor(item.stock_turn)">{{ item.stock_turn.toFixed(1) }}&times;</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(stock_cover)="{ item }">
+            <span v-if="item.stock_cover !== null" class="tabular-nums whitespace-nowrap">{{ item.stock_cover.toFixed(1) }} mo</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(sales_org_currency_external)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_org_currency_external) }}</span>
+        </template>
+
+        <template #cell(sales_org_currency_external_delta)="{ item }">
+            <div v-if="item.sales_org_currency_external_delta" class="whitespace-nowrap">
+                <span>{{ item.sales_org_currency_external_delta.formatted }}</span>
                 <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive)?.icon"
+                    :icon="getIntervalChangesIcon(item.sales_org_currency_external_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[
-                        getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive).class,
-                        getIntervalStateColor(item.sales_grp_currency_external_delta.is_positive),
+                        getIntervalChangesIcon(item.sales_org_currency_external_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_org_currency_external_delta.is_positive),
                     ]"
                     fixed-width
                     aria-hidden="true"
                 />
             </div>
-            <div v-else>
+            <div v-else class="whitespace-nowrap">
                 <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
@@ -131,7 +154,7 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
         </template>
 
         <template #cell(invoices_delta)="{ item }">
-            <div v-if="item.invoices_delta">
+            <div v-if="item.invoices_delta" class="whitespace-nowrap">
                 <span>{{ item.invoices_delta.formatted }}</span>
                 <FontAwesomeIcon
                     :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
@@ -144,7 +167,7 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
                     aria-hidden="true"
                 />
             </div>
-            <div v-else>
+            <div v-else class="whitespace-nowrap">
                 <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
