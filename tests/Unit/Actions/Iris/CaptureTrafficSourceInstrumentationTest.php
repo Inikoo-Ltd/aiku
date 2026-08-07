@@ -23,9 +23,9 @@ function captureWith(array $headers = [], string $url = 'https://ancientwisdom.b
     CaptureTrafficSource::make()->getCookies();
 }
 
-function captureCount(string $outcome): int
+function captureCount(string $outcome, string $audience = 'anon'): int
 {
-    return (int) Cache::get('traffic_capture:'.now()->toDateString().':'.$outcome, 0);
+    return (int) Cache::get('traffic_capture:'.now()->toDateString().':'.$audience.':'.$outcome, 0);
 }
 
 beforeEach(function () {
@@ -39,13 +39,26 @@ it('counts a hit with no referrer at all as direct', function () {
         ->and(captureCount('unmatched'))->toBe(0);
 });
 
-it('counts a hit from an unrecognised referrer as unmatched and records the host', function () {
+it('counts a hit from an external site we do not recognise as a matched referral', function () {
     captureWith(['X-Original-Referer' => 'https://someforum.example/thread/12']);
 
-    expect(captureCount('unmatched'))->toBe(1)
+    expect(captureCount('matched'))->toBe(1)
         ->and(captureCount('direct'))->toBe(0)
-        ->and(Cache::get('traffic_capture:'.now()->toDateString().':hosts'))
-        ->toBe(['someforum.example' => 1]);
+        ->and(captureCount('unmatched'))->toBe(0);
+});
+
+it('does not count our own admin app as a referral', function () {
+    captureWith(['X-Original-Referer' => 'https://app.aiku.io/org/aw/shops/uk']);
+
+    expect(captureCount('direct'))->toBe(1)
+        ->and(captureCount('matched'))->toBe(0);
+});
+
+it('counts anonymous and logged in visitors separately', function () {
+    captureWith();
+
+    expect(captureCount('direct', 'anon'))->toBe(1)
+        ->and(captureCount('direct', 'auth'))->toBe(0);
 });
 
 it('does not count the storefront referring itself as an unrecognised source', function () {

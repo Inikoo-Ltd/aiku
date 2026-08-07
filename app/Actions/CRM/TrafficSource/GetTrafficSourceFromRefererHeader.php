@@ -73,6 +73,44 @@ class GetTrafficSourceFromRefererHeader
             return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_TWITTER->value];
         }
 
-        return null;
+        /* Anything else external is a referral rather than nothing: a trade directory, a blog, an AI
+           assistant. Before this they were indistinguishable from someone typing the address in, and
+           whole acquisition channels were invisible. The host travels as the campaign reference so
+           each referrer is reportable on its own. */
+        $host = self::normaliseHost($domain);
+
+        if ($host === null) {
+            return null;
+        }
+
+        return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::REFERRAL->value].$host;
+    }
+
+    /**
+     * A referrer host is only usable as a campaign reference if it is shaped like a hostname: it comes
+     * from a client-controlled header, and it ends up in the customer's stored touch history.
+     *
+     * Returns null for our own systems, which are not marketing sources.
+     */
+    public static function normaliseHost(?string $domain): ?string
+    {
+        $host = strtolower(trim((string) $domain));
+        $host = preg_replace('/^www\./', '', $host) ?? '';
+
+        if (!preg_match('/^(?=.{4,60}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/', $host)) {
+            return null;
+        }
+
+        if ($host === strtolower((string) request()->getHost())) {
+            return null;
+        }
+
+        foreach ((array) config('marketing.internal_referrer_hosts', []) as $internal) {
+            if ($host === $internal || str_ends_with($host, '.'.$internal)) {
+                return null;
+            }
+        }
+
+        return $host;
     }
 }

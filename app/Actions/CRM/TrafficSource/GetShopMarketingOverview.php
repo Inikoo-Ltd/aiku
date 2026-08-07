@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Carbon;
@@ -31,7 +32,7 @@ class GetShopMarketingOverview
      *
      * All figures are in the shop's currency.
      *
-     * @return array{period: string, period_label: string, from: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     * @return array{period: string, period_label: string, from: string|null, currency_code: string, referrers: array<int, array{host: string, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
      */
     public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
@@ -85,6 +86,7 @@ class GetShopMarketingOverview
             ],
             'channels'      => $channels,
             'campaigns'     => $this->campaigns($shop, $from),
+            'referrers'     => $this->referrers($shop, $from, $window),
             'spend_by_day'  => $this->spendByDay($shop, $from),
         ];
     }
@@ -213,6 +215,58 @@ class GetShopMarketingOverview
                 'roas' => $campaign['spend'] > 0 ? round($campaign['revenue'] / $campaign['spend'], 2) : null,
             ])
             ->sortByDesc(fn (array $campaign) => max($campaign['spend'], $campaign['revenue']))
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The sites actually sending people here, richest first. Each referring host is a campaign of the
+     * referral channel, so this is the campaign breakdown narrowed to that one channel: trade
+     * directories, blogs, AI assistants. Before referral existed they were all indistinguishable from
+     * someone typing the address in.
+     *
+     * @return array<int, array{host: string, registrations: float, revenue: float}>
+     */
+    private function referrers(Shop $shop, ?Carbon $from, int $window, int $limit = 10): array
+    {
+        $referral = DB::table('traffic_sources')
+            ->where('shop_id', $shop->id)
+            ->where('type', TrafficSourcesTypeEnum::REFERRAL->value)
+            ->value('id');
+
+        if (!$referral) {
+            return [];
+        }
+
+        $registrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $window);
+
+        $revenue = DB::table('invoices')
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
+                $join->on('p.model_id', '=', 'invoices.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToAttributionWindow($join, $window);
+            })
+            ->where('p.traffic_source_id', $referral)
+            ->where('invoices.shop_id', $shop->id)
+            ->where('invoices.in_process', false)
+            ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->groupBy('p.traffic_source_campaign_id')
+            ->select('p.traffic_source_campaign_id as campaign_id', DB::raw('SUM(invoices.net_amount * p.share) as revenue'))
+            ->pluck('revenue', 'campaign_id');
+
+        return DB::table('traffic_source_campaigns')
+            ->where('traffic_source_id', $referral)
+            ->select('id', 'name')
+            ->get()
+            ->map(fn ($campaign) => [
+                'host'          => $campaign->name,
+                'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
+                'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),
+            ])
+            ->filter(fn (array $referrer) => $referrer['registrations'] > 0 || $referrer['revenue'] > 0)
+            ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['registrations']])
             ->take($limit)
             ->values()
             ->all();

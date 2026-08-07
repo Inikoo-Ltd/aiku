@@ -33,6 +33,7 @@ enum TrafficSourcesTypeEnum: string
     case TWITTER_ADS = 'twitter-ads';
     case YOUTUBE = 'youtube';
     case NEWSLETTER = 'newsletter';
+    case REFERRAL = 'referral';
 
     public static function labels(): array
     {
@@ -53,6 +54,7 @@ enum TrafficSourcesTypeEnum: string
             self::TWITTER_ADS->value       => 'Twitter Ads',
             self::YOUTUBE->value           => 'Youtube',
             self::NEWSLETTER->value        => 'Newsletter',
+            self::REFERRAL->value          => 'Referral',
         ];
     }
 
@@ -75,6 +77,7 @@ enum TrafficSourcesTypeEnum: string
             self::TWITTER_ADS->value       => false,
             self::YOUTUBE->value           => true,
             self::NEWSLETTER->value        => true,
+            self::REFERRAL->value          => true,
         ];
     }
 
@@ -97,6 +100,7 @@ enum TrafficSourcesTypeEnum: string
             self::TWITTER_ADS->value       => 'n',
             self::YOUTUBE->value           => 'o',
             self::NEWSLETTER->value        => 'p',
+            self::REFERRAL->value          => 'q',
         ];
     }
 

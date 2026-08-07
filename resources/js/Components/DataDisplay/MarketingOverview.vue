@@ -36,6 +36,11 @@ const props = defineProps<{
         period_label: string
         from: string | null
         period_options: { value: string, label: string }[]
+        referrers: {
+            host: string
+            registrations: number
+            revenue: number
+        }[]
         campaigns: {
             name: string
             channel: string
@@ -298,6 +303,34 @@ const typeLabel: Record<string, string> = {
                             :class="campaign.roas === null ? 'text-gray-300' : campaign.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
                             {{ campaign.roas !== null ? campaign.roas.toFixed(2) + '×' : '—' }}
                         </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Top referrers: the sites sending people here, invisible before the referral channel existed -->
+        <div v-if="overview.referrers?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-sm font-medium text-gray-800">{{ trans('Top referrers') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">{{ overview.period_label.toLowerCase() }}</span>
+                </div>
+            </div>
+
+            <table class="mt-4 w-full text-xs">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-100">
+                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Site') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Revenue') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="referrer in overview.referrers" :key="referrer.host"
+                        class="border-b border-gray-50 text-gray-600">
+                        <td class="py-2 pr-2 text-gray-700 truncate max-w-[18rem]">{{ referrer.host }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ fmtShare(referrer.registrations) }}</td>
+                        <td class="text-right pl-2 tabular-nums">{{ money(referrer.revenue) }}</td>
                     </tr>
                 </tbody>
             </table>

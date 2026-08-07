@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -82,6 +83,10 @@ class SyncCustomerTrafficSourcesFromDevice implements ShouldBeUnique
             ->filter(fn (array $touch) => $touch['timestamp'] !== null
                 && $touch['timestamp'] >= $floor
                 && $touch['timestamp'] <= $ceiling)
+            /* A referral's campaign reference is a hostname taken from a client-controlled header,
+               so it is re-validated here rather than trusted into the customer's history. */
+            ->filter(fn (array $touch) => $touch['type'] !== TrafficSourcesTypeEnum::REFERRAL
+                || GetTrafficSourceFromRefererHeader::normaliseHost($touch['campaign_ref']) === $touch['campaign_ref'])
             ->map(fn (array $touch) => $touch['timestamp'].$touch['abbr'].($touch['campaign_ref'] ?? ''));
 
         return $segments->isEmpty() ? null : $segments->implode('|');

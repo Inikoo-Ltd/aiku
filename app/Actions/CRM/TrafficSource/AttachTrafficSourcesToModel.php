@@ -10,6 +10,7 @@ namespace App\Actions\CRM\TrafficSource;
 
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceCampaignHydrateStats;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Support\Carbon;
@@ -20,6 +21,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class AttachTrafficSourcesToModel
 {
     use AsAction;
+
+    /* ponytail: a flat cap, enough for every real referrer a shop will ever have. Swap for a
+       rate-limited allow-list only if junk rows actually show up. */
+    private const MAX_REFERRAL_CAMPAIGNS = 200;
 
     /**
      * Resolves the parsed marketing touches into shop traffic sources and campaigns and writes the
@@ -157,7 +162,18 @@ class AttachTrafficSourcesToModel
                else (including the mailshot-N refs, which the click pipeline creates server-side with
                a proper name) must already exist to be credited; otherwise a visitor cycling made-up
                references could mint unlimited campaign rows named whatever they like. */
-            if (!preg_match('/^\d{1,20}$/', $reference)) {
+            /* Referral campaigns are the referring host itself, so they cannot be numeric. They are
+               still client-controlled, hence the hostname shape check and the per-source cap: worst
+               case a spoofed Referer buys a bounded number of junk rows, not unlimited ones. */
+            if ($trafficSource->type === TrafficSourcesTypeEnum::REFERRAL->value) {
+                if (GetTrafficSourceFromRefererHeader::normaliseHost($reference) !== $reference) {
+                    return null;
+                }
+
+                if (TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)->count() >= self::MAX_REFERRAL_CAMPAIGNS) {
+                    return null;
+                }
+            } elseif (!preg_match('/^\d{1,20}$/', $reference)) {
                 return null;
             }
 

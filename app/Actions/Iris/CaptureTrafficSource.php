@@ -122,7 +122,15 @@ class CaptureTrafficSource
         return array_values(array_filter([
             request()->headers->get('X-Original-Referer', ''),
             $referer,
-        ], fn (string $candidate) => filled($candidate) && !str_contains($candidate, (string) request()->getHost())));
+        ], function (string $candidate) {
+            if (blank($candidate)) {
+                return false;
+            }
+
+            /* Our own systems are not a source: the admin app linking to a storefront, or one shop
+               linking to another, would otherwise read as unrecognised traffic worth chasing. */
+            return GetTrafficSourceFromRefererHeader::normaliseHost(parse_url($candidate, PHP_URL_HOST)) !== null;
+        }));
     }
 
     /**
@@ -138,7 +146,12 @@ class CaptureTrafficSource
     {
         try {
             $day = now()->toDateString();
-            $key = 'traffic_capture:'.$day.':'.$outcome;
+
+            /* Split by whether anyone is logged in: the endpoint fires for regulars browsing as well
+               as for first-time visitors, and lumping them together makes "direct" meaningless -
+               a returning customer arriving direct says nothing about how we acquire people. */
+            $audience = auth()->check() ? 'auth' : 'anon';
+            $key      = 'traffic_capture:'.$day.':'.$audience.':'.$outcome;
 
             /* add() first so the counter carries an expiry; a bare increment on a missing key leaves
                it in the store forever. */
