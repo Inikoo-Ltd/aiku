@@ -26,6 +26,8 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton, Dialog } from "primevue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import FractionDisplayFE from "@/Components/DataDisplay/FractionDisplayFE.vue"
+import { useUnitsOverPack } from "@/Composables/useFractionUnits"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
@@ -653,6 +655,7 @@ const onSubmitSplitPicking = () => {
 // Section: Undo Quantity Waiting Warehouse
 const isOpenModalUndoWaitingWarehouse = ref(false)
 const selectedItemToUndoWaitingWarehouse = ref(null)
+const undoWaitingWarehouseInUnitsOverPack = computed(() => useUnitsOverPack(GetWaitingWarehouseFractional(selectedItemToUndoWaitingWarehouse.value)))
 const isLoadingUndoWaitingWarehouse = ref(false)
 const onSetItemToUndoWaitingWarehouse = () => {
     router.post(route('grp.models.delivery_note_item.undo_set_as_waiting_warehouse', {
@@ -1761,8 +1764,14 @@ const hasDirtyDeliveryNoteItem = computed(() => {
                             <div class="text- opacity-75">
                                 {{ selectedItemToUndoWaitingWarehouse?.org_stock_name ?? '-' }}
                             </div>
-                            <div class="text-sm text-red-500 opacity-75 italic">
-                                {{ ctrans("Quantity waiting for warehouse") }}: {{ Number(selectedItemToUndoWaitingWarehouse?.quantity_waiting_warehouse) }}
+                            <div class="text-sm text-red-500 opacity-75 italic inline-flex items-center gap-x-1">
+                                {{ ctrans("Quantity waiting for warehouse") }}:
+                                <FractionDisplayFE
+                                    v-if="undoWaitingWarehouseInUnitsOverPack"
+                                    :numerator="undoWaitingWarehouseInUnitsOverPack.numerator"
+                                    :denominator="undoWaitingWarehouseInUnitsOverPack.denominator"
+                                />
+                                <template v-else>{{ Number(selectedItemToUndoWaitingWarehouse?.quantity_waiting_warehouse) }}</template>
                             </div>
                         </div>
                     </div>
