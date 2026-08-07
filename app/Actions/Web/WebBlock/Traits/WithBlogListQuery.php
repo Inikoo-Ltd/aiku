@@ -22,6 +22,8 @@ trait WithBlogListQuery
 
     protected const MAX_NUMBER_OF_POSTS = 12;
 
+    protected const SOURCE_MANUAL = 'manual';
+
     public function getNumberOfPosts(array $webBlock): int
     {
         $numberOfPosts = (int) Arr::get(
@@ -51,21 +53,54 @@ trait WithBlogListQuery
     }
 
     /**
+     * @return array<int, int>
+     */
+    public function getPickedPosts(array $webBlock): array
+    {
+        if (Arr::get($webBlock, 'web_block.layout.data.fieldValue.source') !== self::SOURCE_MANUAL) {
+            return [];
+        }
+
+        $picked = Arr::get($webBlock, 'web_block.layout.data.fieldValue.picked_posts', []);
+
+        if (!is_array($picked)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            fn ($post) => (int) (is_array($post) ? Arr::get($post, 'id') : $post),
+            $picked
+        )));
+    }
+
+    /**
      * @return array<int, array{id: int, title: string, image_src: ?string, image_alt: ?string, third_party_image_preview: ?string, url: ?string, published_at: ?string}>
      */
-    public function getBlogList(Webpage $webpage, int $numberOfPosts, array $categories): array
+    public function getBlogList(Webpage $webpage, array $webBlock): array
     {
-        $blogs = DB::table('webpages')
+        $query = DB::table('webpages')
             ->select('id', 'title', 'published_layout', 'canonical_url', 'live_at', 'last_published_at')
             ->where('website_id', $webpage->website_id)
             ->where('type', WebpageTypeEnum::BLOG)
             ->where('state', WebpageStateEnum::LIVE)
-            ->whereIn('sub_type', $categories)
             ->where('id', '!=', $webpage->id)
-            ->whereNull('deleted_at')
-            ->latest('live_at')
-            ->limit($numberOfPosts)
-            ->get();
+            ->whereNull('deleted_at');
+
+        $numberOfPosts = $this->getNumberOfPosts($webBlock);
+        $pickedPosts   = $this->getPickedPosts($webBlock);
+
+        if ($pickedPosts) {
+            $blogs = $query->whereIn('id', $pickedPosts)
+                ->get()
+                ->sortBy(fn ($blog) => array_search($blog->id, $pickedPosts))
+                ->take($numberOfPosts)
+                ->values();
+        } else {
+            $blogs = $query->whereIn('sub_type', $this->getCategories($webBlock))
+                ->latest('live_at')
+                ->limit($numberOfPosts)
+                ->get();
+        }
 
         return $blogs->map(function ($blog) {
             $fieldValue = Arr::get(

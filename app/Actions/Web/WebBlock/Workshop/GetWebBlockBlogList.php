@@ -18,15 +18,11 @@ class GetWebBlockBlogList
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        data_set($webBlock, 'web_block.layout.data.permissions', ['edit']);
+        data_forget($webBlock, 'web_block.layout.data.permissions');
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.blogs',
-            $this->getBlogList(
-                $webpage,
-                $this->getNumberOfPosts($webBlock),
-                $this->getCategories($webBlock)
-            )
+            $this->getBlogList($webpage, $webBlock)
         );
         data_set($webBlock, 'web_block.layout.data.fieldValue.blog_index_url', $this->getBlogIndexUrl($webpage));
 

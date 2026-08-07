@@ -12,6 +12,20 @@ const titleField = {
 	information: "Heading shown above the list. Leave empty to hide it.",
 }
 
+const sourceField = {
+	label: "Source",
+	key: ["source"],
+	type: "select",
+	props_data: {
+		mode: "single",
+		options: [
+			{ label: "Latest posts", value: "latest" },
+			{ label: "Hand-picked posts", value: "manual" },
+		],
+	},
+	information: "Latest pulls posts automatically, hand-picked lets you choose them yourself.",
+}
+
 const categoriesField = {
 	label: "Categories",
 	key: ["categories"],
@@ -26,6 +40,34 @@ const categoriesField = {
 		],
 	},
 	information: "Only posts in the selected categories are listed. Leave empty to show them all.",
+}
+
+const numberOfPostsField = {
+	label: "Number of posts",
+	key: ["number_of_posts"],
+	type: "number",
+	props_data: {},
+	information: "How many posts the block shows, between 1 and 12.",
+}
+
+const pickedPostsField = {
+	label: "Posts",
+	key: ["picked_posts"],
+	type: "selectquery",
+	props_data: {
+		mode: "multiple",
+		valueProp: "id",
+		labelProp: "title",
+		placeholder: "Search a blog post",
+		fetchRoute: {
+			name: "grp.json.shop.website.blog_webpages",
+			parameters: {
+				shop: typeof route === "function" ? route().params["shop"] : null,
+				website: typeof route === "function" ? route().params["website"] : null,
+			},
+		},
+	},
+	information: "Listed in the order you pick them, capped by the number of posts.",
 }
 
 const presentationFields = [
@@ -44,6 +86,17 @@ const presentationFields = [
 	{
 		label: "Call to action label",
 		key: ["cta_label"],
+		type: "text",
+	},
+	{
+		label: "Show view all button",
+		key: ["show_view_all"],
+		type: "switch",
+		props_data: {},
+	},
+	{
+		label: "View all label",
+		key: ["view_all_label"],
 		type: "text",
 	},
 ]
@@ -118,31 +171,21 @@ const layoutGroup = {
 	],
 }
 
-export default {
-	blueprint: [
-		idField,
-		titleField,
-		categoriesField,
-		{
-			label: "Number of posts",
-			key: ["number_of_posts"],
-			type: "number",
-			props_data: {},
-			information: "Between 1 and 12, the newest posts are shown first.",
-		},
-		...presentationFields,
-		{
-			label: "Show view all button",
-			key: ["show_view_all"],
-			type: "switch",
-			props_data: {},
-		},
-		{
-			label: "View all label",
-			key: ["view_all_label"],
-			type: "text",
-		},
-		cardGroup,
-		layoutGroup,
-	],
+export const blueprint = (data?: any, id?: number) => {
+	const block = data?.layout?.web_blocks?.find((item: any) => item.id == id) ?? null
+	const fieldValue = block?.web_block?.layout?.data?.fieldValue ?? null
+	const isManual = fieldValue?.source === "manual"
+
+	return {
+		blueprint: [
+			idField,
+			titleField,
+			sourceField,
+			...(isManual ? [pickedPostsField] : [categoriesField]),
+			numberOfPostsField,
+			...presentationFields,
+			cardGroup,
+			layoutGroup,
+		],
+	}
 }

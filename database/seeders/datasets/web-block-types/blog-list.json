@@ -6,12 +6,14 @@
     "category": "block",
     "icon": ["fal", "rectangle-wide"],
     "website_type": ["b2b", "b2c", "dropshipping", "fulfilment"],
-    "shop_availability": ["uk"],
+    "shop_availability": [],
     "is_in_test": false,
 	"data": {
 		"fieldValue": {
 			"title": "Read The Blog: David's AW News",
+			"source": "latest",
 			"categories": ["davids_travel_blog"],
+			"picked_posts": [],
 			"number_of_posts": 5,
 			"show_published_date": true,
 			"show_cta": true,
