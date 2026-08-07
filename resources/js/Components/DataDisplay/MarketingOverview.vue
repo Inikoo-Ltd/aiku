@@ -25,10 +25,16 @@ const props = defineProps<{
             roas: number | null
             cac: number | null
         }
+        baseline: {
+            registrations: number
+            orders: number
+            revenue: number
+        }
         channels: {
             name: string
             type: string
             spend: number
+            spend_is_estimated?: boolean
             revenue: number
             registrations: number
             roas: number | null
@@ -39,6 +45,7 @@ const props = defineProps<{
         period_options: { value: string, label: string }[]
         referrers: {
             host: string
+            visitors: number
             registrations: number
             revenue: number
         }[]
@@ -186,8 +193,11 @@ const typeLabel: Record<string, string> = {
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('Attributed revenue') }}</div>
+                <div class="text-xs text-gray-500">{{ trans('Revenue marketing brought') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">{{ money(overview.totals.revenue) }}</div>
+                <div class="mt-0.5 text-xs text-gray-400">
+                    {{ trans('of') }} {{ money(overview.baseline?.revenue ?? 0) }} {{ trans('taken in total') }}
+                </div>
                 <!-- Invoicing runs a day or two behind orders; this is what today's marketing already sold -->
                 <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-amber-600">
                     + {{ money(overview.totals.pending) }} {{ trans('placed, awaiting invoice') }}
@@ -202,10 +212,15 @@ const typeLabel: Record<string, string> = {
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('Attributed customers') }}</div>
+                <div class="text-xs text-gray-500">{{ trans('New customers from marketing') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">
                     {{ fmtShare(overview.totals.registrations) }}
-                    <span class="text-sm text-gray-400">· {{ fmtShare(overview.totals.invoices) }} {{ trans('invoices') }}</span>
+                    <span class="text-sm text-gray-400">{{ trans('of') }} {{ overview.baseline?.registrations ?? 0 }}</span>
+                </div>
+                <!-- Sign-ups nobody in marketing can claim: the trade that arrives regardless -->
+                <div v-if="(overview.baseline?.registrations ?? 0) > 0 && overview.totals.registrations === 0"
+                     class="mt-0.5 text-xs text-[#d03b3b]">
+                    {{ trans('none of this period\'s sign-ups came through marketing') }}
                 </div>
             </div>
         </div>
@@ -326,6 +341,7 @@ const typeLabel: Record<string, string> = {
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
                         <th class="text-left font-normal py-1.5 pr-2">{{ trans('Site') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Visitors') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
                         <th class="text-right font-normal py-1.5 pl-2">{{ trans('Revenue') }}</th>
                     </tr>
@@ -334,6 +350,7 @@ const typeLabel: Record<string, string> = {
                     <tr v-for="referrer in overview.referrers" :key="referrer.host"
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 text-gray-700 truncate max-w-[18rem]">{{ referrer.host }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ fmtShare(referrer.visitors) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ fmtShare(referrer.registrations) }}</td>
                         <td class="text-right pl-2 tabular-nums">{{ money(referrer.revenue) }}</td>
                     </tr>

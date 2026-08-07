@@ -12,6 +12,7 @@ use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -28,7 +29,7 @@ class GetShopAttributionDataQuality
      * nothing matches all show up as smaller numbers rather than as errors. These checks make each of
      * those failures visible on its own, per shop.
      *
-     * @return array{period: string, period_label: string, from: string|null, checks: array<int, array{key: string, label: string, status: string, value: string, hint: string, items: array<int, string>}>}
+     * @return array{period: string, period_label: string, from: string|null, capture: array{hits: int, identified_pct: float|null, rows: array<int, array{visitor: string, hits: int, matched: int, repeat: int, direct: int, unmatched: int, identified: string}>, rejected: array<int, array{host: string, hits: int}>}, checks: array<int, array{key: string, label: string, status: string, value: string, hint: string, items: array<int, string>}>}
      */
     public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
@@ -45,6 +46,54 @@ class GetShopAttributionDataQuality
                 $this->neverCreditedTrafficSources($shop),
                 $this->unmatchedCampaignReferences($shop, $from),
             ],
+            'capture' => $this->captureToday(),
+        ];
+    }
+
+    /**
+     * Today's capture counters, written by CaptureTrafficSource on every storefront first hit. Not
+     * shop-scoped - the counters are estate-wide - but this is the only screen where anyone looks at
+     * attribution health, and a command nobody runs answers nothing.
+     *
+     * @return array{hits: int, identified_pct: float|null, rows: array<int, array{visitor: string, hits: int, matched: int, repeat: int, direct: int, unmatched: int, identified: string}>, rejected: array<int, array{host: string, hits: int}>}
+     */
+    private function captureToday(): array
+    {
+        $day      = now()->toDateString();
+        $outcomes = ['matched', 'repeat', 'direct', 'unmatched'];
+        $rows     = [];
+        $allHits  = 0;
+        $allKnown = 0;
+
+        foreach (['anon' => __('Anonymous'), 'auth' => __('Logged in')] as $audience => $label) {
+            $counts = [];
+
+            foreach ($outcomes as $outcome) {
+                $counts[$outcome] = (int) Cache::get('traffic_capture:'.$day.':'.$audience.':'.$outcome, 0);
+            }
+
+            $hits       = array_sum($counts);
+            $identified = $counts['matched'] + $counts['repeat'];
+            $allHits   += $hits;
+            $allKnown  += $identified;
+
+            $rows[] = array_merge(['visitor' => $label, 'hits' => $hits], $counts, [
+                'identified' => $hits > 0 ? round($identified / $hits * 100, 1).'%' : '-',
+            ]);
+        }
+
+        $rejected = collect(Cache::get('traffic_capture:'.$day.':hosts', []))
+            ->sortDesc()
+            ->take(15)
+            ->map(fn (int $hits, string $host) => ['host' => $host, 'hits' => $hits])
+            ->values()
+            ->all();
+
+        return [
+            'hits'           => $allHits,
+            'identified_pct' => $allHits > 0 ? round($allKnown / $allHits * 100, 1) : null,
+            'rows'           => $rows,
+            'rejected'       => $rejected,
         ];
     }
 

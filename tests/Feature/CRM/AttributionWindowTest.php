@@ -120,3 +120,63 @@ it('disables the window when it is set to zero', function () {
     expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME)['totals']['revenue'])
         ->toBe(300.0);
 });
+
+it('credits revenue by the date the customer ordered, not the date the invoice was raised', function () {
+    $customer = $this->customer;
+    $customer->trafficSources()->detach();
+    DB::table('invoices')->where('customer_id', $customer->id)->delete();
+
+    /* Ordered yesterday, touched this morning, invoiced after that: the touch cannot have caused an
+       order that was already placed. */
+    $customer->trafficSources()->attach($this->googleAds->id, [
+        'share'          => 1,
+        'first_touch_at' => now()->subHours(6),
+        'last_touch_at'  => now()->subHours(6),
+    ]);
+
+    $orderId = DB::table('orders')->insertGetId([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ord-'.uniqid(),
+        'state'           => 'dispatched',
+        'status'          => 'settled',
+        'is_invoiced'     => true,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => now()->subDay()->toDateTimeString(),
+        'created_at'      => now()->subDay()->toDateTimeString(),
+        'updated_at'      => now()->subDay()->toDateTimeString(),
+    ]);
+
+    DB::table('invoices')->insert([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'order_id'        => $orderId,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'reference'       => 'INV-'.uniqid(),
+        'slug'            => 'inv-'.uniqid(),
+        'type'            => 'invoice',
+        'net_amount'      => 500,
+        'org_net_amount'  => 500,
+        'grp_net_amount'  => 500,
+        'total_amount'    => 500,
+        'in_process'      => false,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => now()->toDateTimeString(),
+        'created_at'      => now()->toDateTimeString(),
+        'updated_at'      => now()->toDateTimeString(),
+    ]);
+
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+    $channel  = collect($overview['channels'])->firstWhere('type', $this->googleAds->type);
+
+    expect($channel['revenue'] ?? 0.0)->toBe(0.0);
+});

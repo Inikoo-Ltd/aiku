@@ -191,3 +191,10 @@ it('does not count a cancelled order as pending', function () {
 
     expect($overview['totals']['pending'])->toBe(0.0);
 });
+
+it('reports the shop baseline alongside the attributed figures', function () {
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+
+    expect($overview['baseline'])->toHaveKeys(['registrations', 'orders', 'revenue'])
+        ->and($overview['baseline']['registrations'])->toBeGreaterThan(0.0);
+});

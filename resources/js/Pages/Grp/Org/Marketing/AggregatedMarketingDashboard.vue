@@ -36,18 +36,25 @@ const props = defineProps<{
             name: string
             type: string
             spend: number
+            spend_is_estimated?: boolean
             revenue: number
             pending: number
             registrations: number
             orders: number
             roas: number | null
         }[]
+        baseline: {
+            registrations: number
+            orders: number
+            revenue: number
+        }
         children: {
             name: string
             slug: string
             revenue: number
             registrations: number
             orders: number
+            top_channel: string | null
             route: { name: string, parameters: string[] }
         }[]
     }
@@ -57,6 +64,11 @@ const locale = useLocaleStore()
 
 const money = (value: number) => locale.currencyFormat(props.overview.currency_code, value)
 const count = (value: number) => Number.isInteger(value) ? value.toString() : value.toFixed(2)
+
+/* The share of all trade that marketing can claim. Without it, "0 registrations" reads as a quiet
+   period rather than as every ad and mailshot having earned nobody. */
+const share = (part: number, whole: number) =>
+    whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
 
 const changePeriod = (event: Event) => {
     router.get(
@@ -72,10 +84,11 @@ const changePeriod = (event: Event) => {
     <PageHeading :data="pageHead" />
 
     <div class="px-4 py-4 space-y-4">
-        <div class="flex items-center justify-between">
-            <span class="text-xs text-gray-500">
-                {{ trans('All figures in') }} {{ overview.currency_code }}
-            </span>
+        <div class="flex items-start justify-between gap-4">
+            <p class="text-xs text-gray-500 max-w-3xl">
+                {{ trans('Everything here counts only what marketing brought in: sales and sign-ups from visitors who arrived through an ad, a search, a mailshot or a link from another site, credited to that channel. It is not the shop\'s total trade.') }}
+                <span class="text-gray-400">{{ trans('All figures in') }} {{ overview.currency_code }}.</span>
+            </p>
             <select :value="overview.period" @change="changePeriod"
                     class="text-xs border-gray-200 rounded-md py-1 pl-2 pr-7">
                 <option v-for="option in overview.period_options" :key="option.value" :value="option.value">
@@ -87,19 +100,28 @@ const changePeriod = (event: Event) => {
         <!-- Headline: the four numbers management asks for -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ trans('Attributed revenue') }}</div>
+                <div class="text-xs text-gray-400">{{ trans('Revenue marketing brought') }}</div>
                 <div class="mt-1 text-lg tabular-nums">{{ money(overview.totals.revenue) }}</div>
+                <div class="mt-0.5 text-xs text-gray-400">
+                    {{ trans('of') }} {{ money(overview.baseline.revenue) }} {{ trans('total') }} · {{ share(overview.totals.revenue, overview.baseline.revenue) }}
+                </div>
                 <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-amber-600">
                     + {{ money(overview.totals.pending) }} {{ trans('placed, awaiting invoice') }}
                 </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ trans('Registrations') }}</div>
+                <div class="text-xs text-gray-400">{{ trans('New customers from marketing') }}</div>
                 <div class="mt-1 text-lg tabular-nums">{{ count(overview.totals.registrations) }}</div>
+                <div class="mt-0.5 text-xs" :class="overview.baseline.registrations > 0 && overview.totals.registrations === 0 ? 'text-[#d03b3b]' : 'text-gray-400'">
+                    {{ trans('of') }} {{ count(overview.baseline.registrations) }} {{ trans('who signed up') }} · {{ share(overview.totals.registrations, overview.baseline.registrations) }}
+                </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ trans('Orders') }}</div>
+                <div class="text-xs text-gray-400">{{ trans('Orders marketing brought') }}</div>
                 <div class="mt-1 text-lg tabular-nums">{{ count(overview.totals.orders) }}</div>
+                <div class="mt-0.5 text-xs text-gray-400">
+                    {{ trans('of') }} {{ count(overview.baseline.orders) }} {{ trans('placed') }} · {{ share(overview.totals.orders, overview.baseline.orders) }}
+                </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
                 <div class="text-xs text-gray-400">{{ trans('Ad spend') }}</div>
@@ -112,8 +134,10 @@ const changePeriod = (event: Event) => {
 
         <!-- Channels: the whole point of the aggregate, which channel earns across every shop -->
         <div v-if="overview.channels.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
-            <span class="text-sm font-medium text-gray-800">{{ trans('Channels') }}</span>
-            <span class="ml-2 text-xs text-gray-400">{{ overview.period_label.toLowerCase() }}</span>
+            <span class="text-sm font-medium text-gray-800">{{ trans('Where it came from') }}</span>
+            <span class="ml-2 text-xs text-gray-400">
+                {{ trans('ads, searches, mailshots and referring sites') }} · {{ overview.period_label.toLowerCase() }}
+            </span>
 
             <table class="mt-4 w-full text-xs">
                 <thead>
@@ -131,7 +155,10 @@ const changePeriod = (event: Event) => {
                     <tr v-for="channel in overview.channels" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 text-gray-700">{{ channel.name }}</td>
-                        <td class="text-right px-2 tabular-nums">{{ money(channel.spend) }}</td>
+                        <td class="text-right px-2 tabular-nums">
+                            {{ money(channel.spend) }}
+                            <span v-if="channel.spend_is_estimated" class="text-gray-400" :title="trans('Estimated from emails sent, at the SES per-message price')">{{ trans('est.') }}</span>
+                        </td>
                         <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
                         <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-amber-600' : 'text-gray-300'">{{ money(channel.pending) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(channel.registrations) }}</td>
@@ -147,13 +174,22 @@ const changePeriod = (event: Event) => {
 
         <!-- The drill-down: link down a level rather than repeat that level's dashboard here -->
         <div v-if="overview.children.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
-            <span class="text-sm font-medium text-gray-800">{{ overview.children_label }}</span>
+            <div>
+                <span class="text-sm font-medium text-gray-800">{{ overview.children_label }}</span>
+                <span class="ml-2 text-xs text-gray-400">
+                    {{ trans('what marketing brought each one') }} · {{ overview.period_label.toLowerCase() }}
+                </span>
+            </div>
+            <p class="mt-1 text-xs text-gray-400">
+                {{ trans('Open one to see its channels, campaigns and mailshots.') }}
+            </p>
 
             <table class="mt-4 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
                         <th class="text-left font-normal py-1.5 pr-2">{{ trans('Name') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
+                        <th class="text-left font-normal py-1.5 px-2">{{ trans('Best channel') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Attributed revenue') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
                         <th class="text-right font-normal py-1.5 pl-2">{{ trans('Orders') }}</th>
                     </tr>
@@ -167,6 +203,7 @@ const changePeriod = (event: Event) => {
                                 {{ child.name }}
                             </Link>
                         </td>
+                        <td class="px-2 text-gray-500">{{ child.top_channel ?? '—' }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(child.revenue) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(child.registrations) }}</td>
                         <td class="text-right pl-2 tabular-nums">{{ count(child.orders) }}</td>
@@ -175,8 +212,13 @@ const changePeriod = (event: Event) => {
             </table>
         </div>
 
-        <div v-if="!overview.channels.length" class="text-xs text-gray-400">
-            {{ trans('No attributed marketing activity in this period yet.') }}
+        <div v-if="!overview.channels.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5 text-xs text-gray-500">
+            <span v-if="overview.baseline.registrations > 0 || overview.baseline.orders > 0">
+                {{ trans('Nothing in this period can be traced back to marketing, yet the business took') }}
+                {{ count(overview.baseline.orders) }} {{ trans('orders and') }}
+                {{ count(overview.baseline.registrations) }} {{ trans('sign-ups. That trade arrived on its own.') }}
+            </span>
+            <span v-else>{{ trans('No marketing activity in this period yet.') }}</span>
         </div>
     </div>
 </template>

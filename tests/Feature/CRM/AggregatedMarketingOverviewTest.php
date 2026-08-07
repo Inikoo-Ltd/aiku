@@ -157,3 +157,10 @@ it('lets a user who can see marketing on a shop open the organisation dashboard'
     expect($this->user->authTo("marketing.$shopId.view"))->toBeTrue()
         ->and($this->user->authTo('marketing.view'))->toBeFalse();
 });
+
+it('reports what happened without marketing, so nought attributed can be told from nought happening', function () {
+    $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+
+    expect($overview['baseline']['registrations'])->toBeGreaterThan(0.0)
+        ->and($overview['baseline'])->toHaveKeys(['registrations', 'orders', 'revenue']);
+});

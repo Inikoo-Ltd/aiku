@@ -33,7 +33,7 @@ class GetShopMarketingOverview
      *
      * All figures are in the shop's currency.
      *
-     * @return array{period: string, period_label: string, from: string|null, currency_code: string, referrers: array<int, array{host: string, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     * @return array{period: string, period_label: string, from: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
      */
     public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
@@ -50,12 +50,17 @@ class GetShopMarketingOverview
         $pending       = $this->pendingRevenueBySource($shop, $from, $window);
         $registrations = $this->registrationsBy('traffic_source_id', $shop, $from, $window);
         $spend         = $this->spendBySource($shop, $from);
+        /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
+           spend of zero and an infinite return. Estimated from the emails actually dispatched. */
+        $emailCost     = GetEstimatedEmailCost::run([$shop->id], $from, $shop->currency);
 
         $channels = $sources
             ->map(fn ($source) => [
                 'name'          => $source->name,
                 'type'          => $source->type,
-                'spend'         => round((float) ($spend[$source->id] ?? 0), 2),
+                'spend'         => round((float) ($spend[$source->id] ?? 0)
+                    + ($source->type === TrafficSourcesTypeEnum::NEWSLETTER->value ? $emailCost : 0), 2),
+                'spend_is_estimated' => $source->type === TrafficSourcesTypeEnum::NEWSLETTER->value && $emailCost > 0,
                 'revenue'       => round((float) ($revenue[$source->id]->amount ?? 0), 2),
                 'pending'       => round((float) ($pending[$source->id] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$source->id] ?? 0), 2),
@@ -89,6 +94,10 @@ class GetShopMarketingOverview
                     ? round($totalSpend / $totalRegistrations, 2)
                     : null,
             ],
+            /* The denominator: 0 attributed registrations out of 4 is noise, 0 out of 300 means every
+               ad and mailshot in the period earned us nobody. The remainder is the trade that arrives
+               whether we advertise or not. */
+            'baseline'      => $this->baseline($shop, $from),
             'channels'      => $channels,
             'campaigns'     => $this->campaigns($shop, $from),
             'referrers'     => $this->referrers($shop, $from, $window),
@@ -168,6 +177,34 @@ class GetShopMarketingOverview
             ->groupBy('p.'.$pivotColumn)
             ->select('p.'.$pivotColumn, DB::raw('SUM(p.share) as registrations'))
             ->pluck('registrations', $pivotColumn);
+    }
+
+    /**
+     * Everything that happened in the shop this period, marketing or not.
+     *
+     * @return array{registrations: float, orders: float, revenue: float}
+     */
+    private function baseline(Shop $shop, ?Carbon $from): array
+    {
+        return [
+            'registrations' => (float) DB::table('customers')
+                ->where('shop_id', $shop->id)
+                ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+                ->count(),
+
+            'orders'        => (float) DB::table('orders')
+                ->where('shop_id', $shop->id)
+                ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+                ->whereNull('deleted_at')
+                ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->count(),
+
+            'revenue'       => round((float) DB::table('invoices')
+                ->where('shop_id', $shop->id)
+                ->where('in_process', false)
+                ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->sum('net_amount'), 2),
+        ];
     }
 
     private function spendBySource(Shop $shop, ?Carbon $from)
@@ -256,7 +293,7 @@ class GetShopMarketingOverview
      * directories, blogs, AI assistants. Before referral existed they were all indistinguishable from
      * someone typing the address in.
      *
-     * @return array<int, array{host: string, registrations: float, revenue: float}>
+     * @return array<int, array{host: string, visitors: float, registrations: float, revenue: float}>
      */
     private function referrers(Shop $shop, ?Carbon $from, int $window, int $limit = 10): array
     {
@@ -286,17 +323,29 @@ class GetShopMarketingOverview
             ->select('p.traffic_source_campaign_id as campaign_id', DB::raw('SUM(invoices.net_amount * p.share) as revenue'))
             ->pluck('revenue', 'campaign_id');
 
+        /* Counted as well as valued: a site that has only just started sending people is the whole
+           point of this block, and it would be invisible if it had to have earned money first. */
+        $touches = DB::table('model_has_traffic_sources')
+            ->where('model_type', 'Customer')
+            ->where('traffic_source_id', $referral)
+            ->whereNotNull('traffic_source_campaign_id')
+            ->groupBy('traffic_source_campaign_id')
+            ->select('traffic_source_campaign_id', DB::raw('SUM(share) as touches'))
+            ->pluck('touches', 'traffic_source_campaign_id');
+
         return DB::table('traffic_source_campaigns')
             ->where('traffic_source_id', $referral)
             ->select('id', 'name')
             ->get()
             ->map(fn ($campaign) => [
                 'host'          => $campaign->name,
+                'visitors'      => round((float) ($touches[$campaign->id] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),
             ])
-            ->filter(fn (array $referrer) => $referrer['registrations'] > 0 || $referrer['revenue'] > 0)
-            ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['registrations']])
+            ->filter(fn (array $referrer) => $referrer['registrations'] > 0 || $referrer['revenue'] > 0
+                || $referrer['visitors'] > 0)
+            ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['visitors']])
             ->take($limit)
             ->values()
             ->all();

@@ -34,7 +34,7 @@ class GetAggregatedMarketingOverview
      * campaign table would be a list of other people's campaigns; the children table links down to
      * each organisation instead, and the drill-down continues on that dashboard.
      *
-     * @return array{period: string, period_label: string, from: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, orders: float, route: array{name: string, parameters: array<int, string>}}>}
+     * @return array{period: string, period_label: string, from: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, orders: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
      */
     public function handle(Organisation|Group $parent, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
@@ -50,17 +50,23 @@ class GetAggregatedMarketingOverview
         $orders        = $this->ordersByType($shops, $from);
         $pending       = $this->pendingRevenueByType($shops, $from, $isOrganisation ? 'org_net_amount' : 'grp_net_amount');
         $spend         = $this->spendByType($shops, $from, $costColumn);
+        /* Sending is not free and nobody invoices us for it; without this the newsletter channel
+           reports a spend of zero and an infinite return. */
+        $emailCost     = GetEstimatedEmailCost::run($shops->pluck('id'), $from, $parent->currency);
 
         $channels = collect(array_unique(array_merge(
             $revenue->keys()->all(),
             $registrations->keys()->all(),
             $orders->keys()->all(),
             $spend->keys()->all(),
+            $emailCost > 0 ? [\App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::NEWSLETTER->value] : [],
         )))
             ->map(fn (string $type) => [
                 'name'          => \App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::labels()[$type] ?? $type,
                 'type'          => $type,
-                'spend'         => round((float) ($spend[$type] ?? 0), 2),
+                'spend'         => round((float) ($spend[$type] ?? 0)
+                    + ($type === \App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::NEWSLETTER->value ? $emailCost : 0), 2),
+                'spend_is_estimated' => $type === \App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::NEWSLETTER->value && $emailCost > 0,
                 'revenue'       => round((float) ($revenue[$type] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$type] ?? 0), 2),
                 'orders'        => round((float) ($orders[$type] ?? 0), 2),
@@ -95,8 +101,46 @@ class GetAggregatedMarketingOverview
                     ? round($totalSpend / $totalRegistrations, 2)
                     : null,
             ],
+            /* The denominator. Attributed figures alone cannot tell "marketing produced nothing" from
+               "nothing happened": 0 registrations out of 4 is noise, 0 out of 300 means every ad and
+               every mailshot in the period earned us nobody. The remainder is the trade that arrives
+               whether we advertise or not. */
+            'baseline'      => $this->baseline($shops, $from, $revenueColumn),
             'channels'      => $channels,
             'children'      => $this->children($parent, $from, $revenueColumn),
+        ];
+    }
+
+    /**
+     * Everything that happened in the period, marketing or not, so the attributed figures can be read
+     * as a proportion of it.
+     *
+     * @param Collection<int, Shop> $shops
+     *
+     * @return array{registrations: float, orders: float, revenue: float}
+     */
+    private function baseline(Collection $shops, ?Carbon $from, string $revenueColumn): array
+    {
+        $shopIds = $shops->pluck('id');
+
+        return [
+            'registrations' => (float) DB::table('customers')
+                ->whereIn('shop_id', $shopIds)
+                ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+                ->count(),
+
+            'orders'        => (float) DB::table('orders')
+                ->whereIn('shop_id', $shopIds)
+                ->whereNotIn('state', [\App\Enums\Ordering\Order\OrderStateEnum::CREATING, \App\Enums\Ordering\Order\OrderStateEnum::CANCELLED])
+                ->whereNull('deleted_at')
+                ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->count(),
+
+            'revenue'       => round((float) DB::table('invoices')
+                ->whereIn('shop_id', $shopIds)
+                ->where('in_process', false)
+                ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->sum($revenueColumn), 2),
         ];
     }
 
@@ -237,6 +281,49 @@ class GetAggregatedMarketingOverview
     }
 
     /**
+     * The single channel earning the most for each shop, so the children table can say which one it is.
+     *
+     * @param Collection<int, Shop> $shops
+     *
+     * @return Collection<int, array{name: string, amount: float}>
+     */
+    private function topChannelByShop(Collection $shops, ?Carbon $from, string $revenueColumn): Collection
+    {
+        $best = collect();
+
+        foreach ($this->shopsByWindow($shops) as $group) {
+            DB::table('invoices')
+                ->join('model_has_traffic_sources as p', function ($join) use ($group) {
+                    $join->on('p.model_id', '=', 'invoices.customer_id')
+                        ->where('p.model_type', '=', 'Customer');
+
+                    $this->constrainToAttributionWindow($join, $group['window']);
+                })
+                ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
+                ->whereIn('invoices.shop_id', $group['shop_ids'])
+                ->where('invoices.in_process', false)
+                ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+                ->groupBy('invoices.shop_id', 'ts.type')
+                ->select('invoices.shop_id', 'ts.type', DB::raw("SUM(invoices.{$revenueColumn} * p.share) as amount"))
+                ->get()
+                ->each(function ($row) use ($best) {
+                    $amount = (float) $row->amount;
+
+                    if ($amount <= ($best[$row->shop_id]['amount'] ?? 0)) {
+                        return;
+                    }
+
+                    $best[$row->shop_id] = [
+                        'name'   => \App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::labels()[$row->type] ?? $row->type,
+                        'amount' => $amount,
+                    ];
+                });
+        }
+
+        return $best;
+    }
+
+    /**
      * @param Collection<int, Shop> $shops
      */
     private function spendByType(Collection $shops, ?Carbon $from, string $costColumn): Collection
@@ -265,11 +352,19 @@ class GetAggregatedMarketingOverview
         $revenue       = $this->revenueByType($shops, $from, $revenueColumn, 'invoices.shop_id');
         $registrations = $this->registrationsByType($shops, $from, 'customers.shop_id');
         $orders        = $this->ordersByType($shops, $from, 'orders.shop_id');
+        $topChannel    = $this->topChannelByShop($shops, $from, $revenueColumn);
 
         $figures = fn (Collection $shopIds) => [
             'revenue'       => round($shopIds->sum(fn ($id) => $revenue[$id] ?? 0), 2),
             'registrations' => round($shopIds->sum(fn ($id) => $registrations[$id] ?? 0), 2),
             'orders'        => round($shopIds->sum(fn ($id) => $orders[$id] ?? 0), 2),
+            /* Names the channel doing the work, so the row says something about marketing rather than
+               just repeating a shop's name next to a number. */
+            'top_channel'   => $shopIds
+                ->map(fn ($id) => $topChannel[$id] ?? null)
+                ->filter()
+                ->sortByDesc('amount')
+                ->first()['name'] ?? null,
         ];
 
         if ($parent instanceof Organisation) {

@@ -23,6 +23,9 @@ trait WithTouchCausality
      * Rows with no recorded touch date are legacy and are left in rather than silently dropped, so
      * historic attribution does not vanish the day this ships.
      *
+     * `$dateColumn` is raw SQL, so it may be a plain column or an expression. It never carries user
+     * input - every caller passes a literal.
+     *
      * @param \Illuminate\Database\Query\JoinClause|\Illuminate\Database\Query\Builder $query
      */
     protected function constrainToTouchWindow($query, string $dateColumn, int $window, string $pivotAlias = 'p'): void
@@ -30,7 +33,7 @@ trait WithTouchCausality
         $query->where(function ($query) use ($dateColumn, $window, $pivotAlias) {
             $query->whereNull($pivotAlias.'.first_touch_at')
                 ->orWhere(function ($inWindow) use ($dateColumn, $window, $pivotAlias) {
-                    $inWindow->whereColumn($dateColumn, '>=', $pivotAlias.'.first_touch_at');
+                    $inWindow->whereRaw("{$dateColumn} >= {$pivotAlias}.first_touch_at");
 
                     if ($window > 0) {
                         $inWindow->whereRaw(

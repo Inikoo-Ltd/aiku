@@ -10,6 +10,8 @@
 
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\CRM\TrafficSource\GetShopEmailMarketingPerformance;
+use App\Actions\CRM\TrafficSource\GetShopMarketingOverview;
+use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -268,4 +270,19 @@ it('counts prospects who clicked a mailshot and later registered', function () {
 
     $performance = GetShopEmailMarketingPerformance::run($this->shop);
     expect($performance['mailshots'][0]['prospects_registered'])->toBe(1);
+});
+
+it('prices the newsletter channel from the emails it sent, instead of showing it as free', function () {
+    $mailshot = App\Models\Comms\Mailshot::where('shop_id', $this->shop->id)->first();
+
+    expect($mailshot)->not->toBeNull();
+
+    $mailshot->stats()->update(['number_dispatched_emails' => 100000]);
+    $mailshot->update(['sent_at' => now()->subDay()]);
+
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+    $channel  = collect($overview['channels'])->firstWhere('type', 'newsletter');
+
+    expect($channel['spend'])->toBeGreaterThan(0.0)
+        ->and($channel['spend_is_estimated'])->toBeTrue();
 });

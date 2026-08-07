@@ -114,3 +114,17 @@ it('does not flag a campaign reference that resolves to a campaign', function ()
     expect($check['status'])->toBe(GetShopAttributionDataQuality::STATUS_OK)
         ->and($check['items'])->toBe([]);
 });
+
+it('surfaces the capture counters so nobody has to run a command to see them', function () {
+    $day = now()->toDateString();
+
+    Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':anon:matched', 8, now()->addDay());
+    Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':anon:direct', 2, now()->addDay());
+    Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':hosts', ['app.aiku.io' => 26], now()->addDay());
+
+    $capture = GetShopAttributionDataQuality::run($this->shop)['capture'];
+
+    expect($capture['hits'])->toBe(10)
+        ->and($capture['identified_pct'])->toBe(80.0)
+        ->and($capture['rejected'][0])->toBe(['host' => 'app.aiku.io', 'hits' => 26]);
+});
