@@ -68,9 +68,10 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
-        /* Hourly rather than daily: the counters expire after 8 days, and folding them in often means
-           today's visits are already reportable on the dashboard. */
-        $schedule->command('traffic-source:collect-visits')->hourly()->onOneServer()->withoutOverlapping();
+        /* Every five minutes: the run reads a counter per shop channel and writes only the ones that
+           moved, so it is cheap, and the alternative is a dashboard whose visit column is an hour
+           stale while everything beside it is live. */
+        $schedule->command('traffic-source:collect-visits')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
 
