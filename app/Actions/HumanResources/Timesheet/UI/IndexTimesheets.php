@@ -707,6 +707,15 @@ class IndexTimesheets extends OrgAction
                 'pageHead'    => [
                     'title'         => __('Timesheets'),
                     'icon'          => ['title' => __('Timesheets'), 'icon'  => 'fal fa-stopwatch'],
+                    'actions'       => $this->parent instanceof Organisation ? [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'key'   => 'timesheet',
+                            'label' => __('Add timesheet'),
+                            'icon'  => ['fal', 'fa-plus'],
+                        ],
+                    ] : [],
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
@@ -716,6 +725,16 @@ class IndexTimesheets extends OrgAction
                     'current'    => (TimesheetEmployeeViewEnum::tryFrom((string) request()->input('view')) ?? TimesheetEmployeeViewEnum::OVERVIEW)->value,
                     'navigation' => TimesheetEmployeeViewEnum::navigation(),
                 ],
+                'employeeOptions' => $this->parent instanceof Organisation
+                    ? $this->parent->employees()
+                        ->where('state', EmployeeStateEnum::WORKING)
+                        ->orderBy('alias')
+                        ->get()
+                        ->map(fn (Employee $employee) => [
+                            'value' => $employee->id,
+                            'label' => $employee->contact_name,
+                        ])
+                    : [],
 
                 TimesheetsTabsEnum::ALL_EMPLOYEES->value => $this->tab == TimesheetsTabsEnum::ALL_EMPLOYEES->value
                     ? fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))
