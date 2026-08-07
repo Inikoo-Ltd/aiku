@@ -97,7 +97,9 @@ class GetFaireProducts extends OrgAction
 
                 if ($product) {
                     try {
-                        UpdateProduct::make()->action($product, [
+                        $updateProduct                = UpdateProduct::make();
+                        $updateProduct->skipFaireSync = true;
+                        $updateProduct->action($product, [
                             'code'                  => $faireSKU,
                             'name'                  => $faireProduct['name'].' - '.$variant['name'],
                             'description'           => $faireProduct['description'],

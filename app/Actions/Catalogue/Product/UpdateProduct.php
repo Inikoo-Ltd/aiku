@@ -14,6 +14,7 @@ use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProduct;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -64,6 +65,8 @@ class UpdateProduct extends OrgAction
     public bool $bulkPriceUpdate = false;
 
     public bool $skipWebpageCacheBreak = false;
+
+    public bool $skipFaireSync = false;
 
     public function handle(Product $product, array $modelData): Product
     {
@@ -344,6 +347,15 @@ class UpdateProduct extends OrgAction
             if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE) {
                 UpdateFaireProductInventoryQuantity::dispatch($product)->delay(60);
             }
+        }
+
+        if (!$this->skipFaireSync
+            && $product->marketplace_second_id
+            && Arr::hasAny($changed, UpdateFaireProduct::SYNCED_FIELDS)
+            && $product->shop->type === ShopTypeEnum::EXTERNAL
+            && $product->shop->engine === ShopEngineEnum::FAIRE
+        ) {
+            UpdateFaireProduct::dispatch($product)->delay(60);
         }
 
         if (Arr::has($changed, 'master_product_id')) {
