@@ -123,10 +123,17 @@ const submitGiftOffer = () => {
         type: typeOffer.value,
         trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
         trigger_data_item_amount: offerAmount.value,
-        min_order_amount: offerAmount.value,
         ...buildAllowancePayload(),
-        product_id: isMinAmountGift.value ? giftProductId.value : (productId.value || props.product_id),
-        quantity: isMinAmountGift.value ? freeQuantity.value : quantity.value,
+        ...(isMinAmountGift.value
+            ? {
+                min_order_amount: offerAmount.value,
+                product_id: giftProductId.value,
+                quantity: freeQuantity.value != null ? Math.floor(freeQuantity.value) : null,
+            }
+            : {
+                product_id: productId.value || props.product_id,
+                quantity: quantity.value,
+            }),
         duration: dateType.value,
         start_at: formatDate(startDate.value),
         end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
