@@ -35,7 +35,15 @@ const props = defineProps<{
     isStillPicking: boolean
     isReadOnly?: boolean
     waitingType?: string
+    highlightDeliveryNoteSlug?: string
 }>()
+
+const rowHighlightClass = (item: any) => {
+    if (props.highlightDeliveryNoteSlug && item.delivery_note_slug === props.highlightDeliveryNoteSlug) {
+        return 'bg-amber-100 hover:bg-amber-200/70'
+    }
+    return ''
+}
 
 const routeToDeliveryNote = (slug: string) => {
     return route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
@@ -85,7 +93,7 @@ const getWaitingCrmFractional = (item: any) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop :rowColorFunction="rowHighlightClass">
 
         <!-- Column: Reference Delivery Note -->
         <template #cell(delivery_note_reference)="{ item }">

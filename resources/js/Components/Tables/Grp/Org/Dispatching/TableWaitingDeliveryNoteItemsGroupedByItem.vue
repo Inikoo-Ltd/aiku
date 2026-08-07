@@ -26,13 +26,18 @@ library.add(faHandHoldingBox, faHourglassStart, faTruck, faSkull, faCircle)
 
 const locale = inject("locale", aikuLocaleStructure)
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     allowStockControllerSetNotPicked: boolean
     isStillPicking: boolean
     waitingType?: string
+    highlightDeliveryNoteSlug?: string
 }>()
+
+const isHighlightedDeliveryNote = (deliveryItem: any) => {
+    return Boolean(props.highlightDeliveryNoteSlug) && deliveryItem.delivery_note_slug === props.highlightDeliveryNoteSlug
+}
 
 const routeToDeliveryNote = (slug: string) => {
     return route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
@@ -81,6 +86,7 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
                     v-for="deliveryItem in stockRow.delivery_notes"
                     :key="deliveryItem.id"
                     class="py-3 first:pt-1"
+                    :class="isHighlightedDeliveryNote(deliveryItem) ? 'bg-amber-100 -mx-2 px-2 rounded' : ''"
                 >
                     <div class="flex flex-col gap-y-1">
                         <!-- Delivery note reference + notes -->

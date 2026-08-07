@@ -535,6 +535,7 @@ const urlItemsWaitingWarehouse = computed(() => {
         organisation: currentRouteParams.organisation,
         warehouse: currentRouteParams.warehouse,
         shopType: props.shop_type,
+        ...(currentRouteParams.deliveryNote ? { highlight_delivery_note: currentRouteParams.deliveryNote } : {}),
     })
 })
 
