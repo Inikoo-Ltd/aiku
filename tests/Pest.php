@@ -274,7 +274,7 @@ function createInvoiceFor($customer, $shop, string $date, float $net, bool $inPr
  * A channel's order count is measured from the orders themselves, since only they carry the date that
  * says whether the order came after the touch claiming it.
  */
-function createDispatchedOrderFor($customer, $shop, string $date, string $state = 'dispatched', bool $isInvoiced = true, float $net = 100): void
+function createDispatchedOrderFor($customer, $shop, string $date, string $state = 'dispatched', float $net = 100): void
 {
     \Illuminate\Support\Facades\DB::table('orders')->insert([
         'group_id'        => $shop->group_id,
@@ -285,7 +285,6 @@ function createDispatchedOrderFor($customer, $shop, string $date, string $state 
         'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
         'slug'            => 'ord-'.uniqid(),
         'state'           => $state,
-        'is_invoiced'     => $isInvoiced,
         'net_amount'      => $net,
         'org_net_amount'  => $net,
         'grp_net_amount'  => $net,

@@ -164,7 +164,7 @@ it('serves the same period numbers through the daily sql view', function () {
 });
 
 it('shows placed but uninvoiced order value as pending revenue, separate from invoiced', function () {
-    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', false);
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted');
     invoiceOn(now()->subDay()->toDateTimeString(), 400, $this->customer, $this->shop);
 
     $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
@@ -176,10 +176,8 @@ it('shows placed but uninvoiced order value as pending revenue, separate from in
     expect($channel['pending'])->toBe($overview['totals']['pending']);
 });
 
-it('drops an order out of pending once it has an invoice, whatever is_invoiced says', function () {
-    /* is_invoiced is false on every order in production, so pending is decided by whether an invoice
-       exists - this order carries the flag that would have kept it pending forever. */
-    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', false);
+it('drops an order out of pending once it has an invoice', function () {
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted');
 
     $orderId = DB::table('orders')->where('customer_id', $this->customer->id)->orderByDesc('id')->value('id');
     DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
@@ -192,7 +190,7 @@ it('drops an order out of pending once it has an invoice, whatever is_invoiced s
 });
 
 it('does not count a cancelled order as pending', function () {
-    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'cancelled', false);
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'cancelled');
 
     $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
 

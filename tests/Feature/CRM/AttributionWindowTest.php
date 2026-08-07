@@ -144,7 +144,6 @@ it('credits revenue by the date the customer ordered, not the date the invoice w
         'slug'            => 'ord-'.uniqid(),
         'state'           => 'dispatched',
         'status'          => 'settled',
-        'is_invoiced'     => true,
         'payment_data'    => '{}',
         'data'            => '{}',
         'date'            => now()->subDay()->toDateTimeString(),

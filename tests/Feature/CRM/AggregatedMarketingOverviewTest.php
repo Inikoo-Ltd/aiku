@@ -130,7 +130,7 @@ it('does not credit a registration that preceded the touch in the aggregate eith
 });
 
 it('shows pending order value in the aggregate, in the parent currency', function () {
-    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', false, 100);
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', 100);
 
     $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
 
@@ -141,7 +141,7 @@ it('shows pending order value in the aggregate, in the parent currency', functio
 });
 
 it('counts a submitted order in the orders figure without waiting for dispatch', function () {
-    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', false);
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted');
 
     $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
     $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
@@ -167,7 +167,7 @@ it('reports what happened without marketing, so nought attributed can be told fr
 });
 
 it('does not repeat invoiced revenue in the pending figure', function () {
-    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'dispatched', false, 100);
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'dispatched', 100);
 
     $orderId = DB::table('orders')->where('customer_id', $this->customer->id)->orderByDesc('id')->value('id');
 
