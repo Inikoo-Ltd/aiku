@@ -100,6 +100,11 @@ class GetShopMarketingOverview
             'currency_code' => $shop->currency->code,
             'totals'        => [
                 'spend'         => $totalSpend,
+                /* Split because they are different kinds of money: one is invoiced by an ad platform,
+                   the other is our own estimate of what sending the emails cost. Totalled for ROAS,
+                   shown apart so nobody reads an estimate as a bill. */
+                'spend_ads'     => round($totalSpend - $emailCost, 2),
+                'spend_email'   => round($emailCost, 2),
                 'revenue'       => $totalRevenue,
                 'registrations' => $totalRegistrations,
                 'pending'       => $totalPending,

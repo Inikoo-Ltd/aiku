@@ -27,6 +27,8 @@ const props = defineProps<{
         period_options: { value: string, label: string }[]
         totals: {
             spend: number
+            spend_ads: number
+            spend_email: number
             revenue: number
             pending: number
             registrations: number
@@ -192,8 +194,14 @@ const changePeriod = (event: Event) => {
                 </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ trans('Ad spend') }}</div>
+                <div class="text-xs text-gray-400">{{ trans('What it cost') }}</div>
                 <div class="mt-1 text-lg tabular-nums">{{ money(overview.totals.spend) }}</div>
+                <!-- Ads are invoiced by the platform; email is our own estimate. Kept apart so an
+                     estimate is never mistaken for a bill. -->
+                <div class="mt-0.5 text-xs text-gray-400 tabular-nums">
+                    {{ trans('ads') }} {{ money(overview.totals.spend_ads) }} ·
+                    {{ trans('email') }} {{ money(overview.totals.spend_email) }} {{ trans('est.') }}
+                </div>
                 <div class="mt-0.5 text-xs" :class="overview.totals.roas === null ? 'text-gray-300' : overview.totals.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
                     {{ trans('ROAS') }} {{ overview.totals.roas !== null ? overview.totals.roas.toFixed(2) + '×' : '—' }}
                 </div>

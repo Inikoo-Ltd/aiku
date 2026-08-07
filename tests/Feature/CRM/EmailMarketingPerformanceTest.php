@@ -286,3 +286,23 @@ it('prices the newsletter channel from the emails it sent, instead of showing it
     expect($channel['spend'])->toBeGreaterThan(0.0)
         ->and($channel['spend_is_estimated'])->toBeTrue();
 });
+
+it('separates what the ads cost from what the emails cost', function () {
+    $mailshot = App\Models\Comms\Mailshot::where('shop_id', $this->shop->id)->first();
+    $mailshot->stats()->update(['number_dispatched_emails' => 100000]);
+    $mailshot->update(['sent_at' => now()->subDay()]);
+
+    $googleAds = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'google-ads')->first();
+
+    App\Actions\CRM\TrafficSource\StoreTrafficSourceCost::run($googleAds, [
+        'date'               => now()->subDay()->toDateString(),
+        'source_amount'      => 200,
+        'source_currency_id' => $this->shop->currency_id,
+    ]);
+
+    $totals = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['totals'];
+
+    expect($totals['spend_ads'])->toBe(200.0)
+        ->and($totals['spend_email'])->toBeGreaterThan(0.0)
+        ->and(round($totals['spend_ads'] + $totals['spend_email'], 2))->toBe($totals['spend']);
+});
