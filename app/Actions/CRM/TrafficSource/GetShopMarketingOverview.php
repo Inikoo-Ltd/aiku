@@ -30,7 +30,7 @@ class GetShopMarketingOverview
      *
      * All figures are in the shop's currency.
      *
-     * @return array{period: string, period_label: string, from: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     * @return array{period: string, period_label: string, from: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
      */
     public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
@@ -82,6 +82,7 @@ class GetShopMarketingOverview
                     : null,
             ],
             'channels'      => $channels,
+            'campaigns'     => $this->campaigns($shop, $from),
             'spend_by_day'  => $this->spendByDay($shop, $from),
         ];
     }
@@ -133,6 +134,68 @@ class GetShopMarketingOverview
     /**
      * @return array<int, array{date: string, amount: float}>
      */
+    /**
+     * The campaigns that actually moved money in the period, richest first. Campaign refs come from
+     * ad platforms, so a shop can accumulate hundreds; the dashboard shows the handful worth looking
+     * at and the campaign listing carries the rest.
+     *
+     * @return array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>
+     */
+    private function campaigns(Shop $shop, ?Carbon $from, int $limit = 8): array
+    {
+        $revenue = DB::table('invoices')
+            ->join('model_has_traffic_sources as p', function ($join) {
+                $join->on('p.model_id', '=', 'invoices.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+            })
+            ->whereNotNull('p.traffic_source_campaign_id')
+            ->where('invoices.shop_id', $shop->id)
+            ->where('invoices.in_process', false)
+            ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->groupBy('p.traffic_source_campaign_id')
+            ->select(
+                'p.traffic_source_campaign_id as campaign_id',
+                DB::raw('SUM(invoices.net_amount * p.share) as revenue'),
+                DB::raw('SUM(p.share) as registrations'),
+            )
+            ->get()
+            ->keyBy('campaign_id');
+
+        $spend = DB::table('traffic_source_costs')
+            ->whereNotNull('traffic_source_campaign_id')
+            ->where('shop_id', $shop->id)
+            ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
+            ->groupBy('traffic_source_campaign_id')
+            ->select('traffic_source_campaign_id', DB::raw('SUM(amount) as spend'))
+            ->pluck('spend', 'traffic_source_campaign_id');
+
+        $campaignIds = $revenue->keys()->merge($spend->keys())->unique();
+
+        if ($campaignIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('traffic_source_campaigns as c')
+            ->join('traffic_sources as ts', 'ts.id', '=', 'c.traffic_source_id')
+            ->whereIn('c.id', $campaignIds)
+            ->select('c.id', 'c.name', 'ts.name as channel')
+            ->get()
+            ->map(fn ($campaign) => [
+                'name'          => $campaign->name,
+                'channel'       => $campaign->channel,
+                'spend'         => round((float) ($spend[$campaign->id] ?? 0), 2),
+                'revenue'       => round((float) ($revenue[$campaign->id]->revenue ?? 0), 2),
+                'registrations' => round((float) ($revenue[$campaign->id]->registrations ?? 0), 2),
+            ])
+            ->map(fn (array $campaign) => $campaign + [
+                'roas' => $campaign['spend'] > 0 ? round($campaign['revenue'] / $campaign['spend'], 2) : null,
+            ])
+            ->sortByDesc(fn (array $campaign) => max($campaign['spend'], $campaign['revenue']))
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+
     private function spendByDay(Shop $shop, ?Carbon $from): array
     {
         /* The sparkline is a shape, not a ledger: it always shows the recent run of days so the tile

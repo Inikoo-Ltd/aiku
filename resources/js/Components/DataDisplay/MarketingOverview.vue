@@ -36,6 +36,14 @@ const props = defineProps<{
         period_label: string
         from: string | null
         period_options: { value: string, label: string }[]
+        campaigns: {
+            name: string
+            channel: string
+            spend: number
+            revenue: number
+            registrations: number
+            roas: number | null
+        }[]
         spend_by_day: { date: string, amount: number }[]
         email: {
             totals: {
@@ -256,6 +264,43 @@ const typeLabel: Record<string, string> = {
                     {{ trans('Attribution fills this in as visitors register and ad spend is imported') }}
                 </div>
             </div>
+        </div>
+
+        <!-- Campaign performance: which individual campaigns earn their spend -->
+        <div v-if="overview.campaigns.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-sm font-medium text-gray-800">{{ trans('Campaign performance') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">{{ overview.period_label.toLowerCase() }}</span>
+                </div>
+            </div>
+
+            <table class="mt-4 w-full text-xs">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-100">
+                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Campaign') }}</th>
+                        <th class="text-left font-normal py-1.5 px-2">{{ trans('Channel') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="campaign in overview.campaigns" :key="campaign.name + campaign.channel"
+                        class="border-b border-gray-50 text-gray-600">
+                        <td class="py-2 pr-2 text-gray-700 truncate max-w-[18rem]">{{ campaign.name }}</td>
+                        <td class="px-2 text-gray-500">{{ campaign.channel }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ money(campaign.spend) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ money(campaign.revenue) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ fmtShare(campaign.registrations) }}</td>
+                        <td class="text-right pl-2 tabular-nums"
+                            :class="campaign.roas === null ? 'text-gray-300' : campaign.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                            {{ campaign.roas !== null ? campaign.roas.toFixed(2) + '×' : '—' }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <!-- Email marketing: does what we send earn sales, or just unsubscribes? -->
