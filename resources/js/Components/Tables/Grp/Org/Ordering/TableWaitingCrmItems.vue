@@ -9,8 +9,11 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart } from "@fal"
+import { faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart, faHourglassStart } from "@fal"
+import { faFragile } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import FractionDisplayFE from "@/Components/DataDisplay/FractionDisplayFE.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { computed, inject, reactive, ref, watch } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -23,7 +26,9 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
-library.add(faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart)
+import Toggle from "@/Components/Pure/Toggle.vue"
+import Image from "@common/Components/Image.vue"
+library.add(faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart, faHourglassStart, faFragile)
 
 defineProps<{
     data: TableTS
@@ -76,20 +81,199 @@ const replaceProductRoute = (item: Record<string, any>): string | null => {
     }
 }
 
+const productImage = (product: Record<string, any>) => product?.web_images?.main?.thumbnail ?? product?.web_images?.main?.original ?? null
+
 // Section: Modal Replace Product
 const isOpenModalReplaceProduct = ref(false)
 const selectedItem = ref<Record<string, any> | null>(null)
 const modalProducts = ref<any[]>([])
 const modalSearchQuery = ref('')
 const isModalProductsLoading = ref(false)
-const productQuantities = reactive<Record<number, { quantity: number; code: string; name: string; stock: number }>>({})
+const productQuantities = reactive<Record<number, { quantity: number; code: string; name: string; stock: number; units: number; image: any }>>({})
 const isSubmittingReplaceProduct = ref(false)
+
+// Packs are stored as a decimal, the warehouse reads them as "2/16" of an outer.
+const waitingQuantityLabel = (item: Record<string, any> | null): string => {
+    const packedIn = Number(item?.packed_in) || 1
+    const quantity = Number(item?.quantity_waiting_crm) || 0
+    if (packedIn <= 1) {
+        return String(quantity)
+    }
+
+    return `${Math.round(quantity * packedIn)}/${packedIn}`
+}
+
+// Mirrors the "_ds" fractional shape the backend sends: whole packs read as 32/16, a cut as 2/16.
+const toFractionData = (quantity: number, packedIn: number) => {
+    const units = Math.round(quantity * packedIn)
+    if (packedIn <= 1) {
+        return [units, [0, 1]]
+    }
+    return [0, [units, packedIn]]
+}
+
+/*
+ * Section: cut view. Both sides of the swap are packed in outers and both can move a cut at a
+ * time: 4/16 of jbb-02 goes out and 4/16 of jbb-04 comes in. Quantities are held in packs, the
+ * decimal the backend stores, and cut view only changes how they are typed and read: single
+ * items over the pack size instead of whole packs.
+ */
+const quantityToReplace = ref(0)
+const isCutViewSelected = ref(false)
+
+const replacePackedIn = computed(() => Number(selectedItem.value?.packed_in) || 1)
+const waitingQuantity = computed(() => Number(selectedItem.value?.quantity_waiting_crm) || 0)
+
+/*
+ * An item already sitting on a cut, 14/16 left after an earlier swap, cannot be read in whole
+ * packs at all, so cut view is locked on for it rather than merely starting on.
+ */
+const isCutViewLocked = computed(() => !Number.isInteger(waitingQuantity.value))
+
+const isCutViewReplace = computed(() => isCutViewLocked.value || isCutViewSelected.value)
+
+const hasCuttableProduct = computed(() => modalProducts.value.some(product => Number(product.units) > 1))
+const canToggleCutView = computed(() => isCutViewLocked.value || replacePackedIn.value > 1 || hasCuttableProduct.value)
+
+const packsToUnits = (quantity: number, packedIn: number): number => Math.round(quantity * packedIn)
+
+// The server only accepts a whole count of single items, anything else stays expressed in packs.
+const toUnitsPayload = (quantity: number, packedIn: number): number | null => {
+    const units = quantity * packedIn
+    return Number.isInteger(units) ? units : null
+}
+
+const unitsToPacks = (units: number, packedIn: number): number => Math.round((units / packedIn) * 1e6) / 1e6
+
+const replaceQuantityInput = computed(() => isCutViewReplace.value
+    ? packsToUnits(quantityToReplace.value, replacePackedIn.value)
+    : quantityToReplace.value
+)
+
+const maxQuantityToReplace = computed(() => isCutViewReplace.value
+    ? packsToUnits(waitingQuantity.value, replacePackedIn.value)
+    : waitingQuantity.value
+)
+
+const quantityRemainingAfterReplace = computed(() => {
+    const remaining = waitingQuantity.value - quantityToReplace.value
+    return remaining < 0 ? 0 : Math.round(remaining * 1e6) / 1e6
+})
+
+const onUpdateQuantityToReplace = (value: number | null) => {
+    const raw = Number(value) || 0
+    const quantity = isCutViewReplace.value ? unitsToPacks(raw, replacePackedIn.value) : raw
+    quantityToReplace.value = Math.min(Math.max(quantity, 0), waitingQuantity.value)
+}
+
+// Leaving cut view rounds each cut up to the pack it sits in, the only amount that view can express.
+const toggleCutViewReplace = (isCutView: boolean) => {
+    if (isCutViewLocked.value) {
+        return
+    }
+
+    isCutViewSelected.value = isCutView
+    if (isCutView) {
+        return
+    }
+
+    quantityToReplace.value = Math.min(Math.ceil(quantityToReplace.value), waitingQuantity.value)
+    Object.values(productQuantities).forEach(product => {
+        product.quantity = Math.ceil(product.quantity)
+    })
+}
+
+// Section: replacement product quantities, typed in the same view as the item being replaced
+const isProductCutView = (product: Record<string, any>): boolean => isCutViewReplace.value && Number(product?.units) > 1
+
+const productQuantityInput = (product: Record<string, any>): number => {
+    const quantity = productQuantities[product.id]?.quantity ?? 0
+    return isProductCutView(product) ? packsToUnits(quantity, Number(product.units)) : quantity
+}
+
+const productStockInView = (product: Record<string, any>): number => {
+    const stock = Number(product?.stock) || 0
+    return isProductCutView(product) ? packsToUnits(stock, Number(product.units)) : stock
+}
+
+/*
+ * Stock reads as a mixed number rather than a raw count of items: 128 of a 16-pack is 8 packs, 130
+ * is 8 packs and a cut of 2, which is what the picker actually finds on the shelf.
+ */
+const toMixedFractionData = (quantity: number, packedIn: number) => {
+    const units = Math.round(quantity * packedIn)
+    if (packedIn <= 1) {
+        return [units, [0, 1]]
+    }
+    return [Math.floor(units / packedIn), [units % packedIn, packedIn]]
+}
+
+/*
+ * Stock is shown but never caps the input: a cheaper product can answer the one it replaces by
+ * going out in a larger quantity, and anything beyond what is on the shelf simply joins the
+ * delivery note waiting for the warehouse, the same as the rest of the replacement.
+ */
+const onUpdateProductQuantity = (product: Record<string, any>, value: number | null) => {
+    const entry = productQuantities[product.id]
+    if (!entry) {
+        return
+    }
+
+    const raw = Number(value) || 0
+    const quantity = isProductCutView(product) ? unitsToPacks(raw, Number(product.units)) : raw
+    entry.quantity = Math.max(quantity, 0)
+}
+
+const isProductOverStock = (product: Record<string, any>): boolean => (
+    (productQuantities[product.id]?.quantity ?? 0) > (Number(product?.stock) || 0)
+)
+
+// Outside cut view the quantity was typed in whole packs, so it reads as a plain count.
+const productQuantityLabel = (quantity: number, units: number): string => (
+    isCutViewReplace.value && units > 1 ? `${packsToUnits(quantity, units)}/${units}` : String(quantity)
+)
+
+/*
+ * The same quantity as the two halves of a fraction, a denominator of 1 leaving it to read as a
+ * plain count the way the label does outside cut view.
+ */
+const productQuantityFraction = (quantity: number, units: number): { numerator: number; denominator: number } => (
+    isCutViewReplace.value && units > 1
+        ? { numerator: packsToUnits(quantity, units), denominator: units }
+        : { numerator: quantity, denominator: 1 }
+)
+
+/*
+ * Org stocks carry no image of their own, it lives on the trade unit behind them, so the picture
+ * of the item being replaced is fetched per delivery note item the way the delivery note table does.
+ */
+const orgStockImages = reactive<Record<number, any>>({})
+
+const orgStockImage = (item: Record<string, any> | null) => orgStockImages[item?.id] ?? null
+
+const fetchOrgStockImage = async (deliveryNoteItemId: number) => {
+    if (!deliveryNoteItemId || deliveryNoteItemId in orgStockImages) {
+        return
+    }
+
+    try {
+        const response = await axios.get(route('grp.json.fetch_single_delivery_note_item.image', {
+            deliveryNoteItem: deliveryNoteItemId,
+        }))
+        orgStockImages[deliveryNoteItemId] = response.data ?? null
+    } catch (error) {
+        console.error('Error fetching org stock image:', error)
+    }
+}
 
 const openReplaceProductModal = (item: Record<string, any>) => {
     selectedItem.value = item
     modalSearchQuery.value = ''
     Object.keys(productQuantities).forEach(key => delete productQuantities[Number(key)])
+    quantityToReplace.value = Number(item.quantity_waiting_crm) || 0
+    isCutViewSelected.value = false
     isOpenModalReplaceProduct.value = true
+    fetchOrgStockImage(item.id)
     fetchModalProducts()
 }
 
@@ -111,7 +295,14 @@ const fetchModalProducts = debounce(async () => {
         const products = response.data.data ?? []
         products.forEach((product: any) => {
             if (!(product.id in productQuantities)) {
-                productQuantities[product.id] = { quantity: 0, code: product.code, name: product.name, stock: product.stock ?? 0 }
+                productQuantities[product.id] = {
+                    quantity: 0,
+                    code: product.code,
+                    name: product.name,
+                    stock: product.stock ?? 0,
+                    units: Number(product.units) || 1,
+                    image: productImage(product),
+                }
             }
         })
         modalProducts.value = products
@@ -130,7 +321,7 @@ watch(modalSearchQuery, () => {
 const selectedProducts = computed(() =>
     Object.entries(productQuantities)
         .filter(([, p]) => p.quantity > 0)
-        .map(([id, p]) => ({ id: Number(id), code: p.code, name: p.name, quantity: p.quantity }))
+        .map(([id, p]) => ({ id: Number(id), code: p.code, name: p.name, quantity: p.quantity, units: p.units, image: p.image }))
 )
 
 const unselectProduct = (id: number) => {
@@ -141,7 +332,9 @@ const unselectProduct = (id: number) => {
 
 interface SuccessContext {
     replacedItem: Record<string, any>
-    newProducts: { id: number; code: string; name: string; quantity: number }[]
+    replacedQuantity: number
+    remainingQuantity: number
+    newProducts: { id: number; code: string; name: string; numerator: number; denominator: number; image: any }[]
 }
 
 const isModalConfirmationSuccess = ref(false)
@@ -150,18 +343,46 @@ const successContext = ref<SuccessContext | null>(null)
 const submitReplaceProduct = () => {
     if (!selectedItem.value) return
     if (selectedProducts.value.length === 0) return
+    if (quantityToReplace.value <= 0) return
     const submitRoute = replaceProductRoute(selectedItem.value)
     if (!submitRoute) return
     isSubmittingReplaceProduct.value = true
 
-    const snapshotSelectedProducts = [...selectedProducts.value]
+    const snapshotSelectedProducts = selectedProducts.value.map(({ id, code, name, quantity, units, image }) => ({
+        id,
+        code,
+        name,
+        image,
+        ...productQuantityFraction(quantity, units),
+    }))
+    const snapshotQuantityToReplace = quantityToReplace.value
+    const snapshotQuantityRemaining = quantityRemainingAfterReplace.value
 
-    router.post(submitRoute, { products: selectedProducts.value.map(({ id, quantity }) => ({ id, quantity })) }, {
+    /*
+     * A cut is sent as a whole count of single items so the server derives the pack fraction from
+     * its own pack size, the same contract UpdateTransaction uses for units_ordered.
+     */
+    const replacedUnits = isCutViewReplace.value
+        ? toUnitsPayload(quantityToReplace.value, replacePackedIn.value)
+        : null
+
+    const payload = {
+        ...(replacedUnits === null ? { quantity: quantityToReplace.value } : { units: replacedUnits }),
+        products: selectedProducts.value.map(({ id, quantity, units }) => {
+            const orderedUnits = isCutViewReplace.value && units > 1 ? toUnitsPayload(quantity, units) : null
+
+            return orderedUnits === null ? { id, quantity } : { id, units: orderedUnits }
+        }),
+    }
+
+    router.post(submitRoute, payload, {
         preserveScroll: true,
         onSuccess: () => {
             isOpenModalReplaceProduct.value = false
             successContext.value = {
                 replacedItem: { ...selectedItem.value },
+                replacedQuantity: snapshotQuantityToReplace,
+                remainingQuantity: snapshotQuantityRemaining,
                 newProducts: snapshotSelectedProducts,
             }
             notify({
@@ -183,6 +404,7 @@ const isSubmittingSendBack = ref(false)
 const openSendBackWarehouseModal = (item: Record<string, any>) => {
     selectedItemSendBack.value = item
     isOpenModalSendBackWarehouse.value = true
+    fetchOrgStockImage(item.id)
 }
 
 const submitSendBackWarehouse = () => {
@@ -254,8 +476,13 @@ const submitSendBackWarehouse = () => {
                             <span class="ml-1.5 text-gray-600 italic opacity-80">{{ subItem.org_stock_name }}</span>
                             <span class="ml-1.5 italic opacity-80">{{ subItem.packed_in_message }}</span>
                         </div>
-                        <div class="tabular-nums text-sm text-gray-500">
-                            {{ Number(subItem.quantity_waiting_crm) }} {{ ctrans("items") }}
+                        <div class="tabular-nums text-sm text-gray-500 flex items-center gap-x-1">
+                            <FractionDisplay
+                                v-if="subItem.quantity_waiting_crm_fractional_ds"
+                                :fractionData="subItem.quantity_waiting_crm_fractional_ds"
+                            />
+                            <template v-else>{{ Number(subItem.quantity_waiting_crm) }}</template>
+                            {{ ctrans("items") }}
                         </div>
                         <div v-if="subItem.notes" class="text-left border border-gray-300 bg-gray-100 px-2 py-1 rounded text-xs w-fit">
                             <FontAwesomeIcon icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
@@ -266,10 +493,10 @@ const submitSendBackWarehouse = () => {
                     <!-- Actions -->
                     <div class="flex gap-2 shrink-0 flex-wrap">
                         <ButtonWithLink
-                            v-tooltip="ctrans(':itemNotPick items will not picked, and will not billed to customer', { itemNotPick: Number(subItem.quantity_waiting_crm) })"
+                            v-tooltip="ctrans(':itemNotPick items will not picked, and will not billed to customer', { itemNotPick: waitingQuantityLabel(subItem) })"
                             :url="setAsNotPickRoute(subItem)"
                             method="post"
-                            :label="ctrans(`Don't pick :itemNotPick items`, { itemNotPick: Number(subItem.quantity_waiting_crm) })"
+                            :label="ctrans(`Don't pick :itemNotPick items`, { itemNotPick: waitingQuantityLabel(subItem) })"
                             type="negative"
                             icon="fas fa-skull"
                             size="xs"
@@ -301,7 +528,7 @@ const submitSendBackWarehouse = () => {
                         <!-- Replace Product -->
                         <Button
                             v-else-if="replaceProductRoute(subItem)"
-                            :label="ctrans('Replace :itemNotPick items', { itemNotPick: Number(subItem.quantity_waiting_crm) })"
+                            :label="ctrans('Replace :itemNotPick items', { itemNotPick: waitingQuantityLabel(subItem) })"
                             size="xs"
                             type="positive"
                             icon="fal fa-exchange-alt"
@@ -337,19 +564,88 @@ const submitSendBackWarehouse = () => {
                 </div>
                 <div class="bg-amber-50 rounded px-4 py-2 text-sm text-amber-700 border border-amber-400">
                     <div class="flex justify-between items-start gap-4">
-                        <div>
-                            <span class="font-semibold">{{ selectedItem?.org_stock_code }}</span>
-                            <span class="ml-1.5 opacity-80">{{ selectedItem?.org_stock_name }}</span>
+                        <div class="flex items-start gap-x-3">
+                            <Image
+                                v-if="orgStockImage(selectedItem)"
+                                :src="orgStockImage(selectedItem)"
+                                :alt="selectedItem?.org_stock_name"
+                                class="h-10 w-10 shrink-0 rounded object-cover bg-white"
+                            />
+                            <div>
+                                <span class="font-semibold">{{ selectedItem?.org_stock_code }}</span>
+                                <span class="ml-1.5 opacity-80">{{ selectedItem?.org_stock_name }}</span>
+                                <span class="ml-1.5 italic opacity-80">{{ selectedItem?.packed_in_message }}</span>
+                            </div>
                         </div>
                         <div class="shrink-0 text-right">
-                            <div class="tabular-nums font-semibold">
-                                {{ Number(selectedItem?.quantity_waiting_crm) }} {{ ctrans("items") }}
+                            <div class="tabular-nums font-semibold flex justify-end">
+                                <FractionDisplayFE
+                                    :numerator="packsToUnits(waitingQuantity, replacePackedIn)"
+                                    :denominator="replacePackedIn"
+                                />
+                                <span class="ml-1">{{ ctrans("items") }}</span>
                             </div>
                             <div v-if="selectedItem?.net_amount" class="tabular-nums text-xs opacity-70 mt-0.5">
                                 {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount) }}
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Section: how much of the waiting quantity to replace -->
+            <div>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        {{ ctrans("Quantity to replace") }}:
+                    </div>
+
+                    <!-- Toggle: count single items on both sides of the swap instead of whole packs -->
+                    <div
+                        v-if="canToggleCutView"
+                        v-tooltip="isCutViewLocked
+                            ? ctrans('This item is already on a cut, it cannot be counted in whole packs')
+                            : ctrans('Cut view: swap part of a pack, for example 4 of a 16 pack for 4 of another 16 pack')"
+                        class="flex gap-x-2"
+                    >
+                        <Toggle
+                            :modelValue="isCutViewReplace"
+                            :disabled="isCutViewLocked"
+                            @update:modelValue="toggleCutViewReplace"
+                        />
+                        <span
+                            class="flex items-center gap-x-1.5 text-sm"
+                            :class="isCutViewReplace ? 'text-orange-500 opacity-100' : ''"
+                        >
+                            <FontAwesomeIcon icon="fas fa-fragile" class="text-lg" fixed-width aria-hidden="true" />
+                        </span>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <InputNumber
+                        :modelValue="replaceQuantityInput"
+                        @update:model-value="onUpdateQuantityToReplace"
+                        @input="(e) => onUpdateQuantityToReplace(Number(e.value))"
+                        :min="0"
+                        :max="maxQuantityToReplace"
+                        :suffix="isCutViewReplace && replacePackedIn > 1 ? `/${replacePackedIn}` : undefined"
+                        :key="String(isCutViewReplace) + selectedItem?.id"
+                        inputClass="w-28"
+                        showButtons
+                    />
+
+                    <span class="text-sm text-gray-500">
+                        {{ isCutViewReplace ? ctrans('of :max items', { max: String(maxQuantityToReplace) }) : ctrans('of :max outers', { max: String(maxQuantityToReplace) }) }}
+                    </span>
+                </div>
+
+                <div vxif="quantityRemainingAfterReplace > 0" class="mt-1 flex items-center gap-x-1 text-xs text-amber-700"
+                    :class="quantityRemainingAfterReplace > 0 ? 'opacity-100' : 'opacity-0'"
+                >
+                    <FontAwesomeIcon icon="fal fa-hourglass-start" fixed-width aria-hidden="true" />
+                    {{ ctrans('Remaining') }}:
+                    <FractionDisplay :fractionData="toFractionData(quantityRemainingAfterReplace, replacePackedIn)" />
+                    {{ ctrans('will stay waiting for CRM') }}
                 </div>
             </div>
 
@@ -399,29 +695,60 @@ const submitSendBackWarehouse = () => {
                             class="transition-colors"
                         >
                             <td class="px-4 py-3 text-gray-700">
-                                <div class="font-bold">{{ product.code }}</div>
-                                <div class="italic opacity-75">{{ product.name }}</div>
+                                <div class="flex items-start gap-x-3">
+                                    <Image
+                                        :src="productImage(product)"
+                                        :alt="product.name"
+                                        class="h-12 w-12 shrink-0 rounded object-cover bg-white"
+                                    />
+                                    <div>
+                                        <div class="font-bold">{{ product.code }}</div>
+                                        <div class="italic opacity-75">{{ product.name }}</div>
+                                        <div v-if="Number(product.units) > 1" class="italic opacity-60 text-xs">
+                                            ({{ ctrans('Pack of') }}: {{ Number(product.units) }})
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap" :class="!product.stock ? 'text-red-500' : 'text-gray-600'">
-                                {{ product.stock > 0 ? locale.number(product.stock) : ctrans('Empty stock') }}
+                                <template v-if="product.stock > 0">
+                                    <FractionDisplay
+                                        v-if="isProductCutView(product)"
+                                        :fractionData="toMixedFractionData(Number(product.stock), Number(product.units))"
+                                        class="justify-end"
+                                    />
+                                    <template v-else>{{ locale.number(productStockInView(product)) }}</template>
+                                </template>
+                                <template v-else>{{ ctrans('Empty stock') }}</template>
                             </td>
                             <td class="px-4 py-3 flex justify-end">
-                                <InputNumber
-                                    :modelValue="productQuantities[product.id]?.quantity ?? 0"
-                                    @update:model-value="(e) => { if (productQuantities[product.id]) productQuantities[product.id].quantity = e ?? 0 }"
-                                    @input="(e) => { if (productQuantities[product.id]) productQuantities[product.id].quantity = Number(e.value) || 0 }"
-                                    :min="0"
-                                    :max="product.stock ?? 0"
-                                    :disabled="!product.stock"
-                                    inputClass="w-28"
-                                    showButtons
-                                />
+                                <div class="flex flex-col items-end gap-y-1">
+                                    <InputNumber
+                                        :modelValue="productQuantityInput(product)"
+                                        @update:model-value="(e) => onUpdateProductQuantity(product, e)"
+                                        @input="(e) => onUpdateProductQuantity(product, Number(e.value))"
+                                        :min="0"
+                                        :suffix="isProductCutView(product) ? `/${Number(product.units)}` : undefined"
+                                        :key="String(isCutViewReplace) + product.id"
+                                        inputClass="w-28"
+                                        showButtons
+                                    />
+                                    <span
+                                        v-if="isProductOverStock(product)"
+                                        v-tooltip="ctrans('Ordering over the available stock, the excess waits for the warehouse')"
+                                        class="text-xs text-amber-600 whitespace-nowrap"
+                                    >
+                                        <FontAwesomeIcon icon="fal fa-hourglass-start" fixed-width aria-hidden="true" />
+                                        {{ ctrans('Over stock') }}
+                                    </span>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
+            <!-- Section: Footer (list selected products, and button) -->
             <div class="flex flex-col gap-2 pt-2 border-t border-gray-200">
                 <!-- Section: selected products list -->
                 <div class="flex flex-wrap gap-1.5">
@@ -431,15 +758,21 @@ const submitSendBackWarehouse = () => {
                             :key="product.id"
                             class="inline-flex items-center gap-1.5 bg-green-100 border border-green-300 text-green-800 rounded-full px-3 py-1 text-xs font-medium"
                         >
+                            <Image
+                                v-if="product.image"
+                                :src="product.image"
+                                :alt="product.name"
+                                class="h-5 w-5 -ml-1.5 shrink-0 rounded-full object-cover bg-white"
+                            />
                             <span class="font-bold">{{ product.code }}</span>
-                            <span class="opacity-70">×{{ product.quantity }}</span>
+                            <span class="opacity-70">×{{ productQuantityLabel(product.quantity, product.units) }}</span>
                             <button
                                 type="button"
                                 @click="unselectProduct(product.id)"
-                                class="ml-0.5 text-green-600 hover:text-red-600 transition-colors"
+                                class="ml-0.5 xtext-green-600 text-red-600 opacity-70 hover:opacity-100 transition-colors"
                                 :aria-label="ctrans('Remove')"
                             >
-                                <FontAwesomeIcon icon="fal fa-times" class="text-xs" />
+                                <FontAwesomeIcon icon="fal fa-times" class="text-xs" fixed-width />
                             </button>
                         </div>
                     </template>
@@ -458,7 +791,7 @@ const submitSendBackWarehouse = () => {
                             :label="ctrans('Save')"
                             icon="fad fa-save"
                             :loading="isSubmittingReplaceProduct"
-                            :disabled="selectedProducts.length === 0"
+                            :disabled="selectedProducts.length === 0 || quantityToReplace <= 0"
                             @click="submitReplaceProduct"
                         />
                     </div>
@@ -477,12 +810,25 @@ const submitSendBackWarehouse = () => {
 
             <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm">
                 <div class="flex justify-between items-start gap-4">
-                    <div>
-                        <span class="font-semibold">{{ selectedItemSendBack?.org_stock_code }}</span>
-                        <span class="ml-1.5 text-amber-700 italic opacity-80">{{ selectedItemSendBack?.org_stock_name }}</span>
+                    <div class="flex items-start gap-x-3">
+                        <Image
+                            v-if="orgStockImage(selectedItemSendBack)"
+                            :src="orgStockImage(selectedItemSendBack)"
+                            :alt="selectedItemSendBack?.org_stock_name"
+                            class="h-10 w-10 shrink-0 rounded object-cover bg-white"
+                        />
+                        <div>
+                            <span class="font-semibold">{{ selectedItemSendBack?.org_stock_code }}</span>
+                            <span class="ml-1.5 text-amber-700 italic opacity-80">{{ selectedItemSendBack?.org_stock_name }}</span>
+                        </div>
                     </div>
-                    <div class="shrink-0 tabular-nums font-semibold text-amber-800">
-                        {{ Number(selectedItemSendBack?.quantity_waiting_crm) }} {{ ctrans('items') }}
+                    <div class="shrink-0 tabular-nums font-semibold text-amber-800 flex items-center gap-x-1">
+                        <FractionDisplay
+                            v-if="selectedItemSendBack?.quantity_waiting_crm_fractional_ds"
+                            :fractionData="selectedItemSendBack.quantity_waiting_crm_fractional_ds"
+                        />
+                        <template v-else>{{ Number(selectedItemSendBack?.quantity_waiting_crm) }}</template>
+                        {{ ctrans('items') }}
                     </div>
                 </div>
             </div>
@@ -539,17 +885,38 @@ const submitSendBackWarehouse = () => {
             <!-- Section: Replaced item -->
             <div class="flex flex-col gap-1">
                 <div class="text-xs xfont-semibold xuppercase tracking-wide text-gray-400">{{ ctrans('Replaced items') }}</div>
-                <div class="flex justify-between items-center bg-red-100 border border-red-200 rounded-lg px-4 py-3 text-sm">
-                    <div>
-                        <span class="font-bold text-gray-700">{{ successContext.replacedItem.org_stock_code }}</span>
-                        <span class="block text-gray-500 italic">{{ successContext.replacedItem.org_stock_name }}</span>
+                <div class="flex justify-between items-center bg-red-100 border border-red-200 rounded-lg px-4 py-3 text-sm gap-x-4">
+                    <div class="flex items-center gap-x-3">
+                        <Image
+                            v-if="orgStockImage(successContext.replacedItem)"
+                            :src="orgStockImage(successContext.replacedItem)"
+                            :alt="successContext.replacedItem.org_stock_name"
+                            class="h-12 w-12 shrink-0 rounded object-cover bg-white"
+                        />
+                        <div>
+                            <span class="font-bold text-gray-700">{{ successContext.replacedItem.org_stock_code }}</span>
+                            <span class="block text-gray-500 italic">{{ successContext.replacedItem.org_stock_name }}</span>
+                        </div>
                     </div>
                     <div class="text-right tabular-nums text-gray-500 shrink-0">
-                        <div>{{ Number(successContext.replacedItem.quantity_waiting_crm) }} {{ ctrans('items') }}</div>
+                        <div class="flex items-center justify-end gap-x-1">
+                            <FractionDisplay
+                                :fractionData="toFractionData(successContext.replacedQuantity, Number(successContext.replacedItem.packed_in) || 1)"
+                            />
+                            {{ ctrans('items') }}
+                        </div>
                         <div v-if="successContext.replacedItem.net_amount" class="text-xs opacity-70 mt-0.5">
                             {{ locale.currencyFormat(successContext.replacedItem.currency_code, successContext.replacedItem.net_amount) }}
                         </div>
                     </div>
+                </div>
+
+                <div v-if="successContext.remainingQuantity > 0" class="flex items-center gap-x-1 text-xs text-amber-700 mt-1">
+                    <FontAwesomeIcon icon="fal fa-hourglass-start" fixed-width aria-hidden="true" />
+                    <FractionDisplay
+                        :fractionData="toFractionData(successContext.remainingQuantity, Number(successContext.replacedItem.packed_in) || 1)"
+                    />
+                    {{ ctrans('still waiting for CRM, handle it with the actions on the row') }}
                 </div>
             </div>
 
@@ -561,11 +928,21 @@ const submitSendBackWarehouse = () => {
                         :key="product.id"
                         class="flex justify-between items-center bg-green-100 border border-green-200 rounded-lg px-4 py-3 text-sm gap-x-4"
                     >
-                        <div>
-                            <span class="font-bold text-gray-700">{{ product.code }}</span>
-                            <span class="block xml-2 text-gray-500 italic">{{ product.name }}</span>
+                        <div class="flex items-center gap-x-3">
+                            <Image
+                                :src="product.image"
+                                :alt="product.name"
+                                class="h-12 w-12 shrink-0 rounded object-cover bg-white"
+                            />
+                            <div>
+                                <span class="font-bold text-gray-700">{{ product.code }}</span>
+                                <span class="block xml-2 text-gray-500 italic">{{ product.name }}</span>
+                            </div>
                         </div>
-                        <div class="tabular-nums text-gray-500 text-right">{{ product.quantity }} {{ ctrans('items') }}</div>
+                        <div class="flex items-center justify-end gap-x-1 tabular-nums text-gray-500 shrink-0">
+                            <FractionDisplayFE :numerator="product.numerator" :denominator="product.denominator" />
+                            {{ ctrans('items') }}
+                        </div>
                     </div>
                 </div>
             </div>
