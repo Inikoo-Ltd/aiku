@@ -9,24 +9,12 @@
 namespace App\Actions\Comms\Outbox\AbandonedCart;
 
 use App\Models\Catalogue\Product;
-use App\Models\Comms\Outbox;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 
 trait WithAbandonedCartRecoveryContent
 {
-    public function getCheckoutUrl(Outbox $outbox): string
-    {
-        $website = $outbox->shop->website;
-
-        if (!$website) {
-            return '';
-        }
-
-        return $website->getFullUrl().'/checkout';
-    }
-
-    public function generateRecoveryContent(int $orderId, string $checkoutUrl): string
+    public function generateRecoveryContent(int $orderId): string
     {
         $order = Order::find($orderId);
 
@@ -41,26 +29,7 @@ trait WithAbandonedCartRecoveryContent
         $displayProducts = array_slice($productIds, 0, 5);
         $remainingCount = count($productIds) - count($displayProducts);
 
-        $html = '';
-
-        if ($checkoutUrl) {
-            $html .= '<p style="text-align:center; margin:0 0 20px;">
-                <a ses:no-track href="'.$checkoutUrl.'"
-                   style="display:inline-block;
-                          background:#2563eb;
-                          color:#ffffff;
-                          font-family: Helvetica, Arial, sans-serif;
-                          font-size:15px;
-                          font-weight:600;
-                          text-decoration:none;
-                          padding:12px 24px;
-                          border-radius:6px;">'
-                .__('Complete your order').
-                '</a>
-            </p>';
-        }
-
-        $html .= '<table width="100%" cellpadding="8" cellspacing="0"
+        $html = '<table width="100%" cellpadding="8" cellspacing="0"
         style="font-family: Helvetica, Arial, sans-serif;
                font-size: 14px;
                border-collapse: collapse;">';

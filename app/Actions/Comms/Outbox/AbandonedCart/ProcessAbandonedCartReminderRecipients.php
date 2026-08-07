@@ -53,7 +53,6 @@ class ProcessAbandonedCartReminderRecipients
             'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
         ]);
 
-        $checkoutUrl = $this->getCheckoutUrl($outbox);
         $sentAbandonmentIds = [];
 
         foreach ($customers as $customer) {
@@ -69,8 +68,7 @@ class ProcessAbandonedCartReminderRecipients
                     'outbox_id'     => $outbox->id,
                     'email_address' => $customerModel->email,
                     'data->additional_data' => [
-                        'checkout_url'         => $checkoutUrl,
-                        'abandoned_cart_items' => $this->generateRecoveryContent($customer['order_id'], $checkoutUrl),
+                        'abandoned_cart_items' => $this->generateRecoveryContent($customer['order_id']),
                     ]
                 ]
             );

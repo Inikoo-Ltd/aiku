@@ -56,7 +56,6 @@ class SendAbandonedCartReminder extends OrgAction
         }
 
         $outbox      = $dispatchedEmail->outbox;
-        $checkoutUrl = $this->getCheckoutUrl($outbox);
 
         $this->sendEmailWithMergeTags(
             $dispatchedEmail,
@@ -65,8 +64,7 @@ class SendAbandonedCartReminder extends OrgAction
             $emailHtmlBody,
             '',
             additionalData: [
-                'checkout_url'         => $checkoutUrl,
-                'abandoned_cart_items' => $this->generateRecoveryContent($checkoutAbandonment->order_id, $checkoutUrl),
+                'abandoned_cart_items' => $this->generateRecoveryContent($checkoutAbandonment->order_id),
             ],
             senderName: $outbox->emailOngoingRun->senderName(),
         );
