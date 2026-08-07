@@ -53,7 +53,10 @@ class GetAggregatedMarketingOverview
            mailshots against half a day of attributable revenue is not a return on ad spend, it is two
            different questions divided by each other. Sending is not free either, and nobody invoices
            us for it, so the newsletter's cost is estimated from the emails actually sent. */
-        $costFrom      = $this->clipToAttributionStart($from);
+        /* Cost covers the period, not the attribution marker. A mailshot sent this morning cost what
+           it cost and lost the subscribers it lost; clipping that away to make an early ROAS look
+           tidier hid real money and reported zero unsubscribes against a send of a million. */
+        $costFrom      = $from;
 
         $revenue       = $this->revenueByType($shops, $from, $revenueColumn);
         $registrations = $this->registrationsByType($shops, $from);

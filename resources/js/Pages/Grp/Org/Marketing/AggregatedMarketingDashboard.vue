@@ -96,13 +96,11 @@ const periodPredatesAttribution = computed(() => {
 
 /* Sent as ISO8601 with its offset, so this renders in the reader's own timezone rather than in
    whatever the server happens to run on - and says which timezone that is. */
-const attributionStarted = computed(() => {
-    if (!props.overview.attribution_started_at) return ''
-
-    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
-
-    return `${useFormatTime(props.overview.attribution_started_at, { formatTime: 'hm' })} ${zone}`
-})
+const attributionStarted = computed(() =>
+    props.overview.attribution_started_at
+        ? useFormatTime(props.overview.attribution_started_at, { formatTime: 'aiku' })
+        : ''
+)
 
 /* The label says the window the figures actually cover. "last 30 days" is a lie while attribution has
    only been recording since this morning, and it is the lie that made the numbers look like failure
@@ -153,10 +151,7 @@ const changePeriod = (event: Event) => {
         <div class="flex items-start justify-between gap-4">
             <p v-if="periodPredatesAttribution" class="text-xs text-amber-600 max-w-3xl order-last flex items-start gap-1.5">
                 <span class="shrink-0 mt-px inline-flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] font-semibold leading-none">!</span>
-                <span>
-                    {{ trans('This period starts before attribution was recording') }} ({{ attributionStarted }}).
-                    {{ trans('Comparisons below run from then, so anything earlier is missing by definition rather than by failure.') }}
-                </span>
+                <span>{{ trans('Recording from') }} {{ attributionStarted }}. {{ trans('Anything before that is not counted.') }}</span>
             </p>
             <p class="text-xs text-gray-500 max-w-3xl">
                 {{ trans('Everything here counts what marketing touched: sales and sign-ups from people who arrived through an ad, a search, a mailshot or a link from another site, credited to that channel. Touched, not caused — a regular who was going to order anyway still counts if they came through one. It is not the shop\'s total trade.') }}

@@ -52,7 +52,10 @@ class GetShopMarketingOverview
         /* Cost is clipped to the same window everything else is measured over. Thirty days of mailshots
            against half a day of attributable return is not a return on ad spend, it is two different
            questions divided by each other. */
-        $costFrom      = $this->clipToAttributionStart($from);
+        /* Cost covers the period, not the attribution marker. A mailshot sent this morning cost what
+           it cost and lost the subscribers it lost; clipping that away to make an early ROAS look
+           tidier hid real money and reported zero unsubscribes against a send of a million. */
+        $costFrom      = $from;
         $spend         = $this->spendBySource($shop, $costFrom);
         /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
            spend of zero and an infinite return. Estimated from the emails actually dispatched. */
