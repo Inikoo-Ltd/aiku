@@ -34,7 +34,10 @@ beforeEach(function () {
     $this->customer  = createCustomer($this->shop);
 
     $this->customer->trafficSources()->detach();
-    $this->customer->update(['traffic_sources' => '1700000000b']);
+    // Touch 70 days ago: old enough to precede the fixtures' invoices, recent enough that they
+    // fall inside the 90-day attribution window.
+    $this->touchedAt = now()->subDays(70);
+    $this->customer->update(['traffic_sources' => $this->touchedAt->timestamp.'b']);
     RecalculateTrafficSourceAttribution::run($this->customer->fresh());
 
     TrafficSourceCost::where('shop_id', $this->shop->id)->delete();
@@ -87,11 +90,13 @@ it('counts only revenue and spend inside the selected period', function () {
 
     $allTime = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME);
 
+    // The -60d invoice postdates the touch and is inside the window, so all-time sees both.
     expect($allTime['totals']['revenue'])->toBe(1400.0);
     expect($allTime['totals']['spend'])->toBe(600.0);
 });
 
 it('reproduces the lifetime stats figure when the period is all time', function () {
+    // The 200-day-old invoice predates the touch, so neither the dashboard nor the rollup counts it.
     invoiceOn(now()->subDays(200)->toDateTimeString(), 250, $this->customer, $this->shop);
     invoiceOn(now()->subDay()->toDateTimeString(), 750, $this->customer, $this->shop);
 
@@ -108,7 +113,7 @@ it('reproduces the lifetime stats figure when the period is all time', function 
 it('splits period revenue between channels by their shares', function () {
     $organic = createTrafficSource($this->shop, 'organic-google', 'Organic Google');
 
-    $this->customer->update(['traffic_sources' => '1700000000b|1700000100a']);
+    $this->customer->update(['traffic_sources' => $this->touchedAt->timestamp.'b|'.$this->touchedAt->addSecond()->timestamp.'a']);
     RecalculateTrafficSourceAttribution::run($this->customer->fresh());
 
     invoiceOn(now()->subDay()->toDateTimeString(), 1000, $this->customer, $this->shop);

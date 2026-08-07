@@ -21,6 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetShopEmailMarketingPerformance
 {
     use AsAction;
+    use WithAttributionWindow;
 
     /**
      * Answers, per mailshot and in total, whether the emails a shop sends earn sales or just annoy
@@ -62,15 +63,22 @@ class GetShopEmailMarketingPerformance
 
         $campaignIds = $campaignByMailshot->values();
 
-        $customerTotals = DB::table('model_has_traffic_sources')
-            ->join('customer_stats', 'customer_stats.customer_id', '=', 'model_has_traffic_sources.model_id')
-            ->where('model_has_traffic_sources.model_type', 'Customer')
-            ->whereIn('model_has_traffic_sources.traffic_source_campaign_id', $campaignIds)
-            ->groupBy('model_has_traffic_sources.traffic_source_campaign_id')
+        $attributionWindow = GetAttributionWindow::run($shop);
+
+        $customerTotals = DB::table('invoices')
+            ->join('model_has_traffic_sources as p', function ($join) use ($attributionWindow) {
+                $join->on('p.model_id', '=', 'invoices.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToAttributionWindow($join, $attributionWindow);
+            })
+            ->whereIn('p.traffic_source_campaign_id', $campaignIds)
+            ->where('invoices.in_process', false)
+            ->groupBy('p.traffic_source_campaign_id')
             ->select(
-                'model_has_traffic_sources.traffic_source_campaign_id as campaign_id',
-                DB::raw('SUM(model_has_traffic_sources.share) as customers'),
-                DB::raw('SUM(customer_stats.sales_all * model_has_traffic_sources.share) as revenue'),
+                'p.traffic_source_campaign_id as campaign_id',
+                DB::raw('SUM(p.share) as customers'),
+                DB::raw('SUM(invoices.net_amount * p.share) as revenue'),
             )
             ->get()
             ->keyBy('campaign_id');

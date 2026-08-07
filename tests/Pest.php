@@ -242,6 +242,34 @@ function createCustomer(Shop $shop): Customer
     return $customer;
 }
 
+/**
+ * Marketing revenue is measured from invoices, so tests that assert on attributed revenue need real
+ * ones rather than a hand-set customer_stats rollup.
+ */
+function createInvoiceFor($customer, $shop, string $date, float $net, bool $inProcess = false): void
+{
+    \Illuminate\Support\Facades\DB::table('invoices')->insert([
+        'group_id'        => $shop->group_id,
+        'organisation_id' => $shop->organisation_id,
+        'shop_id'         => $shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'reference'       => 'INV-'.uniqid(),
+        'slug'            => 'inv-'.uniqid(),
+        'type'            => 'invoice',
+        'net_amount'      => $net,
+        'org_net_amount'  => $net,
+        'total_amount'    => $net,
+        'in_process'      => $inProcess,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => $date,
+        'created_at'      => $date,
+        'updated_at'      => $date,
+    ]);
+}
+
 function createTrafficSource(Shop $shop, string $type, string $name): TrafficSource
 {
     return TrafficSource::firstOrCreate(
