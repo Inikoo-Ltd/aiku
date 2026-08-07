@@ -202,3 +202,24 @@ it('credits a channel with a registration that followed the touch', function () 
 
     expect((float) $organic->stats->fresh()->number_customers)->toBe(1.0);
 });
+
+it('gives the whole credit to the remaining touches when a channel has no row in the shop', function () {
+    $shop = $this->shop;
+
+    createTrafficSource($shop, 'organic-google', 'Organic Google');
+    App\Models\CRM\TrafficSource::where('shop_id', $shop->id)->where('type', 'organic-bing')->delete();
+
+    $customer = createCustomer($shop);
+    $customer->trafficSources()->detach();
+    $customer->update([
+        'traffic_sources' => now()->subDays(2)->timestamp.'a|'.now()->subDay()->timestamp.'c',
+    ]);
+
+    App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution::run($customer->fresh());
+
+    $credited = $customer->trafficSources()->get();
+
+    expect($credited)->toHaveCount(1)
+        ->and($credited->first()->type)->toBe('organic-google')
+        ->and((float) $credited->first()->pivot->share)->toBe(1.0);
+});

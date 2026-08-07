@@ -48,9 +48,24 @@ class AttachTrafficSourcesToModel
             return;
         }
 
-        /* Filtered before the shares are calculated, never after: dropping a credited touch later
-           would leave the remaining shares summing to less than 1.00 and break the invariant. */
+        /* Every filter runs before the shares are calculated, never after. Dropping a credited touch
+           later leaves the rest summing to under 1.00, which is exactly how a customer ended up with
+           half a registration when a referral touch had no channel row to attach to. */
         $touches = $this->withoutUnusableReferralTouches($touches);
+
+        /** @var Collection<string, TrafficSource> $trafficSources */
+        $trafficSources = TrafficSource::where('shop_id', $shopId)
+            ->whereIn('type', collect($touches)->map(fn (array $touch) => $touch['type']->value)->unique()->all())
+            ->get()
+            ->keyBy('type');
+
+        /* A channel the shop has no row for cannot be credited, so its touch is removed and the
+           remaining touches share the whole of the credit between them. Seeding a new enum case is
+           still mandatory - this only stops the gap corrupting everyone else's shares meanwhile. */
+        $touches = array_values(array_filter(
+            $touches,
+            fn (array $touch) => $trafficSources->has($touch['type']->value)
+        ));
 
         if (empty($touches)) {
             return;
@@ -59,18 +74,6 @@ class AttachTrafficSourcesToModel
         $shares = ProcessTrafficSourceShare::run($touches, $attributionModel);
 
         if (empty($shares)) {
-            return;
-        }
-
-        $typeValues = collect($shares)->map(fn (array $share) => $share['type']->value)->unique()->all();
-
-        /** @var Collection<string, TrafficSource> $trafficSources */
-        $trafficSources = TrafficSource::where('shop_id', $shopId)
-            ->whereIn('type', $typeValues)
-            ->get()
-            ->keyBy('type');
-
-        if ($trafficSources->isEmpty()) {
             return;
         }
 

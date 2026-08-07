@@ -29,9 +29,22 @@ class ShowAggregatedMarketingDashboard extends OrgAction
 
     private MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30;
 
+    /**
+     * Marketing permissions are shop-scoped - `marketing.<shop_id>.view` - and no unscoped
+     * `marketing.view` permission exists, so checking for one would deny everybody. A user who may
+     * see marketing for any shop underneath may see the roll-up of those shops.
+     */
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo('marketing.view');
+        $user = $request->user();
+
+        foreach ($this->parent->shops()->pluck('id') as $shopId) {
+            if ($user->authTo("marketing.$shopId.view")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest

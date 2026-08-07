@@ -147,3 +147,13 @@ it('counts a submitted order in the orders figure without waiting for dispatch',
 
     expect($channel['orders'])->toBe(1.0);
 });
+
+it('lets a user who can see marketing on a shop open the organisation dashboard', function () {
+    $shopId = $this->shop->id;
+
+    setPermissionsTeamId($this->organisation->group_id);
+    $this->user->refresh();
+
+    expect($this->user->authTo("marketing.$shopId.view"))->toBeTrue()
+        ->and($this->user->authTo('marketing.view'))->toBeFalse();
+});
