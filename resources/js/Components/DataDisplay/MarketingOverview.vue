@@ -195,7 +195,7 @@ const typeLabel: Record<string, string> = {
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('Revenue marketing brought') }}</div>
+                <div class="text-xs text-gray-500">{{ trans('Revenue marketing touched') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">{{ money(overview.totals.revenue) }}</div>
                 <div class="mt-0.5 text-xs text-gray-400">
                     {{ trans('of') }} {{ money(overview.baseline?.revenue ?? 0) }} {{ trans('taken in total') }}
