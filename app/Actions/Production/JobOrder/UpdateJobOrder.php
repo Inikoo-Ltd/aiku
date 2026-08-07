@@ -61,7 +61,7 @@ class UpdateJobOrder extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, JobOrder $jobOrder, ActionRequest $request): JobOrder
+    public function asController(JobOrder $jobOrder, ActionRequest $request): JobOrder
     {
         $this->jobOrder = $jobOrder;
         $this->initialisation($jobOrder->organisation, $request);

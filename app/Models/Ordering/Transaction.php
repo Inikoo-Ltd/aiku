@@ -142,6 +142,7 @@ class Transaction extends Model
     ];
 
     protected $casts = [
+        'data'                  => 'array',
         'offers_data'           => 'array',
         'submitted_offers_data' => 'array',
     ];

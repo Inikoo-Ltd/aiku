@@ -45,7 +45,7 @@ class DownloadRetinaPalletsWithStoredItemsTemplate extends RetinaAction
         return [];
     }
 
-    public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, PalletDelivery $palletDelivery, ActionRequest $request): BinaryFileResponse
+    public function asController(Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, PalletDelivery $palletDelivery, ActionRequest $request): BinaryFileResponse
     {
         $this->initialisation($request);
 

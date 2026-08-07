@@ -28,6 +28,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
@@ -47,6 +48,7 @@ class UpdateInvoice extends OrgAction
 {
     use WithActionUpdate;
     use WithFixedAddressActions;
+    use WithLineTaxCategories;
     use WithNoStrictRules;
 
     private Invoice $invoice;
@@ -125,6 +127,10 @@ class UpdateInvoice extends OrgAction
             $updateTaxCategory = true;
         }
 
+        if (Arr::has($modelData, 'is_re')) {
+            $updateTaxCategory = true;
+        }
+
         $invoice = $this->update($invoice, $modelData, ['data']);
 
         if ($updateTaxCategory) {
@@ -156,13 +162,14 @@ class UpdateInvoice extends OrgAction
                 taxNumber: $taxNumber,
                 billingAddress: $invoice->billingAddress,
                 deliveryAddress: $invoice->deliveryAddress,
-                isRe: $customer?->is_re,
+                isRe: $invoice->is_re,
             );
 
             $invoice->update([
                 'tax_category_id' => $taxCategoryInvoice->id,
             ]);
 
+            $this->applyInvoiceLineTaxCategories($invoice);
             CalculateInvoiceTotals::run($invoice);
             RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
 
@@ -187,6 +194,7 @@ class UpdateInvoice extends OrgAction
 
                 $order->update([
                     'tax_category_id' => $taxCategoryInvoice->id,
+                    'is_re'           => $invoice->is_re,
                 ]);
                 $order->refresh();
                 CalculateOrderTotalAmounts::run($order, false, false);
@@ -345,7 +353,8 @@ class UpdateInvoice extends OrgAction
             'formatted_tax_number'         => ['sometimes', 'nullable', 'string'],
             'identity_document_number'     => ['sometimes', 'nullable', 'string'],
             'identity_document_number_alt' => ['sometimes', 'nullable', 'string'],
-            'fiscal_name'                  => ['sometimes', 'nullable', 'string']
+            'fiscal_name'                  => ['sometimes', 'nullable', 'string'],
+            'is_re'                        => ['sometimes', 'boolean']
 
 
         ];

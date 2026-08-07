@@ -19,7 +19,6 @@ const props = defineProps<{
         routeGetInternalLink : routeType
     }
 }>()
-console.log('sdasda',props)
 </script>
 
 <template>

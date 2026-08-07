@@ -11,6 +11,12 @@ beforeEach(function () {
     $this->apc = new CallApiApcGbShipping();
 });
 
+it('orders dimensions longest first, however the packer entered them', function () {
+    expect($this->apc->sortedDimensions(apcParcel(60, 60, 65, 6)))->toBe([65.0, 60.0, 60.0])
+        ->and($this->apc->sortedDimensions(apcParcel(22, 33, 142, 6)))->toBe([142.0, 33.0, 22.0])
+        ->and($this->apc->sortedDimensions(['dimensions' => [], 'weight' => 1]))->toBe([0, 0, 0]);
+});
+
 it('picks lightweight only for a single small parcel', function () {
     expect($this->apc->fitsLightweightParcel([apcParcel(45, 35, 20, 5)]))->toBeTrue()
         ->and($this->apc->fitsLightweightParcel([apcParcel(20, 35, 45, 5)]))->toBeTrue()

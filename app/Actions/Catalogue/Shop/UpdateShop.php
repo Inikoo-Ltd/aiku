@@ -217,6 +217,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
 
+        if (Arr::has($modelData, 'payment_settlement_tolerance')) {
+            data_set($modelData, 'settings.accounting.payment_settlement_tolerance', Arr::pull($modelData, 'payment_settlement_tolerance'));
+        }
+
         if (Arr::has($modelData, 'identity_document_number_label')) {
             data_set($modelData, 'settings.customer.identity_document_number', Arr::pull($modelData, 'identity_document_number_label'));
         }
@@ -828,6 +832,7 @@ class UpdateShop extends OrgAction
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
+            'payment_settlement_tolerance'                            => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'access_id'                                               => ['sometimes', 'nullable', 'string'],
             'access_key'                                              => ['sometimes', 'nullable', 'string'],

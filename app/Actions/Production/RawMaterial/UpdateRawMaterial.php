@@ -12,7 +12,6 @@ use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -79,7 +78,7 @@ class UpdateRawMaterial extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, Production $production, RawMaterial $rawMaterial, ActionRequest $request): RawMaterial
+    public function asController(Production $production, RawMaterial $rawMaterial, ActionRequest $request): RawMaterial
     {
         $this->rawMaterial = $rawMaterial;
         $this->initialisationFromProduction($rawMaterial->production, $request);

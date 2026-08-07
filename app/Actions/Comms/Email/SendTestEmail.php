@@ -94,7 +94,7 @@ class SendTestEmail extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): DispatchedEmail
+    public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): DispatchedEmail
     {
         $this->initialisationFromShop($shop, $request);
 

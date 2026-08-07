@@ -30,6 +30,7 @@ const props = withDefaults(defineProps<{
     iconRight?: Icon | string | string[] | IconDefinition
     action?: string
     label?: string
+    hide_label?: boolean
     full?: boolean
     capitalize?: boolean
     tooltip?: string
@@ -201,7 +202,7 @@ const getActionIcon = (icon: any) => {
                 <FontAwesomeIcon v-if="getActionIcon(icon)" :icon="getActionIcon(icon)" :rotation="iconRotation" fixed-width class="" aria-hidden="true" />
             </slot>
             <slot name="label"></slot>
-            <span v-if="getActionLabel(label)" class="leading-none tabular-nums" :class="{'capitalize': capitalize}">{{ getActionLabel(label) }}</span>
+            <span v-if="getActionLabel(label) && !hide_label" class="leading-none tabular-nums" :class="{'capitalize': capitalize}">{{ getActionLabel(label) }}</span>
             <slot name="iconRight">
                 <FontAwesomeIcon v-if="!getActionIcon(icon) && loading && iconRight" icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-else-if="iconRight" :icon="getActionIcon(iconRight)" :rotation="iconRightRotation" fixed-width class="" aria-hidden="true" />

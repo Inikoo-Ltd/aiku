@@ -55,12 +55,12 @@ withDefaults(defineProps<{
 
                         <div class="flex flex-1 flex-col gap-3 p-5">
                             <h2
-                                class="line-clamp-2 !text-base font-semibold leading-snug text-gray-900 transition-colors duration-200 group-hover:text-blue-600">
+                                class="line-clamp-2 !text-base font-semibold leading-snug text-gray-900 transition-colors duration-200 group-hover:text-primary">
                                 {{ post.title }}
                             </h2>
 
                             <span
-                                class="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-blue-600">
+                                class="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-primary">
                                 {{ trans("Read more") }}
                                 <span aria-hidden="true"
                                     class="transition-transform duration-300 group-hover:translate-x-1">→</span>

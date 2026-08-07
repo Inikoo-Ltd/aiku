@@ -154,7 +154,8 @@ class IndexProductsWithNoImage extends OrgAction
                     : Inertia::optional(fn () => ProductsResource::collection($products)),
 
             ]
-        )->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value));
+        )
+        ->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array

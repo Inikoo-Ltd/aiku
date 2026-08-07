@@ -13,9 +13,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
-use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
-use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
-use App\Models\CRM\TrafficSource;
+use App\Actions\CRM\TrafficSource\AttachTrafficSourcesToModel;
+use App\Actions\CRM\TrafficSource\ParseTrafficSourceTouches;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
 use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -101,7 +100,10 @@ class StoreCustomer extends OrgAction
         );
 
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
-        $trafficSourcesData     = Arr::pull($modelData, 'traffic_sources');
+        /* Deliberately get, not pull: the raw touch history must persist on the customer row. It is
+           the source of truth every attribution recalculation rebuilds from - pivots built here but
+           never backed by the column would be silently destroyed by the first recalculation. */
+        $trafficSourcesData     = Arr::get($modelData, 'traffic_sources');
 
         $customer = DB::transaction(function () use ($shop, $modelData, $contactAddressData, $deliveryAddressData, $taxNumberData, $emailSubscriptionsData) {
             /** @var Customer $customer */
@@ -180,7 +182,14 @@ class StoreCustomer extends OrgAction
         }
 
         if ($trafficSourcesData) {
-            $this->processTrafficSources($customer, $trafficSourcesData);
+            /* Attribution is bookkeeping; it must never fail a registration. The customer row is
+               already committed, so an exception here would 500 the response and the retry would
+               hit "email already taken". */
+            try {
+                $this->processTrafficSources($customer, $trafficSourcesData);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
 
         if ($customer->shop->is_aiku) {
@@ -222,67 +231,13 @@ class StoreCustomer extends OrgAction
             return;
         }
 
-        $abbreviations = $this->extractTrafficSourceAbbreviations($trafficSourcesData);
+        $touches = ParseTrafficSourceTouches::run($trafficSourcesData);
 
-        if (empty($abbreviations)) {
+        if (empty($touches)) {
             return;
         }
 
-        $typeValues = [];
-
-        foreach ($abbreviations as $abbreviation) {
-            $enum = TrafficSourcesTypeEnum::fromAbbr($abbreviation);
-            if ($enum !== null) {
-                $typeValues[] = $enum->value;
-            }
-        }
-
-        $typeValues = array_unique($typeValues);
-
-        if (empty($typeValues)) {
-            return;
-        }
-
-        $trafficSources = TrafficSource::where('shop_id', $customer->shop_id)
-            ->whereIn('type', $typeValues)
-            ->get();
-
-        if ($trafficSources->isEmpty()) {
-            return;
-        }
-
-        $share = round(1 / $trafficSources->count(), 2);
-
-        foreach ($trafficSources as $trafficSource) {
-            $customer->trafficSources()->syncWithoutDetaching([
-                $trafficSource->id => ['share' => $share],
-            ]);
-            TrafficSourceHydrateCustomers::dispatch($trafficSource);
-        }
-    }
-
-    private function extractTrafficSourceAbbreviations(string $data): array
-    {
-        $segments      = preg_split('/[|,]/', $data);
-        $abbreviations = [];
-
-        foreach ($segments as $segment) {
-            $segment = trim($segment);
-
-            if (blank($segment)) {
-                continue;
-            }
-
-            $withoutTimestamp = ltrim($segment, '0123456789');
-
-            if (strlen($withoutTimestamp) === 0) {
-                continue;
-            }
-
-            $abbreviations[] = $withoutTimestamp[0];
-        }
-
-        return $abbreviations;
+        AttachTrafficSourcesToModel::run($customer, $customer->shop_id, $touches);
     }
 
     public function rules(): array

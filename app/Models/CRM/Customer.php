@@ -237,6 +237,9 @@ class Customer extends Model implements HasMedia, Auditable
     use Notifiable;
     use HasSearchableText;
     use HasSearch;
+    /* A recorded marketing touch is telemetry, not an edit someone made; auditing it would write an
+       audit row for every tracked email click. */
+    protected array $auditExclude = ['traffic_sources'];
 
     protected $casts = [
         'data'                        => 'array',
@@ -626,7 +629,7 @@ class Customer extends Model implements HasMedia, Auditable
     public function trafficSources(): MorphToMany
     {
         return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
-            ->withPivot('share')
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
             ->withTimestamps();
     }
 

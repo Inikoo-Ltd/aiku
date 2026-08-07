@@ -244,6 +244,14 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).shop,
                     product.slug
                 ])
+        case "grp.org.shops.show.catalogue.products.mismatched_families.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.mismatched_families.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ])
         case "grp.org.shops.show.catalogue.products.no_image_product.index":
             return route(
                 "grp.org.shops.show.catalogue.products.no_image_product.show",
@@ -429,6 +437,17 @@ function masterProductRoute(product: {}) {
     return route(
         "grp.majordomo.redirect_master_product",
         [product.master_product_id])
+}
+
+function masterFamilyRoute(product: {}) {
+    if (!product.master_family_id) {
+        return ""
+    }
+
+    return route(
+        'grp.majordomo.redirect_master_product_category',
+        [product.master_family_id]
+    )
 }
 
 function organisationRoute(invoice: Invoice) {
@@ -641,6 +660,17 @@ const repairTradeUnitFromChildren = async (product) => {
 
 }
 
+const familyRoute = (item) => {
+    return route(
+        'grp.org.shops.show.catalogue.families.show',
+        [
+            item.organisation_slug,
+            item.shop_slug,
+            item.family_slug
+        ]
+    )
+}
+
 </script>
 
 <template>
@@ -683,7 +713,7 @@ const repairTradeUnitFromChildren = async (product) => {
 
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
-            {{ refund["organisation_code"] }}
+                {{ refund["organisation_code"] }}
             </Link>
         </template>
 
@@ -1124,6 +1154,18 @@ const repairTradeUnitFromChildren = async (product) => {
 
         <template #header-checkbox>
             <div></div>
+        </template>
+
+        <template #cell(family_code)="{ item }">
+            <Link :href="familyRoute(item)" class="secondaryLink">
+                {{ item.family_code }}
+            </Link>
+        </template>
+
+        <template #cell(master_family_code)="{ item }">
+            <Link :href="masterFamilyRoute(item)" class="secondaryLink">
+                {{ item.master_family_code }}
+            </Link>
         </template>
 
     </Table>

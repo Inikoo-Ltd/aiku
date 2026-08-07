@@ -26,6 +26,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsWithIndependentTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
 use App\Actions\Catalogue\Product\UI\IndexMissingDescriptionProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsNotOnline;
+use App\Actions\Catalogue\Product\UI\IndexProductsWithMismatchedFamily;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoImage;
 use App\Actions\Catalogue\Product\UI\IndexRRPViolationProducts;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
@@ -164,6 +165,17 @@ Route::prefix('products')->as('products.')
 
         Route::prefix('missing-images')->as('no_image_product.')->group(function () {
             Route::get('', IndexProductsWithNoImage::class)->name('index');
+            Route::get('create', CreateProduct::class)->name('create');
+            Route::prefix('{product}')->group(function () {
+                Route::get('', ShowProduct::class)->name('show');
+                Route::get('images', GetProductUploadedImages::class)->name('images');
+                Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
+            });
+        });
+
+        Route::prefix('mismatched-families')->as('mismatched_families.')->group(function () {
+            Route::get('', IndexProductsWithMismatchedFamily::class)->name('index');
             Route::get('create', CreateProduct::class)->name('create');
             Route::prefix('{product}')->group(function () {
                 Route::get('', ShowProduct::class)->name('show');

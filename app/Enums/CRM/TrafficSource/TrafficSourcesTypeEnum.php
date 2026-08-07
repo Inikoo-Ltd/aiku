@@ -32,6 +32,7 @@ enum TrafficSourcesTypeEnum: string
     case ORGANIC_TWITTER = 'organic-twitter';
     case TWITTER_ADS = 'twitter-ads';
     case YOUTUBE = 'youtube';
+    case NEWSLETTER = 'newsletter';
 
     public static function labels(): array
     {
@@ -51,6 +52,7 @@ enum TrafficSourcesTypeEnum: string
             self::ORGANIC_TWITTER->value   => 'Organic Twitter',
             self::TWITTER_ADS->value       => 'Twitter Ads',
             self::YOUTUBE->value           => 'Youtube',
+            self::NEWSLETTER->value        => 'Newsletter',
         ];
     }
 
@@ -72,6 +74,7 @@ enum TrafficSourcesTypeEnum: string
             self::ORGANIC_TWITTER->value   => true,
             self::TWITTER_ADS->value       => false,
             self::YOUTUBE->value           => true,
+            self::NEWSLETTER->value        => true,
         ];
     }
 
@@ -93,6 +96,7 @@ enum TrafficSourcesTypeEnum: string
             self::ORGANIC_TWITTER->value   => 'm',
             self::TWITTER_ADS->value       => 'n',
             self::YOUTUBE->value           => 'o',
+            self::NEWSLETTER->value        => 'p',
         ];
     }
 
@@ -106,6 +110,15 @@ enum TrafficSourcesTypeEnum: string
         }
 
         return self::tryFrom($typeValue);
+    }
+
+    /**
+     * Paid traffic types are the ones an advertiser is actually billed for (the `-ads` types),
+     * as opposed to the `organic-*` types. Used by the last-paid-touch attribution model.
+     */
+    public function isPaid(): bool
+    {
+        return str_ends_with($this->value, '-ads');
     }
 
 

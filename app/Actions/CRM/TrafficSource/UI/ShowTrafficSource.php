@@ -97,16 +97,16 @@ class ShowTrafficSource extends OrgAction
         $trafficSource = TrafficSource::where('slug', $routeParameters['trafficSource'])->first();
 
         return match ($routeName) {
-            'grp.org.shops.show.crm.traffic_sources.show' =>
+            'grp.org.shops.show.marketing.traffic_sources.show' =>
             array_merge(
-                IndexTrafficSources::make()->getBreadcrumbs('grp.org.shops.show.crm.traffic_sources.show', [
+                IndexTrafficSources::make()->getBreadcrumbs([
                     'organisation' => $trafficSource->organisation->slug,
                     'shop'         => $trafficSource->shop->slug,
                 ]),
                 $headCrumb(
                     $trafficSource,
                     [
-                        'name'       => 'grp.org.shops.show.crm.traffic_sources.show',
+                        'name'       => 'grp.org.shops.show.marketing.traffic_sources.show',
                         'parameters' => $routeParameters
                     ],
                     $suffix

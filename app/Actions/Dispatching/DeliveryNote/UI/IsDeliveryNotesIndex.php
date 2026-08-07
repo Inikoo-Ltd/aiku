@@ -206,6 +206,7 @@ trait IsDeliveryNotesIndex
             'delivery_notes.slug',
             'delivery_notes.type',
             'delivery_notes.number_items',
+            'delivery_notes.number_items_composition_dirty',
             'delivery_notes.weight',
             'delivery_notes.effective_weight',
             'delivery_notes.estimated_weight',

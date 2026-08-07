@@ -25,14 +25,16 @@ import {
     faShareSquare,
     faEye,
     faEyeSlash,
+    faShieldCheck,
 } from '@fal'
 import { faSlack } from '@fortawesome/free-brands-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
+import SlackShareModal from '@/Components/Chat/Agent/SlackShareModal.vue'
 
 library.add(
     faComments, faUser, faRobot, faHeadset, faCog, faPaperclip,
-    faTag, faChartLine, faLongArrowLeft, faCopy, faCheck, faShareSquare, faEye, faEyeSlash, faSlack
+    faTag, faChartLine, faLongArrowLeft, faCopy, faCheck, faShareSquare, faEye, faEyeSlash, faSlack,
+    faShieldCheck
 )
 
 type SidePanelTab = 'profile' | 'statistics' | 'timeline' | 'log'
@@ -86,6 +88,10 @@ interface MessageProp {
     file_mime: string | null
     download_route: { url: string } | null
     created_at: string
+    is_ai_generated: boolean | null
+    is_validated: boolean | null
+    is_verifiable_image: boolean
+    ai_verification: { model_verdict: boolean; confidence: number; reasoning: string } | null
 }
 
 const props = defineProps<{
@@ -93,9 +99,6 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     chatSession: ChatSessionProp
     messages: MessageProp[]
-    slackConfigured: boolean
-    slackCurrentConfig?: { token: string; channels: string[] }
-    slackUpdateRoute: { name: string; parameters: Record<string, string | number> }
     customerNote?: {
         internal_notes: string | null
         update_route: { name: string; parameters: Record<string, string | number> }
@@ -133,90 +136,14 @@ const agentBubbleStyle = computed(() => ({ backgroundColor: themePrimary.value, 
 const showContactDetail = ref(true)
 const activeTab = ref<SidePanelTab>('profile')
 
-const isSharingSlack = ref(false)
-const slackShareStatus = ref<'idle' | 'success' | 'partial' | 'error'>('idle')
-const slackShareMessage = ref('')
 const isCopied = ref(false)
-
-const showSlackModal = ref(false)
-const slackModalToken = ref('')
-const slackTokenVisible = ref(false)
-const slackTokenAlreadySet = ref(false)
-const slackModalChannels = ref<string[]>(['#general'])
-const isSavingSlack = ref(false)
-const slackSaveError = ref('')
-const slackConfiguredLocal = ref(props.slackConfigured)
-const showGuide = ref(false)
-
-function openSlackModal(): void {
-    slackModalToken.value = props.slackCurrentConfig?.token ?? ''
-    slackTokenAlreadySet.value = !!props.slackCurrentConfig?.token
-    slackTokenVisible.value = false
-    const existing: string[] = Array.isArray(props.slackCurrentConfig?.channels)
-        ? props.slackCurrentConfig!.channels.filter(Boolean)
-        : []
-    slackModalChannels.value = existing.length ? [...existing] : []
-    slackSaveError.value = ''
-    showGuide.value = false
-    showSlackModal.value = true
-}
-
-async function shareToSlack(): Promise<void> {
-    if (isSharingSlack.value) return
-    try {
-        isSharingSlack.value = true
-        slackShareStatus.value = 'idle'
-        const res = await axios.post(`${baseUrl}/app/api/chats/sessions/${props.chatSession.ulid}/share-to-slack`)
-        slackShareStatus.value = res.data?.partial ? 'partial' : 'success'
-        slackShareMessage.value = res.data?.message ?? 'Shared to Slack!'
-    } catch (e: any) {
-        slackShareStatus.value = 'error'
-        slackShareMessage.value = e.response?.data?.message ?? 'Failed to share to Slack.'
-    } finally {
-        isSharingSlack.value = false
-        setTimeout(() => { slackShareStatus.value = 'idle'; slackShareMessage.value = '' }, 6000)
-    }
-}
+const isSlackShareModalOpen = ref(false)
+const currentOrganisation = String((route().params as Record<string, any>)?.organisation ?? 'aw')
 
 async function copyChatId(): Promise<void> {
     await navigator.clipboard.writeText(props.chatSession.ulid)
     isCopied.value = true
     setTimeout(() => { isCopied.value = false }, 2000)
-}
-
-async function saveSlackConfig(): Promise<void> {
-    const tokenRequired = !slackTokenAlreadySet.value
-    if (tokenRequired && !slackModalToken.value.trim()) {
-        slackSaveError.value = 'Bot token is required.'
-        return
-    }
-    if (!slackModalChannels.value.length) {
-        slackSaveError.value = 'At least one channel is required.'
-        return
-    }
-    try {
-        isSavingSlack.value = true
-        slackSaveError.value = ''
-
-        const payload: Record<string, unknown> = {
-            chat_slack_channels: slackModalChannels.value.map(c => c.trim()).filter(Boolean),
-            chat_slack_token:    slackModalToken.value.trim(),
-        }
-
-        await axios.patch(
-            route(props.slackUpdateRoute.name, props.slackUpdateRoute.parameters),
-            payload
-        )
-        slackConfiguredLocal.value = true
-        if (props.slackCurrentConfig) {
-            props.slackCurrentConfig.channels = slackModalChannels.value
-        }
-        showSlackModal.value = false
-    } catch (e: any) {
-        slackSaveError.value = e.response?.data?.message ?? 'Failed to save Slack configuration.'
-    } finally {
-        isSavingSlack.value = false
-    }
 }
 
 const customerProfile = ref<{ tags: CustomerTag[]; stats: CustomerStats | null }>({ tags: [], stats: null })
@@ -283,6 +210,15 @@ function senderLabel(msg: MessageProp): string {
     return props.chatSession.contact_name || 'Customer'
 }
 
+function imageValidation(msg: MessageProp): { is_ai_generated: boolean | null; is_validated: boolean | null } {
+    return { is_ai_generated: msg.is_ai_generated, is_validated: msg.is_validated }
+}
+
+function needsImageVerification(msg: MessageProp): boolean {
+    return msg.message_type === 'image' && !!msg.is_verifiable_image && imageValidation(msg).is_validated == null
+}
+
+
 function formatTimestamp(raw: string): string {
     return new Date(raw).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
@@ -345,48 +281,14 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                         </div>
                     </div>
                     <div class="flex items-center gap-1">
-                        <!-- Share to Slack: not configured -->
+                        <!-- Share to Slack -->
                         <button
-                            v-if="!slackConfiguredLocal"
-                            v-tooltip="'Slack is not configured. Click to set up.'"
-                            class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
-                            @click="openSlackModal()"
+                            class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors"
+                            @click="isSlackShareModalOpen = true"
                         >
                             <FontAwesomeIcon :icon="['fab', 'fa-slack']" class="text-sm" />
-                            <span>Setup Slack</span>
-                            <FontAwesomeIcon :icon="['fal', 'fa-cog']" class="text-xs opacity-70" />
+                            <span>Share to Slack</span>
                         </button>
-
-                        <!-- Share to Slack: configured → button group -->
-                        <div v-else class="inline-flex rounded-md border divide-x overflow-hidden"
-                            :class="slackShareStatus === 'error' ? 'border-red-200 divide-red-200' : slackShareStatus === 'partial' ? 'border-amber-200 divide-amber-200' : 'border-gray-200 divide-gray-200'"
-                        >
-                            <button
-                                class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors"
-                                :class="slackShareStatus === 'success'
-                                    ? 'bg-green-50 text-green-700'
-                                    : slackShareStatus === 'partial'
-                                        ? 'bg-amber-50 text-amber-700'
-                                        : slackShareStatus === 'error'
-                                            ? 'bg-red-50 text-red-600'
-                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'"
-                                :disabled="isSharingSlack"
-                                @click="shareToSlack"
-                            >
-                                <FontAwesomeIcon
-                                    :icon="slackShareStatus === 'success' || slackShareStatus === 'partial' ? ['fal', 'fa-check'] : ['fab', 'fa-slack']"
-                                    class="text-sm"
-                                />
-                                <span>{{ isSharingSlack ? 'Sharing...' : slackShareStatus === 'success' ? 'Shared!' : slackShareStatus === 'partial' ? 'Partial' : slackShareStatus === 'error' ? 'Failed' : 'Share to Slack' }}</span>
-                            </button>
-                            <button
-                                v-tooltip="'Update Slack configuration'"
-                                class="px-2 py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-                                @click="openSlackModal()"
-                            >
-                                <FontAwesomeIcon :icon="['fal', 'fa-cog']" class="text-xs" />
-                            </button>
-                        </div>
                         <!-- Toggle side panel -->
                         <button
                             class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
@@ -397,32 +299,6 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                     </div>
                 </div>
             </div>
-
-            <!-- Slack share result message -->
-            <Transition
-                enter-active-class="transition ease-out duration-200"
-                enter-from-class="opacity-0 -translate-y-1"
-                enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition ease-in duration-150"
-                leave-from-class="opacity-100 translate-y-0"
-                leave-to-class="opacity-0 -translate-y-1"
-            >
-                <div
-                    v-if="slackShareMessage && slackShareStatus !== 'idle'"
-                    class="flex items-start gap-2 px-4 py-2.5 text-xs border-b"
-                    :class="slackShareStatus === 'success'
-                        ? 'bg-green-50 text-green-700 border-green-100'
-                        : slackShareStatus === 'partial'
-                            ? 'bg-amber-50 text-amber-700 border-amber-100'
-                            : 'bg-red-50 text-red-600 border-red-100'"
-                >
-                    <FontAwesomeIcon
-                        :icon="['fab', 'fa-slack']"
-                        class="text-sm mt-0.5 shrink-0"
-                    />
-                    <span>{{ slackShareMessage }}</span>
-                </div>
-            </Transition>
 
             <!-- Messages Area -->
             <div class="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[#f0f4f8]">
@@ -450,6 +326,37 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                     imageClass="rounded-lg max-w-full max-h-64 object-contain cursor-pointer"
                                     class="mt-1"
                                 />
+
+                                <div
+                                    v-if="imageValidation(msg).is_validated === true"
+                                    class="mt-1"
+                                    :title="msg.ai_verification?.reasoning ?? ''"
+                                >
+                                    <span
+                                        v-if="imageValidation(msg).is_ai_generated"
+                                        class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700"
+                                    >
+                                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-[10px]" />
+                                        AI generated
+                                    </span>
+                                    <span
+                                        v-else
+                                        class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700"
+                                    >
+                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" />
+                                        Verified
+                                    </span>
+                                </div>
+
+                                <div v-else-if="needsImageVerification(msg)" class="mt-1">
+                                    <span
+                                        class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500"
+                                        :class="isFromAgent(msg) ? 'text-white/70 bg-white/10' : ''"
+                                    >
+                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" />
+                                        Not verified yet
+                                    </span>
+                                </div>
                             </template>
 
                             <template v-else-if="msg.message_type === 'file' && msg.download_route">
@@ -739,129 +646,11 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
         </Transition>
     </div>
 
-    <!-- Slack Setup Modal -->
-    <Teleport to="body">
-        <Transition
-            enter-active-class="transition ease-out duration-200"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition ease-in duration-150"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
-            <div v-if="showSlackModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div class="absolute inset-0 bg-black/40" @click="showSlackModal = false" />
-
-                <div class="relative w-full max-w-lg bg-white rounded-xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
-                    <!-- Header -->
-                    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                        <div class="flex items-center gap-2.5">
-                            <FontAwesomeIcon :icon="['fab', 'fa-slack']" class="text-lg text-[#4A154B]" />
-                            <h2 class="text-sm font-semibold text-gray-800">Setup Slack Integration</h2>
-                        </div>
-                        <button class="p-1 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100" @click="showSlackModal = false">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                    </div>
-
-                    <!-- Form -->
-                    <div class="px-5 py-4 space-y-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">
-                                Slack Bot Token <span class="text-red-500">*</span>
-                            </label>
-                            <div class="relative">
-                                <input
-                                    v-model="slackModalToken"
-                                    :type="slackTokenVisible ? 'text' : 'password'"
-                                    placeholder="Paste your Slack bot token here"
-                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 pr-9 text-sm font-mono focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300"
-                                />
-                                <button
-                                    type="button"
-                                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                                    v-tooltip="slackTokenVisible ? 'Hide token' : 'Show token'"
-                                    @click="slackTokenVisible = !slackTokenVisible"
-                                >
-                                    <FontAwesomeIcon :icon="['fal', slackTokenVisible ? 'fa-eye-slash' : 'fa-eye']" class="text-sm" />
-                                </button>
-                            </div>
-                            <p class="mt-1 text-[11px] text-gray-400">Bot User OAuth Token from your Slack App (starts with <code class="bg-gray-100 px-1 rounded">xoxb-</code>)</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">
-                                Slack Channels <span class="text-red-500">*</span>
-                            </label>
-                            <div class="rounded-lg border border-gray-200 focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-300">
-                                <TagsInput
-                                    v-model="slackModalChannels"
-                                    :field-data="{ placeholder: 'Type channel and press Enter' }"
-                                />
-                            </div>
-                            <p class="mt-1 text-[11px] text-gray-400">Type a channel name and press <kbd class="bg-gray-100 border border-gray-200 rounded px-1 text-[10px]">Enter</kbd> to add. Multiple channels supported.</p>
-                        </div>
-
-                        <p v-if="slackSaveError" class="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{{ slackSaveError }}</p>
-
-                        <!-- Guide -->
-                        <div class="border border-gray-100 rounded-lg overflow-hidden">
-                            <button
-                                class="w-full flex items-center justify-between px-3 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors text-left"
-                                @click="showGuide = !showGuide"
-                            >
-                                <span class="flex items-center gap-1.5">
-                                    <FontAwesomeIcon :icon="['fab', 'fa-slack']" class="text-[#4A154B]" />
-                                    How to get a Bot Token
-                                </span>
-                                <FontAwesomeIcon :icon="showGuide ? ['fal', 'fa-chevron-down'] : ['fal', 'fa-chevron-right']" class="text-xs text-gray-400" />
-                            </button>
-                            <div v-if="showGuide" class="px-3 pb-3 bg-gray-50 border-t border-gray-100">
-                                <ol class="space-y-2 mt-2.5">
-                                    <li class="flex gap-2 text-xs text-gray-600">
-                                        <span class="shrink-0 w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px]">1</span>
-                                        <span>Go to <a href="https://api.slack.com/apps" target="_blank" class="text-indigo-600 underline hover:text-indigo-800">api.slack.com/apps</a> → Create New App → From scratch</span>
-                                    </li>
-                                    <li class="flex gap-2 text-xs text-gray-600">
-                                        <span class="shrink-0 w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px]">2</span>
-                                        <span>Under <strong>OAuth &amp; Permissions</strong>, add Bot Token Scopes: <code class="bg-gray-200 px-1 rounded">chat:write</code> and <code class="bg-gray-200 px-1 rounded">chat:write.public</code></span>
-                                    </li>
-                                    <li class="flex gap-2 text-xs text-gray-600">
-                                        <span class="shrink-0 w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px]">3</span>
-                                        <span>Click <strong>Install to Workspace</strong> and approve the permissions</span>
-                                    </li>
-                                    <li class="flex gap-2 text-xs text-gray-600">
-                                        <span class="shrink-0 w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px]">4</span>
-                                        <span>Copy the <strong>Bot User OAuth Token</strong> (starts with <code class="bg-gray-200 px-1 rounded">xoxb-</code>) and paste it above</span>
-                                    </li>
-                                    <li class="flex gap-2 text-xs text-gray-600">
-                                        <span class="shrink-0 w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px]">5</span>
-                                        <span>In Slack, type <code class="bg-gray-200 px-1 rounded">/invite @YourBotName</code> in the target channel</span>
-                                    </li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Footer -->
-                    <div class="flex items-center justify-end gap-2 px-5 py-3 bg-gray-50 border-t border-gray-100">
-                        <button
-                            class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-                            @click="showSlackModal = false"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            class="px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-md transition-colors flex items-center gap-1.5"
-                            :disabled="isSavingSlack || !slackModalToken.trim() || !slackModalChannels.length"
-                            @click="saveSlackConfig"
-                        >
-                            <FontAwesomeIcon v-if="isSavingSlack" :icon="['fal', 'fa-cog']" class="text-xs animate-spin" />
-                            {{ isSavingSlack ? 'Saving...' : 'Save Configuration' }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </Transition>
-    </Teleport>
+    <SlackShareModal
+        :is-open="isSlackShareModalOpen"
+        mode="session"
+        :organisation="currentOrganisation"
+        :session-ulid="chatSession.ulid"
+        @close="isSlackShareModalOpen = false"
+    />
 </template>

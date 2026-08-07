@@ -46,10 +46,19 @@ class DeliveryNoteItemsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $requiredFactionalData = riseDivisor(
+        $requiredFractionalData = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
                     $this->quantity_required
+                )
+            ),
+            $this->packed_in
+        );
+
+        $originalRequiredFractionalData = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->original_quantity_required ?? 0
                 )
             ),
             $this->packed_in
@@ -116,8 +125,10 @@ class DeliveryNoteItemsResource extends JsonResource
             'id'                                       => $this->id,
             'state'                                    => $this->state,
             'state_icon'                               => $this->state->stateIcon()[$this->state->value],
+            'original_quantity_required'               => $this->original_quantity_required,
+            'original_quantity_required_fractional'    => $originalRequiredFractionalData,
             'quantity_required'                        => $this->quantity_required,
-            'quantity_required_fractional'             => $requiredFactionalData,
+            'quantity_required_fractional'             => $requiredFractionalData,
             'composition_dirty_at'                     => $this->composition_dirty_at,
             'composition_dirty_quantity_required'      => $this->composition_dirty_quantity_required,
             'applyNewCompositionRoute'                 => $this->composition_dirty_at ? [
@@ -198,7 +209,8 @@ class DeliveryNoteItemsResource extends JsonResource
                 ],
                 'method'     => 'post'
             ],
-            'un_numbers'                               => $unNumbers
+            'un_numbers'                               => $unNumbers,
+            'is_dirty'                                 => $this->is_dirty,
         ];
     }
 }

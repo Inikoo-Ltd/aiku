@@ -10,8 +10,8 @@ namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\SetOrgStockPickingLocation;
 use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
-use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
@@ -73,7 +73,7 @@ class UpdateLocationOrgStock extends OrgAction
             LocationHydrateOrgStocks::dispatch($locationOrgStock->location);
         }
 
-        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->org_stock_id)->delay(2);
+        SetOrgStockPickingLocation::dispatch($locationOrgStock->org_stock_id)->delay(2);
 
         return $locationOrgStock;
     }

@@ -24,7 +24,7 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
     {
-        $pickings = $deliveryNoteItem->pickings;
+        $pickings = $deliveryNoteItem->pickings()->get();
 
 
         $totalPicked = $pickings->whereIn('type', [
