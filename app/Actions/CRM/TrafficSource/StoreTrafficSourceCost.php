@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceCampaignHydrateStats;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCosts;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
@@ -59,6 +60,10 @@ class StoreTrafficSourceCost
         );
 
         TrafficSourceHydrateCosts::dispatch($trafficSource);
+
+        if ($trafficSourceCost->trafficSourceCampaign) {
+            TrafficSourceCampaignHydrateStats::dispatch($trafficSourceCost->trafficSourceCampaign);
+        }
 
         return $trafficSourceCost;
     }
