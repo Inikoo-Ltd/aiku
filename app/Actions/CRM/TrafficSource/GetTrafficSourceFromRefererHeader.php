@@ -75,6 +75,43 @@ class GetTrafficSourceFromRefererHeader
             return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_TWITTER->value];
         }
 
+        /* A click that came through Google's ad redirect is paid Google traffic, not a referral from
+           some website called googleadservices. It reaches us this way whenever the gclid is missing
+           from the landing URL - stripped by a redirect, or a tracking template that omits it. No
+           campaign reference is available on this path; the channel is still right. */
+        if (preg_match('/(^|\.)googleadservices\.com$/', $domain) ||
+            preg_match('/(^|\.)googlesyndication\.com$/', $domain)) {
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::GOOGLE_ADS->value];
+        }
+
+        /* Search engines we do not have a channel of their own for. They are search traffic, not
+           referrals from a website, and lumping them together would have hidden them among trade
+           directories and blogs. The engine's host rides along as the campaign reference, so the
+           breakdown still names each one.
+           Matched on the full host on purpose: `search.seznam.cz` is a search engine,
+           `email.seznam.cz` is somebody's webmail and belongs nowhere near it. */
+        $searchEngines = [
+            '/(^|\.)duckduckgo\.com$/',
+            '/(^|\.)search\.yahoo\.com$/',
+            '/(^|\.)search\.brave\.com$/',
+            '/(^|\.)search\.seznam\.cz$/',
+            '/(^|\.)ecosia\.org$/',
+            '/(^|\.)startpage\.com$/',
+            '/(^|\.)qwant\.com$/',
+            '/(^|\.)baidu\.com$/',
+            '/(^|\.)naver\.com$/',
+            '/(^|\.)yandex\.[a-z.]{2,}$/',
+        ];
+
+        foreach ($searchEngines as $pattern) {
+            if (preg_match($pattern, $domain)) {
+                $engine = self::normaliseHost($domain);
+
+                return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_SEARCH->value]
+                    .($engine ?? '');
+            }
+        }
+
         /* Anything else external is a referral rather than nothing: a trade directory, a blog, an AI
            assistant. Before this they were indistinguishable from someone typing the address in, and
            whole acquisition channels were invisible. The host travels as the campaign reference so

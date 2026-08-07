@@ -120,3 +120,31 @@ it('drops a referral touch for our own storefront instead of crediting it', func
         ->and($credited->first()->type)->toBe('organic-google')
         ->and((float) $credited->first()->pivot->share)->toBe(1.0);
 });
+
+it('records the search engines we have no channel of their own for as organic search', function () {
+    $searchAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_SEARCH->value];
+
+    expect(GetTrafficSourceFromRefererHeader::run('https://duckduckgo.com/?q=incense'))->toBe($searchAbbr.'duckduckgo.com')
+        ->and(GetTrafficSourceFromRefererHeader::run('https://uk.search.yahoo.com/search?p=x'))->toBe($searchAbbr.'uk.search.yahoo.com')
+        ->and(GetTrafficSourceFromRefererHeader::run('https://search.brave.com/search?q=x'))->toBe($searchAbbr.'search.brave.com');
+});
+
+it('treats a webmail host as a referral, never as a search engine', function () {
+    $searchAbbr   = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_SEARCH->value];
+    $referralAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::REFERRAL->value];
+
+    expect(GetTrafficSourceFromRefererHeader::run('https://email.seznam.cz/message/1'))->toBe($referralAbbr.'email.seznam.cz')
+        ->and(GetTrafficSourceFromRefererHeader::run('https://search.seznam.cz/?q=x'))->toBe($searchAbbr.'search.seznam.cz');
+});
+
+it('counts a click arriving through the google ads redirect as paid google', function () {
+    expect(GetTrafficSourceFromRefererHeader::run('https://www.googleadservices.com/pagead/aclk?x=1'))
+        ->toBe(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::GOOGLE_ADS->value]);
+});
+
+it('keeps a search engine that has its own channel out of the generic bucket', function () {
+    expect(GetTrafficSourceFromRefererHeader::run('https://www.google.co.uk/search?q=x'))
+        ->toBe(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_GOOGLE->value])
+        ->and(GetTrafficSourceFromRefererHeader::run('https://www.bing.com/search?q=x'))
+        ->toBe(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_BING->value]);
+});

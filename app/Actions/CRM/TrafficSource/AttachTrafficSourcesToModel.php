@@ -132,7 +132,10 @@ class AttachTrafficSourcesToModel
     {
         return array_values(array_filter(
             $touches,
-            fn (array $touch) => $touch['type'] !== TrafficSourcesTypeEnum::REFERRAL
+            fn (array $touch) => !in_array($touch['type'], [
+                TrafficSourcesTypeEnum::REFERRAL,
+                TrafficSourcesTypeEnum::ORGANIC_SEARCH,
+            ], true)
                 || GetTrafficSourceFromRefererHeader::normaliseHost($touch['campaign_ref']) === $touch['campaign_ref']
         ));
     }
@@ -194,7 +197,10 @@ class AttachTrafficSourcesToModel
             /* Referral campaigns are the referring host itself, so they cannot be numeric. They are
                still client-controlled, hence the hostname shape check and the per-source cap: worst
                case a spoofed Referer buys a bounded number of junk rows, not unlimited ones. */
-            if ($trafficSource->type === TrafficSourcesTypeEnum::REFERRAL->value) {
+            if (in_array($trafficSource->type, [
+                TrafficSourcesTypeEnum::REFERRAL->value,
+                TrafficSourcesTypeEnum::ORGANIC_SEARCH->value,
+            ], true)) {
                 if (GetTrafficSourceFromRefererHeader::normaliseHost($reference) !== $reference) {
                     return null;
                 }
