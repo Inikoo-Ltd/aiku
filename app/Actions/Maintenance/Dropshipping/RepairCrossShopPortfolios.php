@@ -55,6 +55,7 @@ class RepairCrossShopPortfolios
 
             if ($apply) {
                 $portfolio->update([
+                    'data'      => array_merge($portfolio->data ?? [], ['repaired_from_item_id' => $portfolio->item_id]),
                     'item_id'   => $product->id,
                     'item_code' => $product->code,
                     'item_name' => $product->name,
