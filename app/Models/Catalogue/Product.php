@@ -30,6 +30,7 @@ use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
+use App\Models\Traits\HasEffectiveStockPackedIn;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasSearch;
@@ -264,6 +265,7 @@ class Product extends Model implements Auditable, HasMedia
     use SoftDeletes;
     use HasSlug;
     use InAssetModel;
+    use HasEffectiveStockPackedIn;
     use HasHistory;
     use HasFactory;
     use HasImage;

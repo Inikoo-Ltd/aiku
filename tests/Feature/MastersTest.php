@@ -1680,6 +1680,46 @@ test('UI Edit Master Product with a trade unit not linked to a stock', function 
         ->and($showcase['trade_units'][0])->toHaveKey('pick_fractional');
 });
 
+test('showcase pick fraction follows org stock packing over group stock packing', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PCK-DEPT-'.uniqid(),
+        'name' => 'Packing Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PCK-FAM-'.uniqid(),
+        'name' => 'Packing Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PCK-AST-'.uniqid(),
+        'name'    => 'Packing Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits()->first();
+    $masterAsset->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+    DB::table('model_has_trade_units')
+        ->where('model_type', 'Stock')
+        ->where('trade_unit_id', $tradeUnit->id)
+        ->update(['quantity' => 12]);
+
+    $orgStock = $this->organisation->orgStocks()->first();
+    $tradeUnit->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+
+    $masterAsset->refresh()->load('tradeUnits');
+
+    expect($masterAsset->getEffectiveStockPackedInByTradeUnit())->toBe([$tradeUnit->id => 1.0])
+        ->and($product->load('tradeUnits')->getEffectiveStockPackedInByTradeUnit())->toBe([$tradeUnit->id => 1.0]);
+
+    $showcase = GetMasterProductShowcase::run($masterAsset);
+    expect($showcase['trade_units'][0]['pick_fractional'])->toEqual([1, [0, 1]]);
+});
+
 
 // ADDITIONAL MASTER ASSET ACTIONS
 

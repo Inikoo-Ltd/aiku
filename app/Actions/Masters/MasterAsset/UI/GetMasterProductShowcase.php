@@ -147,7 +147,7 @@ class GetMasterProductShowcase
 
     private function getDataTradeUnit(MasterAsset $masterAsset): array
     {
-        $packedIn = $masterAsset->getStockPackedInByTradeUnit();
+        $packedIn = $masterAsset->getEffectiveStockPackedInByTradeUnit();
 
         return $masterAsset->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
             return array_merge(
