@@ -36,15 +36,17 @@ class StoreEmailTrackingEvent extends OrgAction
                dispatch notices, invoices) reach the same CLICKED state, and recording those would
                hand the newsletter channel a share of every engaged customer's revenue for clicks
                that are post-purchase service, not acquisition. */
-            if ($dispatchedEmail->mailshot) {
+            $mailshot = $dispatchedEmail->sentMailshot;
+
+            if ($mailshot) {
                 $clickedAt = $emailTrackingEvent->created_at ?? now();
 
                 foreach ($dispatchedEmail->customers as $customer) {
-                    RecordEmailClickTouchpoint::dispatch($customer, $clickedAt, $dispatchedEmail->mailshot);
+                    RecordEmailClickTouchpoint::dispatch($customer, $clickedAt, $mailshot);
                 }
 
                 foreach ($dispatchedEmail->prospects as $prospect) {
-                    RecordEmailClickTouchpoint::dispatch($prospect, $clickedAt, $dispatchedEmail->mailshot);
+                    RecordEmailClickTouchpoint::dispatch($prospect, $clickedAt, $mailshot);
                 }
             }
         } elseif ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::OPENED) {
