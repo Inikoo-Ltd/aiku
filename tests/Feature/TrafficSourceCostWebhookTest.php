@@ -123,3 +123,13 @@ it('rejects an unknown currency', function () {
 
     expect(TrafficSourceCost::where('shop_id', $this->shop->id)->count())->toBe(0);
 });
+
+it('revokes a token so it stops working', function () {
+    postCosts($this->token, costPayload())->assertOk();
+
+    $tokenId = explode('|', $this->token)[0];
+
+    expect(Artisan::call('traffic-source:cost-token', ['--revoke' => $tokenId]))->toBe(0);
+
+    postCosts($this->token, costPayload())->assertForbidden();
+});

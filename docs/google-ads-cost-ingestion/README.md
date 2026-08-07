@@ -25,8 +25,9 @@ You need three things:
    this is "Standard" or "Admin" access. If you can see **Tools & Settings** in the top menu and
    there is a **Scripts** entry under **Bulk Actions**, you have it.
 2. **Your shop code.** This is the short code Aiku uses for the shop the Ads account advertises,
-   e.g. `aw` or `uk`. If you do not know it, ask whoever gave you the token — it is written on
-   the same message.
+   e.g. `uk` or `es`. It is the shop's own code, not the company's — Ancient Wisdom's shop code is
+   `uk`, not `aw`. If you do not know it, ask whoever gave you the token — it is written on the
+   same message.
 3. **Your token.** This is a long secret string, roughly like
    `47|kQ8vNc3ZpR9wLxT2mF6yH4bJ0sD1aG5eU7iO`. See the next section for how to get one.
 
@@ -96,7 +97,7 @@ var CONFIG = {
 Replace the two placeholder texts, keeping the quote marks around them:
 
 - `PASTE-YOUR-TOKEN-HERE` → your token.
-- `PASTE-YOUR-SHOP-CODE-HERE` → your shop code, e.g. `aw`.
+- `PASTE-YOUR-SHOP-CODE-HERE` → your shop code, e.g. `uk`.
 
 Leave `ENDPOINT` alone unless the message that came with your token gave you a different address
 (it will have, if you are setting this up against a test environment).
@@ -107,7 +108,7 @@ A filled-in version looks like:
 var CONFIG = {
   ENDPOINT: 'https://aiku.io/webhooks/traffic-source-costs',
   TOKEN: '47|kQ8vNc3ZpR9wLxT2mF6yH4bJ0sD1aG5eU7iO',
-  SHOP: 'aw'
+  SHOP: 'uk'
 };
 ```
 
@@ -131,8 +132,8 @@ If you skip this, the script fails the first time it runs with a permissions err
 You want to see two lines roughly like:
 
 ```
-Sending 6 campaign(s) for 2026-08-06, total 153.22 GBP for shop aw.
-OK — {"shop":"aw","source":"google-ads","stored":6,"errors":[]}
+Sending 6 campaign(s) for 2026-08-06, total 153.22 GBP for shop uk.
+OK — {"shop":"uk","source":"google-ads","stored":6,"errors":[]}
 ```
 
 `stored: 6` means six campaign-days of spend were saved. If you see something else, jump to

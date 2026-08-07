@@ -34,7 +34,7 @@ class TrafficSourceCostToken extends Command
     {
         if ($tokenId = $this->option('revoke')) {
             $deleted = PersonalAccessToken::where('id', $tokenId)
-                ->where('tokenable_type', Shop::class)
+                ->where('tokenable_type', (new Shop())->getMorphClass())
                 ->delete();
 
             $this->info($deleted ? "Token {$tokenId} revoked." : "No cost token with id {$tokenId}.");
