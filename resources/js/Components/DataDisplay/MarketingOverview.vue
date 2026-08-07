@@ -33,6 +33,11 @@ const props = defineProps<{
         channels: {
             name: string
             type: string
+            group: string
+            group_label: string
+            group_position: number
+            unsubscribed: number
+            orders: number
             spend: number
             spend_is_estimated?: boolean
             visits: number
@@ -119,6 +124,48 @@ const sparkline = computed(() => {
         endY: y(days[days.length - 1].amount),
     }
 })
+
+/* The same grouping and the same explanations the org and group dashboards carry: a shop manager
+   reading this screen should not have to learn a second vocabulary to compare with the level above. */
+const groupedChannels = computed(() => {
+    const groups: Record<string, any> = {}
+
+    for (const channel of props.overview.channels) {
+        const key = channel.group ?? 'other'
+
+        groups[key] ??= {
+            key,
+            label: channel.group_label ?? key,
+            position: channel.group_position ?? 9,
+            channels: [],
+            visits: 0, orders: 0, spend: 0, pending: 0, revenue: 0, registrations: 0,
+        }
+
+        const g = groups[key]
+        g.channels.push(channel)
+        g.visits += channel.visits ?? 0
+        g.orders += channel.orders ?? 0
+        g.spend += channel.spend ?? 0
+        g.pending += channel.pending ?? 0
+        g.revenue += channel.revenue ?? 0
+        g.registrations += channel.registrations ?? 0
+    }
+
+    return Object.values(groups).sort((a: any, b: any) => a.position - b.position)
+})
+
+const columnHelp: Record<string, string> = {
+    visits: trans('People who arrived from this channel, how many of them bought, and the rate between the two. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked.'),
+    spend: trans('Ad spend imported for this channel over the period. Email spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
+    awaiting: trans('Value of orders already placed but not invoiced yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
+    revenue: trans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it.'),
+    registrations: trans('Customers who signed up after arriving through this channel. A red figure beside it is subscribers lost over the same emails, not subtracted from it.'),
+    orders: trans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships.'),
+    roas: trans('Revenue divided by spend. Blank while money is still awaiting invoice.'),
+}
+
+const count = (value: number) => Number.isInteger(value) ? value.toString() : value.toFixed(2)
+const pctOf = (part: number, whole: number) => whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
 
 const roasIsGood = computed(() => (props.overview.totals.roas ?? 0) >= 1)
 
@@ -290,6 +337,70 @@ const typeLabel: Record<string, string> = {
                         · {{ trans('spend') }} {{ money(channel.spend) }} · {{ trans('revenue') }} {{ money(channel.revenue) }}
                     </div>
                 </Link>
+            </div>
+
+            <!-- The detail under the bars: same table, same wording and same tooltips as the
+                 organisation and group dashboards, so the levels can be read against each other. -->
+            <div v-if="overview.channels.length" class="mt-5 overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-100">
+                            <th class="text-left font-normal py-1.5 pr-2">{{ trans('Channel') }}</th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Visits') }}<sup v-tooltip="columnHelp.visits" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}<sup v-tooltip="columnHelp.spend" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Awaiting invoice') }}<sup v-tooltip="columnHelp.awaiting" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}<sup v-tooltip="columnHelp.revenue" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}<sup v-tooltip="columnHelp.registrations" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Orders') }}<sup v-tooltip="columnHelp.orders" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}<sup v-tooltip="columnHelp.roas" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                        </tr>
+                    </thead>
+                    <tbody v-for="group in groupedChannels" :key="group.key">
+                        <tr class="text-gray-700 bg-gray-50/70">
+                            <td class="py-1.5 pr-2 text-xs font-medium">{{ group.label }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ group.visits > 0 ? locale.number(group.visits) : '' }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ money(group.spend) }}</td>
+                            <td class="text-right px-2 tabular-nums" :class="group.pending > 0 ? 'text-amber-600' : ''">
+                                {{ group.pending > 0 ? money(group.pending) : '' }}
+                            </td>
+                            <td class="text-right px-2 tabular-nums">{{ money(group.revenue) }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ count(group.registrations) }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ count(group.orders) }}</td>
+                            <td class="text-right pl-2 tabular-nums">
+                                {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
+                            </td>
+                        </tr>
+                        <tr v-for="channel in group.channels" :key="channel.type" class="border-b border-gray-50 text-gray-600">
+                            <td class="py-2 pr-2 pl-4">{{ channel.name }}</td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap"
+                                :class="channel.visits > 0 && channel.orders === 0 ? 'text-[#d03b3b]' : ''">
+                                <template v-if="channel.visits > 0">
+                                    {{ locale.number(channel.visits) }}
+                                    <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                                        · {{ count(channel.orders) }} {{ trans('bought') }} · {{ pctOf(channel.orders, channel.visits) }}
+                                    </span>
+                                </template>
+                                <span v-else class="text-gray-300">—</span>
+                            </td>
+                            <td class="text-right px-2 tabular-nums">
+                                <span v-if="channel.spend_is_estimated" class="text-xs text-gray-400 mr-1"
+                                      :title="trans('Estimated from emails sent')">{{ trans('est.') }}</span>{{ money(channel.spend) }}
+                            </td>
+                            <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-amber-600' : 'text-gray-300'">
+                                {{ money(channel.pending) }}
+                            </td>
+                            <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                {{ count(channel.registrations) }}<span v-if="channel.unsubscribed > 0" class="text-[#d03b3b]"> −{{ locale.number(channel.unsubscribed) }}</span>
+                            </td>
+                            <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
+                            <td class="text-right pl-2 tabular-nums"
+                                :class="channel.roas === null ? 'text-gray-300' : channel.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                                {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div v-else class="mt-4 py-8 text-center">

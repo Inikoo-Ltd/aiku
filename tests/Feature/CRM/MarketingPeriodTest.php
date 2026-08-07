@@ -280,3 +280,14 @@ it('groups channels so nineteen rows read as four questions', function () {
         ->and(App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::REFERRAL->group()['key'])->toBe('other')
         ->and(App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::YOUTUBE->group()['key'])->toBe('other');
 });
+
+it('gives the shop dashboard every field its grouped table needs', function () {
+    $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        ->firstWhere('type', 'google-ads');
+
+    expect($channel)->toHaveKeys([
+        'name', 'type', 'group', 'group_label', 'group_position',
+        'visits', 'orders', 'spend', 'spend_is_estimated', 'pending', 'revenue',
+        'registrations', 'unsubscribed', 'roas',
+    ]);
+});
