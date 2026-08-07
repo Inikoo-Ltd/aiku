@@ -17,6 +17,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetShopMarketingOverview
 {
     use AsAction;
+    use WithAttributionWindow;
 
     /**
      * Assembles the marketing dashboard's numbers for a period: attributed revenue, ad spend, and the
@@ -42,7 +43,8 @@ class GetShopMarketingOverview
             ->get()
             ->keyBy('id');
 
-        $revenue       = $this->revenueBySource($shop, $from);
+        $window        = GetAttributionWindow::run($shop);
+        $revenue       = $this->revenueBySource($shop, $from, $window);
         $registrations = $this->registrationsBySource($shop, $from);
         $spend         = $this->spendBySource($shop, $from);
 
@@ -87,12 +89,19 @@ class GetShopMarketingOverview
         ];
     }
 
-    private function revenueBySource(Shop $shop, ?Carbon $from)
+    /**
+     * Revenue a channel may claim: invoiced after the touch that earned it, and no later than the
+     * attribution window allows. Without the first condition a click today collects a customer's
+     * entire history; without the second it collects their next several years.
+     */
+    private function revenueBySource(Shop $shop, ?Carbon $from, int $window)
     {
         return DB::table('invoices')
-            ->join('model_has_traffic_sources as p', function ($join) {
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
                 $join->on('p.model_id', '=', 'invoices.customer_id')
                     ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToAttributionWindow($join, $window);
             })
             ->where('invoices.shop_id', $shop->id)
             ->where('invoices.in_process', false)
@@ -143,10 +152,14 @@ class GetShopMarketingOverview
      */
     private function campaigns(Shop $shop, ?Carbon $from, int $limit = 8): array
     {
+        $window = GetAttributionWindow::run($shop);
+
         $revenue = DB::table('invoices')
-            ->join('model_has_traffic_sources as p', function ($join) {
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
                 $join->on('p.model_id', '=', 'invoices.customer_id')
                     ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToAttributionWindow($join, $window);
             })
             ->whereNotNull('p.traffic_source_campaign_id')
             ->where('invoices.shop_id', $shop->id)

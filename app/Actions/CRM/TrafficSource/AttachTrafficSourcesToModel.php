@@ -12,6 +12,7 @@ use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceCampaignHydrateStats;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -62,6 +63,7 @@ class AttachTrafficSourcesToModel
 
         $touchedSourceIds   = [];
         $touchedCampaignIds = [];
+        $touchDates         = $this->touchDates($touches);
 
         foreach ($shares as $share) {
             /** @var TrafficSource|null $trafficSource */
@@ -75,10 +77,14 @@ class AttachTrafficSourcesToModel
                 ? $this->resolveCampaignId($trafficSource, $share['campaign_ref'])
                 : null;
 
+            $dates = $touchDates[$share['type']->value.'|'.($share['campaign_ref'] ?? '')] ?? null;
+
             $model->trafficSources()->attach($trafficSource->id, [
                 'share'                      => round($share['share'], 2),
                 'traffic_source_campaign_id' => $campaignId,
                 'attribution_model'          => $attributionModel,
+                'first_touch_at'             => $dates['first'] ?? null,
+                'last_touch_at'              => $dates['last'] ?? null,
             ]);
 
             $touchedSourceIds[$trafficSource->id] = true;
@@ -95,6 +101,44 @@ class AttachTrafficSourcesToModel
         foreach (TrafficSourceCampaign::whereIn('id', array_keys($touchedCampaignIds))->get() as $campaign) {
             TrafficSourceCampaignHydrateStats::dispatch($campaign);
         }
+    }
+
+    /**
+     * When each source-and-campaign combination was first and last seen. Revenue attribution needs
+     * this: without it a touch recorded today can be credited with purchases made years earlier.
+     *
+     * @param array<int, array{timestamp: int|null, abbr: string, type: TrafficSourcesTypeEnum, campaign_ref: string|null}> $touches
+     *
+     * @return array<string, array{first: Carbon|null, last: Carbon|null}>
+     */
+    private function touchDates(array $touches): array
+    {
+        $dates = [];
+
+        foreach ($touches as $touch) {
+            if ($touch['timestamp'] === null) {
+                continue;
+            }
+
+            $key  = $touch['type']->value.'|'.($touch['campaign_ref'] ?? '');
+            $when = Carbon::createFromTimestamp($touch['timestamp']);
+
+            if (!isset($dates[$key])) {
+                $dates[$key] = ['first' => $when, 'last' => $when];
+
+                continue;
+            }
+
+            if ($when->lt($dates[$key]['first'])) {
+                $dates[$key]['first'] = $when;
+            }
+
+            if ($when->gt($dates[$key]['last'])) {
+                $dates[$key]['last'] = $when;
+            }
+        }
+
+        return $dates;
     }
 
     private function resolveCampaignId(TrafficSource $trafficSource, string $reference): ?int

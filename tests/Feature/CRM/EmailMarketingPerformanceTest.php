@@ -14,7 +14,6 @@ use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
@@ -40,6 +39,9 @@ beforeEach(function () {
     $this->customer->update(['traffic_sources' => null]);
     $this->customer->trafficSources()->detach();
 
+    // Shared fixtures: clear invoices so revenue assertions do not accumulate across tests.
+    DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
+
     $this->googleAds  = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
     $this->newsletter = createTrafficSource($this->shop, 'newsletter', 'Newsletter');
 });
@@ -60,13 +62,13 @@ it('returns empty performance for a shop that has sent nothing', function () {
 });
 
 it('splits customer credit between channels so their stats sum to the real totals', function () {
-    $this->customer->update(['traffic_sources' => '1700000000b']);
+    $this->customer->update(['traffic_sources' => now()->subDays(11)->timestamp.'b']);
     \App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution::run($this->customer->fresh());
 
-    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 10:00:00'));
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), now()->subDays(10));
 
+    createInvoiceFor($this->customer, $this->shop, now()->subDay()->toDateTimeString(), 1000);
     DB::table('customer_stats')->where('customer_id', $this->customer->id)->update([
-        'sales_all'                      => 1000,
         'number_orders_state_dispatched' => 4,
     ]);
 
@@ -96,9 +98,9 @@ it('reports engagement, estimated cost and attributed revenue per mailshot', fun
         'number_dispatched_emails_state_unsubscribed' => 7,
     ]);
 
-    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 10:00:00'), $mailshot);
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), now()->subDays(10), $mailshot);
 
-    DB::table('customer_stats')->where('customer_id', $this->customer->id)->update(['sales_all' => 250]);
+    createInvoiceFor($this->customer, $this->shop, now()->subDay()->toDateTimeString(), 250);
 
     $performance = GetShopEmailMarketingPerformance::run($this->shop);
 
@@ -121,10 +123,10 @@ it('attributes only the newsletter share of a customer other channels also touch
     $mailshot = makeMailshot($this->shop);
     $mailshot->stats()->update(['number_dispatched_emails' => 100]);
 
-    $this->customer->update(['traffic_sources' => '1700000000b']);
-    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 10:00:00'), $mailshot);
+    $this->customer->update(['traffic_sources' => now()->subDays(11)->timestamp.'b']);
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), now()->subDays(10), $mailshot);
 
-    DB::table('customer_stats')->where('customer_id', $this->customer->id)->update(['sales_all' => 1000]);
+    createInvoiceFor($this->customer, $this->shop, now()->subDay()->toDateTimeString(), 1000);
 
     $performance = GetShopEmailMarketingPerformance::run($this->shop);
 
@@ -145,7 +147,7 @@ it('credits the mailshot channel with the registration when a prospect converts'
         ])
     );
 
-    RecordEmailClickTouchpoint::run($prospect, Carbon::parse('2026-01-01 10:00:00'), $mailshot);
+    RecordEmailClickTouchpoint::run($prospect, now()->subDays(10), $mailshot);
 
     $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
         $this->shop,
@@ -173,10 +175,10 @@ it('serves honest share-weighted numbers through the sql views', function () {
     $mailshot = makeMailshot($this->shop);
     $mailshot->stats()->update(['number_dispatched_emails' => 100]);
 
-    $this->customer->update(['traffic_sources' => '1700000000b']);
-    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 10:00:00'), $mailshot);
+    $this->customer->update(['traffic_sources' => now()->subDays(11)->timestamp.'b']);
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), now()->subDays(10), $mailshot);
 
-    DB::table('customer_stats')->where('customer_id', $this->customer->id)->update(['sales_all' => 1000]);
+    createInvoiceFor($this->customer, $this->shop, now()->subDay()->toDateTimeString(), 1000);
     TrafficSourceHydrateCustomers::run($this->googleAds);
     TrafficSourceHydrateCustomers::run($this->newsletter);
 
@@ -236,10 +238,10 @@ it('keeps repeat clickers visible to every mailshot they clicked', function () {
     $first->stats()->update(['number_dispatched_emails' => 10]);
     $second->stats()->update(['number_dispatched_emails' => 10]);
 
-    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-01 10:00:00'), $first);
-    RecordEmailClickTouchpoint::run($this->customer->fresh(), Carbon::parse('2026-01-02 10:00:00'), $second);
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), now()->subDays(10), $first);
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), now()->subDays(9), $second);
 
-    DB::table('customer_stats')->where('customer_id', $this->customer->id)->update(['sales_all' => 1000]);
+    createInvoiceFor($this->customer, $this->shop, now()->subDay()->toDateTimeString(), 1000);
 
     $performance = collect(GetShopEmailMarketingPerformance::run($this->shop)['mailshots'])->keyBy('id');
 
@@ -257,7 +259,7 @@ it('counts prospects who clicked a mailshot and later registered', function () {
         \App\Models\CRM\Prospect::factory()->definition()
     );
 
-    RecordEmailClickTouchpoint::run($prospect, Carbon::parse('2026-01-01 10:00:00'), $mailshot);
+    RecordEmailClickTouchpoint::run($prospect, now()->subDays(10), $mailshot);
 
     $performance = GetShopEmailMarketingPerformance::run($this->shop);
     expect($performance['mailshots'][0]['prospects_registered'])->toBe(0);

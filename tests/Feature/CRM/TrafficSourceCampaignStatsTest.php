@@ -52,12 +52,12 @@ it('rolls a campaign\'s attributed customers and revenue into its own stats', fu
     $customer = StoreCustomer::make()->action(
         $this->shop,
         array_merge(Customer::factory()->definition(), [
-            'traffic_sources' => '1700000000b'.$reference,
+            'traffic_sources' => now()->subDays(10)->timestamp.'b'.$reference,
         ])
     );
 
+    createInvoiceFor($customer, $this->shop, now()->subDay()->toDateTimeString(), 900);
     DB::table('customer_stats')->where('customer_id', $customer->id)->update([
-        'sales_all'                      => 900,
         'number_orders_state_dispatched' => 3,
     ]);
 
@@ -111,11 +111,11 @@ it('never lets a source\'s campaigns claim more than the source itself', functio
     $customer = StoreCustomer::make()->action(
         $this->shop,
         array_merge(Customer::factory()->definition(), [
-            'traffic_sources' => '1700000000b'.$first.'|1700000100b'.$second,
+            'traffic_sources' => now()->subDays(10)->timestamp.'b'.$first.'|'.now()->subDays(9)->timestamp.'b'.$second,
         ])
     );
 
-    DB::table('customer_stats')->where('customer_id', $customer->id)->update(['sales_all' => 1000]);
+    createInvoiceFor($customer, $this->shop, now()->subDay()->toDateTimeString(), 1000);
 
     TrafficSourceHydrateCustomers::run($this->googleAds);
 
@@ -156,31 +156,13 @@ it('reports campaign performance for the selected period on the dashboard', func
     $customer = StoreCustomer::make()->action(
         $this->shop,
         array_merge(Customer::factory()->definition(), [
-            'traffic_sources' => '1700000000b'.$reference,
+            'traffic_sources' => now()->subDays(10)->timestamp.'b'.$reference,
         ])
     );
 
     $campaign = TrafficSourceCampaign::where('reference', $reference)->firstOrFail();
 
-    DB::table('invoices')->insert([
-        'group_id'        => $this->shop->group_id,
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'customer_id'     => $customer->id,
-        'currency_id'     => $this->shop->currency_id,
-        'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
-        'reference'       => 'INV-'.uniqid(),
-        'slug'            => 'inv-'.uniqid(),
-        'type'            => 'invoice',
-        'net_amount'      => 400,
-        'total_amount'    => 400,
-        'in_process'      => false,
-        'payment_data'    => '{}',
-        'data'            => '{}',
-        'date'            => now()->subDay()->toDateTimeString(),
-        'created_at'      => now()->subDay()->toDateTimeString(),
-        'updated_at'      => now()->subDay()->toDateTimeString(),
-    ]);
+    createInvoiceFor($customer, $this->shop, now()->subDay()->toDateTimeString(), 400);
 
     StoreTrafficSourceCost::run($this->googleAds, [
         'date'                       => now()->subDay()->toDateString(),

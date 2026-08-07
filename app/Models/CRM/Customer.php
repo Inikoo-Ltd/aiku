@@ -629,7 +629,7 @@ class Customer extends Model implements HasMedia, Auditable
     public function trafficSources(): MorphToMany
     {
         return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
-            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model', 'first_touch_at', 'last_touch_at'])
             ->withTimestamps();
     }
 
