@@ -128,6 +128,7 @@ use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
 use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
+use App\Actions\Web\Webpage\Json\GetBlogWebpages;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
@@ -175,6 +176,7 @@ Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::c
 Route::get('shop/{shop}/department-and-sub-departments', GetDepartmentAndSubDepartments::class)->name('shop.department_and_sub_departments');
 
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
+Route::get('shop/{shop}/website/{website}/blog-webpages', GetBlogWebpages::class)->name('shop.website.blog_webpages');
 Route::get('shop/{shop:id}/families', GetFamiliesInShop::class)->name('shop.families');
 Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.departments');
 Route::get('shop/{shop:id}/sub-departments', GetSubDepartmentsInShop::class)->name('shop.sub_departments');

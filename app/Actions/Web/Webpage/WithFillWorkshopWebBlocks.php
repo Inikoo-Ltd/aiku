@@ -17,6 +17,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlogList;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartmentDescription;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategoriesFromMaster;
@@ -71,6 +72,8 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
         } elseif ($webBlockType == 'blog') {
             $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'blog-list') {
+            $parsedWebBlocks[$key] = GetWebBlockBlogList::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-from-master') {
