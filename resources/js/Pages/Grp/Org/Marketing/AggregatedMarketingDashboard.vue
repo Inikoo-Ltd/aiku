@@ -41,6 +41,7 @@ const props = defineProps<{
             type: string
             spend: number
             spend_is_estimated?: boolean
+            unsubscribed: number
             visits: number
             revenue: number
             pending: number
@@ -128,7 +129,7 @@ const columnHelp: Record<string, string> = {
     spend: trans('Ad spend imported for this channel over the period. Newsletter spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
     awaiting: trans('Value of orders already placed but not invoiced yet. Invoicing runs a day or two behind, so this is what the channel has sold that has not become revenue yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
     revenue: trans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it. An order only counts if it was placed after the touch and within the attribution window, so a click cannot claim an order that was already on its way.'),
-    registrations: trans('Customers who signed up after arriving through this channel. Touched, not necessarily won - somebody who would have found us anyway still counts if they came through it. Shared between channels when someone arrived more than one way, so a customer is never counted twice.'),
+    registrations: trans('Customers who signed up after arriving through this channel. A red figure beside it is subscribers lost over the same emails - not subtracted, because an unsubscribe costs permission to email somebody, not the customer. Touched, not necessarily won - somebody who would have found us anyway still counts if they came through it. Shared between channels when someone arrived more than one way, so a customer is never counted twice.'),
     orders: trans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships. Touched, not necessarily caused: a customer who would have reordered anyway and clicked a mailshot first still counts here.'),
     roas: trans('Revenue divided by spend. Blank while money is still awaiting invoice, since a channel that has sold but not yet invoiced has not returned nothing - it has not finished being measured.'),
 }
@@ -270,7 +271,11 @@ const changePeriod = (event: Event) => {
                         </td>
                         <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-amber-600' : 'text-gray-300'">{{ money(channel.pending) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
-                        <td class="text-right px-2 tabular-nums">{{ count(channel.registrations) }}</td>
+                        <!-- Unsubscribes sit beside registrations, never netted off them: losing
+                             permission to email somebody is not losing the customer. -->
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            {{ count(channel.registrations) }}<span v-if="channel.unsubscribed > 0" class="text-[#d03b3b]"> −{{ locale.number(channel.unsubscribed) }}</span>
+                        </td>
                         <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
                         <td class="text-right pl-2 tabular-nums"
                             :class="channel.roas === null ? 'text-gray-300' : channel.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">

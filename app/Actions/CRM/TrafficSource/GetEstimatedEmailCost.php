@@ -20,6 +20,22 @@ class GetEstimatedEmailCost
     use AsAction;
 
     /**
+     * Subscribers lost over the same emails, which is the newsletter's other cost. Money is not the
+     * only thing a mailshot spends: a send that earns well while burning forty subscribers has taken
+     * something that cannot be bought back, and nothing on the dashboard said so.
+     *
+     * @param array<int, int>|\Illuminate\Support\Collection<int, int> $shopIds
+     */
+    public static function unsubscribes($shopIds, ?Carbon $from): int
+    {
+        return (int) Mailshot::whereIn('mailshots.shop_id', $shopIds)
+            ->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING, MailshotTypeEnum::INVITE])
+            ->when($from, fn ($query) => $query->whereRaw('COALESCE(mailshots.sent_at, mailshots.created_at) >= ?', [$from]))
+            ->join('mailshot_stats', 'mailshot_stats.mailshot_id', '=', 'mailshots.id')
+            ->sum('mailshot_stats.number_dispatched_emails_state_unsubscribed');
+    }
+
+    /**
      * What the newsletter channel actually cost to run in a period.
      *
      * Sending is not free, but there is no cost row for it: nobody invoices us per mailshot, so the

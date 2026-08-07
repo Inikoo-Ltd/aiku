@@ -306,3 +306,18 @@ it('separates what the ads cost from what the emails cost', function () {
         ->and($totals['spend_email'])->toBeGreaterThan(0.0)
         ->and(round($totals['spend_ads'] + $totals['spend_email'], 2))->toBe($totals['spend']);
 });
+
+it('shows subscribers lost beside the newsletter, never subtracted from registrations', function () {
+    $mailshot = App\Models\Comms\Mailshot::where('shop_id', $this->shop->id)->first();
+    $mailshot->stats()->update([
+        'number_dispatched_emails'                    => 5000,
+        'number_dispatched_emails_state_unsubscribed' => 4,
+    ]);
+    $mailshot->update(['sent_at' => now()->subDay()]);
+
+    $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        ->firstWhere('type', 'newsletter');
+
+    expect($channel['unsubscribed'])->toBe(4)
+        ->and($channel['registrations'])->toBeGreaterThanOrEqual(0.0);
+});

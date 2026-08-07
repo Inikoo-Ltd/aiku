@@ -56,6 +56,7 @@ class GetShopMarketingOverview
         $spend         = $this->spendBySource($shop, $costFrom);
         /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
            spend of zero and an infinite return. Estimated from the emails actually dispatched. */
+        $unsubscribes  = GetEstimatedEmailCost::unsubscribes([$shop->id], $costFrom);
         $emailCost     = GetEstimatedEmailCost::run([$shop->id], $costFrom, $shop->currency);
         $visits        = $this->visitsBySource($shop, $from);
         $orders        = $this->ordersBySource($shop, $from, $window);
@@ -67,6 +68,10 @@ class GetShopMarketingOverview
                 'spend'         => round((float) ($spend[$source->id] ?? 0)
                     + ($source->type === TrafficSourcesTypeEnum::NEWSLETTER->value ? $emailCost : 0), 2),
                 'spend_is_estimated' => $source->type === TrafficSourcesTypeEnum::NEWSLETTER->value && $emailCost > 0,
+                /* Not netted off registrations: an unsubscribe is not a lost customer, it is lost
+                   permission to email one, and subtracting the two would report a number that means
+                   neither. Shown beside them instead. */
+                'unsubscribed'  => $source->type === TrafficSourcesTypeEnum::NEWSLETTER->value ? $unsubscribes : 0,
                 'visits'        => (int) ($visits[$source->id] ?? 0),
                 'orders'        => round((float) ($orders[$source->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$source->id]->amount ?? 0), 2),
