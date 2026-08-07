@@ -122,6 +122,33 @@ return [
         'discretionary',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Webmail providers
+    |--------------------------------------------------------------------------
+    |
+    | Hosts whose whole domain is a mailbox, where the subdomain gives nothing
+    | away: abv.bg serves its webmail from nm20.abv.bg, which no sensible prefix
+    | rule would catch. Matched as domain suffixes.
+    |
+    | Only for domains that are mail and nothing else. Seznam belongs in the
+    | pattern list instead, because search.seznam.cz is a search engine.
+    |
+    */
+
+    'webmail_referrer_domains' => [
+        'abv.bg',
+        'mail.ru',
+        'gmx.net',
+        'gmx.de',
+        'web.de',
+        'freenet.de',
+        'laposte.net',
+        'wanadoo.fr',
+        'libero.it',
+        'terra.es',
+    ],
+
     'webmail_referrer_patterns' => [
         '/^mail[0-9]*\./',
         '/^webmail\./',

@@ -159,6 +159,12 @@ class GetTrafficSourceFromRefererHeader
             }
         }
 
+        foreach ((array) config('marketing.webmail_referrer_domains', []) as $domain) {
+            if ($host === $domain || str_ends_with($host, '.'.$domain)) {
+                return null;
+            }
+        }
+
         /* Our own storefronts refer each other constantly - a customer moving from awgifts.eu to
            ancientwisdom.biz is cross-shop navigation, not an acquisition. Every referral host seen in
            the first hours of capture was one of ours. */

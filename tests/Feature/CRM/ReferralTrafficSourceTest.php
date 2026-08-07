@@ -166,3 +166,16 @@ it('still records an email marketing platform that is not a mailbox', function (
 it('does not record our own mailshot editor as a referral', function () {
     expect(GetTrafficSourceFromRefererHeader::run('https://app.getbee.io/editor'))->toBeNull();
 });
+
+it('records no touch for a webmail provider whose subdomain gives nothing away', function () {
+    /* abv.bg serves its webmail from nm20.abv.bg, which no prefix rule would catch. */
+    expect(GetTrafficSourceFromRefererHeader::run('https://nm20.abv.bg/mail/1'))->toBeNull()
+        ->and(GetTrafficSourceFromRefererHeader::run('https://abv.bg/'))->toBeNull()
+        ->and(GetTrafficSourceFromRefererHeader::run('https://mail.ru/inbox'))->toBeNull();
+});
+
+it('keeps a search engine matched before the webmail rules can reject it', function () {
+    $searchAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_SEARCH->value];
+
+    expect(GetTrafficSourceFromRefererHeader::run('https://search.seznam.cz/?q=x'))->toBe($searchAbbr.'search.seznam.cz');
+});
