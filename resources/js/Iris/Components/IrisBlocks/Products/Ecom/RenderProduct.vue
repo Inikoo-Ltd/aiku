@@ -81,10 +81,21 @@ const emits = defineEmits<{
 
 const isLoadingRemindBackInStock = ref(false)
 const variant = ref<any>(null)
+const selectedVariantProduct = ref<any>(null)
 const _render_components = ref(null)
 const popoverRef = ref<any>(null)
 const isLoadingFavourite = ref(false)
 const loadingGetVariants = ref(false)
+
+const displayedProduct = computed<ProductResource>(() => {
+    if (!selectedVariantProduct.value) return props.product
+
+    return { ...props.product, ...selectedVariantProduct.value }
+})
+
+const onSelectVariant = (product: ProductResource) => {
+    selectedVariantProduct.value = product
+}
 
 const onAddFavourite = (product: ProductResource) => {
 
@@ -357,11 +368,11 @@ onBeforeUnmount(() => {
 <template>
     <div class="relative w-full popover" >
     <component 
-        :is="productCardComponents[code] ?? ProductCardEcom3" 
-        :product="product"
+        :is="productCardComponents[code] ?? ProductCardEcom3"
+        :product="displayedProduct"
         :buttonStyle="buttonStyle"
         :buttonStyleLogin="buttonStyleLogin"
-        :hasInBasket="hasInBasketList?.[product.id]"
+        :hasInBasket="hasInBasketList?.[displayedProduct.id]"
         :buttonStyleHover="buttonStyleHover"
         :hideLogin="hideLogin"
         @setFavorite="onAddFavourite"
@@ -382,10 +393,12 @@ onBeforeUnmount(() => {
             <div class="p-4 text-sm break-words">
                 <loading-icon v-if="loadingGetVariants" />
                 <variant-dialog-content 
-                    v-else :variants="listProducts" 
+                    v-else :variants="listProducts"
                     :hasInBasketList="hasInBasketList"
-                    @setBackInStock="onAddBackInStock" 
+                    :selectedProductId="selectedVariantProduct?.id"
+                    @setBackInStock="onAddBackInStock"
                     @unsetBackInStock="onUnselectBackInStock"
+                    @selectVariant="onSelectVariant"
                     :isLoadingRemindBackInStock="isLoadingRemindBackInStock" />
             </div>
         </Popover>

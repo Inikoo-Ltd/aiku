@@ -12,20 +12,25 @@ import {  faEnvelope } from '@far';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 
 const props = withDefaults(defineProps<{
-    variants: ProductResource
+    variants: ProductResource[]
     hasInBasketList?: any
     isLoadingRemindBackInStock? : boolean
-}>(), {})
+    selectedProductId?: number | string | null
+}>(), {
+    selectedProductId: null
+})
 
 
 const emits = defineEmits<{
     (e: 'setBackInStock', value: any[]): void
     (e: 'unsetBackInStock', value: any[]): void
+    (e: 'selectVariant', value: ProductResource): void
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-const selectedIndex = ref(0)
-const selectedProduct = ref(props.variants[0])
+const initialIndex = Math.max(0, props.variants.findIndex((v: ProductResource) => v.id === props.selectedProductId))
+const selectedIndex = ref(initialIndex)
+const selectedProduct = ref(props.variants[initialIndex])
 const width = ref(window.innerWidth)
 
 const isMobile = computed(() => width.value < 768)
@@ -37,6 +42,7 @@ const onResize = () => {
 const selectVariant = (variant: ProductResource, index: number) => {
     selectedIndex.value = index
     selectedProduct.value = variant
+    emits('selectVariant', variant)
 }
 
 const isActive = (index: number) => selectedIndex.value === index
