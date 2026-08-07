@@ -45,7 +45,7 @@ class GetShopMarketingOverview
 
         $window        = GetAttributionWindow::run($shop);
         $revenue       = $this->revenueBySource($shop, $from, $window);
-        $registrations = $this->registrationsBySource($shop, $from);
+        $registrations = $this->registrationsBy('traffic_source_id', $shop, $from, $window);
         $spend         = $this->spendBySource($shop, $from);
 
         $channels = $sources
@@ -116,18 +116,26 @@ class GetShopMarketingOverview
             ->keyBy('traffic_source_id');
     }
 
-    private function registrationsBySource(Shop $shop, ?Carbon $from)
+    /**
+     * Registrations a channel or campaign may claim: the same causality the revenue figure obeys. A
+     * touch cannot have acquired a customer who was already registered when it happened, which is why
+     * newsletter once appeared to acquire a hundred customers it had only mailed.
+     */
+    private function registrationsBy(string $pivotColumn, Shop $shop, ?Carbon $from, int $window)
     {
         return DB::table('customers')
-            ->join('model_has_traffic_sources as p', function ($join) {
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
                 $join->on('p.model_id', '=', 'customers.id')
                     ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToTouchWindow($join, 'customers.created_at', $window);
             })
             ->where('customers.shop_id', $shop->id)
+            ->whereNotNull('p.'.$pivotColumn)
             ->when($from, fn ($query) => $query->where('customers.created_at', '>=', $from))
-            ->groupBy('p.traffic_source_id')
-            ->select('p.traffic_source_id', DB::raw('SUM(p.share) as registrations'))
-            ->pluck('registrations', 'traffic_source_id');
+            ->groupBy('p.'.$pivotColumn)
+            ->select('p.'.$pivotColumn, DB::raw('SUM(p.share) as registrations'))
+            ->pluck('registrations', $pivotColumn);
     }
 
     private function spendBySource(Shop $shop, ?Carbon $from)
@@ -144,7 +152,7 @@ class GetShopMarketingOverview
      * @return array<int, array{date: string, amount: float}>
      */
     /**
-     * The campaigns that actually moved money in the period, richest first. Campaign refs come from
+     * The campaigns that actually moved money or brought someone in during the period, richest first. Campaign refs come from
      * ad platforms, so a shop can accumulate hundreds; the dashboard shows the handful worth looking
      * at and the campaign listing carries the rest.
      *
@@ -169,10 +177,11 @@ class GetShopMarketingOverview
             ->select(
                 'p.traffic_source_campaign_id as campaign_id',
                 DB::raw('SUM(invoices.net_amount * p.share) as revenue'),
-                DB::raw('SUM(p.share) as registrations'),
             )
             ->get()
             ->keyBy('campaign_id');
+
+        $registrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $window);
 
         $spend = DB::table('traffic_source_costs')
             ->whereNotNull('traffic_source_campaign_id')
@@ -182,7 +191,7 @@ class GetShopMarketingOverview
             ->select('traffic_source_campaign_id', DB::raw('SUM(amount) as spend'))
             ->pluck('spend', 'traffic_source_campaign_id');
 
-        $campaignIds = $revenue->keys()->merge($spend->keys())->unique();
+        $campaignIds = $revenue->keys()->merge($spend->keys())->merge($registrations->keys())->unique();
 
         if ($campaignIds->isEmpty()) {
             return [];
@@ -198,7 +207,7 @@ class GetShopMarketingOverview
                 'channel'       => $campaign->channel,
                 'spend'         => round((float) ($spend[$campaign->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$campaign->id]->revenue ?? 0), 2),
-                'registrations' => round((float) ($revenue[$campaign->id]->registrations ?? 0), 2),
+                'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
             ])
             ->map(fn (array $campaign) => $campaign + [
                 'roas' => $campaign['spend'] > 0 ? round($campaign['revenue'] / $campaign['spend'], 2) : null,

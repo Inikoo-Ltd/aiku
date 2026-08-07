@@ -10,6 +10,7 @@ namespace App\Actions\CRM\TrafficSource\Hydrator;
 
 use App\Actions\CRM\TrafficSource\GetAttributionWindow;
 use App\Actions\CRM\TrafficSource\WithAttributionWindow;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -41,17 +42,24 @@ class TrafficSourceCampaignHydrateStats implements ShouldBeUnique
      */
     public function handle(TrafficSourceCampaign $campaign): void
     {
-        $attribution = DB::table('model_has_traffic_sources')
-            ->join('customer_stats', 'customer_stats.customer_id', '=', 'model_has_traffic_sources.model_id')
-            ->where('model_has_traffic_sources.traffic_source_campaign_id', $campaign->id)
-            ->where('model_has_traffic_sources.model_type', 'Customer')
-            ->select(
-                DB::raw('COALESCE(SUM(model_has_traffic_sources.share), 0) as customers'),
-                DB::raw('COALESCE(SUM(customer_stats.number_orders_state_dispatched * model_has_traffic_sources.share), 0) as purchases'),
-            )
-            ->first();
+        $window = GetAttributionWindow::run($campaign->trafficSource->shop);
 
-        $window  = GetAttributionWindow::run($campaign->trafficSource->shop);
+        $customers = DB::table('model_has_traffic_sources as p')
+            ->join('customers', 'customers.id', '=', 'p.model_id')
+            ->where('p.traffic_source_campaign_id', $campaign->id)
+            ->where('p.model_type', 'Customer')
+            ->tap(fn ($query) => $this->constrainToTouchWindow($query, 'customers.created_at', $window))
+            ->sum('p.share');
+
+        $purchases = DB::table('model_has_traffic_sources as p')
+            ->join('orders', 'orders.customer_id', '=', 'p.model_id')
+            ->where('p.traffic_source_campaign_id', $campaign->id)
+            ->where('p.model_type', 'Customer')
+            ->where('orders.state', OrderStateEnum::DISPATCHED)
+            ->whereNull('orders.deleted_at')
+            ->tap(fn ($query) => $this->constrainToTouchWindow($query, 'orders.date', $window))
+            ->sum('p.share');
+
         $revenue = DB::table('invoices')
             ->join('model_has_traffic_sources as p', function ($join) use ($window) {
                 $join->on('p.model_id', '=', 'invoices.customer_id')
@@ -78,8 +86,8 @@ class TrafficSourceCampaignHydrateStats implements ShouldBeUnique
         $campaign->stats()->updateOrCreate(
             ['traffic_source_campaign_id' => $campaign->id],
             [
-                'number_customers'           => $attribution->customers,
-                'number_customer_purchases'  => $attribution->purchases,
+                'number_customers'           => $customers,
+                'number_customer_purchases'  => $purchases,
                 'total_customer_revenue'     => $revenue->revenue,
                 'org_total_customer_revenue' => $revenue->org_revenue,
                 'total_cost'                 => $cost->total,

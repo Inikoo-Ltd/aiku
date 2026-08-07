@@ -145,15 +145,15 @@ class CancelOrder extends OrgAction
     }
 
     /**
-     * TrafficSourceHydrateCustomers re-sums `customer_stats` across every customer a traffic source is
-     * credited with, and cancelling this order changes this customer's totals, so every source crediting
-     * either the order or the customer holds a stale revenue figure until it is rehydrated.
+     * TrafficSourceHydrateCustomers re-sums the orders and invoices of every customer a traffic source
+     * is credited with, and cancelling this order changes this customer's totals, so every source
+     * crediting either the order or the customer holds a stale figure until it is rehydrated.
      *
      * The pivot attribution rows themselves are preserved as an audit trail of what originally
      * acquired the order.
      *
-     * ponytail: the extra delay is what keeps this from reading `customer_stats` before the order
-     * hydrators above have written it. Chain it after CustomerHydrateOrderStats if queue depth ever
+     * ponytail: the extra delay keeps this from reading the customer's rollups before the order
+     * hydrators above have written them. Chain it after CustomerHydrateOrderStats if queue depth ever
      * makes a fixed offset unreliable.
      */
     private function refreshTrafficSourceStats(Order $order): void
