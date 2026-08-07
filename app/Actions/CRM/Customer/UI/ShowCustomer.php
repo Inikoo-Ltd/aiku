@@ -209,6 +209,10 @@ class ShowCustomer extends OrgAction
                     fn () => GetCustomerTimeline::run($customer)
                     : Inertia::optional(fn () => GetCustomerTimeline::run($customer)),
 
+                CustomerTabsEnum::JOURNEY->value  => $this->tab == CustomerTabsEnum::JOURNEY->value ?
+                    fn () => GetCustomerJourney::run($customer)
+                    : Inertia::optional(fn () => GetCustomerJourney::run($customer)),
+
                 $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($customer))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($customer))),
