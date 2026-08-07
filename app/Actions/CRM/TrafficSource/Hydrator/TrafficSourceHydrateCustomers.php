@@ -14,11 +14,14 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Actions\CRM\TrafficSource\GetAttributionWindow;
+use App\Actions\CRM\TrafficSource\WithAttributionWindow;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\TrafficSource;
 
 class TrafficSourceHydrateCustomers implements ShouldBeUnique
 {
     use AsAction;
+    use WithAttributionWindow;
 
     /* Fired from every registration, order cancel and email-click recalculation; the numbers it
        refreshes are dashboard statistics, so it must never compete with order processing. */
@@ -35,43 +38,41 @@ class TrafficSourceHydrateCustomers implements ShouldBeUnique
      * figures across every traffic source of a shop therefore reproduces the shop's real totals —
      * channels share the credit, they never each claim the whole of it.
      *
-     * Revenue is what the channel actually earned, not what its customers have ever spent: only
-     * invoices raised after a touch, and within the shop's attribution window, are counted. Before
-     * this, a customer registered in 2022 who clicked a newsletter yesterday handed that newsletter
-     * four years of prior trade, and the listing reported it as marketing performance.
+     * Every figure here answers "what did this channel bring in", not "what have its customers ever
+     * done": a registration, an order or an invoice counts only if it happened after the touch and
+     * inside the shop's attribution window. Before this, a customer registered in 2022 who clicked a
+     * newsletter yesterday handed that newsletter four years of prior trade and their registration
+     * too, and the listing reported it as marketing performance.
      */
     public function handle(TrafficSource $trafficSource): void
     {
-        $counts = DB::table('model_has_traffic_sources')
-            ->join('customer_stats', 'customer_stats.customer_id', '=', 'model_has_traffic_sources.model_id')
-            ->where('model_has_traffic_sources.traffic_source_id', $trafficSource->id)
-            ->where('model_has_traffic_sources.model_type', 'Customer')
-            ->select(
-                DB::raw('COALESCE(SUM(model_has_traffic_sources.share), 0) as customers'),
-                DB::raw('COALESCE(SUM(customer_stats.number_orders_state_dispatched * model_has_traffic_sources.share), 0) as purchases'),
-            )
-            ->first();
-
         $window = GetAttributionWindow::run($trafficSource->shop);
+
+        $customers = DB::table('model_has_traffic_sources as p')
+            ->join('customers', 'customers.id', '=', 'p.model_id')
+            ->where('p.traffic_source_id', $trafficSource->id)
+            ->where('p.model_type', 'Customer')
+            ->tap(fn ($query) => $this->constrainToTouchWindow($query, 'customers.created_at', $window))
+            ->sum('p.share');
+
+        /* Counted from the orders themselves rather than from customer_stats: the rollup carries no
+           dates, so there is no way to tell an order the channel earned from one placed years before
+           the touch existed. */
+        $purchases = DB::table('model_has_traffic_sources as p')
+            ->join('orders', 'orders.customer_id', '=', 'p.model_id')
+            ->where('p.traffic_source_id', $trafficSource->id)
+            ->where('p.model_type', 'Customer')
+            ->where('orders.state', OrderStateEnum::DISPATCHED)
+            ->whereNull('orders.deleted_at')
+            ->tap(fn ($query) => $this->constrainToTouchWindow($query, 'orders.date', $window))
+            ->sum('p.share');
 
         $revenue = DB::table('invoices')
             ->join('model_has_traffic_sources as p', function ($join) use ($window) {
                 $join->on('p.model_id', '=', 'invoices.customer_id')
                     ->where('p.model_type', '=', 'Customer');
 
-                $join->where(function ($q) use ($window) {
-                    $q->whereNull('p.first_touch_at')
-                        ->orWhere(function ($inWindow) use ($window) {
-                            $inWindow->whereColumn('invoices.date', '>=', 'p.first_touch_at');
-
-                            if ($window > 0) {
-                                $inWindow->whereRaw(
-                                    "invoices.date <= p.last_touch_at + (? || ' days')::interval",
-                                    [$window]
-                                );
-                            }
-                        });
-                });
+                $this->constrainToAttributionWindow($join, $window);
             })
             ->where('p.traffic_source_id', $trafficSource->id)
             ->where('invoices.in_process', false)
@@ -82,8 +83,8 @@ class TrafficSourceHydrateCustomers implements ShouldBeUnique
             ->first();
 
         $totals = (object) [
-            'customers'   => $counts->customers,
-            'purchases'   => $counts->purchases,
+            'customers'   => $customers,
+            'purchases'   => $purchases,
             'revenue'     => $revenue->revenue,
             'org_revenue' => $revenue->org_revenue,
         ];

@@ -270,6 +270,30 @@ function createInvoiceFor($customer, $shop, string $date, float $net, bool $inPr
     ]);
 }
 
+/**
+ * A channel's order count is measured from the orders themselves, since only they carry the date that
+ * says whether the order came after the touch claiming it.
+ */
+function createDispatchedOrderFor($customer, $shop, string $date): void
+{
+    \Illuminate\Support\Facades\DB::table('orders')->insert([
+        'group_id'        => $shop->group_id,
+        'organisation_id' => $shop->organisation_id,
+        'shop_id'         => $shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ord-'.uniqid(),
+        'state'           => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED,
+        'status'          => \App\Enums\Ordering\Order\OrderStatusEnum::SETTLED,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => $date,
+        'created_at'      => $date,
+        'updated_at'      => $date,
+    ]);
+}
+
 function createTrafficSource(Shop $shop, string $type, string $name): TrafficSource
 {
     return TrafficSource::firstOrCreate(

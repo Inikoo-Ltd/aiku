@@ -18,7 +18,6 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSourceCampaign;
 use App\Models\CRM\TrafficSourceCost;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 
 beforeAll(function () {
     loadDB();
@@ -57,9 +56,10 @@ it('rolls a campaign\'s attributed customers and revenue into its own stats', fu
     );
 
     createInvoiceFor($customer, $this->shop, now()->subDay()->toDateTimeString(), 900);
-    DB::table('customer_stats')->where('customer_id', $customer->id)->update([
-        'number_orders_state_dispatched' => 3,
-    ]);
+
+    foreach (range(1, 3) as $ignored) {
+        createDispatchedOrderFor($customer, $this->shop, now()->subDay()->toDateTimeString());
+    }
 
     $campaign = TrafficSourceCampaign::where('reference', $reference)->firstOrFail();
     TrafficSourceCampaignHydrateStats::run($campaign);

@@ -45,7 +45,7 @@ class GetShopMarketingOverview
 
         $window        = GetAttributionWindow::run($shop);
         $revenue       = $this->revenueBySource($shop, $from, $window);
-        $registrations = $this->registrationsBySource($shop, $from);
+        $registrations = $this->registrationsBySource($shop, $from, $window);
         $spend         = $this->spendBySource($shop, $from);
 
         $channels = $sources
@@ -116,12 +116,19 @@ class GetShopMarketingOverview
             ->keyBy('traffic_source_id');
     }
 
-    private function registrationsBySource(Shop $shop, ?Carbon $from)
+    /**
+     * Registrations a channel may claim: the same causality the revenue figure obeys. A touch cannot
+     * have acquired a customer who was already registered when it happened, which is why newsletter
+     * once appeared to acquire a hundred customers it had only mailed.
+     */
+    private function registrationsBySource(Shop $shop, ?Carbon $from, int $window)
     {
         return DB::table('customers')
-            ->join('model_has_traffic_sources as p', function ($join) {
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
                 $join->on('p.model_id', '=', 'customers.id')
                     ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToTouchWindow($join, 'customers.created_at', $window);
             })
             ->where('customers.shop_id', $shop->id)
             ->when($from, fn ($query) => $query->where('customers.created_at', '>=', $from))

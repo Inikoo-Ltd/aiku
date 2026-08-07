@@ -68,9 +68,9 @@ it('splits customer credit between channels so their stats sum to the real total
     RecordEmailClickTouchpoint::run($this->customer->fresh(), now()->subDays(10));
 
     createInvoiceFor($this->customer, $this->shop, now()->subDay()->toDateTimeString(), 1000);
-    DB::table('customer_stats')->where('customer_id', $this->customer->id)->update([
-        'number_orders_state_dispatched' => 4,
-    ]);
+    foreach (range(1, 4) as $ignored) {
+        createDispatchedOrderFor($this->customer, $this->shop, now()->subDay()->toDateTimeString());
+    }
 
     TrafficSourceHydrateCustomers::run($this->googleAds);
     TrafficSourceHydrateCustomers::run($this->newsletter);

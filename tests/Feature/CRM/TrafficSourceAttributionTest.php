@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Support\Facades\Artisan;
@@ -166,4 +167,38 @@ it('ignores blank traffic source data', function () {
     );
 
     expect($customer->trafficSources()->count())->toBe(0);
+});
+
+it('does not credit a channel with a registration that happened before the touch', function () {
+    $newsletter = createTrafficSource($this->shop, 'newsletter', 'Newsletter');
+    $customer   = createCustomer($this->shop);
+    $customer->trafficSources()->detach();
+    $customer->update(['created_at' => now()->subDays(30)]);
+
+    $customer->trafficSources()->attach($newsletter->id, [
+        'share'          => 1,
+        'first_touch_at' => now()->subDay(),
+        'last_touch_at'  => now()->subDay(),
+    ]);
+
+    TrafficSourceHydrateCustomers::run($newsletter);
+
+    expect((float) $newsletter->stats->fresh()->number_customers)->toBe(0.0);
+});
+
+it('credits a channel with a registration that followed the touch', function () {
+    $organic  = createTrafficSource($this->shop, 'organic-google', 'Organic Google');
+    $customer = createCustomer($this->shop);
+    $customer->trafficSources()->detach();
+    $customer->update(['created_at' => now()->subDay()]);
+
+    $customer->trafficSources()->attach($organic->id, [
+        'share'          => 1,
+        'first_touch_at' => now()->subDays(2),
+        'last_touch_at'  => now()->subDays(2),
+    ]);
+
+    TrafficSourceHydrateCustomers::run($organic);
+
+    expect((float) $organic->stats->fresh()->number_customers)->toBe(1.0);
 });

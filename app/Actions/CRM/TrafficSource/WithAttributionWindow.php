@@ -18,6 +18,8 @@ namespace App\Actions\CRM\TrafficSource;
  */
 trait WithAttributionWindow
 {
+    use WithTouchCausality;
+
     /**
      * Revenue counts when it was invoiced after the touch that earned it, and no later than the
      * window allows. Rows with no recorded touch date are legacy and are left in rather than
@@ -27,18 +29,6 @@ trait WithAttributionWindow
      */
     protected function constrainToAttributionWindow($join, int $window, string $pivotAlias = 'p'): void
     {
-        $join->where(function ($query) use ($window, $pivotAlias) {
-            $query->whereNull($pivotAlias.'.first_touch_at')
-                ->orWhere(function ($inWindow) use ($window, $pivotAlias) {
-                    $inWindow->whereColumn('invoices.date', '>=', $pivotAlias.'.first_touch_at');
-
-                    if ($window > 0) {
-                        $inWindow->whereRaw(
-                            "invoices.date <= {$pivotAlias}.last_touch_at + (? || ' days')::interval",
-                            [$window]
-                        );
-                    }
-                });
-        });
+        $this->constrainToTouchWindow($join, 'invoices.date', $window, $pivotAlias);
     }
 }

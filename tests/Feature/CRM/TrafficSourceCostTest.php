@@ -178,7 +178,7 @@ it('aggregates period spend per channel into the marketing overview', function (
     // A channel with attributed customers but no spend still has to appear, with no ROAS to show.
     $customer = createCustomer($this->shop);
     $customer->trafficSources()->detach();
-    $customer->update(['traffic_sources' => '1700000000a']);
+    $customer->update(['traffic_sources' => now()->subDays(2)->timestamp.'a']);
     App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution::run($customer->fresh());
 
     $overview = GetShopMarketingOverview::run($this->shop, App\Enums\UI\Marketing\MarketingPeriodEnum::ALL_TIME);
