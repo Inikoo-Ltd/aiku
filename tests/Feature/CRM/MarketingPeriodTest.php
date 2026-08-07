@@ -251,11 +251,12 @@ it('reports orders per channel so a visit count can be read against what it prod
     expect($channel['orders'])->toBe(1.0);
 });
 
-it('counts only the spend that could have earned anything, not spend from before attribution existed', function () {
+it('counts spend over the period, even from before attribution started recording', function () {
     $source = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'google-ads')->first();
 
-    /* Spent long before the first touch was ever recorded: no click from it could be attributed, so
-       charging it against attributed revenue would invent a bad ROAS out of nothing. */
+    /* Spent long before the first touch was ever recorded. It still cost what it cost: clipping it to
+       the attribution marker made an early ROAS look tidier while hiding real money, and reported no
+       unsubscribes against a send of a million emails. */
     App\Actions\CRM\TrafficSource\StoreTrafficSourceCost::run($source, [
         'date'               => now()->subYears(2)->toDateString(),
         'source_amount'      => 5000,
@@ -264,5 +265,18 @@ it('counts only the spend that could have earned anything, not spend from before
 
     $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME);
 
-    expect($overview['totals']['spend'])->toBe(0.0);
+    expect($overview['totals']['spend'])->toBe(5000.0);
+});
+
+it('groups channels so nineteen rows read as four questions', function () {
+    $groups = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        ->pluck('group', 'type');
+
+    expect($groups['google-ads'] ?? null)->toBe('paid');
+
+    expect(App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::ORGANIC_GOOGLE->group()['key'])->toBe('organic')
+        ->and(App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::NEWSLETTER->group()['key'])->toBe('email')
+        ->and(App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::EMAIL_AUTOMATED->group()['key'])->toBe('email')
+        ->and(App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::REFERRAL->group()['key'])->toBe('other')
+        ->and(App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::YOUTUBE->group()['key'])->toBe('other');
 });

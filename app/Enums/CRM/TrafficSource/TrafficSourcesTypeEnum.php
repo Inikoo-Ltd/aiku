@@ -125,6 +125,24 @@ enum TrafficSourcesTypeEnum: string
     }
 
     /**
+     * How the channels group on a dashboard. Nineteen rows is a list nobody reads; four groups is a
+     * question anybody can answer - did the paid stuff work, is search bringing people, is email
+     * carrying us.
+     *
+     * @return array{key: string, label: string, position: int}
+     */
+    public function group(): array
+    {
+        return match (true) {
+            $this->isPaid()                                        => ['key' => 'paid', 'label' => __('Paid ads'), 'position' => 1],
+            str_starts_with($this->value, 'organic-')              => ['key' => 'organic', 'label' => __('Organic'), 'position' => 2],
+            in_array($this, [self::NEWSLETTER, self::EMAIL_AUTOMATED], true)
+                                                                   => ['key' => 'email', 'label' => __('Email'), 'position' => 3],
+            default                                                => ['key' => 'other', 'label' => __('Other'), 'position' => 4],
+        };
+    }
+
+    /**
      * Paid traffic types are the ones an advertiser is actually billed for (the `-ads` types),
      * as opposed to the `organic-*` types. Used by the last-paid-touch attribution model.
      */

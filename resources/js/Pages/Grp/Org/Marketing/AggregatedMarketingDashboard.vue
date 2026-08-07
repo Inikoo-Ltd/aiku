@@ -39,6 +39,9 @@ const props = defineProps<{
         channels: {
             name: string
             type: string
+            group: string
+            group_label: string
+            group_position: number
             spend: number
             spend_is_estimated?: boolean
             unsubscribed: number
@@ -114,6 +117,36 @@ const measuredSince = computed(() => {
     return effective
         ? trans('since') + ' ' + useFormatTime(effective, { formatTime: 'aiku' })
         : props.overview.period_label.toLowerCase()
+})
+
+/* Nineteen channel rows is a list nobody reads. Grouped, the table answers the question people
+   actually arrive with: did the paid stuff work, is search bringing anyone, is email carrying us.
+   Each group carries its own totals, so the summary is readable without the detail. */
+const groupedChannels = computed(() => {
+    const groups: Record<string, any> = {}
+
+    for (const channel of props.overview.channels) {
+        const key = channel.group ?? 'other'
+
+        groups[key] ??= {
+            key,
+            label: channel.group_label ?? key,
+            position: channel.group_position ?? 9,
+            channels: [],
+            visits: 0, orders: 0, spend: 0, pending: 0, revenue: 0, registrations: 0,
+        }
+
+        const g = groups[key]
+        g.channels.push(channel)
+        g.visits += channel.visits ?? 0
+        g.orders += channel.orders ?? 0
+        g.spend += channel.spend ?? 0
+        g.pending += channel.pending ?? 0
+        g.revenue += channel.revenue ?? 0
+        g.registrations += channel.registrations ?? 0
+    }
+
+    return Object.values(groups).sort((a: any, b: any) => a.position - b.position)
 })
 
 const share = (part: number, whole: number) =>
@@ -242,10 +275,26 @@ const changePeriod = (event: Event) => {
                         </th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr v-for="channel in overview.channels" :key="channel.type"
+                <tbody v-for="group in groupedChannels" :key="group.key">
+                    <tr class="text-gray-700 bg-gray-50/70">
+                        <td class="py-1.5 pr-2 text-xs font-medium">{{ group.label }}</td>
+                        <td class="text-right px-2 text-xs tabular-nums">
+                            {{ group.visits > 0 ? locale.number(group.visits) : '' }}
+                        </td>
+                        <td class="text-right px-2 text-xs tabular-nums">{{ money(group.spend) }}</td>
+                        <td class="text-right px-2 text-xs tabular-nums" :class="group.pending > 0 ? 'text-amber-600' : ''">
+                            {{ group.pending > 0 ? money(group.pending) : '' }}
+                        </td>
+                        <td class="text-right px-2 text-xs tabular-nums">{{ money(group.revenue) }}</td>
+                        <td class="text-right px-2 text-xs tabular-nums">{{ count(group.registrations) }}</td>
+                        <td class="text-right px-2 text-xs tabular-nums">{{ count(group.orders) }}</td>
+                        <td class="text-right pl-2 text-xs tabular-nums">
+                            {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
+                        </td>
+                    </tr>
+                    <tr v-for="channel in group.channels" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
-                        <td class="py-2 pr-2 text-gray-700">{{ channel.name }}</td>
+                        <td class="py-2 pr-2 pl-4 text-gray-600">{{ channel.name }}</td>
                         <!-- Visits it sent, and how many of them bought. The pair is the point: people
                              arrived and nobody ordered is the case worth seeing. -->
                         <td class="text-right px-2 tabular-nums whitespace-nowrap"

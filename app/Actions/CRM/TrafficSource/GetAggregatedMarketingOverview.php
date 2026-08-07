@@ -78,6 +78,9 @@ class GetAggregatedMarketingOverview
             ->map(fn (string $type) => [
                 'name'          => TrafficSourcesTypeEnum::labels()[$type] ?? $type,
                 'type'          => $type,
+                'group'         => TrafficSourcesTypeEnum::tryFrom($type)?->group()['key'] ?? 'other',
+                'group_label'   => TrafficSourcesTypeEnum::tryFrom($type)?->group()['label'] ?? __('Other'),
+                'group_position' => TrafficSourcesTypeEnum::tryFrom($type)?->group()['position'] ?? 9,
                 'spend'         => round((float) ($spend[$type] ?? 0)
                     + ($type === TrafficSourcesTypeEnum::NEWSLETTER->value ? $emailCost : 0), 2),
                 'spend_is_estimated' => $type === TrafficSourcesTypeEnum::NEWSLETTER->value && $emailCost > 0,

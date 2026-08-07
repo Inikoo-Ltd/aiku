@@ -68,6 +68,9 @@ class GetShopMarketingOverview
             ->map(fn ($source) => [
                 'name'          => $source->name,
                 'type'          => $source->type,
+                'group'         => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['key'] ?? 'other',
+                'group_label'   => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['label'] ?? __('Other'),
+                'group_position' => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['position'] ?? 9,
                 'spend'         => round((float) ($spend[$source->id] ?? 0)
                     + ($source->type === TrafficSourcesTypeEnum::NEWSLETTER->value ? $emailCost : 0), 2),
                 'spend_is_estimated' => $source->type === TrafficSourcesTypeEnum::NEWSLETTER->value && $emailCost > 0,
