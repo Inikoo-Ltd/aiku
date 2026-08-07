@@ -151,6 +151,28 @@ test('add product to customer portfolio', function () {
 });
 
 
+test('add product from another shop to customer portfolio uses the channel shop product', function () {
+    $customerSalesChannel = $this->customer->customerSalesChannels()->first();
+    foreach ($customerSalesChannel->portfolios as $existingPortfolio) {
+        $existingPortfolio->stats()->delete();
+        $existingPortfolio->forceDelete();
+    }
+
+    $productFromAnotherShop          = new Product();
+    $productFromAnotherShop->shop_id = $this->shop->id + 1000;
+    $productFromAnotherShop->code    = $this->product->code;
+
+    $portfolio = StorePortfolio::make()->action(
+        $customerSalesChannel,
+        $productFromAnotherShop,
+        []
+    );
+
+    expect($portfolio->item_id)->toBe($this->product->id)
+        ->and($portfolio->shop_id)->toBe($this->shop->id);
+});
+
+
 test('add image to product', function () {
     Storage::fake('public');
 

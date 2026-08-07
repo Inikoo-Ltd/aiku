@@ -44,6 +44,8 @@ class StorePortfolio extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData): Portfolio
     {
+        $item = $this->getItemInChannelShop($customerSalesChannel, $item);
+
         $rrp = $item->rrp ?? 0;
 
         $pricingType  = Arr::get($customerSalesChannel->settings, 'pricing.type');
@@ -119,6 +121,20 @@ class StorePortfolio extends OrgAction
         ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
 
         return $portfolio;
+    }
+
+    /**
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function getItemInChannelShop(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item): Product|StoredItem
+    {
+        if (!$item instanceof Product || $item->shop_id == $customerSalesChannel->shop_id) {
+            return $item;
+        }
+
+        return Product::where('shop_id', $customerSalesChannel->shop_id)
+            ->where('code', $item->code)
+            ->firstOrFail();
     }
 
     public function getSKU(Product|StoredItem $item): ?string
