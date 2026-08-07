@@ -104,6 +104,24 @@ return [
         'finish_offer',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Offer types that are not marketing
+    |--------------------------------------------------------------------------
+    |
+    | A discretionary discount is a salesperson deciding to knock money off. It
+    | is the largest giveaway on the books - £38,628 on the uk shop in thirty
+    | days - and it would dominate the offer screen while telling marketing
+    | nothing, since no campaign caused it and no email could have.
+    |
+    | Matched case-insensitively against offers.type.
+    |
+    */
+
+    'non_marketing_offer_types' => [
+        'discretionary',
+    ],
+
     'webmail_referrer_patterns' => [
         '/^mail[0-9]*\./',
         '/^webmail\./',

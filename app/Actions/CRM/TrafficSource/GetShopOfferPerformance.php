@@ -112,6 +112,19 @@ class GetShopOfferPerformance
     }
 
     /**
+     * A discretionary discount is a salesperson deciding to knock money off, not a campaign. It is the
+     * biggest giveaway there is, so leaving it in would bury every offer that marketing actually ran.
+     *
+     * @param \Illuminate\Database\Query\Builder $query
+     */
+    private function excludeNonMarketingOffers($query): void
+    {
+        foreach ((array) config('marketing.non_marketing_offer_types', []) as $type) {
+            $query->where('of.type', 'not ilike', '%'.$type.'%');
+        }
+    }
+
+    /**
      * @return Collection<int, object>
      */
     private function offerTotals(Shop $shop, ?Carbon $from): Collection
@@ -125,6 +138,7 @@ class GetShopOfferPerformance
             ->whereNotIn('ord.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('ord.deleted_at')
             ->when($from, fn ($query) => $query->where('ord.date', '>=', $from))
+            ->tap(fn ($query) => $this->excludeNonMarketingOffers($query))
             ->groupBy('of.id', 'of.name', 'of.code')
             ->select(
                 'of.id',
@@ -159,6 +173,7 @@ class GetShopOfferPerformance
             ->whereNotIn('ord.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('ord.deleted_at')
             ->when($from, fn ($query) => $query->where('ord.date', '>=', $from))
+            ->tap(fn ($query) => $this->excludeNonMarketingOffers($query))
             ->groupBy('of.id')
             ->select('of.id', DB::raw('COUNT(DISTINCT ord.customer_id) as customers'))
             ->pluck('customers', 'id');

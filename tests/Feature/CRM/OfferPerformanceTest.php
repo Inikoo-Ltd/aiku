@@ -57,7 +57,7 @@ beforeEach(function () {
         'slug'            => 'off-'.uniqid(),
         'code'            => 'test-'.uniqid(),
         'name'            => 'Test Offer',
-        'type'            => 'discretionary',
+        'type'            => 'Amount',
         'state'           => 'active',
         'status'          => true,
         'trigger_data'    => '{}',
@@ -158,4 +158,14 @@ it('ignores a cancelled order when counting redemptions', function () {
         ->firstWhere('name', 'Test Offer');
 
     expect($offer)->toBeNull();
+});
+
+it('leaves discretionary discounts out, since no campaign caused them', function () {
+    DB::table('offers')->where('id', $this->offerId)->update(['type' => 'Discretionary']);
+
+    redeemOffer($this->customer, $this->shop, $this->offerId, now()->subDay()->toDateTimeString(), $this->campaignId, $this->allowanceId);
+
+    $offers = GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7)['offers'];
+
+    expect(collect($offers)->firstWhere('name', 'Test Offer'))->toBeNull();
 });
