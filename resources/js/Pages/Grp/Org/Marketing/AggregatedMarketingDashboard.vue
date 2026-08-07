@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
@@ -122,6 +122,11 @@ const measuredSince = computed(() => {
 /* Nineteen channel rows is a list nobody reads. Grouped, the table answers the question people
    actually arrive with: did the paid stuff work, is search bringing anyone, is email carrying us.
    Each group carries its own totals, so the summary is readable without the detail. */
+/* Collapsed shows four group totals and nothing else, which is the whole table for anybody who only
+   wants to know whether paid worked. Expanded is the default because the detail is why the screen
+   exists; the toggle is for reading it, not for hiding it. */
+const showChannelDetail = ref(true)
+
 const groupedChannels = computed(() => {
     const groups: Record<string, any> = {}
 
@@ -241,10 +246,18 @@ const changePeriod = (event: Event) => {
 
         <!-- Channels: the whole point of the aggregate, which channel earns across every shop -->
         <div v-if="overview.channels.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
-            <span class="text-sm font-medium text-gray-800">{{ trans('Where it came from') }}</span>
-            <span class="ml-2 text-xs text-gray-400">
-                {{ trans('ads, searches, mailshots and referring sites') }} · {{ measuredSince }}
-            </span>
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <span class="text-sm font-medium text-gray-800">{{ trans('Where it came from') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">
+                        {{ trans('ads, searches, mailshots and referring sites') }} · {{ measuredSince }}
+                    </span>
+                </div>
+                <button type="button" @click="showChannelDetail = !showChannelDetail"
+                        class="shrink-0 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1">
+                    {{ showChannelDetail ? trans('Collapse') : trans('Expand') }}
+                </button>
+            </div>
 
             <table class="mt-4 w-full text-xs">
                 <thead>
@@ -276,25 +289,25 @@ const changePeriod = (event: Event) => {
                     </tr>
                 </thead>
                 <tbody v-for="group in groupedChannels" :key="group.key">
-                    <tr class="text-gray-700 bg-gray-50/70">
-                        <td class="py-1.5 pr-2 text-xs font-medium">{{ group.label }}</td>
-                        <td class="text-right px-2 text-xs tabular-nums">
+                    <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium">
+                        <td class="py-2 pr-2 text-xs">{{ group.label }}</td>
+                        <td class="text-right px-2 tabular-nums">
                             {{ group.visits > 0 ? locale.number(group.visits) : '' }}
                         </td>
-                        <td class="text-right px-2 text-xs tabular-nums">{{ money(group.spend) }}</td>
-                        <td class="text-right px-2 text-xs tabular-nums" :class="group.pending > 0 ? 'text-amber-600' : ''">
+                        <td class="text-right px-2 tabular-nums">{{ money(group.spend) }}</td>
+                        <td class="text-right px-2 tabular-nums" :class="group.pending > 0 ? 'text-amber-700' : ''">
                             {{ group.pending > 0 ? money(group.pending) : '' }}
                         </td>
-                        <td class="text-right px-2 text-xs tabular-nums">{{ money(group.revenue) }}</td>
-                        <td class="text-right px-2 text-xs tabular-nums">{{ count(group.registrations) }}</td>
-                        <td class="text-right px-2 text-xs tabular-nums">{{ count(group.orders) }}</td>
-                        <td class="text-right pl-2 text-xs tabular-nums">
+                        <td class="text-right px-2 tabular-nums">{{ money(group.revenue) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ count(group.registrations) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ count(group.orders) }}</td>
+                        <td class="text-right pl-2 tabular-nums">
                             {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
                         </td>
                     </tr>
-                    <tr v-for="channel in group.channels" :key="channel.type"
+                    <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
-                        <td class="py-2 pr-2 pl-4 text-gray-600">{{ channel.name }}</td>
+                        <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
                         <!-- Visits it sent, and how many of them bought. The pair is the point: people
                              arrived and nobody ordered is the case worth seeing. -->
                         <td class="text-right px-2 tabular-nums whitespace-nowrap"

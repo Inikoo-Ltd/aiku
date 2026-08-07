@@ -127,6 +127,9 @@ const sparkline = computed(() => {
 
 /* The same grouping and the same explanations the org and group dashboards carry: a shop manager
    reading this screen should not have to learn a second vocabulary to compare with the level above. */
+/* Same toggle as the organisation and group screens. */
+const showChannelDetail = ref(true)
+
 const groupedChannels = computed(() => {
     const groups: Record<string, any> = {}
 
@@ -341,8 +344,14 @@ const typeLabel: Record<string, string> = {
 
             <!-- The detail under the bars: same table, same wording and same tooltips as the
                  organisation and group dashboards, so the levels can be read against each other. -->
-            <div v-if="overview.channels.length" class="mt-5 overflow-x-auto">
-                <table class="w-full text-xs">
+            <div v-if="overview.channels.length" class="mt-5">
+                <div class="flex justify-end">
+                    <button type="button" @click="showChannelDetail = !showChannelDetail"
+                            class="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1">
+                        {{ showChannelDetail ? trans('Collapse') : trans('Expand') }}
+                    </button>
+                </div>
+                <table class="mt-2 w-full text-xs overflow-x-auto">
                     <thead>
                         <tr class="text-gray-400 border-b border-gray-100">
                             <th class="text-left font-normal py-1.5 pr-2">{{ trans('Channel') }}</th>
@@ -356,11 +365,11 @@ const typeLabel: Record<string, string> = {
                         </tr>
                     </thead>
                     <tbody v-for="group in groupedChannels" :key="group.key">
-                        <tr class="text-gray-700 bg-gray-50/70">
-                            <td class="py-1.5 pr-2 text-xs font-medium">{{ group.label }}</td>
+                        <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium">
+                            <td class="py-2 pr-2 text-xs">{{ group.label }}</td>
                             <td class="text-right px-2 tabular-nums">{{ group.visits > 0 ? locale.number(group.visits) : '' }}</td>
                             <td class="text-right px-2 tabular-nums">{{ money(group.spend) }}</td>
-                            <td class="text-right px-2 tabular-nums" :class="group.pending > 0 ? 'text-amber-600' : ''">
+                            <td class="text-right px-2 tabular-nums" :class="group.pending > 0 ? 'text-amber-700' : ''">
                                 {{ group.pending > 0 ? money(group.pending) : '' }}
                             </td>
                             <td class="text-right px-2 tabular-nums">{{ money(group.revenue) }}</td>
@@ -370,8 +379,8 @@ const typeLabel: Record<string, string> = {
                                 {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
                             </td>
                         </tr>
-                        <tr v-for="channel in group.channels" :key="channel.type" class="border-b border-gray-50 text-gray-600">
-                            <td class="py-2 pr-2 pl-4">{{ channel.name }}</td>
+                        <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type" class="border-b border-gray-50 text-gray-600">
+                            <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap"
                                 :class="channel.visits > 0 && channel.orders === 0 ? 'text-[#d03b3b]' : ''">
                                 <template v-if="channel.visits > 0">
