@@ -33,6 +33,7 @@ enum TrafficSourcesTypeEnum: string
     case TWITTER_ADS = 'twitter-ads';
     case YOUTUBE = 'youtube';
     case NEWSLETTER = 'newsletter';
+    case MARKETING_MAILSHOT = 'marketing-mailshot';
     case EMAIL_AUTOMATED = 'email-automated';
     case ORGANIC_SEARCH = 'organic-search';
     case REFERRAL = 'referral';
@@ -56,7 +57,8 @@ enum TrafficSourcesTypeEnum: string
             self::TWITTER_ADS->value       => 'Twitter Ads',
             self::YOUTUBE->value           => 'Youtube',
             self::NEWSLETTER->value        => 'Newsletter',
-            self::EMAIL_AUTOMATED->value   => 'Automated Emails',
+            self::MARKETING_MAILSHOT->value => 'Marketing Mailshots',
+            self::EMAIL_AUTOMATED->value   => 'Automatic Marketing',
             self::ORGANIC_SEARCH->value    => 'Organic Search (other)',
             self::REFERRAL->value          => 'Referral',
         ];
@@ -81,6 +83,7 @@ enum TrafficSourcesTypeEnum: string
             self::TWITTER_ADS->value       => false,
             self::YOUTUBE->value           => true,
             self::NEWSLETTER->value        => true,
+            self::MARKETING_MAILSHOT->value => true,
             self::EMAIL_AUTOMATED->value   => true,
             self::ORGANIC_SEARCH->value    => true,
             self::REFERRAL->value          => true,
@@ -106,6 +109,7 @@ enum TrafficSourcesTypeEnum: string
             self::TWITTER_ADS->value       => 'n',
             self::YOUTUBE->value           => 'o',
             self::NEWSLETTER->value        => 'p',
+            self::MARKETING_MAILSHOT->value => 't',
             self::EMAIL_AUTOMATED->value   => 's',
             self::ORGANIC_SEARCH->value    => 'r',
             self::REFERRAL->value          => 'q',
@@ -125,6 +129,16 @@ enum TrafficSourcesTypeEnum: string
     }
 
     /**
+     * Which channel a mailshot's clicks belong to. A newsletter and a promotional mailshot are
+     * different instruments - one keeps a list warm, the other pushes an offer - and averaging them
+     * hides which of the two is working.
+     */
+    public static function fromMailshotType(?string $mailshotType): self
+    {
+        return $mailshotType === 'newsletter' ? self::NEWSLETTER : self::MARKETING_MAILSHOT;
+    }
+
+    /**
      * How the channels group on a dashboard. Nineteen rows is a list nobody reads; four groups is a
      * question anybody can answer - did the paid stuff work, is search bringing people, is email
      * carrying us.
@@ -136,7 +150,7 @@ enum TrafficSourcesTypeEnum: string
         return match (true) {
             $this->isPaid()                                        => ['key' => 'paid', 'label' => __('Paid ads'), 'position' => 1],
             str_starts_with($this->value, 'organic-')              => ['key' => 'organic', 'label' => __('Organic'), 'position' => 2],
-            in_array($this, [self::NEWSLETTER, self::EMAIL_AUTOMATED], true)
+            in_array($this, [self::NEWSLETTER, self::MARKETING_MAILSHOT, self::EMAIL_AUTOMATED], true)
                                                                    => ['key' => 'email', 'label' => __('Email'), 'position' => 3],
             default                                                => ['key' => 'other', 'label' => __('Other'), 'position' => 4],
         };

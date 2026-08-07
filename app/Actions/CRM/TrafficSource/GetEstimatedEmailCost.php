@@ -10,6 +10,7 @@ namespace App\Actions\CRM\TrafficSource;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\Helpers\Currency;
 use Illuminate\Support\Carbon;
@@ -19,6 +20,24 @@ class GetEstimatedEmailCost
 {
     use AsAction;
 
+    /** Mailshot types split the way the channels do: a newsletter is one instrument, a promotional
+     *  mailshot another.
+     *
+     * @return array<int, MailshotTypeEnum>
+     */
+    public static function typesFor(TrafficSourcesTypeEnum $channel): array
+    {
+        return $channel === TrafficSourcesTypeEnum::NEWSLETTER
+            ? [MailshotTypeEnum::NEWSLETTER]
+            : [MailshotTypeEnum::MARKETING, MailshotTypeEnum::INVITE];
+    }
+
+    /** @return array<int, MailshotTypeEnum> */
+    private static function allTypes(): array
+    {
+        return [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING, MailshotTypeEnum::INVITE];
+    }
+
     /**
      * Subscribers lost over the same emails, which is the newsletter's other cost. Money is not the
      * only thing a mailshot spends: a send that earns well while burning forty subscribers has taken
@@ -26,10 +45,10 @@ class GetEstimatedEmailCost
      *
      * @param array<int, int>|\Illuminate\Support\Collection<int, int> $shopIds
      */
-    public static function unsubscribes($shopIds, ?Carbon $from): int
+    public static function unsubscribes($shopIds, ?Carbon $from, ?array $types = null): int
     {
         return (int) Mailshot::whereIn('mailshots.shop_id', $shopIds)
-            ->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING, MailshotTypeEnum::INVITE])
+            ->whereIn('type', $types ?? self::allTypes())
             ->when($from, fn ($query) => $query->whereRaw('COALESCE(mailshots.sent_at, mailshots.created_at) >= ?', [$from]))
             ->join('mailshot_stats', 'mailshot_stats.mailshot_id', '=', 'mailshots.id')
             ->sum('mailshot_stats.number_dispatched_emails_state_unsubscribed');
@@ -47,10 +66,10 @@ class GetEstimatedEmailCost
      *
      * @param array<int, int>|\Illuminate\Support\Collection<int, int> $shopIds
      */
-    public function handle($shopIds, ?Carbon $from, Currency $currency): float
+    public function handle($shopIds, ?Carbon $from, Currency $currency, ?array $types = null): float
     {
         $dispatched = Mailshot::whereIn('mailshots.shop_id', $shopIds)
-            ->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING, MailshotTypeEnum::INVITE])
+            ->whereIn('type', $types ?? self::allTypes())
             ->when($from, fn ($query) => $query->whereRaw('COALESCE(mailshots.sent_at, mailshots.created_at) >= ?', [$from]))
             ->join('mailshot_stats', 'mailshot_stats.mailshot_id', '=', 'mailshots.id')
             ->sum('mailshot_stats.number_dispatched_emails');

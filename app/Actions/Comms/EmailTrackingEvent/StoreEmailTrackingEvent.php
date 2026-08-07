@@ -53,7 +53,9 @@ class StoreEmailTrackingEvent extends OrgAction
             if ($mailshot || $outboxCode) {
                 RecordTrafficSourceVisit::run(
                     $dispatchedEmail->outbox?->shop_id,
-                    $mailshot ? TrafficSourcesTypeEnum::NEWSLETTER : TrafficSourcesTypeEnum::EMAIL_AUTOMATED
+                    $mailshot
+                        ? TrafficSourcesTypeEnum::fromMailshotType($mailshot->type?->value ?? $mailshot->type)
+                        : TrafficSourcesTypeEnum::EMAIL_AUTOMATED
                 );
             }
 

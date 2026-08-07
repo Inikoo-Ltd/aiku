@@ -155,3 +155,36 @@ it('counts a mailshot click as a visit, since nothing identifies it once the rea
 
     expect((int) Illuminate\Support\Facades\Cache::get($key, 0))->toBe(1);
 });
+
+it('sends a marketing mailshot click to its own channel, apart from the newsletter', function () {
+    createTrafficSource($this->shop, 'marketing-mailshot', 'Marketing Mailshots');
+
+    $mailshot = StoreMailshot::make()->action($this->outbox, array_merge(
+        Mailshot::factory()->definition(),
+        ['type' => App\Enums\Comms\Mailshot\MailshotTypeEnum::MARKETING]
+    ));
+
+    $this->customer->trafficSources()->detach();
+    $this->customer->update(['traffic_sources' => null]);
+
+    RecordEmailClickTouchpoint::run($this->customer, now(), $mailshot);
+
+    $credited = $this->customer->fresh()->trafficSources()->get();
+
+    expect($credited)->toHaveCount(1)
+        ->and($credited->first()->type)->toBe('marketing-mailshot');
+});
+
+it('keeps a newsletter click on the newsletter channel', function () {
+    $mailshot = StoreMailshot::make()->action($this->outbox, array_merge(
+        Mailshot::factory()->definition(),
+        ['type' => App\Enums\Comms\Mailshot\MailshotTypeEnum::NEWSLETTER]
+    ));
+
+    $this->customer->trafficSources()->detach();
+    $this->customer->update(['traffic_sources' => null]);
+
+    RecordEmailClickTouchpoint::run($this->customer, now(), $mailshot);
+
+    expect($this->customer->fresh()->trafficSources()->first()->type)->toBe('newsletter');
+});

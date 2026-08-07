@@ -59,8 +59,18 @@ class GetShopMarketingOverview
         $spend         = $this->spendBySource($shop, $costFrom);
         /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
            spend of zero and an infinite return. Estimated from the emails actually dispatched. */
-        $unsubscribes  = GetEstimatedEmailCost::unsubscribes([$shop->id], $costFrom);
-        $emailCost     = GetEstimatedEmailCost::run([$shop->id], $costFrom, $shop->currency);
+        /* Per email channel: a newsletter and a promotional mailshot cost separately and lose
+           subscribers separately, so averaging them would hide which one is doing the damage. */
+        $emailCostBy = [];
+        $unsubsBy    = [];
+
+        foreach ([TrafficSourcesTypeEnum::NEWSLETTER, TrafficSourcesTypeEnum::MARKETING_MAILSHOT] as $emailChannel) {
+            $types                             = GetEstimatedEmailCost::typesFor($emailChannel);
+            $emailCostBy[$emailChannel->value] = GetEstimatedEmailCost::run([$shop->id], $costFrom, $shop->currency, $types);
+            $unsubsBy[$emailChannel->value]    = GetEstimatedEmailCost::unsubscribes([$shop->id], $costFrom, $types);
+        }
+
+        $emailCost = array_sum($emailCostBy);
         $visits        = $this->visitsBySource($shop, $from);
         $orders        = $this->ordersBySource($shop, $from, $window);
 
@@ -72,12 +82,12 @@ class GetShopMarketingOverview
                 'group_label'   => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['label'] ?? __('Other'),
                 'group_position' => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['position'] ?? 9,
                 'spend'         => round((float) ($spend[$source->id] ?? 0)
-                    + ($source->type === TrafficSourcesTypeEnum::NEWSLETTER->value ? $emailCost : 0), 2),
-                'spend_is_estimated' => $source->type === TrafficSourcesTypeEnum::NEWSLETTER->value && $emailCost > 0,
+                    + ($emailCostBy[$source->type] ?? 0), 2),
+                'spend_is_estimated' => ($emailCostBy[$source->type] ?? 0) > 0,
                 /* Not netted off registrations: an unsubscribe is not a lost customer, it is lost
                    permission to email one, and subtracting the two would report a number that means
                    neither. Shown beside them instead. */
-                'unsubscribed'  => $source->type === TrafficSourcesTypeEnum::NEWSLETTER->value ? $unsubscribes : 0,
+                'unsubscribed'  => (int) ($unsubsBy[$source->type] ?? 0),
                 'visits'        => (int) ($visits[$source->id] ?? 0),
                 'orders'        => round((float) ($orders[$source->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$source->id]->amount ?? 0), 2),

@@ -86,9 +86,11 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
            reorder reminder, an abandoned basket chase, a back-in-stock notice - is its own channel,
            with the outbox code as the campaign reference so each kind reports separately. Mixing
            them into newsletter would hide which of the two actually works. */
-        $type = $outboxCode !== null && !$mailshot
-            ? TrafficSourcesTypeEnum::EMAIL_AUTOMATED
-            : TrafficSourcesTypeEnum::NEWSLETTER;
+        $type = match (true) {
+            (bool) $mailshot     => TrafficSourcesTypeEnum::fromMailshotType($mailshot->type?->value ?? $mailshot->type),
+            $outboxCode !== null => TrafficSourcesTypeEnum::EMAIL_AUTOMATED,
+            default              => TrafficSourcesTypeEnum::NEWSLETTER,
+        };
 
         $campaignRef = match (true) {
             (bool) $mailshot        => self::CAMPAIGN_REF_PREFIX.$mailshot->id,
