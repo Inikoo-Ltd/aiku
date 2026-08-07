@@ -241,3 +241,28 @@ it('does not report a roas of zero while money is still awaiting invoice', funct
         ->and($channel['revenue'])->toBe(0.0)
         ->and($channel['roas'])->toBeNull();
 });
+
+it('reports orders per channel so a visit count can be read against what it produced', function () {
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted');
+
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+    $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
+
+    expect($channel['orders'])->toBe(1.0);
+});
+
+it('counts only the spend that could have earned anything, not spend from before attribution existed', function () {
+    $source = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'google-ads')->first();
+
+    /* Spent long before the first touch was ever recorded: no click from it could be attributed, so
+       charging it against attributed revenue would invent a bad ROAS out of nothing. */
+    App\Actions\CRM\TrafficSource\StoreTrafficSourceCost::run($source, [
+        'date'               => now()->subYears(2)->toDateString(),
+        'source_amount'      => 5000,
+        'source_currency_id' => $this->shop->currency_id,
+    ]);
+
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME);
+
+    expect($overview['totals']['spend'])->toBe(0.0);
+});

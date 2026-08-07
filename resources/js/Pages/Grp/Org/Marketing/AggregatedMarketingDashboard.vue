@@ -5,11 +5,13 @@
   -->
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { trans } from 'laravel-vue-i18n'
 import { useLocaleStore } from '@/Stores/locale'
+import { useFormatTime } from '@/Composables/useFormatTime'
 import { route } from 'ziggy-js'
 import { PageHeadingTypes } from '@/types/PageHeading'
 
@@ -45,6 +47,11 @@ const props = defineProps<{
             roas: number | null
         }[]
         attribution_started_at: string | null
+        referrers: {
+            host: string
+            visitors: number
+            revenue: number
+        }[]
         baseline: {
             registrations: number
             orders: number
@@ -55,7 +62,9 @@ const props = defineProps<{
             slug: string
             revenue: number
             registrations: number
+            registrations_total: number
             orders: number
+            orders_total: number
             top_channel: string | null
             route: { name: string, parameters: string[] }
         }[]
@@ -69,8 +78,55 @@ const count = (value: number) => Number.isInteger(value) ? value.toString() : va
 
 /* The share of all trade that marketing can claim. Without it, "0 registrations" reads as a quiet
    period rather than as every ad and mailshot having earned nobody. */
+/* Only a warning when the period actually reaches back further than we were recording. Selecting a
+   period that starts after capture began is a complete picture, and flagging it would train people to
+   ignore the notice. */
+const periodPredatesAttribution = computed(() => {
+    if (!props.overview.attribution_started_at) return false
+    if (!props.overview.from) return true
+
+    return new Date(props.overview.from) < new Date(props.overview.attribution_started_at)
+})
+
+/* Sent as ISO8601 with its offset, so this renders in the reader's own timezone rather than in
+   whatever the server happens to run on - and says which timezone that is. */
+const attributionStarted = computed(() => {
+    if (!props.overview.attribution_started_at) return ''
+
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+    return `${useFormatTime(props.overview.attribution_started_at, { formatTime: 'hm' })} ${zone}`
+})
+
+/* The label says the window the figures actually cover. "last 30 days" is a lie while attribution has
+   only been recording since this morning, and it is the lie that made the numbers look like failure
+   rather than like a short history. */
+const measuredSince = computed(() => {
+    const startedAt = props.overview.attribution_started_at
+    const from = props.overview.from
+
+    const effective = periodPredatesAttribution.value ? startedAt : from
+
+    return effective
+        ? trans('since') + ' ' + useFormatTime(effective, { formatTime: 'aiku' })
+        : props.overview.period_label.toLowerCase()
+})
+
 const share = (part: number, whole: number) =>
     whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
+
+/* Every column says how it was arrived at. These figures each carry a rule that is not guessable
+   from the label - what counts as a visit, why revenue lags, which spend is estimated - and a
+   dashboard nobody can interrogate gets mistrusted the first time a number looks odd. */
+const columnHelp: Record<string, string> = {
+    visits: trans('People who arrived from this channel, whether or not they bought. Counted when they land, so email channels show none: a mailshot click is recorded when it is clicked, not when it lands.'),
+    spend: trans('Ad spend imported for this channel over the period. Newsletter spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
+    awaiting: trans('Value of orders already placed but not invoiced yet. Invoicing runs a day or two behind, so this is what the channel has sold that has not become revenue yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
+    revenue: trans('Invoiced sales credited to this channel. An order only counts if it was placed after the touch and within the attribution window, so a click cannot claim an order that was already on its way.'),
+    registrations: trans('Customers who signed up after arriving through this channel. Shared between channels when someone arrived more than one way, so a customer is never counted twice.'),
+    orders: trans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships.'),
+    roas: trans('Revenue divided by spend. Blank while money is still awaiting invoice, since a channel that has sold but not yet invoiced has not returned nothing - it has not finished being measured.'),
+}
 
 const changePeriod = (event: Event) => {
     router.get(
@@ -85,10 +141,16 @@ const changePeriod = (event: Event) => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
-    <div class="px-4 py-4 space-y-4">
+    <!-- Capped: wider than this and the columns drift so far apart the rows stop reading as rows.
+         The space left over carries the referrers list instead. -->
+    <div class="px-4 py-4 space-y-4 max-w-[1600px]">
         <div class="flex items-start justify-between gap-4">
-            <p v-if="overview.attribution_started_at" class="text-xs text-gray-400 max-w-3xl order-last">
-                {{ trans('Attribution has only been recording since') }} {{ overview.attribution_started_at }}{{ trans('. Comparisons below start from then, not from the beginning of the period.') }}
+            <p v-if="periodPredatesAttribution" class="text-xs text-amber-600 max-w-3xl order-last flex items-start gap-1.5">
+                <span class="shrink-0 mt-px inline-flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] font-semibold leading-none">!</span>
+                <span>
+                    {{ trans('This period starts before attribution was recording') }} ({{ attributionStarted }}).
+                    {{ trans('Comparisons below run from then, so anything earlier is missing by definition rather than by failure.') }}
+                </span>
             </p>
             <p class="text-xs text-gray-500 max-w-3xl">
                 {{ trans('Everything here counts only what marketing brought in: sales and sign-ups from visitors who arrived through an ad, a search, a mailshot or a link from another site, credited to that channel. It is not the shop\'s total trade.') }}
@@ -111,7 +173,7 @@ const changePeriod = (event: Event) => {
                     {{ trans('of') }} {{ money(overview.baseline.revenue) }} {{ trans('total') }} · {{ share(overview.totals.revenue, overview.baseline.revenue) }}
                 </div>
                 <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-amber-600">
-                    + {{ money(overview.totals.pending) }} {{ trans('placed, awaiting invoice') }}
+                    + {{ money(overview.totals.pending) }} {{ trans('sold, awaiting invoice') }}
                 </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
@@ -141,37 +203,62 @@ const changePeriod = (event: Event) => {
         <div v-if="overview.channels.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <span class="text-sm font-medium text-gray-800">{{ trans('Where it came from') }}</span>
             <span class="ml-2 text-xs text-gray-400">
-                {{ trans('ads, searches, mailshots and referring sites') }} · {{ overview.period_label.toLowerCase() }}
+                {{ trans('ads, searches, mailshots and referring sites') }} · {{ measuredSince }}
             </span>
 
             <table class="mt-4 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
                         <th class="text-left font-normal py-1.5 pr-2">{{ trans('Channel') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Visits') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Pending') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Orders') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">
+                            {{ trans('Visits') }}<sup v-tooltip="columnHelp.visits" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                        </th>
+                        <th class="text-right font-normal py-1.5 px-2">
+                            {{ trans('Spend') }}<sup v-tooltip="columnHelp.spend" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                        </th>
+                        <!-- Awaiting invoice sits before Revenue: that is the order things happen in,
+                             an order is placed and then invoiced. -->
+                        <th class="text-right font-normal py-1.5 px-2">
+                            {{ trans('Awaiting invoice') }}<sup v-tooltip="columnHelp.awaiting" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                        </th>
+                        <th class="text-right font-normal py-1.5 px-2">
+                            {{ trans('Revenue') }}<sup v-tooltip="columnHelp.revenue" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                        </th>
+                        <th class="text-right font-normal py-1.5 px-2">
+                            {{ trans('Registrations') }}<sup v-tooltip="columnHelp.registrations" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                        </th>
+                        <th class="text-right font-normal py-1.5 px-2">
+                            {{ trans('Orders') }}<sup v-tooltip="columnHelp.orders" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                        </th>
+                        <th class="text-right font-normal py-1.5 pl-2">
+                            {{ trans('ROAS') }}<sup v-tooltip="columnHelp.roas" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="channel in overview.channels" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 text-gray-700">{{ channel.name }}</td>
-                        <!-- People it sent us. Large with nothing beside it means we paid for clicks that went nowhere. -->
-                        <td class="text-right px-2 tabular-nums"
-                            :class="channel.visits > 0 && channel.orders === 0 ? 'text-amber-600' : ''">
-                            {{ channel.visits > 0 ? locale.number(channel.visits) : '—' }}
+                        <!-- Visits it sent, and how many of them bought. The pair is the point: people
+                             arrived and nobody ordered is the case worth seeing. -->
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap"
+                            :class="channel.visits > 0 && channel.orders === 0 ? 'text-[#d03b3b]' : ''">
+                            <template v-if="channel.visits > 0">
+                                {{ locale.number(channel.visits) }}
+                                <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                                    · {{ count(channel.orders) }} {{ trans('bought') }}
+                                </span>
+                            </template>
+                            <span v-else class="text-gray-300">—</span>
                         </td>
+                        <!-- The qualifier sits left of the figure so the amounts stay aligned on their
+                             right edge, whether or not one of them is estimated. -->
                         <td class="text-right px-2 tabular-nums">
-                            {{ money(channel.spend) }}
-                            <span v-if="channel.spend_is_estimated" class="text-gray-400" :title="trans('Estimated from emails sent, at the SES per-message price')">{{ trans('est.') }}</span>
+                            <span v-if="channel.spend_is_estimated" class="text-xs text-gray-400 mr-1"
+                                  :title="trans('Estimated from emails sent, at the SES per-message price')">{{ trans('est.') }}</span>{{ money(channel.spend) }}
                         </td>
-                        <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
                         <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-amber-600' : 'text-gray-300'">{{ money(channel.pending) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(channel.registrations) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
                         <td class="text-right pl-2 tabular-nums"
@@ -181,14 +268,20 @@ const changePeriod = (event: Event) => {
                     </tr>
                 </tbody>
             </table>
+
+            <p class="mt-3 text-xs text-gray-400">
+                {{ trans('Visits are counted when someone arrives from that channel, whether or not they buy. Email channels show no visits: a mailshot click is recorded when it is clicked, not when it lands, so there is nothing to count here.') }}
+            </p>
         </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4 items-start">
 
         <!-- The drill-down: link down a level rather than repeat that level's dashboard here -->
         <div v-if="overview.children.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <div>
                 <span class="text-sm font-medium text-gray-800">{{ overview.children_label }}</span>
                 <span class="ml-2 text-xs text-gray-400">
-                    {{ trans('what marketing brought each one') }} · {{ overview.period_label.toLowerCase() }}
+                    {{ trans('what marketing brought each one') }} · {{ measuredSince }}
                 </span>
             </div>
             <p class="mt-1 text-xs text-gray-400">
@@ -216,11 +309,46 @@ const changePeriod = (event: Event) => {
                         </td>
                         <td class="px-2 text-gray-500">{{ child.top_channel ?? '—' }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(child.revenue) }}</td>
-                        <td class="text-right px-2 tabular-nums">{{ count(child.registrations) }}</td>
-                        <td class="text-right pl-2 tabular-nums">{{ count(child.orders) }}</td>
+                        <!-- Against the total, so a zero says marketing reached nobody rather than
+                             that nothing happened. -->
+                        <td class="text-right px-2 tabular-nums"
+                            :class="child.registrations_total > 0 && child.registrations === 0 ? 'text-[#d03b3b]' : ''">
+                            {{ count(child.registrations) }} <span class="text-gray-400">/ {{ count(child.registrations_total) }}</span>
+                        </td>
+                        <td class="text-right pl-2 tabular-nums">
+                            {{ count(child.orders) }} <span class="text-gray-400">/ {{ count(child.orders_total) }}</span>
+                        </td>
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Sites sending people to any shop underneath, pooled by host -->
+        <div v-if="overview.referrers?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
+            <span class="text-sm font-medium text-gray-800">{{ trans('Top referrers') }}</span>
+            <p class="mt-1 text-xs text-gray-400">
+                {{ trans('Other sites linking to us: directories, blogs, AI assistants.') }}
+            </p>
+
+            <table class="mt-4 w-full text-xs">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-100">
+                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Site') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('People') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Revenue') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="referrer in overview.referrers" :key="referrer.host"
+                        class="border-b border-gray-50 text-gray-600">
+                        <td class="py-2 pr-2 text-gray-700 truncate max-w-[12rem]">{{ referrer.host }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ count(referrer.visitors) }}</td>
+                        <td class="text-right pl-2 tabular-nums">{{ money(referrer.revenue) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         </div>
 
         <div v-if="!overview.channels.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5 text-xs text-gray-500">

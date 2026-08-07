@@ -199,3 +199,38 @@ it('does not repeat invoiced revenue in the pending figure', function () {
     expect($overview['totals']['revenue'])->toBe(100.0)
         ->and($overview['totals']['pending'])->toBe(0.0);
 });
+
+it('pools referring sites across every shop underneath', function () {
+    $referral = createTrafficSource($this->shop, 'referral', 'Referral');
+
+    $campaignId = DB::table('traffic_source_campaigns')->insertGetId([
+        'traffic_source_id' => $referral->id,
+        'slug'              => 'r-'.uniqid(),
+        'reference'         => 'esources.co.uk-'.uniqid(),
+        'name'              => 'esources.co.uk',
+        'type'              => 'referral',
+        'created_at'        => now(),
+        'updated_at'        => now(),
+    ]);
+
+    $this->customer->trafficSources()->detach();
+    $this->customer->trafficSources()->attach($referral->id, [
+        'share'                      => 1,
+        'traffic_source_campaign_id' => $campaignId,
+        'first_touch_at'             => now()->subDays(2),
+        'last_touch_at'              => now()->subDays(2),
+    ]);
+
+    $referrers = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['referrers'];
+
+    expect(collect($referrers)->firstWhere('host', 'esources.co.uk'))->not->toBeNull()
+        ->and(collect($referrers)->firstWhere('host', 'esources.co.uk')['visitors'])->toBe(1.0);
+});
+
+it('gives each child the total it is a share of, so a zero can be read', function () {
+    $child = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['children'])
+        ->firstWhere('slug', $this->shop->slug);
+
+    expect($child)->toHaveKeys(['registrations_total', 'orders_total'])
+        ->and($child['registrations_total'])->toBeGreaterThanOrEqual($child['registrations']);
+});

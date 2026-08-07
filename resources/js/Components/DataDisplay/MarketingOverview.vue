@@ -36,6 +36,7 @@ const props = defineProps<{
             spend: number
             spend_is_estimated?: boolean
             visits: number
+            orders: number
             revenue: number
             registrations: number
             roas: number | null
@@ -253,6 +254,13 @@ const typeLabel: Record<string, string> = {
                         <div class="text-sm text-gray-700 truncate">{{ channel.name }}</div>
                         <div v-if="channel.registrations > 0" class="text-xs text-gray-400 tabular-nums">
                             {{ fmtShare(channel.registrations) }} {{ trans('registrations') }}
+                        </div>
+                        <!-- Visits it sent against how many bought: people arrived and nobody ordered
+                             is the case worth seeing, so it is the one in red. -->
+                        <div v-if="channel.visits > 0" class="text-xs tabular-nums"
+                             :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                            {{ locale.number(channel.visits) }} {{ trans('visits') }} ·
+                            {{ fmtShare(channel.orders ?? 0) }} {{ trans('bought') }}
                         </div>
                     </div>
 

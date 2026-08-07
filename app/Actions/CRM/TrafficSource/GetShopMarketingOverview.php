@@ -49,11 +49,16 @@ class GetShopMarketingOverview
         $revenue       = $this->revenueBySource($shop, $from, $window);
         $pending       = $this->pendingRevenueBySource($shop, $from, $window);
         $registrations = $this->registrationsBy('traffic_source_id', $shop, $from, $window);
-        $spend         = $this->spendBySource($shop, $from);
+        /* Cost is clipped to the same window everything else is measured over. Thirty days of mailshots
+           against half a day of attributable return is not a return on ad spend, it is two different
+           questions divided by each other. */
+        $costFrom      = $this->clipToAttributionStart($from);
+        $spend         = $this->spendBySource($shop, $costFrom);
         /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
            spend of zero and an infinite return. Estimated from the emails actually dispatched. */
-        $emailCost     = GetEstimatedEmailCost::run([$shop->id], $from, $shop->currency);
+        $emailCost     = GetEstimatedEmailCost::run([$shop->id], $costFrom, $shop->currency);
         $visits        = $this->visitsBySource($shop, $from);
+        $orders        = $this->ordersBySource($shop, $from, $window);
 
         $channels = $sources
             ->map(fn ($source) => [
@@ -63,6 +68,7 @@ class GetShopMarketingOverview
                     + ($source->type === TrafficSourcesTypeEnum::NEWSLETTER->value ? $emailCost : 0), 2),
                 'spend_is_estimated' => $source->type === TrafficSourcesTypeEnum::NEWSLETTER->value && $emailCost > 0,
                 'visits'        => (int) ($visits[$source->id] ?? 0),
+                'orders'        => round((float) ($orders[$source->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$source->id]->amount ?? 0), 2),
                 'pending'       => round((float) ($pending[$source->id] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$source->id] ?? 0), 2),
@@ -76,7 +82,8 @@ class GetShopMarketingOverview
                     : null,
             ])
             ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0
-                || $channel['registrations'] > 0 || $channel['pending'] > 0 || $channel['visits'] > 0)
+                || $channel['registrations'] > 0 || $channel['pending'] > 0 || $channel['visits'] > 0
+                || $channel['orders'] > 0)
             ->sortByDesc(fn (array $channel) => max($channel['spend'], $channel['revenue']))
             ->values()
             ->all();
@@ -107,7 +114,7 @@ class GetShopMarketingOverview
             /* The denominator: 0 attributed registrations out of 4 is noise, 0 out of 300 means every
                ad and mailshot in the period earned us nobody. The remainder is the trade that arrives
                whether we advertise or not. */
-            'attribution_started_at' => GetAttributionStartedAt::run()?->toDateTimeString(),
+            'attribution_started_at' => GetAttributionStartedAt::run()?->toIso8601String(),
             'baseline'      => $this->baseline($shop, $from),
             'channels'      => $channels,
             'campaigns'     => $this->campaigns($shop, $from),
@@ -252,6 +259,27 @@ class GetShopMarketingOverview
                 ->when($from, fn ($query) => $query->where('date', '>=', $from))
                 ->sum('net_amount'), 2),
         ];
+    }
+
+    /**
+     * Orders the channel may claim, so a visit count can be read against what it produced.
+     */
+    private function ordersBySource(Shop $shop, ?Carbon $from, int $window)
+    {
+        return DB::table('orders')
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
+                $join->on('p.model_id', '=', 'orders.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToTouchWindow($join, 'orders.date', $window);
+            })
+            ->where('orders.shop_id', $shop->id)
+            ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+            ->whereNull('orders.deleted_at')
+            ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
+            ->groupBy('p.traffic_source_id')
+            ->select('p.traffic_source_id', DB::raw('SUM(p.share) as orders'))
+            ->pluck('orders', 'traffic_source_id');
     }
 
     /**
