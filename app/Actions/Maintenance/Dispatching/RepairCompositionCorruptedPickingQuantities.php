@@ -49,7 +49,7 @@ class RepairCompositionCorruptedPickingQuantities
                 $factor = $transaction->current_discount_factor
                     ?? ($transaction->gross_amount != 0 ? $transaction->net_amount / $transaction->gross_amount : 1);
 
-                $expectedGross = round($transaction->historicAsset->price * ($transaction->quantity_ordered + $transaction->quantity_bonus), 2);
+                $expectedGross = round($transaction->historicAsset->price * $transaction->quantity_ordered, 2);
                 $expectedNet   = round($expectedGross * $factor, 2);
                 if ($transaction->is_gift) {
                     $expectedGross = 0;
@@ -67,7 +67,14 @@ class RepairCompositionCorruptedPickingQuantities
                     }
 
                     $expectedRequired = $sync->getQuantityRequired($deliveryNoteItem->orgStock, $deliveryNoteItem);
-                    if (is_null($expectedRequired) || abs($expectedRequired - (float)$deliveryNoteItem->quantity_required) < 0.000001) {
+                    if (is_null($expectedRequired)) {
+                        continue;
+                    }
+
+                    $requiredWrong = abs($expectedRequired - (float)$deliveryNoteItem->quantity_required) > 0.000001;
+                    $overPicked    = (float)$deliveryNoteItem->quantity_picked > $expectedRequired + 0.000001;
+
+                    if (!$requiredWrong && !$overPicked) {
                         continue;
                     }
 
@@ -82,8 +89,12 @@ class RepairCompositionCorruptedPickingQuantities
                     ];
                 }
 
-                $amountsWrong = abs($transaction->gross_amount - $expectedGross) > 0.005
-                    || abs($transaction->net_amount - $expectedNet) > 0.005;
+                /*
+                 * Mid-picking amounts are legitimately picked-quantity-based (zero for
+                 * unpicked, fractional for partial), so only inflation above the ordered
+                 * amount — the corrupted picked/required ratio — is repaired.
+                 */
+                $amountsWrong = $transaction->gross_amount - $expectedGross > 0.005;
 
                 if (!$amountsWrong && empty($itemFixes)) {
                     continue;
