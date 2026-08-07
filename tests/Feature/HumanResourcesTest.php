@@ -50,6 +50,7 @@ use App\Actions\HumanResources\AttendanceAdjustment\RejectAttendanceAdjustment;
 use App\Actions\HumanResources\Employee\GeneratePinEmployee;
 use App\Actions\HumanResources\Employee\ValidatePinEmployee;
 use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
+use App\Actions\HumanResources\Employee\SetEmployeePin;
 use App\Actions\HumanResources\Holiday\GenerateNextYearHolidays;
 use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
 use App\Actions\HumanResources\JobPosition\StoreJobPositionScopeGroup;
@@ -1212,6 +1213,74 @@ test('kiosk endpoint 404s when camera qr mode is disabled', function () {
     \Pest\Laravel\postJson(route('grp.kiosk.camera-qr.submit', ['kioskToken' => $clockingMachine->kiosk_token]), [
         'code' => 'AB12',
     ])->assertNotFound();
+});
+
+test('generated employee pins are unique within the organisation', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $taken = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $taken->updateQuietly(['pin' => $this->organisation->id.':ABC123']);
+
+    for ($i = 0; $i < 30; $i++) {
+        SetEmployeePin::make()->action($employee, updateQuietly: true);
+        expect($employee->fresh()->pin)->not->toBe($taken->pin);
+    }
+});
+
+test('repairing pins leaves a valid pin untouched and replaces an invalid one', function () {
+    $valid = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $valid->updateQuietly(['pin' => $this->organisation->id.':XYZ987']);
+
+    $invalid = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $invalid->updateQuietly(['pin' => null]);
+
+    $this->artisan('employees:repair_pins')->assertExitCode(0);
+
+    expect($valid->fresh()->pin)->toBe($this->organisation->id.':XYZ987')
+        ->and($invalid->fresh()->pin)->toMatch('/^'.$this->organisation->id.':[A-GX-Z]{3}\d{3}$/');
+});
+
+test('a repeated kiosk scan within the duplicate window does not create a second clocking', function () {
+    $suffix = 'L'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Double Scan Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['config' => ['pin' => ['enable' => true]]]);
+
+    $code     = 'GX'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $employee->updateQuietly(['pin' => $this->organisation->id.':'.$code]);
+
+    $first = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    $second = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    expect($second->id)->toBe($first->id)
+        ->and(Clocking::where('subject_id', $employee->id)->where('subject_type', 'Employee')->count())->toBe(1);
 });
 
 test('can adjust employee leave balance creating a new balance', function () {

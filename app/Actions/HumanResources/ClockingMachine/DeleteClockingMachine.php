@@ -8,7 +8,10 @@
 
 namespace App\Actions\HumanResources\ClockingMachine;
 
+use App\Actions\HumanResources\Workplace\Hydrators\WorkplaceHydrateClockingMachines;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateClockingMachines;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateClockingMachines;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\ClockingMachine;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +25,10 @@ class DeleteClockingMachine extends OrgAction
     public function handle(ClockingMachine $clockingMachine): ClockingMachine
     {
         $clockingMachine->delete();
+
+        OrganisationHydrateClockingMachines::dispatch($clockingMachine->organisation);
+        GroupHydrateClockingMachines::dispatch($clockingMachine->group);
+        WorkplaceHydrateClockingMachines::dispatch($clockingMachine->workplace);
 
         return $clockingMachine;
     }

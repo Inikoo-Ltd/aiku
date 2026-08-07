@@ -17,21 +17,23 @@ trait ResolvesEmployeeByCode
 {
     /**
      * Match a kiosk-entered/scanned code against an employee's pin, scoped to the kiosk
-     * machine's organisation. Employees only ever see the full pin with its organisation
-     * prefix (e.g. "5:ABC123"), so a code that already carries that same numeric prefix is
-     * tolerated too - a generated code always starts with a letter, so stripping a leading
-     * run that matches the organisation id is unambiguous.
+     * machine's organisation. Employees are shown the code without its stored organisation
+     * prefix (e.g. "ABC123" for the stored "5:ABC123"), but the prefix is stripped back off
+     * anyway if it is typed or scanned - a generated code always starts with a letter, so a
+     * leading run matching the organisation id, with or without its colon, is unambiguous.
      */
     private function resolveEmployeeByCode(ClockingMachine $clockingMachine, string $enteredCode, string $invalidMessage): Employee
     {
         $organisationPrefix = (string) $clockingMachine->organisation_id;
 
-        if (str_starts_with($enteredCode, $organisationPrefix)) {
-            $enteredCode = substr($enteredCode, strlen($organisationPrefix));
+        foreach ([$organisationPrefix.':', $organisationPrefix] as $prefix) {
+            if (str_starts_with($enteredCode, $prefix)) {
+                $enteredCode = substr($enteredCode, strlen($prefix));
+                break;
+            }
         }
 
         $employee = $clockingMachine->organisation->employees()
-            ->where('state', '!=', EmployeeStateEnum::LEFT->value)
             ->where('pin', $organisationPrefix.':'.$enteredCode)
             ->first();
 

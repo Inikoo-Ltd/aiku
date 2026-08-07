@@ -115,6 +115,18 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(600)->by($request->ip());
         });
 
+        /*
+         * The kiosk submit endpoints are unauthenticated and match a 6 character employee pin,
+         * so they are brute forceable by anyone holding a kiosk link. Limited per kiosk token as
+         * well as per ip, since a whole workplace shares one tablet behind a single ip.
+         */
+        RateLimiter::for('kiosk-submit', function (Request $request) {
+            return [
+                Limit::perMinute(20)->by('kiosk-token:'.$request->route('kioskToken')),
+                Limit::perMinute(20)->by('kiosk-ip:'.$request->ip()),
+            ];
+        });
+
         RateLimiter::for('iris-search', function (Request $request) {
             return Limit::perMinute(6000)->by($request->ip());
         });

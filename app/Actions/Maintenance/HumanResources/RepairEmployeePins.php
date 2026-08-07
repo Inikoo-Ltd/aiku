@@ -10,6 +10,7 @@ namespace App\Actions\Maintenance\HumanResources;
 
 use App\Actions\HumanResources\Employee\SetEmployeePin;
 use App\Models\HumanResources\Employee;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairEmployeePins
@@ -23,12 +24,40 @@ class RepairEmployeePins
 
     public string $commandSignature = 'employees:repair_pins';
 
-    public function asCommand(): void
+    /**
+     * Only employees whose pin is missing, in the pre 3 letters + 3 numbers format, or shared
+     * with another employee of the same organisation are re-pinned. Re-running the command must
+     * not invalidate the pins employees already carry on their printed barcode or phone.
+     */
+    public function asCommand(Command $command): void
     {
-        Employee::orderBy('id')->chunkById(500, function ($employees) {
+        $repaired = 0;
+        $seen     = [];
+
+        Employee::orderBy('id')->chunkById(500, function ($employees) use (&$repaired, &$seen) {
             foreach ($employees as $employee) {
+                $key = $employee->organisation_id.'|'.$employee->pin;
+
+                if ($this->hasValidPin($employee) && !isset($seen[$key])) {
+                    $seen[$key] = true;
+                    continue;
+                }
+
                 $this->handle($employee);
+                $seen[$employee->organisation_id.'|'.$employee->fresh()->pin] = true;
+                $repaired++;
             }
         });
+
+        $command->info($repaired.' employee pins repaired');
+    }
+
+    private function hasValidPin(Employee $employee): bool
+    {
+        list($letters, $numbers) = SetEmployeePin::make()->pinCharacterSet();
+
+        $pattern = '/^'.$employee->organisation_id.':['.implode('', $letters).']{3}['.implode('', $numbers).']{3}$/';
+
+        return (bool) preg_match($pattern, (string) $employee->pin);
     }
 }
