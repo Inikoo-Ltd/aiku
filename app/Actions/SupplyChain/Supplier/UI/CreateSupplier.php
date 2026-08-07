@@ -56,7 +56,7 @@ class CreateSupplier extends OrgAction
                     ],
                 ],
                 'formData'    => [
-                    'blueprint' => $this->getBlueprint(),
+                    'blueprint' => $this->getBlueprint($parent),
                     'route'     => $this->getStoreRoute($parent),
                 ],
             ]
@@ -78,10 +78,12 @@ class CreateSupplier extends OrgAction
         return $this->handle($agent, $request);
     }
 
-    protected function getBlueprint(): array
+    protected function getBlueprint(Group|Agent $parent): array
     {
-        return [
-            [
+        $isInAgent = $parent instanceof Agent;
+
+        return array_values(array_filter([
+            $isInAgent ? null : [
                 'title'  => __('Type'),
                 'icon'   => 'fal fa-truck',
                 'fields' => [
@@ -97,7 +99,7 @@ class CreateSupplier extends OrgAction
                     ],
                 ],
             ],
-            [
+            $isInAgent ? null : [
                 'title'  => __('Delivery Terms'),
                 'icon'   => 'fal fa-ship',
                 'fields' => [
@@ -172,10 +174,11 @@ class CreateSupplier extends OrgAction
                         'value' => '',
                     ],
                     'address'         => [
-                        'type'    => 'address',
-                        'label'   => __('Address'),
-                        'value'   => AddressFormFieldsResource::make(new Address(['country_id' => group()->country_id]))->getArray(),
-                        'options' => [
+                        'type'     => 'address',
+                        'label'    => __('Address'),
+                        'value'    => AddressFormFieldsResource::make(new Address(['country_id' => group()->country_id]))->getArray(),
+                        'required' => true,
+                        'options'  => [
                             'countriesAddressData' => GetAddressData::run(),
                         ],
                     ],
@@ -234,7 +237,7 @@ class CreateSupplier extends OrgAction
                     ],
                 ],
             ],
-            [
+            $isInAgent ? null : [
                 'title'  => __("Purchase Order Settings"),
                 'icon'   => 'fal fa-file-invoice-dollar',
                 'fields' => [
@@ -263,7 +266,7 @@ class CreateSupplier extends OrgAction
                     ],
                 ],
             ],
-        ];
+        ]));
     }
 
     protected function getStoreRoute(Group|Agent $parent): array
