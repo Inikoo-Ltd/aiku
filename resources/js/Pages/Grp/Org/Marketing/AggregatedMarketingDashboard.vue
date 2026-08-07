@@ -124,7 +124,7 @@ const share = (part: number, whole: number) =>
    from the label - what counts as a visit, why revenue lags, which spend is estimated - and a
    dashboard nobody can interrogate gets mistrusted the first time a number looks odd. */
 const columnHelp: Record<string, string> = {
-    visits: trans('People who arrived from this channel, whether or not they bought. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked, since by the time the reader lands there is nothing left to identify.'),
+    visits: trans('People who arrived from this channel, how many of them bought, and the rate between the two. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked, since by the time the reader lands there is nothing left to identify.'),
     spend: trans('Ad spend imported for this channel over the period. Newsletter spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
     awaiting: trans('Value of orders already placed but not invoiced yet. Invoicing runs a day or two behind, so this is what the channel has sold that has not become revenue yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
     revenue: trans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it. An order only counts if it was placed after the touch and within the attribution window, so a click cannot claim an order that was already on its way.'),
@@ -257,7 +257,7 @@ const changePeriod = (event: Event) => {
                             <template v-if="channel.visits > 0">
                                 {{ locale.number(channel.visits) }}
                                 <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
-                                    · {{ count(channel.orders) }} {{ trans('bought') }}
+                                    · {{ count(channel.orders) }} {{ trans('bought') }} · {{ share(channel.orders, channel.visits) }}
                                 </span>
                             </template>
                             <span v-else class="text-gray-300">—</span>

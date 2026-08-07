@@ -223,3 +223,20 @@ it('gives the whole credit to the remaining touches when a channel has no row in
         ->and($credited->first()->type)->toBe('organic-google')
         ->and((float) $credited->first()->pivot->share)->toBe(1.0);
 });
+
+it('refreshes a channel\'s rollups when the customer is invoiced, not only when a touch lands', function () {
+    $source   = createTrafficSource($this->shop, 'organic-google', 'Organic Google');
+    $customer = createCustomer($this->shop);
+    $customer->trafficSources()->detach();
+    $customer->trafficSources()->attach($source->id, [
+        'share'          => 1,
+        'first_touch_at' => now()->subDays(2),
+        'last_touch_at'  => now()->subDays(2),
+    ]);
+
+    createInvoiceFor($customer, $this->shop, now()->subDay()->toDateTimeString(), 400);
+
+    App\Actions\CRM\TrafficSource\Hydrator\RefreshCustomerTrafficSourceStats::run($customer->fresh());
+
+    expect((float) $source->stats()->first()->total_customer_revenue)->toBe(400.0);
+});
