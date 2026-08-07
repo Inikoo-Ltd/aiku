@@ -329,7 +329,7 @@ class IndexSupplierProducts extends OrgAction
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'label' => __('Supplier products'),
+                        'label' => __('Supplier Products'),
                         'icon'  => 'fal fa-bars',
                         'route' => $routeParameters,
                     ],
