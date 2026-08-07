@@ -45,7 +45,7 @@ class UpdateRetinaCustomer extends RetinaAction
             return true;
         }
 
-        return $this->customer->id = $request->route()->parameter('customer')->id && $request->user()->is_root;
+        return $this->customer?->id === $request->route()->parameter('customer')->id && $request->user()->is_root;
     }
 
 
