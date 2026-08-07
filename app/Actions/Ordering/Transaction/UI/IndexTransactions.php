@@ -161,8 +161,8 @@ class IndexTransactions extends OrgAction
             if (
                 $parent instanceof Order
                 && (
-                    (!isset($parent->platform) && $parent->state === OrderStateEnum::CREATING)
-                    || (isset($parent->platform) && $parent->platform->type === PlatformTypeEnum::MANUAL)
+                    (!isset($parent->platform) || $parent->platform->type === PlatformTypeEnum::MANUAL)
+                    && !in_array($parent->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED])
                 )
 
             ) {

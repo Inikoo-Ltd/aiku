@@ -19,6 +19,7 @@ const props = defineProps<{
     title: string
     search_insights: any
     search_merchandising: any
+    live_website_id?: number
     zero_query_status?: Record<string, 'unpublished' | 'not_stocked'>
     drilldown: { query: string, customer: string, opportunities?: string, params: Record<string, any> }
     data: any
@@ -65,6 +66,7 @@ const opportunitiesUrl = props.drilldown.opportunities
             :page-url="pageUrl"
             :zero-query-status="zero_query_status"
             :opportunities-url="opportunitiesUrl"
+            :live-website-id="live_website_id"
         />
         <SearchTrendChart :trend="search_insights?.trend" />
     </div>
@@ -99,6 +101,11 @@ const opportunitiesUrl = props.drilldown.opportunities
         <template #cell(customer_name)="{ item }">
             <Link v-if="item.customer_slug" :href="customerUrl(item) ?? ''" class="text-indigo-600 hover:underline">{{ item.customer_name }}</Link>
             <span v-else class="text-gray-400 text-xs">{{ ctrans("Guest") }}</span>
+        </template>
+
+        <template #cell(source)="{ item }">
+            <span v-if="item.source_label" class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">{{ item.source_label }}</span>
+            <span v-else class="text-gray-300 text-xs">-</span>
         </template>
 
         <template #cell(device)="{ item }">

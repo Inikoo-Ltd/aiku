@@ -26,7 +26,7 @@ class GetWebsiteSearchCustomerAnalytics
 
         $totalSearches = (clone $base)->count();
         $clicked       = (clone $base)->whereNotNull('clicked_at')->count();
-        $zeroResults   = (clone $base)->where('results_count', 0)->count();
+        $zeroResults   = (clone $base)->where('keyword_results_count', 0)->count();
 
         $topQueries = $this->groupedQueries(clone $base)
             ->orderByDesc('searches')
@@ -34,7 +34,7 @@ class GetWebsiteSearchCustomerAnalytics
             ->limit(10)
             ->get();
 
-        $topZeroQueries = $this->groupedQueries((clone $base)->where('results_count', 0))
+        $topZeroQueries = $this->groupedQueries((clone $base)->where('keyword_results_count', 0))
             ->orderByDesc('searches')
             ->orderBy('query')
             ->limit(10)

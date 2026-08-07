@@ -17,7 +17,6 @@ use App\Http\Resources\Catalogue\CollectionResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Shop;
 use App\Models\Inventory\Location;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -147,7 +146,7 @@ class UpdateCollection extends OrgAction
         return $this->handle($collection, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Collection $collection, ActionRequest $request): Collection
+    public function asController(Shop $shop, Collection $collection, ActionRequest $request): Collection
     {
         $this->collection = $collection;
 

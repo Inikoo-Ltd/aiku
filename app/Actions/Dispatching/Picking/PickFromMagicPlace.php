@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
@@ -31,9 +32,10 @@ class PickFromMagicPlace extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use AutoIgnoreZeroQuantityItems;
 
     private DeliveryNoteItem $deliveryNoteItem;
-    protected User $user;
+    protected ?User $user = null;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
     {
@@ -70,6 +72,7 @@ class PickFromMagicPlace extends OrgAction
 
             data_set($modelData, 'engine', PickingEngineEnum::AIKU, false);
             data_set($modelData, 'type', PickingTypeEnum::MAGIC_PICK, false);
+            data_set($modelData, 'last_picked_at', now());
 
             /** @var Picking $picking */
             $picking = $deliveryNoteItem->pickings()->create($modelData);
@@ -77,6 +80,9 @@ class PickFromMagicPlace extends OrgAction
 
 
             CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+
+
+            $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
             return $picking;
 

@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
+use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -24,7 +25,6 @@ use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -41,18 +41,12 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
     use WithMasterDepartmentSubNavigation;
     use WithMasterSubDepartmentSubNavigation;
 
-    private Group|MasterShop|MasterProductCategory $parent;
+    private MasterShop $parent;
 
-    protected function getElementGroups(Group|MasterShop|MasterProductCategory $parent): array
+    protected function getElementGroups(MasterShop $parent): array
     {
-        $activeMasterProducts       = null;
-        $discontinuedMasterProducts = null;
-
-        if ($parent instanceof MasterShop || $parent instanceof MasterProductCategory) {
-            $activeMasterProducts       = $parent->stats->number_mismatched_master_families_active;
-            $discontinuedMasterProducts = $parent->stats->number_mismatched_master_families_inactive;
-        }
-
+        $activeMasterProducts       = $parent->stats->number_mismatched_master_families_active;
+        $discontinuedMasterProducts = $parent->stats->number_mismatched_master_families_inactive;
 
         return [
             'status' => [
@@ -90,7 +84,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
         return $this->handle(parent: $masterShop, prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
 
-    public function handle(Group|MasterShop|MasterProductCategory $parent, string $parentType = 'department', $prefix = null): LengthAwarePaginator
+    public function handle(MasterShop $parent, string $parentType = 'department', $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -154,21 +148,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
                 prefix: $prefix
             );
         }
-
-        // Parent Filter (ONLY affects data scope)
-        match (true) {
-            $parent instanceof MasterShop =>
-            $queryBuilder->where('master_product_categories.master_shop_id', $parent->id),
-
-            $parent instanceof MasterProductCategory && $parentType === 'department' =>
-            $queryBuilder->where('master_product_categories.master_department_id', $parent->id),
-
-            $parent instanceof MasterProductCategory =>
-            $queryBuilder->where('master_product_categories.master_sub_department_id', $parent->id),
-
-            default =>
-            $queryBuilder->where('master_product_categories.group_id', $parent->id),
-        };
+        $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
 
         $selects = [
             // family
@@ -219,7 +199,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(MasterShop $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
@@ -247,12 +227,6 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
                     ],
                 );
 
-            if ($parent instanceof Group) {
-                $table->column('master_shop_code', __('Shop'), sortable: true);
-                $table->column('master_department_code', __('Department'), sortable: true);
-            }
-
-
             $table
                 ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
@@ -272,7 +246,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $masterFamilies, ActionRequest $request): Response
     {
-        $navigation      = MasterProductCategoryTabsEnum::navigation();
+        $navigation      = MasterProductCategoryTabsEnum::navigationExcept([MasterProductCategoryTabsEnum::SALES]);
         $masterShop      = null;
         $subNavigation   = null;
         $modelNavigation = [];
@@ -283,47 +257,15 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
             'title' => __('Master shop')
         ];
         $afterTitle      = [
-            'label' => __('Master Families')
+            'label' => __('Master Families') . ' ('.__('Has mismatch').')'
         ];
         $iconRight       = [
             'icon' => 'fal fa-folder-tree',
         ];
         $parentType      = 'department';
 
-        if ($this->parent instanceof MasterShop) {
-            $subNavigation = $this->getMasterShopNavigation($this->parent);
-            $masterShop    = $this->parent;
-        } elseif ($this->parent instanceof Group) {
-            $title      = __('Master families');
-            $icon       = [
-                'icon'  => ['fal', 'fa-folder'],
-                'title' => $title
-            ];
-            $afterTitle = [
-                'label' => __('In group')
-            ];
-            $iconRight  = [
-                'icon' => 'fal fa-city',
-            ];
-        } elseif ($this->parent instanceof MasterProductCategory) {
-            if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-                $icon            = [
-                    'icon'  => ['fal', 'fa-folder-tree'],
-                    'title' => __('Master department')
-                ];
-                $subNavigation   = $this->getMasterDepartmentSubNavigation($this->parent);
-                $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
-            } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                $parentType      = 'sub_department';
-                $icon            = [
-                    'icon'  => ['fal', 'fa-folder'],
-                    'title' => __('Master sub-department')
-                ];
-                $subNavigation   = $this->getMasterSubDepartmentSubNavigation($this->parent);
-                $modelNavigation = GetMasterSubDepartmentNavigation::run($this->parent, $request);
-            }
-            $masterShop = $this->parent->masterShop;
-        }
+        $subNavigation = $this->getMasterShopNavigation($this->parent);
+        $masterShop    = $this->parent;
 
         $baseData = [
             'breadcrumbs' => $this->getBreadcrumbs(
@@ -332,7 +274,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
                 $request->route()->originalParameters()
             ),
             'navigation'  => $modelNavigation,
-            'title'       => __('Master Families'),
+            'title'       => __('Master Families') . ' ('.__('Has mismatch').')',
             'pageHead'    => [
                 'title'         => $title,
                 'is_negative'   => true,
@@ -378,13 +320,8 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
             fn () => MasterFamiliesResource::collection($masterFamilies)
             : Inertia::optional(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::INDEX->value)));
 
-        $baseData[MasterProductCategoryTabsEnum::SALES->value] = $this->tab == MasterProductCategoryTabsEnum::SALES->value ?
-            fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::SALES->value))
-            : Inertia::optional(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::SALES->value)));
-
         return Inertia::render('Masters/MasterFamilies', $baseData)
-            ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))
-            ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value));
+            ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value));
     }
 
     public function getActions(): array
@@ -409,7 +346,7 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
         return $actions;
     }
 
-    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
+    public function getBreadcrumbs(MasterShop $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -427,16 +364,16 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
 
         return match ($routeName) {
             'grp.masters.master_shops.show.master_family.mismatch_detected.index' =>
-            array_merge(
-                ShowMastersDashboard::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
+                array_merge(
+                    ShowMasterShop::make()->getBreadcrumbs($parent),
+                    $headCrumb(
+                        [
+                            'name'       => $routeName,
+                            'parameters' => $routeParameters
+                        ],
+                        $suffix
+                    )
+                ),
             default => []
         };
     }

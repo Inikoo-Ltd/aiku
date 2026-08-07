@@ -11,9 +11,11 @@ import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Popover from "primevue/popover"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
+import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
 library.add(faSearch)
 
 const SearchResultCatalogue = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogue.vue"))
+const SearchFeatured = defineAsyncComponent(() => import("@/Iris/Components/SearchFeatured.vue"))
 
 const props = defineProps<{
     id: string
@@ -108,7 +110,7 @@ const fetchResults = debounce(async (query: string) => {
     isInternalLoading.value = true
     try {
         const { data } = await axios.get(
-            route(searchRoute('catalogue'), { q: query }),
+            route(searchRoute('catalogue'), { q: query, source: 'desktop_bar' }),
             { signal: abort.signal }
         )
         cacheResponse(query, data)
@@ -134,18 +136,45 @@ const cancelPendingSearch = () => {
     isInternalLoading.value = false
 }
 
+// An empty field shows what the shop merchandises instead of nothing at all. The popover
+// only opens once there is something to put in it, so a shop without featured items keeps
+// the plain focus behaviour.
+const { featuredResults, isFeaturedLoading, hasFeaturedResults, fetchFeaturedResults } = useSearchFeaturedItems()
+
+const isShowingFeatured = computed(() => !inputValue.value.trim() && (isFeaturedLoading.value || hasFeaturedResults.value))
+
+let isInputFocused = false
+
+const showFeaturedOrClose = async () => {
+    await fetchFeaturedResults()
+
+    if (!isInputFocused || inputValue.value.trim()) {
+        return
+    }
+
+    if (hasFeaturedResults.value) {
+        openPopover()
+    } else {
+        closePopover()
+    }
+}
+
 // On the results page the box is pre-filled from ?q=, so typing without selecting first
 // prepends to the old term and searches the concatenation ("incensesalt lampssoap loaves").
 // Selecting on focus makes the next keystroke replace it, while still allowing edits.
 let isFocusSelection = false
 
 const onFocus = (event: FocusEvent) => {
-    isFocusSelection = true;
+    isFocusSelection = true
+    isInputFocused = true;
     (event.target as HTMLInputElement)?.select()
 
     if (inputValue.value.trim()) {
         openPopover()
+        return
     }
+
+    showFeaturedOrClose()
 }
 
 // The mouseup of the click that focused the field would otherwise collapse that selection
@@ -158,6 +187,7 @@ const onMouseUp = (event: MouseEvent) => {
 
 const onBlur = () => {
     isFocusSelection = false
+    isInputFocused = false
 }
 
 const onSearchInput = (event: Event) => {
@@ -166,7 +196,7 @@ const onSearchInput = (event: Event) => {
     if (!inputValue.value.trim()) {
         cancelPendingSearch()
         internalResults.value = null
-        closePopover()
+        showFeaturedOrClose()
         return
     }
 
@@ -234,7 +264,14 @@ const visitSearchPage = () => {
             @show="onPopoverShow"
             @hide="onPopoverHide"
         >
-            <div class="h-[70vh] max-h-[550px] overflow-hidden">
+            <div v-if="isShowingFeatured" class="max-h-[70vh] overflow-y-auto">
+                <SearchFeatured
+                    v-model:open="showDropdown"
+                    :results="featuredResults"
+                    :is-loading="isFeaturedLoading"
+                />
+            </div>
+            <div v-else class="h-[70vh] max-h-[550px] overflow-hidden">
                 <SearchResultCatalogue
                     v-model:open="showDropdown"
                     :results="internalResults"

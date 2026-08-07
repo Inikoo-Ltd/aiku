@@ -6,6 +6,7 @@ import { get } from 'lodash-es'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { useLocaleStore } from '@/Stores/locale'
 import { ctrans } from '@/Composables/useTrans'
+import { useFormatTime } from '@/Composables/useFormatTime'
 import { getStyles } from '@/Composables/styles'
 import Image from '@common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
@@ -22,6 +23,26 @@ interface InternalCatalogueItem {
     name: string
     image: any
     url?: string
+}
+
+interface InternalOrderItem {
+    id: number
+    code: string
+    customer_reference?: string | null
+    state: string
+    state_label?: string | null
+    date?: string
+    total_amount?: number | string | null
+    url: string
+}
+
+interface InternalInvoiceItem {
+    id: number
+    code: string
+    type: string
+    date?: string
+    total_amount?: number | string | null
+    url: string
 }
 
 interface InternalFacetItem {
@@ -87,6 +108,9 @@ const recordClick = (url?: string | null) => {
 }
 const facets = ref<InternalFacets>(emptyFacets())
 const collections = ref<InternalCatalogueItem[]>([])
+// Only sent by SearchIrisCataloguePage when a customer is signed in, and only their own documents
+const orders = ref<InternalOrderItem[]>([])
+const invoices = ref<InternalInvoiceItem[]>([])
 const totalResults = ref(0)
 const currentPage = ref(1)
 const perPage = 15
@@ -108,6 +132,8 @@ const resetResults = () => {
     products.value = []
     facets.value = emptyFacets()
     collections.value = []
+    orders.value = []
+    invoices.value = []
     totalResults.value = 0
     currentPage.value = 1
 }
@@ -141,6 +167,7 @@ const fetchInternalResults = async ({ pageNumber = 1, append = false, resultsOnl
                     price_min: priceMin.value !== '' ? priceMin.value : undefined,
                     price_max: priceMax.value !== '' ? priceMax.value : undefined,
                     sort: sortBy.value || undefined,
+                    source: 'search_page',
                 },
                 signal: internalAbort.signal,
             }
@@ -156,6 +183,10 @@ const fetchInternalResults = async ({ pageNumber = 1, append = false, resultsOnl
         if (!append && !resultsOnly) {
             facets.value = results.facets ?? emptyFacets()
             collections.value = results.collections ?? []
+        }
+        if (!append) {
+            orders.value = results.orders ?? []
+            invoices.value = results.invoices ?? []
         }
     } catch (error) {
         if (axios.isCancel(error) || requestId !== internalRequestId) {
@@ -351,7 +382,7 @@ const isMobileFilterOpen = ref(false)
 </script>
 
 <template>
-    <div class="xmd:py-16 w-full mx-auto px-8">
+    <div class="xmd:py-16 w-full mx-auto px-4 md:px-8">
         <div id="lb-search-element" class="md:mt-4 min-h-44">
             <div v-if="layout.app.environment === 'local'" class="bg-yellow-500 w-full text-center py-1 rounded">
                 Internal search
@@ -431,6 +462,49 @@ const isMobileFilterOpen = ref(false)
                             {{ ctrans('Results for') }}
                             <strong class="text-[var(--theme-color-0)]">{{ searchQuery }}</strong>
                             <span v-if="!isInternalLoading"> ({{ totalResults }})</span>
+                        </div>
+
+                        <!-- Your orders: only present for a signed in customer -->
+                        <div v-if="orders.length" class="mt-4">
+                            <p class="text-base font-bold text-[var(--theme-color-0)] mb-2.5">{{ ctrans('Your orders') }}</p>
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <LinkIris
+                                    v-for="order in orders"
+                                    :key="order.id"
+                                    :href="order.url"
+                                    class="block rounded-md border border-gray-200 bg-white px-3 py-2.5 transition-colors hover:border-[var(--theme-color-0)]"
+                                    @click="() => recordClick(order.url)"
+                                >
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-sm font-semibold text-slate-800 truncate">{{ order.code }}</span>
+                                        <span v-if="order.state_label" class="text-xs text-gray-500 whitespace-nowrap">{{ order.state_label }}</span>
+                                    </div>
+                                    <div class="mt-0.5 flex items-center justify-between gap-2 text-xs text-gray-500">
+                                        <span class="truncate">{{ order.customer_reference || useFormatTime(order.date, { formatTime: 'mdy' }) }}</span>
+                                        <span v-if="formatPrice(order.total_amount)" class="whitespace-nowrap font-semibold text-[var(--theme-color-0)]">{{ formatPrice(order.total_amount) }}</span>
+                                    </div>
+                                </LinkIris>
+                            </div>
+                        </div>
+
+                        <!-- Your invoices: only present for a signed in customer -->
+                        <div v-if="invoices.length" class="mt-4">
+                            <p class="text-base font-bold text-[var(--theme-color-0)] mb-2.5">{{ ctrans('Your invoices') }}</p>
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <LinkIris
+                                    v-for="invoice in invoices"
+                                    :key="invoice.id"
+                                    :href="invoice.url"
+                                    class="block rounded-md border border-gray-200 bg-white px-3 py-2.5 transition-colors hover:border-[var(--theme-color-0)]"
+                                    @click="() => recordClick(invoice.url)"
+                                >
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-sm font-semibold text-slate-800 truncate">{{ invoice.code }}</span>
+                                        <span v-if="formatPrice(invoice.total_amount)" class="whitespace-nowrap text-xs font-semibold text-[var(--theme-color-0)]">{{ formatPrice(invoice.total_amount) }}</span>
+                                    </div>
+                                    <div class="mt-0.5 text-xs text-gray-500">{{ useFormatTime(invoice.date, { formatTime: 'mdy' }) }}</div>
+                                </LinkIris>
+                            </div>
                         </div>
 
                         <!-- Quick searches: tabs + card rail -->
@@ -543,7 +617,7 @@ const isMobileFilterOpen = ref(false)
 
                         <!-- Section: Results (same product card as the family page) -->
                         <div v-else-if="products.length" xstyle="gridColsVars"
-                            class="xproducts-grid grid-cols-1 lg:grid-cols-4 grid gap-x-4 gap-y-10 transition-opacity bg-gray-100 p-4 rounded-md"
+                            class="xproducts-grid grid-cols-2 lg:grid-cols-4 grid gap-x-6 gap-y-10 transition-opacity bg-gray-100 p-4 rounded-md"
                             :class="isResultsRefreshing ? 'opacity-60 pointer-events-none' : ''">
                             <div v-for="product in products" :key="product.id"
                                 :style="getStyles(fieldValue?.card_product?.properties, screenType)"

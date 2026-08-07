@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 import { defineAsyncComponent } from 'vue'
 import Input from '@/Components/Forms/Fields/Input.vue'
 import FieldInputNumber from '@/Components/Forms/Fields/FieldInputNumber.vue'
+import FieldCompositionUnits from '@/Components/Forms/Fields/FieldCompositionUnits.vue'
 import Select from '@/Components/Forms/Fields/Select.vue'
 import SelectBillingCycle from '@/Components/Forms/Fields/SelectBillingCycle.vue'
 import Phone from '@/Components/Forms/Fields/Phone.vue'
@@ -75,6 +76,7 @@ import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue
 import FileUpload from '@/Components/Forms/Fields/FileUpload.vue'
 import InputJsonByForm from '@/Components/Forms/Fields/InputJsonByForm.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
+import VariantOption from '@/Components/Forms/Fields/VariantOption.vue'
 import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
 import PasskeysManager from '@/Components/Forms/Fields/PasskeysManager.vue'
@@ -107,6 +109,7 @@ export const componentsList: { [key: string]: Component } = {
     'input': Input,
     'input_with_warning': InputWithWarning,
     'input_number': FieldInputNumber,
+    'composition_units': FieldCompositionUnits,
     'inputWithAddOn': InputWithAddOn,
     'phone': Phone,
     'date': Date,
@@ -178,6 +181,7 @@ export const componentsList: { [key: string]: Component } = {
     'trade-units-for-stock': TradeUnitsForStock,
     'file_upload': FileUpload,
     'input-variant' : VariantsField,
+    'variant_field' : VariantOption,
     'editOffer' : EditOffer,
     'offer_fields'  : OfferFields,
     'vol_discount' : InputVolDiscount,

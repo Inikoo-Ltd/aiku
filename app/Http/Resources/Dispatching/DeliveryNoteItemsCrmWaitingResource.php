@@ -60,6 +60,13 @@ class DeliveryNoteItemsCrmWaitingResource extends JsonResource
         $quantityToPickFractional   = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->packed_in);
         $quantityToPickFractionalDS = $quantityToPickFractional;
 
+        $packedInMessage = '';
+        if ($packedIn == 1) {
+            $packedInMessage = '('.__('Individually packed').')';
+        } elseif ($packedIn > 1) {
+            $packedInMessage = '('.__('Pack of').": $packedIn".")";
+        }
+
         if (floor($quantityToPick) == $quantityToPick && $packedIn > 1) {
             $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
         }
@@ -82,6 +89,8 @@ class DeliveryNoteItemsCrmWaitingResource extends JsonResource
             'org_stock_code'                 => $this->org_stock_code,
             'org_stock_slug'                 => $this->org_stock_slug,
             'org_stock_name'                 => $this->org_stock_name,
+            'packed_in'                      => $packedIn,
+            'packed_in_message'              => $packedInMessage,
             'is_handled'                     => $this->is_handled,
             'quantity_required_fractional'   => $requiredFactionalData,
             'notes'                          => $this->notes,

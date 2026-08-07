@@ -69,7 +69,9 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
+use App\Actions\CRM\Customer\StoreCustomer;
 use App\Models\CRM\Customer;
+use Illuminate\Validation\ValidationException;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
@@ -856,6 +858,22 @@ test('Update Retina Customer', function () {
         ->and($customer->contact_name)->toBe('John');
 
     return $customer;
+});
+
+test('Update Retina Customer rejects email already used in shop', function () {
+    $otherCustomer = StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(Customer::factory()->definition(), ['email' => 'taken@example.com'])
+    );
+
+    expect($otherCustomer->email)->toBe('taken@example.com');
+
+    expect(fn () => UpdateRetinaCustomer::make()->action(
+        $this->fulfilmentCustomer->customer,
+        [
+            'email' => 'taken@example.com'
+        ]
+    ))->toThrow(ValidationException::class);
 });
 
 test('Store retina delivery address to fulfilment customer', function () {

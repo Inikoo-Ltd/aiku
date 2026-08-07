@@ -128,6 +128,50 @@ class ShowRetinaEcomBasket extends RetinaAction
                         'method'     => 'patch'
                     ],
                 ],
+
+                'upload_spreadsheet' => $isOrder ? [
+                    'title'               => [
+                        'label'       => __('Upload products'),
+                        'information' => __('The list of column file').': code, quantity'
+                    ],
+                    'progressDescription' => __('Adding Products'),
+                    'preview_template'    => [
+                        'header' => ['code', 'quantity'],
+                        'rows'   => [
+                            [
+                                'code'     => 'product-001',
+                                'quantity' => '1'
+                            ]
+                        ]
+                    ],
+                    'upload_spreadsheet'  => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'retina.personal.'.request()->user()->id,
+                        'required_fields' => ['code', 'quantity'],
+                        'template'        => [
+                            'label' => __('Download template (.xlsx)')
+                        ],
+                        'route'           => [
+                            'upload'   => [
+                                'name'       => 'retina.models.order.transaction.upload',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                            'history'  => [
+                                'name'       => 'retina.json.recent_uploads',
+                                'parameters' => [
+                                    'order' => $order->slug
+                                ]
+                            ],
+                            'download' => [
+                                'name'       => 'retina.ecom.order_upload_templates',
+                                'parameters' => []
+                            ],
+                        ],
+                    ]
+                ] : null,
+
                 'is_basket_created'     => (bool) $order,
 
                 'voucher' => $order ? GetVoucherData::run($order->offer_voucher_id) : null,

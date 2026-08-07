@@ -55,6 +55,7 @@ use App\Actions\Chat\ChatSession\UpdateChatSession;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
@@ -1497,7 +1498,9 @@ test('ShareChatSessionToSlack notifies configured channels', function () {
         'updated_at'       => now(),
     ]);
 
-    $result = ShareChatSessionToSlack::make()->handle($chatSession, 'xoxb-fake-token', ['#support']);
+    $result = ShareChatSessionToSlack::make()->handle($chatSession, 'xoxb-fake-token', [
+        ['type' => 'channel', 'id' => 'C0SUPPORT', 'name' => '#support'],
+    ]);
 
     expect($result['succeeded'])->toBe(['#support'])
         ->and($result['failed'])->toBe([]);
@@ -1805,6 +1808,8 @@ test('GetChatAgents returns only available agents with shop assignments', functi
         'is_online'            => true,
         'is_available'         => true,
         'current_chat_count'   => 0,
+        'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at'    => now(),
     ]);
 
     AssignChatAgentToScope::make()->handle([

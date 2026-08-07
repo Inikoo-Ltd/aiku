@@ -2,6 +2,7 @@
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { Link } from '@inertiajs/vue3'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { faMousePointer, faArrowRight } from '@fal'
 
 library.add(faMousePointer, faArrowRight)
@@ -33,6 +34,7 @@ const props = defineProps<{
         top_searchers?: SearcherStat[]
         top_clicked_pages?: { clicked_url: string, clicks: number }[]
         devices?: { device: string, searches: number, clicks: number }[]
+        sources?: { source: string, label: string, searches: number, clicks: number, share: number }[]
     } | null
     logsUrl?: string | null
     logsLabel?: string
@@ -41,7 +43,45 @@ const props = defineProps<{
     pageUrl?: (clickedUrl: string) => string
     zeroQueryStatus?: Record<string, 'unpublished' | 'not_stocked'>
     opportunitiesUrl?: string
+    liveWebsiteId?: number
 }>()
+
+// Headline numbers arrive over the same website analytics channel the live visitor
+// counters use; the lists stay as rendered, they are far heavier to rebuild per search
+type Headline = {
+    total_searches: number
+    logged_in_searches: number
+    guest_searches: number
+    click_through: number
+    zero_results_rate: number
+}
+
+const liveHeadline = ref<Headline | null>(null)
+const justUpdated = ref(false)
+let flashTimer: ReturnType<typeof setTimeout> | null = null
+
+const stats = computed(() => ({ ...(props.widget ?? {}), ...(liveHeadline.value ?? {}) }) as any)
+
+onMounted(() => {
+    if (!props.liveWebsiteId || !(window as any).Echo) {
+        return
+    }
+
+    ;(window as any).Echo.private(`website.${props.liveWebsiteId}.analytics`)
+        .listen('.App\\Events\\Web\\WebsiteSearchStatsUpdated', (event: Headline) => {
+            liveHeadline.value = event
+            justUpdated.value = true
+            if (flashTimer) clearTimeout(flashTimer)
+            flashTimer = setTimeout(() => (justUpdated.value = false), 1200)
+        })
+})
+
+onUnmounted(() => {
+    if (flashTimer) clearTimeout(flashTimer)
+    if (props.liveWebsiteId && (window as any).Echo) {
+        ;(window as any).Echo.leave(`website.${props.liveWebsiteId}.analytics`)
+    }
+})
 
 // The full path is unreadable in a narrow column; the last segment is the webpage url
 const pagePath = (url: string) => {
@@ -89,18 +129,21 @@ const searcherHref = (searcher: SearcherStat): string | null => {
         <template v-if="widget">
             <div class="flex gap-10 mb-4">
                 <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
-                    <p class="text-4xl font-bold">{{ widget.total_searches.toLocaleString() }}</p>
-                    <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("Searches") }}</p>
-                    <p v-if="widget.logged_in_searches !== undefined" class="text-xs text-gray-400">
-                        {{ ctrans(":logged logged in · :guest guests", { logged: String(widget.logged_in_searches), guest: String(widget.guest_searches ?? 0) }) }}
+                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated && 'text-indigo-600'">{{ stats.total_searches.toLocaleString() }}</p>
+                    <p class="text-sm text-gray-600 group-hover:underline">
+                        {{ ctrans("Searches") }}
+                        <span v-if="liveWebsiteId" class="inline-block w-1.5 h-1.5 rounded-full align-middle" :class="justUpdated ? 'bg-indigo-500' : 'bg-green-400'" v-tooltip="ctrans('Updating live')" />
+                    </p>
+                    <p v-if="stats.logged_in_searches !== undefined" class="text-xs text-gray-400">
+                        {{ ctrans(":logged logged in · :guest guests", { logged: String(stats.logged_in_searches), guest: String(stats.guest_searches ?? 0) }) }}
                     </p>
                 </component>
                 <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
-                    <p class="text-4xl font-bold">{{ widget.click_through }}%</p>
+                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated && 'text-indigo-600'">{{ stats.click_through }}%</p>
                     <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("Click-through") }}</p>
                 </component>
                 <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
-                    <p class="text-4xl font-bold">{{ widget.zero_results_rate }}%</p>
+                    <p class="text-4xl font-bold transition-colors duration-500" :class="justUpdated && 'text-indigo-600'">{{ stats.zero_results_rate }}%</p>
                     <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("No results") }}</p>
                 </component>
             </div>
@@ -200,6 +243,24 @@ const searcherHref = (searcher: SearcherStat): string | null => {
                             <span class="shrink-0 tabular-nums font-medium">{{ page.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' class="text-gray-400" /></span>
                         </div>
                         <p v-if="!widget.top_clicked_pages.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
+                    </div>
+                </div>
+                <div v-if="widget.sources">
+                    <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Where searches start") }}</p>
+                    <div class="divide-y divide-gray-100">
+                        <div v-for="source in widget.sources" :key="source.source" class="py-1">
+                            <div class="flex justify-between gap-2">
+                                <span class="text-gray-600 truncate min-w-0">{{ source.label }}</span>
+                                <span class="shrink-0 tabular-nums font-medium">
+                                    {{ source.share }}%
+                                    <span class="text-gray-400 font-normal">{{ source.searches }} / {{ source.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span>
+                                </span>
+                            </div>
+                            <div class="mt-1 h-1 rounded bg-gray-100 overflow-hidden">
+                                <div class="h-full bg-indigo-400" :style="{ width: `${source.share}%` }" />
+                            </div>
+                        </div>
+                        <p v-if="!widget.sources.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div v-if="widget.devices">

@@ -92,6 +92,7 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
             'packed_in_message'                 => $packedInMessage,
             'warehouse_area'                    => $warehouseArea,
 
+            'delivery_note_id'                  => $deliveryNote?->id,
             'delivery_note_slug'                => $deliveryNote?->slug,
             'delivery_note_reference'           => $deliveryNote?->reference,
             'delivery_note_is_premium_dispatch' => $deliveryNote?->is_premium_dispatch,
@@ -109,6 +110,10 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
             'quantity_waiting_warehouse'        => $this->quantity_waiting_warehouse,
             'quantity_waiting_crm'              => $this->quantity_waiting_crm,
             'trolley_names'                     => $deliveryNote->trolleys?->pluck('name')->join(', ') ?: null,
+            'trolleys'                          => $deliveryNote?->trolleys->map(fn ($trolley) => [
+                'id'   => $trolley->id,
+                'name' => $trolley->name,
+            ])->values()->toArray() ?? [],
 
             'is_handled'                        => $this->is_handled,
             'notes'                             => $this->notes,

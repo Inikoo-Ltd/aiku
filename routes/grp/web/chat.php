@@ -6,6 +6,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Chat\Agent\Presence\TrackChatAgentPresence;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Chat\Agent\UI\ShowGroupAgents;
 use App\Actions\Chat\ChatSession\UI\RedirectToOrgChatInbox;
 use App\Actions\Chat\ChatSession\UI\ShowGroupChatDashboard;
@@ -14,3 +16,5 @@ use Illuminate\Support\Facades\Route;
 Route::get('/dashboard', ShowGroupChatDashboard::class)->name('dashboard');
 Route::get('/agents', ShowGroupAgents::class)->name('agents.show');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');
+Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');
+Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');

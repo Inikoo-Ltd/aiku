@@ -86,6 +86,20 @@ class GetEcomOrderActions
                 ],
                 OrderStateEnum::SUBMITTED => [
                     [
+                        'type'   => 'buttonGroup',
+                        'key'    => 'upload-add',
+                        'button' => [
+                            [
+                                'type'    => 'button',
+                                'style'   => 'secondary',
+                                'icon'    => ['fal', 'fa-upload'],
+                                'label'   => '',
+                                'key'     => 'upload',
+                                'tooltip' => __('Upload products via spreadsheet'),
+                            ],
+                        ],
+                    ],
+                    [
                         'type'    => 'button',
                         'style'   => 'secondary',
                         'icon'    => 'fas fa-plus',

@@ -14,11 +14,11 @@ use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStockFamily;
-use Lorisleiva\Actions\Concerns\AsObject;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncProductOrgStocksFromTradeUnits
 {
-    use asObject;
+    use AsAction;
 
     /**
      * @throws \Throwable
@@ -66,10 +66,14 @@ class SyncProductOrgStocksFromTradeUnits
                             $packedIn = (int)$packedIn;
                         }
                     }
-                    list($smallestDividend, $correspondingDivisor) = findSmallestFactors($stock->pivot->quantity);
+
+                    /** Picks follow the organisation's own packing (OS-TU), falling back to the group stock's. */
+                    $orgUnitsPerPack = $orgStock->tradeUnits->firstWhere('id', $tradeUnit->id)?->pivot->quantity
+                        ?? $stock->pivot->quantity;
+                    list($smallestDividend, $correspondingDivisor) = findSmallestFactors($orgUnitsPerPack);
 
                     $orgStocks[$orgStock->id] = [
-                        'quantity'                  => $tradeUnit->pivot->quantity / $stock->pivot->quantity,
+                        'quantity'                  => $tradeUnit->pivot->quantity / $orgUnitsPerPack,
                         'trade_units_per_org_stock' => $packedIn,
                         'divisor'                   => $correspondingDivisor,
                         'dividend'                  => $smallestDividend

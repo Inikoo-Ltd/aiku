@@ -17,6 +17,7 @@ use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Exports\SupplyChain\SupplierProductTemplateExport;
 use App\Http\Resources\SupplyChain\SupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SupplyChain\Agent;
@@ -37,6 +38,7 @@ class IndexSupplierProducts extends OrgAction
     use WithSupplyChainAuthorisation;
     use WithAgentSubNavigation;
     use WithSupplierSubNavigation;
+
     private Group|Agent|Supplier $scope;
 
     private string $bucket = 'all';
@@ -50,7 +52,7 @@ class IndexSupplierProducts extends OrgAction
                 ->selectRaw('state, count(*) as count')
                 ->groupBy('state')
                 ->pluck('count', 'state')->all();
-            $stateCounts  = array_map(fn ($state) => $bucketCounts[$state->value] ?? 0, array_column(SupplierProductStateEnum::cases(), null, 'value'));
+            $stateCounts = array_map(fn ($state) => $bucketCounts[$state->value] ?? 0, array_column(SupplierProductStateEnum::cases(), null, 'value'));
         } else {
             $stateCounts = SupplierProductStateEnum::count($parent);
         }
@@ -58,18 +60,15 @@ class IndexSupplierProducts extends OrgAction
         return [
             'state' => [
                 'label'    => __('State'),
-                'default'  => SupplierProductStateEnum::ACTIVE->value.','.SupplierProductStateEnum::DISCONTINUING->value,
+                'default'  => SupplierProductStateEnum::ACTIVE->value,
                 'elements' => array_merge_recursive(
                     SupplierProductStateEnum::labels(),
                     $stateCounts
                 ),
-
-                'engine' => function ($query, $elements) {
+                'engine'   => function ($query, $elements) {
                     $query->whereIn('supplier_products.state', $elements);
-                }
+                },
             ],
-
-
         ];
     }
 
@@ -81,12 +80,13 @@ class IndexSupplierProducts extends OrgAction
                     ->orWhereAnyWordStartWith('supplier_products.name', $value);
             });
         });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
         $queryBuilder = QueryBuilder::for(SupplierProduct::class);
-
+        $queryBuilder->leftJoin('currencies', 'supplier_products.currency_id', 'currencies.id');
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -104,7 +104,9 @@ class IndexSupplierProducts extends OrgAction
                 'supplier_products.id',
                 'supplier_products.code',
                 'supplier_products.slug',
-                'supplier_products.name'
+                'supplier_products.name',
+                'supplier_products.cost',
+                'currencies.code as currency_code',
             ])
             ->leftJoin('supplier_product_stats', 'supplier_product_stats.supplier_product_id', 'supplier_products.id')
             ->when($parent, function ($query) use ($parent) {
@@ -123,15 +125,15 @@ class IndexSupplierProducts extends OrgAction
                     }
                 }
             })
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null, Group|Agent|Supplier|null $parent = null): Closure
+    public function tableStructure(Group|Agent|Supplier|null $parent = null, ?array $modelOperations = null, $prefix = null): Closure
     {
-        $parent ??= isset($this->scope) ? $this->scope : group();
+        $parent ??= $this->scope ?? group();
 
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
@@ -154,8 +156,17 @@ class IndexSupplierProducts extends OrgAction
                 ->withLabelRecord([__('Supplier Product'), __('Supplier Products')])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency')
                 ->defaultSort('code');
         };
+    }
+
+    public function asController(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->scope = app('group');
+        $this->initialisationFromGroup(app('group'), $request);
+
+        return $this->handle($this->group);
     }
 
     public function inAgent(Agent $agent, ActionRequest $request): LengthAwarePaginator
@@ -164,14 +175,6 @@ class IndexSupplierProducts extends OrgAction
         $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($agent);
-    }
-
-    public function inSupplier(Supplier $supplier, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->scope = $supplier;
-        $this->initialisationFromGroup(app('group'), $request);
-
-        return $this->handle($supplier);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -183,7 +186,24 @@ class IndexSupplierProducts extends OrgAction
         return $this->handle($supplier);
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function inAgents(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'in_agents';
+        $this->scope  = app('group');
+        $this->initialisationFromGroup(app('group'), $request);
+
+        return $this->handle($this->group);
+    }
+
+    public function inSupplier(Supplier $supplier, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->scope = $supplier;
+        $this->initialisationFromGroup(app('group'), $request);
+
+        return $this->handle($supplier);
+    }
+
+    public function inOverview(ActionRequest $request): LengthAwarePaginator
     {
         $this->scope = app('group');
         $this->initialisationFromGroup(app('group'), $request);
@@ -200,23 +220,6 @@ class IndexSupplierProducts extends OrgAction
         return $this->handle($this->group);
     }
 
-    public function inAgents(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'in_agents';
-        $this->scope  = app('group');
-        $this->initialisationFromGroup(app('group'), $request);
-
-        return $this->handle($this->group);
-    }
-
-    public function inOverview(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->scope = app('group');
-        $this->initialisationFromGroup(app('group'), $request);
-
-        return $this->handle($this->group);
-    }
-
     public function jsonResponse(LengthAwarePaginator $supplier_products): AnonymousResourceCollection
     {
         return SupplierProductsResource::collection($supplier_products);
@@ -224,117 +227,111 @@ class IndexSupplierProducts extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $supplier_products, ActionRequest $request): Response
     {
-        $subNavigation = null;
-        $title = match ($this->bucket) {
-            'free' => __('Free Supplier Products'),
-            'in_agents' => __('Agents Supplier Products'),
-            default => __('Supplier Products')
+        $title         = match ($this->bucket) {
+            'free'       => __('Free Supplier Products'),
+            'in_agents'  => __('Agents Supplier Products'),
+            default      => __('Supplier Products'),
         };
+        $icon          = [
+            'icon'  => ['fal', 'fa-box-usd'],
+            'title' => __('Supplier Products'),
+        ];
+        $subNavigation = null;
+
         if ($this->scope instanceof Group) {
             $subNavigation = $this->getSupplierProductsSubNavigation();
         }
-        $model = '';
-        $icon  = [
-            'icon'  => ['fal', 'fa-box-usd'],
-            'title' => __('Supplier Products')
-        ];
-        $afterTitle = null;
-        $iconRight = null;
-        $actions = null;
-        $attachRoutes = null;
 
         if ($this->scope instanceof Agent) {
-            $subNavigation = $this->getAgentNavigation($this->scope);
-            $title = $this->scope->organisation->name;
-            $model = '';
-            $icon  = [
+            $title         = $this->scope->organisation->name;
+            $icon          = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Supplier Products')
+                'title' => __('Supplier Products'),
             ];
-            $iconRight    = [
-                'icon' => 'fal fa-box-usd',
-            ];
-            $afterTitle = [
-
-                'label'     => __('Supplier Products')
-            ];
+            $subNavigation = $this->getAgentNavigation($this->scope);
+            $afterTitle    = ['label' => __('Supplier Products')];
+            $iconRight     = ['icon' => 'fal fa-box-usd'];
         } elseif ($this->scope instanceof Supplier) {
-            $subNavigation = $this->getSupplierNavigation($this->scope);
-            $title = $this->scope->name;
-            $model = '';
-            $icon  = [
+            $title         = $this->scope->name;
+            $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('Supplier Products')
+                'title' => __('Supplier Products'),
             ];
-            $iconRight    = [
-                'icon' => 'fal fa-box-usd',
-            ];
-            $afterTitle = [
-
-                'label'     => __('Supplier Products')
-            ];
-            $actions = [
+            $subNavigation = $this->getSupplierNavigation($this->scope);
+            $afterTitle    = ['label' => __('Supplier Products')];
+            $iconRight     = ['icon' => 'fal fa-box-usd'];
+            $actions       = [
                 [
-                    'type'    =>    'button',
-                                    'style'   => 'create',
-                                    'tooltip' => __('New Supplier Product'),
-                                    'label'   => __('New Supplier Product'),
-                                    'route'   => [
-                                        'name'       => 'grp.supply-chain.suppliers.supplier_products.create',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ]
-                ]
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('New Supplier Product'),
+                    'label'   => __('New Supplier Product'),
+                    'route'   => [
+                        'name'       => 'grp.supply-chain.suppliers.supplier_products.create',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                ],
             ];
-            //'grp.models.supplier.supplier-product.import' import route
-            $spreadsheetRoute = [
+            $spreadsheetRoutes = [
                 'event'           => 'action-progress',
                 'channel'         => 'grp.personal.'.$this->group->id,
-                'required_fields' => ["id:_supplier_part_key", "supplier's_product_code", "units_per_sko", "skos_per_carton", "carton_cbm", "unit_cost", "availability", "supplier's_unit_description"],
+                'required_fields' => array_map(
+                    fn ($heading) => strtolower(str_replace(' ', '_', trim($heading))),
+                    SupplierProductTemplateExport::HEADINGS
+                ),
+                'template'        => [
+                    'label' => __('Download template (.xlsx)'),
+                ],
                 'route'           => [
                     'upload'   => [
                         'name'       => 'grp.models.supplier.supplier-product.import',
                         'parameters' => [
-                            'supplier' => $this->scope->id
-                        ]
+                            'supplier' => $this->scope->id,
+                        ],
+                    ],
+                    'download' => [
+                        'name'       => 'grp.supply-chain.suppliers.supplier_products.uploads.templates',
+                        'parameters' => [
+                            'supplier' => $this->scope->slug,
+                        ],
                     ],
                 ],
             ];
         }
+
         return Inertia::render(
             'SupplyChain/SupplierProducts',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'       => $this->getBreadcrumbs(
+                    $this->scope,
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
-                    $this->scope
                 ),
-                'title'       => $title,
-                'pageHead'    => [
+                'title'             => $title,
+                'pageHead'          => [
                     'title'         => $title,
                     'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
+                    'afterTitle'    => $afterTitle ?? null,
+                    'iconRight'     => $iconRight ?? null,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $actions
+                    'actions'       => $actions ?? null,
                 ],
-                'upload_spreadsheet' => $spreadsheetRoute ?? null,
-                'data'        => SupplierProductsResource::collection($supplier_products),
-            ]
-        )->table($this->tableStructure());
+                'upload_spreadsheet' => $spreadsheetRoutes ?? null,
+                'data'               => SupplierProductsResource::collection($supplier_products),
+            ],
+        )->table($this->tableStructure($this->scope));
     }
 
-
-    public function getBreadcrumbs(string $routeName, array $routeParameters, Group|Agent|Supplier $scope): array
+    public function getBreadcrumbs(Group|Agent|Supplier $scope, string $routeName, array $routeParameters): array
     {
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
                     'type'   => 'simple',
                     'simple' => [
+                        'label' => __('Supplier Products'),
+                        'icon'  => 'fal fa-bars',
                         'route' => $routeParameters,
-                        'label' => __('Supplier products'),
-                        'icon'  => 'fal fa-bars'
                     ],
                 ],
             ];
@@ -349,8 +346,8 @@ class IndexSupplierProducts extends OrgAction
                 $headCrumb(
                     [
                         'name' => $routeName,
-                        null
-                    ]
+                        null,
+                    ],
                 ),
             ),
             'grp.supply-chain.suppliers.supplier_products.index' =>
@@ -358,33 +355,32 @@ class IndexSupplierProducts extends OrgAction
                 ShowSupplier::make()->getBreadcrumbs($scope, $routeName, $routeParameters),
                 $headCrumb(
                     [
-                        'name' => 'grp.supply-chain.suppliers.supplier_products.index',
-                        'parameters' => $routeParameters
-                    ]
+                        'name'       => 'grp.supply-chain.suppliers.supplier_products.index',
+                        'parameters' => $routeParameters,
+                    ],
                 ),
             ),
-
             'grp.supply-chain.agents.show.supplier_products.index' =>
             array_merge(
                 ShowAgent::make()->getBreadcrumbs($scope, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.supply-chain.agents.show.supplier_products.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
+                        'parameters' => $routeParameters,
+                    ],
+                ),
             ),
             'grp.overview.procurement.supplier-products.index' =>
             array_merge(
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name' => $routeName,
-                        'parameters' => $routeParameters
-                    ]
-                )
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters,
+                    ],
+                ),
             ),
-            default => []
+            default => [],
         };
     }
 
@@ -396,29 +392,29 @@ class IndexSupplierProducts extends OrgAction
                 'root'   => 'grp.supply-chain.supplier_products.free',
                 'route'  => [
                     'name'       => 'grp.supply-chain.supplier_products.free',
-                    'parameters' => []
+                    'parameters' => [],
                 ],
-                'number' => $this->group->supplyChainStats->number_independent_supplier_products
+                'number' => $this->group->supplyChainStats->number_independent_supplier_products,
             ],
             [
                 'label'  => __('Agents'),
                 'root'   => 'grp.supply-chain.supplier_products.in_agents',
                 'route'  => [
                     'name'       => 'grp.supply-chain.supplier_products.in_agents',
-                    'parameters' => []
+                    'parameters' => [],
                 ],
-                'number' => $this->group->supplyChainStats->number_supplier_products_in_agents
+                'number' => $this->group->supplyChainStats->number_supplier_products_in_agents,
             ],
             [
                 'label'  => __('All'),
                 'icon'   => 'fal fa-bars',
-                'root'   => 'grp.supply-chain.supplier_products.index',
                 'align'  => 'right',
+                'root'   => 'grp.supply-chain.supplier_products.index',
                 'route'  => [
                     'name'       => 'grp.supply-chain.supplier_products.index',
-                    'parameters' => []
+                    'parameters' => [],
                 ],
-                'number' => $this->group->supplyChainStats->number_supplier_products
+                'number' => $this->group->supplyChainStats->number_supplier_products,
             ],
         ];
     }

@@ -43,6 +43,26 @@ class RecordWebsiteHit
 
         ProcessWebsiteHit::dispatch($metrics, $request->userAgent());
 
+        $webUser = $request->user('retina');
+
+        if (config('iris.analytics.live_visitors')) {
+            TrackWebsiteVisitorActivity::dispatch(
+                $website,
+                $request->session()->getId(),
+                [
+                    'user_agent'  => $request->userAgent(),
+                    'referer'     => $request->header('referer'),
+                    'page'        => $request->input('analytics_webpage'),
+                    'page_title'  => $request->input('analytics_page_title'),
+                    'country'     => $request->header('CF-IPCountry') ?? 'XX',
+                    'city'        => $request->header('CF-IPCity'),
+                    'region'      => $request->header('CF-Region'),
+                    'webpage_id'  => $request->input('webpage_id'),
+                    'web_user_id' => $webUser instanceof WebUser ? $webUser->id : null,
+                ]
+            );
+        }
+
         $geoLocation = [
             $request->header('CF-IPCountry') ?? 'XX',
             $request->header('CF-Region'),

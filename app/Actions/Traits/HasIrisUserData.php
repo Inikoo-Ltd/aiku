@@ -8,6 +8,9 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\CRM\TrafficSource\MergeTrafficSourceTouchHistories;
+use App\Actions\CRM\TrafficSource\SyncCustomerTrafficSourcesFromDevice;
+use App\Actions\Iris\CaptureTrafficSource;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
@@ -21,6 +24,8 @@ trait HasIrisUserData
     public function getIrisUserData(): array
     {
         $webUser = $this->webUser;
+
+        $this->syncDeviceTrafficSources();
 
         $cartCount                    = 0;
         $cartAmount                   = 0;
@@ -88,10 +93,44 @@ trait HasIrisUserData
                 'cart_amount_gross'    => $grossAmount, // order total amount gross (before discount)
                 'cart_products_amount' => $cardItemsAmountAfterDiscount,  // order total items amount after discount
             ],
-            'gr_data'      => $grData,
-            // 'traffic_source_cookies' => CaptureTrafficSource::run(),
-            'offer_meters' => $offerMeters,
-            'offer_data'   => $offerData, // this is used in the top bar
+            'gr_data'                => $grData,
+            'traffic_source_cookies' => CaptureTrafficSource::run(),
+            'offer_meters'           => $offerMeters,
+            'offer_data'             => $offerData, // this is used in the top bar
         ];
+    }
+
+    /**
+     * The touch cookie is per browser, but the customer browses on several: fold this device's
+     * cookie into the customer's server-side history so the ad clicked on the phone and the search
+     * made on the desktop meet in one journey. Inline work is a string merge and comparison, only a
+     * genuinely new touch dispatches the (unique, low-priority) sync job.
+     */
+    private function syncDeviceTrafficSources(): void
+    {
+        /* Attribution bookkeeping on the storefront hot path: nothing here may ever break a
+           customer's page. A failed queue dispatch is a lost sync, not a lost page view. */
+        try {
+            /* Sanitized here too, with the same rules the job applies, so the dispatch decision and
+               the job's outcome agree - comparing raw cookie against sanitized state would re-queue
+               a job forever for any visitor whose cookie holds rejected segments. */
+            $deviceTouches = SyncCustomerTrafficSourcesFromDevice::sanitize(
+                (string) request()->cookie('aiku_tsd', '')
+            );
+
+            $customer = $this->customer ?? null;
+
+            if (blank($deviceTouches) || !$customer instanceof \App\Models\CRM\Customer) {
+                return;
+            }
+
+            $merged = MergeTrafficSourceTouchHistories::run($customer->traffic_sources, $deviceTouches);
+
+            if ($merged !== $customer->traffic_sources) {
+                SyncCustomerTrafficSourcesFromDevice::dispatch($customer, $deviceTouches);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

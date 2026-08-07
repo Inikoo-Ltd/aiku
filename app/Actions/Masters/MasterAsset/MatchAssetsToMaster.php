@@ -39,12 +39,14 @@ class MatchAssetsToMaster extends OrgAction
             return $asset;
         }
 
-        UpdateAsset::make()->action(
-            $asset,
-            [
-                'master_asset_id' => $masterAsset->id,
-            ]
-        );
+        if ($asset->master_asset_id != $masterAsset->id) {
+            UpdateAsset::make()->action(
+                $asset,
+                [
+                    'master_asset_id' => $masterAsset->id,
+                ]
+            );
+        }
 
         if ($asset->type == AssetTypeEnum::PRODUCT) {
             if ($asset->product->master_product_id != $masterAsset->id) {

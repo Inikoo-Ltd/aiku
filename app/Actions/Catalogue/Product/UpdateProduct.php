@@ -316,6 +316,15 @@ class UpdateProduct extends OrgAction
             $this->getProductInformationFieldNames()
         );
 
+        if (Arr::has($changed, 'not_follow_master_media')) {
+
+            if (!$product->not_follow_master_media) {
+                CloneProductImagesFromTradeUnits::run($product);
+            }
+
+            BreakProductInWebpagesCache::dispatch($product)->delay(15);
+        }
+
         if (!$this->bulkPriceUpdate
             && !$this->skipWebpageCacheBreak
             && $product->webpage
@@ -439,6 +448,8 @@ class UpdateProduct extends OrgAction
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
             'units'                     => ['sometimes', 'numeric'],
+
+            'has_independent_units'     => ['sometimes', 'boolean'],
             'unit'                      => ['sometimes', 'string'],
             'exclusive_for_customer_id' => [
                 'sometimes',
@@ -502,6 +513,7 @@ class UpdateProduct extends OrgAction
             'marketplace_id'                => ['sometimes'],
             'not_follow_master_trade_units' => ['sometimes', 'boolean'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
+            'not_follow_master_media'       => ['sometimes', 'boolean'],
         ];
 
 

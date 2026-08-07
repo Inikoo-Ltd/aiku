@@ -42,7 +42,7 @@ class GetWebsiteSearchTrend
         }
 
         $rows = $base
-            ->selectRaw("to_char(created_at, 'YYYY-MM-DD') as day, count(*) as searches, count(clicked_at) as clicks, count(*) filter (where results_count = 0) as zero_results")
+            ->selectRaw("to_char(created_at, 'YYYY-MM-DD') as day, count(*) as searches, count(clicked_at) as clicks, count(*) filter (where keyword_results_count = 0) as zero_results")
             ->groupBy('day')
             ->get()
             ->keyBy('day');

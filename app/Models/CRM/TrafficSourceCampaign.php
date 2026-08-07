@@ -5,6 +5,7 @@ namespace App\Models\CRM;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -48,5 +49,10 @@ class TrafficSourceCampaign extends Model
     public function trafficSource(): BelongsTo
     {
         return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
+    }
+
+    public function stats(): HasOne
+    {
+        return $this->hasOne(TrafficSourceCampaignStat::class);
     }
 }

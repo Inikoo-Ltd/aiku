@@ -77,13 +77,17 @@ const selectedItemStyle = {
 const sidePanelVisible = ref(false)
 
 const chatSettingVisible = ref(false)
-const settingInitialTab = ref<"general" | "jira">("general")
+const settingInitialTab = ref<"general" | "jira" | "slack">("general")
 const openChatSettings = () => {
     settingInitialTab.value = "general"
     chatSettingVisible.value = true
 }
 const onOpenJiraSettings = () => {
     settingInitialTab.value = "jira"
+    chatSettingVisible.value = true
+}
+const onOpenSlackSettings = () => {
+    settingInitialTab.value = "slack"
     chatSettingVisible.value = true
 }
 
@@ -505,7 +509,7 @@ onUnmounted(() => {
 
     <Dialog v-model:visible="chatSettingVisible" modal :header="trans('Chat Settings')"
         :style="{ width: '90vw', maxWidth: '560px' }" :breakpoints="{ '640px': '95vw' }">
-        <SettingChat :initial-tab="settingInitialTab" @close="chatSettingVisible = false" />
+        <SettingChat :initial-tab="settingInitialTab" :session-ulid="selectedSession?.ulid" @close="chatSettingVisible = false" />
     </Dialog>
 
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
@@ -752,7 +756,8 @@ onUnmounted(() => {
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
                     @transfer-agent-success="onTransferAgentSuccess"
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
-                    @open-jira-settings="onOpenJiraSettings" />
+                    @open-jira-settings="onOpenJiraSettings"
+                    @open-slack-settings="onOpenSlackSettings" />
             </div>
         </div>
 

@@ -16,6 +16,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoiceTransactions extends OrgAction
@@ -39,6 +40,11 @@ class IndexInvoiceTransactions extends OrgAction
         $queryBuilder->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
         $queryBuilder->leftJoin('invoices', 'invoice_transactions.invoice_id', 'invoices.id');
         $queryBuilder->leftJoin('currencies', 'invoices.currency_id', 'currencies.id');
+        $queryBuilder->leftJoin('adjustments', function ($join) {
+            $join->on('invoice_transactions.model_id', 'adjustments.id')->where('invoice_transactions.model_type', 'Adjustment');
+        });
+        $queryBuilder->orderByRaw("case invoice_transactions.model_type when 'Product' then 0 when 'Service' then 1 else 2 end");
+
         $queryBuilder
             ->defaultSort('invoice_transactions.id')
             ->select([
@@ -47,8 +53,8 @@ class IndexInvoiceTransactions extends OrgAction
                 'invoice_transactions.is_gift',
                 'invoice_transactions.in_process',
                 'invoice_transactions.data',
-                'historic_assets.code',
-                'historic_assets.name as description',
+                DB::raw("CASE WHEN invoice_transactions.model_type = 'Adjustment' THEN 'Adjustment' ELSE historic_assets.code END as code"),
+                DB::raw("CASE WHEN invoice_transactions.model_type = 'Adjustment' THEN concat('Adjustment (', adjustments.type, ')') ELSE historic_assets.name END as description"),
                 'invoice_transactions.historic_asset_id',
                 'assets.id as asset_id',
                 'assets.shop_id as asset_shop_id',
@@ -60,6 +66,7 @@ class IndexInvoiceTransactions extends OrgAction
                 'currencies.id as currency_id'
             ]);
 
+        $queryBuilder->with('model');
 
         return $queryBuilder
             ->allowedFilters([$globalSearch])

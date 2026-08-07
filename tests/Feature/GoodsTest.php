@@ -935,10 +935,17 @@ test('changing stock trade units recomputes packed_in on the stock and its org s
 });
 
 test('warehouse packing can be edited per org stock from the master editor', function () {
+    [, $product] = createProduct($this->shop);
     $stocks = createStocks($this->group);
     $stock  = $stocks[0];
     [$orgStock] = createOrgStocks($this->organisation, [$stock]);
     $tradeUnit = $stock->tradeUnits()->first();
+
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $orgStock->id],
+        ['quantity' => 1]
+    );
+    expect($orgStock->products()->count())->toBeGreaterThanOrEqual(1);
 
     $response = \Pest\Laravel\patchJson(route('grp.models.org_stock.trade_units.update', [$orgStock->id]), [
         'trade_units' => [

@@ -11,7 +11,7 @@ import { faBarcode, faGift, faRepeat, faTrash, faUndo } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { debounce, get, set } from "lodash-es"
+import { debounce, get, set, toInteger } from "lodash-es"
 import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelectorAutoSelect.vue"
 import { ulid } from "ulid"
@@ -54,6 +54,7 @@ const props = defineProps<{
     fetchRoute?: routeType
     routesProductsListModification?: routeType
     is_shop_external: boolean
+    allow_order_modification: boolean
 }>()
 
 const layout = inject("layout", {})
@@ -271,6 +272,39 @@ defineExpose({
 
 })
 
+const updateQuantityOrdered = (item: ProductRow) => {
+    if (item.quantity_ordered == createNewQty[item.id].quantity_ordered) {
+        editingIds.value.delete(item.id)
+        return
+    }
+
+    router.patch(route('grp.models.transaction.update_quantity_ordered', {
+        transaction: item.id
+    }), {
+        quantity_ordered: createNewQty[item.id].quantity_ordered
+    }, {
+        preserveScroll: true,
+        onStart: () => (loadingsaveModify.value = true),
+        onFinish: () => (loadingsaveModify.value = false),
+        onSuccess: () => {
+            editingIds.value.delete(item.id)
+            notify({
+                title: trans("Success"),
+                text: trans("Quantity updated, warehouse has been notified"),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: Object.values(errors).join(", ") || trans("Failed to update quantity"),
+                type: "error"
+            })
+        }
+    })
+}
+
+
 // Section: Discretionary discount
 const selectedItemToEditNetAmount = ref(null)
 const onCloseModalNetAmount = () => {
@@ -435,13 +469,15 @@ const isOffersData = (offersData: any): boolean => {
 
 <template>
     <div>
-        <Table :resource="data" :name="tab" :rowColorFunction="(item) => {
-            if (typeof item.id === 'string' && item.id.startsWith('new')) {
-                return 'bg-yellow-50'
-            }
-            return ''
-        }" :useTopPagination="true">
-
+        <Table 
+            :resource="data" :name="tab" :rowColorFunction="(item) => {
+                if (typeof item.id === 'string' && item.id.startsWith('new')) {
+                    return 'bg-yellow-50'
+                }
+                return ''
+            }" 
+            :useTopPagination="true"
+        >
 
             <template #cell(image)="{ item }">
                 <!-- <pre>{{ item }}</pre> -->
@@ -462,7 +498,10 @@ const isOffersData = (offersData: any): boolean => {
             <!-- Column: Name / Stock -->
             <template #cell(asset_name)="{ item }">
                 <div>
-                    <div xclass="item.offers_data ? 'text-pink-600' : ''">{{ item.asset_name }}</div>
+                    <div xclass="item.offers_data ? 'text-pink-600' : ''">
+                        <span v-if="Number(item.units) !== 1">[{{ item.units }}x]</span>
+                        {{ item.asset_name }}
+                    </div>
                     <div v-if="item.units_changed_to"
                         v-tooltip="ctrans('This line was ordered and priced at :ordered per pack, the product is now sold as :now per pack. Check what the warehouse should ship.', { ordered: item.product_units, now: item.units_changed_to })"
                         class="text-xs text-amber-600"
@@ -483,6 +522,8 @@ const isOffersData = (offersData: any): boolean => {
                         </span>
                         <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>
                         <div v-if="item.upcoming_transaction_private_notes">{{ item.upcoming_transaction_private_notes }}</div>
+
+                        <div>Units/SKO: {{ toInteger(item.product_units) }}</div>
                     </div>
                     <Discount 
                         v-if="isOffersData(item.offers_data)" 
@@ -731,17 +772,34 @@ const isOffersData = (offersData: any): boolean => {
                     </Link>
 
                     <!-- Edit / Cancel -->
-                    <div v-if="state !== 'creating'" class="flex gap-2 items-center">
-                        <button v-if="!editingIds.has(item.id) && layout?.app?.environment === 'local'"
-                                class="h-9 align-bottom text-center" @click="startEdit(item)"
-                                aria-label="Edit Product Order" v-tooltip="'Edit Product Order'">
-                            <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700"
-                                             aria-hidden="true" />
+                    <div v-if="state !== 'creating' && allow_order_modification" class="flex gap-2 items-center">
+                        <button v-if="!editingIds.has(item.id)"
+                            class="h-9 align-bottom text-center" 
+                            aria-label="Edit Product Order" 
+                            v-tooltip="'Edit Product Order'"
+                            @click="startEdit(item)"
+                        >
+                            <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700" aria-hidden="true" />
                         </button>
-
-                        <Button v-else-if="editingIds.has(item.id)" type="negative" v-tooltip="'Cancel edit'"
-                                :icon="faTimes" @click="onCancel(item)" size="sm" aria-label="Cancel edit" />
-
+                        <Button 
+                            v-if="editingIds.has(item.id)" 
+                            type="negative" 
+                            v-tooltip="'Cancel edit'"
+                            :icon="faTimes" 
+                            @click="onCancel(item)" 
+                            size="sm" 
+                            aria-label="Cancel edit" 
+                        />
+                        <Button 
+                            v-if="editingIds.has(item.id)" 
+                            :style="'save'"
+                            :hide_label="true"
+                            v-tooltip="'Save changes'"
+                            size="sm"
+                            aria-label="Save changes"
+                            :loading="loadingsaveModify"
+                            @click="updateQuantityOrdered(item)"
+                        />
                         <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative"
                                 v-tooltip="'delete'" :icon="faTrashAlt" @click="() => onDeleteNewRow(item.rowIndex)"
                                 size="sm" />

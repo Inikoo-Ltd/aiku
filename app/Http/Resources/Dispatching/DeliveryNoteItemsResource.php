@@ -46,10 +46,19 @@ class DeliveryNoteItemsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $requiredFactionalData = riseDivisor(
+        $requiredFractionalData = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
                     $this->quantity_required
+                )
+            ),
+            $this->packed_in
+        );
+
+        $originalRequiredFractionalData = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->original_quantity_required ?? 0
                 )
             ),
             $this->packed_in
@@ -105,7 +114,7 @@ class DeliveryNoteItemsResource extends JsonResource
         $isFullyPacked     = round((float)$packedQuantity, 3) >= round((float)$this->quantity_picked, 3);
         $hasAnyPacking     = (int)$this->packings_count > 0;
         $pickingBatchCodes = collect($pickings)
-            ->map(fn($picking) => $picking->batch_code ?? null)
+            ->map(fn ($picking) => $picking->batch_code ?? null)
             ->filter()
             ->unique()
             ->values()
@@ -116,8 +125,17 @@ class DeliveryNoteItemsResource extends JsonResource
             'id'                                       => $this->id,
             'state'                                    => $this->state,
             'state_icon'                               => $this->state->stateIcon()[$this->state->value],
+            'original_quantity_required'               => $this->original_quantity_required,
+            'original_quantity_required_fractional'    => $originalRequiredFractionalData,
             'quantity_required'                        => $this->quantity_required,
-            'quantity_required_fractional'             => $requiredFactionalData,
+            'quantity_required_fractional'             => $requiredFractionalData,
+            'composition_dirty_at'                     => $this->composition_dirty_at,
+            'composition_dirty_quantity_required'      => $this->composition_dirty_quantity_required,
+            'applyNewCompositionRoute'                 => $this->composition_dirty_at ? [
+                'name'       => 'grp.models.delivery_note_item.apply_new_composition',
+                'parameters' => ['deliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ] : null,
             'quantity_dispatched'                      => $this->quantity_dispatched,
             'quantity_dispatched_fractional'           => riseDivisor(divideWithRemainder(findSmallestFactors($quantityDispatched)), $packedIn),
             'quantity_picked'                          => $this->quantity_picked,
@@ -191,7 +209,8 @@ class DeliveryNoteItemsResource extends JsonResource
                 ],
                 'method'     => 'post'
             ],
-            'un_numbers'                               => $unNumbers
+            'un_numbers'                               => $unNumbers,
+            'is_dirty'                                 => $this->is_dirty,
         ];
     }
 }

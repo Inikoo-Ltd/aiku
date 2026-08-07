@@ -96,7 +96,11 @@ trait WithMasterFamilySubNavigation
                     ]
                 )
             ];
-        } elseif (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_family.mismatch_detected.show", "grp.masters.master_shops.show.master_family.mismatch_detected.families", "grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index"])) {
+        } elseif (in_array(request()->route()->getName(), [
+            "grp.masters.master_shops.show.master_family.mismatch_detected.show",
+            "grp.masters.master_shops.show.master_family.mismatch_detected.families", 
+            "grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index"
+        ])) {
             $routeFamily = [
                 'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.show',
                 'parameters' => request()->route()->originalParameters()
@@ -109,6 +113,30 @@ trait WithMasterFamilySubNavigation
 
             $routeProducts = [
                 'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index',
+                'parameters' => array_merge(
+                    request()->route()->originalParameters(),
+                    [
+                        'index_elements[status]' => 'active'
+                    ]
+                )
+            ];
+        } elseif (in_array(request()->route()->getName(), [
+            "grp.masters.master_shops.show.master_family.missing_image.show",
+            "grp.masters.master_shops.show.master_family.missing_image.families", 
+            "grp.masters.master_shops.show.master_family.missing_image.master_products.index"
+        ])) {
+            $routeFamily = [
+                'name'       => 'grp.masters.master_shops.show.master_family.missing_image.show',
+                'parameters' => request()->route()->originalParameters()
+            ];
+
+            $routeFamilies = [
+                'name'       => 'grp.masters.master_shops.show.master_family.missing_image.families',
+                'parameters' => request()->route()->originalParameters()
+            ];
+
+            $routeProducts = [
+                'name'       => 'grp.masters.master_shops.show.master_family.missing_image.master_products.index',
                 'parameters' => array_merge(
                     request()->route()->originalParameters(),
                     [

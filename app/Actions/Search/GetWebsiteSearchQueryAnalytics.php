@@ -24,7 +24,7 @@ class GetWebsiteSearchQueryAnalytics
 
         $totalSearches = (clone $base)->count();
         $clicked       = (clone $base)->whereNotNull('clicked_at')->count();
-        $zeroResults   = (clone $base)->where('results_count', 0)->count();
+        $zeroResults   = (clone $base)->where('keyword_results_count', 0)->count();
         $customers     = (clone $base)->whereNotNull('customer_id')->distinct()->count('customer_id');
         $loggedIn      = (clone $base)->whereNotNull('web_user_id')->count();
 

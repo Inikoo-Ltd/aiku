@@ -83,6 +83,8 @@ function orderRoute(order: Order) {
         case "grp.org.shops.show.catalogue.products.discontinued_products.show":
         case "grp.org.shops.show.catalogue.products.in_process_products.show":
         case "grp.org.shops.show.catalogue.products.not_online_products.show":
+        case "grp.org.shops.show.catalogue.products.mismatched_families.show":
+        case "grp.org.shops.show.catalogue.products.no_image_product.show":
         case "grp.org.shops.show.catalogue.products.current_products.show":
         case "grp.org.shops.show.catalogue.products.orphan_products.show":
         case "grp.org.shops.show.catalogue.products.all_products.show":
@@ -316,6 +318,12 @@ const setNewMarkerDate = (newVal: Date) => {
                 <span>
                     {{ useFormatTime(order.platform_milestones?.placed_at || order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
                 </span>
+            </div>
+        </template>
+
+        <template #cell(submitted_at)="{ item: order }">
+            <div class="text-right">
+                {{ order.submitted_at ? useFormatTime(order.submitted_at, { localeCode: locale.language.code, formatTime: "aiku" }) : '-' }}
             </div>
         </template>
 

@@ -78,12 +78,37 @@ trait WithDeliveryNoteItemUI
     {
         $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
         $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-        $table->column(key: 'barcode', label: __('Barcode'), align: 'center');
     }
 
+    /**
+     * Joins the location the picker is actually sent to, which is the first of the item picking
+     * locations shown in the table, not org_stocks.picking_location_id (null for many org stocks,
+     * which left the rows out of warehouse walking order).
+     */
     protected function applyDeliveryNoteItemPickingJoins($query): void
     {
-        $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
+        $query->leftJoinLateral(
+            DB::table('location_org_stocks')
+                ->join('locations', 'locations.id', '=', 'location_org_stocks.location_id')
+                ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
+                ->select([
+                    'locations.id',
+                    'locations.code',
+                    'locations.slug',
+                    'locations.sort_code',
+                    'locations.warehouse_area_id',
+                ])
+                ->orderByRaw("
+                    CASE
+                        WHEN (SELECT type FROM shops WHERE shops.id = delivery_note_items.shop_id) = 'b2b'
+                            THEN location_org_stocks.default_wholesale_picking_location::int
+                        ELSE location_org_stocks.default_dropshipping_picking_location::int
+                    END DESC
+                ")
+                ->orderBy('location_org_stocks.picking_priority')
+                ->limit(1),
+            'locations'
+        );
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
     }
 
@@ -105,13 +130,18 @@ trait WithDeliveryNoteItemUI
             'delivery_note_items.id',
             'delivery_note_items.state',
             'delivery_note_items.quantity_required',
+            'delivery_note_items.original_quantity_required',
+            'delivery_note_items.composition_dirty_at',
+            'delivery_note_items.composition_dirty_quantity_required',
             'delivery_note_items.quantity_picked',
             'delivery_note_items.quantity_packed',
             'delivery_note_items.quantity_dispatched',
             'delivery_note_items.quantity_not_picked',
             'delivery_note_items.is_handled',
+            'delivery_note_items.is_dirty',
             'delivery_note_items.batch_code_id',
             'delivery_note_items.organisation_id',
+            'delivery_note_items.transaction_id',
             DB::raw('COALESCE(batch_codes.code, delivery_note_items.batch_code) as batch_code'),
             DB::raw('COALESCE(batch_codes.expiry_date, delivery_note_items.expiry_date) as expiry_date'),
             'org_stocks.id as org_stock_id',

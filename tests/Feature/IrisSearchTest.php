@@ -7,11 +7,26 @@
  */
 
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Search\GetWebsiteSearchAnalytics;
 use App\Actions\Search\Search;
+use App\Actions\Search\SearchCatalogue;
+use App\Actions\Search\SearchIrisInvoices;
+use App\Actions\Search\SearchIrisOrders;
 use App\Actions\Search\StoreWebsiteSearchLog;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Search\WebsiteSearchSourceEnum;
+use App\Events\Web\WebsiteSearchStatsUpdated;
+use Illuminate\Support\Facades\Event;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Accounting\Invoice;
+use App\Models\CRM\Customer;
+use App\Models\Helpers\Address;
 use App\Models\Helpers\WebsiteSearchLog;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -57,6 +72,54 @@ test('iris search allows single character queries', function () {
 
     $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=e');
     $response->assertOk();
+});
+
+test('a new search broadcasts the headline stats, a refinement does not', function () {
+    Event::fake([WebsiteSearchStatsUpdated::class]);
+
+    $log = fn (array $extra = []) => StoreWebsiteSearchLog::run(array_merge([
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $this->website->id,
+        'session_id'      => 'live-session',
+        'scope'           => 'catalogue',
+        'query'           => 'tealights',
+        'results_count'   => 3,
+    ], $extra));
+
+    $log();
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 1);
+
+    // keystroke refinement reuses the row, so the totals cannot have moved
+    $log(['query' => 'tealights blue']);
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 1);
+
+    // a different search is a new row and a new number on screen
+    $log(['session_id' => 'other-session', 'query' => 'incense']);
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 2);
+});
+
+test('the search log records which control opened the search, and only known ones', function () {
+    Search::shouldRun()->andReturn(irisSearchResults());
+
+    $logFor = function (string $url) {
+        $response = $this->getJson($url);
+        $response->assertOk();
+
+        return WebsiteSearchLog::where('ulid', $response->json('search_log_ulid'))->first();
+    };
+
+    $base = 'http://'.$this->website->domain.'/json/search/catalogue';
+
+    expect($logFor($base.'?q=candles&source=mobile_floating_button')->source)
+        ->toBe(WebsiteSearchSourceEnum::MOBILE_FLOATING_BUTTON->value);
+
+    // anything the enum does not know about is dropped rather than stored, so a crafted
+    // request cannot invent entry points in the breakdown
+    expect($logFor($base.'?q=tealights&source=<script>alert(1)</script>')->source)->toBeNull()
+        ->and($logFor($base.'?q=incense')->source)->toBeNull();
 });
 
 test('iris search stores a website search log with the response ulid', function () {
@@ -203,4 +266,152 @@ test('iris search only returns hits flagged is_in_website', function () {
     $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$product->code.'&v=3');
     $response->assertOk();
     expect($response->json('results.products'))->toBe([]);
+});
+
+test('order search hydrate never returns another customer\'s order', function () {
+    $customer      = createCustomer($this->shop);
+    $otherCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $order = StoreOrder::make()->action($customer, [
+        'reference'        => 'GB550706',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ]);
+    $order->update(['state' => OrderStateEnum::SUBMITTED]);
+
+    $otherOrder = StoreOrder::make()->action($otherCustomer, [
+        'reference'        => 'GB550707',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ]);
+    $otherOrder->update(['state' => OrderStateEnum::SUBMITTED]);
+
+    // a stale or poisoned index handing over the other customer's order id must be dropped
+    $staleIndexDocuments = [
+        ['id' => (string)$order->id],
+        ['id' => (string)$otherOrder->id],
+    ];
+    $results = SearchIrisOrders::make()->hydrate($staleIndexDocuments, 'GB5507', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$order->id])
+        ->and($results[0]['url'])->toBe('/app/orders/'.$order->slug);
+
+    // the direct reference match is scoped to the customer too, even when it matches both references
+    $results = SearchIrisOrders::make()->hydrate([], 'GB5507', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$order->id]);
+
+    // orders still in basket state never surface
+    $order->update(['state' => OrderStateEnum::CREATING]);
+    expect(SearchIrisOrders::make()->hydrate([], 'GB5507', $customer->id, $this->shop->id))->toBe([]);
+});
+
+test('invoice search hydrate never returns another customer\'s invoice', function () {
+    $customer      = createCustomer($this->shop);
+    $otherCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $invoiceData = Invoice::factory()->definition();
+    data_set($invoiceData, 'reference', 'INV-550801');
+    $invoice = StoreInvoice::make()->action($customer, $invoiceData);
+
+    $otherInvoiceData = Invoice::factory()->definition();
+    data_set($otherInvoiceData, 'reference', 'INV-550802');
+    $otherInvoice = StoreInvoice::make()->action($otherCustomer, $otherInvoiceData);
+
+    $staleIndexDocuments = [
+        ['id' => (string)$invoice->id],
+        ['id' => (string)$otherInvoice->id],
+    ];
+    $results = SearchIrisInvoices::make()->hydrate($staleIndexDocuments, 'INV-5508', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$invoice->id])
+        ->and($results[0]['url'])->toBe('/app/invoices/'.$invoice->slug);
+
+    $results = SearchIrisInvoices::make()->hydrate([], 'INV-5508', $customer->id, $this->shop->id);
+    expect(array_column($results, 'id'))->toBe([$invoice->id]);
+
+    $invoice->update(['in_process' => true]);
+    expect(SearchIrisInvoices::make()->hydrate([], 'INV-5508', $customer->id, $this->shop->id))->toBe([]);
+});
+
+test('a query only the vector arm answers is still logged as an assortment gap', function () {
+    config()->set('scout.driver', 'typesense');
+
+    // shungite: nothing in the catalogue matches the word, hybrid answers with
+    // related tumble stones. The customer sees 2 products, the buyers must still
+    // see a query nothing actually matched.
+    Http::fake([
+        '*/multi_search' => Http::response(['results' => [
+            ['hits' => [
+                ['document' => ['id' => '1', 'code' => 'TS-1', 'name' => 'Tumble Stone'], 'vector_distance' => 0.14],
+                ['document' => ['id' => '2', 'code' => 'TS-2', 'name' => 'Tumble Stone L'], 'vector_distance' => 0.15],
+            ]],
+            ['hits' => []],
+            ['hits' => []],
+        ]]),
+    ]);
+
+    $results = SearchCatalogue::run('shungite', ['shop_id' => $this->shop->id, 'is_in_website' => true]);
+
+    expect($results['arm_counts'])->toBe(['keyword' => 0, 'vector' => 2])
+        ->and($results['results']['products'])->toHaveCount(2);
+
+    $log = StoreWebsiteSearchLog::run([
+        'ulid'                  => (string) Str::ulid(),
+        'group_id'              => $this->organisation->group_id,
+        'organisation_id'       => $this->organisation->id,
+        'shop_id'               => $this->shop->id,
+        'website_id'            => $this->website->id,
+        'scope'                 => 'catalogue',
+        'query'                 => 'shungite',
+        'results_count'         => 2,
+        'keyword_results_count' => $results['arm_counts']['keyword'],
+        'vector_results_count'  => $results['arm_counts']['vector'],
+    ]);
+
+    expect($log->results_count)->toBe(2)
+        ->and($log->keyword_results_count)->toBe(0)
+        ->and($log->vector_results_count)->toBe(2);
+
+    $gaps = GetWebsiteSearchAnalytics::run($this->website);
+    expect($gaps['top_zero_queries']->pluck('query')->all())->toContain('shungite');
+});
+
+test('a keyword hit is not counted as a vector rescue', function () {
+    config()->set('scout.driver', 'typesense');
+
+    Http::fake([
+        '*/multi_search' => Http::response(['results' => [
+            ['hits' => [['document' => ['id' => '1', 'code' => 'C-1', 'name' => 'Candle']]]],
+            ['hits' => []],
+            ['hits' => []],
+        ]]),
+    ]);
+
+    $results = SearchCatalogue::run('candles', ['shop_id' => $this->shop->id]);
+
+    expect($results['arm_counts'])->toBe(['keyword' => 1, 'vector' => 0]);
+});
+
+test('the typo tuning reaches every search sent to typesense', function () {
+    config()->set('scout.driver', 'typesense');
+
+    Http::fake([
+        '*/multi_search' => Http::response(['results' => [
+            ['hits' => []], ['hits' => []], ['hits' => []],
+        ]]),
+    ]);
+
+    SearchCatalogue::run('aromcandles', ['shop_id' => $this->shop->id, 'is_in_website' => true]);
+
+    Http::assertSent(function ($request) {
+        expect($request['searches'])->not->toBeEmpty();
+
+        foreach ($request['searches'] as $search) {
+            expect($search)
+                ->toMatchArray(SearchCatalogue::SEARCH_TUNING)
+                ->and($search['min_len_2typo'])->toBe(7);
+        }
+
+        return true;
+    });
 });

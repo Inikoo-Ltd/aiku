@@ -11,9 +11,11 @@ import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 import { useIrisSearchMobile } from "@/Iris/Composables/useIrisSearchMobile"
+import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
 library.add(faSearch, faTimes, faChevronUp, faChevronDown)
 
 const SearchResultCatalogueMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogueMobile.vue"))
+const SearchFeaturedMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchFeaturedMobile.vue"))
 
 defineProps<{
     id: string
@@ -31,7 +33,7 @@ const internalResults = ref<any>(null)
 const searchLogUlid = ref<string | null>(null)
 const isInternalLoading = ref(false)
 // Shared so other components (the sidebar search field) open the very same overlay
-const { isIrisSearchMobileOpen: isOverlayOpen } = useIrisSearchMobile()
+const { isIrisSearchMobileOpen: isOverlayOpen, irisSearchMobileSource, openIrisSearchMobile } = useIrisSearchMobile()
 const showDropdown = ref(true)
 const inputRef = ref<HTMLInputElement | null>(null)
 let internalAbort: AbortController | null = null
@@ -105,12 +107,16 @@ const onFabTouchEnd = () => {
     }
 }
 
+const onTopBarClick = () => {
+    openIrisSearchMobile('mobile_top_bar')
+}
+
 const onFabClick = () => {
     if (dragMoved) {
         dragMoved = false
         return
     }
-    openOverlay()
+    openIrisSearchMobile('mobile_floating_button')
 }
 
 // Touching the floating button reveals that it can be moved: most people never
@@ -140,19 +146,20 @@ const hideDragHintSoon = () => {
     }, DRAG_HINT_LINGER_MS)
 }
 
-const openOverlay = () => {
-    isOverlayOpen.value = true
-}
-
 const closeOverlay = () => {
     isOverlayOpen.value = false
 }
+
+// The items the shop features fill the overlay before anything is typed, so an empty
+// field promotes merchandised products instead of showing a bare hint
+const { featuredResults, isFeaturedLoading, hasFeaturedResults, fetchFeaturedResults } = useSearchFeaturedItems()
 
 watch(isOverlayOpen, (open) => {
     if (open) {
         showDropdown.value = true
         document.body.style.overflow = 'hidden'
         nextTick(() => inputRef.value?.focus())
+        fetchFeaturedResults()
         if (inputValue.value.trim() && !internalResults.value) {
             isInternalLoading.value = true
             fetchResults(inputValue.value)
@@ -171,9 +178,13 @@ const fetchResults = debounce(async (query: string) => {
     internalAbort?.abort()
     internalAbort = new AbortController()
     isInternalLoading.value = true
+    const searchParams: Record<string, string> = { q: query }
+    if (irisSearchMobileSource.value) {
+        searchParams.source = irisSearchMobileSource.value
+    }
     try {
         const { data } = await axios.get(
-            route(searchRoute('catalogue'), { q: query }),
+            route(searchRoute('catalogue'), searchParams),
             { signal: internalAbort.signal }
         )
         if (requestId !== internalRequestId) {
@@ -272,10 +283,7 @@ const visitSearchPage = () => {
             :aria-label="ctrans('Search')"
             class="ml-1 xw-14 xh-14 rounded-full flex items-center justify-center touch-none"
             xstyle="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
-            @click="onFabClick"
-            @touchstart.passive="onFabTouchStart"
-            @touchmove.prevent="onFabTouchMove"
-            @touchend="onFabTouchEnd"
+            @click="onTopBarClick"
         >
             <FontAwesomeIcon icon="far fa-search" class="text-3xl" fixed-width aria-hidden="true" />
         </button>
@@ -284,7 +292,7 @@ const visitSearchPage = () => {
         <!-- Always-present floating search button in the thumb zone; drag it up or down -->
         <div
             v-if="!isOverlayOpen"
-            class="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-40 w-14 h-14"
+            class="fixed right-6 bottom-[calc(env(safe-area-inset-bottom)+13rem)] z-40 w-14 h-14"
             :style="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
         >
             <Transition
@@ -369,6 +377,12 @@ const visitSearchPage = () => {
                     :is-loading="isInternalLoading"
                     :query="inputValue"
                     :search-log-ulid="searchLogUlid"
+                />
+                <SearchFeaturedMobile
+                    v-else-if="isFeaturedLoading || hasFeaturedResults"
+                    v-model:open="showDropdown"
+                    :results="featuredResults"
+                    :is-loading="isFeaturedLoading"
                 />
                 <div v-else class="h-full flex items-center justify-center text-gray-400 text-sm px-8 text-center">
                     {{ trans('Start typing to search the catalogue') }}

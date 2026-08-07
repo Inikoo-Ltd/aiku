@@ -620,6 +620,7 @@ watch(
 				:per-page-options="queryBuilderProps?.perPageOptions"
 				:on-per-page-change="onPerPageChange" 
 				:max-pages="3"
+				:customWrapperClass="'!bg-transparent px-4 py-3 border-t-0 border-gray-200 sm:px-4'"
 			/>
 		</TableWrapper>
 	</fieldset>

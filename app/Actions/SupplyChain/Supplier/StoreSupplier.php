@@ -10,10 +10,11 @@ namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
+use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromFreeSupplier;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromSupplierInAgent;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -27,20 +28,17 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreSupplier extends OrgAction
 {
-    use WithSupplyChainEditAuthorisation;
-    use AsAction;
-    use WithAttributes;
     use WithModelAddressActions;
     use WithNoStrictRules;
-
+    use WithSupplierJsonColumns;
+    use WithSupplyChainEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -50,33 +48,45 @@ class StoreSupplier extends OrgAction
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');
 
-        if (class_basename($parent) == 'Agent') {
+        if (Arr::get($modelData, 'order_number_prefix')) {
+            data_set($modelData, 'order_number_prefix', Str::upper($modelData['order_number_prefix']));
+        }
+
+        if (Arr::get($modelData, 'delivery_type') !== 'container') {
+            Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);
+        }
+
+        $modelData = $this->pullSupplierJsonColumns($modelData);
+
+        if ($parent instanceof Agent) {
             data_set($modelData, 'group_id', $parent->group_id);
-            $group = $parent->group;
-        } else {
-            $group = $parent;
         }
 
         $supplier = DB::transaction(function () use ($parent, $modelData, $addressData) {
             /** @var Supplier $supplier */
             $supplier = $parent->suppliers()->create($modelData);
             $supplier->stats()->create();
+
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $supplier->timeSeries()->create(['frequency' => $frequency]);
             }
+
             SetCurrencyHistoricFields::run($supplier->currency, $supplier->created_at);
 
             $supplier = $this->addAddressToModelFromArray($supplier, $addressData, 'contact');
-
-
-
             $supplier->refresh();
+
             if ($supplier->agent_id) {
                 StoreOrgSupplierFromSupplierInAgent::make()->action(
                     $supplier,
-                    [
-                        'source_id' => $supplier->source_id
-                    ],
+                    ['source_id' => $supplier->source_id],
+                    $this->hydratorsDelay,
+                    $this->strict
+                );
+            } else {
+                StoreOrgSupplierFromFreeSupplier::make()->action(
+                    $supplier,
+                    ['source_id' => $supplier->source_id],
                     $this->hydratorsDelay,
                     $this->strict
                 );
@@ -85,8 +95,7 @@ class StoreSupplier extends OrgAction
             return $supplier;
         });
 
-        GroupHydrateSuppliers::dispatch($group)->delay($this->hydratorsDelay);
-
+        GroupHydrateSuppliers::dispatch($this->getGroup($parent))->delay($this->hydratorsDelay);
 
         if ($supplier->agent_id) {
             AgentHydrateSuppliers::dispatch($supplier->agent)->delay($this->hydratorsDelay);
@@ -97,11 +106,8 @@ class StoreSupplier extends OrgAction
 
     public function rules(): array
     {
-
-
-
         $rules = [
-            'code'         => [
+            'code'            => [
                 'required',
                 'max:32',
                 'alpha_dash',
@@ -112,18 +118,19 @@ class StoreSupplier extends OrgAction
                     ]
                 ),
             ],
-            'contact_name' => ['nullable', 'string', 'max:255'],
+            'contact_name'    => ['nullable', 'string', 'max:255'],
             'contact_website' => ['nullable', 'string', 'max:255'],
-            'company_name' => ['nullable', 'string', 'max:255'],
-            'email'        => ['nullable', 'email'],
-            'phone'        => ['nullable', new Phone()],
-            'address'      => ['required', new ValidAddress()],
-            'currency_id'  => ['required', 'exists:currencies,id'],
-            'status'       => ['sometimes', 'required', 'boolean'],
-            'scope_type'   => ['string', Rule::in(['Group', 'Organisation'])],
-            'scope_id'     => ['integer']
-
+            'company_name'    => ['nullable', 'string', 'max:255'],
+            'email'           => ['nullable', 'email'],
+            'phone'           => ['nullable', new Phone()],
+            'address'         => ['required', new ValidAddress()],
+            'currency_id'     => ['required', 'exists:currencies,id'],
+            'status'          => ['sometimes', 'required', 'boolean'],
+            'scope_type'      => ['string', Rule::in(['Group', 'Organisation'])],
+            'scope_id'        => ['integer'],
         ];
+
+        $rules = array_merge($rules, $this->supplierJsonFieldRules());
 
         if (!$this->strict) {
             $rules['phone']       = ['sometimes', 'nullable', 'max:255'];
@@ -153,27 +160,19 @@ class StoreSupplier extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Group|Agent $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Supplier
+    public function action(Group|Agent $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Supplier
     {
         if (!$audit) {
             Supplier::disableAuditing();
         }
+
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
-        if (class_basename($parent) == 'Agent') {
-            $group = $parent->group;
-        } else {
-            $group = $parent;
-        }
+        $this->initialisationFromGroup($this->getGroup($parent), $modelData);
 
-        $this->initialisationFromGroup($group, $modelData);
-
-        return $this->handle(
-            parent: $parent,
-            modelData: $this->validatedData
-        );
+        return $this->handle($parent, $this->validatedData);
     }
 
     /**
@@ -181,15 +180,10 @@ class StoreSupplier extends OrgAction
      */
     public function asController(ActionRequest $request): Supplier
     {
-
         $group = group();
-
         $this->initialisationFromGroup($group, $request);
 
-        return $this->handle(
-            parent: $group,
-            modelData: $this->validatedData
-        );
+        return $this->handle($group, $this->validatedData);
     }
 
     /**
@@ -197,23 +191,22 @@ class StoreSupplier extends OrgAction
      */
     public function inAgent(Agent $agent, ActionRequest $request): Supplier
     {
-        $this->initialisationFromGroup(app('group'), $request);
+        $this->initialisationFromGroup($agent->group, $request);
 
-        return $this->handle(
-            parent: $agent,
-            modelData: $this->validatedData
-        );
+        return $this->handle($agent, $this->validatedData);
     }
 
     public function htmlResponse(Supplier $supplier): RedirectResponse
     {
         if ($supplier->agent_id) {
-            /** @var Agent $agent */
-            $agent = $supplier->agent;
-
-            return Redirect::route('grp.supply-chain.agents.show.suppliers.show', [$agent->slug, $supplier->slug]);
+            return Redirect::route('grp.supply-chain.agents.show.suppliers.show', [$supplier->agent->slug, $supplier->slug]);
         }
 
         return Redirect::route('grp.supply-chain.suppliers.show', $supplier->slug);
+    }
+
+    protected function getGroup(Group|Agent $parent): Group
+    {
+        return $parent instanceof Agent ? $parent->group : $parent;
     }
 }

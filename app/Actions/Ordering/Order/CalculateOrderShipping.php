@@ -229,7 +229,12 @@ class CalculateOrderShipping
 
     private function getShippingAmountAndShippingZone(Order $order, ShippingZoneSchema $shippingZoneSchema): array
     {
-        $shippingZones = $shippingZoneSchema->shippingZones()->where('status', true)->orderBy('position', 'desc')->get();
+        $shippingZones = $shippingZoneSchema->shippingZones()
+            ->where('status', true)
+            ->orderBy('position', 'desc')
+            ->get()
+            ->sortBy(fn (ShippingZone $shippingZone) => empty($shippingZone->territories) ? 1 : 0)
+            ->values();
 
         foreach ($shippingZones as $shippingZone) {
             if ($this->matchTerritories($order, $shippingZone)) {
@@ -242,20 +247,33 @@ class CalculateOrderShipping
         return [null, null];
     }
 
+    public function isToBeConfirmed(Order $order, ShippingZone $shippingZone): bool
+    {
+        $this->getShippingAmountFromShippingZone($order, $shippingZone);
+
+        return $this->toBeConfirmed;
+    }
+
     private function getShippingAmountFromShippingZone(Order $order, ShippingZone $shippingZone)
     {
         $pricingType = Arr::get($shippingZone->price, 'type');
         if ($pricingType == 'Step Order Items Net Amount') {
-            return $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($shippingZone->price, 'steps'));
+            $price = $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($shippingZone->price, 'steps'));
         } elseif ($pricingType == 'Step Order Estimated Weight') {
-            return $this->getPriceBlanketFromAmount($order->estimated_weight / 1000, Arr::get($shippingZone->price, 'steps'));
+            $price = $this->getPriceBlanketFromAmount($order->estimated_weight / 1000, Arr::get($shippingZone->price, 'steps'));
         } elseif ($pricingType == 'TBC') {
+            $price = 'TBC';
+        } else {
+            return null;
+        }
+
+        if ($price === 'TBC') {
             $this->toBeConfirmed = true;
 
             return null;
         }
 
-        return null;
+        return $price;
     }
 
     private function getPriceBlanketFromAmount($amount, array $priceBlankets)

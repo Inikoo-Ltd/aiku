@@ -55,6 +55,8 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query->leftjoin('shops', 'shops.id', '=', 'delivery_note_items.shop_id');
         $query->leftJoin('transactions', 'transactions.id', '=', 'delivery_note_items.transaction_id');
 
+        $query->where('delivery_note_items.quantity_required', '>', 0);
+
         return $query
             ->defaultSort(['locations.sort_code', 'org_stocks.code'])
             ->select(array_merge(

@@ -15,19 +15,15 @@ enum WebpageSubTypeEnum: string
     use EnumHelperTrait;
 
     case STOREFRONT = 'storefront';
-
     case CATALOGUE = 'catalogue';
     case PRODUCTS = 'products';
-
     case PRODUCT = 'product';
     case FAMILY = 'family';
     case DEPARTMENT = 'department';
     case SUB_DEPARTMENT = 'sub_department';
     case COLLECTION = 'collection';
-
     case LANDING_PAGE = 'landing_page';
     case CONTENT = 'content';
-
     case ABOUT_US = 'about-us';
     case CONTACT = 'contact';
     case RETURNS = 'returns';
@@ -36,7 +32,6 @@ enum WebpageSubTypeEnum: string
     case TERMS_AND_CONDITIONS = 'terms-and-conditions';
     case PRIVACY = 'privacy';
     case COOKIES_POLICY = 'cookies-policy';
-
     case BASKET = 'basket';
     case CHECKOUT = 'checkout';
     case LOGIN = 'login';
@@ -44,11 +39,11 @@ enum WebpageSubTypeEnum: string
     case CALL_BACK = 'call_back';
     case APPOINTMENT = 'appointment';
     case PRICING = 'pricing';
-
-
     case BLOG = 'blog';
     case ARTICLE = 'article';
     case MAILSHOT = 'mailshot';
+    case DAVIDS_TRAVEL_BLOG = 'davids_travel_blog';
+    case TIPS = 'tips';
 
 
     public static function labels(): array
@@ -62,6 +57,8 @@ enum WebpageSubTypeEnum: string
             'mailshot'    => __('mailshot'),
             'article'     => __('article'),
             'content'     => __('content'),
+            'davids_travel_blog' => __("David's Travel Blog"),
+            'tips'               => __('Tips'),
         ];
     }
 

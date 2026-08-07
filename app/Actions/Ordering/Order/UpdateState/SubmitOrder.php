@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
+use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
@@ -149,6 +150,7 @@ class SubmitOrder extends OrgAction
         }
 
         CustomerHydrateTrafficSource::dispatch($order->customer_id);
+        ProcessOrderTrafficSource::dispatch($order)->delay($this->hydratorsDelay);
 
         /** Tells any other browser tab still showing this order's checkout to redirect away,
          * so a stale card widget cannot take a second payment */

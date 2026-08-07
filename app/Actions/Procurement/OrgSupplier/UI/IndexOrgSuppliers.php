@@ -143,7 +143,10 @@ class IndexOrgSuppliers extends OrgAction
         if ($parent instanceof OrgAgent) {
             $queryBuilder->where('org_suppliers.org_agent_id', $parent->id);
         } elseif ($organisationAgent) {
-            $queryBuilder->where('org_suppliers.agent_id', $organisationAgent->id);
+            $queryBuilder->where(
+                fn ($query) => $query->where('org_suppliers.agent_id', $organisationAgent->id)
+                    ->orWhere('org_suppliers.organisation_id', $parent->id)
+            );
         } else {
             $queryBuilder->where('org_suppliers.organisation_id', $parent->id);
         }

@@ -119,6 +119,7 @@ class DeliveryNoteItem extends Model
         'cancel_state' => DeliveryNoteItemCancelStateEnum::class,
 
         'date'                       => 'datetime',
+        'composition_dirty_at'       => 'datetime',
         'order_submitted_at'         => 'datetime',
         'assigned_at'                => 'datetime',
         'picking_at'                 => 'datetime',
@@ -145,6 +146,17 @@ class DeliveryNoteItem extends Model
     ];
 
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        static::creating(
+            function (DeliveryNoteItem $deliveryNoteItem) {
+                if ($deliveryNoteItem->quantity_required) {
+                    $deliveryNoteItem->original_quantity_required = $deliveryNoteItem->quantity_required;
+                }
+            }
+        );
+    }
 
     public function pickings(): HasMany
     {

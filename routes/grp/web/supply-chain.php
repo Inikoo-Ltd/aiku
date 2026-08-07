@@ -15,6 +15,7 @@ use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\SupplyChain\Supplier\UI\EditSupplier;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
+use App\Actions\SupplyChain\SupplierProduct\DownloadSupplierProductsTemplate;
 use App\Actions\SupplyChain\SupplierProduct\UI\CreateSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\UI\ShowSupplierProduct;
@@ -69,8 +70,6 @@ Route::prefix("agents")->name("agents.")->group(
 Route::prefix("suppliers")->name("suppliers")->group(
     function () {
         Route::get('', IndexSuppliers::class)->name('.index');
-        Route::get('free', [IndexSuppliers::class, 'free'])->name('.free');
-        Route::get('in-agents', [IndexSuppliers::class, 'inAgents'])->name('.in_agents');
         Route::get('create', CreateSupplier::class)->name('.create');
         Route::get('export', ExportSuppliers::class)->name('.export');
 
@@ -81,6 +80,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
             Route::prefix('supplier-products')->as('.supplier_products')->group(function () {
                 Route::get('', [IndexSupplierProducts::class, 'inSupplier'])->name('.index');
                 Route::get('create', CreateSupplierProduct::class)->name('.create');
+                Route::get('templates', DownloadSupplierProductsTemplate::class)->name('.uploads.templates');
 
                 Route::prefix('{supplierProduct}')->group(function () {
                     Route::get('', [ShowSupplierProduct::class, 'inSupplier'])->name('.show');

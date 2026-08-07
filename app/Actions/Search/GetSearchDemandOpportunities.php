@@ -55,7 +55,7 @@ class GetSearchDemandOpportunities
         $terms = WebsiteSearchLog::where('group_id', $group->id)
             ->when($organisation, fn ($query) => $query->where('organisation_id', $organisation->id))
             ->where('created_at', '>=', now()->subDays($days))
-            ->where('results_count', 0)
+            ->where('keyword_results_count', 0)
             ->whereRaw('char_length(query) between 3 and 40')
             ->selectRaw('lower(query) as query, count(*) as searches, count(distinct customer_id) as customers, count(distinct website_id) as websites, max(created_at) as last_searched_at')
             ->groupByRaw('lower(query)')

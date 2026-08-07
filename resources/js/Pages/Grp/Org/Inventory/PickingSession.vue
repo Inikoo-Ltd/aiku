@@ -24,6 +24,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
+import { routeType } from "@/types/route"
+import { debounce } from "lodash-es"
 
 
 const props = defineProps<{
@@ -38,6 +41,9 @@ const props = defineProps<{
     allow_waiting: boolean
     allow_picker_set_not_picked: boolean
     picker?: { id: number, contact_name: string } | null
+    scan_to_pack?: {
+        scan_route: routeType
+    }
     routes?: {
         update: { name: string, parameters: object }
         pickers_list: { name: string, parameters: object }
@@ -50,7 +56,7 @@ const props = defineProps<{
         navigation: object;
     }
 }>()
-
+console.log("props", props)
 
 const layout = inject("layout", layoutStructure)
 
@@ -147,6 +153,38 @@ watch(() => props.tabs.current, (newTab) => {
     currentTab.value = newTab
 }, { immediate: true })
 
+const debReloadPage = debounce(() => {
+    router.reload({
+        except: ["auth", "breadcrumbs", "flash", "layout", "localeData", "pageHead", "ziggy"]
+    })
+}, 1200)
+
+// A scan packs one item of one delivery note, so only the row it landed on changes. Patching that
+// row in place keeps the packer on the same scroll position instead of re-rendering the whole table.
+const onItemPackedByScan = (outcome: {
+    status: string
+    item?: { id: number } | null
+    delivery_note?: { id: number } | null
+    row?: Record<string, any> | null
+    picking_session_state?: string
+}) => {
+    if (outcome.status !== "packed") {
+        return
+    }
+
+    const scannedRowId = currentTab.value === "grouped" ? outcome.delivery_note?.id : outcome.item?.id
+    const rows = (props[currentTab.value as keyof typeof props] as { data?: any[] } | undefined)?.data
+    const scannedRow = rows?.find((row: any) => row.id === scannedRowId)
+
+    if (scannedRow && outcome.row) {
+        Object.assign(scannedRow, outcome.row)
+    }
+
+    if (outcome.picking_session_state === "packing_finished") {
+        debReloadPage()
+    }
+}
+
 
 
 
@@ -217,6 +255,14 @@ const handleModalSuccess = () => {
     <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
         <Timeline :options="timelines" :state="data.data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
     </div>
+    <!-- Section: Scan a barcode to pack the matching item of the delivery note it belongs to -->
+    <ScanToPackDeliveryNote
+        v-if="scan_to_pack"
+        :scanRoute="scan_to_pack.scan_route"
+        :tab="currentTab"
+        @scanned="onItemPackedByScan"
+    />
+
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component

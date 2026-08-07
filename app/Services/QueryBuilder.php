@@ -196,6 +196,46 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return $this;
     }
 
+    public function whereOfferFilter(callable $engine, ?string $prefix = null): static
+    {
+        $argumentName = ($prefix ? $prefix . '_' : '') . 'offer';
+        $filters      = request()->input($argumentName, []);
+
+        if (empty($filters) && $prefix) {
+            $filters = request()->input('offer', []);
+        }
+
+        $presence = Arr::get($filters, 'has');
+
+        if (!in_array($presence, ['with', 'without'], true)) {
+            return $this;
+        }
+
+        $range = Arr::get($filters, 'between');
+        $start = null;
+        $end   = null;
+
+        if (is_string($range) && preg_match('/^\d{8}-\d{8}$/', trim($range))) {
+            [$from, $to] = explode('-', trim($range));
+
+            $timezone = resolveTimezoneHeader();
+
+            $start = Carbon::createFromFormat('Ymd', $from, $timezone)
+                ->setTimezone('UTC')
+                ->startOfDay()
+                ->toDateTimeString();
+
+            $end = Carbon::createFromFormat('Ymd', $to, $timezone)
+                ->setTimezone('UTC')
+                ->endOfDay()
+                ->toDateTimeString();
+        }
+
+        $engine($this, $presence, $start, $end);
+
+        return $this;
+    }
+
     public function withIrisPaginator(?int $numberOfRecords = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         if ($numberOfRecords === null && request()->has('perPage')) {
@@ -292,6 +332,8 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             $filters = request()->input('between', []);
         }
 
+        $filters = StickyBetweenDates::apply($filters, ['from', 'date'], 'date');
+
         $hasDateFilter = false;
         $startDate = null;
         $endDate = null;
@@ -386,6 +428,8 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return [
             'hasDateFilter' => $hasDateFilter,
             'selectRaw' => $selectRaw,
+            'alias' => $alias,
+            'days' => $hasDateFilter ? (int) $startDate->diffInDays($endDate) + 1 : null,
         ];
     }
 }
