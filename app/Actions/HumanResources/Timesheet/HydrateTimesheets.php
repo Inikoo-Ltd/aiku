@@ -24,7 +24,7 @@ class HydrateTimesheets
 
     public function handle(Timesheet $timesheet): void
     {
-        TimesheetHydrateTimeTrackers::run($timesheet);
+        TimesheetHydrateTimeTrackers::run($timesheet->id);
     }
 
 }

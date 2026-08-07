@@ -24,7 +24,7 @@ class SetEmployeePin extends OrgAction
      */
     private mixed $needGeneratedPin = false;
 
-    public function handle(Employee $employee): string
+    public function handle(Employee $employee): bool|string
     {
         return $this->setPin($employee);
     }
@@ -32,14 +32,7 @@ class SetEmployeePin extends OrgAction
     public function setPin($employee, $try = 1): bool|string
     {
         try {
-
-
-            list($letters, $emojis, $numbers) = $this->pinCharacterSet();
-
-            $pin = $employee->organisation_id.':'.
-                $letters[array_rand($letters)].$letters[array_rand($letters)].
-                $emojis[array_rand($emojis)].$emojis[array_rand($emojis)].
-                $numbers[array_rand($numbers)].$numbers[array_rand($numbers)];
+            $pin = $this->generateUnusedPin($employee);
 
             if ($this->needGeneratedPin) {
                 return $pin;
@@ -55,25 +48,54 @@ class SetEmployeePin extends OrgAction
             return true;
         } catch (Exception) {
             if ($try < 100) {
-                $this->setPin($employee, $try + 1);
-            } else {
-                return false;
+                return $this->setPin($employee, $try + 1);
+            }
+
+            return false;
+        }
+    }
+
+    /**
+     * The pin is the credential the clocking kiosks authenticate on, and they resolve it with a
+     * single organisation scoped lookup, so a duplicate would clock in the wrong employee.
+     *
+     * @throws Exception
+     */
+    private function generateUnusedPin(Employee $employee): string
+    {
+        for ($attempt = 0; $attempt < 50; $attempt++) {
+            $pin = $employee->organisation_id.':'.$this->generatePinCode();
+
+            $taken = Employee::where('organisation_id', $employee->organisation_id)
+                ->where('pin', $pin)
+                ->where('id', '!=', $employee->id)
+                ->exists();
+
+            if (!$taken) {
+                return $pin;
             }
         }
 
-        return false;
+        throw new Exception('Unable to generate an unused pin for organisation '.$employee->organisation_id);
+    }
+
+    public function generatePinCode(): string
+    {
+        list($letters, $numbers) = $this->pinCharacterSet();
+
+        return $letters[array_rand($letters)].$letters[array_rand($letters)].$letters[array_rand($letters)].
+            $numbers[array_rand($numbers)].$numbers[array_rand($numbers)].$numbers[array_rand($numbers)];
     }
 
 
     public function pinCharacterSet(): array
     {
         $letters = array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'X', 'Y', 'Z');
-        $emojis  = array('🌴', '😀', '👽', '🍄', '👻', '👍🏼', '🚀', '🦄', '🐋', '☘️');
         $numbers = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
 
 
         return [
-            $letters,$emojis,$numbers
+            $letters,$numbers
         ];
 
 

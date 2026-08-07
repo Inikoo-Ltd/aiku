@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, usePage } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
+import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableTimesheets from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheets.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { format, startOfWeek, startOfMonth, startOfQuarter, startOfYear, addDays } from 'date-fns'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
-
-// Import Icons
+import qs from 'qs'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInfoCircle } from '@fal'
-import { trans } from 'laravel-vue-i18n'
-library.add(faInfoCircle)
+import { faCalendarAlt } from '@fal'
+library.add(faCalendarAlt)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -21,30 +20,39 @@ const props = defineProps<{
         current: string,
         navigation: any
     }
-    statistics: {
-        on_time: number,
-        late_clock_in: number,
-        early_clock_out: number,
-        no_clock_out: number,
-        invalid: number,
-        absent: number,
-        total: number
+    employee_view: {
+        current: string,
+        navigation: any
     }
     employees?: {}
     employee?: {}
 }>()
 
 
-const currentTab = ref(props.tabs?.current || 'employees')
+const currentTab = ref(props.tabs?.current || 'employee')
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const currentData = computed(() => {
     return (props as any)[currentTab.value]
 })
 
+const currentEmployeeView = ref(props.employee_view?.current || 'overview')
+
+function handleEmployeeViewUpdate(view: string) {
+    currentEmployeeView.value = view
+    const params = new URLSearchParams(location.search)
+    params.set('view', view)
+    router.get(location.pathname + `?${params.toString()}`, {}, { preserveState: true, preserveScroll: true })
+}
+
+const periodPrefix = computed(() => currentTab.value === 'employee' ? 'employee' : 'employees')
+
 const periodParam = computed(() => {
-    const params = (route().params as any)
-    return params?.period ?? null
+    const url = usePage().url as string
+    const queryString = url.includes('?') ? url.slice(url.indexOf('?') + 1) : ''
+    const params = qs.parse(queryString) as Record<string, any>
+
+    return params?.[`${periodPrefix.value}_period`] ?? params?.period ?? null
 })
 
 function periodLabel(period: any) {
@@ -60,7 +68,7 @@ function periodLabel(period: any) {
         // May 26th, 2024 - June 1st, 2024
         const year = period.week.slice(0, 4)
         const weekNumber = parseInt(period.week.slice(4), 10)
-        const startOfTheWeek = startOfWeek(addDays(new Date(year, 0, 1), (weekNumber - 1) * 7))
+        const startOfTheWeek = startOfWeek(addDays(new Date(year, 0, 1), (weekNumber - 1) * 7), { weekStartsOn: 1 })
         return `${format(startOfTheWeek, 'MMMM do, yyyy')} - ${format(addDays(startOfTheWeek, 6), 'MMMM do, yyyy')}`
     }
 
@@ -88,84 +96,31 @@ function periodLabel(period: any) {
     }
 }
 
-function applyStatus(status: string | null) {
-    const params = new URLSearchParams(location.search)
-    if (status) {
-        params.set('timesheet_status', status)
-    } else {
-        params.delete('timesheet_status')
-    }
-    const url = location.pathname + (params.toString() ? `?${params.toString()}` : '')
-    router.get(url, {}, { preserveState: true, preserveScroll: true })
-}
 </script>
 
 <template>
 
     <Head :title="capitalize(title)" />
 
-    <PageHeading :data="pageHead">
-        <template #afterTitle>
-            <div v-if="periodParam" class="flex font-normal text-lg leading-none h-full text-gray-400">
-                <div>({{ periodLabel(periodParam) }})</div>
-            </div>
-        </template>
-    </PageHeading>
+    <PageHeading :data="pageHead" />
 
-    <!-- STATISTICS CARDS SECTION -->
-    <div class="mt-4 bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6">
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center divide-x divide-gray-100">
-            <button type="button" @click="applyStatus('on_time')" class="px-2">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.on_time }}</div>
-                <div class="text-xs text-gray-500 mt-1">{{ trans("On time") }}</div>
-            </button>
+    <Tabs v-if="Object.keys(tabs.navigation || {}).length" :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-            <button type="button" @click="applyStatus('late_clock_in')" class="px-2">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.late_clock_in }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Late clock in") }}
-                </div>
-            </button>
+    <Tabs
+        v-if="currentTab === 'employee' && Object.keys(employee_view.navigation || {}).length"
+        :current="currentEmployeeView"
+        :navigation="employee_view.navigation"
+        @update:tab="handleEmployeeViewUpdate"
+        class="mt-2"
+    />
 
-            <button type="button" @click="applyStatus('early_clock_out')" class="px-2">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.early_clock_out }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Early clock out") }}
-                </div>
-            </button>
-
-            <button type="button" @click="applyStatus('no_clock_out')" class="px-2">
-                <div class="text-lg font-bold text-blue-600 flex justify-center items-center gap-1">
-                    {{ statistics.no_clock_out }}
-                    <font-awesome-icon :icon="['fal', 'info-circle']" class="text-gray-400 text-[10px]" />
-                </div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("No clock out") }}
-                </div>
-            </button>
-
-            <button type="button" @click="applyStatus('invalid')" class="px-2">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.invalid }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Invalid") }}
-                </div>
-            </button>
-
-            <button type="button" @click="applyStatus(null)" class="px-2 border-r-0 lg:border-r">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.absent }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Absent") }}
-                </div>
-            </button>
-
-            <button type="button" @click="applyStatus(null)" class="px-2 border-l border-gray-200">
-                <div class="text-lg font-bold text-gray-800">{{ statistics.total }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Total Logs") }}
-                </div>
-            </button>
-        </div>
+    <div v-if="periodParam" class="mt-3 mb-1">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700">
+            <font-awesome-icon :icon="['fal', 'calendar-alt']" class="text-indigo-400" />
+            {{ periodLabel(periodParam) }}
+        </span>
     </div>
+
     <!-- TABLE -->
-    <TableTimesheets :key="currentTab" :tab="currentTab" :data="currentData" />
+    <TableTimesheets :key="`${currentTab}-${currentEmployeeView}`" :tab="currentTab" :data="currentData" />
 </template>

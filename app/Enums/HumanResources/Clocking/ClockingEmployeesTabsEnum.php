@@ -10,7 +10,7 @@ enum ClockingEmployeesTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SCAN_QR_CODE = 'scan_qr_code';
+    case CLOCK_IN_OUT = 'clock_in_out';
     case TIMESHEETS = 'timesheets';
     case LEAVES = 'leaves';
     case ADJUSTMENTS = 'adjustments';
@@ -20,9 +20,9 @@ enum ClockingEmployeesTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
-            ClockingEmployeesTabsEnum::SCAN_QR_CODE => [
-                'title' => __('Scan QR Code'),
-                'icon' => 'fal fa-qrcode',
+            ClockingEmployeesTabsEnum::CLOCK_IN_OUT => [
+                'title' => __('Clock In / Out'),
+                'icon' => 'fal fa-user-clock',
             ],
             ClockingEmployeesTabsEnum::TIMESHEETS => [
                 'icon' => 'fal fa-clock',
