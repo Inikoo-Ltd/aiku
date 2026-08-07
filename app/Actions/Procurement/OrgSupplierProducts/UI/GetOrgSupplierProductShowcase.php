@@ -22,7 +22,7 @@ class GetOrgSupplierProductShowcase
     public function handle(OrgSupplierProduct $orgSupplierProduct): array
     {
         return array_merge(
-            $this->getSupplierProductShowcase($orgSupplierProduct->supplierProduct),
+            $this->getSupplierProductShowcase($orgSupplierProduct->supplierProduct, withSupplyChainLink: true),
             [
                 'organisation' => [
                     'name'         => $orgSupplierProduct->organisation->name,

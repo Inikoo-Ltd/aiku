@@ -18,12 +18,12 @@ use App\Models\SupplyChain\SupplierProduct;
 
 trait WithSupplierProductShowcase
 {
-    protected function getSupplierProductShowcase(SupplierProduct $supplierProduct): array
+    protected function getSupplierProductShowcase(SupplierProduct $supplierProduct, bool $withSupplyChainLink = false): array
     {
         $supplierProduct->loadMissing(['currency', 'supplier', 'agent', 'tradeUnits', 'stocks']);
 
         return [
-            'product'     => $this->getSupplierProductDetails($supplierProduct),
+            'product'     => $this->getSupplierProductDetails($supplierProduct, $withSupplyChainLink),
             'costs'       => $this->getSupplierProductCosts($supplierProduct),
             'packaging'   => $this->getSupplierProductPackaging($supplierProduct),
             'trade_units' => $this->getSupplierProductTradeUnits($supplierProduct),
@@ -31,7 +31,7 @@ trait WithSupplierProductShowcase
         ];
     }
 
-    private function getSupplierProductDetails(SupplierProduct $supplierProduct): array
+    private function getSupplierProductDetails(SupplierProduct $supplierProduct, bool $withSupplyChainLink): array
     {
         return [
             'code'         => $supplierProduct->code,
@@ -44,7 +44,7 @@ trait WithSupplierProductShowcase
             ],
             'is_available' => $supplierProduct->is_available,
             'composition'  => $supplierProduct->trade_unit_composition?->value,
-            'route'        => $supplierProduct->supplier ? [
+            'route'        => $withSupplyChainLink && $supplierProduct->supplier ? [
                 'name'       => 'grp.supply-chain.suppliers.supplier_products.show',
                 'parameters' => [
                     'supplier'        => $supplierProduct->supplier->slug,
@@ -202,7 +202,7 @@ trait WithSupplierProductShowcase
 
         return [
             [
-                'label'       => __('Purchase orders'),
+                'label'       => __('Purchase Orders'),
                 'count'       => $stats->number_purchase_orders,
                 'description' => __('open').': '.$stats->number_open_purchase_orders,
             ],
@@ -211,11 +211,11 @@ trait WithSupplierProductShowcase
                 'count' => $stats->number_stock_deliveries,
             ],
             [
-                'label' => __('Ordered items'),
+                'label' => __('Ordered Items'),
                 'count' => $stats->number_purchase_order_transactions,
             ],
             [
-                'label' => __('Delivered items'),
+                'label' => __('Delivered Items'),
                 'count' => $stats->number_stock_delivery_items,
             ],
         ];
