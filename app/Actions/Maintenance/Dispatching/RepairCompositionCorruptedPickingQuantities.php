@@ -46,6 +46,10 @@ class RepairCompositionCorruptedPickingQuantities
             $touchedDeliveryNotes = [];
 
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
+                if ($transaction->quantity_ordered + $transaction->quantity_bonus == 0) {
+                    continue;
+                }
+
                 $factor = $transaction->current_discount_factor
                     ?? ($transaction->gross_amount != 0 ? $transaction->net_amount / $transaction->gross_amount : 1);
 

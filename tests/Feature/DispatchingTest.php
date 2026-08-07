@@ -2525,7 +2525,7 @@ test('sync required pick quantity updates delivery note items in place', functio
     $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
 
     $transaction = $this->order->transactions()->where('model_type', 'Product')->first();
-    $transaction->updateQuietly(['quantity_ordered' => 4]);
+    $transaction->updateQuietly(['quantity_ordered' => 4, 'quantity_bonus' => 0]);
 
     $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
         'reference'        => 'SYNC-'.$orgStock->id,

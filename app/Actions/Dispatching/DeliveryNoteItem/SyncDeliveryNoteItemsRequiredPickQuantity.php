@@ -152,6 +152,6 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
         $unitsNow  = (float)($transaction->model?->units ?? 0);
         $packRatio = ($unitsSold > 0 && $unitsNow > 0) ? $unitsSold / $unitsNow : 1;
 
-        return $quantityPerProduct * $transaction->quantity_ordered * $packRatio;
+        return $quantityPerProduct * ($transaction->quantity_ordered + $transaction->quantity_bonus) * $packRatio;
     }
 }
