@@ -58,6 +58,16 @@ class OmegaManyInvoice extends OrgAction
             $query->where('invoice_category_id', $invoiceCategory->id);
         }
 
+        $maxInvoices = 3000;
+        $count       = (clone $query)->count();
+        if ($count > $maxInvoices) {
+            return response(
+                __('Too many invoices to export (:count). Please narrow the date range (max :max).', ['count' => $count, 'max' => $maxInvoices]),
+                422,
+                ['Content-Type' => 'text/plain']
+            );
+        }
+
         set_time_limit(0);
         ini_set('max_execution_time', 0);
 
