@@ -192,7 +192,7 @@ class GetOrganisationNavigation
 
         if ($this->canViewAnyShopMarketing($user, $organisation->shops()->pluck('id'))) {
             $navigation['marketing'] = [
-                'label' => __('Marketing'),
+                'label' => __('Org Marketing'),
                 'icon'  => ['fal', 'fa-bullhorn'],
                 'root'  => 'grp.org.marketing.',
                 'route' => [
