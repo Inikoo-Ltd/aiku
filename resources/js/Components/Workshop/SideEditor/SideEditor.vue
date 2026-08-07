@@ -88,25 +88,26 @@ onMounted(() => {
 </script>
 
 <template>
-    <div v-for="(field, index) of blueprint.filter((item) => item.type != 'hidden')">
-        <Accordion class="w-full" :value="panelOpen">
-            <template #collapseicon>
-                <FontAwesomeIcon :icon="faCaretDown" class="text-white"></FontAwesomeIcon>
-            </template>
-            <template #expandicon>
-                <FontAwesomeIcon :icon="faCaretLeft" class="text-black"></FontAwesomeIcon>
-            </template>
-            
-            <ParentFieldSideEditor
-                :blueprint="field"
-                :uploadImageRoute="uploadImageRoute"
-                 v-model="modelValue"
-                :key="field.key"
-                @update:modelValue="e =>  emits('update:modelValue', e)"
-                :modelType="type"
-                :editable="editable"
-            />
-        </Accordion>
+    <div class="w-full min-w-0 max-w-full">
+        <div v-for="field of blueprint.filter((item) => item.type != 'hidden')" :key="field.key" class="min-w-0 max-w-full">
+            <Accordion class="w-full min-w-0" :value="panelOpen">
+                <template #collapseicon>
+                    <FontAwesomeIcon :icon="faCaretDown" class="text-white"></FontAwesomeIcon>
+                </template>
+                <template #expandicon>
+                    <FontAwesomeIcon :icon="faCaretLeft" class="text-black"></FontAwesomeIcon>
+                </template>
+
+                <ParentFieldSideEditor
+                    :blueprint="field"
+                    :uploadImageRoute="uploadImageRoute"
+                    v-model="modelValue"
+                    @update:modelValue="e =>  emits('update:modelValue', e)"
+                    :modelType="type"
+                    :editable="editable"
+                />
+            </Accordion>
+        </div>
     </div>
 </template>
 
@@ -117,5 +118,14 @@ onMounted(() => {
 }
 :deep(.p-accordioncontent-content) {
   padding: 1rem !important;
+}
+:deep(.p-accordionpanel),
+:deep(.p-accordionheader),
+:deep(.p-accordioncontent),
+:deep(.p-accordioncontent-wrapper),
+:deep(.p-accordioncontent-content) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 </style>
