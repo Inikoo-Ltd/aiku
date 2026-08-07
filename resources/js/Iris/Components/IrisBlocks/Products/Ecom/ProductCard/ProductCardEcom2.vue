@@ -10,6 +10,7 @@ import Image from "@common/Components/Image.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
+import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -152,25 +153,30 @@ defineExpose({
                          <DiscountByType :offers_data="product?.product_offers_data" template="max_discount" />
                     </div>
 
-                    <!-- FAVOURITE -->
-                    <template v-if="layout?.iris?.is_logged_in && !product.variant">
-                        <div v-if="isLoadingFavourite" class="absolute top-1 right-2 text-gray-500 text-xl z-10">
-                            <LoadingIcon />
-                        </div>
+                    <!-- GOLDEN PRODUCT + FAVOURITE -->
+                    <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && !product.variant)"
+                        class="absolute top-1 right-2 z-10 flex items-center gap-1.5">
 
-                        <div v-else @click.prevent="toggleFavourite"
-                            class="cursor-pointer absolute top-1 right-2 group text-xl z-10">
-                            <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" class="text-pink-500"
-                                fixed-width />
+                        <GoldenProductBadge v-if="product.is_golden_product" />
 
-                            <div v-else class="relative">
-                                <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-500"
-                                    fixed-width />
-                                <FontAwesomeIcon :icon="farHeart" class="inline group-hover:hidden text-gray-800"
-                                    fixed-width />
+                        <template v-if="layout?.iris?.is_logged_in && !product.variant">
+                            <div v-if="isLoadingFavourite" class="text-gray-500 text-xl">
+                                <LoadingIcon />
                             </div>
-                        </div>
-                    </template>
+
+                            <div v-else @click.prevent="toggleFavourite" class="cursor-pointer group text-xl">
+                                <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" class="text-pink-500"
+                                    fixed-width />
+
+                                <div v-else class="relative">
+                                    <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-500"
+                                        fixed-width />
+                                    <FontAwesomeIcon :icon="farHeart" class="inline group-hover:hidden text-gray-800"
+                                        fixed-width />
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </component>
 
                 <!-- PRODUCT INFO -->
