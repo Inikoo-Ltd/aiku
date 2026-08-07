@@ -24,12 +24,14 @@ class RepairCrossShopPortfolios
     /**
      * @throws \Throwable
      */
-    public function handle(bool $apply, ?Command $command = null): array
+    public function handle(bool $apply, bool $withTransactions, ?Command $command = null): array
     {
         $summary = [
-            'portfolios_fixed'      => 0,
-            'portfolios_unmatched'  => 0,
-            'transactions_fixed'    => 0,
+            'portfolios_fixed'       => 0,
+            'portfolios_unmatched'   => 0,
+            'portfolios_duplicated'  => 0,
+            'listings_left_on_wrong_shop' => 0,
+            'transactions_fixed'     => 0,
             'transactions_unmatched' => 0,
         ];
 
@@ -39,6 +41,15 @@ class RepairCrossShopPortfolios
             if (!$product) {
                 $summary['portfolios_unmatched']++;
                 $command?->warn("portfolio $portfolio->id: no $portfolio->item_code in shop $portfolio->shop_id");
+                continue;
+            }
+
+            if ($this->channelAlreadyHas($portfolio, $product)) {
+                $summary['portfolios_duplicated']++;
+                if ($portfolio->platform_product_id) {
+                    $summary['listings_left_on_wrong_shop']++;
+                    $command?->warn("portfolio $portfolio->id: live listing, channel $portfolio->customer_sales_channel_id already has product $product->id");
+                }
                 continue;
             }
 
@@ -52,6 +63,10 @@ class RepairCrossShopPortfolios
                 ]);
             }
             $summary['portfolios_fixed']++;
+        }
+
+        if (!$withTransactions) {
+            return $summary;
         }
 
         foreach ($this->crossShopOpenTransactions() as $transaction) {
@@ -106,9 +121,17 @@ class RepairCrossShopPortfolios
         return Product::where('shop_id', $shopId)->where('code', $code)->first();
     }
 
+    private function channelAlreadyHas(Portfolio $portfolio, Product $product): bool
+    {
+        return Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+            ->where('item_type', 'Product')
+            ->where('item_id', $product->id)
+            ->exists();
+    }
+
     public function getCommandSignature(): string
     {
-        return 'maintenance:repair_cross_shop_portfolios {--apply}';
+        return 'maintenance:repair_cross_shop_portfolios {--apply} {--transactions}';
     }
 
     public function getCommandDescription(): string
@@ -121,7 +144,11 @@ class RepairCrossShopPortfolios
      */
     public function asCommand(Command $command): int
     {
-        $summary = $this->handle((bool)$command->option('apply'), $command);
+        $summary = $this->handle(
+            (bool)$command->option('apply'),
+            (bool)$command->option('transactions'),
+            $command
+        );
 
         $command->table(array_keys($summary), [$summary]);
         if (!$command->option('apply')) {
