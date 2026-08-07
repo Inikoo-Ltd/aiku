@@ -33,6 +33,7 @@ enum TrafficSourcesTypeEnum: string
     case TWITTER_ADS = 'twitter-ads';
     case YOUTUBE = 'youtube';
     case NEWSLETTER = 'newsletter';
+    case EMAIL_AUTOMATED = 'email-automated';
     case ORGANIC_SEARCH = 'organic-search';
     case REFERRAL = 'referral';
 
@@ -55,6 +56,7 @@ enum TrafficSourcesTypeEnum: string
             self::TWITTER_ADS->value       => 'Twitter Ads',
             self::YOUTUBE->value           => 'Youtube',
             self::NEWSLETTER->value        => 'Newsletter',
+            self::EMAIL_AUTOMATED->value   => 'Automated Emails',
             self::ORGANIC_SEARCH->value    => 'Organic Search (other)',
             self::REFERRAL->value          => 'Referral',
         ];
@@ -79,6 +81,7 @@ enum TrafficSourcesTypeEnum: string
             self::TWITTER_ADS->value       => false,
             self::YOUTUBE->value           => true,
             self::NEWSLETTER->value        => true,
+            self::EMAIL_AUTOMATED->value   => true,
             self::ORGANIC_SEARCH->value    => true,
             self::REFERRAL->value          => true,
         ];
@@ -103,6 +106,7 @@ enum TrafficSourcesTypeEnum: string
             self::TWITTER_ADS->value       => 'n',
             self::YOUTUBE->value           => 'o',
             self::NEWSLETTER->value        => 'p',
+            self::EMAIL_AUTOMATED->value   => 's',
             self::ORGANIC_SEARCH->value    => 'r',
             self::REFERRAL->value          => 'q',
         ];

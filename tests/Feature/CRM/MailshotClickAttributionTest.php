@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Comms\EmailTrackingEvent\StoreEmailTrackingEvent;
+use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -31,6 +32,8 @@ beforeEach(function () {
     ) = createShop();
 
     $this->customer = createCustomer($this->shop);
+    $this->customer->trafficSources()->detach();
+    $this->customer->update(['traffic_sources' => null]);
     $this->outbox   = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
 });
 
@@ -99,4 +102,32 @@ it('queues nothing when a transactional email is clicked', function () {
     ]);
 
     expect($this->customer->fresh()->traffic_sources)->toBeNull();
+});
+
+it('credits a reorder reminder click to the automated emails channel, not to newsletter', function () {
+    $automated = createTrafficSource($this->shop, 'email-automated', 'Automated Emails');
+
+    RecordEmailClickTouchpoint::run($this->customer, now(), null, 'reorder_reminder');
+
+    $credited = $this->customer->fresh()->trafficSources()->get();
+
+    expect($credited)->toHaveCount(1)
+        ->and($credited->first()->type)->toBe('email-automated');
+
+    $campaign = App\Models\CRM\TrafficSourceCampaign::where('traffic_source_id', $automated->id)
+        ->where('reference', 'outbox-reorder_reminder')
+        ->first();
+
+    expect($campaign)->not->toBeNull()
+        ->and($campaign->name)->toBe('Reorder Reminder');
+});
+
+it('keeps a second reorder reminder click on the same day from counting twice', function () {
+    createTrafficSource($this->shop, 'email-automated', 'Automated Emails');
+
+    RecordEmailClickTouchpoint::run($this->customer, now(), null, 'reorder_reminder');
+    RecordEmailClickTouchpoint::run($this->customer->fresh(), now()->addMinutes(5), null, 'reorder_reminder');
+
+    expect(App\Actions\CRM\TrafficSource\ParseTrafficSourceTouches::run($this->customer->fresh()->traffic_sources))
+        ->toHaveCount(1);
 });

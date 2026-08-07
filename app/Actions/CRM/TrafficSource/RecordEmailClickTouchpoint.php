@@ -36,6 +36,9 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
      */
     public const CAMPAIGN_REF_PREFIX = 'mailshot-';
 
+    /** Same namespacing reason as above, for the automated emails that are not mailshots. */
+    public const OUTBOX_CAMPAIGN_REF_PREFIX = 'outbox-';
+
     /**
      * Upper bound on how many touches a recipient's history keeps. The cookie path is already capped by
      * its own 3.9KB budget, but this column only ever grew: one touch per mailshot per day, forever.
@@ -53,9 +56,9 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
      * concurrent workers from racing each other on the recipient's touch history, which is a
      * read-append-write. Different mailshots keep their own key so a genuine second click is never dropped.
      */
-    public function getJobUniqueId(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null): string
+    public function getJobUniqueId(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null, ?string $outboxCode = null): string
     {
-        return $recipient->getMorphClass().'-'.$recipient->id.'-'.($mailshot?->id ?? 'no-mailshot');
+        return $recipient->getMorphClass().'-'.$recipient->id.'-'.($mailshot?->id ?? $outboxCode ?? 'no-mailshot');
     }
 
     /**
@@ -73,29 +76,46 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
      * Accepts either a `Customer` or a `Prospect` recipient, since a mailshot may be dispatched to
      * either before a prospect has converted into a customer.
      */
-    public function handle(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null): void
+    public function handle(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null, ?string $outboxCode = null): void
     {
         $occurredAt = $occurredAt ?? now();
 
         $touches = ParseTrafficSourceTouches::run($recipient->traffic_sources);
 
-        $campaignRef = $mailshot ? self::CAMPAIGN_REF_PREFIX.$mailshot->id : null;
+        /* A mailshot is the newsletter channel; anything else we send that counts as marketing - a
+           reorder reminder, an abandoned basket chase, a back-in-stock notice - is its own channel,
+           with the outbox code as the campaign reference so each kind reports separately. Mixing
+           them into newsletter would hide which of the two actually works. */
+        $type = $outboxCode !== null && !$mailshot
+            ? TrafficSourcesTypeEnum::EMAIL_AUTOMATED
+            : TrafficSourcesTypeEnum::NEWSLETTER;
 
-        $lastNewsletterTouch = collect($touches)
-            ->filter(fn (array $touch) => $touch['type'] === TrafficSourcesTypeEnum::NEWSLETTER
+        $campaignRef = match (true) {
+            (bool) $mailshot        => self::CAMPAIGN_REF_PREFIX.$mailshot->id,
+            $outboxCode !== null    => self::OUTBOX_CAMPAIGN_REF_PREFIX.$outboxCode,
+            default                 => null,
+        };
+
+        $lastSameTouch = collect($touches)
+            ->filter(fn (array $touch) => $touch['type'] === $type
                 && $touch['campaign_ref'] === $campaignRef)
             ->last();
 
-        if ($lastNewsletterTouch && $lastNewsletterTouch['timestamp']
-            && Carbon::createFromTimestamp($lastNewsletterTouch['timestamp'])->isSameDay($occurredAt)) {
+        if ($lastSameTouch && $lastSameTouch['timestamp']
+            && Carbon::createFromTimestamp($lastSameTouch['timestamp'])->isSameDay($occurredAt)) {
             return;
         }
 
-        if ($mailshot) {
-            $this->ensureCampaignExists($recipient, $mailshot, $campaignRef);
+        if ($campaignRef) {
+            $this->ensureCampaignExists(
+                $recipient,
+                $type,
+                $campaignRef,
+                $mailshot ? ($mailshot->subject ?? $mailshot->slug) : $this->outboxCampaignName($outboxCode)
+            );
         }
 
-        $abbr     = TrafficSourcesTypeEnum::NEWSLETTER->abbr()[TrafficSourcesTypeEnum::NEWSLETTER->value];
+        $abbr     = TrafficSourcesTypeEnum::abbr()[$type->value];
         $newTouch = $occurredAt->getTimestamp() . $abbr . ($campaignRef ?? '');
 
         /* Appended under a row lock: the device-cookie sync merges into the same column from
@@ -129,11 +149,11 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
         return implode('|', array_merge([$first], array_slice($segments, -(self::MAX_TOUCHES - 1))));
     }
 
-    private function ensureCampaignExists(Customer|Prospect $recipient, Mailshot $mailshot, string $campaignRef): void
+    private function ensureCampaignExists(Customer|Prospect $recipient, TrafficSourcesTypeEnum $type, string $campaignRef, string $name): void
     {
         /** @var TrafficSource|null $trafficSource */
         $trafficSource = TrafficSource::where('shop_id', $recipient->shop_id)
-            ->where('type', TrafficSourcesTypeEnum::NEWSLETTER->value)
+            ->where('type', $type->value)
             ->first();
 
         if (!$trafficSource) {
@@ -146,9 +166,15 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
                 'reference'         => $campaignRef,
             ],
             [
-                'name' => $mailshot->subject ?? $mailshot->slug,
-                'type' => TrafficSourcesTypeEnum::NEWSLETTER->value,
+                'name' => $name,
+                'type' => $type->value,
             ]
         );
+    }
+
+    /** "reorder_reminder_2nd" reads as "Reorder Reminder 2nd" in the campaign breakdown. */
+    private function outboxCampaignName(string $outboxCode): string
+    {
+        return ucwords(str_replace('_', ' ', $outboxCode));
     }
 }

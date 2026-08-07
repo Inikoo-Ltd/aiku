@@ -32,21 +32,27 @@ class StoreEmailTrackingEvent extends OrgAction
         if ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::CLICKED) {
             DispatchedEmailHydrateClicks::run($dispatchedEmail);
 
-            /* Only mailshot clicks are marketing touches. Transactional sends (order confirmations,
-               dispatch notices, invoices) reach the same CLICKED state, and recording those would
-               hand the newsletter channel a share of every engaged customer's revenue for clicks
-               that are post-purchase service, not acquisition. */
-            $mailshot = $dispatchedEmail->sentMailshot;
+            /* A mailshot click is a newsletter touch. Some of what else we send is marketing too - a
+               reorder reminder, an abandoned basket chase, a back-in-stock notice - and a click on one
+               of those brought the customer back just as surely; those are credited to the automated
+               emails channel, listed in config('marketing.attributed_outbox_codes').
 
-            if ($mailshot) {
+               Everything else stays uncredited. Order confirmations, dispatch notices, invoices and
+               password reminders reach the same CLICKED state, and crediting them would hand marketing
+               a share of every engaged customer's revenue for clicks that are service, not
+               acquisition. */
+            $mailshot   = $dispatchedEmail->sentMailshot;
+            $outboxCode = $mailshot ? null : $this->attributedOutboxCode($dispatchedEmail);
+
+            if ($mailshot || $outboxCode) {
                 $clickedAt = $emailTrackingEvent->created_at ?? now();
 
                 foreach ($dispatchedEmail->customers as $customer) {
-                    RecordEmailClickTouchpoint::dispatch($customer, $clickedAt, $mailshot);
+                    RecordEmailClickTouchpoint::dispatch($customer, $clickedAt, $mailshot, $outboxCode);
                 }
 
                 foreach ($dispatchedEmail->prospects as $prospect) {
-                    RecordEmailClickTouchpoint::dispatch($prospect, $clickedAt, $mailshot);
+                    RecordEmailClickTouchpoint::dispatch($prospect, $clickedAt, $mailshot, $outboxCode);
                 }
             }
         } elseif ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::OPENED) {
@@ -55,6 +61,19 @@ class StoreEmailTrackingEvent extends OrgAction
 
 
         return $emailTrackingEvent;
+    }
+
+    /**
+     * The outbox code behind this send, when it is one we count as marketing.
+     */
+    private function attributedOutboxCode(DispatchedEmail $dispatchedEmail): ?string
+    {
+        $code = $dispatchedEmail->outbox?->code;
+        $code = $code instanceof \BackedEnum ? $code->value : $code;
+
+        return in_array($code, (array) config('marketing.attributed_outbox_codes', []), true)
+            ? $code
+            : null;
     }
 
     public function rules(): array

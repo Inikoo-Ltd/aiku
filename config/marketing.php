@@ -66,6 +66,44 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Outboxes whose clicks are marketing
+    |--------------------------------------------------------------------------
+    |
+    | We send far more than mailshots, and some of it is unmistakably marketing:
+    | a reorder reminder, an abandoned basket chase, a back-in-stock notice. A
+    | click on one of those brought the customer back and should be credited,
+    | under the `email-automated` channel with the outbox code as the campaign
+    | reference so each kind is reported on its own.
+    |
+    | Everything absent from this list stays uncredited, which is the safe
+    | default: password reminders, order confirmations, dispatch notices and
+    | invoices are service, not acquisition, and crediting them would hand
+    | marketing a share of every engaged customer's revenue.
+    |
+    */
+
+    'attributed_outbox_codes' => [
+        'abandoned_cart',
+        'abandoned_cart_reminder_1',
+        'abandoned_cart_reminder_2',
+        'abandoned_cart_reminder_3',
+        'reorder_reminder',
+        'reorder_reminder_2nd',
+        'reorder_reminder_3rd',
+        'gold_reward_reminder_1',
+        'gold_reward_reminder_2',
+        'gold_reward_reminder_3',
+        'basket_low_stock',
+        'basket_push',
+        'new_customer_push',
+        'oos_notification',
+        'oos_in_order_notification',
+        'new_offer',
+        'finish_offer',
+    ],
+
     'webmail_referrer_patterns' => [
         '/^mail[0-9]*\./',
         '/^webmail\./',
