@@ -1348,6 +1348,7 @@ const hasDirtyDeliveryNoteItem = computed(() => {
                 </div>
             </div>
 
+            <!-- TODO: both below should <= 0 -->
             <div v-else-if="Number(itemValue.quantity_waiting_warehouse) < 1 && Number(itemValue.quantity_waiting_crm) < 1" class="flex justify-between gap-x-2 gap-y-1">
                 <div v-if="!itemValue.is_handled" class="text-gray-400 italic text-sm">
                     {{ ctrans("No quantity to pick") }}
