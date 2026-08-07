@@ -12,6 +12,8 @@ use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateClicks;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateEmailTracking;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateReads;
 use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
+use App\Actions\CRM\TrafficSource\RecordTrafficSourceVisit;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
@@ -43,6 +45,17 @@ class StoreEmailTrackingEvent extends OrgAction
                acquisition. */
             $mailshot   = $dispatchedEmail->sentMailshot;
             $outboxCode = $mailshot ? null : $this->attributedOutboxCode($dispatchedEmail);
+
+            /* A click on an email is a visit, and the only place it can be counted: by the time the
+               reader lands on the storefront the referrer is their webmail, which we ignore. Counted
+               per click rather than per touch, since opening the same link twice really is two
+               visits even though it is one touch. */
+            if ($mailshot || $outboxCode) {
+                RecordTrafficSourceVisit::run(
+                    $dispatchedEmail->outbox?->shop_id,
+                    $mailshot ? TrafficSourcesTypeEnum::NEWSLETTER : TrafficSourcesTypeEnum::EMAIL_AUTOMATED
+                );
+            }
 
             if ($mailshot || $outboxCode) {
                 $clickedAt = $emailTrackingEvent->created_at ?? now();

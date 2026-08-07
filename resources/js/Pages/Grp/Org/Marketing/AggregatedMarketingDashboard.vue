@@ -64,6 +64,8 @@ const props = defineProps<{
             name: string
             slug: string
             revenue: number
+            pending: number
+            revenue_total: number
             registrations: number
             registrations_total: number
             orders: number
@@ -122,7 +124,7 @@ const share = (part: number, whole: number) =>
    from the label - what counts as a visit, why revenue lags, which spend is estimated - and a
    dashboard nobody can interrogate gets mistrusted the first time a number looks odd. */
 const columnHelp: Record<string, string> = {
-    visits: trans('People who arrived from this channel, whether or not they bought. Counted when they land, so email channels show none: a mailshot click is recorded when it is clicked, not when it lands.'),
+    visits: trans('People who arrived from this channel, whether or not they bought. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked, since by the time the reader lands there is nothing left to identify.'),
     spend: trans('Ad spend imported for this channel over the period. Newsletter spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
     awaiting: trans('Value of orders already placed but not invoiced yet. Invoicing runs a day or two behind, so this is what the channel has sold that has not become revenue yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
     revenue: trans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it. An order only counts if it was placed after the touch and within the attribution window, so a click cannot claim an order that was already on its way.'),
@@ -279,7 +281,7 @@ const changePeriod = (event: Event) => {
             </table>
 
             <p class="mt-3 text-xs text-gray-400">
-                {{ trans('Visits are counted when someone arrives from that channel, whether or not they buy. Email channels show no visits: a mailshot click is recorded when it is clicked, not when it lands, so there is nothing to count here.') }}
+                {{ trans('Visits count everyone a channel sent, whether or not they bought. Only counted since the visit counter was switched on, so a channel with history but no visits simply predates it.') }}
             </p>
         </div>
 
@@ -317,15 +319,23 @@ const changePeriod = (event: Event) => {
                             </Link>
                         </td>
                         <td class="px-2 text-gray-500">{{ child.top_channel ?? '—' }}</td>
-                        <td class="text-right px-2 tabular-nums">{{ money(child.revenue) }}</td>
+                        <!-- Invoiced, plus what is still awaiting invoice, against everything the
+                             business took: the share is the point, not the figure on its own. -->
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            {{ money(child.revenue) }}<span v-if="child.pending > 0" class="text-amber-600"> + {{ money(child.pending) }}</span>
+                            <span class="text-gray-400">/ {{ money(child.revenue_total) }}</span>
+                            <span class="text-gray-400">· {{ share(child.revenue + child.pending, child.revenue_total) }}</span>
+                        </td>
                         <!-- Against the total, so a zero says marketing reached nobody rather than
                              that nothing happened. -->
                         <td class="text-right px-2 tabular-nums"
                             :class="child.registrations_total > 0 && child.registrations === 0 ? 'text-[#d03b3b]' : ''">
-                            {{ count(child.registrations) }} <span class="text-gray-400">/ {{ count(child.registrations_total) }}</span>
+                            {{ count(child.registrations) }}
+                            <span class="text-gray-400">/ {{ count(child.registrations_total) }} · {{ share(child.registrations, child.registrations_total) }}</span>
                         </td>
                         <td class="text-right pl-2 tabular-nums">
-                            {{ count(child.orders) }} <span class="text-gray-400">/ {{ count(child.orders_total) }}</span>
+                            {{ count(child.orders) }}
+                            <span class="text-gray-400">/ {{ count(child.orders_total) }} · {{ share(child.orders, child.orders_total) }}</span>
                         </td>
                     </tr>
                 </tbody>

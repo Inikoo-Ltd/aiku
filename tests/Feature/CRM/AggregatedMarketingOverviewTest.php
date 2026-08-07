@@ -262,3 +262,11 @@ it('lists search engines alongside referring sites, marked as searches', functio
     expect($entry)->not->toBeNull()
         ->and($entry['kind'])->toBe('search');
 });
+
+it('gives each child its pending and its revenue total, so the share can be read', function () {
+    $child = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['children'])
+        ->firstWhere('slug', $this->shop->slug);
+
+    expect($child)->toHaveKeys(['pending', 'revenue_total'])
+        ->and($child['revenue_total'])->toBeGreaterThanOrEqual($child['revenue']);
+});

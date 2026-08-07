@@ -9,6 +9,7 @@
 namespace App\Actions\Iris;
 
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromRefererHeader;
+use App\Actions\CRM\TrafficSource\RecordTrafficSourceVisit;
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromUrl;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
@@ -139,31 +140,15 @@ class CaptureTrafficSource
     }
 
     /**
-     * A visit from a named channel, counted per shop and day whether or not the visitor ever becomes
-     * a customer. Attribution only ever sees the ones who log in or register, so without this a
-     * channel that sends hundreds of people who all leave is simply absent from every report - and a
-     * channel we pay for that sends people who never buy is the single most useful thing to know.
-     *
-     * Counter only; `traffic-source:collect-visits` folds these into the table.
+     * Delegated so a storefront arrival and an email click are counted the same way; see
+     * RecordTrafficSourceVisit for why they cannot share one code path.
      */
     private function recordVisit(string $trafficSourceData): void
     {
-        try {
-            $abbr = substr($trafficSourceData, 0, 1);
-            $type = TrafficSourcesTypeEnum::fromAbbr($abbr);
-            $shop = request()->input('website')?->shop_id;
-
-            if (!$type || !$shop) {
-                return;
-            }
-
-            $key = 'traffic_visits:'.now()->toDateString().':'.$shop.':'.$type->value;
-
-            Cache::add($key, 0, now()->addDays(8));
-            Cache::increment($key);
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        RecordTrafficSourceVisit::run(
+            request()->input('website')?->shop_id,
+            TrafficSourcesTypeEnum::fromAbbr(substr($trafficSourceData, 0, 1))
+        );
     }
 
     /**

@@ -36,7 +36,7 @@ class GetAggregatedMarketingOverview
      * campaign table would be a list of other people's campaigns; the children table links down to
      * each organisation instead, and the drill-down continues on that dashboard.
      *
-     * @return array{period: string, period_label: string, from: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
+     * @return array{period: string, period_label: string, from: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
      */
     public function handle(Organisation|Group $parent, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
@@ -298,7 +298,7 @@ class GetAggregatedMarketingOverview
      *
      * @param Collection<int, Shop> $shops
      */
-    private function pendingRevenueByType(Collection $shops, ?Carbon $from, string $amountColumn): Collection
+    private function pendingRevenueByType(Collection $shops, ?Carbon $from, string $amountColumn, string $groupBy = 'ts.type'): Collection
     {
         $totals = collect();
 
@@ -320,10 +320,10 @@ class GetAggregatedMarketingOverview
                     ->whereColumn('invoices.order_id', 'orders.id')
                     ->where('invoices.in_process', false))
                 ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
-                ->groupBy('ts.type')
-                ->select('ts.type', DB::raw("SUM(orders.{$amountColumn} * p.share) as amount"))
+                ->groupBy($groupBy)
+                ->select(DB::raw($groupBy.' as bucket'), DB::raw("SUM(orders.{$amountColumn} * p.share) as amount"))
                 ->get()
-                ->each(fn ($row) => $totals[$row->type] = ($totals[$row->type] ?? 0) + (float) $row->amount);
+                ->each(fn ($row) => $totals[$row->bucket] = ($totals[$row->bucket] ?? 0) + (float) $row->amount);
         }
 
         return $totals;
@@ -506,6 +506,16 @@ class GetAggregatedMarketingOverview
             ->select('shop_id', DB::raw('COUNT(*) as total'))
             ->pluck('total', 'shop_id');
 
+        $childPending = $this->pendingRevenueByType($shops, $from, $revenueColumn === 'org_net_amount' ? 'org_net_amount' : 'grp_net_amount', 'orders.shop_id');
+
+        $allRevenue = DB::table('invoices')
+            ->whereIn('shop_id', $shops->pluck('id'))
+            ->where('in_process', false)
+            ->when($baselineFrom, fn ($query) => $query->where('date', '>=', $baselineFrom))
+            ->groupBy('shop_id')
+            ->select('shop_id', DB::raw("SUM({$revenueColumn}) as total"))
+            ->pluck('total', 'shop_id');
+
         $allOrders = DB::table('orders')
             ->whereIn('shop_id', $shops->pluck('id'))
             ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
@@ -519,6 +529,8 @@ class GetAggregatedMarketingOverview
             'revenue'       => round($shopIds->sum(fn ($id) => $revenue[$id] ?? 0), 2),
             'registrations' => round($shopIds->sum(fn ($id) => $registrations[$id] ?? 0), 2),
             'orders'        => round($shopIds->sum(fn ($id) => $orders[$id] ?? 0), 2),
+            'pending'             => round($shopIds->sum(fn ($id) => $childPending[$id] ?? 0), 2),
+            'revenue_total'       => round((float) $shopIds->sum(fn ($id) => $allRevenue[$id] ?? 0), 2),
             'registrations_total' => (int) $shopIds->sum(fn ($id) => $allRegistrations[$id] ?? 0),
             'orders_total'        => (int) $shopIds->sum(fn ($id) => $allOrders[$id] ?? 0),
             /* Names the channel doing the work, so the row says something about marketing rather than

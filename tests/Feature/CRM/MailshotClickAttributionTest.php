@@ -131,3 +131,27 @@ it('keeps a second reorder reminder click on the same day from counting twice', 
     expect(App\Actions\CRM\TrafficSource\ParseTrafficSourceTouches::run($this->customer->fresh()->traffic_sources))
         ->toHaveCount(1);
 });
+
+it('counts a mailshot click as a visit, since nothing identifies it once the reader lands', function () {
+    $key = 'traffic_visits:'.now()->toDateString().':'.$this->shop->id.':newsletter';
+
+    Illuminate\Support\Facades\Cache::forget($key);
+
+    $mailshot        = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
+    $dispatchedEmail = dispatchedEmailFor($this->outbox, $this->customer);
+
+    MailshotRecipient::create([
+        'mailshot_id'         => $mailshot->id,
+        'dispatched_email_id' => $dispatchedEmail->id,
+        'recipient_type'      => 'Customer',
+        'recipient_id'        => $this->customer->id,
+        'channel'             => 1,
+    ]);
+
+    StoreEmailTrackingEvent::make()->handle($dispatchedEmail->fresh(), [
+        'type' => EmailTrackingEventTypeEnum::CLICKED,
+        'data' => [],
+    ]);
+
+    expect((int) Illuminate\Support\Facades\Cache::get($key, 0))->toBe(1);
+});
