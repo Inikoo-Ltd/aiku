@@ -43,6 +43,8 @@ class StoreClocking extends OrgAction
     use WithBase64FileConverter;
     use WithUpdateModelImage;
 
+    private const DUPLICATE_CLOCKING_WINDOW_SECONDS = 30;
+
     private Employee $employee;
 
     public function authorize(ActionRequest $request): bool
@@ -101,6 +103,14 @@ class StoreClocking extends OrgAction
         data_set($modelData, 'timesheet_id', $timesheet->id);
 
 
+        if ($parent instanceof ClockingMachine) {
+            $recentClocking = $this->findRecentClocking($subject, $clockedAt);
+
+            if ($recentClocking) {
+                return $recentClocking;
+            }
+        }
+
         $clocking = DB::transaction(function () use ($modelData, $subject, $timesheet, $uploadedPhoto) {
             /** @var Clocking $clocking */
             $clocking = $subject->clockings()->create($modelData);
@@ -135,6 +145,20 @@ class StoreClocking extends OrgAction
         }
 
         return $clocking;
+    }
+
+    /**
+     * A barcode scanner that double fires, or a QR code left in front of the kiosk camera, would
+     * otherwise clock the employee in and straight back out. The existing clocking is returned so
+     * the kiosk repeats the result it already showed.
+     */
+    private function findRecentClocking(Employee|Guest $subject, Carbon $clockedAt): ?Clocking
+    {
+        return $subject->clockings()
+            ->where('clocked_at', '>', $clockedAt->copy()->subSeconds(self::DUPLICATE_CLOCKING_WINDOW_SECONDS))
+            ->where('clocked_at', '<=', $clockedAt)
+            ->latest('clocked_at')
+            ->first();
     }
 
     public function jsonResponse(Clocking $clocking): ClockingResource|ClockingHanResource
