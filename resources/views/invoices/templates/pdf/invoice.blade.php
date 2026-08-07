@@ -532,6 +532,14 @@
                 <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
             </tr>
 
+
+            @if(($adjustmentsNet = $invoice->invoiceTransactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
+                <tr>
+                    <td style="border:none" colspan="4"></td>
+                    <td>{{ __('Adjustments') }}</td>
+                    <td>{{ $invoice->currency->symbol . number_format($adjustmentsNet, 2) }}</td>
+                </tr>
+            @endif
             <tr class="total_net">
                 <td style="border:none" colspan="4"></td>
                 <td>{{__('Total Net')}}</td>
@@ -560,6 +568,14 @@
                 <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
             </tr>
 
+
+            @if(($adjustmentsNet = $invoice->invoiceTransactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
+                <tr>
+                    <td style="border:none" colspan="4"></td>
+                    <td>{{ __('Adjustments') }}</td>
+                    <td>{{ $invoice->currency->symbol . number_format($adjustmentsNet, 2) }}</td>
+                </tr>
+            @endif
             <tr class="total_net">
                 <td style="border:none" colspan="4"></td>
                 <td>{{__('Total Net')}}</td>

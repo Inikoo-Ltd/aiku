@@ -15,7 +15,6 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateArtefacts;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\Production;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
@@ -93,7 +92,7 @@ class StoreArtefact extends OrgAction
         ]);
     }
 
-    public function asController(Organisation $organisation, Production $production, ActionRequest $request): Artefact
+    public function asController(Production $production, ActionRequest $request): Artefact
     {
         $this->initialisationFromProduction($production, $request);
 

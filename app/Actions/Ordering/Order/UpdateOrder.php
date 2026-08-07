@@ -68,6 +68,10 @@ class UpdateOrder extends OrgAction
             CalculateOrderTotalAmounts::run($order, true, true, true);
         }
 
+        if (Arr::has($modelData, 'is_re') && Arr::has($changes, 'is_re')) {
+            ResetOrderTaxCategory::run($order);
+        }
+
 
         if ($oldState != $order->state) {
             $this->orderHydrators($order);
@@ -201,6 +205,15 @@ class UpdateOrder extends OrgAction
             'shipping_zone_schema_id' => ['sometimes', 'nullable'],
             'shipping_zone_id'        => ['sometimes', 'nullable'],
             'is_shipping_by_external' => ['sometimes', 'boolean'],
+            'is_re'                   => [
+                'sometimes',
+                'boolean',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if ($this->order->invoices()->exists()) {
+                        $fail(__('Recargo de equivalencia cannot be changed once the order has been invoiced'));
+                    }
+                }
+            ],
         ];
 
 

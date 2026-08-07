@@ -32,6 +32,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\TrafficSource;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Goods\Stock;
@@ -239,6 +240,21 @@ function createCustomer(Shop $shop): Customer
     }
 
     return $customer;
+}
+
+function createTrafficSource(Shop $shop, string $type, string $name): TrafficSource
+{
+    return TrafficSource::firstOrCreate(
+        [
+            'shop_id' => $shop->id,
+            'type'    => $type,
+        ],
+        [
+            'group_id'        => $shop->group_id,
+            'organisation_id' => $shop->organisation_id,
+            'name'            => $name,
+        ]
+    );
 }
 
 function createTradeUnits(Group $group): array

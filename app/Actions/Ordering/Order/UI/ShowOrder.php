@@ -241,6 +241,11 @@ class ShowOrder extends OrgAction
             :
             GetEcomOrderActions::run($order, $this->canEdit);
 
+        $allowOrderModification = $this->canEdit
+            && $order->shop->type != ShopTypeEnum::EXTERNAL
+            && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
+            && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
+
         if ($order->state != OrderStateEnum::CANCELLED) {
             $wrapped_actions = [
                 [
@@ -576,6 +581,7 @@ class ShowOrder extends OrgAction
                     'icon' => $order->salesChannel->type->icon()
                 ] : null,
                 'is_faire_order'    => $order->shop->engine == ShopEngineEnum::FAIRE,
+                'allow_order_modification'          => $allowOrderModification,
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))

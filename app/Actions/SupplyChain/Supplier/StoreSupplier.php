@@ -17,6 +17,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Traits\WithPullIntoJsonColumn;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
@@ -37,6 +38,7 @@ class StoreSupplier extends OrgAction
 {
     use WithModelAddressActions;
     use WithNoStrictRules;
+    use WithPullIntoJsonColumn;
     use WithSupplyChainEditAuthorisation;
 
     private const DATA_FIELDS = [
@@ -239,25 +241,6 @@ class StoreSupplier extends OrgAction
         }
 
         return Redirect::route('grp.supply-chain.suppliers.show', $supplier->slug);
-    }
-
-    protected function pullIntoJsonColumn(array $modelData, string $column, array $fields): array
-    {
-        foreach ($fields as $field) {
-            if (!array_key_exists($field, $modelData)) {
-                continue;
-            }
-
-            $value = Arr::pull($modelData, $field);
-
-            if ($value === null || $value === '') {
-                continue;
-            }
-
-            $modelData[$column][$field] = $value;
-        }
-
-        return $modelData;
     }
 
     protected function getGroup(Group|Agent $parent): Group

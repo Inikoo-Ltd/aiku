@@ -31,6 +31,12 @@ class TrafficSourcesResource extends JsonResource
             'number_customers'  => $trafficSource->number_customers ?? 0,
             'number_customer_purchases' => $trafficSource->number_customer_purchases ?? 0,
             'total_customer_revenue' => $trafficSource->total_customer_revenue ?? 0,
+            'cost'              => $trafficSource->cost ?? 0,
+
+            /* Deliberately null rather than 0 when there is no spend to divide by: the table renders a
+               dash, which says "no ad spend recorded" instead of claiming a return of zero. */
+            'roas'              => $trafficSource->roas,
+            'cac'               => $trafficSource->cac,
             'created_at'        => $trafficSource->created_at,
             'updated_at'        => $trafficSource->updated_at,
         ];

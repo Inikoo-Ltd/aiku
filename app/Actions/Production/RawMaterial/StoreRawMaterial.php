@@ -17,7 +17,6 @@ use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -96,7 +95,7 @@ class StoreRawMaterial extends OrgAction
         return $this->handle($production, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Production $production, ActionRequest $request): RawMaterial
+    public function asController(Production $production, ActionRequest $request): RawMaterial
     {
         $this->initialisationFromProduction($production, $request);
 

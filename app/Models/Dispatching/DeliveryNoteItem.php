@@ -147,6 +147,17 @@ class DeliveryNoteItem extends Model
 
     protected $guarded = [];
 
+    protected static function booted(): void
+    {
+        static::creating(
+            function (DeliveryNoteItem $deliveryNoteItem) {
+                if ($deliveryNoteItem->quantity_required) {
+                    $deliveryNoteItem->original_quantity_required = $deliveryNoteItem->quantity_required;
+                }
+            }
+        );
+    }
+
     public function pickings(): HasMany
     {
         return $this->hasMany(Picking::class);

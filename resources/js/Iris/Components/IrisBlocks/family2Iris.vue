@@ -121,7 +121,7 @@ const COLLAPSED_HEIGHTS = [
 	{ minWidth: 0, height: 260 },
 ]
 
-const MIN_COLLAPSED_HEIGHT = 300
+const MIN_COLLAPSED_HEIGHT = 250
 
 const getFallbackCollapsedHeight = (): number => {
 	const width = window.innerWidth

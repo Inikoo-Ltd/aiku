@@ -703,6 +703,25 @@ class ShowProduct extends OrgAction
                     ' ('.__('In process').')'
                 )
             ),
+            'grp.org.shops.show.catalogue.products.mismatched_families.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.mismatched_families.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.mismatched_families.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('With Mismatch Family').')'
+                )
+            ),
             'grp.org.shops.show.catalogue.products.no_image_product.show' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),

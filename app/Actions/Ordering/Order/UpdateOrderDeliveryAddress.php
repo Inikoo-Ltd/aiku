@@ -50,7 +50,7 @@ class UpdateOrderDeliveryAddress extends OrgAction
             taxNumber: $customer->taxNumber,
             billingAddress: $order->billingAddress,
             deliveryAddress: $order->deliveryAddress,
-            isRe: $customer->is_re,
+            isRe: $order->is_re,
         );
 
         $order->update([

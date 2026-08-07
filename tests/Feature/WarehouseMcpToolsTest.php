@@ -9,6 +9,7 @@
 use App\Mcp\Servers\AikuServer;
 use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\DeliveryNotesSummaryTool;
+use App\Mcp\Tools\WarehousePerformanceTool;
 use App\Models\SysAdmin\Guest;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 
@@ -65,3 +66,14 @@ test('admin user gets delivery note summary', function () {
 
     $response->assertOk();
 });
+
+test('admin user gets warehouse performance in every breakdown', function (string $breakdown) {
+    $response = AikuServer::actingAs($this->user)->tool(WarehousePerformanceTool::class, [
+        'warehouse' => $this->warehouse->slug,
+        'from'      => '2026-01-01',
+        'to'        => '2026-12-31',
+        'breakdown' => $breakdown,
+    ]);
+
+    $response->assertOk();
+})->with(['summary', 'pickers', 'packers', 'hourly']);

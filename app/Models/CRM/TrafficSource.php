@@ -73,14 +73,14 @@ class TrafficSource extends Model
     public function orders(): MorphToMany
     {
         return $this->morphedByMany(Order::class, 'model', 'model_has_traffic_sources')
-            ->withPivot('share')
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
             ->withTimestamps();
     }
 
     public function customers(): MorphToMany
     {
         return $this->morphedByMany(Customer::class, 'model', 'model_has_traffic_sources')
-            ->withPivot('share')
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
             ->withTimestamps();
     }
 

@@ -47,8 +47,23 @@ class SetAsWaitingCrm extends OrgAction
             abort(403, 'Waiting is not enabled for this organisation');
         }
 
-        $quantityToMove              = $modelData['quantity'];
-        $newQuantityWaitingWarehouse = $deliveryNoteItem->quantity_waiting_warehouse - $quantityToMove;
+        /*
+         * Only what is still outstanding can wait for CRM: quantities already picked are
+         * physical. Blocking "all of it" after a partial pick used to push the whole
+         * required quantity to CRM and drive quantity_waiting_warehouse negative, so the
+         * badge told CRM two items needed attention when one was already in the tote.
+         */
+        $outstanding = (float)$deliveryNoteItem->quantity_required
+            - (float)$deliveryNoteItem->quantity_picked
+            - (float)$deliveryNoteItem->quantity_waiting_crm;
+
+        $quantityToMove = min((float)$modelData['quantity'], max($outstanding, 0));
+
+        if ($quantityToMove <= 0) {
+            abort(422, 'Nothing left to set as waiting: the remaining quantity is already picked or waiting for CRM');
+        }
+
+        $newQuantityWaitingWarehouse = max((float)$deliveryNoteItem->quantity_waiting_warehouse - $quantityToMove, 0);
 
         $dataToUpdate = [
             'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,

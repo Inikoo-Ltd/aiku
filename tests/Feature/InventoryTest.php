@@ -1453,9 +1453,9 @@ test('calculate value location org stock sets value = quantity * cost', function
     CalculateValueLocationOrgStock::run($locationOrgStock->id);
 
     $locationOrgStock->refresh();
-    // Value should be recomputed = quantity * cost_per_sku (0 quantity or 0 cost gives 0)
-    $expected = (float) $locationOrgStock->quantity * (float) $locationOrgStock->orgStock->sku_value;
-    expect((float) $locationOrgStock->value)->toBe($expected);
+    $expected = (float) $locationOrgStock->quantity * CalculateValueLocationOrgStock::make()->getCostPerSku($locationOrgStock->orgStock, now());
+    expect($expected)->toBe(0.0)
+        ->and((float) $locationOrgStock->value)->toBe($expected);
 
     // Guard clauses: null/missing ids return early without throwing
     CalculateValueLocationOrgStock::run(null);

@@ -17,6 +17,7 @@ import type { Component } from 'vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import SimpleBox from '@/Components/DataDisplay/SimpleBox.vue'
+import MarketingOverview from '@/Components/DataDisplay/MarketingOverview.vue'
 
 const props = defineProps<{
     title: string,
@@ -27,8 +28,9 @@ const props = defineProps<{
         count: number
         icon: string
     }[]
+    marketing_overview: InstanceType<typeof MarketingOverview>['$props']['overview']
 
-    
+
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -52,5 +54,6 @@ const component = computed(() => {
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <MarketingOverview v-if="currentTab === 'dashboard' && marketing_overview" :overview="marketing_overview" />
     <SimpleBox v-if="currentTab === 'dashboard' && dashboard_stats" :box_stats="dashboard_stats" />
 </template>

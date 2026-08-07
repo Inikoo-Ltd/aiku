@@ -42,7 +42,7 @@ class CalculateInvoiceTotals extends OrgAction
         $chargeGross   = $transactions->where('model_type', 'Charge')->sum('gross_amount');
 
         $taxBreakdown = $this->getTaxBreakdown(
-            $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge']),
+            $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge', 'Adjustment']),
             $invoice->amount_off
         );
 

@@ -35,6 +35,8 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
+import UploadExcel from '@/Components/Upload/UploadExcel.vue'
+import { UploadPallet } from '@/types/Pallet'
 import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
 library.add(faTag, faCheck, faExclamationTriangle)
 
@@ -154,6 +156,12 @@ const props = defineProps<{
         discount: string
     } | null
     is_basket_created: boolean
+    upload_spreadsheet?: {
+        title: { label: string, information: string }
+        progressDescription: string
+        preview_template: { header: string[], rows: {}[] }
+        upload_spreadsheet: UploadPallet
+    } | null
 }>()
 
 
@@ -178,6 +186,7 @@ const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
 
 const isModalProductListOpen = ref(false)
+const isModalUploadSpreadsheet = ref(false)
 const listLoadingProducts = ref({
 
 })
@@ -643,14 +652,14 @@ const onChangeInsurance = async (val: boolean) => {
     <PageHeading :data="pageHead">
         <template #other>
             <div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
-				<!-- <Button
-					v-if="upload_spreadsheet"
-					@click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-					:label="trans('Upload products')"
+                <Button
+                    v-if="upload_spreadsheet"
+                    @click="() => isModalUploadSpreadsheet = true"
+                    :label="trans('Upload products')"
                     icon="upload"
                     type="tertiary"
-					class="rounded-none border-0"
-				/> -->
+                    class="rounded-none border-0"
+                />
                 <Button
                     @click="() => isModalProductListOpen = true"
                     :label="trans('Add products')"
@@ -946,4 +955,14 @@ const onChangeInsurance = async (val: boolean) => {
             />
         </div>
     </Modal>
+
+    <UploadExcel
+        v-if="upload_spreadsheet"
+        v-model="isModalUploadSpreadsheet"
+        :title="upload_spreadsheet.title"
+        :progressDescription="upload_spreadsheet.progressDescription"
+        :preview_template="upload_spreadsheet.preview_template"
+        :upload_spreadsheet="upload_spreadsheet.upload_spreadsheet"
+        :propsRefreshAfterFinish="['transactions', 'summary', 'total_products', 'order']"
+    />
 </template>

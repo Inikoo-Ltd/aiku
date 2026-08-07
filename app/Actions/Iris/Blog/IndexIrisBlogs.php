@@ -16,6 +16,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexIrisBlogs extends IrisAction
 {
@@ -63,6 +64,18 @@ class IndexIrisBlogs extends IrisAction
         ];
     }
 
+    protected function getPublishedAtSortExpression(): string
+    {
+        $layoutPublishedDate = "NULLIF(webpages.published_layout #>> '{web_blocks,0,web_block,layout,data,fieldValue,published_date}', '')";
+
+        return "COALESCE(
+            CASE WHEN pg_input_is_valid($layoutPublishedDate, 'timestamptz') THEN ($layoutPublishedDate)::timestamptz END,
+            (SELECT snapshots.published_at FROM snapshots WHERE snapshots.id = webpages.live_snapshot_id),
+            webpages.last_published_at,
+            webpages.live_at
+        )";
+    }
+
     /**
      * @param  array<int, WebpageSubTypeEnum>|null  $subTypes
      */
@@ -75,6 +88,12 @@ class IndexIrisBlogs extends IrisAction
                 $query->whereAnyWordStartWith('webpages.title', $value)
                     ->orWhereStartWith('webpages.url', $value);
             });
+        });
+
+        $publishedAtSort = AllowedSort::callback('last_published_at', function ($query, bool $descending) {
+            $newestFirst = !$descending;
+
+            $query->orderByRaw($this->getPublishedAtSortExpression().' '.($newestFirst ? 'desc' : 'asc').' nulls last');
         });
 
         if ($prefix) {
@@ -109,7 +128,7 @@ class IndexIrisBlogs extends IrisAction
             ])
             ->with('liveSnapshot:id,published_at')
             ->defaultSort('-webpages.live_at')
-            ->allowedSorts(['title', 'last_published_at'])
+            ->allowedSorts(['title', $publishedAtSort])
             ->allowedFilters([$globalSearch, AllowedFilter::exact('sub_type')])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();

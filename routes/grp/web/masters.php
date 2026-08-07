@@ -10,6 +10,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoicesInProduct;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
 use App\Actions\Catalogue\Shop\StoreShopFromMaster;
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
+use App\Actions\Catalogue\Product\UI\IndexProductsWithMismatchedFamily;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInMasterDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInMasterFamilies;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartmentsInMasterSubDepartment;
@@ -299,7 +300,10 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('{masterProduct}/composition', EditMasterProductComposition::class)->name('composition');
                 Route::get('{masterProduct}/invoices', [IndexInvoicesInProduct::class, 'inMaster'])->name('invoices');
                 Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMaster'])->name('products');
+            });
 
+            Route::prefix('products')->as('.products.')->group(function () {
+                Route::get('/mismatched-families', [IndexProductsWithMismatchedFamily::class, 'inMasterShop'])->name('mismatched_families');
             });
 
             Route::prefix('/master-family-missing-image')->as('.master_family.missing_image.')->group(function () {

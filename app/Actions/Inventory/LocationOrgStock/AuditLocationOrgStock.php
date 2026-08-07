@@ -10,9 +10,9 @@ namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\SetOrgStockPickingLocation;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
-use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
@@ -83,7 +83,7 @@ class AuditLocationOrgStock extends OrgAction
             return $locationOrgStock;
         });
 
-        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->org_stock_id)->delay(2);
+        SetOrgStockPickingLocation::dispatch($locationOrgStock->org_stock_id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->org_stock_id)->delay(2);
 
         return $locationOrgStock;

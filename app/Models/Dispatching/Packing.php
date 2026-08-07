@@ -47,8 +47,12 @@ class Packing extends Model
     use InShop;
 
     protected $casts = [
-        'data'   => 'array',
-        'engine' => PackingEngineEnum::class,
+        'data'               => 'array',
+        'engine'             => PackingEngineEnum::class,
+        'queued_at'          => 'datetime',
+        'packing_at'         => 'datetime',
+        'packing_blocked_at' => 'datetime',
+        'done_at'            => 'datetime',
     ];
 
     protected $guarded = [];

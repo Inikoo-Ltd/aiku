@@ -103,7 +103,7 @@ class ShowSupplier extends OrgAction
                             'route' => $routeParameters['index'],
                         ],
                         'model' => [
-                            'label' => $supplier->name,
+                            'label' => $supplier->code,
                             'route' => $routeParameters['model'],
                         ],
                     ],

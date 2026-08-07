@@ -13,7 +13,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -63,7 +62,7 @@ class UpdatePalletLocation extends OrgAction
         return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.view");
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse, Location $location, Pallet $pallet, ActionRequest $request): Pallet
+    public function asController(Warehouse $warehouse, Location $location, Pallet $pallet, ActionRequest $request): Pallet
     {
         $this->pallet = $pallet;
         $this->scope  = $pallet->fulfilment;

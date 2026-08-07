@@ -12,9 +12,10 @@ import {
     faMessage,
     faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight
 } from "@fortawesome/free-solid-svg-icons"
-import { faJira } from "@fortawesome/free-brands-svg-icons"
+import { faJira, faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
+import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
@@ -55,6 +56,7 @@ const emit = defineEmits([
     "assign-self-success",
     "messages-read",
     "open-jira-settings",
+    "open-slack-settings",
 ])
 
 const layout: any = inject("layout", {})
@@ -101,6 +103,16 @@ const openJiraModal = () => {
 const onOpenJiraSettings = () => {
     isJiraModalOpen.value = false
     emit("open-jira-settings")
+}
+
+const isSlackModalOpen = ref(false)
+const openSlackModal = () => {
+    isMenuOpen.value = false
+    isSlackModalOpen.value = true
+}
+const onOpenSlackSettings = () => {
+    isSlackModalOpen.value = false
+    emit("open-slack-settings")
 }
 
 const isAssigningSelf = ref(false)
@@ -784,6 +796,10 @@ const handleClickOutside = (e: MouseEvent) => {
                     <button class="menu-item" @click="openJiraModal">
                         <FontAwesomeIcon :icon="faJira" class="text-blue-600" /> {{ trans("Create Jira Ticket") }}
                     </button>
+
+                    <button class="menu-item" @click="openSlackModal">
+                        <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ trans("Share to Slack") }}
+                    </button>
                 </div>
             </div>
         </header>
@@ -822,7 +838,8 @@ const handleClickOutside = (e: MouseEvent) => {
                         :contactName="session?.contact_name || session?.guest_identifier"
                         :agentName="session?.assigned_agent?.name"
                         :canEdit="isMyChat && !isClosed && !isWaiting"
-                        @edit-message="handleEditMessage" />
+                        @edit-message="handleEditMessage"
+                        @open-slack-settings="onOpenSlackSettings" />
                 </div>
             </template>
         </div>
@@ -971,6 +988,15 @@ const handleClickOutside = (e: MouseEvent) => {
             :organisation="currentOrganisation"
             @close="isJiraModalOpen = false"
             @open-settings="onOpenJiraSettings"
+        />
+
+        <SlackShareModal
+            :is-open="isSlackModalOpen"
+            mode="session"
+            :organisation="currentOrganisation"
+            :session-ulid="session?.ulid"
+            @close="isSlackModalOpen = false"
+            @open-settings="onOpenSlackSettings"
         />
     </div>
 </template>

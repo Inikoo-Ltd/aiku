@@ -31,6 +31,8 @@ use App\Models\Traits\HasSearch;
  * @property int|null $sender_id
  * @property string|null $message_text
  * @property int|null $media_id
+ * @property bool|null $is_ai_generated
+ * @property bool|null $is_validated
  * @property bool $is_read
  * @property \Illuminate\Support\Carbon|null $delivered_at
  * @property \Illuminate\Support\Carbon|null $read_at
@@ -74,6 +76,8 @@ class ChatMessage extends Model implements HasMedia
     protected $casts = [
         'message_type' => ChatMessageTypeEnum::class,
         'sender_type' => ChatSenderTypeEnum::class,
+        'is_ai_generated' => 'boolean',
+        'is_validated' => 'boolean',
         'is_read' => 'boolean',
         'delivered_at' => 'datetime',
         'read_at' => 'datetime',
@@ -174,6 +178,14 @@ class ChatMessage extends Model implements HasMedia
     public function isFile(): bool
     {
         return $this->message_type === ChatMessageTypeEnum::FILE;
+    }
+
+
+    public function isVerifiableCustomerImage(): bool
+    {
+        return $this->isImage()
+            && $this->media_id !== null
+            && ($this->isFromGuest() || $this->isFromUser());
     }
 
 

@@ -11,7 +11,6 @@ use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowance
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -78,7 +77,7 @@ class UpdateManufactureTask extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, Production $production, ManufactureTask $manufactureTask, ActionRequest $request): ManufactureTask
+    public function asController(Production $production, ManufactureTask $manufactureTask, ActionRequest $request): ManufactureTask
     {
         $this->manufactureTask = $manufactureTask;
         $this->initialisationFromProduction($manufactureTask->production, $request);

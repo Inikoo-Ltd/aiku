@@ -40,6 +40,7 @@ const activeBlock = ref<number | null>(null)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const key = ref(ulid())
 const blockRefs = new Map<number, HTMLElement>()
+const blockRefSetters = new Map<number, (el: HTMLElement | null) => void>()
 const isActiveBlockNearTop = ref(false)
 
 const DEFAULT_CURRENCY = {
@@ -116,9 +117,16 @@ const reloadPage = (withkey = false) => {
   if (withkey) key.value = ulid()
 }
 
-const setBlockRef = (el: HTMLElement | null, idx: number) => {
-  if (el) blockRefs.set(idx, el)
-  else blockRefs.delete(idx)
+const getBlockRefSetter = (idx: number) => {
+  let setter = blockRefSetters.get(idx)
+  if (!setter) {
+    setter = (el: HTMLElement | null) => {
+      if (el) blockRefs.set(idx, el)
+      else blockRefs.delete(idx)
+    }
+    blockRefSetters.set(idx, setter)
+  }
+  return setter
 }
 
 provide("reloadPage", reloadPage)
@@ -158,7 +166,7 @@ watch(filterBlock, updateIrisLayout, { immediate: true })
             <section v-for="(block, idx) in data.layout.web_blocks" :key="block.id"
               v-show="showWebpage(block)"
               :data-block-id="idx"
-              :ref="el => setBlockRef(el, idx)"
+              :ref="getBlockRefSetter(idx)"
               class="w-full min-h-[10px] relative"
               :class="{ 'border-4 active-block': activeBlock === idx }"
               :style="activeBlock === idx ? { borderColor: layout?.app?.theme?.[0] } : {}"
@@ -219,14 +227,14 @@ watch(filterBlock, updateIrisLayout, { immediate: true })
 .trapezoid-button {
   @apply absolute  left-1/2 px-5 py-1 text-white text-xs font-bold transition;
   transform: translateX(-50%);
-  background-color: v-bind('layout?.app?.theme[0]') !important;
+  background-color: v-bind('layout?.app?.theme?.[0]') !important;
   clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
-  box-shadow: 0 4px 0px v-bind('layout?.app?.theme[0]') !important;
+  box-shadow: 0 4px 0px v-bind('layout?.app?.theme?.[0]') !important;
   border: none;
   top: -37px;
 
   &:hover {
-    background-color: v-bind('layout?.app?.theme[0]') !important;
+    background-color: v-bind('layout?.app?.theme?.[0]') !important;
   }
 }
 
@@ -235,7 +243,7 @@ watch(filterBlock, updateIrisLayout, { immediate: true })
   top: auto;
   bottom: -37px;
   clip-path: polygon(0% 0%, 100% 0%, 85% 100%, 15% 100%);
-  box-shadow: 0 -4px 0px v-bind('layout?.app?.theme[0]') !important;
+  box-shadow: 0 -4px 0px v-bind('layout?.app?.theme?.[0]') !important;
 }
 
 #jsd-widget {
