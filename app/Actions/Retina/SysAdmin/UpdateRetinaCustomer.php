@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Models\CRM\Customer;
+use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
@@ -67,7 +68,27 @@ class UpdateRetinaCustomer extends RetinaAction
             'contact_name'                 => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_name'                 => ['sometimes', 'nullable', 'string', 'max:255'],
             'fiscal_name'                  => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'                        => ['sometimes', 'nullable', 'email'],
+            'email'                        => [
+                'sometimes',
+                'nullable',
+                'email',
+                new IUnique(
+                    table: 'customers',
+                    extraConditions: [
+                        ['column' => 'shop_id', 'value' => $this->shop->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
+                        ['column' => 'id', 'value' => $this->customer->id, 'operator' => '!='],
+                    ]
+                ),
+                new IUnique(
+                    table: 'web_users',
+                    extraConditions: [
+                        ['column' => 'website_id', 'value' => $this->shop->website?->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
+                        ['column' => 'customer_id', 'value' => $this->customer->id, 'operator' => '!='],
+                    ]
+                ),
+            ],
             'phone'                        => ['sometimes', 'nullable', new Phone()],
             'contact_address'              => ['sometimes', 'required', new ValidAddress()],
             'tax_number'                   => ['sometimes', 'nullable', 'array'],
