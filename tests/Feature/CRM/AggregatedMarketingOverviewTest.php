@@ -234,3 +234,31 @@ it('gives each child the total it is a share of, so a zero can be read', functio
     expect($child)->toHaveKeys(['registrations_total', 'orders_total'])
         ->and($child['registrations_total'])->toBeGreaterThanOrEqual($child['registrations']);
 });
+
+it('lists search engines alongside referring sites, marked as searches', function () {
+    $search = createTrafficSource($this->shop, 'organic-search', 'Organic Search (other)');
+
+    $campaignId = DB::table('traffic_source_campaigns')->insertGetId([
+        'traffic_source_id' => $search->id,
+        'slug'              => 's-'.uniqid(),
+        'reference'         => 'duckduckgo.com-'.uniqid(),
+        'name'              => 'duckduckgo.com',
+        'type'              => 'organic-search',
+        'created_at'        => now(),
+        'updated_at'        => now(),
+    ]);
+
+    $this->customer->trafficSources()->detach();
+    $this->customer->trafficSources()->attach($search->id, [
+        'share'                      => 1,
+        'traffic_source_campaign_id' => $campaignId,
+        'first_touch_at'             => now()->subDays(2),
+        'last_touch_at'              => now()->subDays(2),
+    ]);
+
+    $entry = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['referrers'])
+        ->firstWhere('host', 'duckduckgo.com');
+
+    expect($entry)->not->toBeNull()
+        ->and($entry['kind'])->toBe('search');
+});

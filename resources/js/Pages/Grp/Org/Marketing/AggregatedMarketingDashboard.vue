@@ -49,6 +49,7 @@ const props = defineProps<{
         attribution_started_at: string | null
         referrers: {
             host: string
+            kind: 'site' | 'search'
             visitors: number
             revenue: number
         }[]
@@ -325,9 +326,9 @@ const changePeriod = (event: Event) => {
 
         <!-- Sites sending people to any shop underneath, pooled by host -->
         <div v-if="overview.referrers?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
-            <span class="text-sm font-medium text-gray-800">{{ trans('Top referrers') }}</span>
+            <span class="text-sm font-medium text-gray-800">{{ trans('Who sends us people') }}</span>
             <p class="mt-1 text-xs text-gray-400">
-                {{ trans('Other sites linking to us: directories, blogs, AI assistants.') }}
+                {{ trans('Sites linking to us and search engines finding us. A search engine sending people is the case for advertising on it.') }}
             </p>
 
             <table class="mt-4 w-full text-xs">
@@ -341,7 +342,10 @@ const changePeriod = (event: Event) => {
                 <tbody>
                     <tr v-for="referrer in overview.referrers" :key="referrer.host"
                         class="border-b border-gray-50 text-gray-600">
-                        <td class="py-2 pr-2 text-gray-700 truncate max-w-[12rem]">{{ referrer.host }}</td>
+                        <td class="py-2 pr-2 text-gray-700 truncate max-w-[12rem]">
+                            {{ referrer.host }}
+                            <span v-if="referrer.kind === 'search'" class="text-gray-400">{{ trans('search') }}</span>
+                        </td>
                         <td class="text-right px-2 tabular-nums">{{ count(referrer.visitors) }}</td>
                         <td class="text-right pl-2 tabular-nums">{{ money(referrer.revenue) }}</td>
                     </tr>

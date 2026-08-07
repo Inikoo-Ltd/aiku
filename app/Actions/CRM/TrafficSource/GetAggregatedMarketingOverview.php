@@ -373,14 +373,24 @@ class GetAggregatedMarketingOverview
      *
      * @param Collection<int, Shop> $shops
      *
-     * @return array<int, array{host: string, visitors: float, revenue: float}>
+     * @return array<int, array{host: string, kind: string, visitors: float, revenue: float}>
      */
     private function referrers(Collection $shops, ?Carbon $from, string $revenueColumn, int $window, int $limit = 10): array
     {
+        /* Search engines belong here as much as directories do: knowing DuckDuckGo sends people is
+           what tells you whether it is worth advertising on. They keep their own channel for the
+           totals, but this list is about which individual sites send us anybody. */
         $referralSources = DB::table('traffic_sources')
             ->whereIn('shop_id', $shops->pluck('id'))
-            ->where('type', TrafficSourcesTypeEnum::REFERRAL->value)
-            ->pluck('id');
+            ->whereIn('type', [
+                TrafficSourcesTypeEnum::REFERRAL->value,
+                TrafficSourcesTypeEnum::ORGANIC_SEARCH->value,
+            ])
+            ->pluck('id', 'id');
+
+        $kindBySource = DB::table('traffic_sources')
+            ->whereIn('id', $referralSources)
+            ->pluck('type', 'id');
 
         if ($referralSources->isEmpty()) {
             return [];
@@ -388,7 +398,8 @@ class GetAggregatedMarketingOverview
 
         $campaigns = DB::table('traffic_source_campaigns')
             ->whereIn('traffic_source_id', $referralSources)
-            ->pluck('name', 'id');
+            ->get(['id', 'name', 'traffic_source_id'])
+            ->keyBy('id');
 
         if ($campaigns->isEmpty()) {
             return [];
@@ -416,10 +427,13 @@ class GetAggregatedMarketingOverview
             ->pluck('revenue', 'campaign_id');
 
         return $campaigns
-            ->map(fn (string $host, int $id) => [
-                'host'     => $host,
-                'visitors' => round((float) ($visitors[$id] ?? 0), 2),
-                'revenue'  => round((float) ($revenue[$id] ?? 0), 2),
+            ->map(fn ($campaign) => [
+                'host'     => $campaign->name,
+                'kind'     => ($kindBySource[$campaign->traffic_source_id] ?? '') === TrafficSourcesTypeEnum::ORGANIC_SEARCH->value
+                    ? 'search'
+                    : 'site',
+                'visitors' => round((float) ($visitors[$campaign->id] ?? 0), 2),
+                'revenue'  => round((float) ($revenue[$campaign->id] ?? 0), 2),
             ])
             ->filter(fn (array $referrer) => $referrer['visitors'] > 0 || $referrer['revenue'] > 0)
             ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['visitors']])
