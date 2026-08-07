@@ -28,6 +28,7 @@ use App\Models\SysAdmin\Organisation;
 use Arr;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -95,6 +96,11 @@ class ShowPayment extends OrgAction
     {
         $title = (string)($payment->reference ?? $payment->id);
 
+        $editRouteName = preg_replace('/show$/', 'edit', $request->route()->getName());
+        $isEditable    = $this->canEdit
+            && $payment->paymentAccount?->type?->isManuallySettled()
+            && Route::has($editRouteName);
+
         return Inertia::render(
             'Org/Accounting/Payment',
             [
@@ -108,9 +114,9 @@ class ShowPayment extends OrgAction
                     'model' => __('Payment'),
                     'icon'  => 'fal fa-coins',
                     'title' => $title,
-                    'edit'  => $this->canEdit ? [
+                    'edit'  => $isEditable ? [
                         'route' => [
-                            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                            'name'       => $editRouteName,
                             'parameters' => array_values($request->route()->originalParameters())
                         ]
                     ] : false,

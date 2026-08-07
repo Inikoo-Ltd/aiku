@@ -8,16 +8,18 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
-use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\InertiaAction;
+use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
+use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\UI\SupplyChain\SupplierProductTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\SupplyChain\SupplierProductResource;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
-use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Models\SupplyChain\SupplierProduct;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,8 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowSupplierProduct extends InertiaAction
 {
     use WithBucketNavigation;
-
     use WithSupplyChainAuthorisation;
+
     public function handle(SupplierProduct $supplierProduct): SupplierProduct
     {
         return $supplierProduct;
@@ -41,7 +43,6 @@ class ShowSupplierProduct extends InertiaAction
         ];
     }
 
-
     public function asController(SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct
     {
         $this->initialisation($request)->withTab($this->getTabs());
@@ -49,6 +50,7 @@ class ShowSupplierProduct extends InertiaAction
         return $this->handle($supplierProduct);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inSupplier(Supplier $supplier, SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct
     {
         $this->initialisation($request)->withTab($this->getTabs());
@@ -57,57 +59,59 @@ class ShowSupplierProduct extends InertiaAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function inAgent(Agent $agent, SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct
+    {
+        $this->initialisation($request)->withTab($this->getTabs());
+
+        return $this->handle($supplierProduct);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSupplierInAgent(Agent $agent, Supplier $supplier, SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct
+    {
+        $this->initialisation($request)->withTab($this->getTabs());
+
+        return $this->handle($supplierProduct);
+    }
+
     public function htmlResponse(SupplierProduct $supplierProduct, ActionRequest $request): Response
     {
         return Inertia::render(
             'SupplyChain/SupplierProduct',
             [
-                'title'       => __('supplier product'),
-                'breadcrumbs' => $this->getBreadcrumbs($supplierProduct, $request->route()->getName(), $request->route()->originalParameters()),
+                'title'       => __('Supplier Product'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $supplierProduct,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'navigation'  => [
                     'previous' => $this->getPrevious($supplierProduct, $request),
                     'next'     => $this->getNext($supplierProduct, $request),
                 ],
                 'pageHead'    => [
-                    'icon'          =>
-                        [
-                            'icon'  => ['fal', 'box-usd'],
-                            'title' => __('Agent')
-                        ],
                     'title' => $supplierProduct->name,
-                    /*
-                    'edit'  => $this->canEdit ? [
-                        'route' => [
-                            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                            'parameters' => array_values($request->route()->originalParameters())
-                        ]
-                    ] : false,
-                    */
+                    'model' => __('Supplier Product'),
+                    'icon'  => [
+                        'icon'  => ['fal', 'box-usd'],
+                        'title' => __('Supplier Product'),
+                    ],
                 ],
-                'supplier'    => new SupplierProductResource($supplierProduct),
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => SupplierProductTabsEnum::navigationExcept([
-                        SupplierProductTabsEnum::PURCHASE_SALES,
-                        SupplierProductTabsEnum::SUPPLIER_PRODUCTS,
-                        SupplierProductTabsEnum::PURCHASE_ORDERS,
-                        SupplierProductTabsEnum::DELIVERIES,
-                        SupplierProductTabsEnum::FEEDBACKS,
-                        SupplierProductTabsEnum::ATTACHMENTS,
-                        SupplierProductTabsEnum::IMAGES,
-                    ])
+                    'navigation' => SupplierProductTabsEnum::navigationOnly($this->getTabs()),
                 ],
+
                 SupplierProductTabsEnum::SHOWCASE->value => $this->tab == SupplierProductTabsEnum::SHOWCASE->value ?
                     fn () => GetSupplierProductShowcase::run($supplierProduct)
                     : Inertia::optional(fn () => GetSupplierProductShowcase::run($supplierProduct)),
+
                 SupplierProductTabsEnum::HISTORY->value => $this->tab == SupplierProductTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplierProduct))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplierProduct)))
-
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplierProduct))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierProductTabsEnum::HISTORY->value));
     }
-
 
     public function jsonResponse(SupplierProduct $supplierProduct): SupplierProductResource
     {
@@ -116,80 +120,113 @@ class ShowSupplierProduct extends InertiaAction
 
     public function getBreadcrumbs(SupplierProduct $supplierProduct, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-
-        $headCrumb = function (SupplierProduct $supplierProduct, array $routeParameters, string $suffix) {
+        $headCrumb = function (array $index, array $model) use ($supplierProduct, $suffix) {
             return [
                 [
-
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Supplier Products')
+                            'route' => $index,
+                            'label' => __('Supplier Products'),
                         ],
                         'model' => [
-                            'route' => $routeParameters['model'],
+                            'route' => $model,
                             'label' => $supplierProduct->name,
                         ],
-
                     ],
-                    'suffix'         => $suffix
-
+                    'suffix'         => $suffix,
                 ],
             ];
         };
 
+        $supplier = $supplierProduct->supplier;
+        $agent    = $supplierProduct->agent;
+
         return match ($routeName) {
-            'grp.supply-chain.suppliers.supplier_products.show' =>
-            array_merge(
-                ShowSupplier::make()->getBreadcrumbs(
-                    $supplierProduct->supplier,
-                    'grp.supply-chain.suppliers.show',
-                    ['supplier' => $supplierProduct->supplier->slug]
-                ),
-                $headCrumb(
-                    $supplierProduct,
-                    [
-                        'index' => [
-                            'name'       => 'grp.supply-chain.suppliers.supplier_products.index',
-                            'parameters' => [
-                                'supplier' => $supplierProduct->supplier->slug
-                            ]
-                        ],
-                        'model' => [
-                            'name'       => 'grp.supply-chain.suppliers.supplier_products.show',
-                            'parameters' => [
-                                'supplier'        => $supplierProduct->supplier->slug,
-                                'supplierProduct' => $supplierProduct->slug
-                            ]
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
             'grp.supply-chain.supplier_products.show' =>
             array_merge(
                 ShowSupplyChainDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
-                    $supplierProduct,
                     [
-                        'index' => [
-                            'name'       => 'grp.supply-chain.supplier_products.index',
-                            'parameters' => []
-                        ],
-                        'model' => [
-                            'name'       => 'grp.supply-chain.supplier_products.show',
-                            'parameters' => [
-                                'supplierProduct' => $supplierProduct->slug
-                            ]
-                        ]
+                        'name'       => 'grp.supply-chain.supplier_products.index',
+                        'parameters' => [],
                     ],
-                    $suffix
+                    [
+                        'name'       => $routeName,
+                        'parameters' => ['supplierProduct' => $supplierProduct->slug],
+                    ],
                 ),
             ),
-            default => []
+            'grp.supply-chain.suppliers.supplier_products.show' =>
+            array_merge(
+                ShowSupplier::make()->getBreadcrumbs(
+                    $supplier,
+                    'grp.supply-chain.suppliers.show',
+                    ['supplier' => $supplier->slug]
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.supply-chain.suppliers.supplier_products.index',
+                        'parameters' => ['supplier' => $supplier->slug],
+                    ],
+                    [
+                        'name'       => $routeName,
+                        'parameters' => [
+                            'supplier'        => $supplier->slug,
+                            'supplierProduct' => $supplierProduct->slug,
+                        ],
+                    ],
+                ),
+            ),
+            'grp.supply-chain.agents.show.suppliers.supplier_products.show' =>
+            array_merge(
+                ShowSupplier::make()->getBreadcrumbs(
+                    $supplier,
+                    'grp.supply-chain.agents.show.suppliers.show',
+                    [
+                        'agent'    => $agent->slug,
+                        'supplier' => $supplier->slug,
+                    ]
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.supply-chain.agents.show.suppliers.supplier_products.index',
+                        'parameters' => [
+                            'agent'    => $agent->slug,
+                            'supplier' => $supplier->slug,
+                        ],
+                    ],
+                    [
+                        'name'       => $routeName,
+                        'parameters' => [
+                            'agent'           => $agent->slug,
+                            'supplier'        => $supplier->slug,
+                            'supplierProduct' => $supplierProduct->slug,
+                        ],
+                    ],
+                ),
+            ),
+            'grp.supply-chain.agents.show.supplier_products.show' =>
+            array_merge(
+                ShowAgent::make()->getBreadcrumbs($agent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.supply-chain.agents.show.supplier_products.index',
+                        'parameters' => ['agent' => $agent->slug],
+                    ],
+                    [
+                        'name'       => $routeName,
+                        'parameters' => [
+                            'agent'           => $agent->slug,
+                            'supplierProduct' => $supplierProduct->slug,
+                        ],
+                    ],
+                ),
+            ),
+            default => [],
         };
     }
+
     public function getPrevious(SupplierProduct $supplierProduct, ActionRequest $request): ?array
     {
         return $this->getNavigation($this->getSupplierProductNeighbour($supplierProduct, $request, forward: false), $request->route()->getName());
@@ -236,29 +273,36 @@ class ShowSupplierProduct extends InertiaAction
             return null;
         }
 
-        return match ($routeName) {
-            'grp.supply-chain.suppliers.supplier_products.show' => [
-                'label' => $supplierProduct->code,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'supplier'        => $supplierProduct->supplier->slug,
-                        'supplierProduct' => $supplierProduct->slug
-                    ]
-
-                ]
-            ],
+        $parameters = match ($routeName) {
             'grp.supply-chain.supplier_products.show' => [
-                'label' => $supplierProduct->code,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'supplierProduct' => $supplierProduct->slug
-                    ]
-
-                ]
+                'supplierProduct' => $supplierProduct->slug,
+            ],
+            'grp.supply-chain.suppliers.supplier_products.show' => [
+                'supplier'        => $supplierProduct->supplier->slug,
+                'supplierProduct' => $supplierProduct->slug,
+            ],
+            'grp.supply-chain.agents.show.suppliers.supplier_products.show' => [
+                'agent'           => $supplierProduct->agent->slug,
+                'supplier'        => $supplierProduct->supplier->slug,
+                'supplierProduct' => $supplierProduct->slug,
+            ],
+            'grp.supply-chain.agents.show.supplier_products.show' => [
+                'agent'           => $supplierProduct->agent->slug,
+                'supplierProduct' => $supplierProduct->slug,
             ],
             default => null,
         };
+
+        if (!$parameters) {
+            return null;
+        }
+
+        return [
+            'label' => $supplierProduct->code,
+            'route' => [
+                'name'       => $routeName,
+                'parameters' => $parameters,
+            ],
+        ];
     }
 }
