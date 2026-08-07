@@ -70,6 +70,4 @@ class TimesheetHydrateTimeTrackers implements ShouldBeUnique
 
         $timesheet->update($stats);
     }
-
-
 }

@@ -45,6 +45,9 @@ const props = defineProps<{
         work_duration?: string
         breaks_duration?: string
         total_duration?: number
+        paid_duration?: number
+        unpaid_overtime_duration?: number
+        paid_overtime_duration?: number
         overtime?: number
         about?: string
     }
@@ -115,8 +118,16 @@ const component = computed(() => {
                         <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ useSecondsToMS(timesheet.total_duration) }}</dd>
                     </div>
                     <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
-                        <dt class="text-sm text-gray-500">Overtime</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.overtime ? useSecondsToMS(timesheet.overtime) : '-'}}</dd>
+                        <dt class="text-sm text-gray-500">Paid time</dt>
+                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.paid_duration ? useSecondsToMS(timesheet.paid_duration) : '-'}}</dd>
+                    </div>
+                    <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
+                        <dt class="text-sm text-gray-500">Unpaid overtime</dt>
+                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.unpaid_overtime_duration ? useSecondsToMS(timesheet.unpaid_overtime_duration) : '-'}}</dd>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
+                        <dt class="text-sm text-gray-500">Paid overtime</dt>
+                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.paid_overtime_duration ? useSecondsToMS(timesheet.paid_overtime_duration) : '-'}}</dd>
                     </div>
 
                     <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
