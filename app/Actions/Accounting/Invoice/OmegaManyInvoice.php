@@ -63,17 +63,24 @@ class OmegaManyInvoice extends OrgAction
 
         return response()->stream(
             function () use ($query) {
-                $page    = 1;
-                $perPage = 100;
-                do {
-                    $chunk = $query->forPage($page, $perPage)->get();
-                    foreach ($chunk as $invoice) {
-                        echo OmegaInvoice::run($invoice);
+                $query
+                    ->with([
+                        'shop.organisation',
+                        'shop.taxNumber',
+                        'order',
+                        'customer',
+                        'taxCategory',
+                        'currency',
+                        'address',
+                        'originalInvoice.address',
+                    ])
+                    ->chunkById(500, function ($chunk) {
+                        foreach ($chunk as $invoice) {
+                            echo OmegaInvoice::run($invoice);
+                        }
                         ob_flush();
                         flush();
-                    }
-                    $page++;
-                } while ($chunk->isNotEmpty());
+                    });
             },
             200,
             [
