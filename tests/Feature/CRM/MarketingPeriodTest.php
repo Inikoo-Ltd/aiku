@@ -203,3 +203,41 @@ it('reports the shop baseline alongside the attributed figures', function () {
     expect($overview['baseline'])->toHaveKeys(['registrations', 'orders', 'revenue'])
         ->and($overview['baseline']['registrations'])->toBeGreaterThan(0.0);
 });
+
+it('shows visits a channel sent even when none of them converted', function () {
+    $source = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'google-ads')->first();
+
+    DB::table('traffic_source_visits')->insert([
+        'shop_id'           => $this->shop->id,
+        'traffic_source_id' => $source->id,
+        'date'              => now()->subDay()->toDateString(),
+        'visits'            => 480,
+        'created_at'        => now(),
+        'updated_at'        => now(),
+    ]);
+
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+    $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
+
+    expect($channel)->not->toBeNull()
+        ->and($channel['visits'])->toBe(480)
+        ->and($channel['revenue'])->toBe(0.0);
+});
+
+it('does not report a roas of zero while money is still awaiting invoice', function () {
+    $source = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'google-ads')->first();
+
+    App\Actions\CRM\TrafficSource\StoreTrafficSourceCost::run($source, [
+        'date'               => now()->subDay()->toDateString(),
+        'source_amount'      => 100,
+        'source_currency_id' => $this->shop->currency_id,
+    ]);
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted');
+
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+    $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
+
+    expect($channel['pending'])->toBeGreaterThan(0.0)
+        ->and($channel['revenue'])->toBe(0.0)
+        ->and($channel['roas'])->toBeNull();
+});
