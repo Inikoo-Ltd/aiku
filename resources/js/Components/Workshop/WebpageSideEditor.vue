@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, onUnmounted, toRaw, computed, watch } from 'vue'
+import { ref, inject, onMounted, onUnmounted, toRaw, computed, watch, nextTick } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import draggable from 'vuedraggable'
@@ -145,10 +145,8 @@ const confirmDelete = (event: Event, data: Daum) => {
 		message: trans("move this block? This action can't be undone."),
 		rejectProps: { label: trans('Cancel'), severity: 'secondary', outlined: true },
 		acceptProps: { label: trans('Yes, delete'), severity: 'danger' },
-		accept: () => {
-			sendDeleteBlock(data)
-			closeContextMenu()
-		},
+		accept: () => sendDeleteBlock(data),
+		onHide: () => closeContextMenu(),
 	})
 }
 
@@ -160,6 +158,10 @@ const showWebpage = (block: Daum) => {
 	return true
 }
 
+const visibleBlockCount = computed(
+	() => props.webpage?.layout?.web_blocks?.filter(showWebpage).length ?? 0
+)
+
 const contextMenu = ref({
 	visible: false,
 	top: 0,
@@ -168,7 +170,10 @@ const contextMenu = ref({
 })
 const copiedBlock = ref<Daum | null>(null)
 
-const openContextMenu = (event: MouseEvent, block: Daum | null = null) => {
+const contextMenuEl = ref<HTMLElement | null>(null)
+const CONTEXT_MENU_MARGIN = 8
+
+const openContextMenu = async (event: MouseEvent, block: Daum | null = null) => {
 	event.preventDefault()
 	event.stopPropagation()
 	contextMenu.value = {
@@ -177,9 +182,27 @@ const openContextMenu = (event: MouseEvent, block: Daum | null = null) => {
 		left: event.clientX,
 		block,
 	}
+
+	await nextTick()
+
+	const menu = contextMenuEl.value
+	if (!menu) return
+
+	const { width, height } = menu.getBoundingClientRect()
+
+	contextMenu.value.top = Math.max(
+		CONTEXT_MENU_MARGIN,
+		Math.min(event.clientY, window.innerHeight - height - CONTEXT_MENU_MARGIN)
+	)
+	contextMenu.value.left = Math.max(
+		CONTEXT_MENU_MARGIN,
+		Math.min(event.clientX, window.innerWidth - width - CONTEXT_MENU_MARGIN)
+	)
 }
 
 const closeContextMenu = () => {
+	if (!contextMenu.value.visible) return
+
 	contextMenu.value.visible = false
 	contextMenu.value.block = null
 }
@@ -202,23 +225,34 @@ const duplicateBlock = (block: Daum) => {
 	closeContextMenu()
 }
 
-const onClickBlock = (index) => {
-	console.log(index)
-	if (openedBlockSideEditor.value === index) changeTab(2)
-	else {
-		openedBlockSideEditor.value = index
-	}
+const onClickBlock = (index: number) => {
+	openedBlockSideEditor.value = index
+}
+
+const onDoubleClickBlock = (index: number) => {
+	openedBlockSideEditor.value = index
+	changeTab(2)
 }
 
 watch(openedBlockSideEditor, (newVal) => {
 	if (newVal === null) {
-		console.log('masuk')
 		changeTab(1)
 	}
 })
 
+const onContextMenuKeydown = (event: KeyboardEvent) => {
+	if (event.key === 'Escape') closeContextMenu()
+}
+
+const onContextMenuScroll = (event: Event) => {
+	if (contextMenuEl.value?.contains(event.target as Node)) return
+	closeContextMenu()
+}
+
 onMounted(() => {
 	window.addEventListener('click', closeContextMenu)
+	window.addEventListener('keydown', onContextMenuKeydown)
+	document.addEventListener('scroll', onContextMenuScroll, true)
 	// Method to handle in browser
 	window.openSideEditor = (index: number) => {
 		openedBlockSideEditor.value = index
@@ -229,6 +263,8 @@ onMounted(() => {
 
 onUnmounted(() => {
 	window.removeEventListener('click', closeContextMenu)
+	window.removeEventListener('keydown', onContextMenuKeydown)
+	document.removeEventListener('scroll', onContextMenuScroll, true)
 })
 
 defineExpose({
@@ -239,6 +275,14 @@ const editingIndex = ref<number | null>(null)
 const renameValue = ref("")
 const MAX_RENAME_LENGTH = 35
 
+const startRename = (index: number) => {
+	const block = props.webpage.layout.web_blocks[index]
+	if (!block || !getRenamePermision(block.web_block.layout.data)) return
+
+	editingIndex.value = index
+	renameValue.value = block.web_block.layout.data.fieldValue?.blocks?.name || ""
+}
+
 const onRenameBlock = () => {
 	if (!contextMenu.value.block) return
 
@@ -248,9 +292,7 @@ const onRenameBlock = () => {
 
 	if (index === -1) return
 
-	editingIndex.value = index
-
-	renameValue.value = contextMenu.value.block.web_block.layout.data.fieldValue?.blocks?.name || ""
+	startRename(index)
 	closeContextMenu()
 }
 
@@ -303,29 +345,34 @@ const blockNotEditableVisible = [
 		"product-2",
 
 ]
-
-console.log(props)
 </script>
 
 <template>
-	<div>
+	<div class="flex flex-col h-full min-h-0">
 		<TabGroup :selectedIndex="selectedTab" @change="changeTab">
-			<TabList class="flex border-b border-gray-300">
+			<TabList class="flex shrink-0 bg-slate-50 border-b border-slate-200">
 				<Tab
 					v-for="(tab, index) in tabs"
 					:key="index"
-					class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-t-md focus:outline-none"
+					v-tooltip.bottom="tab.tooltip"
+					class="relative flex flex-1 items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium transition-colors focus:outline-none"
 					:class="
-						selectedTab === index ? 'bg-white text-theme border-b-2 border-theme' : ''
+						selectedTab === index
+							? 'bg-white text-theme'
+							: 'text-slate-500 hover:bg-white/60 hover:text-slate-700'
 					">
-					<FontAwesomeIcon :icon="tab.icon" fixed-width v-tooltip="tab.tooltip" />
+					<FontAwesomeIcon :icon="tab.icon" class="text-xs" fixed-width />
 					{{ tab.label }}
+					<span
+						v-if="selectedTab === index"
+						class="absolute inset-x-0 bottom-0 h-0.5 bg-theme"
+						aria-hidden="true" />
 				</Tab>
 			</TabList>
 
-			<TabPanels>
-				<TabPanel class="w-[400px] p-2">
-					<div class="max-h-[calc(100vh-220px)] overflow-y-auto">
+			<TabPanels class="flex-1 min-h-0">
+				<TabPanel class="w-[340px] h-full p-1.5 flex flex-col">
+					<div class="flex-1 min-h-0 overflow-y-auto">
 						<SiteSettings
 							:webpage="webpage"
 							:webBlockTypes="webBlockTypes"
@@ -334,21 +381,24 @@ console.log(props)
 				</TabPanel>
 
 				<!-- Blocks Tab -->
-				<TabPanel class="w-[400px] p-2">
+				<TabPanel class="w-[340px] h-full p-1.5 flex flex-col">
 					<div
-						class="h-[calc(100vh-220px)] overflow-y-auto relative"
+						class="flex-1 min-h-0 flex flex-col relative"
 						@contextmenu="openContextMenu($event, null)">
 						<!-- Header Controls -->
-						<div class="flex justify-between items-center mb-2">
+						<div class="shrink-0 mb-1.5 flex items-center gap-1.5">
 							<Button
 								type="dashed"
 								@click="openModalBlockList"
 								:icon="faPlus"
-								class="text-sm text-theme border-theme"
+								class="text-xs text-theme border-theme"
 								:size="'xs'"
 								label="Block" />
 							<select
-								class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none"
+								id="block-visibility-filter"
+								:aria-label="trans('Show')"
+								v-tooltip="trans('Preview which blocks visitors see when logged in or out')"
+								class="flex-1 min-w-0 text-xs border border-slate-300 rounded px-1.5 py-0.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
 								:value="filterBlock"
 								@change="(event: { target: { value: any } }) => filterBlock = event.target.value">
 								<option disabled value="">Filter</option>
@@ -359,9 +409,15 @@ console.log(props)
 									{{ option.label }}
 								</option>
 							</select>
+							<span
+								v-tooltip="trans('Blocks shown by this filter of the total on the page')"
+								class="shrink-0 text-[10px] tabular-nums text-slate-400">
+								{{ visibleBlockCount }}/{{ webpage?.layout?.web_blocks?.length ?? 0 }}
+							</span>
 						</div>
 
 						<!-- Blocks List -->
+						<div class="flex-1 min-h-0 overflow-y-auto">
 						<template v-if="webpage?.layout?.web_blocks.length">
 							<draggable
 								:list="webpage.layout.web_blocks"
@@ -371,33 +427,37 @@ console.log(props)
 								group="column"
 								itemKey="id"
 								:disabled="!editable"
-								class="space-y-1">
+								class="space-y-0.5">
 								<template #item="{ element, index }">
 									<div
 										v-if="showWebpage(element)"
-										class="bg-white border border-gray-200 rounded"
+										class="group relative overflow-hidden rounded transition-colors"
+										:class="[
+											openedBlockSideEditor === index
+												? 'bg-theme text-white'
+												: 'hover:bg-slate-100',
+											!element.show ? 'opacity-60' : '',
+										]"
 										@contextmenu="(event: any) => openContextMenu(event, element)">
 										<div
-											class="flex justify-between items-center px-3 py-2"
+											class="flex justify-between items-center gap-1 pl-1.5 pr-1 py-1"
 											v-tooltip="
 												getEditPermissions(element.web_block.layout.data)
-													? ''
+													? trans('Double-click to open Style')
 													: trans(
 															'This block is reserved by system. Not editable.'
 													  )
 											"
-											:class="[
-												openedBlockSideEditor === index
-													? 'bg-theme text-white'
-													: '',
+											:class="
 												getEditPermissions(element.web_block.layout.data)
-													? 'cursor-pointer hover:bg-gray-100'
-													: 'cursor-not-allowed',
-											]">
-										
+													? 'cursor-pointer'
+													: 'cursor-not-allowed'
+											">
 											<button
-												class="flex items-center gap-2 w-full"
+												type="button"
+												class="flex items-center gap-1.5 min-w-0 flex-1 text-left"
 												@click.stop="onClickBlock(index)"
+												@dblclick.stop.prevent="onDoubleClickBlock(index)"
 												:disabled="
 													!getEditPermissions(
 														element.web_block.layout.data
@@ -405,42 +465,81 @@ console.log(props)
 												">
 												<FontAwesomeIcon
 													icon="fal fa-bars"
-													class="handle text-sm text-gray-400 cursor-grab" />
+													v-tooltip="editable ? trans('Drag to reorder') : ''"
+													class="handle shrink-0 text-xs cursor-grab active:cursor-grabbing"
+													:class="
+														openedBlockSideEditor === index
+															? 'text-white/70'
+															: 'text-slate-300 group-hover:text-slate-400'
+													" />
+
+												<span
+													class="shrink-0 w-4 text-[10px] font-semibold tabular-nums text-center"
+													:class="
+														openedBlockSideEditor === index
+															? 'text-white/70'
+															: 'text-slate-300'
+													">
+													{{ index + 1 }}
+												</span>
 
 												<!-- block Display Name -->
-												<div
-													class="max-w-[240px] xoverflow-x-auto whitespace-nowrap scrollbar-thin">
+												<div class="min-w-0 flex-1">
 													<input
 														v-if="editingIndex === index"
 														v-model="renameValue"
 														:maxlength="MAX_RENAME_LENGTH"
-														class="text-sm font-medium border rounded px-1 py-0.5 w-full text-gray-700"
-														autofocus
+														:aria-label="trans('Rename')"
+														class="text-xs font-medium border border-slate-300 rounded px-1 py-0.5 w-full text-gray-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
+														@vue:mounted="(vnode: any) => (vnode.el.focus(), vnode.el.select())"
 														@keydown.enter.prevent="saveRename(index)"
 														@keydown.esc.prevent="cancelRename"
-														@blur="saveRename(index)" 
-														@click.stop/>
+														@blur="saveRename(index)"
+														@click.stop
+														@dblclick.stop />
 
-													<span v-else class="text-sm font-medium whitespace-pre-wrap text-left inline-block">
-														<template
-															v-if="element.web_block.layout.data.fieldValue?.blocks?.name">
-															{{element.web_block.layout.data.fieldValue.blocks.name}}
-														</template>
-														<template v-else>
+													<template v-else>
+														<span class="block text-xs font-medium leading-tight truncate">
+															<template
+																v-if="element.web_block.layout.data.fieldValue?.blocks?.name">
+																{{element.web_block.layout.data.fieldValue.blocks.name}}
+															</template>
+															<template v-else>
+																{{ element.type }}
+															</template>
+														</span>
+														<span
+															v-if="element.web_block.layout.data.fieldValue?.blocks?.name"
+															class="block text-[10px] leading-tight truncate"
+															:class="
+																openedBlockSideEditor === index
+																	? 'text-white/60'
+																	: 'text-slate-400'
+															">
 															{{ element.type }}
-														</template>
-													</span>
+														</span>
+													</template>
 												</div>
 
-												<!-- <span class="text-sm font-medium truncate">
-													{{ element.name || element.type }}
-												</span> -->
-												<LoadingIcon v-if="isLoadingBlock === element.id" />
+												<span
+													v-if="!element.show"
+													v-tooltip="trans('This block is hidden on the page')"
+													class="shrink-0 px-1 py-px rounded text-[10px] font-medium leading-tight"
+													:class="
+														openedBlockSideEditor === index
+															? 'bg-white/20 text-white'
+															: 'bg-slate-100 text-slate-500'
+													">
+													{{ trans('Hidden') }}
+												</span>
+
+												<LoadingIcon v-if="isLoadingBlock === element.id" class="shrink-0" />
 											</button>
 
-											<div class="flex items-center gap-1">
+											<div class="flex shrink-0 items-center gap-0.5">
 												<!-- Duplicate Block Button -->
 												<button
+													type="button"
 													v-if="
 														getEditPermissions(
 															element.web_block.layout.data
@@ -448,25 +547,40 @@ console.log(props)
 													"
 													v-tooltip="trans('Duplicate this block')"
 													@click.stop.prevent="duplicateBlock(element)"
-													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													class="h-5 w-5 flex items-center justify-center rounded text-[11px] transition-colors"
+													:class="[
+														'opacity-0 group-hover:opacity-100 focus:opacity-100',
+														openedBlockSideEditor === index
+															? 'text-white hover:bg-white/20'
+															: 'text-slate-400 hover:bg-slate-100 hover:text-slate-700',
+													]">
 													<FontAwesomeIcon :icon="faCopy" fixed-width />
 												</button>
 
 												<button
+													type="button"
 													v-if="
 														getHiddenPermissions(
 															element.web_block.layout.data
 														) && !blockNotEditableVisible.includes(element.type)
 													"
 													v-tooltip="
-														trans(
-															'Toggle visibility: hide/show the block from the page'
-														)
+														element.show
+															? trans('Hide this block from the page')
+															: trans('Show this block on the page')
 													"
 													@click.stop.prevent="
 														setShowBlock($event, element)
 													"
-													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													class="h-5 w-5 flex items-center justify-center rounded text-[11px] transition-colors"
+													:class="[
+														element.show
+															? 'opacity-0 group-hover:opacity-100 focus:opacity-100'
+															: '',
+														openedBlockSideEditor === index
+															? 'text-white hover:bg-white/20'
+															: 'text-slate-400 hover:bg-slate-100 hover:text-slate-700',
+													]">
 													<FontAwesomeIcon
 														:icon="
 															element.show
@@ -477,13 +591,23 @@ console.log(props)
 												</button>
 
 												<button
+													type="button"
 													v-if="
 														getDeletePermissions(
 															element.web_block.layout.data
 														) && !blockNotEditableVisible.includes(element.type)
 													"
+													v-tooltip="trans('Delete this block')"
 													@click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
-													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													class="h-5 w-5 flex items-center justify-center rounded text-[11px] transition-colors"
+													:class="[
+														isLoadingDeleteBlock === element.id
+															? ''
+															: 'opacity-0 group-hover:opacity-100 focus:opacity-100',
+														openedBlockSideEditor === index
+															? 'text-white hover:bg-white/20'
+															: 'text-slate-400 hover:bg-red-50 hover:text-red-600',
+													]">
 													<LoadingIcon
 														v-if="
 															isLoadingDeleteBlock === element.id
@@ -491,7 +615,6 @@ console.log(props)
 													<FontAwesomeIcon
 														v-else
 														icon="fal fa-trash-alt"
-														class="text-red-500"
 														fixed-width />
 												</button>
 											</div>
@@ -502,22 +625,39 @@ console.log(props)
 						</template>
 						<div
 							v-else
-							class="flex flex-col items-center text-center py-6 text-gray-500">
-							<FontAwesomeIcon :icon="['fal', 'browser']" class="text-4xl mb-2" />
-							<span class="text-sm font-medium">{{trans("You don't have any blocks")}}</span>
+							class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
+							<FontAwesomeIcon :icon="['fal', 'browser']" class="text-2xl mb-1 text-slate-300" />
+							<span class="text-xs font-medium">{{trans("You don't have any blocks")}}</span>
+							<span class="text-[11px] text-slate-400">
+								{{ trans('Use the Block button above to add your first one.') }}
+							</span>
+						</div>
+
+						<div
+							v-if="webpage?.layout?.web_blocks.length && visibleBlockCount === 0"
+							class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
+							<FontAwesomeIcon :icon="faEyeSlash" class="text-2xl mb-1 text-slate-300" />
+							<span class="text-xs font-medium">{{ trans('No blocks match this filter') }}</span>
+							<button
+								type="button"
+								class="text-[11px] underline text-theme"
+								@click="filterBlock = 'all'">
+								{{ trans('Show all blocks') }}
+							</button>
 						</div>
 						<div
 							v-if="isAddBlockLoading"
 							class="mt-2 skeleton min-h-10 w-full rounded bg-red-500" />
+						</div>
 					</div>
 				</TabPanel>
 
 				<!-- Tab 3: Style -->
-				<TabPanel class="w-[400px] p-2">
-					<div class="max-h-[calc(100vh-220px)] overflow-y-auto pb-14">
+				<TabPanel class="w-[340px] h-full p-1.5 flex flex-col">
+					<div class="flex-1 min-h-0 overflow-y-auto pb-14">
 						<template v-if="openedBlockSideEditor !== null">
 							<Collapse :when="true">
-								<div class="p-2 space-y-2">
+								<div class="p-1 space-y-1.5">
 									<VisibleCheckmark
 										:disabled="!editable"
 										v-if="!blockNotEditableVisible.includes(webpage.layout.web_blocks?.[openedBlockSideEditor]?.type)"
@@ -561,7 +701,14 @@ console.log(props)
 							</Collapse>
 						</template>
 						<template v-else>
-							<p class="text-gray-500 text-sm">Select a block to edit its style.</p>
+							<div
+								class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
+								<FontAwesomeIcon :icon="faBrush" class="text-2xl mb-1 text-slate-300" />
+								<span class="text-xs font-medium">{{ trans('No block selected') }}</span>
+								<span class="text-[11px] text-slate-400">
+									{{ trans('Pick a block in the Layer tab to edit its style.') }}
+								</span>
+							</div>
 						</template>
 					</div>
 				</TabPanel>
@@ -577,14 +724,45 @@ console.log(props)
 				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
 			</template>
 		</ConfirmPopup>
-	</div>
 
 	<div
 		v-if="contextMenu.visible"
+		ref="contextMenuEl"
 		:style="{ top: `${contextMenu.top}px`, left: `${contextMenu.left}px` }"
-		class="fixed z-50 bg-white border border-gray-200 shadow-md rounded text-sm min-w-[140px] overflow-hidden">
+		class="fixed z-50 py-0.5 bg-white border border-slate-200 shadow-lg rounded-md text-xs min-w-[140px] overflow-hidden">
 		<ul>
 			<template v-if="contextMenu.block">
+				<!-- Rename -->
+				<li
+					@click="
+						getRenamePermision(contextMenu.block.web_block.layout.data) &&
+							onRenameBlock()
+					"
+					:class="[
+						'flex items-center gap-2 px-2.5 py-1',
+						getRenamePermision(contextMenu.block.web_block.layout.data)
+							? 'hover:bg-slate-100 text-slate-800 cursor-pointer'
+							: 'text-gray-400 cursor-not-allowed pointer-events-none',
+					]">
+					<font-awesome-icon :icon="faEdit" fixed-width />
+					{{ trans('Rename') }}
+				</li>
+
+				<!-- Copy -->
+				<li
+					@click="
+						getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()
+					"
+					:class="[
+						'flex items-center gap-2 px-2.5 py-1',
+						getEditPermissions(contextMenu.block.web_block.layout.data)
+							? 'hover:bg-slate-100 text-slate-800 cursor-pointer'
+							: 'text-gray-400 cursor-not-allowed pointer-events-none',
+					]">
+					<font-awesome-icon :icon="faCopy" fixed-width />
+					{{ trans('Copy') }}
+				</li>
+
 				<!-- Toggle Visibility -->
 				<li
 					@click="
@@ -592,72 +770,46 @@ console.log(props)
 							setShowBlock($event, contextMenu.block!)
 					"
 					:class="[
-						'flex items-center gap-2 px-3 py-1 cursor-pointer',
+						'flex items-center gap-2 px-2.5 py-1 cursor-pointer',
 						getHiddenPermissions(contextMenu.block.web_block.layout.data)
-							? 'hover:bg-gray-100 text-gray-800'
+							? 'hover:bg-slate-100 text-slate-800'
 							: 'text-gray-400 cursor-not-allowed pointer-events-none',
 					]">
-					<font-awesome-icon :icon="contextMenu.block?.show ? faEyeSlash : faEye" />
-					{{ contextMenu.block?.show ? "Hide" : "Unhide" }}
+					<font-awesome-icon
+						:icon="contextMenu.block?.show ? faEyeSlash : faEye"
+						fixed-width />
+					{{ contextMenu.block?.show ? trans('Hide') : trans('Unhide') }}
 				</li>
 
-				<!-- Delete -->
+				<li class="my-0.5 h-px bg-slate-200" aria-hidden="true" />
+
+				<!-- Delete: keep the menu mounted so the confirm popup keeps its anchor -->
 				<li
-					@click="
+					@click.stop="
 						getDeletePermissions(contextMenu.block.web_block.layout.data) &&
 							confirmDelete($event, contextMenu.block!)
 					"
 					:class="[
-						'flex items-center gap-2 px-3 py-1',
+						'flex items-center gap-2 px-2.5 py-1',
 						getDeletePermissions(contextMenu.block.web_block.layout.data)
-							? 'hover:bg-gray-100 text-red-600 cursor-pointer'
+							? 'hover:bg-red-50 text-red-600 cursor-pointer'
 							: 'text-gray-400 cursor-not-allowed pointer-events-none',
 					]">
-					<font-awesome-icon :icon="faTrashAlt" />
-					Delete
-				</li>
-
-				<!-- Copy (Always enabled) -->
-				<li
-					@click="
-						getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()
-					"
-					:class="[
-						'flex items-center gap-2 px-3 py-2',
-						getEditPermissions(contextMenu.block.web_block.layout.data)
-							? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
-							: 'text-gray-400 cursor-not-allowed pointer-events-none',
-					]">
-					<font-awesome-icon :icon="faCopy" />
-					Copy
-				</li>
-
-				<!--Rename) -->
-				<li
-					@click="
-						getRenamePermision(contextMenu.block.web_block.layout.data) &&
-							onRenameBlock()
-					"
-					:class="[
-						'flex items-center gap-2 px-3 py-2',
-						getRenamePermision(contextMenu.block.web_block.layout.data)
-							? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
-							: 'text-gray-400 cursor-not-allowed pointer-events-none',
-					]">
-					<font-awesome-icon :icon="faEdit" />
-					Rename
+					<font-awesome-icon :icon="faTrashAlt" fixed-width />
+					{{ trans('Delete') }}
 				</li>
 			</template>
 			<template v-else>
 				<li
 					@click="pasteBlock"
-					class="flex items-center gap-2 px-3 py-1 hover:bg-gray-100 cursor-pointer"
+					class="flex items-center gap-2 px-2.5 py-1 hover:bg-slate-100 cursor-pointer"
 					:class="{ 'text-gray-400 pointer-events-none': !copiedBlock }">
-					<font-awesome-icon :icon="faPaste" />
-					Paste
+					<font-awesome-icon :icon="faPaste" fixed-width />
+					{{ copiedBlock ? trans('Paste') : trans('Nothing to paste') }}
 				</li>
 			</template>
 		</ul>
+	</div>
 	</div>
 </template>
 

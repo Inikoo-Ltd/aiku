@@ -92,12 +92,15 @@ class CallApiApcGbShipping extends OrgAction
 
         $items = [];
         foreach ($parcels as $parcel) {
+            // apc measures its limits against the longest dimension, so send the box that way round
+            [$length, $width, $height] = $this->sortedDimensions($parcel);
+
             $items[] = [
                 'Type'   => 'ALL',
                 'Weight' => $parcel['weight'], // apc weight in kg
-                'Length' => $parcel['dimensions'][0] ?? 0, // cm
-                'Width'  => $parcel['dimensions'][1] ?? 0, // cm
-                'Height' => $parcel['dimensions'][2] ?? 0 // cm
+                'Length' => $length, // cm
+                'Width'  => $width, // cm
+                'Height' => $height // cm
             ];
         }
 

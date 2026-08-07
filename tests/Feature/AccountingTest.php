@@ -1811,6 +1811,23 @@ test('invoice lifecycle: totals, categorise, updates', function () {
     ]);
     expect($invoice->fiscal_name)->toBe('Fiscal Co');
 
+    $invoice = \App\Actions\Accounting\Invoice\UpdateInvoice::make()->action($invoice, [
+        'is_re' => true,
+    ]);
+    expect($invoice->is_re)->toBeTrue()
+        ->and($invoice->tax_category_id)->not->toBeNull();
+
+    $netBefore = (float) $invoice->net_amount;
+    $esReTaxCategory = \App\Models\Helpers\TaxCategory::where('type', 'special')
+        ->where('data->is_re', true)->where('status', true)->first();
+    $invoice->update(['tax_category_id' => $esReTaxCategory->id]);
+    \App\Actions\Accounting\Invoice\UpdateInvoice::make()->applyInvoiceLineTaxCategories($invoice);
+    $invoice = \App\Actions\Accounting\Invoice\CalculateInvoiceTotals::make()->action($invoice);
+
+    expect((float) $invoice->net_amount)->toBe($netBefore)
+        ->and($invoice->invoiceTransactions()->first()->tax_category_id)->toBe($esReTaxCategory->id)
+        ->and((float) $invoice->tax_amount)->toBe(round($netBefore * $esReTaxCategory->rate, 2));
+
     $newDate = now()->subDays(2);
     $invoice = \App\Actions\Accounting\Invoice\UpdateInvoiceDate::make()->handle($invoice, [
         'date' => $newDate,

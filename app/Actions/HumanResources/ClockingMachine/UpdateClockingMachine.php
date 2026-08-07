@@ -18,7 +18,6 @@ use App\Enums\HumanResources\ClockingMachine\ClockingMachineStatusEnum;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Http\Resources\HumanResources\ClockingMachineResource;
 use App\Models\HumanResources\ClockingMachine;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -121,7 +120,7 @@ class UpdateClockingMachine extends OrgAction
         return $rules;
     }
 
-    public function asController(Organisation $organisation, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
+    public function asController(ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
         $this->clockingMachine = $clockingMachine;
         $this->initialisation($clockingMachine->organisation, $request);

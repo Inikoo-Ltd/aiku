@@ -316,6 +316,15 @@ class UpdateProduct extends OrgAction
             $this->getProductInformationFieldNames()
         );
 
+        if (Arr::has($changed, 'not_follow_master_media')) {
+
+            if (!$product->not_follow_master_media) {
+                CloneProductImagesFromTradeUnits::run($product);
+            }
+
+            BreakProductInWebpagesCache::dispatch($product)->delay(15);
+        }
+
         if (!$this->bulkPriceUpdate
             && !$this->skipWebpageCacheBreak
             && $product->webpage
@@ -504,6 +513,7 @@ class UpdateProduct extends OrgAction
             'marketplace_id'                => ['sometimes'],
             'not_follow_master_trade_units' => ['sometimes', 'boolean'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
+            'not_follow_master_media'       => ['sometimes', 'boolean'],
         ];
 
 

@@ -43,6 +43,7 @@ class GetCatalogueShowcase
                 $this->buildOrphanProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildRRPViolationStat($shop, $orgSlug, $shopSlug),
                 $this->buildProductsWithMissingImageStat($shop, $orgSlug, $shopSlug),
+                $this->buildProductsWithMismatchFamilyStat($shop, $orgSlug, $shopSlug),
                 $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
                 $this->buildMissingDescriptionProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildProductsNotOnlineStat($shop, $orgSlug, $shopSlug),
@@ -413,6 +414,21 @@ class GetCatalogueShowcase
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
             'value'           => $shop->stats->number_products_no_images ?? 0,
+        ];
+    }
+
+    private function buildProductsWithMismatchFamilyStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Products with Mismatched Family'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.mismatched_families.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-cube',
+            'backgroundColor' => '#ff000011',
+            'value'           => 0,
         ];
     }
 

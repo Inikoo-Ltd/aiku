@@ -47,6 +47,7 @@ use App\Actions\Ordering\Adjustment\UpdateAdjustment;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\HydrateOrders;
+use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -109,6 +110,8 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
+use App\Actions\Ordering\Order\WriteOffOrderShortfall;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Models\Ordering\Adjustment;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\Ordering\TransactionImport;
@@ -335,6 +338,28 @@ test('delete previous transaction', function (Order $order) {
 })->depends('get order products');
 
 
+test('import transactions in order from spreadsheet', function (Order $order) {
+    $path = tempnam(sys_get_temp_dir(), 'order-transactions').'.csv';
+    file_put_contents($path, "code,quantity\n".$this->product->code.",7\n");
+    $file = new \Illuminate\Http\UploadedFile($path, 'transactions.csv', 'text/csv', null, true);
+
+    $upload = ImportTransactionInOrder::make()->action($order, ['file' => $file]);
+    $order->refresh();
+
+    $transaction = $order->transactions()->where('historic_asset_id', $this->product->historicAsset->id)->first();
+
+    expect($upload->number_success)->toBe(1)
+        ->and($upload->number_fails)->toBe(0)
+        ->and($transaction->quantity_ordered)->toEqual(7)
+        ->and($transaction->data['bulk_import']['id'])->toBe($upload->id);
+
+    DeleteTransaction::make()->action($transaction);
+    $order->refresh();
+    expect($order->transactions()->count())->toBe(0);
+
+    return $order;
+})->depends('delete previous transaction');
+
 test('create transaction', function ($order) {
     $transactionData = Transaction::factory()->definition();
     $historicAsset   = $this->product->historicAsset;
@@ -505,6 +530,10 @@ test('update order', function ($order) {
     $order = UpdateOrder::make()->action($order, Order::factory()->definition());
 
     $this->assertModelExists($order);
+
+    $order = UpdateOrder::make()->action($order, ['is_re' => true]);
+    expect($order->is_re)->toBeTrue()
+        ->and($order->tax_category_id)->not->toBeNull();
 })->depends('create order');
 
 test('update order state to submitted', function (Order $order) {
@@ -652,6 +681,8 @@ test('create invoice from order', function (Order $order) {
         ->and($this->shop->orderingStats->number_invoices)->toBe(3)
         ->and($invoiceTransaction)->toBeInstanceOf(InvoiceTransaction::class);
 
+    expect(fn () => UpdateOrder::make()->action($order, ['is_re' => false]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
 
     return $invoice;
 })->depends('create order', 'update invoice from customer');
@@ -2032,3 +2063,98 @@ test('repricing skips an order that is no longer a basket', function (Order $ord
 
     expect((float)$order->refresh()->transactions()->where('model_type', 'ShippingZone')->first()->net_amount)->toBe(25.0);
 })->depends('repricing a basket picks up a shipping price that changed since it was created');
+
+test('write off settles an order short by less than the tolerance', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, [
+        'quantity_ordered' => 1,
+    ]);
+
+    $order->refresh();
+    $total = (float)$order->total_amount;
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'WO'.mt_rand(1000, 9999),
+            'name' => 'Cash Account',
+        ]
+    );
+
+    expect(WriteOffOrderShortfall::make()->action($order)['success'])->toBeFalse();
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => round($total - 0.04, 2),
+        'reference' => 'PAY-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+    $order->refresh();
+
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::UNPAID);
+
+    $result = WriteOffOrderShortfall::make()->action($order);
+    $order->refresh();
+
+    $adjustmentTransaction = $order->transactions()->where('model_type', 'Adjustment')->first();
+
+    expect($result['success'])->toBeTrue()
+        ->and((float)$order->total_amount)->toBe((float)$order->payment_amount)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($adjustmentTransaction)->not->toBeNull()
+        ->and((float)$adjustmentTransaction->net_amount)->toBeLessThan(0)
+        ->and(WriteOffOrderShortfall::make()->action($order)['success'])->toBeFalse();
+});
+
+test('write off settles an overpaid order with a positive adjustment', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, [
+        'quantity_ordered' => 1,
+    ]);
+
+    $order->refresh();
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'WO'.mt_rand(1000, 9999),
+            'name' => 'Cash Account',
+        ]
+    );
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => round($order->total_amount + 0.03, 2),
+        'reference' => 'PAY-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+    $order->refresh();
+
+    $result = WriteOffOrderShortfall::make()->action($order);
+    $order->refresh();
+
+    $adjustmentTransaction = $order->transactions()->where('model_type', 'Adjustment')->first();
+
+    expect($result['success'])->toBeTrue()
+        ->and((float)$order->total_amount)->toBe((float)$order->payment_amount)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and((float)$adjustmentTransaction->net_amount)->toBeGreaterThan(0);
+});

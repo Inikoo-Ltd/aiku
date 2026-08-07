@@ -303,6 +303,18 @@ trait IsOrder
             ];
         }
 
+        $adjustmentsNet = $order->transactions()->where('model_type', 'Adjustment')->sum('net_amount');
+
+        if ($adjustmentsNet != 0) {
+            $orderSummary[] = [
+                [
+                    'label'       => __('Adjustments (net)'),
+                    'information' => __('Small differences settled by the shop, not charged to the customer'),
+                    'price_total' => $adjustmentsNet,
+                ],
+            ];
+        }
+
         $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
             ->whereNotIn('state', [
                 OrderStateEnum::CANCELLED->value,
@@ -363,6 +375,16 @@ trait IsOrder
                     'pay_amount'          => $roundedDiff,
                     'pay_status'          => $order->pay_status,
                     'pay_detailed_status' => $order->pay_detailed_status,
+                    'write_off'           => $roundedDiff != 0 && abs($roundedDiff) <= paymentSettlementTolerance($order->shop) && !$order->invoices()->where('in_process', false)->exists() ? [
+                        'amount' => $roundedDiff,
+                        'route'  => [
+                            'name'       => 'grp.models.order.write_off_shortfall',
+                            'parameters' => [
+                                'order' => $order->id
+                            ],
+                            'method'     => 'post'
+                        ]
+                    ] : null,
                 ],
                 'excesses_payment' => [
                     'amount'               => round($order->payment_amount - $totalToPay, 2),

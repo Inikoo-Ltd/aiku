@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Fulfilment\PalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\RetinaAction;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -51,7 +50,7 @@ class UpdateRetinaPalletReturn extends RetinaAction
         ];
     }
 
-    public function asController(Organisation $organisation, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
         $this->palletReturn = $palletReturn;
         $this->initialisation($request);

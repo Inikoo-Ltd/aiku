@@ -9,10 +9,6 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Exports\Ordering\OrderTransactionTemplateExport;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
-use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Maatwebsite\Excel\Facades\Excel;
@@ -23,13 +19,13 @@ class DownloadOrderTransactionsTemplate
     use AsAction;
     use WithAttributes;
 
-    public function handle(Order $order): BinaryFileResponse
+    public function handle(): BinaryFileResponse
     {
-        return Excel::download(new OrderTransactionTemplateExport($order), 'order_transaction_templates.xlsx');
+        return Excel::download(new OrderTransactionTemplateExport(), 'order_transaction_templates.xlsx');
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Customer $customer, Order $order): BinaryFileResponse
+    public function asController(): BinaryFileResponse
     {
-        return $this->handle($order);
+        return $this->handle();
     }
 }

@@ -42,7 +42,6 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -394,7 +393,7 @@ class UpdateCustomer extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, Customer $customer, ActionRequest $request): Customer
+    public function asController(Customer $customer, ActionRequest $request): Customer
     {
         $this->customer = $customer;
         $this->initialisationFromShop($customer->shop, $request);

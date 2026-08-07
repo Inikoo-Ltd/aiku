@@ -174,6 +174,21 @@ class MasterShopResource extends JsonResource
             ];
         }
 
+        $additionalStats[] = [
+            'label' => __('Products with Mismatch Family'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.masters.master_shops.show.products.mismatched_families',
+                'parameters' => [
+                    'masterShop' => $masterShop->slug,
+                ]
+            ],
+            'icon'            => 'fal fa-cube',
+            'backgroundColor' => "#fa582761",
+            "color"           => "#df1c1cff",
+            'value'           => $masterShop->stats->products_mismatch_family,
+        ];
+
         $currencies = Currency::whereIn('code', array_keys($masterShop->price_exchanges ?? []))
             ->get()->keyBy('code');
 

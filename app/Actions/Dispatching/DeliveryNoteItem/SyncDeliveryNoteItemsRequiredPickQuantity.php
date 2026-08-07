@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateCompositionDirtyItems;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -45,19 +46,28 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
     public function handle(OrgStock $orgStock): void
     {
         $deliveryNoteItems = $orgStock->deliveryNoteItems()
-            ->with('transaction')
+            ->with('transaction.historicAsset', 'transaction.model')
             ->whereIn('state', collect(self::SYNCED_STATES)->merge(self::DIRTY_STATES)->map(fn ($state) => $state->value))
             ->get();
 
+        $touchedDeliveryNoteIds = [];
+
         foreach ($deliveryNoteItems as $deliveryNoteItem) {
+            $touchedDeliveryNoteIds[$deliveryNoteItem->delivery_note_id] = true;
             $quantityRequired = $this->getQuantityRequired($orgStock, $deliveryNoteItem);
 
             if (is_null($quantityRequired)) {
                 continue;
             }
 
+            /*
+             * Compared at the precision both columns can hold: a pick in twelfths differs
+             * from itself in the last decimal otherwise and stays flagged forever.
+             */
+            $unchanged = abs($quantityRequired - (float)$deliveryNoteItem->quantity_required) < 0.000001;
+
             if (in_array($deliveryNoteItem->state, self::DIRTY_STATES)) {
-                if ($quantityRequired == $deliveryNoteItem->quantity_required) {
+                if ($unchanged) {
                     if ($deliveryNoteItem->composition_dirty_at) {
                         $deliveryNoteItem->update([
                             'composition_dirty_at'                => null,
@@ -74,7 +84,7 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
                 continue;
             }
 
-            if ($quantityRequired == $deliveryNoteItem->quantity_required) {
+            if ($unchanged) {
                 if ($deliveryNoteItem->composition_dirty_at) {
                     $deliveryNoteItem->update([
                         'composition_dirty_at'                => null,
@@ -97,6 +107,10 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
                 ]);
             }
         }
+
+        foreach (array_keys($touchedDeliveryNoteIds) as $deliveryNoteId) {
+            DeliveryNoteHydrateCompositionDirtyItems::run($deliveryNoteId);
+        }
     }
 
     public function getQuantityRequired(OrgStock $orgStock, DeliveryNoteItem $deliveryNoteItem): ?float
@@ -116,6 +130,18 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
             return null;
         }
 
-        return $quantityPerProduct * $transaction->quantity_ordered;
+        /*
+         * The order was placed against a pack of a certain size, and the historic asset on
+         * the transaction remembers it. Redefining the product later — MMC-10 went from a
+         * 3 piece box at 5.85 to a 6 piece box at 7.60 — must not double what an already
+         * sold box means, so the live composition is scaled back to the pack that was
+         * bought. A composition corrected without touching units gives a ratio of 1 and
+         * still propagates, which is the whole point of this sync.
+         */
+        $unitsSold = (float)($transaction->historicAsset?->units ?? 0);
+        $unitsNow  = (float)($transaction->model?->units ?? 0);
+        $packRatio = ($unitsSold > 0 && $unitsNow > 0) ? $unitsSold / $unitsNow : 1;
+
+        return $quantityPerProduct * $transaction->quantity_ordered * $packRatio;
     }
 }

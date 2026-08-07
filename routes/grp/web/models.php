@@ -794,6 +794,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::post('{product:id}/images', UploadImagesToProduct::class)->name('images.store')->withoutScopedBindings();
     Route::patch('{product:id}/update_images', UpdateProductImages::class)->name('images.update_images')->withoutScopedBindings();
     Route::patch('{product:id}/media/{media:id}/alt', UpdateProductImageAlt::class)->name('images.update_image_alt')->withoutScopedBindings();
+    Route::delete('{product:id}/media/{media:id}/delete', DeleteImagesFromProduct::class)->name('images.delete_images')->withoutScopedBindings();
     Route::post('{product:id}/attachment/attach', [AttachAttachmentToModel::class, 'inProduct'])->name('attachment.attach');
     Route::delete('{product:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inProduct'])->name('attachment.detach')->withoutScopedBindings();
 

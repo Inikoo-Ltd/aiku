@@ -23,11 +23,14 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexOrgStockFamilies extends OrgAction
 {
@@ -142,10 +145,10 @@ class IndexOrgStockFamilies extends OrgAction
             'currencies.code as currency_code',
             'warehouses.slug as warehouse_slug',
             'org_stock_family_stats.stock_value',
+            'org_stock_family_stats.stock_commercial_value as potential_sales',
             'org_stock_family_stats.on_the_way_po_value',
             'org_stock_family_stats.on_the_way_po_count',
             'org_stock_family_stats.number_org_stocks_quantity_status_out_of_stock as number_out_of_stock_org_stocks',
-            'org_stock_family_stats.week_of_cover as woc',
             'org_stock_families.health_rank',
         ];
 
@@ -155,7 +158,8 @@ class IndexOrgStockFamilies extends OrgAction
                 timeSeriesRecordsTable: 'org_stock_family_time_series_records',
                 foreignKey: 'org_stock_family_id',
                 aggregateColumns: [
-                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'sales_org_currency_external' => 'sales_org_currency_external',
+                    'cogs_org_currency'           => 'cogs_org_currency',
                     'invoices'                    => 'invoices',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
@@ -163,20 +167,34 @@ class IndexOrgStockFamilies extends OrgAction
                 includeLY: true
             );
 
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_org_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_org_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['cogs_org_currency'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+
+            $selects[] = $this->grossProfitSelect($timeSeriesData['alias']);
+
+            $metricAlias = $timeSeriesData['days'] ? $timeSeriesData['alias'] : $this->joinTrailingYearCogs($queryBuilder, $organisation);
+            $metricDays  = $timeSeriesData['days'] ?? 365;
+
+            $selects[] = $this->stockTurnSelect($metricAlias, $metricDays);
+        } else {
+            $selects[] = $this->stockCoverSelect($this->joinTrailingYearCogs($queryBuilder, $organisation), 365);
         }
 
-        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'on_the_way_po_value', 'health_rank', 'sales_grp_currency_external'];
+        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'potential_sales', 'on_the_way_po_value', 'health_rank'];
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
-            $allowedSorts[] = 'sales_grp_currency_external';
+            $allowedSorts[] = 'sales_org_currency_external';
+            $allowedSorts[] = 'gross_profit';
             $allowedSorts[] = 'invoices';
+            $allowedSorts[] = AllowedSort::callback('stock_turn', function ($query, bool $descending) {
+                $query->orderByRaw('stock_turn '.($descending ? 'desc' : 'asc').' nulls last');
+            });
         }
 
-        $defaultSort = $prefix === OrgStockFamiliesTabsEnum::SALES->value ? '-sales_grp_currency_external' : 'code';
+        $defaultSort = $prefix === OrgStockFamiliesTabsEnum::SALES->value ? '-sales_org_currency_external' : 'code';
 
         return $queryBuilder
             ->defaultSort($defaultSort)
@@ -189,6 +207,61 @@ class IndexOrgStockFamilies extends OrgAction
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function joinTrailingYearCogs(QueryBuilder $queryBuilder, Organisation $organisation): string
+    {
+        $alias = 'cogs_trailing_year';
+
+        $subQuery = DB::table('org_stock_family_time_series')
+            ->join(
+                'org_stock_family_time_series_records',
+                'org_stock_family_time_series_records.org_stock_family_time_series_id',
+                '=',
+                'org_stock_family_time_series.id'
+            )
+            ->join('org_stock_families', 'org_stock_families.id', '=', 'org_stock_family_time_series.org_stock_family_id')
+            ->where('org_stock_families.organisation_id', $organisation->id)
+            ->where('org_stock_family_time_series.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+            ->where('org_stock_family_time_series_records.frequency', TimeSeriesFrequencyEnum::MONTHLY->singleLetter())
+            ->where('org_stock_family_time_series_records.from', '>=', now()->subYear()->startOfMonth())
+            ->groupBy('org_stock_family_time_series.org_stock_family_id')
+            ->select('org_stock_family_time_series.org_stock_family_id')
+            ->selectRaw('COALESCE(SUM(org_stock_family_time_series_records.cogs_org_currency), 0) as cogs_org_currency')
+            ->selectRaw('COALESCE(SUM(org_stock_family_time_series_records.sales_org_currency_external), 0) as sales_org_currency_external');
+
+        $queryBuilder->leftJoinSub(
+            $subQuery,
+            $alias,
+            fn ($join) => $join->on("$alias.org_stock_family_id", '=', 'org_stock_families.id')
+        );
+
+        return $alias;
+    }
+
+    protected function stockTurnSelect(string $alias, int $days): Expression
+    {
+        return DB::raw(
+            'CASE WHEN org_stock_family_stats.stock_value > 0'
+            ." THEN COALESCE($alias.cogs_org_currency, 0) / org_stock_family_stats.stock_value * 365 / $days"
+            .' ELSE NULL END as stock_turn'
+        );
+    }
+
+    protected function grossProfitSelect(string $alias): Expression
+    {
+        return DB::raw(
+            "COALESCE($alias.sales_org_currency_external, 0) - COALESCE($alias.cogs_org_currency, 0) as gross_profit"
+        );
+    }
+
+    protected function stockCoverSelect(string $alias, int $days): Expression
+    {
+        return DB::raw(
+            "CASE WHEN org_stock_family_stats.stock_value > 0 AND COALESCE($alias.cogs_org_currency, 0) > 0"
+            ." THEN org_stock_family_stats.stock_value * 12 * $days / ($alias.cogs_org_currency * 365)"
+            .' ELSE NULL END as stock_cover'
+        );
     }
 
     public function tableStructure(Organisation $organisation, $prefix = null, bool $sales = false): Closure
@@ -215,19 +288,21 @@ class IndexOrgStockFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date'])
-                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
-                    // ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency') // Todo: fix after Purchase Order
+                    ->column(key: 'stock_turn', label: __('Turn'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'sales_org_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_org_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'gross_profit', label: __('Gross Profit'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon')
-                    ->defaultSort('-sales_grp_currency_external');
+                    ->defaultSort('-sales_org_currency_external');
             } else {
                 $table
                     ->column(key: 'number_current_org_stocks', label: __('SKOs'), canBeHidden: false, sortable: true)
-                    ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKO)'), canBeHidden: false)
-                    ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
+                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'potential_sales', label: __('Potential Sales'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'on_the_way_po_value', label: __("On The Way (PO's)"), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: false, align: 'right')
                     ->defaultSort('code');
             }
         };

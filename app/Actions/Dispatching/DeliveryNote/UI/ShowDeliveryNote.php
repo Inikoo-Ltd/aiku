@@ -326,6 +326,8 @@ class ShowDeliveryNote extends OrgAction
         $showCancel = (bool)request()->user()?->authTo([
             "supervisor-dispatching.$deliveryNote->warehouse_id",
             "org-admin.$deliveryNote->organisation_id",
+            "orders.$deliveryNote->shop_id.edit",
+            "crm.$deliveryNote->shop_id.edit",
         ]);
 
         if (in_array($deliveryNote->state, [
@@ -1128,6 +1130,7 @@ class ShowDeliveryNote extends OrgAction
             'allow_waiting'               => $allowWaiting,
             'allow_picker_set_not_picked' => !$allowWaiting || (data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false)),
             'showChangePickerPacker'      => $showChangePickerPacker,
+            'order_slug'                  => $deliveryNote->orders->first()?->slug,
 
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))

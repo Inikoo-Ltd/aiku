@@ -32,13 +32,13 @@ trait WithLineTaxCategories
      * line was sold - a preset change mints a new historic, so old lines keep their
      * treatment. Historics predating the column carry null and fall back to the live master.
      */
-    public function getLineTaxCategoryId(Order $order, ?object $transaction): int
+    public function getLineTaxCategoryId(Order|Invoice $parent, ?object $transaction): int
     {
         $map = $transaction?->historicAsset?->tax_category
             ?? $transaction?->asset?->masterAsset?->tax_category
             ?? [];
 
-        return (int)Arr::get($map, $order->tax_category_id, $order->tax_category_id);
+        return (int)Arr::get($map, $parent->tax_category_id, $parent->tax_category_id);
     }
 
     /**
@@ -280,12 +280,33 @@ trait WithLineTaxCategories
         }
     }
 
+    public function applyInvoiceLineTaxCategories(Invoice $invoice): void
+    {
+        if ($invoice->shop->type == ShopTypeEnum::EXTERNAL) {
+            return;
+        }
+
+        $transactions = $invoice->invoiceTransactions()
+            ->with(['historicAsset:id,tax_category', 'asset:id,master_asset_id', 'asset.masterAsset:id,tax_category'])
+            ->get(['id', 'invoice_id', 'asset_id', 'historic_asset_id', 'tax_category_id']);
+
+        foreach ($transactions as $transaction) {
+            $taxCategoryId = $this->getLineTaxCategoryId($invoice, $transaction);
+
+            if ($transaction->tax_category_id !== $taxCategoryId) {
+                $transaction->updateQuietly(['tax_category_id' => $taxCategoryId]);
+            }
+        }
+
+        $invoice->unsetRelation('invoiceTransactions');
+    }
+
     /**
      * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
      */
     public function getOrderTaxBreakdown(Order $order): array
     {
-        $modelTypes = ['Product', 'Charge'];
+        $modelTypes = ['Product', 'Charge', 'Adjustment'];
         if (!$order->collection_address_id) {
             $modelTypes[] = 'ShippingZone';
         }
@@ -304,7 +325,7 @@ trait WithLineTaxCategories
         /** Two columns, not 2,500 hydrated models: this runs on every invoice view and pdf. */
         return $this->getTaxBreakdown(
             $invoice->invoiceTransactions()
-                ->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge'])
+                ->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge', 'Adjustment'])
                 ->get(['tax_category_id', 'net_amount']),
             $invoice->amount_off
         );
