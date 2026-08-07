@@ -214,3 +214,18 @@ it('reports no roas or cac for a source with no recorded spend', function () {
     expect($row->roas)->toBeNull();
     expect($row->cac)->toBeNull();
 });
+
+it('renders whole share weighted counts without decimals and keeps genuine fractions', function () {
+    $this->trafficSource->stats()->update([
+        'number_customers'          => 333.00,
+        'number_customer_purchases' => 0.50,
+    ]);
+
+    fakeCurrentRoute();
+
+    $row = IndexTrafficSources::make()->handle($this->shop)
+        ->firstWhere('id', $this->trafficSource->id);
+
+    expect($row->number_customers)->toBe('333')
+        ->and($row->number_customer_purchases)->toBe('0.5');
+});
