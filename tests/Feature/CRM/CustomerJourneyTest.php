@@ -94,6 +94,31 @@ it('flags a touch that falls outside the attribution window of the following pur
         ->and($touches[1]['in_window'])->toBeTrue();
 });
 
+it('caps the timeline at the most recent events and reports how many were omitted', function () {
+    $cap    = GetCustomerJourney::MAX_EVENTS;
+    $extra  = 5;
+    $oldest = now()->subDays($cap + $extra + 1);
+
+    $touches = collect(range(0, $cap + $extra - 1))
+        ->map(fn (int $offset) => $oldest->copy()->addDays($offset)->timestamp.'a')
+        ->implode('|');
+
+    $customer = journeyCustomer($this->shop, $touches);
+
+    $journey = GetCustomerJourney::run($customer->refresh());
+
+    expect($journey['events'])->toHaveCount($cap)
+        ->and($journey['omitted_events'])->toBe($extra)
+        ->and($journey['events'][0]['datetime'])->toBe($oldest->copy()->addDays($extra)->toIso8601String())
+        ->and($journey['events'][$cap - 1]['datetime'])->toBe($oldest->copy()->addDays($cap + $extra - 1)->toIso8601String());
+});
+
+it('reports no omitted events for a short journey', function () {
+    $customer = journeyCustomer($this->shop, now()->subDays(2)->timestamp.'a');
+
+    expect(GetCustomerJourney::run($customer->refresh())['omitted_events'])->toBe(0);
+});
+
 it('honours the per shop attribution window override', function () {
     $touch = now()->subDays(30)->timestamp;
 

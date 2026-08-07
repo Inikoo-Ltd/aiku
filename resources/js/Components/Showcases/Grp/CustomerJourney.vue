@@ -31,6 +31,7 @@ interface JourneyEvent {
 const props = defineProps<{
     data?: {
         events: JourneyEvent[]
+        omitted_events: number
         attribution: { label: string, share: number, campaign: string | null }[]
         attribution_window_days: number
         currency_code: string
@@ -60,7 +61,11 @@ const locale = useLocaleStore()
             {{ trans('No marketing touches or invoices recorded for this customer') }}
         </div>
 
-        <ol v-else class="relative border-l border-gray-200 ml-3">
+        <div v-if="data.omitted_events > 0" class="mb-4 text-xs text-gray-400">
+            {{ trans('Showing the most recent :shown events, :omitted older ones are not listed', { shown: data.events.length, omitted: data.omitted_events }) }}
+        </div>
+
+        <ol v-if="data.events.length" class="relative border-l border-gray-200 ml-3">
             <li v-for="event in data.events" :key="event.id" class="mb-6 ml-6">
                 <span
                     class="absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white"
