@@ -38,6 +38,7 @@ use App\Models\Helpers\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -151,25 +152,20 @@ test('add product to customer portfolio', function () {
 });
 
 
-test('add product from another shop to customer portfolio uses the channel shop product', function () {
+test('add product from another shop to customer portfolio is rejected', function () {
     $customerSalesChannel = $this->customer->customerSalesChannels()->first();
-    foreach ($customerSalesChannel->portfolios as $existingPortfolio) {
-        $existingPortfolio->stats()->delete();
-        $existingPortfolio->forceDelete();
-    }
+    $portfoliosBefore     = $customerSalesChannel->portfolios()->count();
 
     $productFromAnotherShop          = new Product();
     $productFromAnotherShop->shop_id = $this->shop->id + 1000;
     $productFromAnotherShop->code    = $this->product->code;
 
-    $portfolio = StorePortfolio::make()->action(
+    expect(fn () => StorePortfolio::make()->action(
         $customerSalesChannel,
         $productFromAnotherShop,
         []
-    );
-
-    expect($portfolio->item_id)->toBe($this->product->id)
-        ->and($portfolio->shop_id)->toBe($this->shop->id);
+    ))->toThrow(ValidationException::class)
+        ->and($customerSalesChannel->portfolios()->count())->toBe($portfoliosBefore);
 });
 
 
