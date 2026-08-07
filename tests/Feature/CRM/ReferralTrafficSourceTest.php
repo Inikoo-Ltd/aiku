@@ -129,12 +129,11 @@ it('records the search engines we have no channel of their own for as organic se
         ->and(GetTrafficSourceFromRefererHeader::run('https://search.brave.com/search?q=x'))->toBe($searchAbbr.'search.brave.com');
 });
 
-it('treats a webmail host as a referral, never as a search engine', function () {
-    $searchAbbr   = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_SEARCH->value];
-    $referralAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::REFERRAL->value];
+it('separates a search engine from the webmail on the same domain', function () {
+    $searchAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_SEARCH->value];
 
-    expect(GetTrafficSourceFromRefererHeader::run('https://email.seznam.cz/message/1'))->toBe($referralAbbr.'email.seznam.cz')
-        ->and(GetTrafficSourceFromRefererHeader::run('https://search.seznam.cz/?q=x'))->toBe($searchAbbr.'search.seznam.cz');
+    expect(GetTrafficSourceFromRefererHeader::run('https://search.seznam.cz/?q=x'))->toBe($searchAbbr.'search.seznam.cz')
+        ->and(GetTrafficSourceFromRefererHeader::run('https://email.seznam.cz/message/1'))->toBeNull();
 });
 
 it('counts a click arriving through the google ads redirect as paid google', function () {
@@ -147,4 +146,23 @@ it('keeps a search engine that has its own channel out of the generic bucket', f
         ->toBe(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_GOOGLE->value])
         ->and(GetTrafficSourceFromRefererHeader::run('https://www.bing.com/search?q=x'))
         ->toBe(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_BING->value]);
+});
+
+it('records no touch for a click arriving from webmail', function () {
+    /* Our own mailshot click is already recorded server-side; counting the webmail host as well
+       would split that click's credit away from the newsletter. */
+    expect(GetTrafficSourceFromRefererHeader::run('https://mail02.orange.fr/inbox/1'))->toBeNull()
+        ->and(GetTrafficSourceFromRefererHeader::run('https://messageriepro.orange.fr/x'))->toBeNull()
+        ->and(GetTrafficSourceFromRefererHeader::run('https://email.seznam.cz/message/1'))->toBeNull()
+        ->and(GetTrafficSourceFromRefererHeader::run('https://outlook.live.com/mail/0/'))->toBeNull();
+});
+
+it('still records an email marketing platform that is not a mailbox', function () {
+    $referralAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::REFERRAL->value];
+
+    expect(GetTrafficSourceFromRefererHeader::run('https://mailchimp.com/blog/x'))->toBe($referralAbbr.'mailchimp.com');
+});
+
+it('does not record our own mailshot editor as a referral', function () {
+    expect(GetTrafficSourceFromRefererHeader::run('https://app.getbee.io/editor'))->toBeNull();
 });

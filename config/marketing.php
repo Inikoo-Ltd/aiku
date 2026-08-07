@@ -34,13 +34,45 @@ return [
     | as a referral, and one shop linking to another as an acquisition.
     |
     | Matched as domain suffixes; a visitor arriving from the same host they are
-    | already on is excluded separately.
+    | already on is excluded separately, as is every domain in the websites table.
     |
     */
 
     'internal_referrer_hosts' => [
         'aiku.io',
         'aiku.test',
+        /* The mailshot template editor: staff previewing an email and clicking
+           through are not visitors from a website called getbee. */
+        'getbee.io',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Webmail referrers
+    |--------------------------------------------------------------------------
+    |
+    | A visitor arriving from webmail clicked a link in an email. If it was our
+    | mailshot, RecordEmailClickTouchpoint already recorded that click
+    | server-side; recording the webmail host as well would count one click
+    | twice and split the credit away from the newsletter it belongs to. If it
+    | was somebody else's email, "orange.fr webmail" is still not a channel
+    | anyone can act on.
+    |
+    | Either way these produce no touch. They stay visible in the rejected
+    | referrers list on the Data quality tab, where a lot of them means our
+    | mailshot links are losing their tracking.
+    |
+    | Matched against the whole host, after `www.` is stripped.
+    |
+    */
+
+    'webmail_referrer_patterns' => [
+        '/^mail[0-9]*\./',
+        '/^webmail\./',
+        '/^messagerie/',
+        '/^email\./',
+        '/^outlook\.(live|office|office365)\.com$/',
+        '/^mail\.(google|yahoo|proton|zoho)\.com$/',
     ],
 
 ];

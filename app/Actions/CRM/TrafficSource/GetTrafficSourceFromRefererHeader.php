@@ -150,6 +150,15 @@ class GetTrafficSourceFromRefererHeader
             }
         }
 
+        /* A click from webmail is a click on a link in an email. Our own mailshots are already
+           recorded server-side by RecordEmailClickTouchpoint, so counting the webmail host too would
+           credit one click twice and take half of it away from the newsletter it belongs to. */
+        foreach ((array) config('marketing.webmail_referrer_patterns', []) as $pattern) {
+            if (preg_match($pattern, $host)) {
+                return null;
+            }
+        }
+
         /* Our own storefronts refer each other constantly - a customer moving from awgifts.eu to
            ancientwisdom.biz is cross-shop navigation, not an acquisition. Every referral host seen in
            the first hours of capture was one of ours. */
