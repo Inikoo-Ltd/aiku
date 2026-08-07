@@ -17,6 +17,7 @@ use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Exports\SupplyChain\SupplierProductTemplateExport;
 use App\Http\Resources\SupplyChain\SupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SupplyChain\Agent;
@@ -274,12 +275,24 @@ class IndexSupplierProducts extends OrgAction
             $spreadsheetRoutes = [
                 'event'           => 'action-progress',
                 'channel'         => 'grp.personal.'.$this->group->id,
-                'required_fields' => ["id:_supplier_part_key", "supplier's_product_code", "units_per_sko", "skos_per_carton", "carton_cbm", "unit_cost", "availability", "supplier's_unit_description"],
+                'required_fields' => array_map(
+                    fn ($heading) => strtolower(str_replace(' ', '_', trim($heading))),
+                    SupplierProductTemplateExport::HEADINGS
+                ),
+                'template'        => [
+                    'label' => __('Download template (.xlsx)'),
+                ],
                 'route'           => [
-                    'upload' => [
+                    'upload'   => [
                         'name'       => 'grp.models.supplier.supplier-product.import',
                         'parameters' => [
                             'supplier' => $this->scope->id,
+                        ],
+                    ],
+                    'download' => [
+                        'name'       => 'grp.supply-chain.suppliers.supplier_products.uploads.templates',
+                        'parameters' => [
+                            'supplier' => $this->scope->slug,
                         ],
                     ],
                 ],
