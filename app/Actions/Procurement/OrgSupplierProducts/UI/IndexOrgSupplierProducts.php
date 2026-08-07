@@ -15,6 +15,7 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Http\Resources\Procurement\OrgSupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\OrgAgent;
@@ -44,6 +45,23 @@ class IndexOrgSupplierProducts extends OrgAction
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
+    protected function getElementGroups(Organisation|OrgAgent|OrgSupplier $parent): array
+    {
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'default'  => OrgSupplierProductStateEnum::ACTIVE->value,
+                'elements' => array_merge_recursive(
+                    OrgSupplierProductStateEnum::labels(),
+                    OrgSupplierProductStateEnum::count($parent),
+                ),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('supplier_products.state', $elements);
+                },
+            ],
+        ];
+    }
+
     public function handle(Organisation|OrgAgent|OrgSupplier $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -59,6 +77,17 @@ class IndexOrgSupplierProducts extends OrgAction
 
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id');
+        $queryBuilder->leftJoin('currencies', 'supplier_products.currency_id', 'currencies.id');
+
+        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null,
+            );
+        }
 
         $organisationAgent = $this->getParentOrganisationAgent($parent);
 
@@ -80,6 +109,8 @@ class IndexOrgSupplierProducts extends OrgAction
             'org_supplier_products.slug',
             'supplier_products.code',
             'supplier_products.name',
+            'supplier_products.cost',
+            'currencies.code as currency_code',
         ]);
 
         if ($organisationAgent) {
@@ -90,19 +121,28 @@ class IndexOrgSupplierProducts extends OrgAction
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure(Organisation|OrgAgent|OrgSupplier $parent, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
+            }
+
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
+                );
             }
 
             $table
@@ -111,10 +151,11 @@ class IndexOrgSupplierProducts extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($this->getParentOrganisationAgent($this->parent)) {
+            if ($this->getParentOrganisationAgent($parent)) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
             }
 
+            $table->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency');
             $table->defaultSort('code');
         };
     }
@@ -193,7 +234,7 @@ class IndexOrgSupplierProducts extends OrgAction
                 ],
                 'data'        => OrgSupplierProductsResource::collection($orgSupplierProducts),
             ],
-        )->table($this->tableStructure());
+        )->table($this->tableStructure($this->parent));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

@@ -44,7 +44,10 @@ use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
+use App\Actions\Ordering\Order\CalculateOrderShipping;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\HydrateOrders;
+use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -107,6 +110,8 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
+use App\Actions\Ordering\Order\WriteOffOrderShortfall;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Models\Ordering\Adjustment;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\Ordering\TransactionImport;
@@ -333,6 +338,28 @@ test('delete previous transaction', function (Order $order) {
 })->depends('get order products');
 
 
+test('import transactions in order from spreadsheet', function (Order $order) {
+    $path = tempnam(sys_get_temp_dir(), 'order-transactions').'.csv';
+    file_put_contents($path, "code,quantity\n".$this->product->code.",7\n");
+    $file = new \Illuminate\Http\UploadedFile($path, 'transactions.csv', 'text/csv', null, true);
+
+    $upload = ImportTransactionInOrder::make()->action($order, ['file' => $file]);
+    $order->refresh();
+
+    $transaction = $order->transactions()->where('historic_asset_id', $this->product->historicAsset->id)->first();
+
+    expect($upload->number_success)->toBe(1)
+        ->and($upload->number_fails)->toBe(0)
+        ->and($transaction->quantity_ordered)->toEqual(7)
+        ->and($transaction->data['bulk_import']['id'])->toBe($upload->id);
+
+    DeleteTransaction::make()->action($transaction);
+    $order->refresh();
+    expect($order->transactions()->count())->toBe(0);
+
+    return $order;
+})->depends('delete previous transaction');
+
 test('create transaction', function ($order) {
     $transactionData = Transaction::factory()->definition();
     $historicAsset   = $this->product->historicAsset;
@@ -503,6 +530,10 @@ test('update order', function ($order) {
     $order = UpdateOrder::make()->action($order, Order::factory()->definition());
 
     $this->assertModelExists($order);
+
+    $order = UpdateOrder::make()->action($order, ['is_re' => true]);
+    expect($order->is_re)->toBeTrue()
+        ->and($order->tax_category_id)->not->toBeNull();
 })->depends('create order');
 
 test('update order state to submitted', function (Order $order) {
@@ -515,6 +546,18 @@ test('update order state to submitted', function (Order $order) {
 
     return $order;
 })->depends('create order');
+
+test('customer cannot update basket transaction on submitted order', function (Order $order) {
+    $webUser = new \App\Models\CRM\WebUser();
+    $webUser->setRelation('customer', $order->customer);
+    $transaction = $order->transactions()->first();
+
+    $request = Mockery::mock(\Lorisleiva\Actions\ActionRequest::class);
+    $request->shouldReceive('user')->andReturn($webUser);
+
+    expect(fn () => \App\Actions\Iris\Basket\UpdateEcomBasketTransaction::make()->asController($transaction, $request))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class, 'Order can not be modified after submission');
+})->depends('update order state to submitted');
 
 test('update order state to in warehouse', function (Order $order) {
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
@@ -638,6 +681,8 @@ test('create invoice from order', function (Order $order) {
         ->and($this->shop->orderingStats->number_invoices)->toBe(3)
         ->and($invoiceTransaction)->toBeInstanceOf(InvoiceTransaction::class);
 
+    expect(fn () => UpdateOrder::make()->action($order, ['is_re' => false]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
 
     return $invoice;
 })->depends('create order', 'update invoice from customer');
@@ -1882,4 +1927,234 @@ test('invoice totals from a part picked order keep net plus tax equal to the tot
         ->and($totals['tax_amount'])->toBe(53.32)
         ->and($totals['total_amount'])->toBe(319.94)
         ->and($totals['net_amount'] + $totals['tax_amount'])->toBe($totals['total_amount']);
+});
+
+test('shipping zone with territories wins over a catch all zone placed above it', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
+        'name' => 'catch all on top schema',
+    ]);
+
+    $franceZone = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-FR',
+        'name'        => 'France',
+        'status'      => true,
+        'price'       => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 12.5],
+            ],
+        ],
+        'territories' => [['country_code' => 'FR']],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+
+    $restOfTheWorld = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-ROW',
+        'name'        => 'Rest of the world',
+        'status'      => true,
+        'price'       => ['type' => 'TBC'],
+        'territories' => [],
+        'position'    => 2,
+        'is_failover' => false,
+    ]);
+
+    $this->shop->update(['shipping_zone_schema_id' => $shippingZoneSchema->id]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->deliveryAddress->update(['country_code' => 'FR', 'postal_code' => '75001']);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+    $order = CalculateOrderShipping::make()->handle($order->refresh());
+
+    expect($order->shipping_zone_id)->toBe($franceZone->id)
+        ->and($order->shipping_zone_id)->not->toBe($restOfTheWorld->id)
+        ->and($order->is_shipping_tbc)->toBeFalse()
+        ->and((float)$order->shipping_amount)->toBe(12.5);
+
+    return $order;
+});
+
+test('a step priced TBC leaves the shipping to be confirmed instead of free', function (Order $order) {
+    UpdateShippingZone::make()->action(ShippingZone::find($order->shipping_zone_id), [
+        'price' => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 'TBC'],
+            ],
+        ],
+    ]);
+
+    $order = CalculateOrderShipping::make()->handle($order->refresh());
+
+    $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
+
+    expect($order->is_shipping_tbc)->toBeTrue()
+        ->and((float)$shippingTransaction->net_amount)->toBe(0.0);
+})->depends('shipping zone with territories wins over a catch all zone placed above it');
+
+test('repricing a basket picks up a shipping price that changed since it was created', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
+        'name' => 'stale basket schema',
+    ]);
+
+    $shippingZone = StoreShippingZone::make()->action($shippingZoneSchema, [
+        'code'        => 'ZONE-STALE',
+        'name'        => 'France',
+        'status'      => true,
+        'price'       => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 5],
+            ],
+        ],
+        'territories' => [['country_code' => 'FR']],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+
+    $this->shop->update(['shipping_zone_schema_id' => $shippingZoneSchema->id]);
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->deliveryAddress->update(['country_code' => 'FR', 'postal_code' => '75001']);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+    CalculateOrderShipping::make()->handle($order->refresh());
+
+    expect((float)$order->transactions()->where('model_type', 'ShippingZone')->first()->net_amount)->toBe(5.0);
+
+    UpdateShippingZone::make()->action($shippingZone, [
+        'price' => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 25],
+            ],
+        ],
+    ]);
+
+    CalculateOrderTotalAmounts::run($order->refresh(), forceRecalculate: true, onlyIfInBasket: true);
+
+    expect((float)$order->refresh()->transactions()->where('model_type', 'ShippingZone')->first()->net_amount)->toBe(25.0);
+
+    return $order;
+});
+
+test('repricing skips an order that is no longer a basket', function (Order $order) {
+    SubmitOrder::make()->action($order);
+
+    UpdateShippingZone::make()->action(ShippingZone::find($order->shipping_zone_id), [
+        'price' => [
+            'type'  => 'Step Order Items Net Amount',
+            'steps' => [
+                ['from' => 0, 'to' => 'INF', 'price' => 99],
+            ],
+        ],
+    ]);
+
+    CalculateOrderTotalAmounts::run($order->refresh(), forceRecalculate: true, onlyIfInBasket: true);
+
+    expect((float)$order->refresh()->transactions()->where('model_type', 'ShippingZone')->first()->net_amount)->toBe(25.0);
+})->depends('repricing a basket picks up a shipping price that changed since it was created');
+
+test('write off settles an order short by less than the tolerance', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, [
+        'quantity_ordered' => 1,
+    ]);
+
+    $order->refresh();
+    $total = (float)$order->total_amount;
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'WO'.mt_rand(1000, 9999),
+            'name' => 'Cash Account',
+        ]
+    );
+
+    expect(WriteOffOrderShortfall::make()->action($order)['success'])->toBeFalse();
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => round($total - 0.04, 2),
+        'reference' => 'PAY-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+    $order->refresh();
+
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::UNPAID);
+
+    $result = WriteOffOrderShortfall::make()->action($order);
+    $order->refresh();
+
+    $adjustmentTransaction = $order->transactions()->where('model_type', 'Adjustment')->first();
+
+    expect($result['success'])->toBeTrue()
+        ->and((float)$order->total_amount)->toBe((float)$order->payment_amount)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($adjustmentTransaction)->not->toBeNull()
+        ->and((float)$adjustmentTransaction->net_amount)->toBeLessThan(0)
+        ->and(WriteOffOrderShortfall::make()->action($order)['success'])->toBeFalse();
+});
+
+test('write off settles an overpaid order with a positive adjustment', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, [
+        'quantity_ordered' => 1,
+    ]);
+
+    $order->refresh();
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'WO'.mt_rand(1000, 9999),
+            'name' => 'Cash Account',
+        ]
+    );
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => round($order->total_amount + 0.03, 2),
+        'reference' => 'PAY-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+    $order->refresh();
+
+    $result = WriteOffOrderShortfall::make()->action($order);
+    $order->refresh();
+
+    $adjustmentTransaction = $order->transactions()->where('model_type', 'Adjustment')->first();
+
+    expect($result['success'])->toBeTrue()
+        ->and((float)$order->total_amount)->toBe((float)$order->payment_amount)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and((float)$adjustmentTransaction->net_amount)->toBeGreaterThan(0);
 });

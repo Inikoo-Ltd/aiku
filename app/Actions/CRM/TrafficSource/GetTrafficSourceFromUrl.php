@@ -25,23 +25,26 @@ class GetTrafficSourceFromUrl
             parse_str($urlComponents['query'], $queryParams);
         }
 
-        if (array_key_exists('gad_source', $queryParams) && array_key_exists('gad_campaignid', $queryParams) && array_key_exists('gclid', $queryParams)) {
+        /* gclid alone is enough to prove a paid Google click: custom tracking templates and some
+           placement types omit the gad_* parameters, and demanding all three sent that paid traffic
+           into organic via the referer fallback. The campaign id rides along when present. */
+        if (array_key_exists('gclid', $queryParams)) {
             return
                 TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::GOOGLE_ADS->value].
-                Arr::get($queryParams, 'gad_campaignid');
-
+                $this->sanitizeCampaignRef(Arr::get($queryParams, 'gad_campaignid'));
         }
 
         if (array_key_exists('fbclid', $queryParams) && array_key_exists('utm_medium', $queryParams) && $queryParams['utm_medium'] == 'paid') {
             return
                 TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::META_ADS->value].
-                Arr::get($queryParams, 'utm_campaign');
+                $this->sanitizeCampaignRef(Arr::get($queryParams, 'utm_campaign'));
         }
 
+        /* No campaign reference for Bing: msclkid is unique per click, so recording it as a campaign
+           made every Bing click a distinct campaign, over-weighting Bing in the share split and
+           matching no imported cost row ever. */
         if (array_key_exists('msclkid', $queryParams)) {
-            return
-                TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::BING_ADS->value].
-                Arr::get($queryParams, 'msclkid');
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::BING_ADS->value];
         }
 
 
@@ -50,4 +53,12 @@ class GetTrafficSourceFromUrl
         return null;
     }
 
+    /**
+     * The cookie is a pipe/comma-joined touch string, so a campaign name containing either separator
+     * would shatter the whole history into garbage segments when parsed back.
+     */
+    private function sanitizeCampaignRef(?string $reference): string
+    {
+        return preg_replace('/[|,\s]+/', '-', trim((string) $reference)) ?? '';
+    }
 }

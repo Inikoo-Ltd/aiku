@@ -20,7 +20,6 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
-use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
@@ -272,6 +271,8 @@ class StoreProduct extends OrgAction
             'settings'          => ['sometimes', 'array'],
             'is_main'           => ['required', 'boolean'],
             'units'             => ['sometimes', 'numeric'],
+
+            'has_independent_units' => ['sometimes', 'boolean'],
             'description_title' => ['sometimes', 'string', 'nullable', 'max:300'],
             'description_extra' => ['sometimes', 'string', 'nullable', 'max:15000'],
 

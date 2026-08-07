@@ -13,7 +13,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Production\ArtefactResource;
 use App\Models\Production\Artefact;
 use App\Models\Production\Production;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
@@ -79,7 +78,7 @@ class UpdateArtefact extends OrgAction
         return $this->handle($artefact, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Production $production, Artefact $artefact, ActionRequest $request): Artefact
+    public function asController(Production $production, Artefact $artefact, ActionRequest $request): Artefact
     {
         $this->artefact = $artefact;
         $this->initialisationFromProduction($production, $request);

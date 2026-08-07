@@ -49,6 +49,21 @@ class UpdatePicking extends OrgAction
             return DeletePicking::make()->action($picking, $this->user);
         }
 
+        if (Arr::has($modelData, 'quantity') && in_array($picking->type, [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK], true)) {
+            $deliveryNoteItemForClamp = $picking->deliveryNoteItem;
+            /* Outstanding includes this picking's own quantity, so any decrease is always allowed */
+            $outstanding = (float)$deliveryNoteItemForClamp->quantity_required
+                - ((float)$deliveryNoteItemForClamp->quantity_picked - (float)$picking->quantity)
+                - (float)$deliveryNoteItemForClamp->quantity_waiting_warehouse
+                - (float)$deliveryNoteItemForClamp->quantity_waiting_crm;
+
+            if ($outstanding <= 0) {
+                abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
+            }
+
+            $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding);
+        }
+
         $picking = $this->update($picking, $modelData);
 
 
@@ -68,7 +83,7 @@ class UpdatePicking extends OrgAction
 
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
-        
+
         $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
         return $picking;

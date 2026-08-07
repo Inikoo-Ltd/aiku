@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -115,6 +116,7 @@ class Prospect extends Model implements Auditable
     use HasAddresses;
     use HasHistory;
     use HasSearch;
+    protected array $auditExclude = ['traffic_sources'];
 
     protected $casts = [
         'data'                    => 'array',
@@ -253,6 +255,13 @@ class Prospect extends Model implements Auditable
     public function subscriptionEvents(): MorphMany
     {
         return $this->morphMany(SubscriptionEvent::class, 'model');
+    }
+
+    public function trafficSources(): MorphToMany
+    {
+        return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
+            ->withTimestamps();
     }
 
     public function dispatchedEmails(): BelongsToMany

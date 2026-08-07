@@ -14,7 +14,6 @@ use App\Http\Resources\Production\JobOrderResource;
 use App\Models\CRM\WebUser;
 use App\Models\Production\JobOrder;
 use App\Models\Production\Production;
-use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -91,9 +90,9 @@ class StoreJobOrder extends OrgAction
         return $this->handle($production, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Production $production, ActionRequest $request): JobOrder
+    public function asController(Production $production, ActionRequest $request): JobOrder
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($production->organisation, $request);
 
         return $this->handle($production, $this->validatedData);
     }

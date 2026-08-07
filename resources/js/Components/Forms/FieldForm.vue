@@ -38,6 +38,7 @@ const props = defineProps<{
         options?: {}[]
         full: boolean
         noTitle?: boolean
+        compact?: boolean       // Tight table-like row, for read-only-until-edited fields
         noSaveButton?: boolean  // Button: save
         updateRoute?: routeType
         isWithRefreshFieldForm?: boolean
@@ -163,7 +164,8 @@ const needsSaveConfirmation = computed(() => {
 
 <template>
     <form @submit.prevent="submit" class="divide-y divide-gray-200 w-full" :class="props.fieldData.full ? '' : 'max-w-2xl'">
-        <dl class="pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4 ">
+        <!-- compact packs read-only rows as tight table lines instead of roomy form rows -->
+        <dl class="sm:grid sm:grid-cols-3 sm:gap-4" :class="fieldData.compact ? 'py-1.5 items-center' : 'pb-4 sm:pb-5'">
             <!-- Title -->
             <dt v-if="!fieldData.noTitle && fieldData.label" class="qwezxctext-sm font-medium text-gray-400">
                 <div class="inline-flex items-start leading-none">

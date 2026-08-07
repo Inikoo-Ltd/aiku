@@ -371,6 +371,24 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
+                    'label'  => __('Payments'),
+                    'icon'   => 'fal fa-coins',
+                    'fields' => [
+                        'payment_settlement_tolerance' => [
+                            'type'        => 'input_number',
+                            'bind'        => [
+                                'step'              => '0.01',
+                                'maxFractionDigits' => 2,
+                                'min'               => 0,
+                                'max'               => 1
+                            ],
+                            'label'       => __('Settlement tolerance'),
+                            'information' => __('Orders and invoices short by up to this amount are treated as paid, so tiny differences are not chased. Maximum 1.'),
+                            'value'       => paymentSettlementTolerance($shop),
+                        ],
+                    ],
+                ],
+                [
                     'label'  => __('Invoice numbers'),
                     'icon'   => 'fal fa-file-invoice',
                     'fields' => [

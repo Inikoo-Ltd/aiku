@@ -16,7 +16,6 @@ use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowance
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -102,7 +101,7 @@ class StoreManufactureTask extends OrgAction
         return $this->handle($production, $this->validatedData);
     }
 
-    public function asController(Organisation $organisation, Production $production, ActionRequest $request): ManufactureTask
+    public function asController(Production $production, ActionRequest $request): ManufactureTask
     {
         $this->initialisationFromProduction($production, $request);
 

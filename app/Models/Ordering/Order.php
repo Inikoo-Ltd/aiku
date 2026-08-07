@@ -23,6 +23,7 @@ use App\Models\Billables\ShippingZone;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
+use App\Models\CRM\TrafficSource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -200,6 +201,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
+ * @property-read Collection<int, \App\Models\CRM\TrafficSource> $trafficSources
  * @method static \Database\Factories\Ordering\OrderFactory factory($count = null, $state = [])
  * @method static Builder<static>|Order newModelQuery()
  * @method static Builder<static>|Order newQuery()
@@ -531,6 +533,13 @@ class Order extends Model implements HasMedia, Auditable
     public function reviewStats(): HasOne
     {
         return $this->hasOne(OrderReviewStat::class);
+    }
+
+    public function trafficSources(): MorphToMany
+    {
+        return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
+            ->withTimestamps();
     }
 
 }

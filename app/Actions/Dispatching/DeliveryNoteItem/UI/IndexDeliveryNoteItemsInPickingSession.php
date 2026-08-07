@@ -65,6 +65,7 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
             'org_stocks.slug as org_stock_slug',
             'org_stocks.name as org_stock_name',
             'org_stocks.packed_in',
+            'org_stocks.barcode',
         ]);
 
         $query->where('delivery_note_items.quantity_required', '>', 0);

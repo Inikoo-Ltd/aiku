@@ -261,7 +261,7 @@ const openBundlePanel = (product:any) => {
 
     <!-- Mobile Layout -->
     <div class="block sm:hidden px-4 py-6 text-gray-800">
-        <h1 class="text-xl font-bold mb-2">{{ product.name }}</h1>
+        <div class="text-4xl font-bold mb-2">{{ product.name }}</div>
         <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
 
 

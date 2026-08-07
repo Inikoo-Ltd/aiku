@@ -8,6 +8,7 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditProductComposition extends OrgAction
 {
     use WithCatalogueAuthorisation;
+    use WithMasterAssetTradeUnits;
     use WithUnitsChangeConfirmation;
 
     public function handle(Product $product): Product
@@ -132,12 +134,7 @@ class EditProductComposition extends OrgAction
                         ])),
                         'value' => $this->getTradeUnitsWithPackingData($product),
                     ] : null,
-                    'units' => [
-                        'type'             => 'input_number',
-                        'label'            => __('Units'),
-                        'value'            => $product->units,
-                        'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
-                    ],
+                    'units' => $this->getUnitsField($product, $this->getUnitsChangeConfirmation($product)),
                 ]),
             ],
         ];

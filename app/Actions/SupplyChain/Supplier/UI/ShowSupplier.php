@@ -8,21 +8,17 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
-use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Actions\OrgAction;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
-use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
+use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
-use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\SupplyChain\SupplierProductResource;
 use App\Http\Resources\SupplyChain\SupplierResource;
 use App\Models\SupplyChain\Agent;
-use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -32,14 +28,13 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowSupplier extends OrgAction
 {
     use WithBucketNavigation;
-
-    use WithSupplyChainAuthorisation;
     use WithSupplierSubNavigation;
+    use WithSupplyChainAuthorisation;
+
     public function handle(Supplier $supplier): Supplier
     {
         return $supplier;
     }
-
 
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
@@ -47,7 +42,6 @@ class ShowSupplier extends OrgAction
 
         return $this->handle($supplier);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
@@ -59,11 +53,9 @@ class ShowSupplier extends OrgAction
 
     public function htmlResponse(Supplier $supplier, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'SupplyChain/Supplier',
             [
-                'title'       => __('Supplier'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $supplier,
                     $request->route()->getName(),
@@ -73,86 +65,19 @@ class ShowSupplier extends OrgAction
                     'previous' => $this->getPrevious($supplier, $request),
                     'next'     => $this->getNext($supplier, $request),
                 ],
+                'title'       => __('Supplier'),
                 'pageHead'    => [
                     'title'         => $supplier->name,
                     'icon'          => [
                         'icon'  => 'fal fa-person-dolly',
-                        'title' => __('Supplier')
+                        'title' => __('Supplier'),
                     ],
                     'model'         => __('Supplier'),
                     'subNavigation' => $this->getSupplierNavigation($supplier),
-                    // 'actions' => [
-                    //     $this->canEdit ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'edit',
-                    //         'route' => [
-                    //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ]
-                    //     ] : false,
-                    //     $this->canDelete ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'delete',
-                    //         'route' => [
-                    //             'name'       => 'grp.supply-chain.suppliers.remove',
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ]
-                    //     ] : false,
-                    //     $this->canEdit && !$supplier->agent_id ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'create',
-                    //         'route' => [
-                    //             'name'       => 'grp.supply-chain.suppliers.show.purchase_orders.create',
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ],
-                    //         'label' => __('Purchase Order')
-                    //     ] : false,
-                    // ],
-                    // 'meta'          => [
-                    //     [
-                    //         'name'     => trans_choice('Purchases|Sales', $supplier->stats->number_open_purchase_orders),
-                    //         'number'   => $supplier->stats->number_open_purchase_orders,
-                    //         'route'     => [
-                    //             'grp.supply-chain.supplier_products.show',
-                    //             $supplier->slug
-                    //         ],
-                    //         'leftIcon' => [
-                    //             'icon'    => 'fal fa-person-dolly',
-                    //             'tooltip' => __('Sales')
-                    //         ]
-                    //     ],
-                    //     [
-                    //         'name'     => trans_choice('product|products', $supplier->stats->number_supplier_products),
-                    //         'number'   => $supplier->stats->number_supplier_products,
-                    //         'route'     => [
-                    //             'grp.supply-chain.supplier_products.show',
-                    //             $supplier->slug
-                    //         ],
-                    //         'leftIcon' => [
-                    //             'icon'    => 'fal fa-box-usd',
-                    //             'tooltip' => __('Products')
-                    //         ]
-                    //     ],
-                    // ]
-                ],
-                'attachmentRoutes' => [
-                    'attachRoute' => [
-                        'name'       => 'grp.models.supplier.attachment.attach',
-                        'parameters' => [
-                            'supplier' => $supplier->id,
-                        ]
-                    ],
-                    'detachRoute' => [
-                        'name'       => 'grp.models.supplier.attachment.detach',
-                        'parameters' => [
-                            'supplier' => $supplier->id,
-                        ],
-                        'method'     => 'delete'
-                    ]
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => SupplierTabsEnum::navigation()
+                    'navigation' => SupplierTabsEnum::navigation(),
                 ],
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
@@ -162,30 +87,9 @@ class ShowSupplier extends OrgAction
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplier))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplier))),
-
-                // SupplierTabsEnum::PURCHASES_SALES->value => $this->tab == SupplierTabsEnum::PURCHASES_SALES->value ?
-                //     fn () => SupplierProductResource::collection(
-                //         IndexSupplierProducts::run(
-                //             parent: $supplier,
-                //             prefix: SupplierTabsEnum::PURCHASES_SALES->value
-                //         )
-                //     )
-                //     : Inertia::optional(fn () => SupplierProductResource::collection(
-                //         IndexSupplierProducts::run(
-                //             parent: $supplier,
-                //             prefix: SupplierTabsEnum::PURCHASES_SALES->value
-                //         )
-                //     )),
-
-                // SupplierTabsEnum::ATTACHMENTS->value => $this->tab == SupplierTabsEnum::ATTACHMENTS->value ?
-                //     fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))
-                //     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
-        // ->table(IndexSupplierProducts::make()->tableStructure(parent: $supplier, prefix: SupplierTabsEnum::PURCHASES_SALES->value))
-        // ->table(IndexAttachments::make()->tableStructure(SupplierTabsEnum::ATTACHMENTS->value))
     }
-
 
     public function getBreadcrumbs(Supplier $supplier, string $routeName, array $routeParameters, string $suffix = ''): array
     {
@@ -199,7 +103,7 @@ class ShowSupplier extends OrgAction
                             'route' => $routeParameters['index'],
                         ],
                         'model' => [
-                            'label' => $supplier->name,
+                            'label' => $supplier->code,
                             'route' => $routeParameters['model'],
                         ],
                     ],
@@ -230,11 +134,7 @@ class ShowSupplier extends OrgAction
             ),
             'grp.supply-chain.agents.show.suppliers.show' =>
             array_merge(
-                (new ShowAgent())->getBreadcrumbs(
-                    $supplier->agent,
-                    $routeName,
-                    $routeParameters,
-                ),
+                ShowAgent::make()->getBreadcrumbs($supplier->agent, $routeName, $routeParameters),
                 $headCrumb(
                     $supplier,
                     [
@@ -320,6 +220,7 @@ class ShowSupplier extends OrgAction
                     ],
                 ],
             ],
+            default => null,
         };
     }
 }

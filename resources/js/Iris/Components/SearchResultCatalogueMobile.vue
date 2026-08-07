@@ -8,6 +8,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Image as ImgTS } from '@/types/Image'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { searchRoute } from '@/Iris/Composables/useSearchRoute'
+import { useFormatTime } from '@/Composables/useFormatTime'
 
 // Mobile twin of SearchResultCatalogue: one thumb-friendly scrolling list instead of
 // desktop's three columns. Chips for categories/collections, large tappable product rows.
@@ -42,6 +43,25 @@ const props = defineProps<{
             image: ImgTS
             url?: string
         }[]
+        orders?: {
+            id: number
+            code: string
+            customer_reference?: string | null
+            state: string
+            state_label?: string | null
+            state_icon?: { icon?: string; color?: string; tooltip?: string } | null
+            date?: string
+            total_amount?: number | string | null
+            url: string
+        }[]
+        invoices?: {
+            id: number
+            code: string
+            type: string
+            date?: string
+            total_amount?: number | string | null
+            url: string
+        }[]
     } | null
     isLoading: boolean
     query: string
@@ -70,6 +90,10 @@ const formatPrice = (price?: number | string | null) => {
 }
 
 const products = computed(() => props.results?.products?.slice(0, 11) ?? [])
+
+// Only sent by SearchIrisCatalogue when a customer is signed in, and only their own documents
+const orders = computed(() => props.results?.orders ?? [])
+const invoices = computed(() => props.results?.invoices ?? [])
 
 // Categories and collections share one chip strip, capped to keep it scannable
 const chips = computed(() => [
@@ -143,6 +167,45 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
         </template>
 
         <template v-else>
+            <!-- Your orders: only present for a signed in customer -->
+            <div v-if="orders.length" class="px-4 pt-4 space-y-2">
+                <p class="text-base font-bold text-[var(--theme-color-0)]">{{ ctrans('Your orders') }}</p>
+                <LinkIris
+                    v-for="order in orders"
+                    :key="order.id"
+                    :href="order.url"
+                    class="block rounded-md border border-gray-200 bg-white px-3 py-2.5"
+                    @click="() => { recordClick(order.url); model = false }"
+                >
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm font-semibold text-slate-800 truncate" v-html="highlightMatch(order.code)" />
+                        <span v-if="order.state_label" class="text-xs text-gray-500 whitespace-nowrap">{{ order.state_label }}</span>
+                    </div>
+                    <div class="mt-0.5 flex items-center justify-between gap-2 text-xs text-gray-500">
+                        <span class="truncate" v-html="order.customer_reference ? highlightMatch(order.customer_reference) : useFormatTime(order.date, { formatTime: 'mdy' })" />
+                        <span v-if="formatPrice(order.total_amount)" class="whitespace-nowrap font-semibold text-[var(--theme-color-0)]">{{ formatPrice(order.total_amount) }}</span>
+                    </div>
+                </LinkIris>
+            </div>
+
+            <!-- Your invoices: only present for a signed in customer -->
+            <div v-if="invoices.length" class="px-4 pt-4 space-y-2">
+                <p class="text-base font-bold text-[var(--theme-color-0)]">{{ ctrans('Your invoices') }}</p>
+                <LinkIris
+                    v-for="invoice in invoices"
+                    :key="invoice.id"
+                    :href="invoice.url"
+                    class="block rounded-md border border-gray-200 bg-white px-3 py-2.5"
+                    @click="() => { recordClick(invoice.url); model = false }"
+                >
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm font-semibold text-slate-800 truncate" v-html="highlightMatch(invoice.code)" />
+                        <span v-if="formatPrice(invoice.total_amount)" class="whitespace-nowrap text-xs font-semibold text-[var(--theme-color-0)]">{{ formatPrice(invoice.total_amount) }}</span>
+                    </div>
+                    <div class="mt-0.5 text-xs text-gray-500">{{ useFormatTime(invoice.date, { formatTime: 'mdy' }) }}</div>
+                </LinkIris>
+            </div>
+
             <!-- Categories & collections as a horizontally scrollable chip strip -->
             <div v-if="chips.length" class="shrink-0 flex gap-2 px-4 pt-4 pb-2 overflow-x-auto no-scrollbar">
                 <LinkIris

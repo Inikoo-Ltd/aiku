@@ -717,10 +717,35 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
     return response.data ?? null;
 }
+
+const hasDirtyDeliveryNoteItem = computed(() => {
+    return Object.values(props.data?.data ?? {}).some((item: any) => item.is_dirty);
+});
+
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo :useTopPagination="true">
+    <Table 
+        :resource="data" 
+        :name="tab" 
+        class="mt-5"
+        rowAlignTop
+        xisUseVMemo 
+        :useTopPagination="true"
+        :rowColorFunction="(item) => {
+            if (item.is_dirty) {
+                return '!bg-[#fff6db]'
+            }
+            return ''
+        }"
+        :showWarningMessage="hasDirtyDeliveryNoteItem"
+        :warning="{
+            text: ctrans('Order has been modified by the CRM, some items quantity might differ, please check it'),
+            title: ctrans('Order has been modified'),
+            icon: 'fal fa-exclamation-triangle',
+            type: 'warning'
+        }"
+    >
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
@@ -731,9 +756,23 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
         <template #cell(quantity_required_readonly)="{ item }">
             <span v-tooltip="item.quantity_required">
-                <FractionDisplay v-if="item.quantity_required_fractional"
-                    :fractionData="item.quantity_required_fractional" />
-                <span v-else>{{ item.quantity_required }}</span>
+                <FractionDisplay 
+                    v-if="item.quantity_required_fractional"
+                    :fractionData="item.quantity_required_fractional" 
+                />
+                <span v-else>
+                    {{ item.quantity_required }}
+                </span>
+            </span>
+            <span v-if="item.original_quantity_required && item.original_quantity_required != item.quantity_required" v-tooltip="ctrans('Original Qty Required: :__originalRequired', {__originalRequired: item.original_quantity_required})" class="ml-1">
+                <FractionDisplay 
+                    v-if="item.original_quantity_required_fractional"
+                    :strikethrough="true"
+                    :fractionData="item.original_quantity_required_fractional" 
+                />
+                <span v-else class="line-through">
+                    {{ item.original_quantity_required }}
+                </span>
             </span>
         </template>
 
@@ -885,13 +924,26 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
-
             <span v-tooltip="item.quantity_required">
-                <FractionDisplay v-if="item.quantity_required_fractional"
-                    :fractionData="item.quantity_required_fractional" />
-                <span v-else>{{ item.quantity_required }}</span>
-
+                <FractionDisplay 
+                    v-if="item.quantity_required_fractional"
+                    :fractionData="item.quantity_required_fractional" 
+                />
+                <span v-else>
+                    {{ item.quantity_required }}
+                </span>
             </span>
+            <span v-if="item.original_quantity_required && item.original_quantity_required != item.quantity_required" v-tooltip="ctrans('Original Qty Required: :__originalRequired', {__originalRequired: item.original_quantity_required})" class="ml-1">
+                <FractionDisplay 
+                    v-if="item.original_quantity_required_fractional"
+                    :strikethrough="true"
+                    :fractionData="item.original_quantity_required_fractional" 
+                />
+                <span v-else class="line-through">
+                    {{ item.original_quantity_required }}
+                </span>
+            </span>
+
 
             <!-- The SKU composition changed after this was picked/packed: human decides -->
             <template v-if="item.composition_dirty_at">

@@ -38,6 +38,8 @@ const props = defineProps<{
         blueprint: {
             label: string
             icon: string
+            accent?: string
+            compact?: boolean
             fields: Record<string, any>
         }[]
         args: {
@@ -75,16 +77,20 @@ const triangleProductsCount = computed(() => {
     <PageHeading :data="pageHead" />
 
     <div class="px-4 py-5 sm:px-6 lg:px-8 grid gap-8 xl:grid-cols-[minmax(0,64rem)_minmax(16rem,20rem)]">
-        <div class="flex flex-col gap-y-8 min-w-0">
+        <div class="flex flex-col gap-y-5 min-w-0">
             <MasterAnomalyBlocks :anomalies="anomalies" />
 
+            <!-- accent 'pink' marks the sell side, the colour the triangle's TU—P edge wears -->
             <section v-for="(section, sectionIdx) in formData.blueprint" :key="sectionIdx"
-                class="rounded-lg border border-gray-200 bg-white">
-                <div class="border-b border-gray-100 px-4 py-3 sm:px-6 flex items-center gap-2">
-                    <FontAwesomeIcon v-if="section.icon" :icon="section.icon" class="text-gray-400" fixed-width aria-hidden="true" />
-                    <h2 class="font-medium text-gray-700">{{ section.label }}</h2>
+                class="rounded-lg border bg-white"
+                :class="section.accent === 'pink' ? 'border-pink-300' : 'border-gray-200'">
+                <div class="border-b px-4 py-2 sm:px-6 flex items-center gap-2"
+                    :class="section.accent === 'pink' ? 'border-pink-100' : 'border-gray-100'">
+                    <FontAwesomeIcon v-if="section.icon" :icon="section.icon" fixed-width aria-hidden="true"
+                        :class="section.accent === 'pink' ? 'text-pink-400' : 'text-gray-400'" />
+                    <h2 class="font-medium" :class="section.accent === 'pink' ? 'text-pink-700' : 'text-gray-700'">{{ section.label }}</h2>
                 </div>
-                <div class="px-4 py-4 sm:px-6">
+                <div class="px-4 sm:px-6" :class="section.compact ? 'py-2 divide-y divide-gray-100' : 'py-4'">
                     <FieldForm v-for="(fieldData, fieldName) in section.fields"
                         :key="`${sectionIdx}-${fieldName}`"
                         :field="fieldName as string"

@@ -11,7 +11,8 @@ import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from "lodash-es"
 import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue"
-import { watch, ref, computed } from "vue"
+import { watch, ref, computed, onUnmounted } from "vue"
+import { pendingCompositionUnits } from "@/Composables/usePendingCompositionUnits"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSave as fadSave } from "@fad"
@@ -140,6 +141,24 @@ const priceImpact = computed(() => {
         scaledPrice: (priceContext.price / oldUnits) * newUnits,
         perUnitIfKept: priceContext.price / newUnits,
     }
+})
+
+const unitsChange = computed(() => {
+    const oldUnits = Number(props.fieldData.priceContext?.units)
+    const rows = setFormValue(props.form, props.fieldName)
+    if (!oldUnits || !Array.isArray(rows) || rows.length !== 1) {
+        return null
+    }
+    const newUnits = Number(rows[0][props.fieldData.key_quantity ?? 'quantity']) || 1
+    return newUnits === oldUnits ? null : { from: oldUnits, to: newUnits }
+})
+
+watch(unitsChange, (change) => {
+    pendingCompositionUnits.value = change
+}, { immediate: true })
+
+onUnmounted(() => {
+    pendingCompositionUnits.value = null
 })
 </script>
 <template>

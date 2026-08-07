@@ -36,6 +36,7 @@ use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\TopProductsTool;
 use App\Mcp\Tools\TradeUnitFamilySalesTool;
 use App\Mcp\Tools\TradeUnitSalesTool;
+use App\Mcp\Tools\WarehousePerformanceTool;
 use App\Mcp\Tools\WebsiteOverviewTool;
 use App\Mcp\Tools\WebTrafficTool;
 use Laravel\Mcp\Server;
@@ -58,6 +59,7 @@ class AikuServer extends Server
         OrderStatusTool::class,
         StockLevelsTool::class,
         DeliveryNotesSummaryTool::class,
+        WarehousePerformanceTool::class,
         EmployeeDirectoryTool::class,
         EmployeeAttendanceTool::class,
         WebsiteOverviewTool::class,

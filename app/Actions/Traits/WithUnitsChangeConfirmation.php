@@ -35,4 +35,49 @@ trait WithUnitsChangeConfirmation
             'yesLabel'    => __('Yes, change the units'),
         ];
     }
+
+    /**
+     * Customer facing text on a master is not a quiet edit: it is rewritten into every
+     * shop that follows the master, each one machine translated into its own language.
+     * The count is what makes that concrete before the button is pressed.
+     *
+     * @return array{title: string, description: string, yesLabel: string}|null
+     */
+    public function getCascadeAndTranslateConfirmation(MasterAsset $masterAsset, string $what): ?array
+    {
+        $followers = $this->countMasterFollowers($masterAsset);
+
+        if (!$followers) {
+            return null;
+        }
+
+        return [
+            'title'       => __('This rewrites the :what of :count shop products', ['what' => $what, 'count' => $followers]),
+            'description' => __('The new :what is copied to every shop product following this master and machine translated into each shop language, replacing what is there now. Translations are marked unreviewed so they can be checked afterwards.', ['what' => $what]),
+            'yesLabel'    => __('Yes, update and translate them'),
+        ];
+    }
+
+    /** The note the editor reads while typing, before any confirmation dialog appears. */
+    public function getCascadeAndTranslateNote(MasterAsset $masterAsset): ?string
+    {
+        $followers = $this->countMasterFollowers($masterAsset);
+
+        if (!$followers) {
+            return null;
+        }
+
+        return trans_choice(
+            '{1} Saving updates 1 shop product and translates it with AI into that shop language.|[2,*] Saving updates all :count shop products and translates them with AI into each shop language.',
+            $followers
+        );
+    }
+
+    private function countMasterFollowers(MasterAsset $masterAsset): int
+    {
+        return $masterAsset->products()
+            ->join('shops', 'shops.id', '=', 'products.shop_id')
+            ->where('shops.settings->catalog->product_follow_master', true)
+            ->count();
+    }
 }

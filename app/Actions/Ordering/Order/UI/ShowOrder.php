@@ -241,6 +241,11 @@ class ShowOrder extends OrgAction
             :
             GetEcomOrderActions::run($order, $this->canEdit);
 
+        $allowOrderModification = $this->canEdit
+            && $order->shop->type != ShopTypeEnum::EXTERNAL
+            && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
+            && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
+
         if ($order->state != OrderStateEnum::CANCELLED) {
             $wrapped_actions = [
                 [
@@ -287,6 +292,17 @@ class ShowOrder extends OrgAction
             ];
 
             $deliveryNoteResource = DeliveryNotesResource::make($firstDeliveryNote);
+        }
+
+        $redispatchRoute = null;
+        if ($firstDeliveryNote && $firstDeliveryNote->state == DeliveryNoteStateEnum::FINALISED) {
+            $redispatchRoute = [
+                'method'     => 'patch',
+                'name'       => 'grp.models.delivery_note.state.dispatched',
+                'parameters' => [
+                    'deliveryNote' => $firstDeliveryNote->id
+                ]
+            ];
         }
 
         $platform = $order->platform;
@@ -376,6 +392,7 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
+                    'redispatch'                 => $redispatchRoute,
                     'products_list'              => [
                         'name'       => 'grp.json.order.products',
                         'parameters' => [
@@ -564,6 +581,7 @@ class ShowOrder extends OrgAction
                     'icon' => $order->salesChannel->type->icon()
                 ] : null,
                 'is_faire_order'    => $order->shop->engine == ShopEngineEnum::FAIRE,
+                'allow_order_modification'          => $allowOrderModification,
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))

@@ -1383,8 +1383,11 @@ test('UI Edit Master Product Composition', function (MasterAsset $masterAsset) {
                 fn (AssertableInertia $form) => $form
                     ->has('blueprint.0.fields.trade_units.priceContext')
                     ->where('blueprint.0.fields.trade_units.type', 'list-selector-trade-unit')
-                    ->has('blueprint.1.fields.master_prices')
-                    ->has('blueprint.1.fields.master_rrps')
+                    ->where('blueprint.1.accent', 'pink')
+                    ->has('blueprint.1.fields.name')
+                    ->has('blueprint.1.fields.unit')
+                    ->has('blueprint.2.fields.master_prices')
+                    ->has('blueprint.2.fields.master_rrps')
                     ->etc()
             );
     });
@@ -2596,6 +2599,54 @@ test('minor currency with increment rounds converted prices and rrps up to the s
     expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe(37.84);
 });
 
+test('master asset prices update when stored minor currency has no independent flag', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'PLN' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 4.3],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'NOINDDEP-'.uniqid(),
+        'name' => 'No Independent Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'NOINDFAM-'.uniqid(),
+        'name' => 'No Independent Family',
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'NOINDAST-'.uniqid(),
+        'name'    => 'No Independent Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 5.97,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 5.97, 'independent' => false],
+            'PLN' => ['value' => 25.67],
+        ],
+        'master_rrps'   => [
+            'EUR' => ['value' => 19.98, 'independent' => false],
+            'PLN' => ['value' => 85.91],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => ['EUR' => ['value' => 8.8, 'independent' => false]],
+        'master_rrps'   => ['EUR' => ['value' => 29.9, 'independent' => false]],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'EUR.value'))->toBe(8.8)
+        ->and(data_get($masterAsset->master_rrps, 'EUR.value'))->toBe(29.9);
+});
+
 test('master shop currencies rate can restrict to open shops only', function () {
     $masterShop = createFreshMasterShop();
     $masterShop->update(['price_exchanges' => [
@@ -2721,4 +2772,26 @@ test('MatchAssetsToMaster links an asset once and skips redundant writes', funct
     expect($queries)->toBeLessThan(5)
         ->and($asset->refresh()->master_asset_id)->toBe($masterAsset->id)
         ->and($product->refresh()->master_product_id)->toBe($masterAsset->id);
+});
+
+test('warehouse packing change recomputes product pick quantity', function () {
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits()->first();
+    $product->tradeUnits()->updateExistingPivot($tradeUnit->id, ['quantity' => 2]);
+
+    $stock = $tradeUnit->stocks()->first();
+    if (!$stock) {
+        $stock = $this->group->stocks()->first();
+        $tradeUnit->stocks()->attach($stock->id, ['quantity' => 1]);
+    }
+    $orgStock = $stock->orgStocks()->where('organisation_id', $product->organisation_id)->first();
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 4]]);
+
+    \App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits::run($product->refresh());
+
+    $row = DB::table('product_has_org_stocks')
+        ->where('product_id', $product->id)->where('org_stock_id', $orgStock->id)->first();
+    expect((float) $row->quantity)->toBe(0.5)
+        ->and((int) $row->dividend)->toBe(4)
+        ->and((int) $row->divisor)->toBe(1);
 });

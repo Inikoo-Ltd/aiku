@@ -98,6 +98,7 @@ organisation, group (parent only — group records table does not exist yet).
 | Catalogue | `products`, `assets`, `product_categories` (type: department / sub_department / family) |
 | Stock | `org_stocks` (`quantity_in_locations`, `value_in_locations`), `locations`, `location_org_stock` |
 | Dispatch | `delivery_notes`, `delivery_note_items`, `picking_sessions` |
+| Warehouse labour | `pickings` (`picker_user_id`, `last_picked_at`), `packings` (`packer_user_id`, `queued_at`, `packing_at`, `done_at`). Neither carries `warehouse_id`: join `delivery_notes`. Only trust rows where `created_at >= shops.migrated_to_aiku_on` and `delivery_notes.source_id IS NULL`; earlier work was picked on paper. For per line packing rates exclude `packings.data->>'auto_packed' = 'true'`, those lines were swept up by one click on the note rather than packed one by one |
 | Suppliers / purchasing | `suppliers`, `supplier_products`, `purchase_orders`, `stock_deliveries` |
 | Marketing | `mailshots` + `mailshot_stats`, `outboxes`, `dispatched_emails`, `email_bulk_runs` |
 | Offers | `offers` + `offer_stats`, `offer_campaigns` |

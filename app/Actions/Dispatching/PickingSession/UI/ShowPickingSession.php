@@ -9,6 +9,7 @@ use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
@@ -127,6 +128,27 @@ class ShowPickingSession extends OrgAction
             unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
         }
 
+        /*
+         * Scanning packs delivery note items, so it has nothing to offer a fulfilment session, and
+         * it only makes sense once the picking is over and the packer is filling the boxes.
+         */
+        $scanToPack = null;
+        if (
+            (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false)
+            && $pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED
+            && $pickingSession->type != PickingSessionTypeEnum::FULFILMENT
+        ) {
+            $scanToPack = [
+                'scan_route' => [
+                    'name'       => 'grp.json.picking_session.pack_by_scan',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id,
+                    ],
+                    'method'     => 'post',
+                ],
+            ];
+        }
+
         $props = [
             'title'       => $title . ' (' . $pickingSession->reference . ')',
             'breadcrumbs' => $this->getBreadcrumbs(
@@ -154,6 +176,7 @@ class ShowPickingSession extends OrgAction
             ],
             'data' => PickingSessionResource::make($pickingSession),
 
+            'scan_to_pack'                => $scanToPack,
             'allow_waiting'               => $allowWaiting,
             'allow_picker_set_not_picked' => !$allowWaiting || (bool)data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false),
 

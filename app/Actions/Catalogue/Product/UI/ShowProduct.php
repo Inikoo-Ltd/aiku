@@ -470,6 +470,7 @@ class ShowProduct extends OrgAction
                 ],
                 'is_external_shop'          => $isExternalShop,
                 'is_dependent_trade_unit'   => $product->not_follow_master_trade_units,
+                'not_follow_master_media'   => $product->not_follow_master_media,
                 'family_slug'               => $product->family->slug ?? null,
                 'product_state'             => $product->state->value,
                 'webpage_canonical_url'     => $product->webpage?->canonical_url,
@@ -700,6 +701,44 @@ class ShowProduct extends OrgAction
                     ],
                     $suffix,
                     ' ('.__('In process').')'
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.mismatched_families.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.mismatched_families.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.mismatched_families.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('With Mismatch Family').')'
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.no_image_product.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.no_image_product.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Missing Image').')'
                 )
             ),
             'grp.org.shops.show.catalogue.products.orphan_products.show' =>

@@ -445,7 +445,7 @@ const onChangeInsurance = async (val: boolean) => {
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
           @update:tab="handleTabUpdate"/>
 
-    <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
+    <div class="mb-4 mx-4 mt-4 overflow-x-auto rounded-md border border-gray-200">
         <component :is="component"
                    :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
@@ -529,9 +529,9 @@ const onChangeInsurance = async (val: boolean) => {
         </template>
     </div>
 
-    <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
-        <div class="grid grid-cols-3 gap-x-4 w-full">
-            <div></div>
+    <div v-if="total_products > 0" class="flex flex-col md:flex-row justify-end px-4 md:px-6 gap-4">        
+        <div class="grid md:grid-cols-3 gap-4 w-full">
+            <div class="hidden md:block"></div>
             <!-- Input text: notes from staff  -->
             <!-- <div class="">
                 <div class="text-sm text-gray-500">
@@ -592,7 +592,7 @@ const onChangeInsurance = async (val: boolean) => {
 
 
         <!-- Button: Continue to checkout, Place Order -->
-        <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || data.data.is_collection" class="w-72 pt-5">
+        <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || data.data.is_collection" class="w-full md:w-72 pt-5">
             <!-- Place Order -->
             <template v-if="total_to_pay == 0 && balance > 0">
                 <ButtonWithLink
@@ -629,7 +629,7 @@ const onChangeInsurance = async (val: boolean) => {
                 :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
             />
         </div>
-        <div v-else class="w-72 pt-5 text-sm">
+        <div v-else class="w-full md:w-72 pt-5 text-sm">
             <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: box_stats?.customer?.addresses?.billing?.country?.name }) }}</div>
             <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: box_stats?.customer?.addresses?.delivery?.country?.name}) }}</div>
         </div>
