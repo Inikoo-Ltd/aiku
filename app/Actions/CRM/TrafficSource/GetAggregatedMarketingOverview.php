@@ -1,0 +1,270 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 07 Aug 2026
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\CRM\TrafficSource;
+
+use App\Enums\UI\Marketing\MarketingPeriodEnum;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class GetAggregatedMarketingOverview
+{
+    use AsAction;
+    use WithAttributionWindow;
+
+    /**
+     * The management view: one marketing picture for a whole organisation or the whole group, with the
+     * per-channel figures added up across every shop underneath.
+     *
+     * Money is reported in the parent's own currency, never the shops': an organisation totals
+     * `org_net_amount` and `org_amount`, the group totals `grp_net_amount`. Summing a shop's own
+     * amounts across currencies would produce a number that means nothing.
+     *
+     * Group level deliberately stops at channels. A campaign belongs to one shop, so a group-wide
+     * campaign table would be a list of other people's campaigns; the children table links down to
+     * each organisation instead, and the drill-down continues on that dashboard.
+     *
+     * @return array{period: string, period_label: string, from: string|null, currency_code: string, has_spend: bool, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, orders: float, route: array{name: string, parameters: array<int, string>}}>}
+     */
+    public function handle(Organisation|Group $parent, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
+    {
+        $from  = $period->startsAt();
+        $shops = $parent->shops()->with('currency')->get();
+
+        /* Spend only exists per shop and per organisation; traffic_source_costs carries no group
+           amount, so a group total would have to add euros to zlotys. Reported as absent rather than
+           as zero, which would read as "we spent nothing". */
+        $isOrganisation = $parent instanceof Organisation;
+        $revenueColumn  = $isOrganisation ? 'org_net_amount' : 'grp_net_amount';
+
+        $revenue       = $this->revenueByType($shops, $from, $revenueColumn);
+        $registrations = $this->registrationsByType($shops, $from);
+        $orders        = $this->ordersByType($shops, $from);
+        $spend         = $isOrganisation ? $this->spendByType($shops, $from) : collect();
+
+        $channels = collect(array_unique(array_merge(
+            $revenue->keys()->all(),
+            $registrations->keys()->all(),
+            $orders->keys()->all(),
+            $spend->keys()->all(),
+        )))
+            ->map(fn (string $type) => [
+                'name'          => \App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum::labels()[$type] ?? $type,
+                'type'          => $type,
+                'spend'         => round((float) ($spend[$type] ?? 0), 2),
+                'revenue'       => round((float) ($revenue[$type] ?? 0), 2),
+                'registrations' => round((float) ($registrations[$type] ?? 0), 2),
+                'orders'        => round((float) ($orders[$type] ?? 0), 2),
+            ])
+            ->map(fn (array $channel) => $channel + [
+                'roas' => $channel['spend'] > 0 ? round($channel['revenue'] / $channel['spend'], 2) : null,
+            ])
+            ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0
+                || $channel['registrations'] > 0 || $channel['orders'] > 0)
+            ->sortByDesc(fn (array $channel) => max($channel['spend'], $channel['revenue']))
+            ->values()
+            ->all();
+
+        $totalSpend         = round(array_sum(array_column($channels, 'spend')), 2);
+        $totalRevenue       = round(array_sum(array_column($channels, 'revenue')), 2);
+        $totalRegistrations = round(array_sum(array_column($channels, 'registrations')), 2);
+
+        return [
+            'period'        => $period->value,
+            'period_label'  => MarketingPeriodEnum::labels()[$period->value],
+            'from'          => $from?->toDateString(),
+            'currency_code' => $parent->currency->code,
+            'has_spend'     => $isOrganisation,
+            'totals'        => [
+                'spend'         => $totalSpend,
+                'revenue'       => $totalRevenue,
+                'registrations' => $totalRegistrations,
+                'orders'        => round(array_sum(array_column($channels, 'orders')), 2),
+                'roas'          => $totalSpend > 0 ? round($totalRevenue / $totalSpend, 2) : null,
+                'cac'           => ($totalSpend > 0 && $totalRegistrations > 0)
+                    ? round($totalSpend / $totalRegistrations, 2)
+                    : null,
+            ],
+            'channels'      => $channels,
+            'children'      => $this->children($parent, $from, $revenueColumn),
+        ];
+    }
+
+    /**
+     * Shops may each override the attribution window, so they are grouped by the window they actually
+     * use and queried once per distinct value - in practice one query, since overrides are rare.
+     *
+     * @param Collection<int, Shop> $shops
+     *
+     * @return Collection<int, array{window: int, shop_ids: array<int, int>}>
+     */
+    private function shopsByWindow(Collection $shops): Collection
+    {
+        return $shops
+            ->groupBy(fn (Shop $shop) => GetAttributionWindow::run($shop))
+            ->map(fn (Collection $group, $window) => [
+                'window'   => (int) $window,
+                'shop_ids' => $group->pluck('id')->all(),
+            ])
+            ->values();
+    }
+
+    /**
+     * @param Collection<int, Shop> $shops
+     */
+    private function revenueByType(Collection $shops, ?Carbon $from, string $revenueColumn, string $groupBy = 'ts.type'): Collection
+    {
+        $totals = collect();
+
+        foreach ($this->shopsByWindow($shops) as $group) {
+            DB::table('invoices')
+                ->join('model_has_traffic_sources as p', function ($join) use ($group) {
+                    $join->on('p.model_id', '=', 'invoices.customer_id')
+                        ->where('p.model_type', '=', 'Customer');
+
+                    $this->constrainToAttributionWindow($join, $group['window']);
+                })
+                ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
+                ->whereIn('invoices.shop_id', $group['shop_ids'])
+                ->where('invoices.in_process', false)
+                ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+                ->groupBy($groupBy)
+                ->select(DB::raw($groupBy.' as bucket'), DB::raw("SUM(invoices.{$revenueColumn} * p.share) as amount"))
+                ->get()
+                ->each(fn ($row) => $totals[$row->bucket] = ($totals[$row->bucket] ?? 0) + (float) $row->amount);
+        }
+
+        return $totals;
+    }
+
+    /**
+     * @param Collection<int, Shop> $shops
+     */
+    private function registrationsByType(Collection $shops, ?Carbon $from, string $groupBy = 'ts.type'): Collection
+    {
+        $totals = collect();
+
+        foreach ($this->shopsByWindow($shops) as $group) {
+            DB::table('customers')
+                ->join('model_has_traffic_sources as p', function ($join) use ($group) {
+                    $join->on('p.model_id', '=', 'customers.id')
+                        ->where('p.model_type', '=', 'Customer');
+
+                    $this->constrainToTouchWindow($join, 'customers.created_at', $group['window']);
+                })
+                ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
+                ->whereIn('customers.shop_id', $group['shop_ids'])
+                ->when($from, fn ($query) => $query->where('customers.created_at', '>=', $from))
+                ->groupBy($groupBy)
+                ->select(DB::raw($groupBy.' as bucket'), DB::raw('SUM(p.share) as registrations'))
+                ->get()
+                ->each(fn ($row) => $totals[$row->bucket] = ($totals[$row->bucket] ?? 0) + (float) $row->registrations);
+        }
+
+        return $totals;
+    }
+
+    /**
+     * @param Collection<int, Shop> $shops
+     */
+    private function ordersByType(Collection $shops, ?Carbon $from, string $groupBy = 'ts.type'): Collection
+    {
+        $totals = collect();
+
+        foreach ($this->shopsByWindow($shops) as $group) {
+            DB::table('orders')
+                ->join('model_has_traffic_sources as p', function ($join) use ($group) {
+                    $join->on('p.model_id', '=', 'orders.customer_id')
+                        ->where('p.model_type', '=', 'Customer');
+
+                    $this->constrainToTouchWindow($join, 'orders.date', $group['window']);
+                })
+                ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
+                ->whereIn('orders.shop_id', $group['shop_ids'])
+                ->where('orders.state', \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED)
+                ->whereNull('orders.deleted_at')
+                ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
+                ->groupBy($groupBy)
+                ->select(DB::raw($groupBy.' as bucket'), DB::raw('SUM(p.share) as orders'))
+                ->get()
+                ->each(fn ($row) => $totals[$row->bucket] = ($totals[$row->bucket] ?? 0) + (float) $row->orders);
+        }
+
+        return $totals;
+    }
+
+    /**
+     * @param Collection<int, Shop> $shops
+     */
+    private function spendByType(Collection $shops, ?Carbon $from): Collection
+    {
+        return DB::table('traffic_source_costs as c')
+            ->join('traffic_sources as ts', 'ts.id', '=', 'c.traffic_source_id')
+            ->whereIn('c.shop_id', $shops->pluck('id'))
+            ->when($from, fn ($query) => $query->where('c.date', '>=', $from->toDateString()))
+            ->groupBy('ts.type')
+            ->select('ts.type', DB::raw('SUM(c.org_amount) as spend'))
+            ->pluck('spend', 'type')
+            ->map(fn ($amount) => (float) $amount);
+    }
+
+    /**
+     * The row under the headline: each shop of an organisation, each organisation of the group, with
+     * a link onward. Three queries for the whole table, bucketed by shop and rolled up here - the
+     * drill-down is the existing dashboard for that level rather than a repeat of it.
+     *
+     * @return array<int, array{name: string, slug: string, revenue: float, registrations: float, orders: float, route: array{name: string, parameters: array<int, string>}}>
+     */
+    private function children(Organisation|Group $parent, ?Carbon $from, string $revenueColumn): array
+    {
+        $shops = $parent->shops()->get();
+
+        $revenue       = $this->revenueByType($shops, $from, $revenueColumn, 'invoices.shop_id');
+        $registrations = $this->registrationsByType($shops, $from, 'customers.shop_id');
+        $orders        = $this->ordersByType($shops, $from, 'orders.shop_id');
+
+        $figures = fn (Collection $shopIds) => [
+            'revenue'       => round($shopIds->sum(fn ($id) => $revenue[$id] ?? 0), 2),
+            'registrations' => round($shopIds->sum(fn ($id) => $registrations[$id] ?? 0), 2),
+            'orders'        => round($shopIds->sum(fn ($id) => $orders[$id] ?? 0), 2),
+        ];
+
+        if ($parent instanceof Organisation) {
+            $children = $shops->map(fn (Shop $shop) => array_merge(
+                ['name' => $shop->name, 'slug' => $shop->slug],
+                $figures(collect([$shop->id])),
+                ['route' => [
+                    'name'       => 'grp.org.shops.show.marketing.dashboard',
+                    'parameters' => [$parent->slug, $shop->slug],
+                ]],
+            ));
+        } else {
+            $shopsByOrganisation = $shops->groupBy('organisation_id');
+
+            $children = $parent->organisations()->get()->map(fn (Organisation $organisation) => array_merge(
+                ['name' => $organisation->name, 'slug' => $organisation->slug],
+                $figures(($shopsByOrganisation[$organisation->id] ?? collect())->pluck('id')),
+                ['route' => [
+                    'name'       => 'grp.org.marketing.dashboard',
+                    'parameters' => [$organisation->slug],
+                ]],
+            ));
+        }
+
+        return $children
+            ->filter(fn (array $child) => $child['revenue'] > 0 || $child['registrations'] > 0 || $child['orders'] > 0)
+            ->sortByDesc('revenue')
+            ->values()
+            ->all();
+    }
+}
