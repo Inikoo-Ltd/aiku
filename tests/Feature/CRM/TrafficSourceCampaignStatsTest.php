@@ -178,3 +178,46 @@ it('reports campaign performance for the selected period on the dashboard', func
     expect($campaigns[$campaign->name]['revenue'])->toBe(400.0);
     expect($campaigns[$campaign->name]['roas'])->toBe(4.0);
 });
+
+it('counts a campaign\'s registrations as customers rather than as invoices', function () {
+    $reference = (string) random_int(10000000000, 99999999999);
+
+    $customer = StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(Customer::factory()->definition(), [
+            'traffic_sources' => now()->subDays(10)->timestamp.'b'.$reference,
+        ])
+    );
+
+    $campaign = TrafficSourceCampaign::where('reference', $reference)->firstOrFail();
+
+    createInvoiceFor($customer, $this->shop, now()->subDay()->toDateTimeString(), 400);
+    createInvoiceFor($customer, $this->shop, now()->subDay()->toDateTimeString(), 200);
+
+    $campaigns = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['campaigns'])
+        ->keyBy('name');
+
+    expect($campaigns[$campaign->name]['registrations'])->toBe(1.0)
+        ->and($campaigns[$campaign->name]['revenue'])->toBe(600.0);
+});
+
+it('does not credit a campaign with a registration that preceded its touch', function () {
+    $reference = (string) random_int(10000000000, 99999999999);
+
+    $customer = StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(Customer::factory()->definition(), [
+            'traffic_sources' => now()->subDay()->timestamp.'b'.$reference,
+        ])
+    );
+
+    $customer->update(['created_at' => now()->subDays(5)]);
+    $campaign = TrafficSourceCampaign::where('reference', $reference)->firstOrFail();
+
+    createInvoiceFor($customer, $this->shop, now()->toDateTimeString(), 400);
+
+    $campaigns = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['campaigns'])
+        ->keyBy('name');
+
+    expect($campaigns[$campaign->name]['registrations'])->toBe(0.0);
+});
