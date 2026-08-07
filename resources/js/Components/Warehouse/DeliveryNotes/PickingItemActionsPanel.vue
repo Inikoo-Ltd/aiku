@@ -17,6 +17,8 @@ import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import FractionDisplayFE from "@/Components/DataDisplay/FractionDisplayFE.vue"
+import { useUnitsOverPack } from "@/Composables/useFractionUnits"
 import Modal from "@/Components/Utils/Modal.vue"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -60,6 +62,8 @@ const waitingWarehouseFractional = computed(() => {
     }
     return null
 })
+
+const waitingWarehouseInUnitsOverPack = computed(() => useUnitsOverPack(waitingWarehouseFractional.value))
 
 const pickingDenominator = computed(() => {
     if (props.item?.delivery_note_shop_type == "dropshipping" && Number(props.item?.packed_in) > 1) {
@@ -199,7 +203,11 @@ const errors = ref<string[]>([])
                 v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(item.quantity_waiting_warehouse) || '0' })"
             >
                 <template #label>
-                    <FractionDisplay v-if="waitingWarehouseFractional" :fractionData="waitingWarehouseFractional" />
+                    <FractionDisplayFE
+                        v-if="waitingWarehouseInUnitsOverPack"
+                        :numerator="waitingWarehouseInUnitsOverPack.numerator"
+                        :denominator="waitingWarehouseInUnitsOverPack.denominator"
+                    />
                     <span v-else>{{ locale.number(item.quantity_waiting_warehouse ?? 0) }}</span>
                 </template>
             </ButtonWithLink>
@@ -208,15 +216,18 @@ const errors = ref<string[]>([])
             <Button
                 @click="isOpenModalPassToCs = true"
                 icon="fal fa-user-headset"
-                :label="waitingWarehouseFractional ? undefined : trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: String(Number(item.quantity_waiting_warehouse)) })"
+                :label="waitingWarehouseInUnitsOverPack ? undefined : trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: String(Number(item.quantity_waiting_warehouse)) })"
                 :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
                 type="tertiary"
                 class="!bg-purple-300 hover:!bg-purple-400/80 !text-purple-700 !border-purple-400 !py-2"
             >
-                <template v-if="waitingWarehouseFractional" #label>
+                <template v-if="waitingWarehouseInUnitsOverPack" #label>
                     <span class="inline-flex items-center gap-x-1">
                         {{ trans('Pass') }}
-                        <FractionDisplay :fractionData="waitingWarehouseFractional" />
+                        <FractionDisplayFE
+                            :numerator="waitingWarehouseInUnitsOverPack.numerator"
+                            :denominator="waitingWarehouseInUnitsOverPack.denominator"
+                        />
                         {{ trans('to CS') }}
                     </span>
                 </template>
