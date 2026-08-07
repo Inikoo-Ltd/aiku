@@ -13,12 +13,42 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\Helpers\Currency;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetEstimatedEmailCost
 {
     use AsAction;
+
+    /**
+     * The automated emails cost the same per message as any other: SES bills for a send, not for the
+     * reason behind it. They are not mailshots, so they are counted from the dispatched emails of the
+     * outboxes we treat as marketing.
+     *
+     * @param array<int, int>|\Illuminate\Support\Collection<int, int> $shopIds
+     */
+    public static function automated($shopIds, ?Carbon $from, Currency $currency): float
+    {
+        $codes = (array) config('marketing.attributed_outbox_codes', []);
+
+        if ($codes === []) {
+            return 0.0;
+        }
+
+        $dispatched = DB::table('dispatched_emails as de')
+            ->join('outboxes as o', 'o.id', '=', 'de.outbox_id')
+            ->whereIn('o.shop_id', $shopIds)
+            ->whereIn('o.code', $codes)
+            ->when($from, fn ($query) => $query->where('de.created_at', '>=', $from))
+            ->count();
+
+        if (!$dispatched) {
+            return 0.0;
+        }
+
+        return round($dispatched * self::make()->costPerEmail($currency), 2);
+    }
 
     /** Mailshot types split the way the channels do: a newsletter is one instrument, a promotional
      *  mailshot another.
@@ -85,7 +115,7 @@ class GetEstimatedEmailCost
      * Falls back to 1:1 when no rate is available; for a cost this small a stale-or-missing rate must
      * never take the dashboard down, and the figure is labelled an estimate anyway.
      */
-    private function costPerEmail(Currency $currency): float
+    public function costPerEmail(Currency $currency): float
     {
         $usd  = Currency::where('code', 'USD')->first();
         $rate = (!$usd || $usd->id === $currency->id)

@@ -321,3 +321,20 @@ it('shows subscribers lost beside the newsletter, never subtracted from registra
     expect($channel['unsubscribed'])->toBe(4)
         ->and($channel['registrations'])->toBeGreaterThanOrEqual(0.0);
 });
+
+it('charges automated marketing for its sends, at the same rate as any other email', function () {
+    $outbox = $this->shop->outboxes()->where('code', 'oos_notification')->first();
+
+    expect($outbox)->not->toBeNull();
+
+    foreach (range(1, 500) as $ignored) {
+        $outbox->dispatchedEmails()->create(['data' => []]);
+    }
+
+    $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        ->firstWhere('type', 'email-automated');
+
+    expect($channel)->not->toBeNull()
+        ->and($channel['spend'])->toBeGreaterThan(0.0)
+        ->and($channel['spend_is_estimated'])->toBeTrue();
+});

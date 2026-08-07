@@ -70,6 +70,9 @@ class GetShopMarketingOverview
             $unsubsBy[$emailChannel->value]    = GetEstimatedEmailCost::unsubscribes([$shop->id], $costFrom, $types);
         }
 
+        /* Automated marketing is billed per message like everything else we send. */
+        $emailCostBy[TrafficSourcesTypeEnum::EMAIL_AUTOMATED->value] = GetEstimatedEmailCost::automated([$shop->id], $costFrom, $shop->currency);
+
         $emailCost = array_sum($emailCostBy);
         $visits        = $this->visitsBySource($shop, $from);
         $orders        = $this->ordersBySource($shop, $from, $window);
