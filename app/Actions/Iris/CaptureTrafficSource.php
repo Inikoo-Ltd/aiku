@@ -11,6 +11,7 @@ namespace App\Actions\Iris;
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromRefererHeader;
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromUrl;
 use App\Enums\Web\Website\WebsiteTypeEnum;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CaptureTrafficSource
@@ -60,41 +61,113 @@ class CaptureTrafficSource
             $trafficSourceData = GetTrafficSourceFromRefererHeader::run($referer);
         }
 
-        if ($trafficSourceData) {
-            $lastTrafficSource = request()->cookie('aiku_lts');
+        if (!$trafficSourceData) {
+            $candidates = $this->refererCandidates($referer);
 
-            if ($lastTrafficSource == $trafficSourceData) {
-                return $cookies;
+            $this->recordCaptureOutcome($candidates === [] ? 'direct' : 'unmatched', $candidates);
+
+            return $cookies;
+        }
+
+        $lastTrafficSource = request()->cookie('aiku_lts');
+
+        if ($lastTrafficSource == $trafficSourceData) {
+            $this->recordCaptureOutcome('repeat');
+
+            return $cookies;
+        }
+
+
+        // Check if the cookie already exists
+        $existingCookieData = request()->cookie('aiku_tsd');
+        if ($existingCookieData) {
+            $appendedTrafficSourceData = $existingCookieData.'|'.now()->utc()->timestamp.$trafficSourceData;
+            $cookieSize                = (4 + strlen('aiku_tsd'.$appendedTrafficSourceData)) / 1024;
+
+            if ($cookieSize > 3.9) {
+                $appendedTrafficSourceData = $this->trimOldestTrafficSource($appendedTrafficSourceData);
             }
 
-
-            // Check if the cookie already exists
-            $existingCookieData = request()->cookie('aiku_tsd');
-            if ($existingCookieData) {
-                $appendedTrafficSourceData = $existingCookieData.'|'.now()->utc()->timestamp.$trafficSourceData;
-                $cookieSize                = (4 + strlen('aiku_tsd'.$appendedTrafficSourceData)) / 1024;
-
-                if ($cookieSize > 3.9) {
-                    $appendedTrafficSourceData = $this->trimOldestTrafficSource($appendedTrafficSourceData);
-                }
-
-                $cookies['aiku_tsd'] = [
-                    'value'    => $appendedTrafficSourceData,
-                    'duration' => 60 * 24 * 120,
-                ];
-            } else {
-                $cookies['aiku_tsd'] = [
-                    'value'    => now()->utc()->timestamp.$trafficSourceData,
-                    'duration' => 60 * 24 * 120,
-                ];
-            }
-            $cookies['aiku_lts'] = [
-                'value'    => $trafficSourceData,
+            $cookies['aiku_tsd'] = [
+                'value'    => $appendedTrafficSourceData,
+                'duration' => 60 * 24 * 120,
+            ];
+        } else {
+            $cookies['aiku_tsd'] = [
+                'value'    => now()->utc()->timestamp.$trafficSourceData,
                 'duration' => 60 * 24 * 120,
             ];
         }
+        $cookies['aiku_lts'] = [
+            'value'    => $trafficSourceData,
+            'duration' => 60 * 24 * 120,
+        ];
+
+        $this->recordCaptureOutcome('matched');
 
         return $cookies;
+    }
+
+    /**
+     * Whether this hit arrived with anything at all that could name a source. A visitor who typed the
+     * address or used a bookmark leaves nothing here, and produces no touch entirely legitimately;
+     * one who arrived from somewhere we failed to recognise leaves a referrer we could not classify.
+     * Counting those two apart is the only way to tell "our traffic is direct" from "capture is
+     * missing sources it should be finding".
+     *
+     * @return array<int, string>
+     */
+    private function refererCandidates(string $referer): array
+    {
+        return array_values(array_filter([
+            request()->headers->get('X-Original-Referer', ''),
+            $referer,
+        ], fn (string $candidate) => filled($candidate) && !str_contains($candidate, (string) request()->getHost())));
+    }
+
+    /**
+     * Per-day counters rather than log lines: this runs on every storefront first hit, so one line per
+     * miss would bury the log and still need counting afterwards. Read them with
+     * `traffic-source:capture-stats`.
+     *
+     * Nothing here may break a page view, hence the catch: a lost counter is a lost counter.
+     *
+     * @param array<int, string> $referers
+     */
+    private function recordCaptureOutcome(string $outcome, array $referers = []): void
+    {
+        try {
+            $day = now()->toDateString();
+            $key = 'traffic_capture:'.$day.':'.$outcome;
+
+            /* add() first so the counter carries an expiry; a bare increment on a missing key leaves
+               it in the store forever. */
+            Cache::add($key, 0, now()->addDays(8));
+            Cache::increment($key);
+
+            if ($outcome !== 'unmatched' || $referers === []) {
+                return;
+            }
+
+            $host = parse_url($referers[0], PHP_URL_HOST);
+
+            if (!$host) {
+                return;
+            }
+
+            /* ponytail: capped so a referrer-spamming crawler cannot grow this without bound; the
+               point is to spot the handful of real sources we are missing, not to log every host. */
+            $hosts = Cache::get('traffic_capture:'.$day.':hosts', []);
+
+            if (count($hosts) >= 100 && !isset($hosts[$host])) {
+                return;
+            }
+
+            $hosts[$host] = ($hosts[$host] ?? 0) + 1;
+            Cache::put('traffic_capture:'.$day.':hosts', $hosts, now()->addDays(8));
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
 
