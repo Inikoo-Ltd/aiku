@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
@@ -69,9 +70,33 @@ class DispatchedEmail extends Model
         return $this->belongsTo(EmailAddress::class);
     }
 
+    /**
+     * `dispatched_emails.mailshot_id` was dropped in May 2025, so this belongsTo resolves against a
+     * column that no longer exists and always returns null. Kept only so existing callers keep
+     * compiling; anything that needs the mailshot must use `sentMailshot()`.
+     *
+     * @deprecated Use sentMailshot()
+     */
     public function mailshot(): BelongsTo
     {
         return $this->belongsTo(Mailshot::class);
+    }
+
+    /**
+     * The mailshot this email was actually sent for, resolved through mailshot_recipients, which is
+     * where the link has lived since the column was dropped. Null for transactional mail, which is
+     * how a marketing touch is told apart from an order confirmation.
+     */
+    public function sentMailshot(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Mailshot::class,
+            MailshotRecipient::class,
+            'dispatched_email_id',
+            'id',
+            'id',
+            'mailshot_id'
+        );
     }
 
     public function outbox(): BelongsTo

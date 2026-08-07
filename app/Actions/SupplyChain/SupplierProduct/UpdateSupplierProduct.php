@@ -44,6 +44,17 @@ class UpdateSupplierProduct extends OrgAction
         'units_per_carton',
     ];
 
+    private const ORG_PROPAGATED_FIELDS = [
+        'state',
+        'is_available',
+    ];
+
+    private const STATS_FIELDS = [
+        'state',
+        'is_available',
+        'deleted_at',
+    ];
+
     public bool $skipHistoric = false;
     private SupplierProduct $supplierProduct;
 
@@ -67,7 +78,7 @@ class UpdateSupplierProduct extends OrgAction
             ]);
         }
 
-        if (!$skipHistoric && $supplierProduct->wasChanged(['state', 'is_available'])) {
+        if ($supplierProduct->wasChanged(self::ORG_PROPAGATED_FIELDS)) {
             foreach ($supplierProduct->orgSupplierProducts as $orgSupplierProduct) {
                 UpdateOrgSupplierProduct::run(
                     $orgSupplierProduct,
@@ -77,7 +88,9 @@ class UpdateSupplierProduct extends OrgAction
                     ]
                 );
             }
+        }
 
+        if ($supplierProduct->wasChanged(self::STATS_FIELDS)) {
             GroupHydrateSupplierProducts::dispatch($supplierProduct->group)->delay($this->hydratorsDelay);
             SupplierHydrateSupplierProducts::dispatch($supplierProduct->supplier)->delay($this->hydratorsDelay);
             AgentHydrateSupplierProducts::dispatchIf((bool)$supplierProduct->agent_id, $supplierProduct->agent)->delay($this->hydratorsDelay);

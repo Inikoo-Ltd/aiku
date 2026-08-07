@@ -9,17 +9,19 @@ import { router } from "@inertiajs/vue3";
 import { ref, computed } from "vue";
 import { format } from "date-fns";
 import Table from "@/Components/Table/Table.vue";
+import PrimeImage from "primevue/image";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import DatePicker from "primevue/datepicker";
 import axios from "axios";
 import { trans } from "laravel-vue-i18n";
 import { notify } from "@kyvg/vue3-notification";
-import { faEdit } from "@fal";
+import { faEdit, faTrash } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
-library.add(faEdit);
+library.add(faEdit, faTrash);
 
 const props = defineProps<{
     data: any,
@@ -123,6 +125,12 @@ const submitNotes = async () => {
     <div>
         <Table :resource="data" :name="tab" class="mt-5">
             <template #cell(media_slug)="{ item }">
+                <PrimeImage
+                    v-if="item.photo"
+                    :src="item.photo.original"
+                    preview
+                    imageClass="rounded-md h-10 w-10 object-cover cursor-pointer shadow"
+                />
             </template>
 
             <template #cell(clocked_at)="{ item }">
@@ -144,7 +152,7 @@ const submitNotes = async () => {
             </template>
 
             <template v-if="canEdit" #cell(actions)="{ item }">
-                <div class="flex">
+                <div class="flex items-center gap-x-1">
                     <Button
                         type="transparent"
                         size="xs"
@@ -152,6 +160,22 @@ const submitNotes = async () => {
                         :label="trans('Edit')"
                         @click="openEditModal(item)"
                     />
+                    <ModalConfirmationDelete
+                        v-if="item.delete_route"
+                        :routeDelete="item.delete_route"
+                        :title="trans('Delete this clocking?')"
+                        :description="trans('Any working period anchored on this clocking will keep its record but lose that reference. This action cannot be undone.')"
+                    >
+                        <template #default="{ changeModel }">
+                            <Button
+                                type="cancel"
+                                size="xs"
+                                :icon="faTrash"
+                                :label="trans('Delete')"
+                                @click="changeModel(true)"
+                            />
+                        </template>
+                    </ModalConfirmationDelete>
                 </div>
             </template>
         </Table>

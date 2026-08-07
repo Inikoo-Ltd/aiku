@@ -7,7 +7,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faCheck, faMapMarkerAlt, faSyncAlt, faCamera, faClock } from "@fal"
+import { faTimes, faCheck, faMapMarkerAlt, faSyncAlt, faCamera } from "@fal"
 import { Dialog } from "primevue"
 import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -44,7 +44,7 @@ const pageProps = defineProps<{
 	timezone?: string
 }>()
 
-library.add(faTimes, faCheck, faMapMarkerAlt, faSyncAlt, faCamera, faClock)
+library.add(faTimes, faCheck, faMapMarkerAlt, faSyncAlt, faCamera)
 
 interface DetectedCode {
 	rawValue: string
@@ -61,6 +61,8 @@ const lat = ref<number | null>(null)
 const lng = ref<number | null>(null)
 const mapZoom = ref(15)
 const isDetectingLocation = ref(false)
+let geolocationPermission: PermissionStatus | null = null
+let isPanelMounted = true
 
 const cameraOn = ref(false)
 const loading = ref(false)
@@ -69,6 +71,18 @@ const lastResult = ref<string | null>(null)
 
 const hasLocation = computed(() => lat.value !== null && lng.value !== null)
 const canOpenCamera = computed(() => hasLocation.value)
+
+const locationTitle = computed(() => {
+	if (hasLocation.value) return trans("Location detected")
+	if (isDetectingLocation.value) return trans("Detecting your location…")
+	return trans("Location not detected")
+})
+
+const locationSubtitle = computed(() => {
+	if (hasLocation.value) return `${lat.value?.toFixed(6)}, ${lng.value?.toFixed(6)}`
+	if (isDetectingLocation.value) return trans("Please wait a moment")
+	return trans("Required before you can scan")
+})
 
 const showWorkHourModal = ref(false)
 const showSuccessModal = ref(false)
@@ -82,22 +96,6 @@ const workingHours = ref<{ start: string; end: string } | null>(null)
 const isProcessing = ref(false)
 const shiftSchedules = ref<WorkSchedule[]>([])
 const selectedWorkScheduleId = ref<number | null>(null)
-
-// Status Computed Properties
-const isClockedIn = computed(() => pageProps.clockingStatus === "clocked_in")
-
-const statusClasses = computed(() => ({
-	container: isClockedIn.value
-		? "bg-green-50 border border-green-200"
-		: "bg-gray-50 border border-gray-200",
-	iconWrapper: isClockedIn.value ? "bg-green-100" : "bg-gray-200",
-	icon: isClockedIn.value ? "text-green-600" : "text-gray-500",
-	text: isClockedIn.value ? "text-green-800" : "text-gray-700",
-}))
-
-const statusText = computed(() =>
-	isClockedIn.value ? trans("You're currently clocked in") : trans("You're currently clocked out")
-)
 
 const isIOS = () => {
 	return /iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -129,10 +127,17 @@ const fetchShiftSchedules = async () => {
 
 onMounted(() => {
 	fetchShiftSchedules()
+	detectLocationIfAlreadyAllowed()
 })
 
 onBeforeUnmount(() => {
 	stopCamera()
+	isPanelMounted = false
+
+	if (geolocationPermission) {
+		geolocationPermission.onchange = null
+		geolocationPermission = null
+	}
 })
 
 const detectMyLocation = () => {
@@ -173,6 +178,35 @@ const detectMyLocation = () => {
 		timeout: 15000,
 		maximumAge: 30000,
 	})
+}
+
+const detectLocationIfAlreadyAllowed = async () => {
+	if (!navigator.geolocation || !navigator.permissions?.query) return
+
+	let permission: PermissionStatus
+
+	try {
+		permission = await navigator.permissions.query({ name: "geolocation" as PermissionName })
+	} catch {
+		return
+	}
+
+	if (!isPanelMounted) return
+
+	geolocationPermission = permission
+
+	const detectWhenGranted = () => {
+		if (
+			geolocationPermission?.state === "granted" &&
+			!hasLocation.value &&
+			!isDetectingLocation.value
+		) {
+			detectMyLocation()
+		}
+	}
+
+	detectWhenGranted()
+	geolocationPermission.onchange = detectWhenGranted
 }
 
 const startCamera = async () => {
@@ -354,49 +388,6 @@ const submitNotes = async () => {
 	}
 }
 
-// Formatting Helpers
-const formatDurationLocal = (seconds: number) => {
-	const hours = Math.floor(seconds / 3600)
-	const minutes = Math.floor((seconds % 3600) / 60)
-	if (hours === 0 && minutes === 0) return trans("0m")
-	return hours === 0 ? `${minutes}m` : `${hours}h ${minutes}m`
-}
-
-const formatInTimezone = (dateString: string | undefined, options: Intl.DateTimeFormatOptions) => {
-	if (!dateString) return "-"
-	return new Date(dateString).toLocaleString("en-US", {
-		...options,
-		timeZone: pageProps.timezone || "UTC",
-	})
-}
-
-const displayDate = computed(() =>
-	formatInTimezone(pageProps.todayTimesheet?.date, {
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	})
-)
-
-const displayTime = (date?: string) =>
-	formatInTimezone(date, {
-		hour: "numeric",
-		minute: "2-digit",
-		second: "2-digit",
-		hour12: true,
-	})
-
-const clockingSessions = computed<ClockingSession[]>(() => pageProps.clockingSessions ?? [])
-
-const hasMultipleSessions = computed(() => clockingSessions.value.length > 1)
-
-const sessionElapsedSeconds = (session: ClockingSession) => {
-	if (session.duration !== null && session.duration !== undefined) return session.duration
-	if (!session.starts_at) return null
-	const end = session.ends_at ? new Date(session.ends_at) : new Date()
-	return Math.max(0, Math.floor((end.getTime() - new Date(session.starts_at).getTime()) / 1000))
-}
-
 const trackFunction = () => ({
 	facingMode: "environment",
 	width: { ideal: 1080 },
@@ -405,188 +396,60 @@ const trackFunction = () => ({
 </script>
 
 <template>
-	<div class="relative z-0 pb-10">
-		<div v-if="!cameraOn" class="max-w-lg mx-auto p-4 sm:p-6 sm:pb-6">
-			<h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
-				{{ trans("Employee Clocking") }}
-			</h2>
-
+	<div class="relative z-0 space-y-4">
+		<div v-if="!cameraOn" class="space-y-4">
 			<div
-				v-if="pageProps?.clockingStatus"
-				class="mb-6 p-4 rounded-lg"
-				:class="statusClasses.container">
-				<div class="flex items-center justify-between mb-3">
-					<div class="flex items-center gap-3">
-						<div
-							class="w-10 h-10 rounded-full flex items-center justify-center"
-							:class="statusClasses.iconWrapper">
-							<FontAwesomeIcon
-								:icon="isClockedIn ? faCheck : faTimes"
-								class="text-lg"
-								:class="statusClasses.icon" />
-						</div>
-						<div>
-							<p class="text-sm font-medium" :class="statusClasses.text">
-								{{ statusText }}
-							</p>
-							<p
-								v-if="isClockedIn && pageProps.activeTimeTracker?.starts_at"
-								class="text-xs text-gray-500">
-								{{ trans("Since") }}:
-								{{
-									useFormatTime(pageProps.activeTimeTracker.starts_at, {
-										formatTime: "hms",
-									})
-								}}
-							</p>
-						</div>
-					</div>
-					<div class="text-right">
-						<p class="text-xs text-gray-400">{{ trans("Date") }}</p>
-						<p class="text-sm font-semibold text-gray-700">
-							{{ displayDate }}
-						</p>
-					</div>
-				</div>
-
-				<div
-					v-if="pageProps.todayTimesheet?.start_at || pageProps.todayTimesheet?.end_at"
-					class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
+				class="rounded-xl border p-3 sm:p-4 space-y-3 sm:space-y-4"
+				:class="
+					hasLocation
+						? 'border-green-200 bg-green-50/60'
+						: 'border-dashed border-gray-300 bg-gray-50'
+				">
+				<div class="flex items-center gap-2 sm:gap-3">
 					<div
-						v-if="pageProps.todayTimesheet?.start_at"
-						class="text-center p-2 rounded bg-white/50">
-						<p class="text-xs text-gray-400">{{ trans("First Clock In") }}</p>
-						<p class="text-sm font-semibold text-gray-800">
-							{{ displayTime(pageProps.todayTimesheet.start_at) }}
-						</p>
-					</div>
-					<div
-						v-if="pageProps.todayTimesheet?.end_at"
-						class="text-center p-2 rounded bg-white/50">
-						<p class="text-xs text-gray-400">{{ trans("Last Clock Out") }}</p>
-						<p class="text-sm font-semibold text-gray-800">
-							{{ displayTime(pageProps.todayTimesheet.end_at) }}
-						</p>
-					</div>
-				</div>
-
-				<div
-					v-if="pageProps.todayTimesheet"
-					class="flex gap-4 mt-3 pt-3 border-t border-gray-200">
-					<span class="text-xs text-gray-500">
-						{{ trans("Working") }}:
-						{{ formatDurationLocal(pageProps.todayTimesheet.working_duration || 0) }}
-					</span>
-					<span class="text-xs text-gray-500">
-						{{ trans("Breaks") }}:
-						{{ formatDurationLocal(pageProps.todayTimesheet.breaks_duration || 0) }}
-					</span>
-				</div>
-
-				<div v-if="hasMultipleSessions" class="mt-3 pt-3 border-t border-gray-200">
-					<p class="text-xs font-semibold text-gray-500 mb-2">
-						{{ trans("Clocking Details") }} ({{ clockingSessions.length }})
-					</p>
-					<div class="space-y-2">
-						<div
-							v-for="session in clockingSessions"
-							:key="session.id"
-							class="rounded-lg bg-white/70 border border-gray-200 p-2">
-							<div class="grid grid-cols-2 gap-2">
-								<div class="text-center p-1 rounded bg-gray-50">
-									<p class="text-[10px] text-gray-400">{{ trans("Clock In") }}</p>
-									<p class="text-xs font-semibold text-gray-800">
-										{{ displayTime(session.clock_in?.clocked_at ?? session.starts_at ?? undefined) }}
-									</p>
-								</div>
-								<div class="text-center p-1 rounded bg-gray-50">
-									<p class="text-[10px] text-gray-400">{{ trans("Clock Out") }}</p>
-									<p class="text-xs font-semibold text-gray-800">
-										{{
-											session.is_open
-												? "—"
-												: displayTime(session.clock_out?.clocked_at ?? session.ends_at ?? undefined)
-										}}
-									</p>
-								</div>
-							</div>
-							<div class="mt-1 flex items-center justify-center gap-1.5 text-[10px]">
-								<FontAwesomeIcon
-									v-if="session.is_open"
-									:icon="faClock"
-									class="text-amber-500"
-									:title="trans('Ongoing')" />
-								<template v-else>
-									<FontAwesomeIcon
-										:icon="faCheck"
-										class="text-green-600"
-										:title="trans('Completed')" />
-									<span class="text-gray-500">
-										{{ trans("Duration") }}:
-										{{ formatDurationLocal(sessionElapsedSeconds(session) || 0) }}
-									</span>
-								</template>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div
-				class="mb-6 rounded-xl border"
-				:class="hasLocation ? 'border-green-200 bg-green-50/60' : 'border-gray-200 bg-white'">
-				<div class="flex items-center gap-3 p-4">
-					<div
-						class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center"
+						class="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-full flex items-center justify-center"
 						:class="hasLocation ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'">
-						<FontAwesomeIcon :icon="faMapMarkerAlt" class="text-lg" />
+						<FontAwesomeIcon :icon="faMapMarkerAlt" class="text-base sm:text-lg" />
 					</div>
 					<div class="min-w-0 flex-1">
 						<p
-							class="text-sm font-semibold"
+							class="text-xs sm:text-sm font-semibold"
 							:class="hasLocation ? 'text-green-800' : 'text-gray-700'">
-							{{ hasLocation ? trans("Location detected") : trans("Location not detected") }}
+							{{ locationTitle }}
 						</p>
-						<p class="text-xs text-gray-500 truncate">
-							{{
-								hasLocation
-									? `${lat?.toFixed(6)}, ${lng?.toFixed(6)}`
-									: trans("Required before you can scan")
-							}}
+						<p class="text-[11px] sm:text-xs text-gray-500 truncate">
+							{{ locationSubtitle }}
 						</p>
 					</div>
 				</div>
 
-				<div v-if="hasLocation" class="px-4">
-					<div class="h-40 sm:h-48 rounded-lg overflow-hidden border border-gray-200">
-						<LMap :zoom="mapZoom" :center="[lat, lng]" style="height: 100%">
-							<LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-							<LMarker :lat-lng="[lat, lng]">
-								<LTooltip>
-									Lat: {{ lat?.toFixed(6) }}<br />Lng: {{ lng?.toFixed(6) }}
-								</LTooltip>
-							</LMarker>
-						</LMap>
-					</div>
+				<div
+					v-if="hasLocation"
+					class="h-44 sm:h-52 md:h-64 rounded-lg overflow-hidden border border-green-200">
+					<LMap :zoom="mapZoom" :center="[lat, lng]" style="height: 100%">
+						<LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+						<LMarker :lat-lng="[lat, lng]">
+							<LTooltip>
+								Lat: {{ lat?.toFixed(6) }}<br />Lng: {{ lng?.toFixed(6) }}
+							</LTooltip>
+						</LMarker>
+					</LMap>
 				</div>
 
-				<div class="p-4 sm:flex justify-center w-full">
-					<Button
-						:label="hasLocation ? trans('Update location') : trans('Detect my location')"
-						:icon="hasLocation ? faSyncAlt : faMapMarkerAlt"
-						:loading="isDetectingLocation"
-						:disabled="isDetectingLocation"
-						type="secondary"
-						size="l"
-						class="min-h-[44px] sm:min-h-[50px] w-full"
-						@click="detectMyLocation"
-						full />
-				</div>
+				<Button
+					:label="hasLocation ? trans('Update location') : trans('Detect my location')"
+					:icon="hasLocation ? faSyncAlt : faMapMarkerAlt"
+					:loading="isDetectingLocation"
+					:disabled="isDetectingLocation"
+					type="secondary"
+					size="l"
+					class="lg:min-h-[44px] md:min-h-[32px]  sm:min-h-[50px]"
+					@click="detectMyLocation"
+					full />
 			</div>
 
-			<!-- OPEN CAMERA -->
-			<div>
-				<p v-if="!canOpenCamera" class="mb-2 text-center text-xs text-gray-500">
+			<div class="space-y-2">
+				<p v-if="!canOpenCamera" class="text-center text-[11px] sm:text-xs text-gray-500">
 					{{ trans("Detect your location first to enable scanning") }}
 				</p>
 				<Button
@@ -602,8 +465,8 @@ const trackFunction = () => ({
 		</div>
 		<Teleport to="body">
 			<div v-if="cameraOn" class="fixed inset-0 bg-black z-[9999] flex flex-col overflow-hidden">
-				<div class="flex justify-between items-center text-white p-4">
-					<h3 class="font-semibold">{{ trans("Scan QR Code") }}</h3>
+				<div class="flex justify-between items-center text-white p-3 sm:p-4">
+					<h3 class="text-sm sm:text-base font-semibold">{{ trans("Scan QR Code") }}</h3>
 					<Button
 						@click="stopCamera"
 						class="!text-white text-2xl"
@@ -612,7 +475,7 @@ const trackFunction = () => ({
 				</div>
 
 				<div class="flex-1 min-h-0 flex items-center justify-center relative overflow-hidden">
-					<div class="relative w-full max-w-xl max-h-full aspect-[3/4]">
+					<div class="relative h-full max-h-full w-full max-w-xl sm:aspect-[3/4] sm:h-auto">
 						<QrcodeStream
 							@detect="onDetect"
 							@error="onStreamError"
@@ -623,7 +486,8 @@ const trackFunction = () => ({
 						<!-- TARGET OVERLAY -->
 						<div
 							class="absolute inset-0 flex items-center justify-center pointer-events-none">
-							<div class="relative w-[70vw] max-w-[280px] aspect-[3/4]">
+							<div
+								class="relative aspect-[3/4] h-[45vh] max-h-[280px] w-auto max-w-[70vw]">
 								<!-- 4 CORNERS -->
 								<span class="corner tl"></span>
 								<span class="corner tr"></span>
@@ -636,7 +500,7 @@ const trackFunction = () => ({
 						</div>
 					</div>
 				</div>
-				<div class="text-center text-white pb-6 text-sm opacity-70">
+				<div class="px-4 pb-4 sm:pb-6 text-center text-xs sm:text-sm text-white opacity-70">
 					{{ trans("Align QR code inside the frame") }}
 				</div>
 			</div>
@@ -654,34 +518,35 @@ const trackFunction = () => ({
 			:closable="false"
 			class="w-[95vw] max-w-[95vw] sm:w-[480px] sm:max-w-[480px]"
 			appendTo="body">
-			<div class="text-center space-y-4 py-4">
+			<div class="text-center space-y-4 py-2 sm:py-4">
 				<!-- ICON -->
 				<div class="flex justify-center">
-					<div class="w-20 h-20 rounded-full flex items-center justify-center bg-green-100">
-						<FontAwesomeIcon :icon="faCheck" class="text-4xl text-green-600" />
+					<div
+						class="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center bg-green-100">
+						<FontAwesomeIcon :icon="faCheck" class="text-3xl sm:text-4xl text-green-600" />
 					</div>
 				</div>
 
 				<!-- TITLE -->
-				<h3 class="text-xl font-semibold text-gray-800">
+				<h3 class="text-lg sm:text-xl font-semibold text-gray-800">
 					{{ modalTitle }}
 				</h3>
 
 				<!-- INFO -->
-				<div class="text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
-					<div class="flex justify-between">
+				<div class="text-xs sm:text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
+					<div class="flex justify-between gap-3 text-left">
 						<span class="text-gray-500">{{ trans("Schedule ") }}</span>
-						<span class="font-semibold text-gray-800">
+						<span class="text-right font-semibold text-gray-800">
 							{{ useFormatTime(now) ?? "-" }}
 						</span>
 					</div>
-					<div class="flex justify-between">
+					<div class="flex justify-between gap-3 text-left">
 						<span class="text-gray-500">{{ trans("Working Office Hour ") }}</span>
-						<span class="font-semibold text-gray-800">{{ workingHoursFormatted }}</span>
+						<span class="text-right font-semibold text-gray-800">{{ workingHoursFormatted }}</span>
 					</div>
-					<div class="flex justify-between">
+					<div class="flex justify-between gap-3 text-left">
 						<span class="text-gray-500">{{ trans("Scan Time") }}</span>
-						<span class="font-semibold text-gray-800">{{ scanTime ?? "-" }}</span>
+						<span class="text-right font-semibold text-gray-800">{{ scanTime ?? "-" }}</span>
 					</div>
 				</div>
 
@@ -710,7 +575,9 @@ const trackFunction = () => ({
 			</div>
 		</Dialog>
 
-		<div v-if="errorMsg" class="text-red-500 text-sm mt-2 text-center px-4">
+		<div
+			v-if="errorMsg"
+			class="rounded-lg bg-red-50 px-3 py-2 text-center text-xs sm:text-sm text-red-700">
 			{{ errorMsg }}
 		</div>
 	</div>
