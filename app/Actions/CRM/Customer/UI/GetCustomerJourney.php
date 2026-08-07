@@ -19,11 +19,17 @@ class GetCustomerJourney
 {
     use AsObject;
 
+    // ponytail: flat cap on rendered events; paginate the timeline if anyone needs to walk further back
+    public const MAX_EVENTS = 200;
+
     /**
      * Builds the read-only marketing journey of a customer: every recorded traffic source touch and
      * every issued invoice, interleaved on a single time axis, plus the resulting attribution split.
      *
-     * @return array{events: array<int, array<string, mixed>>, attribution: array<int, array{label: string, share: float, campaign: string|null}>, attribution_window_days: int, currency_code: string}
+     * Only the most recent self::MAX_EVENTS events are returned; `omitted_events` reports how many
+     * older ones were dropped so the timeline never silently presents itself as complete.
+     *
+     * @return array{events: array<int, array<string, mixed>>, omitted_events: int, attribution: array<int, array{label: string, share: float, campaign: string|null}>, attribution_window_days: int, currency_code: string}
      */
     public function handle(Customer $customer): array
     {
@@ -75,8 +81,11 @@ class GetCustomerJourney
 
         usort($events, fn (array $a, array $b) => [$a['datetime'], $a['type']] <=> [$b['datetime'], $b['type']]);
 
+        $totalEvents = count($events);
+
         return [
-            'events'                  => $events,
+            'events'                  => array_slice($events, -self::MAX_EVENTS),
+            'omitted_events'          => max(0, $totalEvents - self::MAX_EVENTS),
             'attribution'             => $this->attribution($customer, $labels),
             'attribution_window_days' => $windowDays,
             'currency_code'           => $customer->shop->currency->code,
