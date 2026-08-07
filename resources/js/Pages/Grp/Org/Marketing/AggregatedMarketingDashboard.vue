@@ -126,7 +126,7 @@ const columnHelp: Record<string, string> = {
     spend: trans('Ad spend imported for this channel over the period. Newsletter spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
     awaiting: trans('Value of orders already placed but not invoiced yet. Invoicing runs a day or two behind, so this is what the channel has sold that has not become revenue yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
     revenue: trans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it. An order only counts if it was placed after the touch and within the attribution window, so a click cannot claim an order that was already on its way.'),
-    registrations: trans('Customers who signed up after arriving through this channel. Shared between channels when someone arrived more than one way, so a customer is never counted twice.'),
+    registrations: trans('Customers who signed up after arriving through this channel. Touched, not necessarily won - somebody who would have found us anyway still counts if they came through it. Shared between channels when someone arrived more than one way, so a customer is never counted twice.'),
     orders: trans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships. Touched, not necessarily caused: a customer who would have reordered anyway and clicked a mailshot first still counts here.'),
     roas: trans('Revenue divided by spend. Blank while money is still awaiting invoice, since a channel that has sold but not yet invoiced has not returned nothing - it has not finished being measured.'),
 }
@@ -180,7 +180,7 @@ const changePeriod = (event: Event) => {
                 </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ trans('New customers from marketing') }}</div>
+                <div class="text-xs text-gray-400">{{ trans('New customers marketing touched') }}</div>
                 <div class="mt-1 text-lg tabular-nums">{{ count(overview.totals.registrations) }}</div>
                 <div class="mt-0.5 text-xs" :class="overview.baseline.registrations > 0 && overview.totals.registrations === 0 ? 'text-[#d03b3b]' : 'text-gray-400'">
                     {{ trans('of') }} {{ count(overview.baseline.registrations) }} {{ trans('who signed up') }} · {{ share(overview.totals.registrations, overview.baseline.registrations) }}

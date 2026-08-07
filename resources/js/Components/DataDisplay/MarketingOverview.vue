@@ -214,7 +214,7 @@ const typeLabel: Record<string, string> = {
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('New customers from marketing') }}</div>
+                <div class="text-xs text-gray-500">{{ trans('New customers marketing touched') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">
                     {{ fmtShare(overview.totals.registrations) }}
                     <span class="text-sm text-gray-400">{{ trans('of') }} {{ overview.baseline?.registrations ?? 0 }}</span>
@@ -400,7 +400,7 @@ const typeLabel: Record<string, string> = {
                     <div class="text-sm text-gray-800 tabular-nums">{{ money(overview.email.totals.estimated_cost) }}</div>
                 </div>
                 <div>
-                    <span class="text-xs text-gray-500">{{ trans('Attributed revenue') }}</span>
+                    <span class="text-xs text-gray-500">{{ trans('Revenue marketing touched') }}</span>
                     <div class="text-sm tabular-nums"
                         :class="overview.email.totals.attributed_revenue >= overview.email.totals.estimated_cost ? 'text-[#006300]' : 'text-[#d03b3b]'">
                         {{ money(overview.email.totals.attributed_revenue) }}
