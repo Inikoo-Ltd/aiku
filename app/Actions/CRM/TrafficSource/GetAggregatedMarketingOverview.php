@@ -48,6 +48,7 @@ class GetAggregatedMarketingOverview
         $revenue       = $this->revenueByType($shops, $from, $revenueColumn);
         $registrations = $this->registrationsByType($shops, $from);
         $orders        = $this->ordersByType($shops, $from);
+        $pending       = $this->pendingRevenueByType($shops, $from, $isOrganisation ? 'org_net_amount' : 'grp_net_amount');
         $spend         = $this->spendByType($shops, $from, $costColumn);
 
         $channels = collect(array_unique(array_merge(
@@ -63,12 +64,13 @@ class GetAggregatedMarketingOverview
                 'revenue'       => round((float) ($revenue[$type] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$type] ?? 0), 2),
                 'orders'        => round((float) ($orders[$type] ?? 0), 2),
+                'pending'       => round((float) ($pending[$type] ?? 0), 2),
             ])
             ->map(fn (array $channel) => $channel + [
                 'roas' => $channel['spend'] > 0 ? round($channel['revenue'] / $channel['spend'], 2) : null,
             ])
             ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0
-                || $channel['registrations'] > 0 || $channel['orders'] > 0)
+                || $channel['registrations'] > 0 || $channel['orders'] > 0 || $channel['pending'] > 0)
             ->sortByDesc(fn (array $channel) => max($channel['spend'], $channel['revenue']))
             ->values()
             ->all();
@@ -87,6 +89,7 @@ class GetAggregatedMarketingOverview
                 'revenue'       => $totalRevenue,
                 'registrations' => $totalRegistrations,
                 'orders'        => round(array_sum(array_column($channels, 'orders')), 2),
+                'pending'       => round(array_sum(array_column($channels, 'pending')), 2),
                 'roas'          => $totalSpend > 0 ? round($totalRevenue / $totalSpend, 2) : null,
                 'cac'           => ($totalSpend > 0 && $totalRegistrations > 0)
                     ? round($totalSpend / $totalRegistrations, 2)
@@ -188,13 +191,46 @@ class GetAggregatedMarketingOverview
                 })
                 ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
                 ->whereIn('orders.shop_id', $group['shop_ids'])
-                ->where('orders.state', \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED)
+                ->whereNotIn('orders.state', [\App\Enums\Ordering\Order\OrderStateEnum::CREATING, \App\Enums\Ordering\Order\OrderStateEnum::CANCELLED])
                 ->whereNull('orders.deleted_at')
                 ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
                 ->groupBy($groupBy)
                 ->select(DB::raw($groupBy.' as bucket'), DB::raw('SUM(p.share) as orders'))
                 ->get()
                 ->each(fn ($row) => $totals[$row->bucket] = ($totals[$row->bucket] ?? 0) + (float) $row->orders);
+        }
+
+        return $totals;
+    }
+
+    /**
+     * The leading indicator: value of orders placed but not yet invoiced, in the parent's currency.
+     * Invoicing runs a day or two behind, and this is what a mailshot sent this morning shows today.
+     *
+     * @param Collection<int, Shop> $shops
+     */
+    private function pendingRevenueByType(Collection $shops, ?Carbon $from, string $amountColumn): Collection
+    {
+        $totals = collect();
+
+        foreach ($this->shopsByWindow($shops) as $group) {
+            DB::table('orders')
+                ->join('model_has_traffic_sources as p', function ($join) use ($group) {
+                    $join->on('p.model_id', '=', 'orders.customer_id')
+                        ->where('p.model_type', '=', 'Customer');
+
+                    $this->constrainToTouchWindow($join, 'orders.date', $group['window']);
+                })
+                ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
+                ->whereIn('orders.shop_id', $group['shop_ids'])
+                ->whereNotIn('orders.state', [\App\Enums\Ordering\Order\OrderStateEnum::CREATING, \App\Enums\Ordering\Order\OrderStateEnum::CANCELLED])
+                ->where('orders.is_invoiced', false)
+                ->whereNull('orders.deleted_at')
+                ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
+                ->groupBy('ts.type')
+                ->select('ts.type', DB::raw("SUM(orders.{$amountColumn} * p.share) as amount"))
+                ->get()
+                ->each(fn ($row) => $totals[$row->type] = ($totals[$row->type] ?? 0) + (float) $row->amount);
         }
 
         return $totals;

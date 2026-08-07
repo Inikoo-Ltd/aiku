@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\TrafficSource;
 
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Carbon;
@@ -46,6 +47,7 @@ class GetShopMarketingOverview
 
         $window        = GetAttributionWindow::run($shop);
         $revenue       = $this->revenueBySource($shop, $from, $window);
+        $pending       = $this->pendingRevenueBySource($shop, $from, $window);
         $registrations = $this->registrationsBy('traffic_source_id', $shop, $from, $window);
         $spend         = $this->spendBySource($shop, $from);
 
@@ -55,12 +57,14 @@ class GetShopMarketingOverview
                 'type'          => $source->type,
                 'spend'         => round((float) ($spend[$source->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$source->id]->amount ?? 0), 2),
+                'pending'       => round((float) ($pending[$source->id] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$source->id] ?? 0), 2),
             ])
             ->map(fn (array $channel) => $channel + [
                 'roas' => $channel['spend'] > 0 ? round($channel['revenue'] / $channel['spend'], 2) : null,
             ])
-            ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0 || $channel['registrations'] > 0)
+            ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0
+                || $channel['registrations'] > 0 || $channel['pending'] > 0)
             ->sortByDesc(fn (array $channel) => max($channel['spend'], $channel['revenue']))
             ->values()
             ->all();
@@ -78,6 +82,7 @@ class GetShopMarketingOverview
                 'spend'         => $totalSpend,
                 'revenue'       => $totalRevenue,
                 'registrations' => $totalRegistrations,
+                'pending'       => round(array_sum(array_column($channels, 'pending')), 2),
                 'invoices'      => round(collect($revenue)->sum('invoices'), 2),
                 'roas'          => $totalSpend > 0 ? round($totalRevenue / $totalSpend, 2) : null,
                 'cac'           => ($totalSpend > 0 && $totalRegistrations > 0)
@@ -123,6 +128,31 @@ class GetShopMarketingOverview
      * touch cannot have acquired a customer who was already registered when it happened, which is why
      * newsletter once appeared to acquire a hundred customers it had only mailed.
      */
+    /**
+     * The leading indicator: value of orders already placed but not yet invoiced. Invoicing runs a
+     * day or two behind, and a mailshot sent this morning has to show something today - this is that
+     * something, and it drains into the invoiced figure as invoicing catches up. It can shrink when
+     * an order is cancelled, which is why it is labelled pending and never added into revenue.
+     */
+    private function pendingRevenueBySource(Shop $shop, ?Carbon $from, int $window)
+    {
+        return DB::table('orders')
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
+                $join->on('p.model_id', '=', 'orders.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToTouchWindow($join, 'orders.date', $window);
+            })
+            ->where('orders.shop_id', $shop->id)
+            ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+            ->where('orders.is_invoiced', false)
+            ->whereNull('orders.deleted_at')
+            ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
+            ->groupBy('p.traffic_source_id')
+            ->select('p.traffic_source_id', DB::raw('SUM(orders.net_amount * p.share) as amount'))
+            ->pluck('amount', 'traffic_source_id');
+    }
+
     private function registrationsBy(string $pivotColumn, Shop $shop, ?Carbon $from, int $window)
     {
         return DB::table('customers')

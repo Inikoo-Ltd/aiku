@@ -55,7 +55,7 @@ class TrafficSourceCampaignHydrateStats implements ShouldBeUnique
             ->join('orders', 'orders.customer_id', '=', 'p.model_id')
             ->where('p.traffic_source_campaign_id', $campaign->id)
             ->where('p.model_type', 'Customer')
-            ->where('orders.state', OrderStateEnum::DISPATCHED)
+            ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('orders.deleted_at')
             ->tap(fn ($query) => $this->constrainToTouchWindow($query, 'orders.date', $window))
             ->sum('p.share');

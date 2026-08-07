@@ -42,6 +42,7 @@ beforeEach(function () {
 
     TrafficSourceCost::where('shop_id', $this->shop->id)->delete();
     DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
+    DB::table('orders')->where('customer_id', $this->customer->id)->delete();
 });
 
 function invoiceOn(string $date, float $net, $customer, $shop, bool $inProcess = false): void
@@ -160,4 +161,33 @@ it('serves the same period numbers through the daily sql view', function () {
 
     expect(round((float) $row->revenue, 2))->toBe(400.0);
     expect(round((float) $row->cost, 2))->toBe(100.0);
+});
+
+it('shows placed but uninvoiced order value as pending revenue, separate from invoiced', function () {
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', false);
+    invoiceOn(now()->subDay()->toDateTimeString(), 400, $this->customer, $this->shop);
+
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+
+    expect($overview['totals']['revenue'])->toBe(400.0)
+        ->and($overview['totals']['pending'])->toBe(100.0);
+
+    $channel = collect($overview['channels'])->firstWhere('type', 'google-ads');
+    expect($channel['pending'])->toBe($overview['totals']['pending']);
+});
+
+it('drops an order out of pending once it is invoiced', function () {
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', true);
+
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+
+    expect($overview['totals']['pending'])->toBe(0.0);
+});
+
+it('does not count a cancelled order as pending', function () {
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'cancelled', false);
+
+    $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+
+    expect($overview['totals']['pending'])->toBe(0.0);
 });

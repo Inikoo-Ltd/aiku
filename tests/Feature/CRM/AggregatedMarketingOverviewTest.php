@@ -36,6 +36,8 @@ beforeEach(function () {
         'traffic_sources' => now()->subDays(4)->timestamp.'b',
     ]);
     RecalculateTrafficSourceAttribution::run($this->customer->fresh());
+
+    DB::table('orders')->where('customer_id', $this->customer->id)->delete();
 });
 
 it('reports the organisation total in the organisation currency, not the shop currency', function () {
@@ -124,4 +126,24 @@ it('does not credit a registration that preceded the touch in the aggregate eith
     $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
 
     expect($channel['registrations'] ?? 0.0)->toBe(0.0);
+});
+
+it('shows pending order value in the aggregate, in the parent currency', function () {
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', false, 100);
+
+    $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+
+    expect($overview['totals']['pending'])->toBe(100.0);
+
+    $channel = collect($overview['channels'])->firstWhere('type', 'google-ads');
+    expect($channel['pending'])->toBe(100.0);
+});
+
+it('counts a submitted order in the orders figure without waiting for dispatch', function () {
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', false);
+
+    $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+    $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
+
+    expect($channel['orders'])->toBe(1.0);
 });

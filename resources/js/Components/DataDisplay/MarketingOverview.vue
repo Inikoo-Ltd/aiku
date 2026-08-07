@@ -19,6 +19,7 @@ const props = defineProps<{
         totals: {
             spend: number
             revenue: number
+            pending: number
             registrations: number
             invoices: number
             roas: number | null
@@ -187,6 +188,10 @@ const typeLabel: Record<string, string> = {
             <div class="bg-white p-5">
                 <div class="text-xs text-gray-500">{{ trans('Attributed revenue') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">{{ money(overview.totals.revenue) }}</div>
+                <!-- Invoicing runs a day or two behind orders; this is what today's marketing already sold -->
+                <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-amber-600">
+                    + {{ money(overview.totals.pending) }} {{ trans('placed, awaiting invoice') }}
+                </div>
             </div>
 
             <div class="bg-white p-5">

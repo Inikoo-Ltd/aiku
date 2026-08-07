@@ -26,6 +26,7 @@ const props = defineProps<{
         totals: {
             spend: number
             revenue: number
+            pending: number
             registrations: number
             orders: number
             roas: number | null
@@ -36,6 +37,7 @@ const props = defineProps<{
             type: string
             spend: number
             revenue: number
+            pending: number
             registrations: number
             orders: number
             roas: number | null
@@ -87,6 +89,9 @@ const changePeriod = (event: Event) => {
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
                 <div class="text-xs text-gray-400">{{ trans('Attributed revenue') }}</div>
                 <div class="mt-1 text-lg tabular-nums">{{ money(overview.totals.revenue) }}</div>
+                <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-amber-600">
+                    + {{ money(overview.totals.pending) }} {{ trans('placed, awaiting invoice') }}
+                </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
                 <div class="text-xs text-gray-400">{{ trans('Registrations') }}</div>
@@ -116,6 +121,7 @@ const changePeriod = (event: Event) => {
                         <th class="text-left font-normal py-1.5 pr-2">{{ trans('Channel') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Pending') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Orders') }}</th>
                         <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}</th>
@@ -127,6 +133,7 @@ const changePeriod = (event: Event) => {
                         <td class="py-2 pr-2 text-gray-700">{{ channel.name }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(channel.spend) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
+                        <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-amber-600' : 'text-gray-300'">{{ money(channel.pending) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(channel.registrations) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
                         <td class="text-right pl-2 tabular-nums"
