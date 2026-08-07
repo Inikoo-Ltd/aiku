@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceCampaignHydrateStats;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
@@ -59,7 +60,8 @@ class AttachTrafficSourcesToModel
             return;
         }
 
-        $touchedSourceIds = [];
+        $touchedSourceIds   = [];
+        $touchedCampaignIds = [];
 
         foreach ($shares as $share) {
             /** @var TrafficSource|null $trafficSource */
@@ -69,19 +71,29 @@ class AttachTrafficSourcesToModel
                 continue;
             }
 
+            $campaignId = $share['campaign_ref']
+                ? $this->resolveCampaignId($trafficSource, $share['campaign_ref'])
+                : null;
+
             $model->trafficSources()->attach($trafficSource->id, [
                 'share'                      => round($share['share'], 2),
-                'traffic_source_campaign_id' => $share['campaign_ref']
-                    ? $this->resolveCampaignId($trafficSource, $share['campaign_ref'])
-                    : null,
+                'traffic_source_campaign_id' => $campaignId,
                 'attribution_model'          => $attributionModel,
             ]);
 
             $touchedSourceIds[$trafficSource->id] = true;
+
+            if ($campaignId) {
+                $touchedCampaignIds[$campaignId] = true;
+            }
         }
 
         foreach ($trafficSources->whereIn('id', array_keys($touchedSourceIds)) as $trafficSource) {
             TrafficSourceHydrateCustomers::dispatch($trafficSource);
+        }
+
+        foreach (TrafficSourceCampaign::whereIn('id', array_keys($touchedCampaignIds))->get() as $campaign) {
+            TrafficSourceCampaignHydrateStats::dispatch($campaign);
         }
     }
 
