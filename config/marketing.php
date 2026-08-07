@@ -24,4 +24,23 @@ return [
 
     'attribution_window_days' => env('MARKETING_ATTRIBUTION_WINDOW_DAYS', 90),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Internal referrer hosts
+    |--------------------------------------------------------------------------
+    |
+    | Traffic arriving from our own systems is not a marketing source. A staff
+    | member opening a storefront from the admin app would otherwise be recorded
+    | as a referral, and one shop linking to another as an acquisition.
+    |
+    | Matched as domain suffixes; a visitor arriving from the same host they are
+    | already on is excluded separately.
+    |
+    */
+
+    'internal_referrer_hosts' => [
+        'aiku.io',
+        'aiku.test',
+    ],
+
 ];

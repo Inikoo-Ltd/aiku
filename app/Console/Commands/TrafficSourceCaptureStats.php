@@ -28,33 +28,39 @@ class TrafficSourceCaptureStats extends Command
         $rows     = [];
 
         foreach (range((int) $this->option('days') - 1, 0) as $daysAgo) {
-            $day    = now()->subDays($daysAgo)->toDateString();
-            $counts = [];
+            $day = now()->subDays($daysAgo)->toDateString();
 
-            foreach ($outcomes as $outcome) {
-                $counts[$outcome] = (int) Cache::get('traffic_capture:'.$day.':'.$outcome, 0);
+            /* Anonymous first, since that is the row that answers "do new visitors arrive with a
+               source". The logged-in row is mostly regulars returning direct and says little. */
+            foreach (['anon', 'auth'] as $audience) {
+                $counts = [];
+
+                foreach ($outcomes as $outcome) {
+                    $counts[$outcome] = (int) Cache::get('traffic_capture:'.$day.':'.$audience.':'.$outcome, 0);
+                }
+
+                $total      = array_sum($counts);
+                $identified = $counts['matched'] + $counts['repeat'];
+
+                $rows[] = [
+                    $day,
+                    $audience === 'anon' ? 'anonymous' : 'logged in',
+                    $total,
+                    $counts['matched'],
+                    $counts['repeat'],
+                    $counts['direct'],
+                    $counts['unmatched'],
+                    $total > 0 ? round($identified / $total * 100, 1).'%' : '-',
+                ];
             }
-
-            $total      = array_sum($counts);
-            $identified = $counts['matched'] + $counts['repeat'];
-
-            $rows[] = [
-                $day,
-                $total,
-                $counts['matched'],
-                $counts['repeat'],
-                $counts['direct'],
-                $counts['unmatched'],
-                $total > 0 ? round($identified / $total * 100, 1).'%' : '-',
-            ];
         }
 
-        $this->table(['Day', 'Hits', 'Matched', 'Repeat', 'Direct', 'Unmatched', 'Identified'], $rows);
+        $this->table(['Day', 'Visitor', 'Hits', 'Matched', 'Repeat', 'Direct', 'Unmatched', 'Identified'], $rows);
 
         $hosts = Cache::get('traffic_capture:'.now()->toDateString().':hosts', []);
 
         if ($hosts === []) {
-            $this->info('No unrecognised referrers recorded today.');
+            $this->info('No unrecognised referrers recorded today (external ones now record as referral touches).');
 
             return Command::SUCCESS;
         }
@@ -62,7 +68,7 @@ class TrafficSourceCaptureStats extends Command
         arsort($hosts);
 
         $this->newLine();
-        $this->info('Unrecognised referrers today (a source worth mapping would show up here):');
+        $this->info('Referrers rejected today (malformed hosts and our own systems; real ones are recorded as referral touches):');
         $this->table(
             ['Host', 'Hits'],
             collect($hosts)->take(20)->map(fn (int $count, string $host) => [$host, $count])->values()->all()
