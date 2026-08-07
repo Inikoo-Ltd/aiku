@@ -11,6 +11,7 @@ import { useLocaleStore } from '@/Stores/locale'
 import { routeType } from '@/types/route'
 import { route } from 'ziggy-js'
 import { trans } from 'laravel-vue-i18n'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps<{
     overview: {
@@ -19,13 +20,25 @@ const props = defineProps<{
             spend: number
             revenue: number
             registrations: number
-            purchases: number
+            invoices: number
             roas: number | null
             cac: number | null
         }
         channels: {
             name: string
             type: string
+            spend: number
+            revenue: number
+            registrations: number
+            roas: number | null
+        }[]
+        period: string
+        period_label: string
+        from: string | null
+        period_options: { value: string, label: string }[]
+        campaigns: {
+            name: string
+            channel: string
             spend: number
             revenue: number
             registrations: number
@@ -94,6 +107,13 @@ const sparkline = computed(() => {
 
 const roasIsGood = computed(() => (props.overview.totals.roas ?? 0) >= 1)
 
+/* Period lives in the URL so a filtered view can be shared, bookmarked and reloaded. */
+const selectPeriod = (period: string) => router.get(
+    window.location.pathname,
+    { period },
+    { preserveScroll: true, preserveState: true, replace: true }
+)
+
 const pct = (part: number, whole: number) => whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : '—'
 
 /* Registrations are share-weighted, so a channel can legitimately hold 12.5 of them. */
@@ -108,6 +128,22 @@ const typeLabel: Record<string, string> = {
 
 <template>
     <div class="px-4 py-5 md:px-6 space-y-6">
+
+        <!-- Period filter: one row above everything it governs -->
+        <div class="flex flex-wrap items-center gap-1">
+            <button v-for="option in overview.period_options" :key="option.value"
+                type="button"
+                class="px-2.5 py-1 text-xs rounded-md border transition-colors"
+                :class="option.value === overview.period
+                    ? 'bg-gray-800 text-white border-gray-800'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'"
+                @click="selectPeriod(option.value)">
+                {{ option.label }}
+            </button>
+            <span v-if="overview.from" class="ml-2 text-xs text-gray-400">
+                {{ trans('since') }} {{ overview.from }}
+            </span>
+        </div>
 
         <!-- KPI row: ROAS is the hero, everything else supports it -->
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-px rounded-xl overflow-hidden bg-gray-200 ring-1 ring-gray-200">
@@ -140,7 +176,7 @@ const typeLabel: Record<string, string> = {
                             stroke="#ffffff" stroke-width="2" />
                     </svg>
                 </div>
-                <div v-if="sparkline" class="mt-0.5 text-xs text-gray-400">{{ trans('last 30 days') }}</div>
+                <div v-if="sparkline" class="mt-0.5 text-xs text-gray-400">{{ trans('daily, recent') }}</div>
             </div>
 
             <div class="bg-white p-5">
@@ -159,7 +195,7 @@ const typeLabel: Record<string, string> = {
                 <div class="text-xs text-gray-500">{{ trans('Attributed customers') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">
                     {{ fmtShare(overview.totals.registrations) }}
-                    <span class="text-sm text-gray-400">· {{ fmtShare(overview.totals.purchases) }} {{ trans('orders') }}</span>
+                    <span class="text-sm text-gray-400">· {{ fmtShare(overview.totals.invoices) }} {{ trans('invoices') }}</span>
                 </div>
             </div>
         </div>
@@ -169,7 +205,7 @@ const typeLabel: Record<string, string> = {
             <div class="flex items-center justify-between">
                 <div>
                     <span class="text-sm font-medium text-gray-800">{{ trans('Channel performance') }}</span>
-                    <span class="ml-2 text-xs text-gray-400">{{ trans('all time, shop currency') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">{{ overview.period_label.toLowerCase() }}, {{ overview.currency_code }}</span>
                 </div>
                 <div class="flex items-center gap-4 text-xs text-gray-500">
                     <span class="flex items-center gap-1.5">
@@ -230,12 +266,49 @@ const typeLabel: Record<string, string> = {
             </div>
         </div>
 
+        <!-- Campaign performance: which individual campaigns earn their spend -->
+        <div v-if="overview.campaigns.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-sm font-medium text-gray-800">{{ trans('Campaign performance') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">{{ overview.period_label.toLowerCase() }}</span>
+                </div>
+            </div>
+
+            <table class="mt-4 w-full text-xs">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-100">
+                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Campaign') }}</th>
+                        <th class="text-left font-normal py-1.5 px-2">{{ trans('Channel') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="campaign in overview.campaigns" :key="campaign.name + campaign.channel"
+                        class="border-b border-gray-50 text-gray-600">
+                        <td class="py-2 pr-2 text-gray-700 truncate max-w-[18rem]">{{ campaign.name }}</td>
+                        <td class="px-2 text-gray-500">{{ campaign.channel }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ money(campaign.spend) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ money(campaign.revenue) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ fmtShare(campaign.registrations) }}</td>
+                        <td class="text-right pl-2 tabular-nums"
+                            :class="campaign.roas === null ? 'text-gray-300' : campaign.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                            {{ campaign.roas !== null ? campaign.roas.toFixed(2) + '×' : '—' }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <!-- Email marketing: does what we send earn sales, or just unsubscribes? -->
         <div v-if="overview.email" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <div class="flex items-center justify-between">
                 <div>
                     <span class="text-sm font-medium text-gray-800">{{ trans('Email marketing') }}</span>
-                    <span class="ml-2 text-xs text-gray-400">{{ trans('recent mailshots · cost estimated from SES') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">{{ trans('sent') }} {{ overview.period_label.toLowerCase() }} · {{ trans('cost estimated from SES') }}</span>
                 </div>
                 <Link :href="route(overview.mailshots_route.name, overview.mailshots_route.parameters)"
                     class="text-xs text-gray-500 hover:text-gray-800">{{ trans('All mailshots') }} →</Link>

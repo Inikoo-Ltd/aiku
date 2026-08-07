@@ -27,45 +27,58 @@ use Illuminate\Validation\Rule;
 
 class UpdateSupplierProduct extends OrgAction
 {
-    use WithSupplyChainEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithSupplierProductJsonColumns;
+    use WithSupplyChainEditAuthorisation;
 
+    private const UNAVAILABLE_STATES = [
+        SupplierProductStateEnum::IN_PROCESS,
+        SupplierProductStateEnum::DISCONTINUED,
+    ];
+
+    private const HISTORIC_FIELDS = [
+        'code',
+        'cbm',
+        'units_per_pack',
+        'units_per_carton',
+    ];
+
+    private const ORG_PROPAGATED_FIELDS = [
+        'state',
+        'is_available',
+    ];
+
+    private const STATS_FIELDS = [
+        'state',
+        'is_available',
+        'deleted_at',
+    ];
 
     public bool $skipHistoric = false;
-
-
     private SupplierProduct $supplierProduct;
 
     public function handle(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false): SupplierProduct
     {
-        if (Arr::exists($modelData, 'state')) {
-            if ($modelData['state'] == SupplierProductStateEnum::DISCONTINUED
-                || SupplierProductStateEnum::IN_PROCESS
-            ) {
-                $modelData['is_available'] = false;
-            }
+        if (Arr::exists($modelData, 'state') && in_array($this->parseState($modelData['state']), self::UNAVAILABLE_STATES, true)) {
+            $modelData['is_available'] = false;
         }
+
+        $modelData = $this->pullSupplierProductJsonColumns($modelData);
 
         $supplierProduct = $this->update($supplierProduct, $modelData, ['data', 'settings']);
 
-
-        if (!$skipHistoric and $supplierProduct->wasChanged(
-            ['code', 'cbm', 'units_per_pack', 'units_per_pack']
-        )) {
+        if (!$skipHistoric && $supplierProduct->wasChanged(self::HISTORIC_FIELDS)) {
             $historicProduct = StoreHistoricSupplierProduct::make()->action($supplierProduct, [
                 'status' => true,
             ]);
-            $supplierProduct->update(
-                [
-                    'current_historic_supplier_product_id' => $historicProduct->id
-                ]
-            );
+
+            $supplierProduct->update([
+                'current_historic_supplier_product_id' => $historicProduct->id,
+            ]);
         }
 
-        if (!$skipHistoric and $supplierProduct->wasChanged(
-            ['state', 'is_available']
-        )) {
+        if ($supplierProduct->wasChanged(self::ORG_PROPAGATED_FIELDS)) {
             foreach ($supplierProduct->orgSupplierProducts as $orgSupplierProduct) {
                 UpdateOrgSupplierProduct::run(
                     $orgSupplierProduct,
@@ -74,10 +87,13 @@ class UpdateSupplierProduct extends OrgAction
                         'is_available' => $supplierProduct->is_available
                     ]
                 );
-                GroupHydrateSupplierProducts::dispatch($supplierProduct->group)->delay($this->hydratorsDelay);
-                SupplierHydrateSupplierProducts::dispatch($supplierProduct->supplier)->delay($this->hydratorsDelay);
-                AgentHydrateSupplierProducts::dispatchIf((bool)$supplierProduct->agent_id, $supplierProduct->agent)->delay($this->hydratorsDelay);
             }
+        }
+
+        if ($supplierProduct->wasChanged(self::STATS_FIELDS)) {
+            GroupHydrateSupplierProducts::dispatch($supplierProduct->group)->delay($this->hydratorsDelay);
+            SupplierHydrateSupplierProducts::dispatch($supplierProduct->supplier)->delay($this->hydratorsDelay);
+            AgentHydrateSupplierProducts::dispatchIf((bool)$supplierProduct->agent_id, $supplierProduct->agent)->delay($this->hydratorsDelay);
         }
 
         return $supplierProduct;
@@ -112,9 +128,9 @@ class UpdateSupplierProduct extends OrgAction
             'units_per_carton' => ['sometimes', 'nullable'],
             'cbm'              => ['sometimes', 'nullable', 'numeric'],
             'extra_costs'      => ['sometimes', 'nullable', 'numeric', 'min:0'],
-
         ];
 
+        $rules = array_merge($rules, $this->supplierProductJsonFieldRules());
 
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
@@ -128,18 +144,27 @@ class UpdateSupplierProduct extends OrgAction
         if (!$audit) {
             SupplierProduct::disableAuditing();
         }
-        $this->strict          = $strict;
+
+        $this->supplierProduct = $supplierProduct;
         $this->asAction        = true;
         $this->hydratorsDelay  = $hydratorsDelay;
         $this->skipHistoric    = $skipHistoric;
-        $this->supplierProduct = $supplierProduct;
+        $this->strict          = $strict;
+
         $this->initialisationFromGroup($supplierProduct->group, $modelData);
 
-        return $this->handle($supplierProduct, $this->validatedData);
+        return $this->handle($supplierProduct, $this->validatedData, $skipHistoric);
     }
 
     public function jsonResponse(SupplierProduct $supplierProduct): SupplierProductResource
     {
         return new SupplierProductResource($supplierProduct);
+    }
+
+    private function parseState(mixed $state): ?SupplierProductStateEnum
+    {
+        return $state instanceof SupplierProductStateEnum
+            ? $state
+            : SupplierProductStateEnum::tryFrom((string)$state);
     }
 }

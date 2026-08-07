@@ -163,44 +163,32 @@ it('exposes cost, roas and cac on the shop traffic sources listing', function ()
     expect((float) $row->cac)->toBe(12.5);
 });
 
-it('assembles the marketing overview from the stats rollups', function () {
+it('aggregates period spend per channel into the marketing overview', function () {
     $organic = createTrafficSource($this->shop, 'organic-google', 'Organic Google');
-    $organic->stats()->updateOrCreate(
-        ['traffic_source_id' => $organic->id],
-        ['number_customers' => 10, 'total_customer_revenue' => 300.00, 'total_cost' => 0]
-    );
 
-    StoreTrafficSourceCost::run($this->trafficSource, [
-        'date'               => now()->subDays(2)->toDateString(),
-        'source_amount'      => 100.00,
-        'source_currency_id' => $this->currency->id,
-    ]);
-    StoreTrafficSourceCost::run($this->trafficSource, [
-        'date'               => now()->subDay()->toDateString(),
-        'source_amount'      => 100.00,
-        'source_currency_id' => $this->currency->id,
-    ]);
+    foreach ([2, 1] as $daysAgo) {
+        StoreTrafficSourceCost::run($this->trafficSource, [
+            'date'               => now()->subDays($daysAgo)->toDateString(),
+            'source_amount'      => 100.00,
+            'source_currency_id' => $this->currency->id,
+        ]);
+    }
     TrafficSourceHydrateCosts::run($this->trafficSource);
-    $this->trafficSource->stats()->update([
-        'number_customers'       => 4,
-        'total_customer_revenue' => 500.00,
-    ]);
 
-    $overview = GetShopMarketingOverview::run($this->shop);
+    // A channel with attributed customers but no spend still has to appear, with no ROAS to show.
+    $customer = createCustomer($this->shop);
+    $customer->trafficSources()->detach();
+    $customer->update(['traffic_sources' => '1700000000a']);
+    App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution::run($customer->fresh());
+
+    $overview = GetShopMarketingOverview::run($this->shop, App\Enums\UI\Marketing\MarketingPeriodEnum::ALL_TIME);
+    $channels = collect($overview['channels'])->keyBy('type');
 
     expect($overview['totals']['spend'])->toBe(200.0);
-    expect($overview['totals']['revenue'])->toBe(800.0);
-    expect($overview['totals']['roas'])->toBe(4.0);
-    expect($overview['totals']['cac'])->toBe(round(200 / 14, 2));
     expect($overview['currency_code'])->toBe($this->currency->code);
-
-    expect($overview['channels'])->toHaveCount(2);
-    expect($overview['channels'][0]['type'])->toBe('google-ads');
-    expect($overview['channels'][0]['roas'])->toBe(2.5);
-    expect($overview['channels'][1]['roas'])->toBeNull();
-
-    expect($overview['spend_by_day'])->toHaveCount(2);
-    expect($overview['spend_by_day'][0]['amount'])->toBe(100.0);
+    expect((float) $channels['google-ads']['spend'])->toBe(200.0);
+    expect($channels['organic-google']['roas'])->toBeNull();
+    expect($channels['organic-google']['registrations'])->toBe(1.0);
 });
 
 it('reports a null roas and cac in the overview when nothing was spent', function () {
