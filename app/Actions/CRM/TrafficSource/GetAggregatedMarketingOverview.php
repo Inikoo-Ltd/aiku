@@ -269,8 +269,6 @@ class GetAggregatedMarketingOverview
                 ->whereIn('orders.shop_id', $group['shop_ids'])
                 ->whereNotIn('orders.state', [\App\Enums\Ordering\Order\OrderStateEnum::CREATING, \App\Enums\Ordering\Order\OrderStateEnum::CANCELLED])
                 ->whereNull('orders.deleted_at')
-                /* Never `orders.is_invoiced`: that column is false on every order in production, so
-                   trusting it made pending repeat revenue instead of leading it. */
                 ->whereNotExists(fn ($invoice) => $invoice
                     ->select(DB::raw(1))
                     ->from('invoices')

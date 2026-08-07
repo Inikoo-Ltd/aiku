@@ -163,10 +163,7 @@ class GetShopMarketingOverview
     }
 
     /**
-     * "Not yet invoiced" is decided by looking for the invoice, never by `orders.is_invoiced`: that
-     * column is false on every order in production - 7,687 of 8,140 in a month had an invoice while
-     * still flagged false - so trusting it counted every invoiced order as pending too, and pending
-     * simply repeated revenue.
+     * "Not yet invoiced" is decided by looking for the invoice
      *
      * Mirrors the revenue condition (`in_process = false`) so every order lands in exactly one of the
      * two figures.
