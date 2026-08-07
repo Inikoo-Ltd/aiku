@@ -34,23 +34,21 @@ class GetAggregatedMarketingOverview
      * campaign table would be a list of other people's campaigns; the children table links down to
      * each organisation instead, and the drill-down continues on that dashboard.
      *
-     * @return array{period: string, period_label: string, from: string|null, currency_code: string, has_spend: bool, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, orders: float, route: array{name: string, parameters: array<int, string>}}>}
+     * @return array{period: string, period_label: string, from: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, orders: float, route: array{name: string, parameters: array<int, string>}}>}
      */
     public function handle(Organisation|Group $parent, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
         $from  = $period->startsAt();
         $shops = $parent->shops()->with('currency')->get();
 
-        /* Spend only exists per shop and per organisation; traffic_source_costs carries no group
-           amount, so a group total would have to add euros to zlotys. Reported as absent rather than
-           as zero, which would read as "we spent nothing". */
         $isOrganisation = $parent instanceof Organisation;
         $revenueColumn  = $isOrganisation ? 'org_net_amount' : 'grp_net_amount';
+        $costColumn     = $isOrganisation ? 'org_amount' : 'grp_amount';
 
         $revenue       = $this->revenueByType($shops, $from, $revenueColumn);
         $registrations = $this->registrationsByType($shops, $from);
         $orders        = $this->ordersByType($shops, $from);
-        $spend         = $isOrganisation ? $this->spendByType($shops, $from) : collect();
+        $spend         = $this->spendByType($shops, $from, $costColumn);
 
         $channels = collect(array_unique(array_merge(
             $revenue->keys()->all(),
@@ -84,7 +82,6 @@ class GetAggregatedMarketingOverview
             'period_label'  => MarketingPeriodEnum::labels()[$period->value],
             'from'          => $from?->toDateString(),
             'currency_code' => $parent->currency->code,
-            'has_spend'     => $isOrganisation,
             'totals'        => [
                 'spend'         => $totalSpend,
                 'revenue'       => $totalRevenue,
@@ -206,14 +203,14 @@ class GetAggregatedMarketingOverview
     /**
      * @param Collection<int, Shop> $shops
      */
-    private function spendByType(Collection $shops, ?Carbon $from): Collection
+    private function spendByType(Collection $shops, ?Carbon $from, string $costColumn): Collection
     {
         return DB::table('traffic_source_costs as c')
             ->join('traffic_sources as ts', 'ts.id', '=', 'c.traffic_source_id')
             ->whereIn('c.shop_id', $shops->pluck('id'))
             ->when($from, fn ($query) => $query->where('c.date', '>=', $from->toDateString()))
             ->groupBy('ts.type')
-            ->select('ts.type', DB::raw('SUM(c.org_amount) as spend'))
+            ->select('ts.type', DB::raw("SUM(c.{$costColumn}) as spend"))
             ->pluck('spend', 'type')
             ->map(fn ($amount) => (float) $amount);
     }

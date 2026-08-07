@@ -20,7 +20,6 @@ const props = defineProps<{
         scope: 'group' | 'organisation'
         children_label: string
         currency_code: string
-        has_spend: boolean
         period: string
         period_label: string
         period_options: { value: string, label: string }[]
@@ -98,17 +97,12 @@ const changePeriod = (event: Event) => {
                 <div class="mt-1 text-lg tabular-nums">{{ count(overview.totals.orders) }}</div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ overview.has_spend ? trans('Ad spend') : trans('ROAS') }}</div>
-                <div class="mt-1 text-lg tabular-nums">
-                    <template v-if="overview.has_spend">{{ money(overview.totals.spend) }}</template>
-                    <span v-else class="text-gray-300">—</span>
+                <div class="text-xs text-gray-400">{{ trans('Ad spend') }}</div>
+                <div class="mt-1 text-lg tabular-nums">{{ money(overview.totals.spend) }}</div>
+                <div class="mt-0.5 text-xs" :class="overview.totals.roas === null ? 'text-gray-300' : overview.totals.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                    {{ trans('ROAS') }} {{ overview.totals.roas !== null ? overview.totals.roas.toFixed(2) + '×' : '—' }}
                 </div>
             </div>
-        </div>
-
-        <!-- Spend is per shop and per organisation only; there is no group-currency cost column -->
-        <div v-if="!overview.has_spend" class="text-xs text-gray-400">
-            {{ trans('Ad spend and ROAS are shown per organisation, where costs carry a comparable currency.') }}
         </div>
 
         <!-- Channels: the whole point of the aggregate, which channel earns across every shop -->
@@ -120,22 +114,22 @@ const changePeriod = (event: Event) => {
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
                         <th class="text-left font-normal py-1.5 pr-2">{{ trans('Channel') }}</th>
-                        <th v-if="overview.has_spend" class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Orders') }}</th>
-                        <th v-if="overview.has_spend" class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="channel in overview.channels" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 text-gray-700">{{ channel.name }}</td>
-                        <td v-if="overview.has_spend" class="text-right px-2 tabular-nums">{{ money(channel.spend) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ money(channel.spend) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(channel.registrations) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
-                        <td v-if="overview.has_spend" class="text-right pl-2 tabular-nums"
+                        <td class="text-right pl-2 tabular-nums"
                             :class="channel.roas === null ? 'text-gray-300' : channel.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
                             {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}
                         </td>

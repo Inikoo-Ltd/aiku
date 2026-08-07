@@ -64,8 +64,7 @@ it('reports the organisation total in the organisation currency, not the shop cu
     $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
 
     expect($overview['totals']['revenue'])->toBe(250.0)
-        ->and($overview['currency_code'])->toBe($this->organisation->currency->code)
-        ->and($overview['has_spend'])->toBeTrue();
+        ->and($overview['currency_code'])->toBe($this->organisation->currency->code);
 
     $channel = collect($overview['channels'])->firstWhere('type', 'google-ads');
 
@@ -83,12 +82,22 @@ it('links each shop of the organisation to its own dashboard instead of repeatin
         ->and($child['route']['parameters'])->toBe([$this->organisation->slug, $this->shop->slug]);
 });
 
-it('reports the group total in the group currency and offers no spend', function () {
-    $overview = GetAggregatedMarketingOverview::run($this->organisation->group, MarketingPeriodEnum::LAST_7);
+it('reports the group total and its spend in the group currency', function () {
+    App\Actions\CRM\TrafficSource\StoreTrafficSourceCost::run($this->googleAds, [
+        'date'               => now()->subDay()->toDateString(),
+        'source_amount'      => 100,
+        'source_currency_id' => $this->shop->currency_id,
+    ]);
 
-    expect($overview['currency_code'])->toBe($this->organisation->group->currency->code)
-        ->and($overview['has_spend'])->toBeFalse()
-        ->and($overview['totals']['spend'])->toBe(0.0);
+    $group    = $this->organisation->group;
+    $overview = GetAggregatedMarketingOverview::run($group, MarketingPeriodEnum::LAST_7);
+
+    $expected = (float) App\Models\CRM\TrafficSourceCost::where('traffic_source_id', $this->googleAds->id)
+        ->sum('grp_amount');
+
+    expect($overview['currency_code'])->toBe($group->currency->code)
+        ->and($expected)->toBeGreaterThan(0.0)
+        ->and($overview['totals']['spend'])->toBe(round($expected, 2));
 });
 
 it('links the group children to each organisation dashboard', function () {
