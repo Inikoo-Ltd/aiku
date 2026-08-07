@@ -9,6 +9,8 @@
 namespace App\Actions\CRM\TrafficSource;
 
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetTrafficSourceFromRefererHeader
@@ -111,6 +113,37 @@ class GetTrafficSourceFromRefererHeader
             }
         }
 
+        /* Our own storefronts refer each other constantly - a customer moving from awgifts.eu to
+           ancientwisdom.biz is cross-shop navigation, not an acquisition. Every referral host seen in
+           the first hours of capture was one of ours. */
+        if (self::ourOwnDomains()->contains($host)) {
+            return null;
+        }
+
         return $host;
+    }
+
+    /**
+     * Cached: this runs on the storefront first hit, and the set of domains we own changes about
+     * never. Cleared naturally within the hour if a website is added.
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    private static function ourOwnDomains(): \Illuminate\Support\Collection
+    {
+        try {
+            return Cache::remember('marketing:our_own_domains', now()->addHour(), function () {
+                return DB::table('websites')
+                    ->whereNotNull('domain')
+                    ->pluck('domain')
+                    ->map(fn (string $domain) => preg_replace('/^www\./', '', strtolower(trim($domain))))
+                    ->filter()
+                    ->values();
+            });
+        } catch (\Throwable) {
+            /* Never break a page view over this; the worst case is one of our own domains being
+               recorded as a referral until the next request succeeds. */
+            return collect();
+        }
     }
 }

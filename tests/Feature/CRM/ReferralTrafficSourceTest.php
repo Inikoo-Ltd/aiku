@@ -15,7 +15,9 @@ use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSourceCampaign;
+use App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 
 beforeAll(function () {
     loadDB();
@@ -84,4 +86,37 @@ it('refuses a referral campaign whose reference is not a hostname', function () 
        referral source still carries the campaign the earlier test created. */
     expect(TrafficSourceCampaign::where('traffic_source_id', $this->referral->id)
         ->where('reference', 'not-a-host')->exists())->toBeFalse();
+});
+
+/* Primed rather than seeded from the websites table: the test database carries no live domains, and
+   what is under test is the exclusion, not the lookup. */
+function pretendWeOwn(string $domain): void
+{
+    Cache::put('marketing:our_own_domains', collect([$domain]), now()->addHour());
+}
+
+it('does not record one of our own storefronts as a referral', function () {
+    pretendWeOwn('awgifts.eu');
+
+    expect(GetTrafficSourceFromRefererHeader::run('https://awgifts.eu/products'))->toBeNull()
+        ->and(GetTrafficSourceFromRefererHeader::run('https://www.awgifts.eu/products'))->toBeNull();
+});
+
+it('drops a referral touch for our own storefront instead of crediting it', function () {
+    $domain   = 'awgifts.eu';
+    $customer = createCustomer($this->shop);
+    $customer->trafficSources()->detach();
+
+    pretendWeOwn($domain);
+
+    $customer->update([
+        'traffic_sources' => now()->subDay()->timestamp.'q'.$domain.'|'.now()->timestamp.'a',
+    ]);
+    RecalculateTrafficSourceAttribution::run($customer->fresh());
+
+    $credited = $customer->trafficSources()->get();
+
+    expect($credited)->toHaveCount(1)
+        ->and($credited->first()->type)->toBe('organic-google')
+        ->and((float) $credited->first()->pivot->share)->toBe(1.0);
 });

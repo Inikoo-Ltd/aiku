@@ -6,7 +6,6 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
 use App\Actions\Comms\Mailshot\UI\WithIndexMailshots;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\TrafficSourcesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -25,7 +24,6 @@ class IndexTrafficSources extends OrgAction
 {
     use HasUIMailshots;
     use WithIndexMailshots;
-    use WithCustomersSubNavigation;
 
     private Shop|Organisation $parent;
 
@@ -144,7 +142,6 @@ class IndexTrafficSources extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $trafficSources, ActionRequest $request): Response
     {
-        $subNavigation = $this->getSubNavigation($request);
         $title         = __('Traffic Sources');
         $model         = __('Traffic Source');
         $icon          = [
@@ -177,7 +174,6 @@ class IndexTrafficSources extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'subNavigation' => $subNavigation,
                     'actions'       => $action,
                 ],
                 'data'        => TrafficSourcesResource::collection($trafficSources), // You may want to use a resource if needed

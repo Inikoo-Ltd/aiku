@@ -48,6 +48,14 @@ class AttachTrafficSourcesToModel
             return;
         }
 
+        /* Filtered before the shares are calculated, never after: dropping a credited touch later
+           would leave the remaining shares summing to less than 1.00 and break the invariant. */
+        $touches = $this->withoutUnusableReferralTouches($touches);
+
+        if (empty($touches)) {
+            return;
+        }
+
         $shares = ProcessTrafficSourceShare::run($touches, $attributionModel);
 
         if (empty($shares)) {
@@ -106,6 +114,24 @@ class AttachTrafficSourcesToModel
         foreach (TrafficSourceCampaign::whereIn('id', array_keys($touchedCampaignIds))->get() as $campaign) {
             TrafficSourceCampaignHydrateStats::dispatch($campaign);
         }
+    }
+
+    /**
+     * A referral touch is only meaningful if its host survives validation: malformed hosts, our own
+     * admin and our own storefronts are not acquisitions. Stored touch strings predate this check, so
+     * it runs on the way in as well as at capture.
+     *
+     * @param array<int, array{timestamp: int|null, abbr: string, type: TrafficSourcesTypeEnum, campaign_ref: string|null}> $touches
+     *
+     * @return array<int, array{timestamp: int|null, abbr: string, type: TrafficSourcesTypeEnum, campaign_ref: string|null}>
+     */
+    private function withoutUnusableReferralTouches(array $touches): array
+    {
+        return array_values(array_filter(
+            $touches,
+            fn (array $touch) => $touch['type'] !== TrafficSourcesTypeEnum::REFERRAL
+                || GetTrafficSourceFromRefererHeader::normaliseHost($touch['campaign_ref']) === $touch['campaign_ref']
+        ));
     }
 
     /**
