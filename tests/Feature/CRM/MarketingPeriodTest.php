@@ -176,8 +176,15 @@ it('shows placed but uninvoiced order value as pending revenue, separate from in
     expect($channel['pending'])->toBe($overview['totals']['pending']);
 });
 
-it('drops an order out of pending once it is invoiced', function () {
-    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', true);
+it('drops an order out of pending once it has an invoice, whatever is_invoiced says', function () {
+    /* is_invoiced is false on every order in production, so pending is decided by whether an invoice
+       exists - this order carries the flag that would have kept it pending forever. */
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', false);
+
+    $orderId = DB::table('orders')->where('customer_id', $this->customer->id)->orderByDesc('id')->value('id');
+    DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
+    invoiceOn(now()->subHour()->toDateTimeString(), 100, $this->customer, $this->shop);
+    DB::table('invoices')->where('customer_id', $this->customer->id)->update(['order_id' => $orderId]);
 
     $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
 

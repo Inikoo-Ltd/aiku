@@ -154,12 +154,32 @@ class GetShopMarketingOverview
             })
             ->where('orders.shop_id', $shop->id)
             ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
-            ->where('orders.is_invoiced', false)
             ->whereNull('orders.deleted_at')
+            ->tap(fn ($query) => $this->whereNotYetInvoiced($query))
             ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
             ->groupBy('p.traffic_source_id')
             ->select('p.traffic_source_id', DB::raw('SUM(orders.net_amount * p.share) as amount'))
             ->pluck('amount', 'traffic_source_id');
+    }
+
+    /**
+     * "Not yet invoiced" is decided by looking for the invoice, never by `orders.is_invoiced`: that
+     * column is false on every order in production - 7,687 of 8,140 in a month had an invoice while
+     * still flagged false - so trusting it counted every invoiced order as pending too, and pending
+     * simply repeated revenue.
+     *
+     * Mirrors the revenue condition (`in_process = false`) so every order lands in exactly one of the
+     * two figures.
+     *
+     * @param \Illuminate\Database\Query\Builder $query
+     */
+    private function whereNotYetInvoiced($query): void
+    {
+        $query->whereNotExists(fn ($invoice) => $invoice
+            ->select(DB::raw(1))
+            ->from('invoices')
+            ->whereColumn('invoices.order_id', 'orders.id')
+            ->where('invoices.in_process', false));
     }
 
     private function registrationsBy(string $pivotColumn, Shop $shop, ?Carbon $from, int $window)

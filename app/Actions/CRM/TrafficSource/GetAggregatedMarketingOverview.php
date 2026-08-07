@@ -268,8 +268,14 @@ class GetAggregatedMarketingOverview
                 ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
                 ->whereIn('orders.shop_id', $group['shop_ids'])
                 ->whereNotIn('orders.state', [\App\Enums\Ordering\Order\OrderStateEnum::CREATING, \App\Enums\Ordering\Order\OrderStateEnum::CANCELLED])
-                ->where('orders.is_invoiced', false)
                 ->whereNull('orders.deleted_at')
+                /* Never `orders.is_invoiced`: that column is false on every order in production, so
+                   trusting it made pending repeat revenue instead of leading it. */
+                ->whereNotExists(fn ($invoice) => $invoice
+                    ->select(DB::raw(1))
+                    ->from('invoices')
+                    ->whereColumn('invoices.order_id', 'orders.id')
+                    ->where('invoices.in_process', false))
                 ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
                 ->groupBy('ts.type')
                 ->select('ts.type', DB::raw("SUM(orders.{$amountColumn} * p.share) as amount"))

@@ -38,6 +38,7 @@ beforeEach(function () {
     RecalculateTrafficSourceAttribution::run($this->customer->fresh());
 
     DB::table('orders')->where('customer_id', $this->customer->id)->delete();
+    DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
 });
 
 it('reports the organisation total in the organisation currency, not the shop currency', function () {
@@ -163,4 +164,38 @@ it('reports what happened without marketing, so nought attributed can be told fr
 
     expect($overview['baseline']['registrations'])->toBeGreaterThan(0.0)
         ->and($overview['baseline'])->toHaveKeys(['registrations', 'orders', 'revenue']);
+});
+
+it('does not repeat invoiced revenue in the pending figure', function () {
+    createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'dispatched', false, 100);
+
+    $orderId = DB::table('orders')->where('customer_id', $this->customer->id)->orderByDesc('id')->value('id');
+
+    DB::table('invoices')->insert([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $this->customer->id,
+        'order_id'        => $orderId,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'reference'       => 'INV-'.uniqid(),
+        'slug'            => 'inv-'.uniqid(),
+        'type'            => 'invoice',
+        'net_amount'      => 100,
+        'org_net_amount'  => 100,
+        'grp_net_amount'  => 100,
+        'total_amount'    => 100,
+        'in_process'      => false,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => now()->subHour()->toDateTimeString(),
+        'created_at'      => now()->subHour()->toDateTimeString(),
+        'updated_at'      => now()->subHour()->toDateTimeString(),
+    ]);
+
+    $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+
+    expect($overview['totals']['revenue'])->toBe(100.0)
+        ->and($overview['totals']['pending'])->toBe(0.0);
 });
