@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
+import ShowcaseStats from "@/Components/ShowcaseStats.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -13,6 +16,8 @@ defineProps<{
     data: object
     title: string
     pageHead: object
+    stats: { label: string; value: number | string }[]
+    outbox_state_active: boolean
 }>()
 
 function orderRoute(row: any) {
@@ -30,11 +35,20 @@ function customerRoute(row: any) {
         row.customer_slug
     ])
 }
+
+function sendReminder(row: any) {
+    router.post(
+        route("grp.models.checkout_abandonment.send_reminder", row.id),
+        {},
+        { preserveScroll: true }
+    )
+}
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <ShowcaseStats v-if="stats?.length" :data="stats" class="mt-5" />
     <Table :resource="data" class="mt-5">
         <template #cell(reference)="{ item: row }">
             <Link :href="orderRoute(row)" class="primaryLink">
@@ -50,6 +64,25 @@ function customerRoute(row: any) {
             <span class="whitespace-nowrap">
                 {{ useFormatTime(row["checkout_visited_at"], { formatTime: "dd MMM yyyy, HH:mm", timeZone: 'UTC', keepTimezone: true }) }} UTC
             </span>
+        </template>
+        <template #cell(email_sent_at)="{ item: row }">
+            <span v-if="row['email_sent_at']" class="whitespace-nowrap text-green-600">
+                {{ useFormatTime(row["email_sent_at"], { formatTime: "dd MMM yyyy, HH:mm", timeZone: 'UTC', keepTimezone: true }) }} UTC
+            </span>
+            <span v-else class="text-gray-400">—</span>
+        </template>
+        <template #cell(send_reminder)="{ item: row }">
+            <Button
+                v-if="row['state'] === 'abandoned' && !row['email_sent_at']"
+                type="tertiary"
+                size="xs"
+                icon="fal fa-paper-plane"
+                :label="trans('Send reminder')"
+                :disabled="!outbox_state_active"
+                :tooltip="!outbox_state_active ? trans('Email not configure yet') : undefined"
+                @click="sendReminder(row)"
+            />
+            <span v-else class="text-gray-400">—</span>
         </template>
     </Table>
 </template>

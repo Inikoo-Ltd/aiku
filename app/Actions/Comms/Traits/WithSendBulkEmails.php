@@ -240,6 +240,8 @@ trait WithSendBulkEmails
             'last-invoice-date' => Arr::get($additionalData, 'last_invoice_date'),
             'gold-reward-deadline' => Arr::get($additionalData, 'gold_reward_deadline'),
 
+            'abandoned-cart-items' => Arr::get($additionalData, 'abandoned_cart_items'),
+
             default => $originalPlaceholder,
         };
     }
