@@ -10,6 +10,7 @@ namespace App\Models\Catalogue;
 
 use App\Models\Dispatching\Shipper;
 use App\Models\Helpers\Country;
+use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +21,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
- * @property int $shop_id
+ * @property int|null $shop_id
  * @property int|null $country_id
  * @property string|null $postcode
  * @property int $shipper_id
@@ -29,6 +30,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Country|null $country
+ * @property-read Organisation|null $organisation
  * @property-read Shop|null $shop
  * @property-read Shipper|null $shipper
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PreferredShipping newModelQuery()
@@ -44,6 +46,11 @@ class PreferredShipping extends Model implements Auditable
     protected $table = 'preferred_shippings';
 
     protected $guarded = [];
+
+    public function organisation(): BelongsTo
+    {
+        return $this->belongsTo(Organisation::class);
+    }
 
     public function shop(): BelongsTo
     {

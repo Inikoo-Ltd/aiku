@@ -19,7 +19,7 @@ return new class () extends Migration {
             $table->increments('id');
             $table = $this->groupOrgRelationship($table);
 
-            $table->unsignedSmallInteger('shop_id')->index();
+            $table->unsignedSmallInteger('shop_id')->nullable()->index();
             $table->foreign('shop_id')->references('id')->on('shops')->cascadeOnDelete();
 
             $table->unsignedSmallInteger('country_id')->nullable()->index();

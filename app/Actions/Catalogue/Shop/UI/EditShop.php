@@ -27,7 +27,6 @@ use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
-use App\Models\Dispatching\Shipper;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
 use App\Support\Forms\SesConfigurationBlueprint;
@@ -100,9 +99,6 @@ class EditShop extends OrgAction
         $isExternal = $shop->type === ShopTypeEnum::EXTERNAL;
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
-
-        $preferredShippingRows = $shop->preferredShippings()->with(['shipper', 'country'])->get();
-        $usedShipperIds        = $preferredShippingRows->pluck('shipper_id')->filter()->all();
 
         $allowedBlueprintLabels = [
             __('Faire Settings'),
@@ -389,35 +385,6 @@ class EditShop extends OrgAction
                             'label'       => __('Settlement tolerance'),
                             'information' => __('Orders and invoices short by up to this amount are treated as paid, so tiny differences are not chased. Maximum 1.'),
                             'value'       => paymentSettlementTolerance($shop),
-                        ],
-                    ],
-                ],
-                [
-                    'label'  => __('Preferred Shipping'),
-                    'icon'   => 'fal fa-truck',
-                    'fields' => [
-                        'preferred_shipping' => [
-                            'full'     => true,
-                            'type'    => 'preferred_shipping',
-                            'label'   => __('Preferred Shipping'),
-                            'value'   => $preferredShippingRows->map(fn ($preferredShipping) => [
-                                'id'            => $preferredShipping->id,
-                                'shipper_id'    => $preferredShipping->shipper_id,
-                                'shipper_name'  => $preferredShipping->shipper?->name,
-                                'country_id'    => $preferredShipping->country_id,
-                                'country_name'  => $preferredShipping->country?->name,
-                                'postcode'      => $preferredShipping->postcode,
-                                'important'     => $preferredShipping->important,
-                            ])->all(),
-                            'options' => [
-                                'shippers'  => Shipper::where('organisation_id', $shop->organisation_id)
-                                    ->where(function ($query) use ($usedShipperIds) {
-                                        $query->where('status', true)->orWhereIn('id', $usedShipperIds);
-                                    })
-                                    ->orderBy('name')
-                                    ->get(['id', 'name']),
-                                'countries' => GetCountriesOptions::run(),
-                            ],
                         ],
                     ],
                 ],

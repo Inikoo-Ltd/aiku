@@ -121,6 +121,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'value' => $customer->ukims
                                     ],
                                     'shipper_id'               => [
+                                        'hidden'      => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
                                         'type'        => 'select',
                                         'label'       => __('Preferred shipping'),
                                         'placeholder' => __('Select preferred shipping'),

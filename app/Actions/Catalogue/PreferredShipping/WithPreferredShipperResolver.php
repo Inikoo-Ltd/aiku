@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\PreferredShipping;
 
 use App\Models\Catalogue\PreferredShipping;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 
 trait WithPreferredShipperResolver
@@ -24,6 +25,13 @@ trait WithPreferredShipperResolver
         $rows = PreferredShipping::query()
             ->where('shop_id', $shopId)
             ->get();
+
+        if ($rows->isEmpty()) {
+            $rows = PreferredShipping::query()
+                ->whereNull('shop_id')
+                ->where('organisation_id', Shop::find($shopId)?->organisation_id)
+                ->get();
+        }
 
         if ($important = $rows->firstWhere('important', true)) {
             return $important->shipper_id;
