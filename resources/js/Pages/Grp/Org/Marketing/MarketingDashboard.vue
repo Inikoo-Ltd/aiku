@@ -19,6 +19,7 @@ import { Tabs as TSTabs } from '@/types/Tabs'
 import SimpleBox from '@/Components/DataDisplay/SimpleBox.vue'
 import MarketingOverview from '@/Components/DataDisplay/MarketingOverview.vue'
 import AttributionDataQuality from '@/Components/DataDisplay/AttributionDataQuality.vue'
+import OfferPerformance from '@/Components/DataDisplay/OfferPerformance.vue'
 
 const props = defineProps<{
     title: string,
@@ -31,6 +32,7 @@ const props = defineProps<{
     }[]
     marketing_overview: InstanceType<typeof MarketingOverview>['$props']['overview']
     data_quality?: InstanceType<typeof AttributionDataQuality>['$props']['data']
+    offers?: InstanceType<typeof OfferPerformance>['$props']['data']
 
 
 }>()
@@ -43,6 +45,7 @@ const component = computed(() => {
     const components: Component = {
         dashboard: {},
         data_quality: AttributionDataQuality,
+        offers: OfferPerformance,
     }
 
     return components[currentTab.value]

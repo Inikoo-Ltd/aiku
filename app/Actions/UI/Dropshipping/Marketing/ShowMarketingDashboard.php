@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\TrafficSource\GetShopAttributionDataQuality;
 use App\Actions\CRM\TrafficSource\GetShopEmailMarketingPerformance;
 use App\Actions\CRM\TrafficSource\GetShopMarketingOverview;
+use App\Actions\CRM\TrafficSource\GetShopOfferPerformance;
 use App\Actions\OrgAction;
 use App\Enums\UI\Marketing\MarketingDashboardTabsEnum;
 use App\Enums\UI\Marketing\MarketingPeriodEnum;
@@ -100,6 +101,9 @@ class ShowMarketingDashboard extends OrgAction
                         ],
                     ]
                 ),
+                MarketingDashboardTabsEnum::OFFERS->value => $this->tab == MarketingDashboardTabsEnum::OFFERS->value
+                    ? fn () => GetShopOfferPerformance::run($this->shop, $this->period)
+                    : Inertia::optional(fn () => GetShopOfferPerformance::run($this->shop, $this->period)),
                 MarketingDashboardTabsEnum::DATA_QUALITY->value => $this->tab == MarketingDashboardTabsEnum::DATA_QUALITY->value
                     ? fn () => GetShopAttributionDataQuality::run($this->shop, $this->period)
                     : Inertia::optional(fn () => GetShopAttributionDataQuality::run($this->shop, $this->period)),
