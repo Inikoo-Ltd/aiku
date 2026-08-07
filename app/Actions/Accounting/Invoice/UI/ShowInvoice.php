@@ -256,6 +256,10 @@ class ShowInvoice extends OrgAction
                 'label' => __('Batch Code'),
                 'value' => 'show_batch_code',
             ],
+            [
+                'label' => __('Out of stock items in a separate block'),
+                'value' => 'separate_out_of_stock',
+            ],
         ];
 
         return array_map(function (array $column) use ($savedColumns) {
