@@ -179,3 +179,12 @@ it('credits revenue by the date the customer ordered, not the date the invoice w
 
     expect($channel['revenue'] ?? 0.0)->toBe(0.0);
 });
+
+it('lets the recording start date be set, so a fix to capture is not judged by what came before it', function () {
+    config()->set('marketing.attribution_started_at', '2026-08-07 19:30:00');
+
+    expect(App\Actions\CRM\TrafficSource\GetAttributionStartedAt::run()->toDateTimeString())
+        ->toBe('2026-08-07 19:30:00');
+
+    config()->set('marketing.attribution_started_at', null);
+});

@@ -26,6 +26,13 @@ class GetAttributionStartedAt
      */
     public function handle(): ?Carbon
     {
+        /* Configured wins: after a fix to capture, the earliest touch on record is older than the
+           point from which the numbers can be trusted, and comparing against it understates marketing
+           for as long as anyone looks. */
+        if ($configured = config('marketing.attribution_started_at')) {
+            return Carbon::parse($configured);
+        }
+
         $timestamp = Cache::remember('marketing:attribution_started_at', now()->addHour(), function () {
             return DB::table('model_has_traffic_sources')->min('first_touch_at');
         });

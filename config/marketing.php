@@ -26,6 +26,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | When attribution started recording properly
+    |--------------------------------------------------------------------------
+    |
+    | The dashboards compare what marketing touched against everything the
+    | business took, which only means something over a window where capture
+    | actually worked. Left unset, that window starts at the earliest touch on
+    | record - which is fine until the day capture is fixed, because the touches
+    | from before the fix make it look like we were recording when we were not.
+    |
+    | Set to the deploy of the fix rather than deleting anything: the touches
+    | from before it are real (a logged-in customer clicking a newsletter is a
+    | genuine touch, and its revenue is genuinely attributed). It was only the
+    | anonymous visitor - the one who could still be acquired - whose cookie was
+    | being thrown away, so it is the comparison that needs moving, not the data.
+    |
+    */
+
+    'attribution_started_at' => env('MARKETING_ATTRIBUTION_STARTED_AT'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Internal referrer hosts
     |--------------------------------------------------------------------------
     |
