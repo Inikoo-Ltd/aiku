@@ -69,8 +69,11 @@ class IndexTrafficSources extends OrgAction
             'traffic_sources.id',
             'traffic_sources.slug',
             'traffic_sources.name',
-            'traffic_source_stats.number_customers',
-            'traffic_source_stats.number_customer_purchases',
+            /* Both counts are share weighted, so they are stored fractional: a customer credited to two
+               channels is half a customer to each. Whole values still have to read as counts rather
+               than as money, so the trailing zeros come off and only a genuine fraction keeps them. */
+            DB::raw('trim_scale(traffic_source_stats.number_customers) as number_customers'),
+            DB::raw('trim_scale(traffic_source_stats.number_customer_purchases) as number_customer_purchases'),
             "traffic_source_stats.{$revenueField} as total_customer_revenue",
             "traffic_source_stats.{$costField} as cost",
             'currencies.code as currency_code',
@@ -130,11 +133,11 @@ class IndexTrafficSources extends OrgAction
 
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_customers', label: __('Registrations'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_customer_purchases', label: __('Orders'), canBeHidden: false, sortable: true)
+                ->column(key: 'number_customers', label: __('Registrations'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'number_customer_purchases', label: __('Orders'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency')
                 ->column(key: 'total_customer_revenue', label: __('Revenue'), canBeHidden: false, sortable: true, type: 'currency')
-                ->column(key: 'roas', label: __('ROAS'), canBeHidden: true, sortable: true)
+                ->column(key: 'roas', label: __('ROAS'), canBeHidden: true, sortable: true, align: 'right')
                 ->column(key: 'cac', label: __('CAC'), canBeHidden: true, sortable: true, type: 'currency');
         };
     }
