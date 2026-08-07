@@ -66,7 +66,7 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
              */
             $unchanged = abs($quantityRequired - (float)$deliveryNoteItem->quantity_required) < 0.000001;
 
-            if (in_array($deliveryNoteItem->state, self::DIRTY_STATES)) {
+            if ($this->hasPhysicalWork($deliveryNoteItem)) {
                 if ($unchanged) {
                     if ($deliveryNoteItem->composition_dirty_at) {
                         $deliveryNoteItem->update([
@@ -111,6 +111,16 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
         foreach (array_keys($touchedDeliveryNoteIds) as $deliveryNoteId) {
             DeliveryNoteHydrateCompositionDirtyItems::run($deliveryNoteId);
         }
+    }
+
+    /**
+     * A picker may already have picked while the item is still in a synced state, so the
+     * decision is made on the picks themselves, never on the state alone.
+     */
+    public function hasPhysicalWork(DeliveryNoteItem $deliveryNoteItem): bool
+    {
+        return in_array($deliveryNoteItem->state, self::DIRTY_STATES)
+            || (float)$deliveryNoteItem->quantity_picked != 0.0;
     }
 
     public function getQuantityRequired(OrgStock $orgStock, DeliveryNoteItem $deliveryNoteItem): ?float
