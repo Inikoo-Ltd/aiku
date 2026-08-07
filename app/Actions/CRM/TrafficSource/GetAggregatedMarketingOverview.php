@@ -40,7 +40,11 @@ class GetAggregatedMarketingOverview
      */
     public function handle(Organisation|Group $parent, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
-        $from  = $period->startsAt();
+        /* One window for the whole screen. Everything - revenue, orders, sign-ups, spend, unsubscribes,
+           visits, the baseline they are shares of - starts when attribution started recording, so no
+           two figures on the page cover different stretches of time. Before that date the report reads
+           zero, which is the truthful answer: we were not measuring. */
+        $from  = $this->clipToAttributionStart($period->startsAt());
         $shops = $parent->shops()->with('currency')->get();
 
         $isOrganisation = $parent instanceof Organisation;
@@ -53,9 +57,6 @@ class GetAggregatedMarketingOverview
            mailshots against half a day of attributable revenue is not a return on ad spend, it is two
            different questions divided by each other. Sending is not free either, and nobody invoices
            us for it, so the newsletter's cost is estimated from the emails actually sent. */
-        /* Cost covers the period, not the attribution marker. A mailshot sent this morning cost what
-           it cost and lost the subscribers it lost; clipping that away to make an early ROAS look
-           tidier hid real money and reported zero unsubscribes against a send of a million. */
         $costFrom      = $from;
 
         $revenue       = $this->revenueByType($shops, $from, $revenueColumn);
@@ -86,7 +87,9 @@ class GetAggregatedMarketingOverview
             $orders->keys()->all(),
             $spend->keys()->all(),
             $visits->keys()->all(),
-            $emailCost > 0 ? [TrafficSourcesTypeEnum::NEWSLETTER->value] : [],
+            /* Every email channel that cost something, not just the newsletter: a channel with spend
+               and no touches yet is exactly the one worth seeing. */
+            array_keys(array_filter($emailCostBy)),
         )))
             ->map(fn (string $type) => [
                 'name'          => TrafficSourcesTypeEnum::labels()[$type] ?? $type,
@@ -188,7 +191,6 @@ class GetAggregatedMarketingOverview
 
     private function baseline(Collection $shops, ?Carbon $from, string $revenueColumn): array
     {
-        $from    = $this->clipToAttributionStart($from);
         $shopIds = $shops->pluck('id');
 
         return [
@@ -520,7 +522,7 @@ class GetAggregatedMarketingOverview
 
         /* Each row carries what it is a share of. "0" against no denominator reads as a quiet month;
            "0 of 123" says marketing reached none of the people who signed up. */
-        $baselineFrom  = $this->clipToAttributionStart($from);
+        $baselineFrom  = $from;
 
         $allRegistrations = DB::table('customers')
             ->whereIn('shop_id', $shops->pluck('id'))

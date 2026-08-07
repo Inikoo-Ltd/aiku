@@ -270,3 +270,25 @@ it('gives each child its pending and its revenue total, so the share can be read
     expect($child)->toHaveKeys(['pending', 'revenue_total'])
         ->and($child['revenue_total'])->toBeGreaterThanOrEqual($child['revenue']);
 });
+
+it('lists an email channel that has cost but no touches yet', function () {
+    /* A channel with spend and nothing to show for it is exactly the one worth seeing, so it must not
+       need a touch to appear. */
+    $outbox   = $this->shop->outboxes()->where('type', App\Enums\Comms\Outbox\OutboxCodeEnum::MARKETING)->first();
+    $mailshot = App\Actions\Comms\Mailshot\StoreMailshot::make()->action($outbox, array_merge(
+        App\Models\Comms\Mailshot::factory()->definition(),
+        ['type' => App\Enums\Comms\Mailshot\MailshotTypeEnum::MARKETING]
+    ));
+
+    $mailshot->update(['sent_at' => now()->subDay()]);
+    $mailshot->stats()->update(['number_dispatched_emails' => 200000]);
+
+    createTrafficSource($this->shop, 'marketing-mailshot', 'Marketing Mailshots');
+
+    $channel = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['channels'])
+        ->firstWhere('type', 'marketing-mailshot');
+
+    expect($channel)->not->toBeNull()
+        ->and($channel['spend'])->toBeGreaterThan(0.0)
+        ->and($channel['group'])->toBe('email');
+});

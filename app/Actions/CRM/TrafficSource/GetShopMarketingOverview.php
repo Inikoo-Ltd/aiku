@@ -37,7 +37,11 @@ class GetShopMarketingOverview
      */
     public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
-        $from = $period->startsAt();
+        /* One window for the whole screen. Everything - revenue, orders, sign-ups, spend, unsubscribes,
+           visits, the baseline they are shares of - starts when attribution started recording, so no
+           two figures on the page cover different stretches of time. Before that date the report
+           reads zero, which is the truthful answer: we were not measuring. */
+        $from = $this->clipToAttributionStart($period->startsAt());
 
         $sources = DB::table('traffic_sources')
             ->where('shop_id', $shop->id)
@@ -52,9 +56,6 @@ class GetShopMarketingOverview
         /* Cost is clipped to the same window everything else is measured over. Thirty days of mailshots
            against half a day of attributable return is not a return on ad spend, it is two different
            questions divided by each other. */
-        /* Cost covers the period, not the attribution marker. A mailshot sent this morning cost what
-           it cost and lost the subscribers it lost; clipping that away to make an early ROAS look
-           tidier hid real money and reported zero unsubscribes against a send of a million. */
         $costFrom      = $from;
         $spend         = $this->spendBySource($shop, $costFrom);
         /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
@@ -107,7 +108,7 @@ class GetShopMarketingOverview
             ])
             ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0
                 || $channel['registrations'] > 0 || $channel['pending'] > 0 || $channel['visits'] > 0
-                || $channel['orders'] > 0)
+                || $channel['orders'] > 0 || $channel['unsubscribed'] > 0)
             ->sortByDesc(fn (array $channel) => max($channel['spend'], $channel['revenue']))
             ->values()
             ->all();
@@ -267,8 +268,6 @@ class GetShopMarketingOverview
 
     private function baseline(Shop $shop, ?Carbon $from): array
     {
-        $from = $this->clipToAttributionStart($from);
-
         return [
             'registrations' => (float) DB::table('customers')
                 ->where('shop_id', $shop->id)

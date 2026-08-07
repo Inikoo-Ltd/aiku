@@ -141,7 +141,10 @@ it('reports the selected period back to the dashboard', function () {
     expect($overview['period'])->toBe('month_to_date');
     expect($overview['from'])->toBe(now()->startOfMonth()->toDateString());
 
-    expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME)['from'])->toBeNull();
+    /* All time means since we started recording, not since the beginning: every figure on the screen
+       is capped at the attribution marker, so the window it reports has to say so. */
+    expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME)['from'])
+        ->toBe(App\Actions\CRM\TrafficSource\GetAttributionStartedAt::run()?->toDateString());
 });
 
 it('serves the same period numbers through the daily sql view', function () {
@@ -251,21 +254,20 @@ it('reports orders per channel so a visit count can be read against what it prod
     expect($channel['orders'])->toBe(1.0);
 });
 
-it('counts spend over the period, even from before attribution started recording', function () {
+it('caps spend at the attribution marker, like every other figure on the screen', function () {
     $source = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'google-ads')->first();
 
-    /* Spent long before the first touch was ever recorded. It still cost what it cost: clipping it to
-       the attribution marker made an early ROAS look tidier while hiding real money, and reported no
-       unsubscribes against a send of a million emails. */
     App\Actions\CRM\TrafficSource\StoreTrafficSourceCost::run($source, [
         'date'               => now()->subYears(2)->toDateString(),
         'source_amount'      => 5000,
         'source_currency_id' => $this->shop->currency_id,
     ]);
 
+    /* One window for the whole screen: spend from before we were measuring cannot be set against
+       revenue we could not have attributed, or ROAS compares two different stretches of time. */
     $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME);
 
-    expect($overview['totals']['spend'])->toBe(5000.0);
+    expect($overview['totals']['spend'])->toBe(0.0);
 });
 
 it('groups channels so nineteen rows read as four questions', function () {

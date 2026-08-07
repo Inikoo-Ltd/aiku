@@ -289,8 +289,8 @@ const changePeriod = (event: Event) => {
                     </tr>
                 </thead>
                 <tbody v-for="group in groupedChannels" :key="group.key">
-                    <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium">
-                        <td class="py-2 pr-2 text-xs">{{ group.label }}</td>
+                    <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
+                        <td class="py-1 pr-2 text-xs leading-tight">{{ group.label }}</td>
                         <td class="text-right px-2 tabular-nums">
                             {{ group.visits > 0 ? locale.number(group.visits) : '' }}
                         </td>
