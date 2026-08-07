@@ -348,6 +348,8 @@ test('UI show payment', function (Payment $payment) {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->where('title', $payment->reference)
+                    ->has('actions', 1)
+                    ->where('actions.0.style', 'edit')
                     ->etc()
             )
             ->has('tabs');

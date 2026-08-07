@@ -114,12 +114,18 @@ class ShowPayment extends OrgAction
                     'model' => __('Payment'),
                     'icon'  => 'fal fa-coins',
                     'title' => $title,
-                    'edit'  => $isEditable ? [
-                        'route' => [
-                            'name'       => $editRouteName,
-                            'parameters' => array_values($request->route()->originalParameters())
+                    'actions' => $isEditable ? [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'edit',
+                            'tooltip' => __('Edit payment'),
+                            'label'   => __('Edit'),
+                            'route'   => [
+                                'name'       => $editRouteName,
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
                         ]
-                    ] : false,
+                    ] : [],
 
                 ],
                 'tabs'        => [
