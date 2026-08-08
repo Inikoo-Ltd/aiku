@@ -9,15 +9,31 @@
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowAgentSupplierPurchaseOrder extends OrgAction
 {
-    use WithSupplyChainAuthorisation;
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if (str_starts_with($request->route()->getName(), 'grp.org.')) {
+            $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+
+            return $request->user()->authTo("procurement.{$this->organisation->id}.view");
+        }
+
+        $this->canEdit = $request->user()->authTo("supply-chain.edit");
+
+        return $request->user()->authTo("supply-chain.view");
+    }
 
     public function handle(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder): AgentSupplierPurchaseOrder
     {
@@ -27,6 +43,13 @@ class ShowAgentSupplierPurchaseOrder extends OrgAction
     public function asController(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): AgentSupplierPurchaseOrder
     {
         $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($agentSupplierPurchaseOrder);
+    }
+
+    public function inOrganisation(Organisation $organisation, AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): AgentSupplierPurchaseOrder
+    {
+        $this->initialisation($organisation, $request);
 
         return $this->handle($agentSupplierPurchaseOrder);
     }
@@ -66,7 +89,7 @@ class ShowAgentSupplierPurchaseOrder extends OrgAction
                     'supplier'       => $supplier ? [
                         'code'  => $supplier->code,
                         'name'  => $supplier->name,
-                        'route' => [
+                        'route' => str_starts_with($request->route()->getName(), 'grp.org.') ? null : [
                             'name'       => 'grp.supply-chain.suppliers.show',
                             'parameters' => [$supplier->slug]
                         ]
@@ -82,10 +105,14 @@ class ShowAgentSupplierPurchaseOrder extends OrgAction
 
     public function getBreadcrumbs(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, string $routeName, array $routeParameters, string $suffix = ''): array
     {
+        $indexRouteName = str_starts_with($routeName, 'grp.org.')
+            ? 'grp.org.procurement.agent_supplier_purchase_orders.index'
+            : 'grp.supply-chain.agent_supplier_purchase_orders.index';
+
         return array_merge(
             IndexAgentSupplierPurchaseOrders::make()->getBreadcrumbs(
-                'grp.supply-chain.agent_supplier_purchase_orders.index',
-                []
+                $indexRouteName,
+                Arr::only($routeParameters, 'organisation')
             ),
             [
                 [

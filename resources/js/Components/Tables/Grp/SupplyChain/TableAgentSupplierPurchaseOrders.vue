@@ -13,19 +13,27 @@ const props = defineProps<{
     data: object,
     tab?: string
 }>()
+
+function aspoRoute(aspo: { slug: string }) {
+    if (route().current()?.startsWith('grp.org.')) {
+        return route('grp.org.procurement.agent_supplier_purchase_orders.show', [route().params.organisation, aspo.slug])
+    }
+    return route('grp.supply-chain.agent_supplier_purchase_orders.show', [aspo.slug])
+}
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: aspo }">
-            <Link :href="route('grp.supply-chain.agent_supplier_purchase_orders.show', [aspo.slug])" class="primaryLink">
+            <Link :href="aspoRoute(aspo)" class="primaryLink">
                 {{ aspo.reference }}
             </Link>
         </template>
         <template #cell(supplier_code)="{ item: aspo }">
-            <Link v-if="aspo.supplier_slug" :href="route('grp.supply-chain.suppliers.show', [aspo.supplier_slug])" class="secondaryLink">
+            <Link v-if="aspo.supplier_slug && !route().current()?.startsWith('grp.org.')" :href="route('grp.supply-chain.suppliers.show', [aspo.supplier_slug])" class="secondaryLink">
                 {{ aspo.supplier_code }}
             </Link>
+            <span v-else>{{ aspo.supplier_code }}</span>
         </template>
         <template #cell(date)="{ item: aspo }">
             {{ useFormatTime(aspo.date) }}

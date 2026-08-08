@@ -9,12 +9,13 @@
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
-use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Http\Resources\SupplyChain\AgentSupplierPurchaseOrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -26,9 +27,24 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexAgentSupplierPurchaseOrders extends OrgAction
 {
-    use WithSupplyChainAuthorisation;
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
 
-    public function handle(?Agent $agent = null, $prefix = null): LengthAwarePaginator
+        if (str_starts_with($request->route()->getName(), 'grp.org.')) {
+            $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+
+            return $request->user()->authTo("procurement.{$this->organisation->id}.view");
+        }
+
+        $this->canEdit = $request->user()->authTo("supply-chain.edit");
+
+        return $request->user()->authTo("supply-chain.view");
+    }
+
+    public function handle(?Agent $agent = null, ?Organisation $organisation = null, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -50,6 +66,8 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
 
         if ($agent) {
             $queryBuilder->where('suppliers.agent_id', $agent->id);
+        } elseif ($organisation) {
+            $queryBuilder->where('purchase_orders.organisation_id', $organisation->id);
         }
 
         return $queryBuilder
@@ -114,6 +132,15 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
         return $this->handle($agent);
     }
 
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($organisation, $request);
+
+        $agent = Agent::where('organisation_id', $organisation->id)->first();
+
+        return $agent ? $this->handle($agent) : $this->handle(null, $organisation);
+    }
+
     public function jsonResponse(LengthAwarePaginator $agentSupplierPurchaseOrders): AnonymousResourceCollection
     {
         return AgentSupplierPurchaseOrdersResource::collection($agentSupplierPurchaseOrders);
@@ -156,6 +183,13 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
                 ],
             ],
         ];
+
+        if (str_starts_with($routeName, 'grp.org.')) {
+            return array_merge(
+                ShowProcurementDashboard::make()->getBreadcrumbs($routeParameters),
+                $headCrumb
+            );
+        }
 
         return array_merge(
             ShowSupplyChainDashboard::make()->getBreadcrumbs(),
