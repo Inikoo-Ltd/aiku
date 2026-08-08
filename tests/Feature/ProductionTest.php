@@ -455,7 +455,7 @@ test('UI edit raw material', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 8)
+            ->has('formData.blueprint.0.fields', 6)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -851,4 +851,20 @@ test('UI index artisans aggregates worker sessions', function () {
                 ->has('sessions')
                 ->etc());
     });
+});
+
+test('raw material stores with defaults and only human fields', function () {
+    $rawMaterial = StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::STOCK->value,
+        'code'        => 'MINIMAL1',
+        'description' => 'Minimal raw material',
+        'unit'        => RawMaterialUnitEnum::LITER->value,
+    ]);
+
+    expect($rawMaterial->state)->toBe(RawMaterialStateEnum::IN_PROCESS)
+        ->and($rawMaterial->stock_status)->toBe(RawMaterialStockStatusEnum::OPTIMAL)
+        ->and((float)$rawMaterial->unit_cost)->toBe(0.0)
+        ->and((float)$rawMaterial->quantity_on_location)->toBe(0.0)
+        ->and($rawMaterial->trade_unit_id)->toBeNull()
+        ->and($rawMaterial->org_stock_id)->toBeNull();
 });

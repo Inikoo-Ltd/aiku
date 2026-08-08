@@ -33,6 +33,10 @@ class StoreRawMaterial extends OrgAction
     {
         data_set($modelData, 'group_id', $production->group_id);
         data_set($modelData, 'organisation_id', $production->organisation_id);
+        data_set($modelData, 'state', RawMaterialStateEnum::IN_PROCESS, overwrite: false);
+        data_set($modelData, 'stock_status', RawMaterialStockStatusEnum::OPTIMAL, overwrite: false);
+        data_set($modelData, 'unit_cost', 0, overwrite: false);
+        data_set($modelData, 'quantity_on_location', 0, overwrite: false);
 
         /** @var RawMaterial $rawMaterial */
         $rawMaterial = $production->rawMaterials()->create($modelData);
@@ -58,7 +62,7 @@ class StoreRawMaterial extends OrgAction
     {
         return [
             'type'             => ['required', Rule::enum(RawMaterialTypeEnum::class)],
-            'state'            => ['required', Rule::enum(RawMaterialStateEnum::class)],
+            'state'            => ['sometimes', Rule::enum(RawMaterialStateEnum::class)],
             'code'             => [
                 'required',
                 'alpha_dash',
@@ -72,7 +76,17 @@ class StoreRawMaterial extends OrgAction
             ],
             'description'      => ['required', 'string', 'max:255'],
             'unit'             => ['required', Rule::enum(RawMaterialUnitEnum::class)],
-            'unit_cost'        => ['required', 'numeric', 'min:0'],
+            'unit_cost'        => ['sometimes', 'numeric', 'min:0'],
+            'trade_unit_id'    => [
+                'sometimes',
+                'nullable',
+                Rule::exists('trade_units', 'id')->where('group_id', $this->organisation->group_id),
+            ],
+            'org_stock_id'     => [
+                'sometimes',
+                'nullable',
+                Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
+            ],
             'quantity_on_location' => ['sometimes', 'nullable', 'numeric'],
             'stock_status'     => ['sometimes', Rule::enum(RawMaterialStockStatusEnum::class)],
             'created_at'       => ['sometimes', 'nullable', 'date'],
