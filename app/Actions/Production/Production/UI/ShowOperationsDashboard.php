@@ -152,6 +152,10 @@ class ShowOperationsDashboard extends OrgAction
                     ],
                 ],
                 'command_control' => [
+                    'payroll_export_route' => [
+                        'name'       => 'grp.org.productions.show.operations.payroll.export',
+                        'parameters' => $request->route()->originalParameters()
+                    ],
                     'floor_route' => [
                         'name'       => 'grp.org.productions.show.floor',
                         'parameters' => $request->route()->originalParameters()

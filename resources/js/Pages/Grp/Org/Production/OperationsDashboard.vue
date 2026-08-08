@@ -39,6 +39,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     flatTreeMaps: {}
     command_control?: {
+        payroll_export_route: { name: string, parameters: object }
         floor_route: { name: string, parameters: object }
         open_session: null | {
             id: number
@@ -82,6 +83,28 @@ const now = ref(Date.now())
 let timer: ReturnType<typeof setInterval>
 onMounted(() => timer = setInterval(() => now.value = Date.now(), 1000))
 onUnmounted(() => clearInterval(timer))
+
+function previousMonday(weeksBack: number) {
+    const date = new Date()
+    const day = (date.getDay() + 6) % 7
+    date.setDate(date.getDate() - day - weeksBack * 7)
+    return date.toISOString().slice(0, 10)
+}
+const payrollFrom = ref(previousMonday(1))
+const payrollTo = ref((() => {
+    const date = new Date(previousMonday(1))
+    date.setDate(date.getDate() + 6)
+    return date.toISOString().slice(0, 10)
+})())
+
+function payrollExportUrl() {
+    if (!props.command_control) return '#'
+    return route(props.command_control.payroll_export_route.name, {
+        ...props.command_control.payroll_export_route.parameters,
+        from: payrollFrom.value,
+        to: payrollTo.value,
+    })
+}
 
 function elapsedSince(startedAt: string) {
     const seconds = Math.max(0, Math.floor((now.value - new Date(startedAt).getTime()) / 1000))
@@ -144,6 +167,22 @@ function elapsedSince(startedAt: string) {
             </h2>
             <div v-if="!command_control.queue.length" class="text-gray-400 text-sm py-6 text-center border border-dashed border-gray-200 rounded-lg">
                 {{ trans('The queue is empty') }}
+            </div>
+            <div class="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 flex items-end gap-3">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">{{ trans('Payroll from') }}</label>
+                    <input type="date" v-model="payrollFrom" class="rounded border-gray-300 text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">{{ trans('To') }}</label>
+                    <input type="date" v-model="payrollTo" class="rounded border-gray-300 text-sm" />
+                </div>
+                <a
+                    :href="payrollExportUrl()"
+                    class="rounded bg-gray-700 text-white text-sm px-3 py-2"
+                >
+                    {{ trans('Export payroll CSV') }}
+                </a>
             </div>
             <div v-for="task in command_control.queue" :key="task.id"
                 class="mb-2 rounded-lg border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3">

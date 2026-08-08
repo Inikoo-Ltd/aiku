@@ -13,6 +13,7 @@ use App\Actions\Production\Artefact\UI\ShowArtefact;
 use App\Actions\Production\JobOrder\UI\IndexJobOrders;
 use App\Actions\Production\JobOrder\UI\ShowJobOrder;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
+use App\Actions\Production\ManufactureTaskSession\ExportManufacturePayroll;
 use App\Actions\Production\ManufactureTask\UI\CreateManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\EditManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\IndexManufactureTasks;
@@ -47,6 +48,7 @@ Route::prefix('{production}')
                         Route::get('', ShowOperationsDashboard::class)->name('dashboard');
                         Route::get('artisans', ShowDummy::class)->name('artisans.index');
 
+                        Route::get('payroll/export', ExportManufacturePayroll::class)->name('payroll.export');
                         Route::get('job-orders', IndexJobOrders::class)->name('job-orders.index');
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
                     });

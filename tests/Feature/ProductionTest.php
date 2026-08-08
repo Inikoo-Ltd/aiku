@@ -773,3 +773,22 @@ test('UI show job order', function () {
             ->has('artefact_options');
     });
 });
+
+test('payroll csv export aggregates closed sessions with snapshotted rates', function () {
+    $response = get(route('grp.org.productions.show.operations.payroll.export', [
+        $this->organisation->slug,
+        $this->production->slug,
+        'from' => now()->toDateString(),
+        'to'   => now()->toDateString(),
+    ]));
+
+    $response->assertOk();
+    $response->assertDownload();
+
+    ob_start();
+    $response->sendContent();
+    $csv = ob_get_clean();
+
+    expect($csv)->toContain('"Worker","Task code"')
+        ->and($csv)->toContain($this->manufactureTask->code);
+});
