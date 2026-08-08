@@ -99,6 +99,12 @@ function resetMarketingFixtures(): void
     DB::table('invoices')->where('reference', 'like', 'INV-%')->delete();
     DB::table('orders')->where('slug', 'like', 'ord-%')->delete();
 
+    /* GetAttributionStartedAt caches the earliest touch on record for an hour, which is right in
+       production - it only ever moves once - and wrong the moment the touch history is rewritten.
+       Left cached, the first block's touch marks where recording began for the whole run, and every
+       later block's dashboard is clipped to it: revenue, orders and registrations dated before it
+       read zero, which is what six of these blocks were failing on. */
+    Cache::forget('marketing:attribution_started_at');
 }
 
 /**
@@ -1979,17 +1985,18 @@ describe('fetching meta ads costs', function () {
     });
 
     it('follows pagination so a long day is not silently cut short', function () {
-        /* Order matters: Laravel resolves fakes with reduce(), so the LAST matching stub wins. The
-           catch-all has to come first or it also answers the page-two URL, and the command then
-           follows a next link back to the page it just read, for ever. */
+        /* Order matters: the stubs are filtered and the FIRST match answers, so the page-two pattern
+           has to come before the catch-all. Behind it, the catch-all answers page two as well, the
+           command follows a next link back to the page it just read, and the repeated-page guard
+           ends the run one page short. */
         Http::fake([
+            'graph.facebook.com/*page2*' => Http::response(metaInsights([
+                metaRow('120000006', 10.00, $this->shop->currency->code),
+            ])),
             'graph.facebook.com/*' => Http::response(metaInsights(
                 [metaRow('120000005', 10.00, $this->shop->currency->code)],
                 'https://graph.facebook.com/v21.0/act_1234567890/insights?page2=1'
             )),
-            'graph.facebook.com/*page2*' => Http::response(metaInsights([
-                metaRow('120000006', 10.00, $this->shop->currency->code),
-            ])),
         ]);
 
         Artisan::call('traffic-source:fetch-meta-costs', ['shop' => $this->shop->slug]);
@@ -3363,9 +3370,12 @@ describe('the aggregated marketing overview', function () {
         $expected = (float) App\Models\CRM\TrafficSourceCost::where('traffic_source_id', $this->googleAds->id)
             ->sum('grp_amount');
 
+        /* spend_ads rather than spend: the headline adds the estimated cost of every mailshot the
+           group has sent, and the mailshots other blocks send from their own shops are still in the
+           database. Ad spend is the half this test is about. */
         expect($overview['currency_code'])->toBe($group->currency->code)
             ->and($expected)->toBeGreaterThan(0.0)
-            ->and($overview['totals']['spend'])->toBe(round($expected, 2));
+            ->and($overview['totals']['spend_ads'])->toBe(round($expected, 2));
     });
 
     it('links the group children to each organisation dashboard', function () {

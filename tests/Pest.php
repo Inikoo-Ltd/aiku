@@ -224,7 +224,11 @@ function createOwnCustomer(Shop $shop, string $key): Customer
         $customers[$key] = StoreCustomer::make()->action($shop, Customer::factory()->definition());
     }
 
-    return $customers[$key];
+    /* Refreshed, because the model outlives the rows it describes: a fixture reset that clears a
+       column straight through the query builder leaves this instance still holding the old value,
+       and the next ->update() with that same value writes nothing at all. The touch history then
+       silently stays empty and every figure derived from it reads zero. */
+    return $customers[$key]->refresh();
 }
 
 /**
