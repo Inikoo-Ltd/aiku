@@ -3595,12 +3595,33 @@ describe('order attribution', function () {
         expect($this->order->trafficSources()->count())->toBe(0);
     });
 
+    it('logs basket ups, downs and removals with the basket value at that time', function () {
+        $this->order->update(['data' => array_merge((array) $this->order->data, ['basket_log' => []])]);
+        $transaction = $this->order->transactions()->where('model_type', 'Product')->first();
+        $startingQuantity = (float) $transaction->quantity_ordered;
+
+        App\Actions\Ordering\Transaction\UpdateTransaction::make()->action($transaction, ['quantity_ordered' => $startingQuantity + 5]);
+        App\Actions\Ordering\Transaction\UpdateTransaction::make()->action($transaction->fresh(), ['quantity_ordered' => $startingQuantity + 2]);
+
+        $log = collect(data_get($this->order->fresh()->data, 'basket_log'));
+
+        expect($log->pluck('e')->all())->toBe(['up', 'down'])
+            ->and((float) $log->first()['q'])->toBeGreaterThan(0)
+            ->and((float) $log->last()['q'])->toBeLessThan(0)
+            ->and($log->last())->toHaveKey('basket');
+
+        $journey = App\Actions\Ordering\Order\UI\GetOrderMarketingJourney::run($this->order->fresh());
+        $kinds   = collect($journey['events'])->where('type', 'product')->pluck('kind');
+
+        expect($kinds->all())->toBe(['up', 'down']);
+    });
+
     it('tells the order marketing story on one time axis, registration included for a first order', function () {
         createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
         $this->customer->update(['traffic_sources' => '1700000000b']);
         $this->order->update(['submitted_at' => now()]);
-        App\Actions\CRM\TrafficSource\ProcessOrderTrafficSource::run($this->order->fresh());
+        ProcessOrderTrafficSource::run($this->order->fresh());
 
         $journey = App\Actions\Ordering\Order\UI\GetOrderMarketingJourney::run($this->order->fresh());
 

@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\LogBasketEvent;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
@@ -138,6 +139,8 @@ class StoreTransaction extends OrgAction
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
         }
+
+        LogBasketEvent::run($order->fresh(), 'add', $transaction, (float) $transaction->quantity_ordered);
 
         if (request()->hasSession() && request()->input('website')) {
             StoreWebsiteConversionEvent::dispatch(

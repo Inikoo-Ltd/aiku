@@ -95,14 +95,35 @@ class GetOrderMarketingJourney
             'label'    => __('Basket opened'),
         ];
 
-        foreach ($order->transactions()->where('model_type', 'Product')->orderBy('created_at')->get() as $transaction) {
-            $events[] = [
-                'id'       => 'product-'.$transaction->id,
-                'type'     => 'product',
-                'datetime' => $transaction->created_at->toIso8601String(),
-                'label'    => $transaction->asset?->name ?? $transaction->asset?->code ?? __('Product'),
-                'quantity' => (float) $transaction->quantity_ordered,
-            ];
+        /* The basket log carries every change with the basket's worth at that moment; orders that
+           predate it only have their surviving lines' creation times, so those fall back to reading
+           the transactions - additions only, no values. */
+        $basketLog = (array) data_get($order->data, 'basket_log', []);
+
+        if ($basketLog !== []) {
+            foreach ($basketLog as $index => $entry) {
+                $events[] = [
+                    'id'       => 'basket-'.$index,
+                    'type'     => 'product',
+                    'kind'     => $entry['e'],
+                    'datetime' => Carbon::parse($entry['t'])->toIso8601String(),
+                    'label'    => $entry['asset'] ?? __('Product'),
+                    'quantity' => (float) $entry['q'],
+                    'basket'   => isset($entry['basket']) ? (float) $entry['basket'] : null,
+                ];
+            }
+        } else {
+            foreach ($order->transactions()->where('model_type', 'Product')->orderBy('created_at')->get() as $transaction) {
+                $events[] = [
+                    'id'       => 'product-'.$transaction->id,
+                    'type'     => 'product',
+                    'kind'     => 'add',
+                    'datetime' => $transaction->created_at->toIso8601String(),
+                    'label'    => $transaction->asset?->name ?? $transaction->asset?->code ?? __('Product'),
+                    'quantity' => (float) $transaction->quantity_ordered,
+                    'basket'   => null,
+                ];
+            }
         }
 
         if ($order->submitted_at) {
