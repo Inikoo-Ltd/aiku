@@ -18,6 +18,8 @@ use App\Models\Transfers\Fetch;
 use App\Transfers\Aurora\FetchAuroraAdjustment;
 use App\Transfers\Aurora\FetchAuroraAgent;
 use App\Transfers\Aurora\FetchAuroraArtefact;
+use App\Transfers\Aurora\FetchAuroraJobOrder;
+use App\Transfers\Aurora\FetchAuroraRawMaterial;
 use App\Transfers\Aurora\FetchAuroraBackInStockReminder;
 use App\Transfers\Aurora\FetchAuroraBarcode;
 use App\Transfers\Aurora\FetchAuroraCharge;
@@ -417,6 +419,16 @@ class AuroraOrganisationService implements SourceOrganisationService
     public function fetchArtefact($id): array
     {
         return (new FetchAuroraArtefact($this))->fetch($id);
+    }
+
+    public function fetchRawMaterial($id): ?array
+    {
+        return (new FetchAuroraRawMaterial($this))->fetch($id);
+    }
+
+    public function fetchJobOrder($id): ?array
+    {
+        return (new FetchAuroraJobOrder($this))->fetch($id);
     }
 
     public function fetchBarcode($id): ?array

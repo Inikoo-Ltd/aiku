@@ -10,11 +10,13 @@ namespace App\Actions\Production\JobOrder;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Production\JobOrder;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
@@ -56,7 +58,15 @@ class UpdateJobOrder extends OrgAction
         }
 
         return [
-            'customer_notes' => ['sometimes','nullable','string','max:4000'],
+            'customer_notes'  => ['sometimes','nullable','string','max:4000'],
+            'reference'       => ['sometimes', 'nullable', 'string', 'max:64'],
+            'state'           => ['sometimes', Rule::enum(JobOrderStateEnum::class)],
+            'date'            => ['sometimes', 'nullable', 'date'],
+            'in_process_at'   => ['sometimes', 'nullable', 'date'],
+            'submitted_at'    => ['sometimes', 'nullable', 'date'],
+            'confirmed_at'    => ['sometimes', 'nullable', 'date'],
+            'received_at'     => ['sometimes', 'nullable', 'date'],
+            'not_received_at' => ['sometimes', 'nullable', 'date'],
             ...$rules
         ];
     }

@@ -106,6 +106,10 @@ interface SourceOrganisationService
 
     public function fetchArtefact($id);
 
+    public function fetchRawMaterial($id);
+
+    public function fetchJobOrder($id);
+
     public function fetchOrgPaymentServiceProvider($id);
 
     public function fetchPaymentAccount($id);

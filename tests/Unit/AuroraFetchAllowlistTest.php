@@ -2,6 +2,8 @@
 
 use App\Actions\Transfers\Aurora\FetchAuroraCustomers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeliveryNotes;
+use App\Actions\Transfers\Aurora\FetchAuroraJobOrders;
+use App\Actions\Transfers\Aurora\FetchAuroraRawMaterials;
 use App\Actions\Transfers\Aurora\FetchAuroraPurchaseOrders;
 use App\Actions\Transfers\Aurora\FetchAuroraStockLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraSuppliers;
@@ -35,6 +37,8 @@ it('only lets a departed organisation keep the fetchers it has no aiku replaceme
     expect(auroraStillFeeds($fetcher, organisationNamed('aw')))->toBe($expected);
 })->with([
     'purchase orders still come from aurora' => [FetchAuroraPurchaseOrders::class, true],
+    'job orders still come from aurora'      => [FetchAuroraJobOrders::class, true],
+    'raw materials still come from aurora'   => [FetchAuroraRawMaterials::class, true],
     'suppliers still come from aurora'       => [FetchAuroraSuppliers::class, true],
     'timesheets are the clocking machine'    => [FetchAuroraTimesheets::class, true],
     'customers are aiku owned now'           => [FetchAuroraCustomers::class, false],

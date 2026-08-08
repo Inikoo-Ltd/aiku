@@ -318,6 +318,16 @@ class WowsbarOrganisationService implements SourceOrganisationService
         return null;
     }
 
+    public function fetchRawMaterial($id): ?array
+    {
+        return null;
+    }
+
+    public function fetchJobOrder($id): ?array
+    {
+        return null;
+    }
+
     public function fetchBarcode($id): ?array
     {
         return null;

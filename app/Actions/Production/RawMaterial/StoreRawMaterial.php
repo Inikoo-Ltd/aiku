@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRawMaterials;
 use App\Enums\Production\RawMaterial\RawMaterialStateEnum;
+use App\Enums\Production\RawMaterial\RawMaterialStockStatusEnum;
 use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Production\Production;
@@ -72,6 +73,10 @@ class StoreRawMaterial extends OrgAction
             'description'      => ['required', 'string', 'max:255'],
             'unit'             => ['required', Rule::enum(RawMaterialUnitEnum::class)],
             'unit_cost'        => ['required', 'numeric', 'min:0'],
+            'quantity_on_location' => ['sometimes', 'nullable', 'numeric'],
+            'stock_status'     => ['sometimes', Rule::enum(RawMaterialStockStatusEnum::class)],
+            'created_at'       => ['sometimes', 'nullable', 'date'],
+            'source_id'        => ['sometimes', 'nullable', 'string'],
         ];
     }
 
