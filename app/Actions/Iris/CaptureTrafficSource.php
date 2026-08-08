@@ -75,9 +75,16 @@ class CaptureTrafficSource
 
         if ($lastTrafficSource == $trafficSourceData) {
             $this->recordCaptureOutcome('repeat');
-            /* A repeat visit from the same channel is still a visit: no new touch, but the channel
-               did send somebody again. */
-            $this->recordVisit($trafficSourceData);
+
+            /* A returning visitor from the same channel is a visit, but only the first time today.
+               This branch fires on every page load whose URL still carries the click id, so counting
+               it each time turned one person reading five pages into five visits. */
+            if ($this->countVisitOnce($trafficSourceData)) {
+                $cookies['aiku_vcd'] = [
+                    'value'    => now()->toDateString(),
+                    'duration' => 60 * 24 * 2,
+                ];
+            }
 
             return $cookies;
         }
@@ -109,7 +116,13 @@ class CaptureTrafficSource
         ];
 
         $this->recordCaptureOutcome('matched');
-        $this->recordVisit($trafficSourceData);
+
+        if ($this->countVisitOnce($trafficSourceData)) {
+            $cookies['aiku_vcd'] = [
+                'value'    => now()->toDateString(),
+                'duration' => 60 * 24 * 2,
+            ];
+        }
 
         return $cookies;
     }
@@ -140,15 +153,28 @@ class CaptureTrafficSource
     }
 
     /**
-     * Delegated so a storefront arrival and an email click are counted the same way; see
-     * RecordTrafficSourceVisit for why they cannot share one code path.
+     * Counts the visit unless this browser has already been counted today, and says whether it did so
+     * the caller can stamp the marker cookie.
+     *
+     * A visit is a person arriving, not a page being loaded. Without this, any visitor whose URL keeps
+     * its click id through internal navigation counted once per page, and the visits column measured
+     * browsing rather than arrivals.
+     *
+     * Delegated to RecordTrafficSourceVisit so a storefront arrival and an email click are counted the
+     * same way; see that action for why they cannot share one code path.
      */
-    private function recordVisit(string $trafficSourceData): void
+    private function countVisitOnce(string $trafficSourceData): bool
     {
+        if (request()->cookie('aiku_vcd') === now()->toDateString()) {
+            return false;
+        }
+
         RecordTrafficSourceVisit::run(
             request()->input('website')?->shop_id,
             TrafficSourcesTypeEnum::fromAbbr(substr($trafficSourceData, 0, 1))
         );
+
+        return true;
     }
 
     /**

@@ -74,3 +74,31 @@ it('counts an identified source as matched', function () {
     expect(captureCount('matched'))->toBe(1)
         ->and(captureCount('direct'))->toBe(0);
 });
+
+it('marks a visitor as counted for the day, and does not count them again', function () {
+    Cache::flush();
+
+    /* Asserted through the marker cookie rather than the counter: the counter needs a resolved shop,
+       and what is under test is the decision, not the increment. A URL that keeps its click id through
+       internal navigation used to count a visit on every page load. */
+    app()->instance('request', Illuminate\Http\Request::create('https://ecom.test/', 'GET', [], [], [], [
+        'HTTP_X_ORIGINAL_REFERER' => 'https://www.google.com/search?q=incense',
+    ]));
+
+    $firstLoad = CaptureTrafficSource::make()->getCookies();
+
+    expect($firstLoad)->toHaveKey('aiku_vcd')
+        ->and($firstLoad['aiku_vcd']['value'])->toBe(now()->toDateString());
+
+    /* The same browser on its next page, now carrying the marker the first response set. */
+    app()->instance('request', Illuminate\Http\Request::create(
+        'https://ecom.test/',
+        'GET',
+        [],
+        ['aiku_vcd' => now()->toDateString(), 'aiku_lts' => $firstLoad['aiku_lts']['value'] ?? ''],
+        [],
+        ['HTTP_X_ORIGINAL_REFERER' => 'https://www.google.com/search?q=incense']
+    ));
+
+    expect(CaptureTrafficSource::make()->getCookies())->not->toHaveKey('aiku_vcd');
+});
