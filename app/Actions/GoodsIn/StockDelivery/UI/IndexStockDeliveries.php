@@ -17,6 +17,9 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
+use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
+use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Http\Resources\Procurement\StockDeliveriesResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
@@ -26,6 +29,8 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\SupplyChain\Agent;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -41,9 +46,11 @@ class IndexStockDeliveries extends OrgAction
     use WithOrgAgentSubNavigation;
     use WithOrgPartnerSubNavigation;
     use WithOrgSupplierSubNavigation;
+    use WithAgentSubNavigation;
+    use WithSupplierSubNavigation;
     use WithAgentOrganisation;
 
-    private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier $parent;
+    private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier|Agent|Supplier $parent;
 
     protected function getElementGroups(): array
     {
@@ -90,6 +97,10 @@ class IndexStockDeliveries extends OrgAction
             $query->where('stock_deliveries.parent_type', 'OrgSupplier')->where('stock_deliveries.parent_id', $this->parent->id);
         } elseif ($this->parent instanceof Warehouse) {
             $query->where('stock_deliveries.organisation_id', $this->parent->organisation_id);
+        } elseif ($this->parent instanceof Agent) {
+            $query->where('stock_deliveries.agent_id', $this->parent->id);
+        } elseif ($this->parent instanceof Supplier) {
+            $query->where('stock_deliveries.supplier_id', $this->parent->id);
         } elseif ($organisationAgent) {
             $query->where('stock_deliveries.agent_id', $organisationAgent->id);
         } elseif ($this->parent instanceof Organisation) {
@@ -217,6 +228,22 @@ class IndexStockDeliveries extends OrgAction
         return $this->handle();
     }
 
+    public function inAgent(Agent $agent, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $agent;
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle();
+    }
+
+    public function inSupplier(Supplier $supplier, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $supplier;
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle();
+    }
+
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $title         = __('Stock Deliveries');
@@ -256,6 +283,24 @@ class IndexStockDeliveries extends OrgAction
             $afterTitle    = ['label' => __('Stock Deliveries')];
             $iconRight     = ['icon' => 'fal fa-truck-container'];
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
+        } elseif ($this->parent instanceof Agent) {
+            $title         = $this->parent->organisation->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-people-arrows'],
+                'title' => __('Stock Deliveries'),
+            ];
+            $afterTitle    = ['label' => __('Stock Deliveries')];
+            $iconRight     = ['icon' => 'fal fa-truck-container'];
+            $subNavigation = $this->getAgentNavigation($this->parent);
+        } elseif ($this->parent instanceof Supplier) {
+            $title         = $this->parent->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-person-dolly'],
+                'title' => __('Stock Deliveries'),
+            ];
+            $afterTitle    = ['label' => __('Stock Deliveries')];
+            $iconRight     = ['icon' => 'fal fa-truck-container'];
+            $subNavigation = $this->getSupplierNavigation($this->parent);
         } elseif ($this->parent instanceof Warehouse) {
             $model = __('Goods in');
         }
@@ -372,7 +417,39 @@ class IndexStockDeliveries extends OrgAction
                         ]
                     ]
                 ]
-            )
+            ),
+            'grp.supply-chain.agents.show.stock_deliveries.index' => array_merge(
+                ShowSupplyChainDashboard::make()->getBreadcrumbs(),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'label' => __('Stock deliveries'),
+                            'icon'  => 'fal fa-bars',
+                            'route' => [
+                                'name'       => 'grp.supply-chain.agents.show.stock_deliveries.index',
+                                'parameters' => $routeParameters,
+                            ],
+                        ]
+                    ]
+                ]
+            ),
+            'grp.supply-chain.suppliers.stock_deliveries.index' => array_merge(
+                ShowSupplyChainDashboard::make()->getBreadcrumbs(),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'label' => __('Stock deliveries'),
+                            'icon'  => 'fal fa-bars',
+                            'route' => [
+                                'name'       => 'grp.supply-chain.suppliers.stock_deliveries.index',
+                                'parameters' => $routeParameters,
+                            ],
+                        ]
+                    ]
+                ]
+            ),
         };
     }
 }

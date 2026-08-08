@@ -54,6 +54,10 @@ class GetSupplierShowcase
                     'label' => __('Deliveries'),
                     'icon'  => 'fal fa-truck-container',
                     'count' => $supplier->stats->number_stock_deliveries,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.suppliers.stock_deliveries.index',
+                        'parameters' => [$supplier->slug],
+                    ],
                 ],
             ],
         ];

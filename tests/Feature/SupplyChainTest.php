@@ -519,6 +519,32 @@ test('UI index agent supplier purchase orders in supplier', function () {
     });
 });
 
+test('UI index stock deliveries in agent', function () {
+    $agent = Agent::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agents.show.stock_deliveries.index', [$agent->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDeliveries')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data');
+    });
+});
+
+test('UI index stock deliveries in supplier', function () {
+    $supplier = Supplier::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.suppliers.stock_deliveries.index', [$supplier->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDeliveries')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data');
+    });
+});
+
 test('UI show supplier navigation follows the free bucket', function () {
     $this->withoutExceptionHandling();
 

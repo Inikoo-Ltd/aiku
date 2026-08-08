@@ -6,6 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\SupplyChain\Agent\UI\CreateAgent;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\IndexAgentSupplierPurchaseOrders;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurchaseOrder;
@@ -67,6 +68,7 @@ Route::prefix("agents")->name("agents.")->group(
             });
 
             Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inAgent'])->name('.agent_supplier_purchase_orders.index');
+            Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inAgent'])->name('.stock_deliveries.index');
         });
     }
 );
@@ -93,6 +95,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
             });
 
             Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inSupplier'])->name('.agent_supplier_purchase_orders.index');
+            Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inSupplier'])->name('.stock_deliveries.index');
         });
 
 

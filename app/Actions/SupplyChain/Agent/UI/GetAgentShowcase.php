@@ -64,6 +64,10 @@ class GetAgentShowcase
                     'label' => __('Deliveries'),
                     'icon'  => 'fal fa-truck-container',
                     'count' => $agent->stats->number_stock_deliveries,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.agents.show.stock_deliveries.index',
+                        'parameters' => [$agent->slug],
+                    ],
                 ],
             ],
         ];
