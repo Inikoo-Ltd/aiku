@@ -14,14 +14,25 @@ import { faPlus, faTrashAlt, faSave } from '@fal'
 
 library.add(faPlus, faTrashAlt, faSave)
 
+interface RecipeStepRawMaterial {
+    raw_material_id: number
+    code: string
+    description: string
+    unit: string
+    quantity_per_unit: number
+    line_cost: number
+}
+
 interface RecipeRow {
     id: number
+    step_id: number
     slug: string
     code: string
     name: string
     task_work_cost: number
     position: number
     units_per_artefact: number
+    raw_materials: RecipeStepRawMaterial[]
 }
 
 const props = defineProps<{
@@ -29,9 +40,12 @@ const props = defineProps<{
         artefact_id: number
         recipe: RecipeRow[]
         task_options: { id: number, code: string, name: string }[]
+        raw_material_options: { id: number, code: string, description: string, unit: string }[]
         routes: {
             attach: { name: string, parameters: object }
             detach: { name: string, parameters: object }
+            raw_material_attach: { name: string }
+            raw_material_detach: { name: string }
         }
     }
     tab?: string
@@ -41,6 +55,10 @@ const newTaskId = ref<number | null>(null)
 const newPosition = ref(props.data.recipe.length + 1)
 const newUnits = ref(1)
 const processing = ref(false)
+
+const newRawMaterialId = ref<Record<number, number | null>>({})
+const newRawMaterialQuantity = ref<Record<number, number>>({})
+const rawMaterialProcessing = ref(false)
 
 function attach(taskId: number, position: number, units: number) {
     processing.value = true
@@ -68,6 +86,39 @@ function detach(taskId: number) {
         {
             preserveScroll: true,
             onFinish: () => processing.value = false,
+        }
+    )
+}
+
+function stepMaterialsCost(row: RecipeRow): number {
+    return row.raw_materials.reduce((sum, material) => sum + material.line_cost, 0)
+}
+
+function attachRawMaterial(stepId: number, rawMaterialId: number, quantityPerUnit: number) {
+    rawMaterialProcessing.value = true
+    router.post(
+        route(props.data.routes.raw_material_attach.name, { recipeStep: stepId }),
+        {
+            raw_material_id: rawMaterialId,
+            quantity_per_unit: quantityPerUnit,
+        },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                rawMaterialProcessing.value = false
+                newRawMaterialId.value[stepId] = null
+            },
+        }
+    )
+}
+
+function detachRawMaterial(stepId: number, rawMaterialId: number) {
+    rawMaterialProcessing.value = true
+    router.delete(
+        route(props.data.routes.raw_material_detach.name, { recipeStep: stepId, rawMaterial: rawMaterialId }),
+        {
+            preserveScroll: true,
+            onFinish: () => rawMaterialProcessing.value = false,
         }
     )
 }
@@ -118,6 +169,57 @@ function detach(taskId: number) {
                         >
                             <FontAwesomeIcon :icon="['fal', 'trash-alt']" fixed-width />
                         </button>
+                    </td>
+                </tr>
+                <tr v-for="row in data.recipe" :key="`materials-${row.id}`" class="border-b border-gray-100 bg-gray-50">
+                    <td></td>
+                    <td colspan="4" class="py-2 pr-4">
+                        <ul class="pl-4 space-y-1">
+                            <li v-for="material in row.raw_materials" :key="material.raw_material_id" class="flex items-center gap-3 text-xs text-gray-600">
+                                <span class="font-medium">{{ material.code }}</span>
+                                <span>{{ material.description }}</span>
+                                <input
+                                    type="number" min="0.0001" step="any"
+                                    class="w-24 rounded border-gray-300 text-xs"
+                                    :value="material.quantity_per_unit"
+                                    @change="attachRawMaterial(row.step_id, material.raw_material_id, Number(($event.target as HTMLInputElement).value))"
+                                />
+                                <span>{{ material.unit }}</span>
+                                <span class="tabular-nums">{{ material.line_cost }}</span>
+                                <button
+                                    type="button"
+                                    class="text-gray-400 hover:text-red-600 disabled:opacity-50"
+                                    :disabled="rawMaterialProcessing"
+                                    :title="trans('Remove raw material from step')"
+                                    @click="detachRawMaterial(row.step_id, material.raw_material_id)"
+                                >
+                                    <FontAwesomeIcon :icon="['fal', 'trash-alt']" fixed-width />
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="pl-4 mt-2 flex items-center gap-2">
+                            <select v-model="newRawMaterialId[row.step_id]" class="rounded border-gray-300 text-xs min-w-40">
+                                <option :value="null" disabled>{{ trans('Select raw material') }}</option>
+                                <option v-for="option in data.raw_material_options" :key="option.id" :value="option.id">
+                                    {{ option.code }} — {{ option.description }}
+                                </option>
+                            </select>
+                            <input
+                                type="number" min="0.0001" step="any"
+                                class="w-24 rounded border-gray-300 text-xs"
+                                v-model.number="newRawMaterialQuantity[row.step_id]"
+                            />
+                            <button
+                                type="button"
+                                class="rounded bg-indigo-50 text-indigo-600 text-xs px-2 py-1 disabled:opacity-50"
+                                :disabled="!newRawMaterialId[row.step_id] || rawMaterialProcessing"
+                                @click="attachRawMaterial(row.step_id, newRawMaterialId[row.step_id]!, newRawMaterialQuantity[row.step_id] || 1)"
+                            >
+                                <FontAwesomeIcon :icon="['fal', 'plus']" fixed-width class="mr-1" />
+                                {{ trans('Add material') }}
+                            </button>
+                            <span class="text-xs text-gray-500 ml-auto">{{ trans('Materials cost') }}: {{ stepMaterialsCost(row) }}</span>
+                        </div>
                     </td>
                 </tr>
                 <tr v-if="!data.recipe.length">

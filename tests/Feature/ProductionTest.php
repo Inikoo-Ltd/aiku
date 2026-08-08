@@ -16,7 +16,10 @@ use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrder\UpdateJobOrder;
 use App\Actions\Production\ManufactureTask\StoreManufactureTask;
 use App\Actions\Production\Artefact\AttachManufactureTaskToArtefact;
+use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
+use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
+use App\Models\Production\ArtefactManufactureTask;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession;
@@ -735,6 +738,36 @@ test('recipe can be edited by attaching and detaching manufacture tasks', functi
 
     DetachManufactureTaskFromArtefact::make()->action($this->artefact, $this->manufactureTask);
     expect($this->artefact->manufactureTasks()->count())->toBe(0);
+});
+
+test('recipe steps consume raw materials', function () {
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $step = ArtefactManufactureTask::where('artefact_id', $this->artefact->id)
+        ->where('manufacture_task_id', $this->manufactureTask->id)
+        ->first();
+
+    AttachRawMaterialToRecipeStep::make()->action($step, [
+        'raw_material_id'   => $this->rawMaterial->id,
+        'quantity_per_unit' => 0.25,
+    ]);
+
+    expect($step->rawMaterials()->count())->toBe(1)
+        ->and((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(0.25);
+
+    AttachRawMaterialToRecipeStep::make()->action($step, [
+        'raw_material_id'   => $this->rawMaterial->id,
+        'quantity_per_unit' => 0.5,
+    ]);
+
+    expect($step->rawMaterials()->count())->toBe(1)
+        ->and((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(0.5);
+
+    DetachRawMaterialFromRecipeStep::make()->action($step, $this->rawMaterial);
+
+    expect($step->rawMaterials()->count())->toBe(0);
 });
 
 test('UI show manufacture floor', function () {
