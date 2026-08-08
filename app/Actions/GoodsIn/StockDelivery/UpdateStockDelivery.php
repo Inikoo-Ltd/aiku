@@ -9,6 +9,7 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -26,6 +27,7 @@ class UpdateStockDelivery extends OrgAction
     use WithActionUpdate;
     use WithNoStrictProcurementOrderRules;
     use WithNoStrictRules;
+    use HasStockDeliveryHydrators;
 
     private StockDelivery $stockDelivery;
 
@@ -49,7 +51,13 @@ class UpdateStockDelivery extends OrgAction
             }
         }
 
-        return $this->update($stockDelivery, $modelData, ['data']);
+        $stockDelivery = $this->update($stockDelivery, $modelData, ['data']);
+
+        if ($stockDelivery->wasChanged('state')) {
+            $this->runStockDeliveryHydrators($stockDelivery);
+        }
+
+        return $stockDelivery;
     }
 
     public function rules(): array

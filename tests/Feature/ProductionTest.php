@@ -1001,7 +1001,10 @@ test('completed job order is received into stock with a batch code', function ()
         'location_id' => $location->id,
     ]);
 
-    expect($jobOrder->state)->toBe(JobOrderStateEnum::RECEIVED);
+    expect($jobOrder->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and(fn () => \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), [
+            'location_id' => $location->id,
+        ]))->toThrow(ValidationException::class);
 
     $movement = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)
         ->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PRODUCTION)

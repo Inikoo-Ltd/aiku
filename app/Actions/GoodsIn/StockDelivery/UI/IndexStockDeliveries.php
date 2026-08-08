@@ -52,6 +52,29 @@ class IndexStockDeliveries extends OrgAction
 
     private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier|Agent|Supplier $parent;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction || $this->maya) {
+            return true;
+        }
+
+        $routeName = $request->route()->getName();
+
+        if (str_starts_with($routeName, 'grp.org.warehouses.')) {
+            return $request->user()->authTo("incoming.{$this->warehouse->id}.view");
+        }
+
+        if (str_starts_with($routeName, 'grp.org.')) {
+            $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+
+            return $request->user()->authTo("procurement.{$this->organisation->id}.view");
+        }
+
+        $this->canEdit = $request->user()->authTo('supply-chain.edit');
+
+        return $request->user()->authTo('supply-chain.view');
+    }
+
     protected function getElementGroups(): array
     {
         $elements = [];

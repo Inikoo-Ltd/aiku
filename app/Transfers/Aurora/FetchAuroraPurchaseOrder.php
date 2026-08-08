@@ -30,8 +30,6 @@ class FetchAuroraPurchaseOrder extends FetchAurora
 
 
         if (in_array($this->auroraModelData->{'Purchase Order Parent'}, ['Parcel', 'Container'])) {
-            print_r($this->auroraModelData);
-
             return;
         }
 

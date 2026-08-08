@@ -43,32 +43,36 @@ class UpdateJobOrder extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("productions-view.{$this->organisation->id}");
+        return $request->user()->authTo([
+            'org-supervisor.'.$this->organisation->id,
+            'productions-view.'.$this->organisation->id,
+            "productions_operations.{$this->jobOrder->production_id}.orchestrate",
+        ]);
     }
 
     public function rules(): array
     {
-        $rules = [];
+        $rules = [
+            'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'reference'      => ['sometimes', 'nullable', 'string', 'max:64'],
+            'date'           => ['sometimes', 'nullable', 'date'],
+        ];
 
         if (!request()->user() instanceof WebUser) {
-            $rules = [
-                'public_notes'  => ['sometimes','nullable','string','max:4000'],
-                'internal_notes' => ['sometimes','nullable','string','max:4000'],
-            ];
+            $rules['public_notes']   = ['sometimes', 'nullable', 'string', 'max:4000'];
+            $rules['internal_notes'] = ['sometimes', 'nullable', 'string', 'max:4000'];
         }
 
-        return [
-            'customer_notes'  => ['sometimes','nullable','string','max:4000'],
-            'reference'       => ['sometimes', 'nullable', 'string', 'max:64'],
-            'state'           => ['sometimes', Rule::enum(JobOrderStateEnum::class)],
-            'date'            => ['sometimes', 'nullable', 'date'],
-            'in_process_at'   => ['sometimes', 'nullable', 'date'],
-            'submitted_at'    => ['sometimes', 'nullable', 'date'],
-            'confirmed_at'    => ['sometimes', 'nullable', 'date'],
-            'received_at'     => ['sometimes', 'nullable', 'date'],
-            'not_received_at' => ['sometimes', 'nullable', 'date'],
-            ...$rules
-        ];
+        if ($this->asAction) {
+            $rules['state']           = ['sometimes', Rule::enum(JobOrderStateEnum::class)];
+            $rules['in_process_at']   = ['sometimes', 'nullable', 'date'];
+            $rules['submitted_at']    = ['sometimes', 'nullable', 'date'];
+            $rules['confirmed_at']    = ['sometimes', 'nullable', 'date'];
+            $rules['received_at']     = ['sometimes', 'nullable', 'date'];
+            $rules['not_received_at'] = ['sometimes', 'nullable', 'date'];
+        }
+
+        return $rules;
     }
 
     public function asController(JobOrder $jobOrder, ActionRequest $request): JobOrder

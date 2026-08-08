@@ -89,7 +89,7 @@ class FetchAuroraPurchaseOrderTransaction extends FetchAurora
 
         $agentSupplierPurchaseOrderId = null;
         if ($this->auroraModelData->{'Agent Supplier Purchase Order Key'}) {
-            $agentSupplierPurchaseOrderId = AgentSupplierPurchaseOrder::where(
+            $agentSupplierPurchaseOrderId = AgentSupplierPurchaseOrder::withTrashed()->where(
                 'source_id',
                 $this->organisation->id.':'.$this->auroraModelData->{'Agent Supplier Purchase Order Key'}
             )->value('id');

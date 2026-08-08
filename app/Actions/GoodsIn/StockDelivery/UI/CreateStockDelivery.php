@@ -9,6 +9,7 @@
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,6 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateStockDelivery extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
+
     public function handle(ActionRequest $request): Response
     {
         return Inertia::render(

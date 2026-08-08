@@ -52,7 +52,9 @@ class StoreAgentSupplierPurchaseOrdersFromPurchaseOrder extends OrgAction
                 $agentSupplierPurchaseOrder = StoreAgentSupplierPurchaseOrder::make()->action(
                     purchaseOrder: $purchaseOrder,
                     supplier: $supplier,
-                    modelData: []
+                    modelData: [
+                        'currency_id' => $purchaseOrder->currency_id,
+                    ]
                 );
             }
 
@@ -60,15 +62,20 @@ class StoreAgentSupplierPurchaseOrdersFromPurchaseOrder extends OrgAction
                 ->whereIn('purchase_order_transactions.id', $transactions->pluck('id'))
                 ->update(['agent_supplier_purchase_order_id' => $agentSupplierPurchaseOrder->id]);
 
+            $modelData = [
+                'cost_items' => $transactions->sum('net_amount'),
+                'cost_total' => $transactions->sum('net_amount'),
+            ];
+
+            if (!$agentSupplierPurchaseOrder->state || $agentSupplierPurchaseOrder->state == AgentSupplierPurchaseOrderStateEnum::IN_PROCESS) {
+                $modelData['state']        = AgentSupplierPurchaseOrderStateEnum::SUBMITTED;
+                $modelData['date']         = now();
+                $modelData['submitted_at'] = now();
+            }
+
             UpdateAgentSupplierPurchaseOrder::make()->action(
                 $agentSupplierPurchaseOrder,
-                [
-                    'state'        => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
-                    'cost_items'   => $transactions->sum('net_amount'),
-                    'cost_total'   => $transactions->sum('net_amount'),
-                    'date'         => now(),
-                    'submitted_at' => now(),
-                ],
+                $modelData,
                 strict: false
             );
 

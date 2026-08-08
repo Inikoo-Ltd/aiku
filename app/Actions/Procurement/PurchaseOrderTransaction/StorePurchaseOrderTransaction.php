@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreProcurementOrderItem;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePurchaseOrderTransaction extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithNoStrictRules;
     use WithStoreProcurementOrderItem;
 
