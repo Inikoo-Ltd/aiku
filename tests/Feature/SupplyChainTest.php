@@ -22,8 +22,12 @@ use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Imports\SupplyChain\SupplierProductImport;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Upload;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgAgentStats;
 use App\Models\Procurement\OrgSupplier;
@@ -186,6 +190,68 @@ test('create supplier product in agent supplier', function ($supplier) {
         ->and($this->group->supplyChainStats->number_supplier_products)->toBe(3)
         ->and($this->group->supplyChainStats->number_independent_supplier_products)->toBe(2)
         ->and($this->group->supplyChainStats->number_supplier_products_in_agents)->toBe(1);
+})->depends('create supplier in agent');
+
+test('import supplier product row creates trade unit and stock family', function ($supplier) {
+    $upload = Upload::create([
+        'group_id'          => $this->group->id,
+        'organisation_id'   => $this->organisation->id,
+        'model'             => 'SupplierProduct',
+        'parent_type'       => $supplier->getMorphClass(),
+        'parent_id'         => $supplier->id,
+        'original_filename' => 'supplier_products.xlsx',
+        'filename'          => 'supplier_products.xlsx',
+        'filesize'          => 0,
+    ]);
+
+    $import = new SupplierProductImport($supplier, $upload);
+
+    $row = collect([
+        'id_supplier_part_key'                => 'new',
+        'suppliers_product_code'               => 'IMP-SUP-001',
+        'suppliers_unit_description'           => 'Imported unit',
+        'family'                               => 'IMP-FAM',
+        'part_reference'                       => 'IMP-TU-001',
+        'unit_label'                           => 'Imported trade unit',
+        'units_per_sko'                        => 12,
+        'skos_per_carton'                      => 4,
+        'minimum_order_cartons'                => 1,
+        'average_delivery_time_days'           => 21,
+        'carton_cbm'                           => 0.08,
+        'unit_cost'                            => 1.25,
+        'unit_extra_costs'                     => 0,
+        'unit_recommended_description_website' => 'Imported product description',
+        'unit_barcode_ean_13_for_website'      => '5000000000001',
+        'unit_weight_kg'                       => 0.5,
+        'unit_dimensions_l_x_w_x_h_in_cm'      => '10 x 5 x 3',
+        'country_of_origin'                    => 'GBR',
+    ]);
+
+    $uploadRecord = $upload->records()->create(['values' => $row->all(), 'row_number' => 2]);
+    $import->storeModel($row, $uploadRecord);
+
+    $tradeUnit = TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-001')->first();
+    expect($tradeUnit)->not->toBeNull()
+        ->and($tradeUnit->name)->toBe('Imported trade unit')
+        ->and($tradeUnit->description)->toBe('Imported product description');
+
+    $stockFamily = StockFamily::where('group_id', $this->group->id)->where('code', 'IMP-FAM')->first();
+    expect($stockFamily)->not->toBeNull();
+
+    $supplierProduct = SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->first();
+    expect($supplierProduct)->not->toBeNull()
+        ->and((int)$supplierProduct->tradeUnits()->first()->pivot->quantity)->toBe(12);
+
+    $uploadRecord->refresh();
+    expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::COMPLETE->value);
+
+    $secondRow          = clone $row;
+    $secondUploadRecord = $upload->records()->create(['values' => $secondRow->all(), 'row_number' => 3]);
+    $import->storeModel($secondRow, $secondUploadRecord);
+
+    expect(TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-001')->count())->toBe(1)
+        ->and(StockFamily::where('group_id', $this->group->id)->where('code', 'IMP-FAM')->count())->toBe(1)
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->count())->toBe(1);
 })->depends('create supplier in agent');
 
 
