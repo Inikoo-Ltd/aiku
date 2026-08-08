@@ -2972,6 +2972,66 @@ test('index email tracking events', function (\App\Models\Comms\EmailTrackingEve
     expect($results->total())->toBeGreaterThanOrEqual(1);
 })->depends('store and post process email tracking event');
 
+test('scanner burst clicks are reclassified out of click stats', function () {
+    $outbox     = $this->shop->outboxes()->first();
+    $outboxCode = $outbox->code instanceof \BackedEnum ? $outbox->code->value : $outbox->code;
+    config()->set('marketing.attributed_outbox_codes', [$outboxCode]);
+
+    $dispatchedEmail = $outbox->dispatchedEmails()->create([
+        'data'  => [],
+        'state' => \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::CLICKED,
+    ]);
+
+    $ip          = '72.153.231.69';
+    $campaignRef = \App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint::OUTBOX_CAMPAIGN_REF_PREFIX.$outboxCode;
+
+    foreach (range(1, 6) as $i) {
+        $dispatchedEmail->emailTrackingEvents()->create([
+            'type'       => EmailTrackingEventTypeEnum::CLICKED,
+            'data'       => ['ipAddress' => $ip, 'l' => 'https://example.com/link-'.$i],
+            'created_at' => now(),
+        ]);
+        \App\Actions\CRM\TrafficSource\RecordTrafficSourceClick::countScannerClick($ip, $campaignRef);
+    }
+
+    \App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateClicks::run($dispatchedEmail);
+    expect($dispatchedEmail->refresh()->number_clicks)->toBe(6);
+
+    $firstEvent = $dispatchedEmail->emailTrackingEvents()->first();
+    \App\Actions\Comms\EmailTrackingEvent\ReclassifyScannerEmailClicks::run($firstEvent->id);
+
+    $dispatchedEmail->refresh();
+    expect($dispatchedEmail->number_clicks)->toBe(0)
+        ->and($dispatchedEmail->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::DELIVERED)
+        ->and($dispatchedEmail->emailTrackingEvents()->where('is_scanner', true)->count())->toBe(6);
+});
+
+test('a lone human click survives reclassification', function () {
+    $outbox     = $this->shop->outboxes()->first();
+    $outboxCode = $outbox->code instanceof \BackedEnum ? $outbox->code->value : $outbox->code;
+    config()->set('marketing.attributed_outbox_codes', [$outboxCode]);
+
+    $dispatchedEmail = $outbox->dispatchedEmails()->create([
+        'data'  => [],
+        'state' => \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::CLICKED,
+    ]);
+
+    $event = $dispatchedEmail->emailTrackingEvents()->create([
+        'type'       => EmailTrackingEventTypeEnum::CLICKED,
+        'data'       => ['ipAddress' => '203.0.113.7'],
+        'created_at' => now(),
+    ]);
+    \App\Actions\CRM\TrafficSource\RecordTrafficSourceClick::countScannerClick('203.0.113.7', \App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint::OUTBOX_CAMPAIGN_REF_PREFIX.$outboxCode);
+
+    \App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateClicks::run($dispatchedEmail);
+    \App\Actions\Comms\EmailTrackingEvent\ReclassifyScannerEmailClicks::run($event->id);
+
+    $dispatchedEmail->refresh();
+    expect($dispatchedEmail->number_clicks)->toBe(1)
+        ->and($dispatchedEmail->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::CLICKED)
+        ->and($event->refresh()->is_scanner)->toBeFalse();
+});
+
 test('get email copy returns null when copy missing', function () {
     $outbox          = $this->shop->outboxes()->first();
     $dispatchedEmail = $outbox->dispatchedEmails()->create(['data' => []]);
