@@ -287,11 +287,7 @@ class EditOrgSupplier extends OrgAction
 
     public function getPrevious(Supplier $supplier, ActionRequest $request): ?array
     {
-        $previous = Supplier::where('code', '<', $supplier->code)->when(true, function ($query) use ($supplier, $request) {
-            if ($request->route()->getName() == 'grp.org.procurement.marketplace.org_agents.show.org_suppliers.show') {
-                $query->where('suppliers.agent_id', $supplier->agent_id);
-            }
-        })->orderBy('code', 'desc')->first();
+        $previous = Supplier::where('code', '<', $supplier->code)->orderBy('code', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
