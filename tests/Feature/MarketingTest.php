@@ -2235,6 +2235,58 @@ describe('mailshot click attribution', function () {
             ->toContain(App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshot->id);
     });
 
+    it('records a click row with ip and user agent when the ses event carries them', function () {
+        $mailshot        = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
+        $dispatchedEmail = dispatchedEmailFor($this->outbox, $this->customer);
+
+        MailshotRecipient::create([
+            'mailshot_id'         => $mailshot->id,
+            'dispatched_email_id' => $dispatchedEmail->id,
+            'recipient_type'      => 'Customer',
+            'recipient_id'        => $this->customer->id,
+            'channel'             => 1,
+        ]);
+
+        Illuminate\Support\Facades\Queue::fake();
+
+        StoreEmailTrackingEvent::make()->handle($dispatchedEmail->fresh(), [
+            'type' => EmailTrackingEventTypeEnum::CLICKED,
+            'data' => ['l' => 'https://ancientwisdom.biz/offers', 'ipAddress' => '203.0.113.77', 'userAgent' => 'Mozilla/5.0'],
+        ]);
+
+        Illuminate\Support\Facades\Queue::assertPushed(
+            Lorisleiva\Actions\Decorators\JobDecorator::class,
+            fn ($job) => $job->decorates(RecordTrafficSourceClick::class)
+                && $job->getParameters()[0]['ip'] === '203.0.113.77'
+                && $job->getParameters()[0]['url'] === 'https://ancientwisdom.biz/offers'
+        );
+    });
+
+    it('records no click row for replayed events without an ip, so aurora imports stay out', function () {
+        $mailshot        = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
+        $dispatchedEmail = dispatchedEmailFor($this->outbox, $this->customer);
+
+        MailshotRecipient::create([
+            'mailshot_id'         => $mailshot->id,
+            'dispatched_email_id' => $dispatchedEmail->id,
+            'recipient_type'      => 'Customer',
+            'recipient_id'        => $this->customer->id,
+            'channel'             => 1,
+        ]);
+
+        Illuminate\Support\Facades\Queue::fake();
+
+        StoreEmailTrackingEvent::make()->handle($dispatchedEmail->fresh(), [
+            'type' => EmailTrackingEventTypeEnum::CLICKED,
+            'data' => [],
+        ]);
+
+        Illuminate\Support\Facades\Queue::assertNotPushed(
+            Lorisleiva\Actions\Decorators\JobDecorator::class,
+            fn ($job) => $job->decorates(RecordTrafficSourceClick::class)
+        );
+    });
+
     it('queues nothing when a transactional email is clicked', function () {
         $dispatchedEmail = dispatchedEmailFor($this->outbox, $this->customer);
 

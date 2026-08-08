@@ -12,7 +12,9 @@ use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateClicks;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateEmailTracking;
 use App\Actions\Comms\DispatchedEmail\Hydrators\DispatchedEmailHydrateReads;
 use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
+use App\Actions\CRM\TrafficSource\RecordTrafficSourceClick;
 use App\Actions\CRM\TrafficSource\RecordTrafficSourceVisit;
+use Illuminate\Support\Arr;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -51,12 +53,37 @@ class StoreEmailTrackingEvent extends OrgAction
                per click rather than per touch, since opening the same link twice really is two
                visits even though it is one touch. */
             if ($mailshot || $outboxCode) {
-                RecordTrafficSourceVisit::run(
-                    $dispatchedEmail->outbox?->shop_id,
-                    $mailshot
-                        ? TrafficSourcesTypeEnum::fromMailshotType($mailshot->type?->value ?? $mailshot->type)
-                        : TrafficSourcesTypeEnum::EMAIL_AUTOMATED
-                );
+                $channel = $mailshot
+                    ? TrafficSourcesTypeEnum::fromMailshotType($mailshot->type?->value ?? $mailshot->type)
+                    : TrafficSourcesTypeEnum::EMAIL_AUTOMATED;
+
+                RecordTrafficSourceVisit::run($dispatchedEmail->outbox?->shop_id, $channel);
+
+                /* Email needs the fraud record more than the storefront does: security scanners
+                   click every link in every message, and without the user agent on record they are
+                   indistinguishable from readers. Guarded on ipAddress so historical Aurora imports,
+                   which replay these events without one, record nothing. */
+                $shop = $dispatchedEmail->outbox?->shop;
+                $ip   = Arr::get($emailTrackingEvent->data, 'ipAddress');
+
+                if ($shop && $ip && $channel) {
+                    RecordTrafficSourceClick::dispatch([
+                        'shop_id'      => $shop->id,
+                        'website_id'   => $shop->website?->id,
+                        'type'         => $channel->value,
+                        'campaign_ref' => $mailshot
+                            ? ($channel === TrafficSourcesTypeEnum::NEWSLETTER
+                                ? RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX
+                                : RecordEmailClickTouchpoint::MARKETING_CAMPAIGN_REF_PREFIX).$mailshot->id
+                            : RecordEmailClickTouchpoint::OUTBOX_CAMPAIGN_REF_PREFIX.$outboxCode,
+                        'click_id'     => null,
+                        'ip'           => $ip,
+                        'country_code' => null,
+                        'user_agent'   => Arr::get($emailTrackingEvent->data, 'userAgent'),
+                        'url'          => Arr::get($emailTrackingEvent->data, 'l'),
+                        'is_repeat'    => false,
+                    ]);
+                }
             }
 
             if ($mailshot || $outboxCode) {

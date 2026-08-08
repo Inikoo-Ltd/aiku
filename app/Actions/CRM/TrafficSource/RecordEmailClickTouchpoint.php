@@ -185,9 +185,10 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
                     'type'              => $type->value,
                 ]
             );
-        } catch (\Throwable $e) {
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
             /* Another worker created it a moment ago. The campaign exists either way, which is all
-               this method promises; a click must never be lost to a race. */
+               this method promises - expected under an email burst, so not worth a Sentry event. */
+        } catch (\Throwable $e) {
             report($e);
         }
     }
