@@ -129,9 +129,15 @@ class GetShopOfferPerformance
      */
     private function offerTotals(Shop $shop, ?Carbon $from): Collection
     {
-        /* Grouped from distinct orders on purpose: an offer allowance is written per transaction, so
-           counting rows would report a basket of twelve discounted lines as twelve redemptions. */
-        return DB::table('offers as of')
+        /* Aggregated per order first, then per offer: an offer allowance is written per transaction,
+           so counting raw rows would report a basket of twelve discounted lines as twelve redemptions,
+           and summing net_amount on raw rows would count the order's revenue twelve times.
+
+           Revenue used to be a correlated subquery over the whole orders table per offer - on the uk
+           shop it ran for over seven minutes and killed the request - and it was unbounded by date,
+           so an old offer claimed every order it had ever touched while its other columns obeyed the
+           period. One window, everything. */
+        $perOrder = DB::table('offers as of')
             ->join('transaction_has_offer_allowances as a', 'a.offer_id', '=', 'of.id')
             ->join('orders as ord', 'ord.id', '=', 'a.order_id')
             ->where('of.shop_id', $shop->id)
@@ -139,15 +145,27 @@ class GetShopOfferPerformance
             ->whereNull('ord.deleted_at')
             ->when($from, fn ($query) => $query->where('ord.date', '>=', $from))
             ->tap(fn ($query) => $this->excludeNonMarketingOffers($query))
-            ->groupBy('of.id', 'of.name', 'of.code')
+            ->groupBy('of.id', 'of.name', 'of.code', 'ord.id', 'ord.customer_id', 'ord.net_amount')
             ->select(
                 'of.id',
                 'of.name',
                 'of.code',
-                DB::raw('COUNT(DISTINCT ord.id) as orders'),
-                DB::raw('COUNT(DISTINCT ord.customer_id) as customers'),
+                'ord.customer_id',
+                'ord.net_amount',
                 DB::raw('SUM(a.discounted_amount) as discount'),
-                DB::raw('(SELECT COALESCE(SUM(o2.net_amount), 0) FROM orders o2 WHERE o2.id IN (SELECT DISTINCT a2.order_id FROM transaction_has_offer_allowances a2 WHERE a2.offer_id = of.id AND a2.order_id = o2.id)) as revenue'),
+            );
+
+        return DB::query()
+            ->fromSub($perOrder, 'per_order')
+            ->groupBy('id', 'name', 'code')
+            ->select(
+                'id',
+                'name',
+                'code',
+                DB::raw('COUNT(*) as orders'),
+                DB::raw('COUNT(DISTINCT customer_id) as customers'),
+                DB::raw('SUM(discount) as discount'),
+                DB::raw('SUM(net_amount) as revenue'),
             )
             ->get();
     }
