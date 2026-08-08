@@ -12,11 +12,13 @@ use App\Actions\Dispatching\BatchCode\StoreBatchCode;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
+use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\Warehouse;
+use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Http\RedirectResponse;
@@ -85,6 +87,8 @@ class ReceiveJobOrderIntoStock extends OrgAction
                     'type'     => OrgStockMovementTypeEnum::PRODUCTION,
                     'user_id'  => $this->request?->user()?->id,
                 ]);
+
+                $this->deductRawMaterials($item, $producedQuantity);
             }
 
             $jobOrder->update([
@@ -100,7 +104,68 @@ class ReceiveJobOrderIntoStock extends OrgAction
     {
         $lastTask = $item->tasks->sortByDesc('position')->first();
 
-        return $lastTask ? (float) $lastTask->quantity_made : 0.0;
+        if (!$lastTask) {
+            return 0.0;
+        }
+
+        $unitsPerArtefact = ArtefactManufactureTask::where('artefact_id', $item->artefact_id)
+            ->where('manufacture_task_id', $lastTask->manufacture_task_id)
+            ->value('units_per_artefact');
+
+        $unitsPerArtefact = (float) $unitsPerArtefact;
+
+        if ($unitsPerArtefact <= 0) {
+            $unitsPerArtefact = 1;
+        }
+
+        return (float) $lastTask->quantity_made / $unitsPerArtefact;
+    }
+
+    private function deductRawMaterials(JobOrderItem $item, float $producedArtefactUnits): void
+    {
+        $recipeSteps = ArtefactManufactureTask::where('artefact_id', $item->artefact_id)
+            ->with('rawMaterials.rawMaterial.orgStock')
+            ->get();
+
+        $consumptionByOrgStock = [];
+
+        foreach ($recipeSteps as $recipeStep) {
+            foreach ($recipeStep->rawMaterials as $recipeStepRawMaterial) {
+                $rawMaterial = $recipeStepRawMaterial->rawMaterial;
+
+                if (!$rawMaterial || !$rawMaterial->org_stock_id || !$rawMaterial->orgStock) {
+                    continue;
+                }
+
+                $consumed = $producedArtefactUnits * (float) $recipeStepRawMaterial->quantity_per_unit;
+
+                $consumptionByOrgStock[$rawMaterial->org_stock_id] ??= [
+                    'orgStock' => $rawMaterial->orgStock,
+                    'quantity' => 0.0,
+                ];
+
+                $consumptionByOrgStock[$rawMaterial->org_stock_id]['quantity'] += $consumed;
+            }
+        }
+
+        foreach ($consumptionByOrgStock as $consumption) {
+            $orgStock = $consumption['orgStock'];
+
+            $deductionLocationOrgStock = LocationOrgStock::where('org_stock_id', $orgStock->id)
+                ->orderByRaw("type = '".LocationStockTypeEnum::PICKING->value."' desc")
+                ->orderByDesc('quantity')
+                ->first();
+
+            if (!$deductionLocationOrgStock) {
+                continue;
+            }
+
+            StoreOrgStockMovement::make()->action($orgStock, $deductionLocationOrgStock->location, [
+                'quantity' => -$consumption['quantity'],
+                'type'     => OrgStockMovementTypeEnum::PRODUCTION,
+                'user_id'  => $this->request?->user()?->id,
+            ]);
+        }
     }
 
     public function rules(): array

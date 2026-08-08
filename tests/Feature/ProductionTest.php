@@ -1018,3 +1018,115 @@ test('completed job order is received into stock with a batch code', function ()
     expect($locationOrgStock)->not->toBeNull()
         ->and((float)$locationOrgStock->quantity)->toBe(10.0);
 });
+
+test('completed job order into stock converts units and deducts raw materials', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $inputStock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $inputOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $inputStock);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'         => 'RECEIVEART2',
+        'name'         => 'Receivable artefact with recipe',
+        'org_stock_id' => $orgStock->id,
+    ]);
+    $artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 2],
+    ]);
+
+    $recipeStep = ArtefactManufactureTask::where('artefact_id', $artefact->id)
+        ->where('manufacture_task_id', $this->manufactureTask->id)
+        ->first();
+
+    $rawMaterial = StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'RECIPERM1',
+        'description' => 'recipe raw material',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => 10,
+    ]);
+    UpdateRawMaterial::make()->action($rawMaterial, ['org_stock_id' => $inputOrgStock->id]);
+
+    AttachRawMaterialToRecipeStep::make()->action($recipeStep, [
+        'raw_material_id'   => $rawMaterial->id,
+        'quantity_per_unit' => 0.5,
+    ]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'WH-REC2',
+        'name' => 'Warehouse for receiving 2',
+    ]);
+    $area = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, [
+        'code' => 'A-REC2',
+        'name' => 'Area receiving 2',
+    ]);
+    $location = \App\Actions\Inventory\Location\StoreLocation::make()->action(
+        $area,
+        [
+            'code' => 'L-REC2',
+            'name' => 'Loc receiving 2',
+        ] + \App\Models\Inventory\Location::factory()->definition()
+    );
+    $inputLocation = \App\Actions\Inventory\Location\StoreLocation::make()->action(
+        $area,
+        [
+            'code' => 'L-INPUT2',
+            'name' => 'Loc input 2',
+        ] + \App\Models\Inventory\Location::factory()->definition()
+    );
+
+    $inputLocationOrgStock = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($inputOrgStock, $inputLocation, [
+        'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+    ]);
+    \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($inputOrgStock, $inputLocation, [
+        'quantity' => 100,
+        'type'     => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PRODUCTION,
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+        'artefact_id' => $artefact->id,
+        'quantity'    => 10,
+    ]);
+
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $task = $jobOrderItem->tasks()->first();
+    $user = $this->guest->getUser();
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 20]);
+
+    $jobOrder = \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder, [
+        'location_id' => $location->id,
+    ]);
+
+    expect($jobOrder->state)->toBe(JobOrderStateEnum::RECEIVED);
+
+    $creditMovement = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)
+        ->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PRODUCTION)
+        ->first();
+    expect($creditMovement)->not->toBeNull()
+        ->and((float) $creditMovement->quantity)->toBe(10.0);
+
+    $deductionMovement = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $inputOrgStock->id)
+        ->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PRODUCTION)
+        ->where('quantity', '<', 0)
+        ->first();
+    expect($deductionMovement)->not->toBeNull()
+        ->and((float) $deductionMovement->quantity)->toBe(-5.0);
+
+    $inputLocationOrgStock->refresh();
+    expect((float) $inputLocationOrgStock->quantity)->toBe(95.0);
+});
