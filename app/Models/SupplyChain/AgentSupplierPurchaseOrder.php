@@ -129,9 +129,8 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data'      => '{}',
         'cost_data' => '{}',
-        'sources' => '{}',
     ];
 
     protected $guarded = [];

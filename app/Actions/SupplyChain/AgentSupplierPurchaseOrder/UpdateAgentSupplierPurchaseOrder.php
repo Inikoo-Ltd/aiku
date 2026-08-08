@@ -13,8 +13,11 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Rules\IUnique;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateAgentSupplierPurchaseOrder extends OrgAction
@@ -50,7 +53,13 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
                 'required',
                 $this->strict ? 'alpha_dash' : 'string'
             ],
-            'notes'     => ['sometimes', 'string']
+            'notes'          => ['sometimes', 'string'],
+            'state'          => ['sometimes', 'required', Rule::enum(AgentSupplierPurchaseOrderStateEnum::class)],
+            'delivery_state' => ['sometimes', 'required', Rule::enum(AgentSupplierPurchaseOrderDeliveryStateEnum::class)],
+            'cost_items'     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_shipping'  => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'date'           => ['sometimes', 'required'],
         ];
 
         if ($this->strict) {

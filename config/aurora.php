@@ -23,6 +23,7 @@ return [
      */
     'allowed_fetchers' => [
         'Agents',
+        'AgentSupplierPurchaseOrders',
         'ClockingMachines',
         'OrgStockMovements',
         'PurchaseOrgStockMovements',

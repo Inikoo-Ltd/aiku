@@ -9,6 +9,11 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrder;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
@@ -293,6 +298,40 @@ test('create purchase order independent supplier', function (OrgSupplierProduct 
 
     return $purchaseOrder;
 })->depends('attach supplier product to organisation');
+
+test('create agent supplier purchase order', function (PurchaseOrder $purchaseOrder) {
+    $supplier = $this->supplier;
+
+    $agentSupplierPurchaseOrder = StoreAgentSupplierPurchaseOrder::make()->action(
+        $purchaseOrder,
+        $supplier,
+        []
+    );
+
+    expect($agentSupplierPurchaseOrder)->toBeInstanceOf(AgentSupplierPurchaseOrder::class)
+        ->and($agentSupplierPurchaseOrder->purchase_order_id)->toBe($purchaseOrder->id)
+        ->and($agentSupplierPurchaseOrder->supplier_id)->toBe($supplier->id)
+        ->and($agentSupplierPurchaseOrder->group_id)->toBe($supplier->group_id)
+        ->and($agentSupplierPurchaseOrder->reference)->toBe($supplier->code.'-'.$purchaseOrder->reference)
+        ->and($agentSupplierPurchaseOrder->currency_id)->toBe($supplier->currency_id);
+
+    return $agentSupplierPurchaseOrder;
+})->depends('create purchase order independent supplier');
+
+test('update agent supplier purchase order', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
+    $updated = UpdateAgentSupplierPurchaseOrder::make()->action(
+        $agentSupplierPurchaseOrder,
+        [
+            'state'          => AgentSupplierPurchaseOrderStateEnum::CONFIRMED,
+            'delivery_state' => AgentSupplierPurchaseOrderDeliveryStateEnum::CONFIRMED,
+            'cost_total'     => 1234.56,
+        ]
+    );
+
+    expect($updated->state)->toBe(AgentSupplierPurchaseOrderStateEnum::CONFIRMED)
+        ->and($updated->delivery_state)->toBe(AgentSupplierPurchaseOrderDeliveryStateEnum::CONFIRMED)
+        ->and((float)$updated->cost_total)->toBe(1234.56);
+})->depends('create agent supplier purchase order');
 
 test('add item to purchase order', function (PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct) {
     $orgStock                     = $this->orgStocks[0];

@@ -76,6 +76,7 @@ use App\Transfers\Aurora\FetchAuroraPortfolio;
 use App\Transfers\Aurora\FetchAuroraProduct;
 use App\Transfers\Aurora\FetchAuroraProductHasOrgStock;
 use App\Transfers\Aurora\FetchAuroraProspect;
+use App\Transfers\Aurora\FetchAuroraAgentSupplierPurchaseOrder;
 use App\Transfers\Aurora\FetchAuroraPurchaseOrder;
 use App\Transfers\Aurora\FetchAuroraPurchaseOrderTransaction;
 use App\Transfers\Aurora\FetchAuroraPurge;
@@ -391,6 +392,11 @@ class AuroraOrganisationService implements SourceOrganisationService
     public function fetchPurchaseOrder($id): ?array
     {
         return (new FetchAuroraPurchaseOrder($this))->fetch($id);
+    }
+
+    public function fetchAgentSupplierPurchaseOrder($id): ?array
+    {
+        return (new FetchAuroraAgentSupplierPurchaseOrder($this))->fetch($id);
     }
 
     public function fetchStockDelivery($id): ?array

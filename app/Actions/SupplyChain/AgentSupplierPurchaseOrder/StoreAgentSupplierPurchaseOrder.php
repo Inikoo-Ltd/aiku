@@ -12,8 +12,8 @@ namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\Supplier;
@@ -45,7 +45,9 @@ class StoreAgentSupplierPurchaseOrder extends OrgAction
         if (!Arr::get($modelData, 'currency_id')) {
             data_set($modelData, 'currency_id', $supplier->currency_id);
         }
-        // dd($parent);
+        data_set($modelData, 'group_id', $supplier->group_id);
+        data_set($modelData, 'purchase_order_id', $purchaseOrder->id);
+
         /** @var AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder */
         $agentSupplierPurchaseOrder = $supplier->agentSupplierPurchaseOrder()->create($modelData);
 
@@ -69,8 +71,8 @@ class StoreAgentSupplierPurchaseOrder extends OrgAction
                 'required',
                 $this->strict ? 'alpha_dash' : 'string'
             ],
-            'state'          => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
-            'delivery_state' => ['sometimes', 'required', Rule::enum(PurchaseOrderDeliveryStateEnum::class)],
+            'state'          => ['sometimes', 'required', Rule::enum(AgentSupplierPurchaseOrderStateEnum::class)],
+            'delivery_state' => ['sometimes', 'required', Rule::enum(AgentSupplierPurchaseOrderDeliveryStateEnum::class)],
             'cost_items'     => ['sometimes', 'required', 'numeric', 'min:0'],
             'cost_shipping'  => ['sometimes', 'required', 'numeric', 'min:0'],
             'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
