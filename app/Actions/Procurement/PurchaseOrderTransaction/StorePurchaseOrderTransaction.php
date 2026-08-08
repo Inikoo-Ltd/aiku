@@ -53,6 +53,7 @@ class StorePurchaseOrderTransaction extends OrgAction
             $rules['net_amount'] = ['sometimes', 'numeric'];
             $rules['org_exchange'] = ['sometimes', 'numeric'];
             $rules['grp_exchange'] = ['sometimes', 'numeric'];
+            $rules['agent_supplier_purchase_order_id'] = ['sometimes', 'nullable', 'integer', 'exists:agent_supplier_purchase_orders,id'];
 
             $rules = $this->noStrictStoreRules($rules);
         }

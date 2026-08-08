@@ -11,6 +11,7 @@ namespace App\Transfers\Aurora;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraPurchaseOrderTransaction extends FetchAurora
@@ -81,7 +82,16 @@ class FetchAuroraPurchaseOrderTransaction extends FetchAurora
         }
 
 
+        $agentSupplierPurchaseOrderId = null;
+        if ($this->auroraModelData->{'Agent Supplier Purchase Order Key'}) {
+            $agentSupplierPurchaseOrderId = AgentSupplierPurchaseOrder::where(
+                'source_id',
+                $this->organisation->id.':'.$this->auroraModelData->{'Agent Supplier Purchase Order Key'}
+            )->value('id');
+        }
+
         $this->parsedData['purchase_order_transaction'] = [
+            'agent_supplier_purchase_order_id' => $agentSupplierPurchaseOrderId,
             'quantity_ordered' => $quantityOrdered,
             'state'            => $state,
             'delivery_state'  => $deliveryState,

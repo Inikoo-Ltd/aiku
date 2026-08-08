@@ -352,6 +352,20 @@ test('add item to purchase order', function (PurchaseOrder $purchaseOrder, OrgSu
     return $purchaseOrder;
 })->depends('create purchase order independent supplier', 'attach supplier product to organisation');
 
+test('link purchase order transaction to agent supplier purchase order', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, PurchaseOrder $purchaseOrder) {
+    $purchaseOrderTransaction = $purchaseOrder->purchaseOrderTransactions()->first();
+    expect($purchaseOrderTransaction)->not->toBeNull();
+
+    UpdatePurchaseOrderTransaction::make()->action(
+        $purchaseOrderTransaction,
+        ['agent_supplier_purchase_order_id' => $agentSupplierPurchaseOrder->id],
+        strict: false
+    );
+
+    expect($agentSupplierPurchaseOrder->purchaseOrderTransactions()->count())->toBe(1)
+        ->and($purchaseOrderTransaction->refresh()->agentSupplierPurchaseOrder->id)->toBe($agentSupplierPurchaseOrder->id);
+})->depends('create agent supplier purchase order', 'add item to purchase order');
+
 
 test('add more items to purchase order', function (PurchaseOrder $purchaseOrder) {
     /** @var OrgSupplier $orgSupplier */

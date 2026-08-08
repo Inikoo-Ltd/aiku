@@ -53,6 +53,7 @@ class UpdatePurchaseOrderTransaction extends OrgAction
             'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
         ];
         if (! $this->strict) {
+            $rules['agent_supplier_purchase_order_id'] = ['sometimes', 'nullable', 'integer', 'exists:agent_supplier_purchase_orders,id'];
             $rules = $this->noStrictUpdateRules($rules);
         }
 
