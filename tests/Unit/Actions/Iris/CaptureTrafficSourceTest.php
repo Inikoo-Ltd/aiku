@@ -26,6 +26,10 @@ function irisAjaxRequest(string $referer, array $cookies = [], ?string $original
         $server
     );
 
+    /* A visit is only counted, and therefore only marked as counted, when the shop is known - the
+       iris middleware puts the website on the request in production. */
+    $request->attributes->set('website', (object) ['shop_id' => 1, 'type' => null]);
+
     app()->instance('request', $request);
 
     return $request;

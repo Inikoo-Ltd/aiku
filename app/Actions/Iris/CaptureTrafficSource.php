@@ -181,7 +181,18 @@ class CaptureTrafficSource
             return null;
         }
 
-        RecordTrafficSourceVisit::run(request()->input('website')?->shop_id, $type);
+        /* The iris middleware merges the website into the request input; reading the attribute bag as
+           well keeps this resolvable wherever it was put. */
+        $website = request()->input('website') ?? request()->attributes->get('website');
+        $shopId  = $website?->shop_id;
+
+        if (!$shopId) {
+            /* Nothing was counted, so nothing should be marked as counted - otherwise the marker
+               suppresses the next load too and the visit is lost rather than deduplicated. */
+            return null;
+        }
+
+        RecordTrafficSourceVisit::run($shopId, $type);
 
         return $today.'|'.$counted.$abbr;
     }

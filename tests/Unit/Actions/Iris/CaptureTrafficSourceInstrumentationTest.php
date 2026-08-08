@@ -18,7 +18,10 @@ function captureWith(array $headers = [], string $url = 'https://ancientwisdom.b
         $server['HTTP_'.str_replace('-', '_', strtoupper($key))] = $value;
     }
 
-    app()->instance('request', Request::create($url, 'GET', [], [], [], $server));
+    $request = Request::create($url, 'GET', [], [], [], $server);
+    $request->attributes->set('website', (object) ['shop_id' => 1, 'type' => null]);
+
+    app()->instance('request', $request);
 
     CaptureTrafficSource::make()->getCookies();
 }
@@ -81,9 +84,11 @@ it('marks a visitor as counted for the day, and does not count them again', func
     /* Asserted through the marker cookie rather than the counter: the counter needs a resolved shop,
        and what is under test is the decision, not the increment. A URL that keeps its click id through
        internal navigation used to count a visit on every page load. */
-    app()->instance('request', Illuminate\Http\Request::create('https://ecom.test/', 'GET', [], [], [], [
+    $request = Illuminate\Http\Request::create('https://ecom.test/', 'GET', [], [], [], [
         'HTTP_X_ORIGINAL_REFERER' => 'https://www.google.com/search?q=incense',
-    ]));
+    ]);
+    $request->attributes->set('website', (object) ['shop_id' => 1, 'type' => null]);
+    app()->instance('request', $request);
 
     $firstLoad = CaptureTrafficSource::make()->getCookies();
 
@@ -91,14 +96,16 @@ it('marks a visitor as counted for the day, and does not count them again', func
         ->and($firstLoad['aiku_vcd']['value'])->toStartWith(now()->toDateString().'|');
 
     /* The same browser on its next page, now carrying the marker the first response set. */
-    app()->instance('request', Illuminate\Http\Request::create(
+    $second = Illuminate\Http\Request::create(
         'https://ecom.test/',
         'GET',
         [],
         ['aiku_vcd' => $firstLoad['aiku_vcd']['value'], 'aiku_lts' => $firstLoad['aiku_lts']['value'] ?? ''],
         [],
         ['HTTP_X_ORIGINAL_REFERER' => 'https://www.google.com/search?q=incense']
-    ));
+    );
+    $second->attributes->set('website', (object) ['shop_id' => 1, 'type' => null]);
+    app()->instance('request', $second);
 
     expect(CaptureTrafficSource::make()->getCookies())->not->toHaveKey('aiku_vcd');
 });
