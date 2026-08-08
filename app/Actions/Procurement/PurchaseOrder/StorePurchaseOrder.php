@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
@@ -37,6 +38,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePurchaseOrder extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithPrepareDeliveryStoreFields;
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
@@ -79,15 +81,6 @@ class StorePurchaseOrder extends OrgAction
         GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->delay($this->hydratorsDelay);
 
         return $purchaseOrder;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
     }
 
     public function rules(): array

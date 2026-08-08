@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplier;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSuppliers;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrgSupplier extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
 
     public function handle(OrgSupplier $orgSupplier, $modelData = []): OrgSupplier
@@ -31,15 +33,6 @@ class UpdateOrgSupplier extends OrgAction
         }
 
         return $orgSupplier;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction = true) {
-            return true;
-        }
-
-        return $request->user()->authTo('procurement.'.$this->organisation->id.'.edit');
     }
 
     public function rules(ActionRequest $request): array

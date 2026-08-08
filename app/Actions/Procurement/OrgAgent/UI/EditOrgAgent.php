@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgAgent\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SysAdmin\Organisation;
@@ -17,13 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditOrgAgent extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
-
+    use WithProcurementAuthorisation;
     public function handle(OrgAgent $orgAgent): OrgAgent
     {
         return $orgAgent;

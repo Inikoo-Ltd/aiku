@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
@@ -22,20 +23,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use AsAction;
     use HasPurchaseOrderHydrators;
 
     private PurchaseOrder $purchaseOrder;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function afterValidator(Validator $validator): void
     {

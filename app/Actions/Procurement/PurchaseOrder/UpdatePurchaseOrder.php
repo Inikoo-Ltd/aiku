@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrder extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
@@ -47,15 +49,6 @@ class UpdatePurchaseOrder extends OrgAction
         }
 
         return $this->update($purchaseOrder, $modelData, ['data']);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
     }
 
     public function rules(): array

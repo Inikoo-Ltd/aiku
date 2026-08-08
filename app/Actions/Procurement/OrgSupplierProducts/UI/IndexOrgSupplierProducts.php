@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
@@ -34,16 +35,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgSupplierProducts extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithOrgSupplierSubNavigation;
     use WithAgentOrganisation;
 
     private OrgSupplier|OrgAgent|Organisation $parent;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
 
     protected function getElementGroups(Organisation|OrgAgent|OrgSupplier $parent): array
     {

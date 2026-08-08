@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -30,14 +31,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgSupplierProduct extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithAgentOrganisation;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
 
     public function handle(OrgSupplierProduct $orgSupplierProduct): OrgSupplierProduct
     {

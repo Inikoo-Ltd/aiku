@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrderTransaction extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 
@@ -43,16 +45,6 @@ class UpdatePurchaseOrderTransaction extends OrgAction
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrderTransaction->purchaseOrder)->delay($this->hydratorsDelay);
 
         return $purchaseOrderTransaction;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
     public function rules(): array

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplier\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
@@ -29,17 +30,11 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgSuppliers extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithAgentOrganisation;
 
     private Organisation|OrgAgent $parent;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
 
     protected function getSupplierElementGroups(Organisation|OrgAgent $parent): array
     {
