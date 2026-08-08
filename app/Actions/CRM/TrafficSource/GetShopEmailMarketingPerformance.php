@@ -56,9 +56,12 @@ class GetShopEmailMarketingPerformance
             ->get();
 
         $campaignByMailshot = TrafficSourceCampaign::query()
-            ->whereIn('reference', $mailshots->map(
-                fn (Mailshot $mailshot) => RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshot->id
-            ))
+            /* Both namespaces: a newsletter's campaign is mailshot-N, a marketing mailshot's is
+               mmailshot-N, because `reference` is unique across the whole table. */
+            ->whereIn('reference', $mailshots->flatMap(fn (Mailshot $mailshot) => [
+                RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshot->id,
+                RecordEmailClickTouchpoint::MARKETING_CAMPAIGN_REF_PREFIX.$mailshot->id,
+            ]))
             ->pluck('id', 'reference');
 
         $campaignIds = $campaignByMailshot->values();
@@ -97,7 +100,8 @@ class GetShopEmailMarketingPerformance
             ->keyBy('campaign_id');
 
         $rows = $mailshots->map(function (Mailshot $mailshot) use ($campaignByMailshot, $customerTotals, $prospectConversions, $costPerEmail) {
-            $campaignId = $campaignByMailshot->get(RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshot->id);
+            $campaignId = $campaignByMailshot->get(RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshot->id)
+                ?? $campaignByMailshot->get(RecordEmailClickTouchpoint::MARKETING_CAMPAIGN_REF_PREFIX.$mailshot->id);
             $attribution = $campaignId ? $customerTotals->get($campaignId) : null;
 
             return [

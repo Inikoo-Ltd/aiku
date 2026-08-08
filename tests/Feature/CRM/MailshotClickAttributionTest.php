@@ -188,3 +188,32 @@ it('keeps a newsletter click on the newsletter channel', function () {
 
     expect($this->customer->fresh()->trafficSources()->first()->type)->toBe('newsletter');
 });
+
+it('does not collide when a mailshot already has a campaign under the newsletter channel', function () {
+    /* AIKU-18ZB: traffic_source_campaigns.reference is unique across the whole table, so once
+       newsletters and marketing mailshots became separate channels, the same mailshot-N reference
+       could not be created twice. */
+    createTrafficSource($this->shop, 'marketing-mailshot', 'Marketing Mailshots');
+
+    $mailshot = StoreMailshot::make()->action($this->outbox, array_merge(
+        Mailshot::factory()->definition(),
+        ['type' => App\Enums\Comms\Mailshot\MailshotTypeEnum::MARKETING]
+    ));
+
+    $newsletter = App\Models\CRM\TrafficSource::where('shop_id', $this->shop->id)->where('type', 'newsletter')->first();
+
+    App\Models\CRM\TrafficSourceCampaign::create([
+        'traffic_source_id' => $newsletter->id,
+        'reference'         => RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshot->id,
+        'slug'              => 'ms-'.uniqid(),
+        'name'              => 'Already there',
+        'type'              => 'newsletter',
+    ]);
+
+    $this->customer->trafficSources()->detach();
+    $this->customer->update(['traffic_sources' => null]);
+
+    RecordEmailClickTouchpoint::run($this->customer, now(), $mailshot);
+
+    expect($this->customer->fresh()->trafficSources()->first()->type)->toBe('marketing-mailshot');
+});

@@ -36,6 +36,14 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
      */
     public const CAMPAIGN_REF_PREFIX = 'mailshot-';
 
+    /**
+     * Marketing mailshots need a namespace of their own. `reference` is unique across the whole table,
+     * so once newsletters and marketing mailshots became separate channels, a marketing click on
+     * mailshot 43496 tried to insert `mailshot-43496` a second time - the row already existed under the
+     * newsletter source - and the insert was rejected outright.
+     */
+    public const MARKETING_CAMPAIGN_REF_PREFIX = 'mmailshot-';
+
     /** Same namespacing reason as above, for the automated emails that are not mailshots. */
     public const OUTBOX_CAMPAIGN_REF_PREFIX = 'outbox-';
 
@@ -93,7 +101,9 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
         };
 
         $campaignRef = match (true) {
-            (bool) $mailshot        => self::CAMPAIGN_REF_PREFIX.$mailshot->id,
+            (bool) $mailshot        => ($type === TrafficSourcesTypeEnum::NEWSLETTER
+                ? self::CAMPAIGN_REF_PREFIX
+                : self::MARKETING_CAMPAIGN_REF_PREFIX).$mailshot->id,
             $outboxCode !== null    => self::OUTBOX_CAMPAIGN_REF_PREFIX.$outboxCode,
             default                 => null,
         };
@@ -162,16 +172,24 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
             return;
         }
 
-        TrafficSourceCampaign::firstOrCreate(
-            [
-                'traffic_source_id' => $trafficSource->id,
-                'reference'         => $campaignRef,
-            ],
-            [
-                'name' => $name,
-                'type' => $type->value,
-            ]
-        );
+        /* `reference` is unique across the whole table, so a lookup keyed on source *and* reference
+           will miss a row that exists under a different source and then fail to insert it. Keyed on
+           the reference alone, and tolerant of losing the race with a concurrent click: an email burst
+           arrives as many jobs at once. */
+        try {
+            TrafficSourceCampaign::firstOrCreate(
+                ['reference' => $campaignRef],
+                [
+                    'traffic_source_id' => $trafficSource->id,
+                    'name'              => $name,
+                    'type'              => $type->value,
+                ]
+            );
+        } catch (\Throwable $e) {
+            /* Another worker created it a moment ago. The campaign exists either way, which is all
+               this method promises; a click must never be lost to a race. */
+            report($e);
+        }
     }
 
     /** "reorder_reminder_2nd" reads as "Reorder Reminder 2nd" in the campaign breakdown. */
