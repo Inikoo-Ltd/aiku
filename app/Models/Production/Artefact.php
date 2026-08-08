@@ -100,7 +100,9 @@ class Artefact extends Model implements Auditable
 
     public function manufactureTasks()
     {
-        return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks');
+        return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks')
+            ->withPivot('position', 'units_per_artefact')
+            ->orderByPivot('position');
     }
 
 

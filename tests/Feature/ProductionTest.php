@@ -14,6 +14,14 @@ use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrder\UpdateJobOrder;
 use App\Actions\Production\ManufactureTask\StoreManufactureTask;
+use App\Actions\Production\Artefact\AttachManufactureTaskToArtefact;
+use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
+use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
+use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
+use App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Actions\Production\ManufactureTask\UpdateManufactureTask;
 use App\Actions\Production\Production\StoreProduction;
 use App\Actions\Production\Production\UpdateProduction;
@@ -629,4 +637,139 @@ test('UI get section route org productions index', function () {
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::ORG_PRODUCTION->value)
         ->and($sectionScope->model_slug)->toBe($this->organisation->slug);
+});
+
+test('work queue is generated from the artefact recipe and sessions pay the worker', function () {
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 2],
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+        'artefact_id' => $this->artefact->id,
+        'quantity'    => 10,
+    ]);
+
+    $task = $jobOrderItem->tasks()->first();
+    expect($jobOrderItem->tasks()->count())->toBe(1)
+        ->and($task->manufacture_task_id)->toBe($this->manufactureTask->id)
+        ->and((float)$task->quantity_required)->toBe(20.0)
+        ->and($task->state)->toBe(JobOrderItemTaskStateEnum::TODO);
+
+    $user    = $this->guest->getUser();
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    expect($session->state)->toBe(ManufactureTaskSessionStateEnum::OPEN)
+        ->and($session->started_at)->not->toBeNull()
+        ->and($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::IN_PROGRESS);
+
+    expect(fn () => StartManufactureTaskSession::make()->action($user, $task))
+        ->toThrow(ValidationException::class);
+
+    $session = CloseManufactureTaskSession::make()->action($session, [
+        'quantity_made'     => 15,
+        'quantity_rejected' => 1,
+    ]);
+    expect($session->state)->toBe(ManufactureTaskSessionStateEnum::CLOSED)
+        ->and($session->ended_at)->not->toBeNull()
+        ->and((float)$session->task_work_cost)->toBe((float)$this->manufactureTask->task_work_cost)
+        ->and($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::IN_PROGRESS)
+        ->and((float)$task->quantity_made)->toBe(15.0);
+
+    $secondSession = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($secondSession, ['quantity_made' => 5]);
+
+    $task->refresh();
+    expect($task->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float)$task->quantity_made)->toBe(20.0)
+        ->and((float)$task->quantity_rejected)->toBe(1.0);
+});
+
+test('historic job orders do not generate a work queue', function () {
+    $jobOrder = StoreJobOrder::make()->action($this->production, [
+        'state'       => JobOrderStateEnum::RECEIVED,
+        'received_at' => now(),
+    ]);
+
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+        'artefact_id' => $this->artefact->id,
+        'quantity'    => 5,
+    ]);
+
+    expect($jobOrderItem->tasks()->count())->toBe(0);
+});
+
+test('recipe can be edited by attaching and detaching manufacture tasks', function () {
+    $this->artefact->manufactureTasks()->detach();
+
+    AttachManufactureTaskToArtefact::make()->action($this->artefact, [
+        'manufacture_task_id' => $this->manufactureTask->id,
+        'position'            => 2,
+        'units_per_artefact'  => 3,
+    ]);
+
+    $recipeTask = $this->artefact->refresh()->manufactureTasks()->first();
+    expect((int)$recipeTask->pivot->position)->toBe(2)
+        ->and((float)$recipeTask->pivot->units_per_artefact)->toBe(3.0);
+
+    AttachManufactureTaskToArtefact::make()->action($this->artefact, [
+        'manufacture_task_id' => $this->manufactureTask->id,
+        'position'            => 1,
+        'units_per_artefact'  => 5,
+    ]);
+
+    $recipeTask = $this->artefact->refresh()->manufactureTasks()->first();
+    expect($this->artefact->manufactureTasks()->count())->toBe(1)
+        ->and((int)$recipeTask->pivot->position)->toBe(1)
+        ->and((float)$recipeTask->pivot->units_per_artefact)->toBe(5.0);
+
+    DetachManufactureTaskFromArtefact::make()->action($this->artefact, $this->manufactureTask);
+    expect($this->artefact->manufactureTasks()->count())->toBe(0);
+});
+
+test('UI show manufacture floor', function () {
+    $response = get(route('grp.org.productions.show.floor', [
+        $this->organisation->slug,
+        $this->production->slug,
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Production/ManufactureFloor')
+            ->has('tasks')
+            ->has('today', fn (AssertableInertia $page) => $page
+                ->has('sessions')
+                ->has('quantity_made')
+                ->has('earned'))
+            ->where('open_session', null);
+    });
+});
+
+test('UI index job orders', function () {
+    $response = get(route('grp.org.productions.show.operations.job-orders.index', [
+        $this->organisation->slug,
+        $this->production->slug,
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Production/JobOrders')
+            ->has('data')
+            ->has('pageHead')
+            ->has('breadcrumbs');
+    });
+});
+
+test('UI show job order', function () {
+    $jobOrder = JobOrder::first();
+    $response = get(route('grp.org.productions.show.operations.job-orders.show', [
+        $this->organisation->slug,
+        $this->production->slug,
+        $jobOrder->slug,
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) use ($jobOrder) {
+        $page
+            ->component('Org/Production/JobOrder')
+            ->where('job_order.reference', $jobOrder->reference)
+            ->has('items')
+            ->has('artefact_options');
+    });
 });

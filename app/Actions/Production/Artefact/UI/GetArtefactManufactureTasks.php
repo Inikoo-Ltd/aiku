@@ -2,29 +2,57 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 10 May 2024 17:29:22 British Summer Time, Sheffield, UK
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sat, 08 Aug 2026 22:00:00 Central European Summer Time, Mijas, Spain
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Production\Artefact\UI;
 
-use App\Http\Resources\Production\ManufactureTasksResource;
 use App\Models\Production\Artefact;
-use Lorisleiva\Actions\ActionRequest;
+use App\Models\Production\ManufactureTask;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetArtefactManufactureTasks
 {
     use AsObject;
 
-    public function handle(Artefact $artefact, ActionRequest $request): array
+    public function handle(Artefact $artefact): array
     {
-        // Fetch the artefacts related to the manufacture task from the pivot table
-        $manufactureTasks = $artefact->manufactureTasks()->get();
+        $recipe = $artefact->manufactureTasks->map(fn (ManufactureTask $task) => [
+            'id'                 => $task->id,
+            'slug'               => $task->slug,
+            'code'               => $task->code,
+            'name'               => $task->name,
+            'task_work_cost'     => $task->task_work_cost,
+            'position'           => $task->pivot->position,
+            'units_per_artefact' => $task->pivot->units_per_artefact,
+        ])->values()->all();
 
+        $taskOptions = ManufactureTask::where('production_id', $artefact->production_id)
+            ->orderBy('code')
+            ->get()
+            ->map(fn (ManufactureTask $task) => [
+                'id'   => $task->id,
+                'code' => $task->code,
+                'name' => $task->name,
+            ])->values()->all();
 
-        $manufactureTaskData = ManufactureTasksResource::collection($manufactureTasks)->toArray($request);
-
-        return $manufactureTaskData;
+        return [
+            'artefact_id'  => $artefact->id,
+            'recipe'       => $recipe,
+            'task_options' => $taskOptions,
+            'routes'       => [
+                'attach' => [
+                    'name'       => 'grp.models.artefact.manufacture-task.attach',
+                    'parameters' => ['artefact' => $artefact->id],
+                    'method'     => 'post',
+                ],
+                'detach' => [
+                    'name'       => 'grp.models.artefact.manufacture-task.detach',
+                    'parameters' => ['artefact' => $artefact->id],
+                    'method'     => 'delete',
+                ],
+            ],
+        ];
     }
 }

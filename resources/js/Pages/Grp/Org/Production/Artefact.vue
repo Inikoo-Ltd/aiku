@@ -11,7 +11,7 @@ import type { Component } from 'vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
-import TableManufactureTasks from "@/Components/Tables/Grp/Org/Production/TableManufactureTasks.vue"
+import TableArtefactRecipe from "@/Components/Tables/Grp/Org/Production/TableArtefactRecipe.vue"
 // import FileShowcase from '@/xxxxxxxxxxxx'
 
 const props = defineProps<{
@@ -31,7 +31,7 @@ const component = computed(() => {
 
     const components: Component = {
         // showcase: FileShowcase
-        manufacture_tasks: TableManufactureTasks,
+        manufacture_tasks: TableArtefactRecipe,
         history: TableHistories,
     }
 

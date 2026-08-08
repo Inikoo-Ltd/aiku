@@ -10,6 +10,7 @@ namespace App\Actions\Production\JobOrder;
 
 use App\Actions\Production\Production\Hydrators\ProductionHydrateJobOrders;
 use App\Actions\OrgAction;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Http\Resources\Production\JobOrderResource;
 use App\Models\CRM\WebUser;
 use App\Models\Production\JobOrder;
@@ -17,6 +18,7 @@ use App\Models\Production\Production;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,7 +36,7 @@ class StoreJobOrder extends OrgAction
     {
         data_set($modelData, 'group_id', $production->group_id);
         data_set($modelData, 'organisation_id', $production->organisation_id);
-        data_set($modelData, 'in_process_at', now());
+        data_set($modelData, 'in_process_at', now(), overwrite: false);
 
         if (!Arr::get($modelData, 'reference')) {
             data_set(
@@ -61,7 +63,12 @@ class StoreJobOrder extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("productions-view.{$this->organisation->id}");
+        return $request->user()->authTo([
+            'org-supervisor.'.$this->organisation->id,
+            'productions-view.'.$this->organisation->id,
+            "productions_operations.{$this->production->id}.view",
+            "productions_operations.{$this->production->id}.orchestrate",
+        ]);
     }
 
 
@@ -77,7 +84,17 @@ class StoreJobOrder extends OrgAction
         }
 
         return [
-            'customer_notes' => ['sometimes','nullable','string'],
+            'customer_notes'  => ['sometimes','nullable','string'],
+            'reference'       => ['sometimes', 'nullable', 'string', 'max:64'],
+            'state'           => ['sometimes', Rule::enum(JobOrderStateEnum::class)],
+            'date'            => ['sometimes', 'nullable', 'date'],
+            'in_process_at'   => ['sometimes', 'nullable', 'date'],
+            'submitted_at'    => ['sometimes', 'nullable', 'date'],
+            'confirmed_at'    => ['sometimes', 'nullable', 'date'],
+            'received_at'     => ['sometimes', 'nullable', 'date'],
+            'not_received_at' => ['sometimes', 'nullable', 'date'],
+            'created_at'      => ['sometimes', 'nullable', 'date'],
+            'source_id'       => ['sometimes', 'nullable', 'string'],
             ...$rules
         ];
     }
@@ -92,7 +109,7 @@ class StoreJobOrder extends OrgAction
 
     public function asController(Production $production, ActionRequest $request): JobOrder
     {
-        $this->initialisation($production->organisation, $request);
+        $this->initialisationFromProduction($production, $request);
 
         return $this->handle($production, $this->validatedData);
     }
@@ -103,18 +120,13 @@ class StoreJobOrder extends OrgAction
 
     }
 
-    public function htmlResponse(JobOrder $jobOrder, ActionRequest $request): Response
+    public function htmlResponse(JobOrder $jobOrder): Response
     {
-        $routeName = $request->route()->getName();
-
-        return match ($routeName) {
-            'grp.models.production.job-order.store' => Inertia::location(route('grp.org.productions.show.job-order.show', [
-                'organisation'           => $jobOrder->organisation->slug,
-            ])),
-            default => Inertia::location(route('retina.fulfilment.storage.pallet_deliveries.show', [
-                'jobOrder'         => $jobOrder->slug
-            ]))
-        };
+        return Inertia::location(route('grp.org.productions.show.operations.job-orders.show', [
+            'organisation' => $jobOrder->organisation->slug,
+            'production'   => $jobOrder->production->slug,
+            'jobOrder'     => $jobOrder->slug,
+        ]));
     }
 
     public string $commandSignature = 'job_orders:create {production}';
