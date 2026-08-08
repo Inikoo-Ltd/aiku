@@ -57,7 +57,7 @@ class FetchAuroraStockDelivery extends FetchAurora
             "Placed",  "Costing", "InvoiceChecked" => StockDeliveryStateEnum::PLACED,
 
 
-            "InProcess", "Confirmed", "Manufactured", "QC_Pass"."Submitted" => StockDeliveryStateEnum::IN_PROCESS,
+            "InProcess", "Confirmed", "Manufactured", "QC_Pass", "Submitted" => StockDeliveryStateEnum::IN_PROCESS,
 
             "Inputted", "Dispatched" => StockDeliveryStateEnum::DISPATCHED,
             "Received" => StockDeliveryStateEnum::RECEIVED,
