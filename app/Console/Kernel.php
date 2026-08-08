@@ -72,6 +72,10 @@ class Kernel extends ConsoleKernel
            moved, so it is cheap, and the alternative is a dashboard whose visit column is an hour
            stale while everything beside it is live. */
         $schedule->command('traffic-source:collect-visits')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
+        /* Two days rather than one: Meta revises the previous day's spend for a while after the fact,
+           and re-sending a day replaces its figure instead of adding to it, so the later, better
+           number wins and a missed night repairs itself. */
+        $schedule->command('traffic-source:fetch-meta-costs --days=2')->dailyAt('06:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
 

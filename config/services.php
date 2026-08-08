@@ -77,6 +77,13 @@ return [
         'client_id'       => env('GOOGLE_CLIENT_ID'),
         'client_secret'   => env('GOOGLE_CLIENT_SECRET'),
     ],
+    'meta_ads'  => [
+        /* A Business Manager system user token, which does not expire and normally covers every ad
+           account in the business. A shop may override it in settings.meta_ads.access_token when its
+           account belongs to somebody else's business, e.g. an agency's. */
+        'access_token' => env('META_ADS_ACCESS_TOKEN'),
+        'api_version'  => env('META_ADS_API_VERSION', 'v21.0'),
+    ],
     'slack'     => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

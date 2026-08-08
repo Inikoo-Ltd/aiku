@@ -208,7 +208,9 @@ class AttachTrafficSourcesToModel
                 if (TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)->count() >= self::MAX_REFERRAL_CAMPAIGNS) {
                     return null;
                 }
-            } elseif (!preg_match('/^\d{1,20}$/', $reference)) {
+            } elseif (!preg_match('/^(?:'.preg_quote(TrafficSourcesTypeEnum::INSTAGRAM_CAMPAIGN_PREFIX, '/').')?\d{1,20}$/', $reference)) {
+                /* Instagram campaign references carry a prefix so they cannot collide with the Facebook
+                   half of the same Meta campaign; the id after it is still the platform's own. */
                 return null;
             }
 

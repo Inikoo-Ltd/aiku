@@ -17,12 +17,21 @@ enum TrafficSourcesTypeEnum: string
 {
     use EnumHelperTrait;
 
+    /**
+     * Instagram spend and Instagram clicks both name a Meta campaign by the same numeric id, and a
+     * campaign `reference` is unique across every traffic source, so the Instagram row has to claim a
+     * different string: otherwise the two halves of one Meta campaign fight over a single campaign row
+     * and whichever arrives second loses its breakdown.
+     */
+    public const INSTAGRAM_CAMPAIGN_PREFIX = 'ig-';
+
     case ORGANIC_GOOGLE = 'organic-google';
     case GOOGLE_ADS = 'google-ads';
     case ORGANIC_BING = 'organic-bing';
     case BING_ADS = 'bing-ads';
     case ORGANIC_META = 'organic-meta';
     case META_ADS = 'meta-ads';
+    case INSTAGRAM_ADS = 'instagram-ads';
     case ORGANIC_PINTEREST = 'organic-pinterest';
     case PINTEREST_ADS = 'pinterest-ads';
     case ORGANIC_TIKTOK = 'organic-tiktok';
@@ -47,6 +56,7 @@ enum TrafficSourcesTypeEnum: string
             self::BING_ADS->value          => 'Bing Ads',
             self::ORGANIC_META->value      => 'Organic Meta',
             self::META_ADS->value          => 'Meta Ads',
+            self::INSTAGRAM_ADS->value     => 'Instagram Ads',
             self::ORGANIC_PINTEREST->value => 'Organic Pinterest',
             self::PINTEREST_ADS->value     => 'Pinterest Ads',
             self::ORGANIC_TIKTOK->value    => 'Organic TikTok',
@@ -73,6 +83,7 @@ enum TrafficSourcesTypeEnum: string
             self::BING_ADS->value          => true,
             self::ORGANIC_META->value      => true,
             self::META_ADS->value          => true,
+            self::INSTAGRAM_ADS->value     => true,
             self::ORGANIC_PINTEREST->value => true,
             self::PINTEREST_ADS->value     => false,
             self::ORGANIC_TIKTOK->value    => true,
@@ -99,6 +110,7 @@ enum TrafficSourcesTypeEnum: string
             self::BING_ADS->value          => 'd',
             self::ORGANIC_META->value      => 'e',
             self::META_ADS->value          => 'f',
+            self::INSTAGRAM_ADS->value     => 'u',
             self::ORGANIC_PINTEREST->value => 'g',
             self::PINTEREST_ADS->value     => 'h',
             self::ORGANIC_TIKTOK->value    => 'i',

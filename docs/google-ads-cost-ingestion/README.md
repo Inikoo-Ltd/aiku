@@ -340,3 +340,30 @@ One thing has to be done on the Meta side for **campaign-level** figures to line
 must carry `utm_medium=paid` and `utm_campaign={{campaign.id}}`, Meta's dynamic parameter for the
 campaign id. That is what the click already stores, and what the spend is keyed on. Without it the
 channel total and its ROAS are still right, but campaign rows show cost against no revenue.
+
+#### Instagram as its own channel
+
+Instagram ads are bought in the same ad account as Facebook ones and have no separate API, so both
+sides of the split come from a parameter rather than a second integration:
+
+- **Cost**: the Insights call is broken down by `publisher_platform`. Rows served on Instagram go to
+  the `instagram-ads` source; Facebook, Audience Network, Messenger and Threads are summed back into
+  `meta-ads`.
+- **Revenue**: the ads' URLs carry `utm_source={{site_source_name}}`, which Meta fills in with `ig`,
+  `fb`, `an`, `msg` or `th`. A paid Meta click whose `utm_source` is `ig` is classified as
+  `instagram-ads`, everything else stays `meta-ads` — the mirror image of the cost rule.
+
+**`utm_source={{site_source_name}}` is what makes the split honest.** An ad that omits it has all of
+its Instagram clicks counted as Facebook while its Instagram spend is counted as Instagram, so both
+channels' ROAS are wrong. Check the account's URL parameters before turning anything on: as of Aug
+2026 every paid Meta click reaching Aiku carried it.
+
+Instagram campaign references are the Meta campaign id prefixed with `ig-`, because a campaign
+reference is unique across all sources and the Facebook half of the same campaign already holds the
+bare id. Both the click and the spend build the same prefixed string, so they still meet on one row.
+
+Two things do not split retroactively. Clicks recorded before the change are all `meta-ads`,
+including the Instagram ones, and attribution windows are long — so **do not backfill Meta costs
+across the switch-over date** (`--days=30` over it moves Instagram spend off revenue that is still
+filed under Meta). Run `traffic-source:seed` before the first fetch, or the command stops with
+`shop has no instagram-ads traffic source`.

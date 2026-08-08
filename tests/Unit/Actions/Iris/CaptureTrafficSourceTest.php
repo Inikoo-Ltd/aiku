@@ -49,6 +49,20 @@ it('captures a meta ads click from the referring page url', function () {
     expect($cookies['aiku_lts']['value'])->toBe('f120230926608450511');
 });
 
+it('captures an instagram ads click as its own channel', function () {
+    irisAjaxRequest('https://ecom.test/?fbclid=XYZ&utm_source=ig&utm_medium=paid&utm_campaign=120230926608450511');
+
+    $cookies = CaptureTrafficSource::make()->getCookies();
+
+    expect($cookies['aiku_lts']['value'])->toBe('uig-120230926608450511');
+});
+
+it('keeps the other meta placements under meta ads', function () {
+    irisAjaxRequest('https://ecom.test/?fbclid=XYZ&utm_source=an&utm_medium=paid&utm_campaign=120230926608450511');
+
+    expect(CaptureTrafficSource::make()->getCookies()['aiku_lts']['value'])->toBe('f120230926608450511');
+});
+
 it('still falls back to organic detection when the referrer is an external search engine', function () {
     irisAjaxRequest('https://www.google.com/search?q=candles');
 
