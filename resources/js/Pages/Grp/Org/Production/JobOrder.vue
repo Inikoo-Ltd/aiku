@@ -48,7 +48,18 @@ const props = defineProps<{
     }[]
     artefact_options: { id: number, code: string, name: string, has_recipe: boolean }[]
     add_item_route: null | { name: string, parameters: object }
+    confirm_route: null | { name: string, parameters: object }
 }>()
+
+function confirmJobOrder() {
+    if (!props.confirm_route) return
+    processing.value = true
+    router.patch(
+        route(props.confirm_route.name, props.confirm_route.parameters),
+        {},
+        { preserveScroll: true, onFinish: () => processing.value = false }
+    )
+}
 
 const newArtefactId = ref<number | null>(null)
 const newQuantity = ref<number | null>(null)
@@ -89,6 +100,18 @@ function progressPercent(task: ItemTask) {
             <span class="rounded-full bg-gray-100 border border-gray-200 px-3 py-1 font-medium">{{ job_order.state_label }}</span>
             <span v-if="job_order.date">{{ useFormatTime(job_order.date) }}</span>
             <span v-if="job_order.public_notes" class="truncate">{{ job_order.public_notes }}</span>
+            <button
+                v-if="confirm_route"
+                type="button"
+                class="ml-auto rounded bg-green-600 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40"
+                :disabled="processing || !items.length"
+                @click="confirmJobOrder"
+            >
+                {{ trans('Release to floor') }}
+            </button>
+        </div>
+        <div v-if="confirm_route" class="mb-6 -mt-3 text-sm text-amber-600">
+            {{ trans('Draft — workers cannot see these tasks until the order is released to the floor') }}
         </div>
 
         <div v-if="!items.length" class="text-gray-400 text-center py-10 border border-dashed border-gray-200 rounded-lg mb-6">

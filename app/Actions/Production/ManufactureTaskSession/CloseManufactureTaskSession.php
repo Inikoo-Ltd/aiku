@@ -9,7 +9,7 @@
 namespace App\Actions\Production\ManufactureTaskSession;
 
 use App\Actions\OrgAction;
-use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
+use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\ManufactureTaskSession;
 use Illuminate\Http\RedirectResponse;
@@ -40,21 +40,7 @@ class CloseManufactureTaskSession extends OrgAction
             'operative_reward_amount'         => $manufactureTask->operative_reward_amount,
         ]);
 
-        $jobOrderItemTask = $session->jobOrderItemTask;
-        $quantityMade     = $jobOrderItemTask->sessions()
-            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
-            ->sum('quantity_made');
-        $quantityRejected = $jobOrderItemTask->sessions()
-            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
-            ->sum('quantity_rejected');
-
-        $jobOrderItemTask->update([
-            'quantity_made'     => $quantityMade,
-            'quantity_rejected' => $quantityRejected,
-            'state'             => $quantityMade >= $jobOrderItemTask->quantity_required
-                ? JobOrderItemTaskStateEnum::DONE
-                : JobOrderItemTaskStateEnum::IN_PROGRESS,
-        ]);
+        CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
 
         return $session;
     }

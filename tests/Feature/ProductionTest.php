@@ -11,6 +11,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Production\Artefact\StoreArtefact;
+use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrder\UpdateJobOrder;
 use App\Actions\Production\ManufactureTask\StoreManufactureTask;
@@ -19,6 +20,7 @@ use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession;
+use App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
@@ -655,9 +657,17 @@ test('work queue is generated from the artefact recipe and sessions pay the work
     expect($jobOrderItem->tasks()->count())->toBe(1)
         ->and($task->manufacture_task_id)->toBe($this->manufactureTask->id)
         ->and((float)$task->quantity_required)->toBe(20.0)
-        ->and($task->state)->toBe(JobOrderItemTaskStateEnum::TODO);
+        ->and($task->state)->toBe(JobOrderItemTaskStateEnum::TODO)
+        ->and($jobOrder->reference)->toStartWith('JO'.$this->organisation->slug.'-');
 
-    $user    = $this->guest->getUser();
+    $user = $this->guest->getUser();
+
+    expect(fn () => StartManufactureTaskSession::make()->action($user, $task))
+        ->toThrow(ValidationException::class);
+
+    ConfirmJobOrder::make()->action($jobOrder);
+    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED);
+
     $session = StartManufactureTaskSession::make()->action($user, $task);
     expect($session->state)->toBe(ManufactureTaskSessionStateEnum::OPEN)
         ->and($session->started_at)->not->toBeNull()
@@ -791,4 +801,21 @@ test('payroll csv export aggregates closed sessions with snapshotted rates', fun
 
     expect($csv)->toContain('"Worker","Task code"')
         ->and($csv)->toContain($this->manufactureTask->code);
+});
+
+test('a voided session removes its quantities from the task and payroll', function () {
+    $session = \App\Models\Production\ManufactureTaskSession::where('state', ManufactureTaskSessionStateEnum::CLOSED)
+        ->orderByDesc('id')->first();
+    $task = $session->jobOrderItemTask;
+    expect($task->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+
+    VoidManufactureTaskSession::make()->action($session);
+
+    $task->refresh();
+    expect($session->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::VOIDED)
+        ->and($task->state)->toBe(JobOrderItemTaskStateEnum::IN_PROGRESS)
+        ->and((float)$task->quantity_made)->toBe(15.0);
+
+    expect(fn () => VoidManufactureTaskSession::make()->action($session))
+        ->toThrow(ValidationException::class);
 });

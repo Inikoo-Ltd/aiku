@@ -9,6 +9,7 @@
 namespace App\Actions\Production\JobOrderItemTask\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\JobOrderItemTask;
@@ -55,6 +56,7 @@ class ShowManufactureFloor extends OrgAction
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
             ->with(['jobOrderItem.artefact', 'jobOrder', 'manufactureTask'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
+            ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
             ->orderBy('job_orders.date')
             ->orderBy('job_order_item_tasks.position')
             ->select('job_order_item_tasks.*')

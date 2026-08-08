@@ -108,6 +108,10 @@ class ShowJobOrder extends OrgAction
                     'name'       => 'grp.models.job-order.item.store',
                     'parameters' => ['jobOrder' => $jobOrder->id],
                 ] : null,
+                'confirm_route' => $this->canEdit && $jobOrder->state == JobOrderStateEnum::IN_PROCESS ? [
+                    'name'       => 'grp.models.job-order.confirm',
+                    'parameters' => ['jobOrder' => $jobOrder->id],
+                ] : null,
             ]
         );
     }

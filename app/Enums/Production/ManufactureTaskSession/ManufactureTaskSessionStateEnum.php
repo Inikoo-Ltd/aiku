@@ -16,12 +16,14 @@ enum ManufactureTaskSessionStateEnum: string
 
     case OPEN   = 'open';
     case CLOSED = 'closed';
+    case VOIDED = 'voided';
 
     public static function labels($forElements = false): array
     {
         return [
             'open'   => __('Open'),
             'closed' => __('Closed'),
+            'voided' => __('Voided'),
         ];
     }
 }

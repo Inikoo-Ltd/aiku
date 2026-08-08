@@ -9,7 +9,9 @@
 namespace App\Actions\Production\JobOrder;
 
 use App\Actions\Production\Production\Hydrators\ProductionHydrateJobOrders;
+use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Http\Resources\Production\JobOrderResource;
 use App\Models\CRM\WebUser;
@@ -19,7 +21,6 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -37,12 +38,24 @@ class StoreJobOrder extends OrgAction
         data_set($modelData, 'group_id', $production->group_id);
         data_set($modelData, 'organisation_id', $production->organisation_id);
         data_set($modelData, 'in_process_at', now(), overwrite: false);
+        data_set($modelData, 'state', JobOrderStateEnum::IN_PROCESS, overwrite: false);
 
         if (!Arr::get($modelData, 'reference')) {
+            $organisation = $production->organisation;
+            $organisation->serialReferences()->firstOrCreate(
+                ['model' => SerialReferenceModelEnum::JOB_ORDER],
+                [
+                    'organisation_id' => $organisation->id,
+                    'format'          => 'JO'.$organisation->slug.'-%04d',
+                ]
+            );
             data_set(
                 $modelData,
                 'reference',
-                Str::random(10) //TODO: make a reference generator for Job Order
+                GetSerialReference::run(
+                    container: $organisation,
+                    modelType: SerialReferenceModelEnum::JOB_ORDER
+                )
             );
         }
 

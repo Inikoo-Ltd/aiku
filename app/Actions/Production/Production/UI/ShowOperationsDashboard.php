@@ -194,10 +194,30 @@ class ShowOperationsDashboard extends OrgAction
                             'quantity_made'       => (float)$session->jobOrderItemTask->quantity_made,
                             'quantity_required'   => (float)$session->jobOrderItemTask->quantity_required,
                         ]),
+                    'today_sessions' => ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
+                        ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::CLOSED)
+                        ->whereDate('ended_at', now()->toDateString())
+                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact'])
+                        ->orderByDesc('ended_at')
+                        ->limit(30)
+                        ->get()
+                        ->map(fn (ManufactureTaskSession $session) => [
+                            'id'            => $session->id,
+                            'worker'        => $session->user->contact_name ?: $session->user->username,
+                            'task_name'     => $session->manufactureTask->name,
+                            'artefact_code' => $session->jobOrderItemTask->jobOrderItem->artefact->code,
+                            'ended_at'      => $session->ended_at,
+                            'quantity_made' => (float)$session->quantity_made,
+                            'void_route'    => [
+                                'name'       => 'grp.models.manufacture-task-session.void',
+                                'parameters' => ['manufactureTaskSession' => $session->id],
+                            ],
+                        ]),
                     'queue'       => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
                         ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
                         ->with(['jobOrderItem.artefact', 'jobOrder', 'manufactureTask'])
                         ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
+                        ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
                         ->orderBy('job_orders.date')
                         ->orderBy('job_order_item_tasks.position')
                         ->select('job_order_item_tasks.*')

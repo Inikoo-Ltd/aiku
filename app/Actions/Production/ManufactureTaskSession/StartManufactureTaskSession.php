@@ -9,6 +9,7 @@
 namespace App\Actions\Production\ManufactureTaskSession;
 
 use App\Actions\OrgAction;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\JobOrderItemTask;
@@ -23,6 +24,12 @@ class StartManufactureTaskSession extends OrgAction
 {
     public function handle(User $user, JobOrderItemTask $jobOrderItemTask): ManufactureTaskSession
     {
+        if ($jobOrderItemTask->jobOrder()->first()->state != JobOrderStateEnum::CONFIRMED) {
+            throw ValidationException::withMessages([
+                'job_order_item_task_id' => __('This job order has not been released to the floor'),
+            ]);
+        }
+
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
             ->first();

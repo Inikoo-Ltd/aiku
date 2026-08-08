@@ -64,9 +64,28 @@ const props = defineProps<{
             quantity_made: number
             quantity_required: number
         }[]
+        today_sessions: {
+            id: number
+            worker: string
+            task_name: string
+            artefact_code: string
+            ended_at: string
+            quantity_made: number
+            void_route: { name: string, parameters: object }
+        }[]
         queue: QueueTask[]
     }
 }>();
+
+function voidSession(session: { id: number, worker: string, quantity_made: number, void_route: { name: string, parameters: object } }) {
+    if (!window.confirm(trans('Void this entry?') + ` ${session.worker} · ${session.quantity_made}`)) return
+    processing.value = true
+    router.patch(
+        route(session.void_route.name, session.void_route.parameters),
+        {},
+        { preserveScroll: true, onFinish: () => processing.value = false }
+    )
+}
 
 const processing = ref(false)
 
@@ -158,6 +177,28 @@ function elapsedSince(startedAt: string) {
                     <div class="text-xs text-gray-500 tabular-nums">{{ session.quantity_made }} / {{ session.quantity_required }}</div>
                 </div>
             </div>
+
+            <template v-if="command_control.today_sessions.length">
+                <h3 class="text-sm font-semibold text-gray-500 mt-6 mb-2">{{ trans('Finished today') }}</h3>
+                <div v-for="session in command_control.today_sessions" :key="session.id"
+                    class="mb-2 rounded-lg border border-gray-200 bg-white px-4 py-2 flex items-center justify-between gap-3 text-sm">
+                    <div class="min-w-0 truncate">
+                        <span class="font-medium">{{ session.worker }}</span>
+                        <span class="text-gray-600"> · {{ session.task_name }} · {{ session.artefact_code }}</span>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span class="tabular-nums text-gray-700">{{ session.quantity_made }}</span>
+                        <button
+                            type="button"
+                            class="text-xs text-red-600 hover:underline disabled:opacity-40"
+                            :disabled="processing"
+                            @click="voidSession(session)"
+                        >
+                            {{ trans('Void') }}
+                        </button>
+                    </div>
+                </div>
+            </template>
         </div>
 
         <div>
