@@ -916,3 +916,72 @@ test('artefact links to trade unit and org stock', function () {
     expect($artefact->org_stock_id)->toBe($orgStock->id)
         ->and($artefact->trade_unit_id)->toBe($tradeUnit?->id);
 });
+
+test('completed job order is received into stock with a batch code', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'         => 'RECEIVEART1',
+        'name'         => 'Receivable artefact',
+        'org_stock_id' => $orgStock->id,
+    ]);
+    $artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'WH-REC',
+        'name' => 'Warehouse for receiving',
+    ]);
+    $area = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, [
+        'code' => 'A-REC',
+        'name' => 'Area receiving',
+    ]);
+    $location = \App\Actions\Inventory\Location\StoreLocation::make()->action(
+        $area,
+        [
+            'code' => 'L-REC',
+            'name' => 'Loc receiving',
+        ] + \App\Models\Inventory\Location::factory()->definition()
+    );
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+        'artefact_id' => $artefact->id,
+        'quantity'    => 10,
+    ]);
+
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $task = $jobOrderItem->tasks()->first();
+    $user = $this->guest->getUser();
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10]);
+
+    $jobOrder = \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder, [
+        'location_id' => $location->id,
+    ]);
+
+    expect($jobOrder->state)->toBe(JobOrderStateEnum::RECEIVED);
+
+    $movement = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)
+        ->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PRODUCTION)
+        ->first();
+    expect($movement)->not->toBeNull()
+        ->and((float)$movement->quantity)->toBe(10.0);
+
+    $batchCode = \App\Models\Dispatching\BatchCode::where('org_stock_id', $orgStock->id)->first();
+    expect($batchCode)->not->toBeNull()
+        ->and($batchCode->code)->toBe($jobOrder->reference.'-'.$artefact->code);
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $location->id)
+        ->where('org_stock_id', $orgStock->id)->first();
+    expect($locationOrgStock)->not->toBeNull()
+        ->and((float)$locationOrgStock->quantity)->toBe(10.0);
+});

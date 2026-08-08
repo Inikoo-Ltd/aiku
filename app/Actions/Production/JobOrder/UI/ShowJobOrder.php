@@ -50,15 +50,18 @@ class ShowJobOrder extends OrgAction
 
     public function htmlResponse(JobOrder $jobOrder, ActionRequest $request): Response
     {
+        $warehouse = $this->organisation->warehouses()->first();
+
         $items = $jobOrder->jobOrderItems()
             ->with(['artefact', 'tasks.manufactureTask'])
             ->get()
             ->map(fn (JobOrderItem $item) => [
-                'id'            => $item->id,
-                'artefact_code' => $item->artefact->code,
-                'artefact_name' => $item->artefact->name,
-                'quantity'      => (int)$item->quantity,
-                'tasks'         => $item->tasks->map(fn (JobOrderItemTask $task) => [
+                'id'                => $item->id,
+                'artefact_code'     => $item->artefact->code,
+                'artefact_name'     => $item->artefact->name,
+                'quantity'          => (int)$item->quantity,
+                'produced_quantity' => (float)($item->tasks->sortByDesc('position')->first()->quantity_made ?? 0),
+                'tasks'             => $item->tasks->map(fn (JobOrderItemTask $task) => [
                     'id'                => $task->id,
                     'position'          => $task->position,
                     'task_name'         => $task->manufactureTask->name,
@@ -111,6 +114,14 @@ class ShowJobOrder extends OrgAction
                 'confirm_route' => $this->canEdit && $jobOrder->state == JobOrderStateEnum::IN_PROCESS ? [
                     'name'       => 'grp.models.job-order.confirm',
                     'parameters' => ['jobOrder' => $jobOrder->id],
+                ] : null,
+                'receive_route' => $this->canEdit && $jobOrder->state == JobOrderStateEnum::CONFIRMED && $warehouse ? [
+                    'name'       => 'grp.models.job-order.receive',
+                    'parameters' => ['jobOrder' => $jobOrder->id],
+                ] : null,
+                'locations_fetch_route' => $warehouse ? [
+                    'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
+                    'parameters' => ['organisation' => $this->organisation->slug, 'warehouse' => $warehouse->slug],
                 ] : null,
             ]
         );

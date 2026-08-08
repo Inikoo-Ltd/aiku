@@ -30,6 +30,7 @@ enum OrgStockMovementTypeEnum: string
     case CONSUMPTION                = 'consumption';
     case WRITE_OFF                  = 'write-off';
     case ADJUSTMENT                 = 'adjustment';
+    case PRODUCTION                  = 'production';
 
     case ASSOCIATE    = 'associate';
     case DISASSOCIATE = 'disassociate';
@@ -55,6 +56,7 @@ enum OrgStockMovementTypeEnum: string
             self::CONSUMPTION           => __('Consumption'),
             self::WRITE_OFF             => __('Write Off'),
             self::ADJUSTMENT            => __('Adjustment'),
+            self::PRODUCTION             => __('Production'),
             self::ASSOCIATE             => __('Associate'),
             self::DISASSOCIATE          => __('Disassociate'),
             self::AUDIT                 => __('Audit'),

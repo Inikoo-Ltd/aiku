@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
 import { ref } from "vue"
+import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -44,11 +45,14 @@ const props = defineProps<{
         artefact_code: string
         artefact_name: string
         quantity: number
+        produced_quantity: number
         tasks: ItemTask[]
     }[]
     artefact_options: { id: number, code: string, name: string, has_recipe: boolean }[]
     add_item_route: null | { name: string, parameters: object }
     confirm_route: null | { name: string, parameters: object }
+    receive_route: null | { name: string, parameters: object }
+    locations_fetch_route: null | { name: string, parameters: object }
 }>()
 
 function confirmJobOrder() {
@@ -88,6 +92,43 @@ function addItem() {
 function progressPercent(task: ItemTask) {
     if (!task.quantity_required) return 0
     return Math.min(100, Math.round(task.quantity_made / task.quantity_required * 100))
+}
+
+const locationQuery = ref("")
+const locationResults = ref<{ id: number, code: string }[]>([])
+const selectedLocation = ref<{ id: number, code: string } | null>(null)
+const searchingLocations = ref(false)
+
+async function searchLocations() {
+    if (!props.locations_fetch_route || !locationQuery.value) {
+        locationResults.value = []
+        return
+    }
+    searchingLocations.value = true
+    try {
+        const response = await axios.get(route(props.locations_fetch_route.name, props.locations_fetch_route.parameters), {
+            params: { "filter[global]": locationQuery.value },
+        })
+        locationResults.value = response.data.data ?? []
+    } finally {
+        searchingLocations.value = false
+    }
+}
+
+function pickLocation(location: { id: number, code: string }) {
+    selectedLocation.value = location
+    locationResults.value = []
+    locationQuery.value = location.code
+}
+
+function receiveIntoStock() {
+    if (!props.receive_route || !selectedLocation.value) return
+    processing.value = true
+    router.patch(
+        route(props.receive_route.name, props.receive_route.parameters),
+        { location_id: selectedLocation.value.id },
+        { preserveScroll: true, onFinish: () => processing.value = false }
+    )
 }
 </script>
 
@@ -151,6 +192,43 @@ function progressPercent(task: ItemTask) {
                     />
                 </div>
             </div>
+        </div>
+
+        <div v-if="receive_route" class="mt-6 rounded-xl border border-gray-200 bg-white p-4">
+            <div class="font-semibold mb-3">{{ trans('Receive into stock') }}</div>
+            <ul class="text-sm text-gray-600 mb-3">
+                <li v-for="item in items" :key="item.id">
+                    {{ item.artefact_code }} — {{ trans('will receive') }} {{ item.produced_quantity }} {{ trans('units') }}
+                </li>
+            </ul>
+            <div class="relative max-w-xs">
+                <label class="block text-xs text-gray-500 mb-1">{{ trans('Location') }}</label>
+                <input
+                    type="text"
+                    v-model="locationQuery"
+                    class="w-full rounded border-gray-300 text-sm"
+                    :placeholder="trans('Search location')"
+                    @input="selectedLocation = null; searchLocations()"
+                />
+                <ul v-if="locationResults.length" class="absolute z-10 mt-1 w-full rounded border border-gray-200 bg-white shadow-lg max-h-48 overflow-auto">
+                    <li
+                        v-for="location in locationResults"
+                        :key="location.id"
+                        class="px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100"
+                        @click="pickLocation(location)"
+                    >
+                        {{ location.code }}
+                    </li>
+                </ul>
+            </div>
+            <button
+                type="button"
+                class="mt-3 rounded bg-green-600 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40"
+                :disabled="!selectedLocation || processing"
+                @click="receiveIntoStock"
+            >
+                {{ trans('Receive into stock') }}
+            </button>
         </div>
 
         <div v-if="add_item_route" class="mt-6 flex items-end gap-3">
