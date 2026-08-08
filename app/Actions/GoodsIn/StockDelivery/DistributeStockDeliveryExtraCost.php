@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -22,19 +23,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DistributeStockDeliveryExtraCost extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     public const DISTRIBUTION_EQUALLY = 'equally';
     public const DISTRIBUTION_BY_VALUE = 'by_value';
 
     private StockDelivery $stockDelivery;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function rules(): array
     {

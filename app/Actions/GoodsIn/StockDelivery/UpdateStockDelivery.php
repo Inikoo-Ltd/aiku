@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDelivery extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictProcurementOrderRules;
     use WithNoStrictRules;
@@ -38,15 +40,6 @@ class UpdateStockDelivery extends OrgAction
         'port_of_import',
         'delivery_address',
     ];
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function handle(StockDelivery $stockDelivery, array $modelData): StockDelivery
     {
