@@ -46,7 +46,7 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
         "grp.org.procurement.org_suppliers.show.purchase-orders.show",
         [route().params["organisation"], route().params["orgSupplier"], purchaseOrder.slug]);
     default:
-      return "";
+      return null;
   }
 }
 
@@ -71,7 +71,7 @@ function SupplierRoute(purchaseOrder: PurchaseOrder) {
         "grp.org.procurement.org_suppliers.show",
         [route().params["organisation"], route().params["orgSupplier"]]);
     default:
-      return "";
+      return null;
   }
 }
 
@@ -92,7 +92,7 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
         "grp.org.procurement.org_agents.show",
         [route().params["organisation"], purchaseOrder.agent_slug]);
     default:
-      return "";
+      return null;
   }
 }
 </script>
@@ -100,15 +100,18 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
 <template>
   <Table :resource="data" :name="tab" class="mt-5">
     <template #cell(reference)="{ item: purchaseOrder }">
-      <Link :href="PurchaseOrderRoute(purchaseOrder)" class="primaryLink">
+      <Link v-if="PurchaseOrderRoute(purchaseOrder)" :href="PurchaseOrderRoute(purchaseOrder)" class="primaryLink">
         {{ purchaseOrder.reference }}
       </Link>
+      <span v-else>{{ purchaseOrder.reference }}</span>
     </template>
 
     <template #cell(parent_name)="{ item: purchaseOrder }">
-      <Link :href="purchaseOrder.parent_type === 'OrgSupplier' ? SupplierRoute(purchaseOrder) : AgentRoute(purchaseOrder)" class="secondaryLink">
+      <Link v-if="purchaseOrder.parent_type === 'OrgSupplier' ? SupplierRoute(purchaseOrder) : AgentRoute(purchaseOrder)"
+        :href="purchaseOrder.parent_type === 'OrgSupplier' ? SupplierRoute(purchaseOrder) : AgentRoute(purchaseOrder)" class="secondaryLink">
         {{ purchaseOrder.parent_name }}
       </Link>
+      <span v-else>{{ purchaseOrder.parent_name }}</span>
     </template>
 
     <template #cell(state)="{ item: purchaseOrder }">

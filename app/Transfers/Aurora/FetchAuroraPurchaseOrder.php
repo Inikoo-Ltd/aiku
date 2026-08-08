@@ -154,6 +154,7 @@ class FetchAuroraPurchaseOrder extends FetchAurora
         return DB::connection("aurora")
             ->table("Purchase Order Dimension")
             ->where("Purchase Order Key", $id)
+            ->whereIn("Purchase Order Type", ["Parcel", "Container"])
             ->first();
     }
 
