@@ -29,7 +29,7 @@ class GetShopAttributionDataQuality
      * nothing matches all show up as smaller numbers rather than as errors. These checks make each of
      * those failures visible on its own, per shop.
      *
-     * @return array{period: string, period_label: string, from: string|null, capture: array{hits: int, identified_pct: float|null, rows: array<int, array{visitor: string, hits: int, matched: int, repeat: int, direct: int, unmatched: int, identified: string}>, rejected: array<int, array{host: string, hits: int}>}, checks: array<int, array{key: string, label: string, status: string, value: string, hint: string, items: array<int, string>}>}
+     * @return array{period: string, period_label: string, from: string|null, capture: array{arrivals: int, identified_pct: float|null, rows: array<int, array{visitor: string, arrivals: int, matched: int, repeat: int, direct: int, unmatched: int, internal: int, identified: string}>, rejected: array<int, array{host: string, hits: int}>}, checks: array<int, array{key: string, label: string, status: string, value: string, hint: string, items: array<int, string>}>}
      */
     public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
     {
@@ -55,15 +55,15 @@ class GetShopAttributionDataQuality
      * shop-scoped - the counters are estate-wide - but this is the only screen where anyone looks at
      * attribution health, and a command nobody runs answers nothing.
      *
-     * @return array{hits: int, identified_pct: float|null, rows: array<int, array{visitor: string, hits: int, matched: int, repeat: int, direct: int, unmatched: int, identified: string}>, rejected: array<int, array{host: string, hits: int}>}
+     * @return array{arrivals: int, identified_pct: float|null, rows: array<int, array{visitor: string, arrivals: int, matched: int, repeat: int, direct: int, unmatched: int, internal: int, identified: string}>, rejected: array<int, array{host: string, hits: int}>}
      */
     private function captureToday(): array
     {
-        $day      = now()->toDateString();
-        $outcomes = ['matched', 'repeat', 'direct', 'unmatched'];
-        $rows     = [];
-        $allHits  = 0;
-        $allKnown = 0;
+        $day         = now()->toDateString();
+        $outcomes    = ['matched', 'repeat', 'direct', 'unmatched', 'internal'];
+        $rows        = [];
+        $allArrivals = 0;
+        $allKnown    = 0;
 
         foreach (['anon' => __('Anonymous'), 'auth' => __('Logged in')] as $audience => $label) {
             $counts = [];
@@ -72,13 +72,18 @@ class GetShopAttributionDataQuality
                 $counts[$outcome] = (int) Cache::get('traffic_capture:'.$day.':'.$audience.':'.$outcome, 0);
             }
 
-            $hits       = array_sum($counts);
+            /* Identified is a share of arrivals, never of page views: `internal` is a visitor
+               browsing our own pages after arriving, and leaving it in the denominator let one
+               session dilute its own arrival a dozen times over - healthy capture read as 7%
+               identified and raised a false alarm. */
+            $arrivals   = array_sum($counts) - $counts['internal'];
             $identified = $counts['matched'] + $counts['repeat'];
-            $allHits   += $hits;
-            $allKnown  += $identified;
 
-            $rows[] = array_merge(['visitor' => $label, 'hits' => $hits], $counts, [
-                'identified' => $hits > 0 ? round($identified / $hits * 100, 1).'%' : '-',
+            $allArrivals += $arrivals;
+            $allKnown    += $identified;
+
+            $rows[] = array_merge(['visitor' => $label, 'arrivals' => $arrivals], $counts, [
+                'identified' => $arrivals > 0 ? round($identified / $arrivals * 100, 1).'%' : '-',
             ]);
         }
 
@@ -90,8 +95,8 @@ class GetShopAttributionDataQuality
             ->all();
 
         return [
-            'hits'           => $allHits,
-            'identified_pct' => $allHits > 0 ? round($allKnown / $allHits * 100, 1) : null,
+            'arrivals'       => $allArrivals,
+            'identified_pct' => $allArrivals > 0 ? round($allKnown / $allArrivals * 100, 1) : null,
             'rows'           => $rows,
             'rejected'       => $rejected,
         ];

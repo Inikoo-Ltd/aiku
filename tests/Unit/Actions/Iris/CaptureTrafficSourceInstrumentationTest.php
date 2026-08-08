@@ -50,10 +50,11 @@ it('counts a hit from an external site we do not recognise as a matched referral
         ->and(captureCount('unmatched'))->toBe(0);
 });
 
-it('does not count our own admin app as a referral', function () {
+it('counts a hit referred by our own admin app as browsing, not a direct arrival', function () {
     captureWith(['X-Original-Referer' => 'https://app.aiku.io/org/aw/shops/uk']);
 
-    expect(captureCount('direct'))->toBe(1)
+    expect(captureCount('internal'))->toBe(1)
+        ->and(captureCount('direct'))->toBe(0)
         ->and(captureCount('matched'))->toBe(0);
 });
 
@@ -64,10 +65,11 @@ it('counts anonymous and logged in visitors separately', function () {
         ->and(captureCount('direct', 'auth'))->toBe(0);
 });
 
-it('does not count the storefront referring itself as an unrecognised source', function () {
+it('counts an own-site page view as browsing, never as a direct arrival', function () {
     captureWith(['X-Original-Referer' => 'https://ancientwisdom.biz/products']);
 
-    expect(captureCount('direct'))->toBe(1)
+    expect(captureCount('internal'))->toBe(1)
+        ->and(captureCount('direct'))->toBe(0)
         ->and(captureCount('unmatched'))->toBe(0);
 });
 

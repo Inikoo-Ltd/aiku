@@ -110,3 +110,7 @@
 p span.country {
     font-weight: 600
 }
+/* floating-vue ships no max-width, so a long v-tooltip stretches into a full-width band */
+.v-popper--theme-tooltip .v-popper__inner {
+    max-width: 20rem;
+}

@@ -24,7 +24,7 @@ class TrafficSourceCaptureStats extends Command
      */
     public function handle(): int
     {
-        $outcomes = ['matched', 'repeat', 'direct', 'unmatched'];
+        $outcomes = ['matched', 'repeat', 'direct', 'unmatched', 'internal'];
         $rows     = [];
 
         foreach (range((int) $this->option('days') - 1, 0) as $daysAgo) {
@@ -39,23 +39,29 @@ class TrafficSourceCaptureStats extends Command
                     $counts[$outcome] = (int) Cache::get('traffic_capture:'.$day.':'.$audience.':'.$outcome, 0);
                 }
 
-                $total      = array_sum($counts);
+                /* Identified is a share of arrivals, never of page views. `internal` is a visitor
+                   browsing our own pages after arriving, so leaving it in the denominator let one
+                   session dilute its own arrival a dozen times over - a healthy day read as 7%
+                   identified and raised a false alarm. */
+                $arrivals   = array_sum($counts) - $counts['internal'];
                 $identified = $counts['matched'] + $counts['repeat'];
 
                 $rows[] = [
                     $day,
                     $audience === 'anon' ? 'anonymous' : 'logged in',
-                    $total,
+                    $arrivals,
                     $counts['matched'],
                     $counts['repeat'],
                     $counts['direct'],
                     $counts['unmatched'],
-                    $total > 0 ? round($identified / $total * 100, 1).'%' : '-',
+                    $counts['internal'],
+                    $arrivals > 0 ? round($identified / $arrivals * 100, 1).'%' : '-',
                 ];
             }
         }
 
-        $this->table(['Day', 'Visitor', 'Hits', 'Matched', 'Repeat', 'Direct', 'Unmatched', 'Identified'], $rows);
+        $this->table(['Day', 'Visitor', 'Arrivals', 'Matched', 'Repeat', 'Direct', 'Unmatched', 'Browsing', 'Identified'], $rows);
+        $this->line('Arrivals exclude Browsing (own-site page views). Counters written before this split still hold browsing inside Direct.');
 
         $hosts = Cache::get('traffic_capture:'.now()->toDateString().':hosts', []);
 
