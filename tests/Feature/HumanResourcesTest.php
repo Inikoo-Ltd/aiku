@@ -536,6 +536,101 @@ test('can approve attendance adjustment', function () {
         ->and($approved->approved_at)->not->toBeNull();
 });
 
+test('approving an adjustment recomputes the hours the employee is paid from', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $timesheet = \App\Models\HumanResources\Timesheet::create([
+        'group_id'                  => $this->group->id,
+        'organisation_id'           => $this->organisation->id,
+        'date'                      => '2026-06-30',
+        'subject_type'              => 'Employee',
+        'subject_id'                => $employee->id,
+        'subject_name'              => $employee->contact_name,
+        'start_at'                  => '2026-06-30 08:00:00',
+        'working_duration'          => 0,
+        'breaks_duration'           => 0,
+        'total_duration'            => 0,
+        'number_time_trackers'      => 1,
+        'number_open_time_trackers' => 1,
+    ]);
+
+    \App\Models\HumanResources\TimeTracker::create([
+        'timesheet_id'    => $timesheet->id,
+        'subject_type'    => 'Employee',
+        'subject_id'      => $employee->id,
+        'status'          => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::OPEN,
+        'starts_at'       => '2026-06-30 08:00:00',
+    ]);
+
+    $adjustment = StoreAttendanceAdjustment::make()->action($employee, [
+        'date'               => '2026-06-30',
+        'reason'             => 'Forgot to clock out',
+        'requested_start_at' => '08:00',
+        'requested_end_at'   => '17:00',
+    ]);
+    $adjustment->update(['timesheet_id' => $timesheet->id]);
+
+    ApproveAttendanceAdjustment::make()->handle($adjustment->refresh());
+
+    $timesheet->refresh();
+
+    expect($timesheet->working_duration)->toBe(9 * 3600)
+        ->and($timesheet->number_open_time_trackers)->toBe(0);
+});
+
+test('an adjustment that ends before it starts never reaches the paid hours', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $timesheet = \App\Models\HumanResources\Timesheet::create([
+        'group_id'                  => $this->group->id,
+        'organisation_id'           => $this->organisation->id,
+        'date'                      => '2026-06-30',
+        'subject_type'              => 'Employee',
+        'subject_id'                => $employee->id,
+        'subject_name'              => $employee->contact_name,
+        'working_duration'          => 28800,
+        'breaks_duration'           => 0,
+        'total_duration'            => 28800,
+        'number_time_trackers'      => 1,
+        'number_open_time_trackers' => 0,
+    ]);
+
+    \App\Models\HumanResources\TimeTracker::create([
+        'timesheet_id'    => $timesheet->id,
+        'subject_type'    => 'Employee',
+        'subject_id'      => $employee->id,
+        'status'          => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::CLOSED,
+        'starts_at'       => '2026-06-30 09:00:00',
+        'ends_at'         => '2026-06-30 17:00:00',
+        'duration'        => 28800,
+    ]);
+
+    $adjustment = AttendanceAdjustment::create([
+        'group_id'           => $this->group->id,
+        'organisation_id'    => $this->organisation->id,
+        'employee_id'        => $employee->id,
+        'employee_name'      => $employee->contact_name,
+        'timesheet_id'       => $timesheet->id,
+        'date'               => '2026-06-30',
+        'reason'             => 'Typo in the end time',
+        'requested_start_at' => '2026-06-30 09:00:00',
+        'requested_end_at'   => '2026-06-30 07:00:00',
+        'status'             => \App\Enums\HumanResources\Attendance\AttendanceAdjustmentStatusEnum::PENDING,
+    ]);
+
+    ApproveAttendanceAdjustment::make()->handle($adjustment);
+
+    $timesheet->refresh();
+
+    expect($timesheet->working_duration)->toBe(28800);
+});
+
 test('can reject attendance adjustment', function () {
     $employee = Employee::factory()->create([
         'organisation_id' => $this->organisation->id,
