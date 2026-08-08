@@ -343,7 +343,7 @@ const changePeriod = (event: Event) => {
             </table>
 
             <p class="mt-3 text-xs text-gray-400">
-                {{ trans('Visits count everyone a channel sent, whether or not they bought. Only counted since the visit counter was switched on, so a channel with history but no visits simply predates it.') }}
+                {{ trans('Visits count everyone a channel sent, whether or not they bought - not unique people: each browser counts once per channel per day, so the same person on two days counts twice. Only counted since the visit counter was switched on, so a channel with history but no visits simply predates it.') }}
             </p>
         </div>
 
