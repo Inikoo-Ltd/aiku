@@ -90,7 +90,6 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
 
 Route::prefix('supplier-products')->as('org_supplier_products.')->group(function () {
     Route::get('', IndexOrgSupplierProducts::class)->name('index');
-    //todo  Route::get('export', ExportOrgSupplierProducts::class)->name('export');
     Route::get('{orgSupplierProduct}', ShowOrgSupplierProduct::class)->name('show');
     Route::get('{orgSupplierProduct}/edit', EditOrgSupplierProduct::class)->name('edit');
 });
