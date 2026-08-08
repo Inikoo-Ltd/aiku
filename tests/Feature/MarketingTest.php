@@ -3595,6 +3595,26 @@ describe('order attribution', function () {
         expect($this->order->trafficSources()->count())->toBe(0);
     });
 
+    it('tells the order marketing story on one time axis, registration included for a first order', function () {
+        createTrafficSource($this->shop, 'google-ads', 'Google Ads');
+
+        $this->customer->update(['traffic_sources' => '1700000000b']);
+        $this->order->update(['submitted_at' => now()]);
+        App\Actions\CRM\TrafficSource\ProcessOrderTrafficSource::run($this->order->fresh());
+
+        $journey = App\Actions\Ordering\Order\UI\GetOrderMarketingJourney::run($this->order->fresh());
+
+        $types = collect($journey['events'])->pluck('type');
+
+        expect($journey['is_first_order'])->toBeTrue()
+            ->and($types)->toContain('touch')
+            ->and($types)->toContain('registration')
+            ->and($types)->toContain('product')
+            ->and(collect($journey['events'])->firstWhere('type', 'touch')['attributed'])->toBeTrue()
+            ->and(collect($journey['events'])->last()['id'])->toBe('order-submitted')
+            ->and($journey['attribution'][0]['label'])->toBe('Google Ads');
+    });
+
     it('attributes an order from the customer touch history when the order has none of its own', function () {
         createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
