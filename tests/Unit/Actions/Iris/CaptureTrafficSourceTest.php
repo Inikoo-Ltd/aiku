@@ -113,13 +113,34 @@ it('does not record the same touch twice in a row', function () {
         ->and($cookies)->not->toHaveKey('aiku_lts');
 });
 
-it('does not set the visit marker twice on the same day', function () {
+it('does not count the same channel twice on the same day', function () {
     irisAjaxRequest(
         'https://ecom.test/?gad_source=1&gad_campaignid=99887766&gclid=ABC123',
-        ['aiku_lts' => 'b99887766', 'aiku_vcd' => now()->toDateString()]
+        ['aiku_lts' => 'b99887766', 'aiku_vcd' => now()->toDateString().'|b']
     );
 
     expect(CaptureTrafficSource::make()->getCookies())->toBe([]);
+});
+
+it('counts a second channel on the same day, rather than halving either', function () {
+    /* Arrived from Google this morning, clicked a newsletter this afternoon: one visit each, because
+       both channels did send them. The attributed columns are where credit gets shared. */
+    irisAjaxRequest('https://ecom.test/', ['aiku_vcd' => now()->toDateString().'|b']);
+    request()->headers->set('X-Original-Referer', 'https://www.google.com/search?q=incense');
+
+    $cookies = CaptureTrafficSource::make()->getCookies();
+
+    expect($cookies)->toHaveKey('aiku_vcd')
+        ->and($cookies['aiku_vcd']['value'])->toBe(now()->toDateString().'|ba');
+});
+
+it('forgets yesterday\'s marker rather than carrying it forward', function () {
+    irisAjaxRequest('https://ecom.test/', ['aiku_vcd' => now()->subDay()->toDateString().'|a']);
+    request()->headers->set('X-Original-Referer', 'https://www.google.com/search?q=incense');
+
+    $cookies = CaptureTrafficSource::make()->getCookies();
+
+    expect($cookies['aiku_vcd']['value'])->toBe(now()->toDateString().'|a');
 });
 
 it('appends a new touch to an existing history', function () {

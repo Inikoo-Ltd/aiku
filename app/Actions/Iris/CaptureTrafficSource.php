@@ -79,11 +79,8 @@ class CaptureTrafficSource
             /* A returning visitor from the same channel is a visit, but only the first time today.
                This branch fires on every page load whose URL still carries the click id, so counting
                it each time turned one person reading five pages into five visits. */
-            if ($this->countVisitOnce($trafficSourceData)) {
-                $cookies['aiku_vcd'] = [
-                    'value'    => now()->toDateString(),
-                    'duration' => 60 * 24 * 2,
-                ];
+            if ($marker = $this->countVisitOnce($trafficSourceData)) {
+                $cookies['aiku_vcd'] = ['value' => $marker, 'duration' => 60 * 24 * 2];
             }
 
             return $cookies;
@@ -117,11 +114,8 @@ class CaptureTrafficSource
 
         $this->recordCaptureOutcome('matched');
 
-        if ($this->countVisitOnce($trafficSourceData)) {
-            $cookies['aiku_vcd'] = [
-                'value'    => now()->toDateString(),
-                'duration' => 60 * 24 * 2,
-            ];
+        if ($marker = $this->countVisitOnce($trafficSourceData)) {
+            $cookies['aiku_vcd'] = ['value' => $marker, 'duration' => 60 * 24 * 2];
         }
 
         return $cookies;
@@ -163,18 +157,33 @@ class CaptureTrafficSource
      * Delegated to RecordTrafficSourceVisit so a storefront arrival and an email click are counted the
      * same way; see that action for why they cannot share one code path.
      */
-    private function countVisitOnce(string $trafficSourceData): bool
+    private function countVisitOnce(string $trafficSourceData): ?string
     {
-        if (request()->cookie('aiku_vcd') === now()->toDateString()) {
-            return false;
+        $abbr = substr($trafficSourceData, 0, 1);
+        $type = TrafficSourcesTypeEnum::fromAbbr($abbr);
+
+        if (!$type) {
+            return null;
         }
 
-        RecordTrafficSourceVisit::run(
-            request()->input('website')?->shop_id,
-            TrafficSourcesTypeEnum::fromAbbr(substr($trafficSourceData, 0, 1))
-        );
+        /* Per channel, not per visitor. Somebody who arrives from Google in the morning and clicks a
+           newsletter in the afternoon is one visit for each: both channels did send them. Splitting
+           that into halves would discount the traffic twice, since the attributed columns already
+           share the credit between the two touches.
 
-        return true;
+           The marker is `<date>|<abbrs counted today>`, so it stays one small cookie however many
+           channels a visitor arrives through. */
+        [$markedDate, $counted] = array_pad(explode('|', (string) request()->cookie('aiku_vcd'), 2), 2, '');
+        $today                  = now()->toDateString();
+        $counted                = $markedDate === $today ? $counted : '';
+
+        if (str_contains($counted, $abbr)) {
+            return null;
+        }
+
+        RecordTrafficSourceVisit::run(request()->input('website')?->shop_id, $type);
+
+        return $today.'|'.$counted.$abbr;
     }
 
     /**

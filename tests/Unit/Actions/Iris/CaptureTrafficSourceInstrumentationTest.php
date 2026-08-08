@@ -88,14 +88,14 @@ it('marks a visitor as counted for the day, and does not count them again', func
     $firstLoad = CaptureTrafficSource::make()->getCookies();
 
     expect($firstLoad)->toHaveKey('aiku_vcd')
-        ->and($firstLoad['aiku_vcd']['value'])->toBe(now()->toDateString());
+        ->and($firstLoad['aiku_vcd']['value'])->toStartWith(now()->toDateString().'|');
 
     /* The same browser on its next page, now carrying the marker the first response set. */
     app()->instance('request', Illuminate\Http\Request::create(
         'https://ecom.test/',
         'GET',
         [],
-        ['aiku_vcd' => now()->toDateString(), 'aiku_lts' => $firstLoad['aiku_lts']['value'] ?? ''],
+        ['aiku_vcd' => $firstLoad['aiku_vcd']['value'], 'aiku_lts' => $firstLoad['aiku_lts']['value'] ?? ''],
         [],
         ['HTTP_X_ORIGINAL_REFERER' => 'https://www.google.com/search?q=incense']
     ));

@@ -158,7 +158,7 @@ const groupedChannels = computed(() => {
 })
 
 const columnHelp: Record<string, string> = {
-    visits: trans('People who arrived from this channel, how many of them bought, and the rate between the two. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked.'),
+    visits: trans('People who arrived from this channel, how many of them bought, and the rate between the two. Counted once per channel per day, so somebody arriving from a search and then a mailshot is one visit for each. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked.'),
     spend: trans('Ad spend imported for this channel over the period. Email spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
     awaiting: trans('Value of orders already placed but not invoiced yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
     revenue: trans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it.'),
