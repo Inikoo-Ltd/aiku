@@ -7,6 +7,8 @@
  */
 
 use App\Actions\SupplyChain\Agent\UI\CreateAgent;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\IndexAgentSupplierPurchaseOrders;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\Agent\UI\EditAgent;
 use App\Actions\SupplyChain\Agent\UI\IndexAgents;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
@@ -63,6 +65,8 @@ Route::prefix("agents")->name("agents.")->group(
                     Route::get('edit', [EditSupplierProduct::class, 'inAgent'])->name('.edit');
                 });
             });
+
+            Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inAgent'])->name('.agent_supplier_purchase_orders.index');
         });
     }
 );
@@ -101,5 +105,12 @@ Route::prefix("supplier-products")->name("supplier_products.")->group(
 
         Route::get('/{supplierProduct}', ShowSupplierProduct::class)->name('show');
         Route::get('/{supplierProduct}/edit', EditSupplierProduct::class)->name('edit');
+    }
+);
+
+Route::prefix("agent-supplier-purchase-orders")->name("agent_supplier_purchase_orders.")->group(
+    function () {
+        Route::get('', IndexAgentSupplierPurchaseOrders::class)->name('index');
+        Route::get('/{agentSupplierPurchaseOrder}', ShowAgentSupplierPurchaseOrder::class)->name('show');
     }
 );

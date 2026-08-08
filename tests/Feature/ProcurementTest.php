@@ -366,6 +366,37 @@ test('link purchase order transaction to agent supplier purchase order', functio
         ->and($purchaseOrderTransaction->refresh()->agentSupplierPurchaseOrder->id)->toBe($agentSupplierPurchaseOrder->id);
 })->depends('create agent supplier purchase order', 'add item to purchase order');
 
+test('UI index agent supplier purchase orders', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.index'));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/AgentSupplierPurchaseOrders')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data');
+    });
+});
+
+test('UI show agent supplier purchase order', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.show', [$agentSupplierPurchaseOrder->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($agentSupplierPurchaseOrder) {
+        $page
+            ->component('SupplyChain/AgentSupplierPurchaseOrder')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $agentSupplierPurchaseOrder->reference)
+                    ->etc()
+            )
+            ->has('showcase.supplier')
+            ->where('showcase.number_transactions', 1);
+    });
+})->depends('create agent supplier purchase order');
+
 
 test('add more items to purchase order', function (PurchaseOrder $purchaseOrder) {
     /** @var OrgSupplier $orgSupplier */
