@@ -62,9 +62,9 @@ class EditArtefact extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit manufacture task'),
+                'title'       => __('Edit artefact'),
                 'pageHead'    => [
-                    'title'     => __('Edit manufacture task'),
+                    'title'     => __('Edit artefact'),
                     // 'actions'   => [
                     //     [
                     //         'type'  => 'button',
@@ -79,7 +79,7 @@ class EditArtefact extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Edit Manufacture Task'),
+                            'title'  => __('Edit artefact'),
                             'label'  => 'edit',
                             'icon'   => ['fal', 'fa-narwhal'],
                             'fields' => [

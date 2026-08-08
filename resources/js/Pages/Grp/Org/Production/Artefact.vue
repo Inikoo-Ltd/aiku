@@ -12,16 +12,17 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import TableArtefactRecipe from "@/Components/Tables/Grp/Org/Production/TableArtefactRecipe.vue"
-// import FileShowcase from '@/xxxxxxxxxxxx'
+import ArtefactShowcase from "@/Components/Showcases/Grp/ArtefactShowcase.vue"
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
+    showcase?: {}
     manufacture_tasks?:{}
     history?: {}
 
-    
+
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -30,7 +31,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components: Component = {
-        // showcase: FileShowcase
+        showcase: ArtefactShowcase,
         manufacture_tasks: TableArtefactRecipe,
         history: TableHistories,
     }
