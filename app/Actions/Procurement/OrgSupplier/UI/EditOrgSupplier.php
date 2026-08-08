@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplier\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
@@ -22,13 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditOrgSupplier extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('procurement.edit');
-
-        return $request->user()->authTo('procurement.view');
-    }
-
+    use WithProcurementAuthorisation;
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
         $organisationParameter = $request->route('organisation');
@@ -272,7 +267,7 @@ class EditOrgSupplier extends OrgAction
                     'args' => [
                         'updateRoute' => [
                             'name' => 'grp.models.supplier.update',
-                            'parameters' => $supplier->slug,
+                            'parameters' => $supplier->id,
 
                         ],
                     ],

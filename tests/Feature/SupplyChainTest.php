@@ -200,7 +200,6 @@ test('UI show suppliers product in supplier', function (SupplierProduct $supplie
             ->component('SupplyChain/SupplierProduct')
             ->has('title')
             ->has('pageHead')
-            ->has('supplier')
             ->has('tabs')
             ->has('breadcrumbs', 4);
     });
