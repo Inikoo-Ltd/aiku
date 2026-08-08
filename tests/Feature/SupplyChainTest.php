@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductShowcase;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
@@ -214,6 +215,9 @@ test('UI show supplier product in supply chain', function (SupplierProduct $supp
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('SupplyChain/SupplierProduct');
     });
+
+    $showcase = GetSupplierProductShowcase::run($supplierProduct);
+    expect($showcase['composition'])->toBeArray();
 })->depends('create supplier product independent supplier');
 
 

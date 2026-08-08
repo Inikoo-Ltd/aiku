@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrdersFromPurchaseOrder;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
@@ -968,6 +969,9 @@ test('UI show org supplier product', function () {
             )
             ->has('tabs');
     });
+
+    $showcase = GetOrgSupplierProductShowcase::run($this->orgSupplierProduct);
+    expect($showcase['composition'])->toBeArray();
 });
 
 test('UI edit org supplier product', function () {

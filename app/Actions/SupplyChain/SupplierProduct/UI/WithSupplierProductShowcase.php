@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\SupplierProduct\UI;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Agent;
@@ -18,7 +19,7 @@ use App\Models\SupplyChain\SupplierProduct;
 
 trait WithSupplierProductShowcase
 {
-    protected function getSupplierProductShowcase(SupplierProduct $supplierProduct, bool $withSupplyChainLink = false): array
+    protected function getSupplierProductShowcase(SupplierProduct $supplierProduct, bool $withSupplyChainLink = false, ?int $organisationId = null): array
     {
         $supplierProduct->loadMissing(['currency', 'supplier', 'agent', 'tradeUnits', 'stocks']);
 
@@ -28,7 +29,49 @@ trait WithSupplierProductShowcase
             'packaging'   => $this->getSupplierProductPackaging($supplierProduct),
             'trade_units' => $this->getSupplierProductTradeUnits($supplierProduct),
             'stocks'      => $this->getSupplierProductStocks($supplierProduct),
+            'composition' => $this->getSupplierProductComposition($supplierProduct, $organisationId),
         ];
+    }
+
+    /**
+     * Read-only mirror of the master product composition triangle: this supplier
+     * product's trade units, and the org stocks each trade unit is packed into
+     * (scoped to one organisation for the org-level showcase).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSupplierProductComposition(SupplierProduct $supplierProduct, ?int $organisationId = null): array
+    {
+        return $supplierProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($organisationId) {
+            $orgStocks = $tradeUnit->orgStocks()
+                ->when($organisationId, fn ($query) => $query->where('org_stocks.organisation_id', $organisationId))
+                ->with('organisation:id,code,slug')
+                ->get();
+
+            return [
+                'code'       => $tradeUnit->code,
+                'name'       => $tradeUnit->name,
+                'slug'       => $tradeUnit->slug,
+                'quantity'   => (float) $tradeUnit->pivot->quantity,
+                'route'      => [
+                    'name'       => 'grp.goods.trade-units.show',
+                    'parameters' => ['tradeUnit' => $tradeUnit->slug],
+                ],
+                'org_stocks' => $orgStocks->map(fn (OrgStock $orgStock) => [
+                    'code'         => $orgStock->code,
+                    'slug'         => $orgStock->slug,
+                    'quantity'     => (float) $orgStock->quantity_in_locations,
+                    'organisation' => [
+                        'code' => $orgStock->organisation->code,
+                        'slug' => $orgStock->organisation->slug,
+                    ],
+                    'route'        => [
+                        'name'       => 'grp.majordomo.redirect_org_stock',
+                        'parameters' => ['orgStock' => $orgStock->id],
+                    ],
+                ])->all(),
+            ];
+        })->all();
     }
 
     private function getSupplierProductDetails(SupplierProduct $supplierProduct, bool $withSupplyChainLink): array
