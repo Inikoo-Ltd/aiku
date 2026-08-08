@@ -44,9 +44,9 @@ class RecordTrafficSourceClick
     }
 
     /**
-     * Webpage urls are stored as bare slugs ("tcrystal-110"), so the landing path maps by trimming
-     * slashes. No match is fine - campaign landing params, retired pages - the raw url column keeps
-     * the evidence either way.
+     * Webpage urls are stored as the final slug alone ("csfh", "tcrystal-110"), never the nested
+     * storefront path, so only the last segment of the landing path can match. No match is fine -
+     * the search page, retired slugs - the raw url column keeps the evidence either way.
      */
     private function resolveWebpage(?int $websiteId, ?string $url): ?int
     {
@@ -55,10 +55,11 @@ class RecordTrafficSourceClick
         }
 
         $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
+        $slug = $path === '' ? '' : basename($path);
 
         return DB::table('webpages')
             ->where('website_id', $websiteId)
-            ->where('url', $path)
+            ->where('url', $slug)
             ->value('id');
     }
 
