@@ -71,6 +71,68 @@ beforeAll(function () {
     loadDB();
 });
 
+/*
+ * Every block below shares one shop and one customer: createShop() hands back Shop::first() and
+ * createCustomer() the shop's first customer. That was harmless while each block was its own file,
+ * because a file restored the database before it ran. Sharing one database in sequence, a block
+ * inherits whatever the blocks above it left behind, and the failures that causes are always a count
+ * too high, never one too low.
+ *
+ * Called as the first line of every block's beforeEach rather than from a beforeEach of its own: the
+ * reset has to happen before the block builds its fixtures, and calling it explicitly is the only
+ * ordering that cannot be got wrong.
+ */
+function resetMarketingFixtures(): void
+{
+    DB::table('model_has_traffic_sources')->delete();
+    DB::table('traffic_source_costs')->delete();
+    DB::table('traffic_source_campaign_stats')->delete();
+    DB::table('traffic_source_campaigns')->delete();
+    DB::table('traffic_source_visits')->delete();
+    DB::table('customers')->update(['traffic_sources' => null]);
+
+    /* Only the rows the fixtures insert. A real invoice or order has a dozen FK children, and the
+       seeded ones some blocks read are not ours to delete; createInvoiceFor and
+       createDispatchedOrderFor stamp theirs with these prefixes. */
+    DB::table('invoices')->where('reference', 'like', 'INV-%')->delete();
+    DB::table('orders')->where('slug', 'like', 'ord-%')->delete();
+
+}
+
+/**
+ * Removes the mailshots a previous block sent from this shop, for blocks whose figures must not
+ * include them. GetEstimatedEmailCost prices marketing spend off
+ * `mailshot_stats.number_dispatched_emails` for the shop, so a block that sent nothing otherwise
+ * carries the previous block's sends as spend it never made.
+ *
+ * Called from the blocks that must not see them, never globally: the blocks that send the mailshots
+ * assert on exactly these rows, and deleting them for everyone breaks those instead.
+ */
+function clearMailshotsFor($shop): void
+{
+    $mailshots = DB::table('mailshots')->where('shop_id', $shop->id)->pluck('id');
+
+    if ($mailshots->isEmpty()) {
+        return;
+    }
+
+    $emails = DB::table('mailshot_has_dispatched_emails')->whereIn('mailshot_id', $mailshots)->pluck('dispatched_email_id');
+
+    DB::table('mailshot_has_dispatched_emails')->whereIn('mailshot_id', $mailshots)->delete();
+    DB::table('mailshot_recipients')->whereIn('mailshot_id', $mailshots)->delete();
+    DB::table('mailshot_stats')->whereIn('mailshot_id', $mailshots)->delete();
+
+    if ($emails->isNotEmpty()) {
+        DB::table('customer_has_dispatched_emails')->whereIn('dispatched_email_id', $emails)->delete();
+        DB::table('model_has_dispatched_emails')->whereIn('dispatched_email_id', $emails)->delete();
+        DB::table('email_bulk_run_has_dispatched_emails')->whereIn('dispatched_email_id', $emails)->delete();
+        DB::table('email_ongoing_run_has_dispatched_emails')->whereIn('dispatched_email_id', $emails)->delete();
+        DB::table('dispatched_emails')->whereIn('id', $emails)->delete();
+    }
+
+    DB::table('mailshots')->whereIn('id', $mailshots)->delete();
+}
+
 function windowInvoice(string $date, float $net, $customer, $shop): void
 {
     DB::table('invoices')->insert([
@@ -316,11 +378,13 @@ function invoiceOn(string $date, float $net, $customer, $shop, bool $inProcess =
 
 describe('traffic source attribution', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('traffic source attribution');
     });
 
     it('attaches a single traffic source without a campaign to a newly registered customer', function () {
@@ -466,7 +530,7 @@ describe('traffic source attribution', function () {
 
     it('does not credit a channel with a registration that happened before the touch', function () {
         $newsletter = createTrafficSource($this->shop, 'newsletter', 'Newsletter');
-        $customer   = createCustomer($this->shop);
+        $customer   = createOwnCustomer($this->shop, 'traffic source attribution');
         $customer->trafficSources()->detach();
         $customer->update(['created_at' => now()->subDays(30)]);
 
@@ -483,7 +547,7 @@ describe('traffic source attribution', function () {
 
     it('credits a channel with a registration that followed the touch', function () {
         $organic  = createTrafficSource($this->shop, 'organic-google', 'Organic Google');
-        $customer = createCustomer($this->shop);
+        $customer = createOwnCustomer($this->shop, 'traffic source attribution');
         $customer->trafficSources()->detach();
         $customer->update(['created_at' => now()->subDay()]);
 
@@ -504,7 +568,7 @@ describe('traffic source attribution', function () {
         createTrafficSource($shop, 'organic-google', 'Organic Google');
         App\Models\CRM\TrafficSource::where('shop_id', $shop->id)->where('type', 'organic-bing')->delete();
 
-        $customer = createCustomer($shop);
+        $customer = createOwnCustomer($shop, 'traffic source attribution');
         $customer->trafficSources()->detach();
         $customer->update([
             'traffic_sources' => now()->subDays(2)->timestamp.'a|'.now()->subDay()->timestamp.'c',
@@ -521,7 +585,7 @@ describe('traffic source attribution', function () {
 
     it('refreshes a channel\'s rollups when the customer is invoiced, not only when a touch lands', function () {
         $source   = createTrafficSource($this->shop, 'organic-google', 'Organic Google');
-        $customer = createCustomer($this->shop);
+        $customer = createOwnCustomer($this->shop, 'traffic source attribution');
         $customer->trafficSources()->detach();
         $customer->trafficSources()->attach($source->id, [
             'share'          => 1,
@@ -539,13 +603,15 @@ describe('traffic source attribution', function () {
 
 describe('recalculating attribution', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('recalculating attribution');
 
-        $this->customer = createCustomer($this->shop);
+        $this->customer = createOwnCustomer($this->shop, 'recalculating attribution');
 
         $this->customer->trafficSources()->detach();
         $this->customer->update(['traffic_sources' => null]);
@@ -623,16 +689,18 @@ describe('recalculating attribution', function () {
 
 describe('attribution window', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         config()->set('marketing.attribution_window_days', 90);
 
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('attribution window');
 
         $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
-        $this->customer  = createCustomer($this->shop);
+        $this->customer  = createOwnCustomer($this->shop, 'attribution window');
 
         $this->customer->trafficSources()->detach();
         DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
@@ -771,14 +839,16 @@ describe('attribution window', function () {
 
 describe('attribution data quality', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('attribution data quality');
 
         $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
-        $this->customer  = createCustomer($this->shop);
+        $this->customer  = createOwnCustomer($this->shop, 'attribution data quality');
         $this->customer->trafficSources()->detach();
     });
 
@@ -786,7 +856,7 @@ describe('attribution data quality', function () {
         $this->customer->update(['traffic_sources' => now()->subDay()->timestamp.'b']);
         RecalculateTrafficSourceAttribution::run($this->customer->fresh());
 
-        $unattributed = createCustomer($this->shop);
+        $unattributed = createOwnCustomer($this->shop, 'attribution data quality');
         $unattributed->trafficSources()->detach();
 
         $check = dataQualityCheck('registrations_without_attribution', $this->shop);
@@ -893,11 +963,13 @@ describe('attribution data quality', function () {
 
 describe('customer journey', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('customer journey');
 
         createTrafficSource($this->shop, 'organic-google', 'Organic Google');
         createTrafficSource($this->shop, 'google-ads', 'Google Ads');
@@ -961,11 +1033,13 @@ describe('customer journey', function () {
 
 describe('referral traffic sources', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('referral traffic sources');
 
         $this->referral = createTrafficSource($this->shop, 'referral', 'Referral');
     });
@@ -1034,7 +1108,7 @@ describe('referral traffic sources', function () {
 
     it('drops a referral touch for our own storefront instead of crediting it', function () {
         $domain   = 'awgifts.eu';
-        $customer = createCustomer($this->shop);
+        $customer = createOwnCustomer($this->shop, 'referral traffic sources');
         $customer->trafficSources()->detach();
 
         pretendWeOwn($domain);
@@ -1113,16 +1187,18 @@ describe('referral traffic sources', function () {
 
 describe('showing a traffic source', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('showing a traffic source');
 
         $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
         $this->organic   = createTrafficSource($this->shop, 'organic-google', 'Organic Google');
 
-        $this->customer = createCustomer($this->shop);
+        $this->customer = createOwnCustomer($this->shop, 'showing a traffic source');
         $this->customer->trafficSources()->detach();
     });
 
@@ -1163,11 +1239,13 @@ describe('showing a traffic source', function () {
 
 describe('campaign stats', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('campaign stats');
 
         $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
@@ -1354,11 +1432,13 @@ describe('campaign stats', function () {
 
 describe('campaign channel type', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('campaign channel type');
 
         $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
@@ -1437,11 +1517,13 @@ describe('traffic source costs', function () {
      * action is called directly rather than through a request.
      */
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('traffic source costs');
 
         $this->trafficSource = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
         $this->currency      = $this->shop->currency;
@@ -1578,7 +1660,7 @@ describe('traffic source costs', function () {
         TrafficSourceHydrateCosts::run($this->trafficSource);
 
         // A channel with attributed customers but no spend still has to appear, with no ROAS to show.
-        $customer = createCustomer($this->shop);
+        $customer = createOwnCustomer($this->shop, 'traffic source costs');
         $customer->trafficSources()->detach();
         $customer->update(['traffic_sources' => now()->subDays(2)->timestamp.'a']);
         App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution::run($customer->fresh());
@@ -1635,11 +1717,13 @@ describe('traffic source costs', function () {
 
 describe('importing costs from a csv', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('importing costs from a csv');
 
         $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
         $this->metaAds   = createTrafficSource($this->shop, 'meta-ads', 'Meta Ads');
@@ -1729,11 +1813,13 @@ describe('importing costs from a csv', function () {
 
 describe('the cost webhook', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('the cost webhook');
 
         $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
 
@@ -1817,11 +1903,13 @@ describe('the cost webhook', function () {
 
 describe('fetching meta ads costs', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('fetching meta ads costs');
 
         $this->metaAds      = createTrafficSource($this->shop, 'meta-ads', 'Meta Ads');
         $this->instagramAds = createTrafficSource($this->shop, 'instagram-ads', 'Instagram Ads');
@@ -1998,11 +2086,13 @@ describe('fetching meta ads costs', function () {
 
 describe('splitting instagram from meta', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('splitting instagram from meta');
 
         $this->metaAds      = createTrafficSource($this->shop, 'meta-ads', 'Meta Ads');
         $this->instagramAds = createTrafficSource($this->shop, 'instagram-ads', 'Instagram Ads');
@@ -2086,13 +2176,15 @@ describe('splitting instagram from meta', function () {
 
 describe('mailshot click attribution', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('mailshot click attribution');
 
-        $this->customer = createCustomer($this->shop);
+        $this->customer = createOwnCustomer($this->shop, 'mailshot click attribution');
         $this->customer->trafficSources()->detach();
         $this->customer->update(['traffic_sources' => null]);
         $this->outbox   = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
@@ -2270,13 +2362,15 @@ describe('mailshot click attribution', function () {
 
 describe('recording email click touchpoints', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('recording email click touchpoints');
 
-        $this->customer = createCustomer($this->shop);
+        $this->customer = createOwnCustomer($this->shop, 'recording email click touchpoints');
         $this->customer->update(['traffic_sources' => null]);
         $this->customer->trafficSources()->detach();
     });
@@ -2410,6 +2504,8 @@ describe('recording email click touchpoints', function () {
 
 describe('email marketing performance', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         config()->set('services.ses.cost_per_thousand_usd', 100.0);
 
         // Pin the USD rate so the estimated-cost assertions never depend on a live exchange fetch.
@@ -2420,9 +2516,9 @@ describe('email marketing performance', function () {
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('email marketing performance');
 
-        $this->customer = createCustomer($this->shop);
+        $this->customer = createOwnCustomer($this->shop, 'email marketing performance');
         $this->customer->update(['traffic_sources' => null]);
         $this->customer->trafficSources()->detach();
 
@@ -2735,13 +2831,15 @@ describe('email marketing performance', function () {
 
 describe('offer performance', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('offer performance');
 
-        $this->customer = createCustomer($this->shop);
+        $this->customer = createOwnCustomer($this->shop, 'offer performance');
 
         /* createShop()/createCustomer() reuse the same records across the file, so redemptions from an
            earlier test would otherwise still be counted here. */
@@ -2848,14 +2946,16 @@ describe('offer performance', function () {
 
 describe('marketing periods', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('marketing periods');
 
         $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
-        $this->customer  = createCustomer($this->shop);
+        $this->customer  = createOwnCustomer($this->shop, 'marketing periods');
 
         $this->customer->trafficSources()->detach();
         // Touch 70 days ago: old enough to precede the fixtures' invoices, recent enough that they
@@ -2867,6 +2967,14 @@ describe('marketing periods', function () {
         TrafficSourceCost::where('shop_id', $this->shop->id)->delete();
         DB::table('invoices')->where('customer_id', $this->customer->id)->delete();
         DB::table('orders')->where('customer_id', $this->customer->id)->delete();
+
+        /* Marketing spend prices in an estimated cost per email sent, so mailshots a previous block
+           sent from this shop land in this block's spend as pence nobody here spent. This block
+           measures spend from advertising costs alone - as its own file it saw a database where no
+           mailshot had ever been sent, and these two lines are what that condition looks like when
+           the database is shared. */
+        clearMailshotsFor($this->shop);
+        config()->set('services.ses.cost_per_thousand_usd', 0);
     });
 
     it('counts only revenue and spend inside the selected period', function () {
@@ -3098,14 +3206,16 @@ describe('marketing periods', function () {
 
 describe('the aggregated marketing overview', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('the aggregated marketing overview');
 
         $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
-        $this->customer  = createCustomer($this->shop);
+        $this->customer  = createOwnCustomer($this->shop, 'the aggregated marketing overview');
         $this->customer->trafficSources()->detach();
 
         $this->customer->update([
@@ -3373,18 +3483,20 @@ describe('the aggregated marketing overview', function () {
 
 describe('order attribution', function () {
     beforeEach(function () {
+        resetMarketingFixtures();
+
         list(
             $this->organisation,
             $this->user,
             $this->shop
-        ) = createShop();
+        ) = createOwnShop('order attribution');
 
         list(
             $this->tradeUnit,
             $this->product
         ) = createProduct($this->shop);
 
-        $this->customer = createCustomer($this->shop);
+        $this->customer = createOwnCustomer($this->shop, 'order attribution');
         $this->order     = createOrder($this->customer, $this->product);
 
         // The shared fixtures above are reused across tests, reset any state left by a previous test.
