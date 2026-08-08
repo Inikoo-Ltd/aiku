@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { computed, inject } from 'vue'
+import { Link } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -71,6 +72,10 @@ const props = defineProps<{
             label: string
             icon?: string
             count: number
+            route?: {
+                name: string
+                parameters?: Record<string, any>
+            }
         }[]
     }
 }>()
@@ -171,10 +176,13 @@ const details = computed(() =>
 <template>
     <div class="space-y-6 px-4 py-6 md:px-6 lg:px-8">
         <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div
+            <component
+                :is="stat.route?.name ? Link : 'div'"
                 v-for="stat in data?.stats"
                 :key="stat.label"
-                class="flex items-center gap-4 rounded-xl bg-white px-5 py-4 shadow-sm ring-1 ring-gray-900/5">
+                :href="stat.route?.name ? route(stat.route.name, stat.route.parameters) : undefined"
+                class="flex items-center gap-4 rounded-xl bg-white px-5 py-4 shadow-sm ring-1 ring-gray-900/5"
+                :class="stat.route?.name ? 'hover:bg-gray-50' : ''">
                 <div
                     class="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 ring-1 ring-indigo-500/20">
                     <FontAwesomeIcon :icon="stat.icon || 'fal fa-hashtag'" fixed-width aria-hidden="true" />
@@ -187,7 +195,7 @@ const details = computed(() =>
                         {{ locale.number(stat.count ?? 0) }}
                     </dd>
                 </div>
-            </div>
+            </component>
         </dl>
 
         <div class="grid gap-6 lg:grid-cols-2">

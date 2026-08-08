@@ -13,8 +13,10 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Http\Resources\SupplyChain\AgentSupplierPurchaseOrdersResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -44,7 +46,7 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
         return $request->user()->authTo("supply-chain.view");
     }
 
-    public function handle(?Agent $agent = null, ?Organisation $organisation = null, $prefix = null): LengthAwarePaginator
+    public function handle(?Agent $agent = null, ?Organisation $organisation = null, $prefix = null, ?Supplier $supplier = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -68,6 +70,10 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
             $queryBuilder->where('suppliers.agent_id', $agent->id);
         } elseif ($organisation) {
             $queryBuilder->where('purchase_orders.organisation_id', $organisation->id);
+        }
+
+        if ($supplier) {
+            $queryBuilder->where('agent_supplier_purchase_orders.supplier_id', $supplier->id);
         }
 
         return $queryBuilder
@@ -139,6 +145,20 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
         $agent = Agent::where('organisation_id', $organisation->id)->first();
 
         return $agent ? $this->handle($agent) : $this->handle(null, $organisation);
+    }
+
+    public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($orgAgent->agent);
+    }
+
+    public function inSupplier(Supplier $supplier, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle(supplier: $supplier);
     }
 
     public function jsonResponse(LengthAwarePaginator $agentSupplierPurchaseOrders): AnonymousResourceCollection

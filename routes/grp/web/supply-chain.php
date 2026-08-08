@@ -91,6 +91,8 @@ Route::prefix("suppliers")->name("suppliers")->group(
                     Route::get('edit', [EditSupplierProduct::class, 'inSupplier'])->name('.edit');
                 });
             });
+
+            Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inSupplier'])->name('.agent_supplier_purchase_orders.index');
         });
 
 

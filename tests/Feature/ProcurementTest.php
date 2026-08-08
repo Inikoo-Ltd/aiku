@@ -379,6 +379,18 @@ test('UI index agent supplier purchase orders in organisation', function () {
     });
 });
 
+test('UI index agent supplier purchase orders in org agent', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.org_agents.show.agent_supplier_purchase_orders.index', [$this->organisation->slug, $this->orgAgent->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/AgentSupplierPurchaseOrders')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data');
+    });
+});
+
 test('UI index agent supplier purchase orders', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.index'));

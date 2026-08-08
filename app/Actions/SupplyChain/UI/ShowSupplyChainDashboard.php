@@ -13,6 +13,7 @@ use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -81,6 +82,16 @@ class ShowSupplyChainDashboard extends OrgAction
                             ],
 
                         ],
+                        [
+                            'name'      => __('Agent Supplier Purchase Orders'),
+                            'shortName' => __('purchase orders'),
+                            'icon'      => ['fal', 'fa-clipboard-list'],
+                            'route'      => ['name' => 'grp.supply-chain.agent_supplier_purchase_orders.index'],
+                            'index'     => [
+                                'number' => AgentSupplierPurchaseOrder::where('group_id', $this->group->id)->count()
+                            ],
+
+                        ],
                     ],
 
                 ],
@@ -119,6 +130,16 @@ class ShowSupplyChainDashboard extends OrgAction
                                             'route'      => ['name' => 'grp.supply-chain.supplier_products.index'],
                                             'index'     => [
                                                 'number' => $this->group->supplyChainStats->number_current_supplier_products
+                                            ],
+
+                                        ],
+                                        [
+                                            'name'      => __('Agent Supplier Purchase Orders'),
+                                            'shortName' => __('Purchase Orders'),
+                                            'icon'      => ['fal', 'fa-clipboard-list'],
+                                            'route'      => ['name' => 'grp.supply-chain.agent_supplier_purchase_orders.index'],
+                                            'index'     => [
+                                                'number' => AgentSupplierPurchaseOrder::where('group_id', $this->group->id)->count()
                                             ],
 
                                         ],

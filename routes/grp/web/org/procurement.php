@@ -53,6 +53,7 @@ Route::prefix('agents')->as('org_agents.')->group(function () {
         Route::get('suppliers/{orgSupplier}/edit', [EditOrgSupplier::class, 'inOrgAgent'])->name('.suppliers.edit');
         Route::get('supplier-products', [IndexOrgSupplierProducts::class, 'inOrgAgent'])->name('.supplier_products.index');
         Route::get('supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgAgent'])->name('.supplier_products.show');
+        Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inOrgAgent'])->name('.agent_supplier_purchase_orders.index');
     });
 });
 

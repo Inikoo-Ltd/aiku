@@ -54,6 +54,17 @@ trait WithAgentSubNavigation
                     "tooltip" => __("Products"),
                 ],
             ],
+            [
+                "label"    => __("Purchase Orders"),
+                "route"     => [
+                    "name"       => "grp.supply-chain.agents.show.agent_supplier_purchase_orders.index",
+                    "parameters" => [$parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-clipboard-list"],
+                    "tooltip" => __("Purchase Orders"),
+                ],
+            ],
 
         ];
     }

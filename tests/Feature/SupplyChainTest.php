@@ -506,6 +506,19 @@ test('UI show supplier', function () {
     });
 });
 
+test('UI index agent supplier purchase orders in supplier', function () {
+    $supplier = Supplier::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.suppliers.agent_supplier_purchase_orders.index', [$supplier->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/AgentSupplierPurchaseOrders')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data');
+    });
+});
+
 test('UI show supplier navigation follows the free bucket', function () {
     $this->withoutExceptionHandling();
 

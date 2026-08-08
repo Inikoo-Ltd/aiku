@@ -36,11 +36,19 @@ class GetSupplierShowcase
                     'label' => __('Products'),
                     'icon'  => 'fal fa-box-usd',
                     'count' => $supplier->stats->number_supplier_products,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.suppliers.supplier_products.index',
+                        'parameters' => [$supplier->slug],
+                    ],
                 ],
                 [
                     'label' => __('Purchase Orders'),
                     'icon'  => 'fal fa-clipboard-list',
                     'count' => $supplier->stats->number_purchase_orders,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index',
+                        'parameters' => [$supplier->slug],
+                    ],
                 ],
                 [
                     'label' => __('Deliveries'),
