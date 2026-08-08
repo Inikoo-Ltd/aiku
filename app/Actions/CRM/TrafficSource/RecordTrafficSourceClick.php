@@ -11,6 +11,7 @@ namespace App\Actions\CRM\TrafficSource;
 use App\Actions\Web\WebsiteVisitor\IsBot;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Models\CRM\ScannerIp;
 use App\Models\CRM\TrafficSourceClick;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -57,7 +58,18 @@ class RecordTrafficSourceClick
         }
 
         try {
-            return (int) Cache::get('scanner_clicks:'.$ip.':'.$campaignRef, 0) >= self::SCANNER_CLICK_THRESHOLD;
+            if ((int) Cache::get('scanner_clicks:'.$ip.':'.$campaignRef, 0) >= self::SCANNER_CLICK_THRESHOLD) {
+                /* Every detection path converges here, so this is where an IP earns its listing.
+                   The write is idempotent per (ip, campaign) and only runs in queued jobs. */
+                ScannerIp::recordBurst($ip, $campaignRef);
+
+                return true;
+            }
+
+            /* A listed IP - one that has burst several different campaigns - is a scanner from its
+               first click, which is the only way to catch it on a single-link email where no burst
+               can ever form. */
+            return ScannerIp::isListed($ip);
         } catch (\Throwable) {
             return false;
         }
