@@ -1401,3 +1401,97 @@ test('UI show stock delivery items exposes the placement and sowings data', func
             );
     });
 });
+
+test('UI edit org supplier relationship (not owned)', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.org_suppliers.edit', [$this->organisation->slug, $this->orgSupplier->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('EditModel')
+            ->has(
+                'formData',
+                fn (AssertableInertia $page) => $page
+                    ->where('args.updateRoute.name', 'grp.models.org_supplier.update')
+                    ->has('blueprint.0.fields.status')
+                    ->etc()
+            );
+    });
+});
+
+test('UI create org supplier picker page', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.org_suppliers.create', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Procurement/CreateOrgSupplier')
+            ->has('title')
+            ->has('data')
+            ->where('pageHead.title', 'Add suppliers');
+    });
+});
+
+test('adopt a free supplier into the organisation', function () {
+    $foreignAgent   = StoreAgent::make()->action($this->group, Agent::factory()->definition());
+    $foreignSupplier = StoreSupplier::make()->action($foreignAgent, Supplier::factory()->definition());
+
+    expect(OrgSupplier::where('organisation_id', $this->organisation->id)->where('supplier_id', $foreignSupplier->id)->exists())->toBeFalse();
+
+    $this->withoutExceptionHandling();
+    $this->post(route('grp.models.org.org_supplier.store', [$this->organisation->id, $foreignSupplier->id]))
+        ->assertSessionHasNoErrors();
+
+    $orgSupplier = OrgSupplier::where('organisation_id', $this->organisation->id)
+        ->where('supplier_id', $foreignSupplier->id)
+        ->first();
+
+    expect($orgSupplier)->not->toBeNull();
+});
+
+test('agent organisation manages its own supplier identity', function () {
+    $ownAgent = StoreAgent::make()->action($this->group, Agent::factory()->definition());
+
+    StoreOrgAgent::make()->action($ownAgent->organisation, $ownAgent, []);
+
+    $ownSupplier = StoreSupplier::make()->action($ownAgent, Supplier::factory()->definition());
+
+    $orgSupplier = OrgSupplier::where('organisation_id', $ownAgent->organisation_id)
+        ->where('supplier_id', $ownSupplier->id)
+        ->firstOrFail();
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.org_suppliers.edit', [$ownAgent->organisation->slug, $orgSupplier->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('EditModel')
+            ->has(
+                'formData',
+                fn (AssertableInertia $page) => $page
+                    ->where('args.updateRoute.name', 'grp.models.supplier.update')
+                    ->has('blueprint.0.fields.code')
+                    ->etc()
+            );
+    });
+
+    $this->patch(route('grp.models.supplier.update', $ownSupplier->id), [
+        'company_name' => 'Renamed Own Supplier',
+    ])->assertSessionHasNoErrors();
+
+    expect($ownSupplier->fresh()->company_name)->toBe('Renamed Own Supplier');
+});
+
+test('agent organisation creates a supplier under its own agent', function () {
+    $ownAgent = StoreAgent::make()->action($this->group, Agent::factory()->definition());
+
+    $this->withoutExceptionHandling();
+    $this->get(route('grp.org.procurement.org_suppliers.create_for_agent', [$ownAgent->organisation->slug]))
+        ->assertOk();
+
+    $storeData = Supplier::factory()->definition();
+    $this->post(route('grp.models.agent.supplier.store', $ownAgent->id), $storeData)
+        ->assertSessionHasNoErrors();
+
+    expect(Supplier::where('agent_id', $ownAgent->id)->where('code', $storeData['code'])->exists())->toBeTrue();
+});

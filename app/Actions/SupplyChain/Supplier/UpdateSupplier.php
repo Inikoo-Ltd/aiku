@@ -31,6 +31,19 @@ class UpdateSupplier extends OrgAction
     private Supplier $supplier;
     private bool $action = false;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($this->supplier->agent && $request->user()->authTo("procurement.{$this->supplier->agent->organisation_id}.edit")) {
+            return true;
+        }
+
+        return $request->user()->authTo('supply-chain.edit');
+    }
+
     public function handle(Supplier $supplier, array $modelData): Supplier
     {
         $leavingContainer = Arr::exists($modelData, 'delivery_type')

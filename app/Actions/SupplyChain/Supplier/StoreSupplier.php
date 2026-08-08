@@ -40,6 +40,21 @@ class StoreSupplier extends OrgAction
     use WithSupplierJsonColumns;
     use WithSupplyChainEditAuthorisation;
 
+    private ?Agent $agent = null;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($this->agent && $request->user()->authTo("procurement.{$this->agent->organisation_id}.edit")) {
+            return true;
+        }
+
+        return $request->user()->authTo('supply-chain.edit');
+    }
+
     /**
      * @throws \Throwable
      */
@@ -191,6 +206,7 @@ class StoreSupplier extends OrgAction
      */
     public function inAgent(Agent $agent, ActionRequest $request): Supplier
     {
+        $this->agent = $agent;
         $this->initialisationFromGroup($agent->group, $request);
 
         return $this->handle($agent, $this->validatedData);

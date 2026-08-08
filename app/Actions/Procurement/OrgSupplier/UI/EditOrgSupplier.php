@@ -14,8 +14,8 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressResource;
-use App\Models\SupplyChain\Agent;
-use App\Models\SupplyChain\Supplier;
+use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,36 +24,135 @@ use Lorisleiva\Actions\ActionRequest;
 class EditOrgSupplier extends OrgAction
 {
     use WithProcurementAuthorisation;
-    public function asController(Supplier $supplier, ActionRequest $request): Supplier
+
+    public function handle(OrgSupplier $orgSupplier): OrgSupplier
     {
-        $organisationParameter = $request->route('organisation');
-
-        $organisation = Organisation::where('slug', $organisationParameter)->first();
-
-        if ($organisation) {
-            $this->initialisation($organisation, $request);
-        } else {
-            abort(404, 'Organisation not found.');
-        }
-
-        return $this->handle($supplier);
+        return $orgSupplier;
     }
 
-    public function handle(Supplier $supplier): Supplier
+    public function asController(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
-        return $supplier;
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($orgSupplier);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
+    public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
-        $this->initialisation($request);
+        $this->initialisation($organisation, $request);
 
-        return $this->handle($supplier);
+        return $this->handle($orgSupplier);
     }
 
-    public function htmlResponse(Supplier $supplier, ActionRequest $request): Response
+    protected function ownsSupplierAgent(OrgSupplier $orgSupplier): bool
     {
+        return (bool) ($orgSupplier->supplier->agent && $orgSupplier->supplier->agent->organisation_id === $this->organisation->id);
+    }
+
+    public function htmlResponse(OrgSupplier $orgSupplier, ActionRequest $request): Response
+    {
+        $supplier = $orgSupplier->supplier;
+
+        $blueprint = $this->ownsSupplierAgent($orgSupplier)
+            ? [
+                [
+                    'title' => __('ID/contact details '),
+                    'icon' => 'fal fa-address-book',
+                    'fields' => [
+                        'code' => [
+                            'type' => 'input',
+                            'label' => __('Code'),
+                            'value' => $supplier->code,
+                            'required' => true,
+                        ],
+                        'company_name' => [
+                            'type' => 'input',
+                            'label' => __('Company'),
+                            'value' => $supplier->company_name,
+                        ],
+                        'contact_name' => [
+                            'type' => 'input',
+                            'label' => __('Contact name'),
+                            'value' => $supplier->contact_name,
+                        ],
+                        'contact_website' => [
+                            'type' => 'input',
+                            'label' => __('Contact website'),
+                            'value' => $supplier->contact_website,
+                        ],
+                        'email' => [
+                            'type' => 'input',
+                            'label' => __('Email'),
+                            'value' => $supplier->email,
+                            'options' => [
+                                'inputType' => 'email',
+                            ],
+                        ],
+                        'phone' => [
+                            'type' => 'phone',
+                            'label' => __('phone'),
+                            'value' => $supplier->phone,
+                        ],
+                        'address' => [
+                            'type' => 'address',
+                            'label' => __('Address'),
+                            'value' => AddressResource::make($supplier->getAddress('contact'))->getArray(),
+                            'options' => [
+                                'countriesAddressData' => GetAddressData::run(),
+                            ],
+                        ],
+                    ],
+                ],
+                [
+                    'title' => __('settings '),
+                    'icon' => 'fa-light fa-cog',
+                    'fields' => [
+                        'currency_id' => [
+                            'type' => 'select',
+                            'label' => __('Currency'),
+                            'placeholder' => __('Select a currency'),
+                            'options' => GetCurrenciesOptions::run(),
+                            'value' => $supplier->currency_id,
+                            'searchable' => true,
+                            'required' => true,
+                            'mode' => 'single',
+                        ],
+                        'default_product_country_origin' => [
+                            'type' => 'select',
+                            'label' => __("Asset's country of origin"),
+                            'placeholder' => __('Select a country'),
+                            'value' => $supplier->code,
+                            'options' => GetCountriesOptions::run(),
+                            'mode' => 'single',
+                        ],
+                    ],
+                ],
+            ]
+            : [
+                [
+                    'title' => __('Status'),
+                    'icon' => 'fa-light fa-cog',
+                    'fields' => [
+                        'status' => [
+                            'type' => 'toggle',
+                            'label' => __('Active'),
+                            'value' => $orgSupplier->status,
+                        ],
+                    ],
+                ],
+            ];
+
+        $updateRoute = $this->ownsSupplierAgent($orgSupplier)
+            ? [
+                'name' => 'grp.models.supplier.update',
+                'parameters' => $supplier->id,
+            ]
+            : [
+                'name' => 'grp.models.org_supplier.update',
+                'parameters' => $orgSupplier->id,
+            ];
+
         return Inertia::render(
             'EditModel',
             [
@@ -62,10 +161,6 @@ class EditOrgSupplier extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation' => [
-                    'previous' => $this->getPrevious($supplier, $request),
-                    'next' => $this->getNext($supplier, $request),
-                ],
                 'pageHead' => [
                     'title' => $supplier->code,
                     'actions' => [
@@ -81,195 +176,9 @@ class EditOrgSupplier extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
-                        [
-                            'title' => __('ID/contact details '),
-                            'icon' => 'fal fa-address-book',
-                            'fields' => [
-
-                                'code' => [
-                                    'type' => 'input',
-                                    'label' => __('Code'),
-                                    'value' => $supplier->code,
-                                    'required' => true,
-                                ],
-                                'company_name' => [
-                                    'type' => 'input',
-                                    'label' => __('Company'),
-                                    'value' => $supplier->company_name,
-                                ],
-                                'contact_name' => [
-                                    'type' => 'input',
-                                    'label' => __('Contact name'),
-                                    'value' => $supplier->contact_name,
-                                ],
-                                'email' => [
-                                    'type' => 'input',
-                                    'label' => __('Email'),
-                                    'value' => $supplier->email,
-                                    'options' => [
-                                        'inputType' => 'email',
-                                    ],
-                                ],
-                                'phone' => [
-                                    'type' => 'phone',
-                                    'label' => __('phone'),
-                                    'value' => $supplier->phone,
-                                ],
-                                'address' => [
-                                    'type' => 'address',
-                                    'label' => __('Address'),
-                                    'value' => AddressResource::make($supplier->getAddress())->getArray(),
-                                    'options' => [
-                                        'countriesAddressData' => GetAddressData::run(),
-
-                                    ],
-                                ],
-
-                            ],
-                        ],
-
-                        /*
-                        [
-                            'title'  => __("supplier's products settings"),
-                            'fields' => [
-
-                                'allow on demand'              => [
-                                    'type'  => 'input',
-                                    'label' => __('allow on demand'),
-                                    'value' => ''
-                                ],
-                                'products origin country code' => [
-                                    'type'  => 'input',
-                                    'label' => __('products origin country code'),
-                                    'value' => ''
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('waiting times'),
-                            'fields' => [
-
-                                'delivery time' => [
-                                    'type'  => 'input',
-                                    'label' => __('delivery time (days)'),
-                                    'value' => ''
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('payment'),
-                            'fields' => [
-
-                                'incoterm'      => [
-                                    'type'  => 'input',
-                                    'label' => __('incoterm'),
-                                    'value' => ''
-                                ],
-                                'currency'      => [
-                                    'type'  => 'input',
-                                    'label' => __('Currency'),
-                                    'value' => ''
-                                ],
-                                'payment terms' => [
-                                    'type'  => 'input',
-                                    'label' => __('payment terms'),
-                                    'value' => ''
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('terms and conditions'),
-                            'fields' => [
-
-                                't&c'                 => [
-                                    'type'  => 'input',
-                                    'label' => __('t&c'),
-                                    'value' => ''
-                                ],
-                                'include general t&c' => [
-                                    'type'  => 'input',
-                                    'label' => __('include general t&c'),
-                                    'value' => ''
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('purchase order settings'),
-                            'fields' => [
-                                'minimum order'                 => [
-                                    'type'  => 'input',
-                                    'label' => __('minimum order (EUR)'),
-                                    'value' => ''
-                                ],
-                                'cooling period between orders' => [
-                                    'type'  => 'input',
-                                    'label' => __('cooling period between orders (days)'),
-                                    'value' => ''
-                                ],
-
-                                'order number format'           => [
-                                    'type'  => 'input',
-                                    'label' => __('order number format'),
-                                    'value' => ''
-                                ],
-                                'last incremental order number' => [
-                                    'type'  => 'input',
-                                    'label' => __('last incremental order number'),
-                                    'value' => ''
-                                ],
-                            ]
-
-                        ],
-
-
-                        [
-                            'title'  => __('Currency'),
-                            'fields' => [
-
-                                'currency_id' => [
-                                    'type'  => 'currencies',
-                                    'label' => __('Currency'),
-                                    'value' => ''
-                                ],
-
-                            ]
-                        ],
-                        */
-
-                        [
-                            'title' => __('settings '),
-                            'icon' => 'fa-light fa-cog',
-                            'fields' => [
-                                'currency_id' => [
-                                    'type' => 'select',
-                                    'label' => __('Currency'),
-                                    'placeholder' => __('Select a currency'),
-                                    'options' => GetCurrenciesOptions::run(),
-                                    'value' => $supplier->currency_id,
-                                    'searchable' => true,
-                                    'required' => true,
-                                    'mode' => 'single',
-                                ],
-
-                                'default_product_country_origin' => [
-                                    'type' => 'select',
-                                    'label' => __("Asset's country of origin"),
-                                    'placeholder' => __('Select a country'),
-                                    'value' => $supplier->code,
-                                    'options' => GetCountriesOptions::run(),
-                                    'mode' => 'single',
-                                ],
-                            ],
-                        ],
-
-                    ],
+                    'blueprint' => $blueprint,
                     'args' => [
-                        'updateRoute' => [
-                            'name' => 'grp.models.supplier.update',
-                            'parameters' => $supplier->id,
-
-                        ],
+                        'updateRoute' => $updateRoute,
                     ],
                 ],
             ]
@@ -278,59 +187,10 @@ class EditOrgSupplier extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return ShowSupplier::make()->getBreadcrumbs(
+        return ShowOrgSupplier::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'
         );
-    }
-
-    public function getPrevious(Supplier $supplier, ActionRequest $request): ?array
-    {
-        $previous = Supplier::where('code', '<', $supplier->code)->orderBy('code', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
-    }
-
-    private function getNavigation(?Supplier $supplier, string $routeName): ?array
-    {
-        if (! $supplier) {
-            return null;
-        }
-
-        return match ($routeName) {
-            'grp.org.procurement.org_suppliers.edit' => [
-                'label' => $supplier->name,
-                'route' => [
-                    'name' => $routeName,
-                    'parameters' => [
-                        'supplier' => $supplier->slug,
-                    ],
-
-                ],
-            ],
-            'grp.org.procurement.org_agents.show.org_suppliers.edit' => [
-                'label' => $supplier->name,
-                'route' => [
-                    'name' => $routeName,
-                    'parameters' => [
-                        'agent' => $supplier->agent->slug,
-                        'supplier' => $supplier->slug,
-                    ],
-
-                ],
-            ]
-        };
-    }
-
-    public function getNext(Supplier $supplier, ActionRequest $request): ?array
-    {
-        $next = Supplier::where('code', '>', $supplier->code)->when(true, function ($query) use ($supplier, $request) {
-            if ($request->route()->getName() == 'grp.org.procurement.org_agents.show.org_suppliers.show') {
-                $query->where('suppliers.agent_id', $supplier->agent_id);
-            }
-        })->orderBy('code')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
     }
 }

@@ -303,6 +303,18 @@ class IndexOrgSuppliers extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
+                    'actions'       => [
+                        $this->canEdit && $this->parent instanceof Organisation ? [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Add suppliers'),
+                            'label'   => __('Add suppliers'),
+                            'route'   => [
+                                'name'       => 'grp.org.procurement.org_suppliers.create',
+                                'parameters' => [$this->parent->slug],
+                            ],
+                        ] : false,
+                    ],
                 ],
                 'data'        => OrgSuppliersResource::collection($suppliers),
             ]
