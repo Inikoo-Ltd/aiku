@@ -66,6 +66,20 @@ are worth more than long explanations.
 16. **First line.** Which line or product family should try the system first,
     running alongside the paper for two weeks so we can compare the numbers?
 
+## New products and the law
+
+17. **Paperwork per product.** When you launch a new product, which documents
+    and tests must exist before it can be made and sold? (For example safety
+    reports, stability tests, labels with ingredients.) Are they different
+    for the UK, Slovakia and Spain? Who keeps these documents today and who
+    watches the expiry dates?
+18. **Barcodes and customs codes.** Who assigns the barcode and the customs
+    (tariff) code for a new product, and where does the list of free barcodes
+    live?
+19. **Batch sizes.** For each product family, how many units does one normal
+    production run make (one vat, one tray)? We want the system to suggest
+    this number when a job order is created.
+
 ---
 
 *Living document — add answers inline under each question as they arrive.*
