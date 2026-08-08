@@ -105,6 +105,20 @@ it('does not record the same touch twice in a row', function () {
         ['aiku_lts' => 'b99887766']
     );
 
+    /* No touch is rewritten. The visit marker may still be set: the same visitor arriving again is a
+       visit even when it adds nothing to their touch history. */
+    $cookies = CaptureTrafficSource::make()->getCookies();
+
+    expect($cookies)->not->toHaveKey('aiku_tsd')
+        ->and($cookies)->not->toHaveKey('aiku_lts');
+});
+
+it('does not set the visit marker twice on the same day', function () {
+    irisAjaxRequest(
+        'https://ecom.test/?gad_source=1&gad_campaignid=99887766&gclid=ABC123',
+        ['aiku_lts' => 'b99887766', 'aiku_vcd' => now()->toDateString()]
+    );
+
     expect(CaptureTrafficSource::make()->getCookies())->toBe([]);
 });
 
