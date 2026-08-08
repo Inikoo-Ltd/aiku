@@ -34,6 +34,8 @@ use App\Actions\CRM\TrafficSource\ProcessTrafficSourceShare;
 use App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution;
 use App\Actions\CRM\TrafficSource\ReceiveTrafficSourceCostWebhook;
 use App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint;
+use App\Actions\CRM\TrafficSource\RecordTrafficSourceClick;
+use App\Actions\Iris\CaptureTrafficSource;
 use App\Actions\CRM\TrafficSource\StoreTrafficSourceCost;
 use App\Actions\CRM\TrafficSource\UI\IndexTrafficSources;
 use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
@@ -3588,5 +3590,79 @@ describe('order attribution', function () {
         expect($order->trafficSources()->count())->toBe(1);
         expect($order->trafficSources()->first()->id)->toBe($trafficSource->id);
         expect((float) $order->trafficSources()->first()->pivot->share)->toBe(1.0);
+    });
+});
+
+describe('traffic source clicks', function () {
+    beforeEach(function () {
+        resetMarketingFixtures();
+        App\Models\CRM\TrafficSourceClick::query()->delete();
+        list(
+            $this->organisation,
+            $this->user,
+            $this->shop
+        ) = createOwnShop('traffic source clicks');
+    });
+
+    it('records the click-level detail the aggregates drop', function () {
+        RecordTrafficSourceClick::run([
+            'shop_id'      => $this->shop->id,
+            'website_id'   => null,
+            'type'         => 'google-ads',
+            'campaign_ref' => '12345',
+            'click_id'     => 'TESTCLICK',
+            'ip'           => '203.0.113.9',
+            'country_code' => 'GB',
+            'user_agent'   => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+            'url'          => 'https://ancientwisdom.biz/?gclid=TESTCLICK',
+            'is_repeat'    => false,
+        ]);
+
+        $click = App\Models\CRM\TrafficSourceClick::sole();
+
+        expect($click->type)->toBe('google-ads')
+            ->and($click->click_id)->toBe('TESTCLICK')
+            ->and($click->ip)->toBe('203.0.113.9')
+            ->and($click->country_code)->toBe('GB')
+            ->and($click->device_type)->toBe('Smartphone')
+            ->and($click->is_bot)->toBeFalse()
+            ->and($click->is_repeat)->toBeFalse();
+    });
+
+    it('marks a crawler click as a bot', function () {
+        RecordTrafficSourceClick::run([
+            'shop_id'      => $this->shop->id,
+            'website_id'   => null,
+            'type'         => 'google-ads',
+            'campaign_ref' => null,
+            'click_id'     => null,
+            'ip'           => '203.0.113.10',
+            'country_code' => null,
+            'user_agent'   => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+            'url'          => null,
+            'is_repeat'    => true,
+        ]);
+
+        expect(App\Models\CRM\TrafficSourceClick::sole()->is_bot)->toBeTrue();
+    });
+
+    it('queues a click record when capture matches a source', function () {
+        Illuminate\Support\Facades\Queue::fake();
+
+        $request = Illuminate\Http\Request::create('https://ecom.test/?gclid=TESTCLICK&gad_campaignid=123', 'GET', [], [], [], [
+            'HTTP_CF_IPCOUNTRY' => 'PL',
+            'HTTP_USER_AGENT'   => 'Mozilla/5.0',
+        ]);
+        $request->attributes->set('website', (object) ['id' => 1, 'shop_id' => $this->shop->id, 'type' => null]);
+        app()->instance('request', $request);
+
+        CaptureTrafficSource::make()->getCookies();
+
+        Illuminate\Support\Facades\Queue::assertPushed(
+            Lorisleiva\Actions\Decorators\JobDecorator::class,
+            fn ($job) => $job->decorates(RecordTrafficSourceClick::class)
+                && $job->getParameters()[0]['click_id'] === 'TESTCLICK'
+                && $job->getParameters()[0]['country_code'] === 'PL'
+        );
     });
 });

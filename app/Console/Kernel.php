@@ -76,6 +76,10 @@ class Kernel extends ConsoleKernel
            and re-sending a day replaces its figure instead of adding to it, so the later, better
            number wins and a missed night repairs itself. */
         $schedule->command('traffic-source:fetch-meta-costs --days=2')->dailyAt('06:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
+        /* Click rows carry IPs, kept only as long as fraud prevention justifies - the attribution
+           window, 90 days. */
+        $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('traffic_source_clicks')->where('created_at', '<', now()->subDays(90))->delete())
+            ->name('prune-traffic-source-clicks')->dailyAt('04:30')->timezone('UTC')->onOneServer();
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
 

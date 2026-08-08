@@ -9,6 +9,7 @@
 namespace App\Actions\Iris;
 
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromRefererHeader;
+use App\Actions\CRM\TrafficSource\RecordTrafficSourceClick;
 use App\Actions\CRM\TrafficSource\RecordTrafficSourceVisit;
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromUrl;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
@@ -86,6 +87,7 @@ class CaptureTrafficSource
 
         if ($lastTrafficSource == $trafficSourceData) {
             $this->recordCaptureOutcome('repeat');
+            $this->recordClick($trafficSourceData, true);
 
             /* A returning visitor from the same channel is a visit, but only the first time today.
                This branch fires on every page load whose URL still carries the click id, so counting
@@ -124,6 +126,7 @@ class CaptureTrafficSource
         ];
 
         $this->recordCaptureOutcome('matched');
+        $this->recordClick($trafficSourceData, false);
 
         if ($marker = $this->countVisitOnce($trafficSourceData)) {
             $cookies['aiku_vcd'] = ['value' => $marker, 'duration' => 60 * 24 * 2];
@@ -206,6 +209,50 @@ class CaptureTrafficSource
         RecordTrafficSourceVisit::run($shopId, $type);
 
         return $today.'|'.$counted.$abbr;
+    }
+
+    /**
+     * The click-level record behind the fraud tables and per-webpage arrivals: repeats included on
+     * purpose, since a bot hammering an ad shows up as one matched and forty-nine repeats. Everything
+     * request-bound is read here and handed to a queued job; the hot path pays only the dispatch, and
+     * a lost click on a bad day is a lost click.
+     */
+    private function recordClick(string $trafficSourceData, bool $isRepeat): void
+    {
+        try {
+            $website = request()->input('website') ?? request()->attributes->get('website');
+
+            $type = TrafficSourcesTypeEnum::fromAbbr(substr($trafficSourceData, 0, 1));
+
+            if (!$website?->shop_id || !$type) {
+                return;
+            }
+
+            $referer = (string) request()->headers->get('referer', '');
+            $url     = $referer !== '' ? $referer : request()->fullUrl();
+            $clickId = collect(['gclid', 'fbclid', 'msclkid'])
+                ->map(function (string $param) use ($referer) {
+                    parse_str((string) parse_url($referer, PHP_URL_QUERY), $refererParams);
+
+                    return request()->query($param) ?? ($refererParams[$param] ?? null);
+                })
+                ->first(fn ($value) => filled($value));
+
+            RecordTrafficSourceClick::dispatch([
+                'shop_id'      => $website->shop_id,
+                'website_id'   => $website->id ?? null,
+                'type'         => $type->value,
+                'campaign_ref' => substr($trafficSourceData, 1) ?: null,
+                'click_id'     => $clickId,
+                'ip'           => request()->ip(),
+                'country_code' => request()->headers->get('CF-IPCountry'),
+                'user_agent'   => request()->userAgent(),
+                'url'          => $url,
+                'is_repeat'    => $isRepeat,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
