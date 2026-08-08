@@ -148,7 +148,85 @@ test('admin can view employee attendance', function () {
     $response->assertOk()
         ->assertSee("Alice Worker")
         ->assertSee('"days_with_timesheet":1')
-        ->assertSee('"total_working_hours":8');
+        ->assertSee('"total_clocked":8');
+});
+
+test('attendance flags a day the employee has not clocked out of', function () {
+    $employee = StoreEmployee::make()->action(
+        $this->organisation,
+        array_merge(
+            Employee::factory()->definition(),
+            [
+                'contact_name'    => 'Bob OpenShift',
+                'type'            => EmployeeTypeEnum::EMPLOYEE,
+                'employment_type' => EmploymentTypeEnum::FULL_TIME,
+            ]
+        ),
+        audit: false
+    );
+
+    Timesheet::create([
+        'group_id'                  => $this->organisation->group_id,
+        'organisation_id'           => $this->organisation->id,
+        'date'                      => '2026-07-20',
+        'subject_type'              => 'Employee',
+        'subject_id'                => $employee->id,
+        'subject_name'              => $employee->contact_name,
+        'working_duration'          => 0,
+        'breaks_duration'           => 0,
+        'total_duration'            => 0,
+        'number_time_trackers'      => 1,
+        'number_open_time_trackers' => 1,
+    ]);
+
+    $response = AikuServer::actingAs($this->user)->tool(EmployeeAttendanceTool::class, [
+        'organisation' => $this->organisation->slug,
+        'employee'     => $employee->slug,
+        'from'         => '2026-07-20',
+        'to'           => '2026-07-22',
+    ]);
+
+    $response->assertOk()
+        ->assertSee('UNDERSTATED')
+        ->assertSee('2026-07-20');
+});
+
+test('attendance refuses to let unreconciled hours pass silently', function () {
+    $employee = StoreEmployee::make()->action(
+        $this->organisation,
+        array_merge(
+            Employee::factory()->definition(),
+            [
+                'contact_name'    => 'Carol NoTrackers',
+                'type'            => EmployeeTypeEnum::EMPLOYEE,
+                'employment_type' => EmploymentTypeEnum::FULL_TIME,
+            ]
+        ),
+        audit: false
+    );
+
+    Timesheet::create([
+        'group_id'                  => $this->organisation->group_id,
+        'organisation_id'           => $this->organisation->id,
+        'date'                      => '2026-07-20',
+        'subject_type'              => 'Employee',
+        'subject_id'                => $employee->id,
+        'subject_name'              => $employee->contact_name,
+        'working_duration'          => 28800,
+        'breaks_duration'           => 0,
+        'total_duration'            => 28800,
+        'number_time_trackers'      => 0,
+        'number_open_time_trackers' => 0,
+    ]);
+
+    $response = AikuServer::actingAs($this->user)->tool(EmployeeAttendanceTool::class, [
+        'organisation' => $this->organisation->slug,
+        'employee'     => $employee->slug,
+        'from'         => '2026-07-20',
+        'to'           => '2026-07-22',
+    ]);
+
+    $response->assertOk()->assertSee('DOES NOT RECONCILE');
 });
 
 test('employee not found returns error', function () {
