@@ -137,10 +137,15 @@ class FetchMetaAdsCosts extends Command
         ];
 
         $rows = [];
+        $seen = [];
 
         /* Insights paginates, and an account with hundreds of campaigns over a multi-day backfill
-           needs every page or the day's total silently comes back short. */
-        while ($url !== null) {
+           needs every page or the day's total silently comes back short.
+           A next link is followed only once: a self-referential or cyclic one would otherwise spin
+           here for ever, holding a worker and re-counting the same spend on every lap. */
+        while ($url !== null && !isset($seen[$url])) {
+            $seen[$url] = true;
+
             $response = Http::timeout(60)->get($url, $query);
             $query    = [];
 
@@ -155,6 +160,10 @@ class FetchMetaAdsCosts extends Command
             }
 
             $url = $response->json('paging.next');
+        }
+
+        if ($url !== null) {
+            Log::warning('Meta Ads pagination stopped on a repeated page', ['shop' => $shop->slug, 'url' => $url]);
         }
 
         return $this->store($trafficSources, $rows);
