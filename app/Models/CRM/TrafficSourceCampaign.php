@@ -18,6 +18,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $reference
  * @property string $name
  * @property string $type
+ * @property string|null $channel_type
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\CRM\TrafficSource $trafficSource

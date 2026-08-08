@@ -11,7 +11,6 @@ namespace App\Actions\CRM\TrafficSource;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSource;
-use App\Models\CRM\TrafficSourceCampaign;
 use App\Models\Helpers\Currency;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -69,6 +68,7 @@ class ReceiveTrafficSourceCostWebhook
             'costs.*.amount'          => ['required', 'numeric', 'min:0'],
             'costs.*.campaign'        => ['nullable', 'string', 'max:255'],
             'costs.*.campaign_name'   => ['nullable', 'string', 'max:255'],
+            'costs.*.channel_type'    => ['nullable', 'string', 'max:64'],
         ];
     }
 
@@ -99,7 +99,12 @@ class ReceiveTrafficSourceCostWebhook
                     'date'                       => Arr::get($cost, 'date'),
                     'source_amount'              => (float) Arr::get($cost, 'amount'),
                     'source_currency_id'         => $currency->id,
-                    'traffic_source_campaign_id' => $this->campaignId($trafficSource, $cost),
+                    'traffic_source_campaign_id' => GetTrafficSourceCampaign::run(
+                        $trafficSource,
+                        Arr::get($cost, 'campaign'),
+                        Arr::get($cost, 'campaign_name'),
+                        Arr::get($cost, 'channel_type')
+                    ),
                 ]);
                 $stored++;
             } catch (\Throwable $e) {
@@ -120,33 +125,5 @@ class ReceiveTrafficSourceCostWebhook
             'stored' => $stored,
             'errors' => $errors,
         ];
-    }
-
-    /**
-     * Campaign references are the ad platform's own numeric campaign ids, which is exactly what the
-     * touch history stores, so no mapping table is needed. A campaign that has had spend but no click
-     * yet has no row, hence firstOrCreate; `reference` is globally unique, so a reference already
-     * claimed by another shop's source falls back to the source-level total rather than mis-crediting.
-     */
-    private function campaignId(TrafficSource $trafficSource, array $cost): ?int
-    {
-        $reference = Arr::get($cost, 'campaign');
-
-        if (blank($reference)) {
-            return null;
-        }
-
-        $campaign = TrafficSourceCampaign::where('reference', $reference)->first();
-
-        if ($campaign) {
-            return $campaign->traffic_source_id === $trafficSource->id ? $campaign->id : null;
-        }
-
-        return TrafficSourceCampaign::create([
-            'traffic_source_id' => $trafficSource->id,
-            'reference'         => $reference,
-            'name'              => Arr::get($cost, 'campaign_name') ?: $reference,
-            'type'              => $trafficSource->type,
-        ])->id;
     }
 }

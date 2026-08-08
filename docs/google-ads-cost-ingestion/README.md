@@ -290,10 +290,21 @@ sees a token, and a token is only ever good for one shop.
 ## What actually gets sent (for the curious)
 
 One request per account per day. It contains: the shop code, the word `google-ads`, the account's
-currency, and one line per campaign with the date, the Google campaign id, the campaign name and
-the amount spent. No customer data, no order data, nothing personal. Campaign ids are the same
-numbers Google shows in your Ads account, which is how Aiku lines the cost up against the
-revenue it already attributed to that campaign.
+currency, and one line per campaign with the date, the Google campaign id, the campaign name, the
+campaign type and the amount spent. No customer data, no order data, nothing personal. Campaign
+ids are the same numbers Google shows in your Ads account, which is how Aiku lines the cost up
+against the revenue it already attributed to that campaign.
+
+The campaign type is Google's own word for what kind of campaign it is — `SEARCH`, `SHOPPING`,
+`VIDEO` (that is YouTube), `PERFORMANCE_MAX` and so on. It changes nothing about how the money is
+reported: all of it still counts as Google Ads, because a click arriving on the website carries no
+such label and there is no honest way to tell a YouTube visitor from any other Google Ads visitor.
+It is recorded so that the question "how much of our Google Ads money actually goes on YouTube?"
+can be answered from the figures rather than from memory. If that share turns out to be large, a
+separate YouTube channel becomes worth building; today there is nothing to measure it with.
+
+If you set up your script before this was added, it keeps working exactly as before — the type is
+simply left blank. Re-paste the script when convenient.
 
 ### Issuing and cancelling tokens (Aiku team only)
 
@@ -306,6 +317,26 @@ php artisan traffic-source:cost-token --revoke=<id>                # cancel one,
 The mint command prints the exact endpoint URL for the environment it runs in — send that along
 with the token, and the shop slug.
 
-Other ad platforms (Meta, Bing, Pinterest) can use the same endpoint — swap `google-ads` for
-`meta-ads`, `bing-ads`, `pinterest-ads` and post the same shape. The one-off CSV route
-(`traffic-source:import-costs`) still exists for backfilling history.
+Other ad platforms (Bing, Pinterest) can use the same endpoint — swap `google-ads` for `bing-ads`,
+`pinterest-ads` and post the same shape. The one-off CSV route (`traffic-source:import-costs`) still
+exists for backfilling history.
+
+### Meta (Facebook/Instagram) ads
+
+Meta has no equivalent of Google Ads Scripts, so nothing can push from inside the platform. Aiku
+pulls instead, nightly at 06:00 UTC:
+
+```
+php artisan traffic-source:fetch-meta-costs                    # every configured shop, yesterday
+php artisan traffic-source:fetch-meta-costs uk --days=30 --dry-run
+```
+
+To connect a shop, set `settings.meta_ads.ad_account_id` on it (the digits of the ad account) and
+put a Business Manager **system user** token in `META_ADS_ACCESS_TOKEN`. One system user token
+normally covers every ad account in the business; a shop whose account belongs to somebody else's
+business — an agency's — can carry its own in `settings.meta_ads.access_token`.
+
+One thing has to be done on the Meta side for **campaign-level** figures to line up: the ads' URLs
+must carry `utm_medium=paid` and `utm_campaign={{campaign.id}}`, Meta's dynamic parameter for the
+campaign id. That is what the click already stores, and what the spend is keyed on. Without it the
+channel total and its ROAS are still right, but campaign rows show cost against no revenue.

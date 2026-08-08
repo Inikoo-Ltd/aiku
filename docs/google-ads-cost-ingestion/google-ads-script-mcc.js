@@ -74,7 +74,7 @@ function buildPayload(account, shop, day) {
   var costs = [];
 
   var rows = AdsApp.report(
-    'SELECT campaign.id, campaign.name, metrics.cost_micros ' +
+    'SELECT campaign.id, campaign.name, campaign.advertising_channel_type, metrics.cost_micros ' +
     'FROM campaign ' +
     'WHERE segments.date BETWEEN ' + day.report + ' AND ' + day.report
   ).rows();
@@ -91,6 +91,7 @@ function buildPayload(account, shop, day) {
       date: day.label,
       campaign: String(row['campaign.id']),
       campaign_name: String(row['campaign.name']),
+      channel_type: String(row['campaign.advertising_channel_type']),
       amount: cost
     });
   }
