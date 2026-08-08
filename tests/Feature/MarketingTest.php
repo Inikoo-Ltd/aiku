@@ -1158,6 +1158,7 @@ describe('referral traffic sources', function () {
         expect(GetTrafficSourceFromRefererHeader::run('https://mail02.orange.fr/inbox/1'))->toBeNull()
             ->and(GetTrafficSourceFromRefererHeader::run('https://messageriepro.orange.fr/x'))->toBeNull()
             ->and(GetTrafficSourceFromRefererHeader::run('https://email.seznam.cz/message/1'))->toBeNull()
+            ->and(GetTrafficSourceFromRefererHeader::run('https://poczta.wp.pl/w/message/1'))->toBeNull()
             ->and(GetTrafficSourceFromRefererHeader::run('https://outlook.live.com/mail/0/'))->toBeNull();
     });
 

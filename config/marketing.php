@@ -175,6 +175,7 @@ return [
         '/^webmail\./',
         '/^messagerie/',
         '/^email\./',
+        '/^poczta[0-9]*\./',
         '/^outlook\.(live|office|office365)\.com$/',
         '/^mail\.(google|yahoo|proton|zoho)\.com$/',
     ],
