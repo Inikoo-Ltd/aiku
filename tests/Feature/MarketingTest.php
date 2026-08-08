@@ -2262,6 +2262,29 @@ describe('mailshot click attribution', function () {
         );
     });
 
+    it('gives a scanner burst no touch', function () {
+        $mailshot = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
+
+        foreach (range(1, 5) as $i) {
+            RecordTrafficSourceClick::countScannerClick(
+                '198.51.100.30',
+                App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshot->id
+            );
+        }
+
+        $this->customer->update(['traffic_sources' => null]);
+
+        App\Actions\CRM\TrafficSource\RecordEmailClickTouchpoint::run(
+            $this->customer,
+            now(),
+            $mailshot,
+            null,
+            '198.51.100.30'
+        );
+
+        expect($this->customer->fresh()->traffic_sources)->toBeNull();
+    });
+
     it('records no click row for replayed events without an ip, so aurora imports stay out', function () {
         $mailshot        = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
         $dispatchedEmail = dispatchedEmailFor($this->outbox, $this->customer);
@@ -3696,6 +3719,60 @@ describe('traffic source clicks', function () {
         ]);
 
         expect(App\Models\CRM\TrafficSourceClick::sole()->is_bot)->toBeTrue();
+    });
+
+    it('marks a scanner burst as bot clicks and counts it no visits', function () {
+        Illuminate\Support\Facades\Cache::flush();
+
+        foreach (range(1, 5) as $i) {
+            RecordTrafficSourceClick::countScannerClick('198.51.100.20', 'mailshot-99');
+        }
+
+        RecordTrafficSourceClick::run([
+            'shop_id'       => $this->shop->id,
+            'website_id'    => null,
+            'type'          => 'newsletter',
+            'campaign_ref'  => 'mailshot-99',
+            'click_id'      => null,
+            'ip'            => '198.51.100.20',
+            'country_code'  => null,
+            'user_agent'    => 'Mozilla/5.0',
+            'url'           => null,
+            'is_repeat'     => false,
+            'check_scanner' => true,
+            'count_visit'   => true,
+        ]);
+
+        $visitKey = 'traffic_visits:'.now()->toDateString().':'.$this->shop->id.':newsletter';
+
+        expect(App\Models\CRM\TrafficSourceClick::sole()->is_bot)->toBeTrue()
+            ->and((int) Illuminate\Support\Facades\Cache::get($visitKey, 0))->toBe(0);
+    });
+
+    it('counts the visit for an email click below the scanner threshold', function () {
+        Illuminate\Support\Facades\Cache::flush();
+
+        RecordTrafficSourceClick::countScannerClick('198.51.100.21', 'mailshot-99');
+
+        RecordTrafficSourceClick::run([
+            'shop_id'       => $this->shop->id,
+            'website_id'    => null,
+            'type'          => 'newsletter',
+            'campaign_ref'  => 'mailshot-99',
+            'click_id'      => null,
+            'ip'            => '198.51.100.21',
+            'country_code'  => null,
+            'user_agent'    => 'Mozilla/5.0',
+            'url'           => null,
+            'is_repeat'     => false,
+            'check_scanner' => true,
+            'count_visit'   => true,
+        ]);
+
+        $visitKey = 'traffic_visits:'.now()->toDateString().':'.$this->shop->id.':newsletter';
+
+        expect(App\Models\CRM\TrafficSourceClick::sole()->is_bot)->toBeFalse()
+            ->and((int) Illuminate\Support\Facades\Cache::get($visitKey, 0))->toBe(1);
     });
 
     it('surfaces bots and same-ip clusters as suspicious, computed at read time', function () {

@@ -64,7 +64,7 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
      * concurrent workers from racing each other on the recipient's touch history, which is a
      * read-append-write. Different mailshots keep their own key so a genuine second click is never dropped.
      */
-    public function getJobUniqueId(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null, ?string $outboxCode = null): string
+    public function getJobUniqueId(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null, ?string $outboxCode = null, ?string $ip = null): string
     {
         return $recipient->getMorphClass().'-'.$recipient->id.'-'.($mailshot?->id ?? $outboxCode ?? 'no-mailshot');
     }
@@ -84,7 +84,7 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
      * Accepts either a `Customer` or a `Prospect` recipient, since a mailshot may be dispatched to
      * either before a prospect has converted into a customer.
      */
-    public function handle(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null, ?string $outboxCode = null): void
+    public function handle(Customer|Prospect $recipient, ?Carbon $occurredAt = null, ?Mailshot $mailshot = null, ?string $outboxCode = null, ?string $ip = null): void
     {
         $occurredAt = $occurredAt ?? now();
 
@@ -107,6 +107,13 @@ class RecordEmailClickTouchpoint implements ShouldBeUnique
             $outboxCode !== null    => self::OUTBOX_CAMPAIGN_REF_PREFIX.$outboxCode,
             default                 => null,
         };
+
+        /* Runs two minutes after the click, so a scanner burst has finished and the counter is
+           conclusive: a mail security scanner clicking every link must not become a marketing touch
+           on somebody who never opened the message. */
+        if ($ip && RecordTrafficSourceClick::isScannerBurst($ip, $campaignRef)) {
+            return;
+        }
 
         $lastSameTouch = collect($touches)
             ->filter(fn (array $touch) => $touch['type'] === $type
