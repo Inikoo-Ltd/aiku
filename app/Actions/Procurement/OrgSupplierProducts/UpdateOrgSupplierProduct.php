@@ -51,6 +51,13 @@ class UpdateOrgSupplierProduct extends OrgAction
         ];
     }
 
+    public function asController(OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
+    {
+        $this->initialisation($orgSupplierProduct->organisation, $request);
+
+        return $this->handle($orgSupplierProduct, $this->validatedData);
+    }
+
     public function action(OrgSupplierProduct $orgSupplierProduct, $modelData, $hydratorsDelay = 0): OrgSupplierProduct
     {
         $this->asAction       = true;

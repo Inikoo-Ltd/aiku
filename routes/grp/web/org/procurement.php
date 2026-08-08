@@ -22,6 +22,7 @@ use App\Actions\Procurement\OrgSupplier\ExportOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
+use App\Actions\Procurement\OrgSupplierProducts\UI\EditOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\UI\IndexOrgSupplierProducts;
 use App\Actions\Procurement\OrgSupplierProducts\UI\ShowOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrders;
@@ -89,6 +90,7 @@ Route::prefix('supplier-products')->as('org_supplier_products.')->group(function
     Route::get('', IndexOrgSupplierProducts::class)->name('index');
     //todo  Route::get('export', ExportOrgSupplierProducts::class)->name('export');
     Route::get('{orgSupplierProduct}', ShowOrgSupplierProduct::class)->name('show');
+    Route::get('{orgSupplierProduct}/edit', EditOrgSupplierProduct::class)->name('edit');
 });
 
 Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {

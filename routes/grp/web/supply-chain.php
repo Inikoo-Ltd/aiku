@@ -17,10 +17,10 @@ use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\SupplierProduct\DownloadSupplierProductsTemplate;
 use App\Actions\SupplyChain\SupplierProduct\UI\CreateSupplierProduct;
+use App\Actions\SupplyChain\SupplierProduct\UI\EditSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\UI\ShowSupplierProduct;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
-use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowSupplyChainDashboard::class)->name('dashboard');
@@ -49,7 +49,7 @@ Route::prefix("agents")->name("agents.")->group(
 
                         Route::prefix('{supplierProduct}')->group(function () {
                             Route::get('', [ShowSupplierProduct::class, 'inSupplierInAgent'])->name('.show');
-                            Route::get('edit', [EditDummy::class, 'inSupplierInAgent'])->name('.edit');
+                            Route::get('edit', [EditSupplierProduct::class, 'inSupplierInAgent'])->name('.edit');
                         });
                     });
                 });
@@ -60,7 +60,7 @@ Route::prefix("agents")->name("agents.")->group(
 
                 Route::prefix('{supplierProduct}')->group(function () {
                     Route::get('', [ShowSupplierProduct::class, 'inAgent'])->name('.show');
-                    Route::get('edit', [EditDummy::class, 'inAgent'])->name('.edit');
+                    Route::get('edit', [EditSupplierProduct::class, 'inAgent'])->name('.edit');
                 });
             });
         });
@@ -84,7 +84,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
 
                 Route::prefix('{supplierProduct}')->group(function () {
                     Route::get('', [ShowSupplierProduct::class, 'inSupplier'])->name('.show');
-                    Route::get('edit', [EditDummy::class, 'inSupplier'])->name('.edit');
+                    Route::get('edit', [EditSupplierProduct::class, 'inSupplier'])->name('.edit');
                 });
             });
         });
@@ -100,5 +100,6 @@ Route::prefix("supplier-products")->name("supplier_products.")->group(
         Route::get('in-agents', [IndexSupplierProducts::class, 'inAgents'])->name('in_agents');
 
         Route::get('/{supplierProduct}', ShowSupplierProduct::class)->name('show');
+        Route::get('/{supplierProduct}/edit', EditSupplierProduct::class)->name('edit');
     }
 );

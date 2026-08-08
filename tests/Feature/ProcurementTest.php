@@ -834,6 +834,24 @@ test('UI show org supplier product', function () {
     });
 });
 
+test('UI edit org supplier product', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.org_supplier_products.edit', [$this->organisation->slug, $this->orgSupplierProduct->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->orgSupplierProduct->supplierProduct->code)
+                    ->etc()
+            )
+            ->has('formData.args.updateRoute');
+    });
+});
+
 test('UI Index purchase orders', function () {
     $response = $this->get(route('grp.org.procurement.purchase_orders.index', [$this->organisation->slug]));
 

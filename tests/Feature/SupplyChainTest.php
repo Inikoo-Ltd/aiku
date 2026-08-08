@@ -554,6 +554,26 @@ test('UI edit supplier', function () {
     });
 });
 
+test('UI edit supplier product', function () {
+    $supplierProduct = SupplierProduct::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.supplier_products.edit', [$supplierProduct->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($supplierProduct) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $supplierProduct->code)
+                    ->etc()
+            )
+            ->has('formData.args.updateRoute')
+            ->has('formData.blueprint.0.fields.code');
+    });
+});
+
 test('UI Index agents', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.agents.index'));

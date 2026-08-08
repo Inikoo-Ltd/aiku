@@ -383,6 +383,7 @@ use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
+use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
@@ -417,6 +418,7 @@ use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\SysAdmin\Guest\DeleteGuest;
 use App\Actions\SysAdmin\Guest\StoreGuest;
@@ -1173,6 +1175,8 @@ Route::name('customer_client.')->prefix('customer-client/{customerClient:id}')->
 
 Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
 Route::patch('/supplier/{supplier:id}', UpdateSupplier::class)->name('supplier.update');
+Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
+Route::patch('/org-supplier-product/{orgSupplierProduct:id}', UpdateOrgSupplierProduct::class)->name('org_supplier_product.update');
 
 Route::patch('/org-supplier/{orgSupplier:id}', UpdateOrgSupplier::class)->name('org_supplier.update');
 
