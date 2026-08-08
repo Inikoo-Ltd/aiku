@@ -819,3 +819,36 @@ test('a voided session removes its quantities from the task and payroll', functi
     expect(fn () => VoidManufactureTaskSession::make()->action($session))
         ->toThrow(ValidationException::class);
 });
+
+test('UI index artisans aggregates worker sessions', function () {
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+        'artefact_id' => $this->artefact->id,
+        'quantity'    => 5,
+    ]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $jobOrderItem->tasks()->first());
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 5]);
+
+    $response = get(route('grp.org.productions.show.operations.artisans.index', [
+        $this->organisation->slug,
+        $this->production->slug,
+        'from' => now()->toDateString(),
+        'to'   => now()->toDateString(),
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Production/Artisans')
+            ->has('period')
+            ->has('artisans')
+            ->has('artisans.0', fn (AssertableInertia $page) => $page
+                ->has('worker')
+                ->has('number_sessions')
+                ->has('earned')
+                ->has('sessions')
+                ->etc());
+    });
+});
