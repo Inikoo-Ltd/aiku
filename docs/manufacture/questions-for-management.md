@@ -39,26 +39,31 @@ are worth more than long explanations.
    only the quantity made?
 9. **Rejects afterwards.** When rejected units are re-worked or thrown away,
    does anyone need to record what happened to them?
+10. **Who can make what.** Different workers are specialised in different
+    products, but there are hundreds of products. Should the tablet show each
+    worker only the tasks they know how to do — and if so, who keeps the list
+    of who can do what? Or does everyone see everything and the supervisor
+    decides on the floor?
 
 ## The production lines
 
-10. **Products and steps.** For each product family: what are the steps to make
+11. **Products and steps.** For each product family: what are the steps to make
     it, in what order, and which of them are paid per unit? (This is the
     "recipe" we must type into the system once per product — we need someone
     from the floor to sit with us and go through the list.)
-11. **The paper sheet.** Please give us a photo or copy of the sheet workers
+12. **The paper sheet.** Please give us a photo or copy of the sheet workers
     fill in today, and of the sheet the office types it into. We want the new
     screen to ask for exactly the same things, nothing more.
 
 ## Tablets and people
 
-12. **Devices.** How many tablets per line do we need, and is there wifi
+13. **Devices.** How many tablets per line do we need, and is there wifi
     everywhere the workers stand?
-13. **Logging in.** Is typing a username and password acceptable for workers,
+14. **Logging in.** Is typing a username and password acceptable for workers,
     or would a card / code to scan be much better on the floor?
-14. **Languages.** For the Slovak and Spanish lines: which language must the
+15. **Languages.** For the Slovak and Spanish lines: which language must the
     worker screens be in?
-15. **First line.** Which line or product family should try the system first,
+16. **First line.** Which line or product family should try the system first,
     running alongside the paper for two weeks so we can compare the numbers?
 
 ---

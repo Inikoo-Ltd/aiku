@@ -10,7 +10,6 @@ namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
-use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Production\Artefact;
 use App\Models\Production\Production;
@@ -96,13 +95,38 @@ class EditArtefact extends OrgAction
                                     'value'    => $artefact->name,
                                     'required' => true
                                 ],
-                                // 'state' => [
-                                //     'type'     => 'select',
-                                //     'options'  => ArtefactStateEnum::values(),
-                                //     'label'    => __('state'),
-                                //     'value'    => $artefact->state,
-                                //     'required' => false
-                                // ],
+                                'trade_unit_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Trade unit'),
+                                    'options'    => array_filter([
+                                        $artefact->tradeUnit ? ['id' => $artefact->tradeUnit->id, 'code' => $artefact->tradeUnit->code] : null,
+                                    ]),
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.goods.trade-units.index',
+                                        'parameters' => []
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required'  => false,
+                                    'value'     => $artefact->trade_unit_id,
+                                ],
+                                'org_stock_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Stock (SKU)'),
+                                    'options'    => array_filter([
+                                        $artefact->orgStock ? ['id' => $artefact->orgStock->id, 'code' => $artefact->orgStock->code] : null,
+                                    ]),
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.json.org_stocks.index',
+                                        'parameters' => [
+                                            'organisation' => $artefact->organisation->slug,
+                                        ]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required'  => false,
+                                    'value'     => $artefact->org_stock_id,
+                                ],
                                 // 'type' => [
                                 //     'type'    => 'select',
                                 //     'label'   => __('Type'),

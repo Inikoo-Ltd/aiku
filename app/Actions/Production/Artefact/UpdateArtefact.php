@@ -64,6 +64,16 @@ class UpdateArtefact extends OrgAction
             ],
             'name'            => ['sometimes', 'required', 'string', 'max:255'],
             'stock_family_id' => ['sometimes', 'nullable', 'exists:stock_families,id'],
+            'trade_unit_id'   => [
+                'sometimes',
+                'nullable',
+                Rule::exists('trade_units', 'id')->where('group_id', $this->organisation->group_id),
+            ],
+            'org_stock_id'    => [
+                'sometimes',
+                'nullable',
+                Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
+            ],
         ];
     }
 

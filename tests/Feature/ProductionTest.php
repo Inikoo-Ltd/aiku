@@ -529,7 +529,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 2)
+            ->has('formData.blueprint.0.fields', 4)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -894,4 +894,25 @@ test('raw material linked to org stock derives quantities from it', function () 
     \App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock::run($rawMaterial->refresh());
 
     expect((float)$rawMaterial->refresh()->quantity_on_location)->toBe(10.0);
+});
+
+test('artefact links to trade unit and org stock', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = $stock->tradeUnits()->first();
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'          => 'LINKEDART1',
+        'name'          => 'Linked artefact',
+        'trade_unit_id' => $tradeUnit?->id,
+        'org_stock_id'  => $orgStock->id,
+    ]);
+
+    expect($artefact->org_stock_id)->toBe($orgStock->id)
+        ->and($artefact->trade_unit_id)->toBe($tradeUnit?->id);
 });

@@ -9,7 +9,6 @@
 namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -64,12 +63,33 @@ class CreateArtefact extends OrgAction
                                     'value'    => '',
                                     'required' => true
                                 ],
-                                'state' => [
-                                    'type'     => 'select',
-                                    'options'  => ArtefactStateEnum::values(),
-                                    'label'    => __('state'),
-                                    'value'    => '',
-                                    'required' => false
+                                'trade_unit_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Trade unit'),
+                                    'options'    => [],
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.goods.trade-units.index',
+                                        'parameters' => []
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required'  => false,
+                                    'value'     => null,
+                                ],
+                                'org_stock_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Stock (SKU)'),
+                                    'options'    => [],
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.json.org_stocks.index',
+                                        'parameters' => [
+                                            'organisation' => $this->organisation->slug,
+                                        ]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required'  => false,
+                                    'value'     => null,
                                 ],
                             ]
                         ]

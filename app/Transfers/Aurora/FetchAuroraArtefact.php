@@ -90,8 +90,9 @@ class FetchAuroraArtefact extends FetchAurora
 
         $this->parsedData['artefact'] =
             [
-                'code' => $code,
-                'name' => $name,
+                'code'          => $code,
+                'name'          => $name,
+                'trade_unit_id' => $this->parsedData['trade_unit']?->id,
 
                 'cost'                  => round($this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0, 2),
                 'units_per_pack'        => $auroraPartData->{'Part Units Per Package'},

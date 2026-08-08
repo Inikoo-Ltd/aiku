@@ -10,6 +10,8 @@ namespace App\Models\Production;
 
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Goods\Stock;
+use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\OrgStock;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
@@ -38,6 +40,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property int|null $trade_unit_id
+ * @property int|null $org_stock_id
+ * @property-read \App\Models\Goods\TradeUnit|null $tradeUnit
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTask> $manufactureTasks
@@ -85,6 +91,16 @@ class Artefact extends Model implements Auditable
             ->generateSlugsFrom('code')
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
+    }
+
+    public function tradeUnit(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnit::class);
+    }
+
+    public function orgStock(): BelongsTo
+    {
+        return $this->belongsTo(OrgStock::class);
     }
 
     public function stock(): BelongsTo
