@@ -631,6 +631,79 @@ test('an adjustment that ends before it starts never reaches the paid hours', fu
     expect($timesheet->working_duration)->toBe(28800);
 });
 
+function makeOvertimeDay(mixed $context, string $compensationType, string $multiplier): array
+{
+    $employee = Employee::factory()->create([
+        'organisation_id' => $context->organisation->id,
+        'group_id'        => $context->group->id,
+    ]);
+
+    $timesheet = \App\Models\HumanResources\Timesheet::create([
+        'group_id'                  => $context->group->id,
+        'organisation_id'           => $context->organisation->id,
+        'date'                      => '2026-06-27',
+        'subject_type'              => 'Employee',
+        'subject_id'                => $employee->id,
+        'subject_name'              => $employee->contact_name,
+        'start_at'                  => '2026-06-27 09:00:00',
+        'end_at'                    => '2026-06-27 11:00:00',
+        'working_duration'          => 7200,
+        'breaks_duration'           => 0,
+        'total_duration'            => 7200,
+        'number_time_trackers'      => 1,
+        'number_open_time_trackers' => 0,
+    ]);
+
+    \App\Models\HumanResources\TimeTracker::create([
+        'timesheet_id' => $timesheet->id,
+        'subject_type' => 'Employee',
+        'subject_id'   => $employee->id,
+        'status'       => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::CLOSED,
+        'starts_at'    => '2026-06-27 09:00:00',
+        'ends_at'      => '2026-06-27 11:00:00',
+        'duration'     => 7200,
+    ]);
+
+    $overtimeType = \App\Models\HumanResources\OvertimeType::create([
+        'group_id'          => $context->group->id,
+        'organisation_id'   => $context->organisation->id,
+        'code'              => 'OT'.$employee->id,
+        'name'              => 'Overtime '.$employee->id,
+        'category'          => \App\Enums\HumanResources\Overtime\OvertimeCategoryEnum::OVERTIME,
+        'compensation_type' => $compensationType,
+        'multiplier'        => $multiplier,
+        'is_active'         => true,
+    ]);
+
+    \App\Models\HumanResources\OvertimeRequest::create([
+        'group_id'                   => $context->group->id,
+        'organisation_id'            => $context->organisation->id,
+        'employee_id'                => $employee->id,
+        'overtime_type_id'           => $overtimeType->id,
+        'requested_date'             => '2026-06-27',
+        'requested_duration_minutes' => 120,
+        'status'                     => \App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum::APPROVED,
+    ]);
+
+    return [$timesheet, \App\Actions\HumanResources\Timesheet\CalculateTimesheetOvertime::run($timesheet->refresh())];
+}
+
+test('paid overtime is weighted by its type multiplier without inflating hours worked', function () {
+    [, $split] = makeOvertimeDay($this, 'paid', '1.50');
+
+    expect($split['paid_overtime_duration'])->toBe(7200)
+        ->and($split['payable_overtime_equivalent_duration'])->toBe(10800)
+        ->and($split['unpaid_overtime_duration'])->toBe(0);
+});
+
+test('time in lieu overtime is never treated as payable', function () {
+    [, $split] = makeOvertimeDay($this, 'time_in_lieu', '1.50');
+
+    expect($split['paid_overtime_duration'])->toBe(0)
+        ->and($split['payable_overtime_equivalent_duration'])->toBe(0)
+        ->and($split['unpaid_overtime_duration'])->toBe(7200);
+});
+
 test('can reject attendance adjustment', function () {
     $employee = Employee::factory()->create([
         'organisation_id' => $this->organisation->id,

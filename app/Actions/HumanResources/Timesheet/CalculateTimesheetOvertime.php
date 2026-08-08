@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\Timesheet;
 
+use App\Enums\HumanResources\Overtime\OvertimeCompensationTypeEnum;
 use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use App\Models\HumanResources\OvertimeRequest;
@@ -21,14 +22,14 @@ class CalculateTimesheetOvertime
         $timesheet->loadMissing(['timeTrackers', 'organisation']);
 
         $scheduleDaysByIso = $this->scheduleDaysByIso($timesheet->organisation);
-        $approvedOvertimeSeconds = $this->approvedOvertimeSecondsFor($timesheet);
+        $approvedAllowances = $this->approvedAllowancesFor($timesheet);
 
-        return $this->calculateForTimesheet($timesheet, $scheduleDaysByIso, $approvedOvertimeSeconds);
+        return $this->calculateForTimesheet($timesheet, $scheduleDaysByIso, $approvedAllowances);
     }
 
     /**
      * @param  Collection<int, Timesheet>  $timesheets  Must have timeTrackers eager loaded; organisation is loaded here if missing.
-     * @return Collection<int, array{paid_duration: int, unpaid_overtime_duration: int, paid_overtime_duration: int}> keyed by timesheet id
+     * @return Collection<int, array{paid_duration: int, unpaid_overtime_duration: int, paid_overtime_duration: int, payable_overtime_equivalent_duration: int}> keyed by timesheet id
      */
     public function handleMany(Collection $timesheets): Collection
     {
@@ -46,23 +47,27 @@ class CalculateTimesheetOvertime
         $employeeIds = $timesheets->where('subject_type', 'Employee')->pluck('subject_id')->unique()->all();
         $dates       = $timesheets->pluck('date')->map(fn ($date) => $date->toDateString())->unique()->all();
 
-        $approvedOvertimeByEmployeeAndDate = OvertimeRequest::whereIn('employee_id', $employeeIds)
+        $approvedOvertimeByEmployeeAndDate = OvertimeRequest::with('overtimeType')
+            ->whereIn('employee_id', $employeeIds)
             ->whereIn('requested_date', $dates)
             ->where('status', OvertimeRequestStatusEnum::APPROVED)
             ->get()
             ->groupBy(fn (OvertimeRequest $overtimeRequest) => $overtimeRequest->employee_id.'|'.$overtimeRequest->requested_date->toDateString())
-            ->map(fn (Collection $group) => (int) $group->sum(fn (OvertimeRequest $overtimeRequest) => ($overtimeRequest->recorded_duration_minutes ?? $overtimeRequest->requested_duration_minutes ?? 0) * 60));
+            ->map(fn (Collection $group) => $this->allowances($group));
 
         return $timesheets->mapWithKeys(function (Timesheet $timesheet) use ($scheduleDaysByOrganisation, $approvedOvertimeByEmployeeAndDate) {
             $scheduleDaysByIso = $scheduleDaysByOrganisation->get($timesheet->organisation_id) ?? collect();
             $key = $timesheet->subject_id.'|'.$timesheet->date->toDateString();
-            $approvedOvertimeSeconds = $approvedOvertimeByEmployeeAndDate->get($key, 0);
+            $approvedAllowances = $approvedOvertimeByEmployeeAndDate->get($key, []);
 
-            return [$timesheet->id => $this->calculateForTimesheet($timesheet, $scheduleDaysByIso, $approvedOvertimeSeconds)];
+            return [$timesheet->id => $this->calculateForTimesheet($timesheet, $scheduleDaysByIso, $approvedAllowances)];
         });
     }
 
-    private function calculateForTimesheet(Timesheet $timesheet, Collection $scheduleDaysByIso, int $approvedOvertimeSeconds): array
+    /**
+     * @param  array<int, array{seconds: int, multiplier: float}>  $approvedAllowances
+     */
+    private function calculateForTimesheet(Timesheet $timesheet, Collection $scheduleDaysByIso, array $approvedAllowances): array
     {
         $scheduledWindow = $this->resolveScheduledWindow($timesheet, $scheduleDaysByIso);
 
@@ -79,14 +84,51 @@ class CalculateTimesheetOvertime
             $unpaidOvertimeDuration += max(0, (int) $timeTracker->duration - $overlapSeconds);
         }
 
-        $paidOvertimeDuration = min($unpaidOvertimeDuration, $approvedOvertimeSeconds);
+        $paidOvertimeDuration = 0;
+        $payableEquivalent    = 0.0;
+        $remaining            = $unpaidOvertimeDuration;
+
+        foreach ($approvedAllowances as $allowance) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $covered              = min($remaining, $allowance['seconds']);
+            $paidOvertimeDuration += $covered;
+            $payableEquivalent    += $covered * $allowance['multiplier'];
+            $remaining            -= $covered;
+        }
+
         $unpaidOvertimeDuration -= $paidOvertimeDuration;
 
         return [
             'paid_duration'            => $paidDuration,
             'unpaid_overtime_duration' => $unpaidOvertimeDuration,
             'paid_overtime_duration'   => $paidOvertimeDuration,
+            'payable_overtime_equivalent_duration' => (int) round($payableEquivalent),
         ];
+    }
+
+    /**
+     * Only overtime compensated in money earns a multiplier. Time in lieu is banked as leave
+     * and unpaid overtime buys nothing, so neither is treated as approved here — their time
+     * stays in unpaid_overtime_duration, which keeps paid + paid overtime + unpaid overtime
+     * equal to the hours actually clocked.
+     *
+     * @param  Collection<int, OvertimeRequest>  $overtimeRequests
+     * @return array<int, array{seconds: int, multiplier: float}>
+     */
+    private function allowances(Collection $overtimeRequests): array
+    {
+        return $overtimeRequests
+            ->filter(fn (OvertimeRequest $overtimeRequest) => $overtimeRequest->overtimeType?->compensation_type === OvertimeCompensationTypeEnum::PAID)
+            ->map(fn (OvertimeRequest $overtimeRequest) => [
+                'seconds'    => (int) ($overtimeRequest->recorded_duration_minutes ?? $overtimeRequest->requested_duration_minutes ?? 0) * 60,
+                'multiplier' => (float) ($overtimeRequest->overtimeType->multiplier ?? 1),
+            ])
+            ->filter(fn (array $allowance) => $allowance['seconds'] > 0)
+            ->values()
+            ->all();
     }
 
     /**
@@ -151,18 +193,21 @@ class CalculateTimesheetOvertime
         return (int) $overlapStart->diffInSeconds($overlapEnd);
     }
 
-    private function approvedOvertimeSecondsFor(Timesheet $timesheet): int
+    /**
+     * @return array<int, array{seconds: int, multiplier: float}>
+     */
+    private function approvedAllowancesFor(Timesheet $timesheet): array
     {
         if ($timesheet->subject_type !== 'Employee') {
-            return 0;
+            return [];
         }
 
-        $minutes = OvertimeRequest::where('employee_id', $timesheet->subject_id)
-            ->where('requested_date', $timesheet->date->toDateString())
-            ->where('status', OvertimeRequestStatusEnum::APPROVED)
-            ->get()
-            ->sum(fn (OvertimeRequest $overtimeRequest) => $overtimeRequest->recorded_duration_minutes ?? $overtimeRequest->requested_duration_minutes ?? 0);
-
-        return (int) $minutes * 60;
+        return $this->allowances(
+            OvertimeRequest::with('overtimeType')
+                ->where('employee_id', $timesheet->subject_id)
+                ->where('requested_date', $timesheet->date->toDateString())
+                ->where('status', OvertimeRequestStatusEnum::APPROVED)
+                ->get()
+        );
     }
 }

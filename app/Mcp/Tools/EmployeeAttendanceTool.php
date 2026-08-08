@@ -63,20 +63,23 @@ class EmployeeAttendanceTool extends AikuOrganisationTool
         $scheduledSeconds        = 0;
         $approvedOvertimeSeconds = 0;
         $unapprovedOvertime      = 0;
+        $payableEquivalent       = 0;
         $clockedSeconds          = 0;
         $openDays                = [];
         $inconsistentDays        = [];
 
         foreach ($timesheets as $timesheet) {
             $split = $overtimeByTimesheetId->get($timesheet->id, [
-                'paid_duration'            => 0,
-                'paid_overtime_duration'   => 0,
-                'unpaid_overtime_duration' => 0,
+                'paid_duration'                        => 0,
+                'paid_overtime_duration'               => 0,
+                'unpaid_overtime_duration'             => 0,
+                'payable_overtime_equivalent_duration' => 0,
             ]);
 
             $scheduledSeconds        += $split['paid_duration'];
             $approvedOvertimeSeconds += $split['paid_overtime_duration'];
             $unapprovedOvertime      += $split['unpaid_overtime_duration'];
+            $payableEquivalent       += $split['payable_overtime_equivalent_duration'];
             $clockedSeconds          += $timesheet->working_duration;
 
             if ($timesheet->number_open_time_trackers > 0) {
@@ -107,6 +110,8 @@ class EmployeeAttendanceTool extends AikuOrganisationTool
                 'total_clocked'        => $this->hours($clockedSeconds),
             ],
 
+            'payable_hours_after_overtime_multiplier' => $this->hours($scheduledSeconds + $payableEquivalent),
+
             'approved_leave' => $leaves->map(fn (Leave $leave) => [
                 'from'  => $leave->start_date->toDateString(),
                 'to'    => $leave->end_date->toDateString(),
@@ -122,7 +127,7 @@ class EmployeeAttendanceTool extends AikuOrganisationTool
                 $clockedSeconds - ($scheduledSeconds + $approvedOvertimeSeconds + $unapprovedOvertime)
             ),
 
-            'how_to_read_this' => 'scheduled = clocked time inside the work schedule. approved_overtime = time outside it covered by an approved overtime request. unapproved_overtime = worked but never approved, so it is NOT automatically payable. total_clocked is the raw sum and equals the other three; do not add it to them. Leave is listed separately because leave days never produce a timesheet. Aiku stores no pay rate, so no wage figure can be derived here.',
+            'how_to_read_this' => 'scheduled = clocked time inside the work schedule. approved_overtime = time outside it covered by an approved overtime request that is compensated in money. unapproved_overtime = worked but never approved, or compensated as time in lieu rather than money, so it is NOT automatically payable. total_clocked is the raw sum and equals the other three; do not add it to them. payable_hours_after_overtime_multiplier is the only figure to multiply by a rate: it is scheduled hours plus approved overtime already weighted by its overtime type multiplier, so at 1.5x an overtime hour counts as 1.5. Leave is listed separately because leave days never produce a timesheet. Aiku stores no pay rate, so no wage figure can be derived here.',
         ]);
     }
 
