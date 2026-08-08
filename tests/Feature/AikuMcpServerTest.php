@@ -68,6 +68,26 @@ test('unknown shop error lists the codes the user can query', function () {
         ->assertSee($this->shop->code);
 });
 
+test('unknown shop error reports what the user recently queried', function () {
+    \App\Models\SysAdmin\McpRequest::create([
+        'group_id'    => $this->group->id,
+        'user_id'     => $this->user->id,
+        'tool'        => 'shop-sales-tool',
+        'arguments'   => ['shop' => 'previously-used-code'],
+        'is_error'    => false,
+        'duration_ms' => 5,
+        'created_at'  => now(),
+    ]);
+
+    $response = AikuServer::actingAs($this->user)->tool(ShopSalesTool::class, [
+        'shop' => 'totally-made-up',
+        'from' => '2026-01-01',
+        'to'   => '2026-12-31',
+    ]);
+
+    $response->assertSee('This user most recently queried: previously-used-code.');
+});
+
 test('shop resolves by full name', function () {
     $response = AikuServer::actingAs($this->user)->tool(ShopSalesTool::class, [
         'shop' => strtoupper($this->shop->name),
