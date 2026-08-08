@@ -3646,6 +3646,40 @@ describe('traffic source clicks', function () {
         expect(App\Models\CRM\TrafficSourceClick::sole()->is_bot)->toBeTrue();
     });
 
+    it('surfaces bots and same-ip clusters as suspicious, computed at read time', function () {
+        foreach (range(1, 6) as $i) {
+            App\Models\CRM\TrafficSourceClick::create([
+                'shop_id'    => $this->shop->id,
+                'type'       => 'google-ads',
+                'ip'         => '198.51.100.7',
+                'is_repeat'  => $i > 1,
+                'created_at' => now(),
+            ]);
+        }
+        App\Models\CRM\TrafficSourceClick::create([
+            'shop_id'    => $this->shop->id,
+            'type'       => 'google-ads',
+            'ip'         => '198.51.100.8',
+            'is_bot'     => true,
+            'created_at' => now(),
+        ]);
+        App\Models\CRM\TrafficSourceClick::create([
+            'shop_id'    => $this->shop->id,
+            'type'       => 'referral',
+            'ip'         => '198.51.100.9',
+            'created_at' => now(),
+        ]);
+
+        $fraud = App\Actions\CRM\TrafficSource\GetShopClickFraud::run($this->shop);
+
+        expect($fraud['totals'])->toMatchArray(['clicks' => 8, 'bots' => 1, 'ips' => 3, 'repeats' => 5])
+            ->and(collect($fraud['suspect_ips'])->pluck('ip')->all())->toBe(['198.51.100.7', '198.51.100.8'])
+            ->and($fraud['suspect_ips'][0]['clicks'])->toBe(6)
+            ->and($fraud['recent_bots'])->toHaveCount(1)
+            ->and($fraud['recent_bots'][0]['ip'])->toBe('198.51.100.8')
+            ->and(collect($fraud['channels'])->firstWhere('channel', 'Google Ads')['bot_pct'])->toBe(14.3);
+    });
+
     it('queues a click record when capture matches a source', function () {
         Illuminate\Support\Facades\Queue::fake();
 

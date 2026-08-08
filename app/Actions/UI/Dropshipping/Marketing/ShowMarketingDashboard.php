@@ -10,6 +10,7 @@ namespace App\Actions\UI\Dropshipping\Marketing;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\TrafficSource\GetShopAttributionDataQuality;
+use App\Actions\CRM\TrafficSource\GetShopClickFraud;
 use App\Actions\CRM\TrafficSource\GetShopEmailMarketingPerformance;
 use App\Actions\CRM\TrafficSource\GetShopMarketingOverview;
 use App\Actions\CRM\TrafficSource\GetShopOfferPerformance;
@@ -107,6 +108,9 @@ class ShowMarketingDashboard extends OrgAction
                 MarketingDashboardTabsEnum::DATA_QUALITY->value => $this->tab == MarketingDashboardTabsEnum::DATA_QUALITY->value
                     ? fn () => GetShopAttributionDataQuality::run($this->shop, $this->period)
                     : Inertia::optional(fn () => GetShopAttributionDataQuality::run($this->shop, $this->period)),
+                MarketingDashboardTabsEnum::FRAUD->value => $this->tab == MarketingDashboardTabsEnum::FRAUD->value
+                    ? fn () => GetShopClickFraud::run($this->shop, $this->period)
+                    : Inertia::optional(fn () => GetShopClickFraud::run($this->shop, $this->period)),
                 'dashboard_stats'   => [
                     [
                         'name' => __('Newsletters'),
