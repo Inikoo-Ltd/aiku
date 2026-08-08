@@ -2013,6 +2013,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         :shipping_fields_update_route="note.shipping_fields_update_route"
                                         :shipments="note.shipments"
                                         :shipments_routes="note.shipments_routes"
+                                        :preferred_shipper_id="note.preferred_shipper_id"
                                         :address="note.shipping_fields.address"
                                         :currencyCode="box_stats?.currency?.data.code"
                                         :external_shop="box_stats?.external_shop"

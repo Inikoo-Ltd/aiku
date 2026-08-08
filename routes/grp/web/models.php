@@ -1402,6 +1402,7 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
     Route::delete('delete', DeleteShippingCountry::class)->name('delete');
 });
 
+
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 

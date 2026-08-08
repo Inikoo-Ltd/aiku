@@ -17,6 +17,7 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\Shipper;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -107,6 +108,19 @@ class EditCustomer extends OrgAction
                     'type'  => 'input',
                     'label' => 'UKIMS',
                     'value' => $customer->ukims
+                ],
+                'shipper_id'               => [
+                    'type'        => 'select',
+                    'label'       => __('Preferred shipping'),
+                    'placeholder' => __('Select preferred shipping'),
+                    'value'       => $customer->shipper_id,
+                    'options'     => Shipper::where('organisation_id', $this->organisation->id)
+                        ->where('status', true)
+                        ->get()->map(fn (Shipper $shipper) => [
+                        'value' => $shipper->id,
+                        'label' => $shipper->name,
+                    ])->values()->all(),
+                    'searchable'  => true,
                 ],
                 'is_re'                    => [
                     'type'   => 'toggle',

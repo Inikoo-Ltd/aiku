@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
@@ -68,6 +69,7 @@ class ShowDeliveryNote extends OrgAction
     use WithBucketNavigation;
     use WithOrderForbiddenCountryCheck;
     use WithDeliveryNoteHandler;
+    use WithPreferredShipperResolver;
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
@@ -816,6 +818,12 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
+            'preferred_shipper_id'         => $this->findShipperIdForAddress(
+                $deliveryNote->shop_id,
+                $deliveryNote->deliveryAddress?->country_id ?? $deliveryNote->delivery_country_id,
+                $deliveryNote->deliveryAddress?->postal_code,
+                $deliveryNote->customer_id
+            ),
             'shop_type'                    => $deliveryNote->shop->type,
             'shipping_fields'              => [
                 'company_name' => $deliveryNote->company_name,
