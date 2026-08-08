@@ -862,13 +862,32 @@ describe('attribution data quality', function () {
 
         Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':anon:matched', 8, now()->addDay());
         Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':anon:direct', 2, now()->addDay());
+        /* Browsing must not dilute the percentage: one identified arrival is followed by a dozen
+           own-site page views, and counting those as hits is what made 7% read as capture failing. */
+        Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':anon:internal', 90, now()->addDay());
         Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':hosts', ['app.aiku.io' => 26], now()->addDay());
 
         $capture = GetShopAttributionDataQuality::run($this->shop)['capture'];
 
-        expect($capture['hits'])->toBe(10)
+        expect($capture['arrivals'])->toBe(10)
             ->and($capture['identified_pct'])->toBe(80.0)
+            ->and($capture['rows'][0]['internal'])->toBe(90)
             ->and($capture['rejected'][0])->toBe(['host' => 'app.aiku.io', 'hits' => 26]);
+    });
+
+    it('reports identified as a share of arrivals in the capture stats command too', function () {
+        $day = now()->toDateString();
+
+        Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':anon:matched', 8, now()->addDay());
+        Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':anon:direct', 2, now()->addDay());
+        Illuminate\Support\Facades\Cache::put('traffic_capture:'.$day.':anon:internal', 90, now()->addDay());
+
+        Illuminate\Support\Facades\Artisan::call('traffic-source:capture-stats', ['--days' => 1]);
+        $output = Illuminate\Support\Facades\Artisan::output();
+
+        expect($output)->toContain('Arrivals')
+            ->and($output)->toContain('80%')
+            ->and($output)->not->toContain('7.2%');
     });
 });
 

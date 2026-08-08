@@ -66,7 +66,18 @@ class CaptureTrafficSource
         if (!$trafficSourceData) {
             $candidates = $this->refererCandidates($referer);
 
-            $this->recordCaptureOutcome($candidates === [] ? 'direct' : 'unmatched', $candidates);
+            /* Three different nothings. `unmatched` arrived from somewhere we failed to classify.
+               `internal` is a page view whose referrer is one of our own systems - a visitor browsing,
+               not arriving - and it dominates: one session leaves one identifiable arrival and then a
+               dozen of these, which is why counting them as `direct` made healthy capture read as 7%
+               identified. `direct` is a genuine arrival with no referrer at all: typed, bookmarked. */
+            $outcome = match (true) {
+                $candidates !== [] => 'unmatched',
+                filled(request()->headers->get('X-Original-Referer')) || filled($referer) => 'internal',
+                default => 'direct',
+            };
+
+            $this->recordCaptureOutcome($outcome, $candidates);
 
             return $cookies;
         }
