@@ -3,6 +3,7 @@
 namespace App\Actions\Production\RawMaterial;
 
 use App\Actions\Production\Production\Hydrators\ProductionHydrateRawMaterials;
+use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRawMaterials;
@@ -29,6 +30,11 @@ class UpdateRawMaterial extends OrgAction
     public function handle(RawMaterial $rawMaterial, array $modelData): RawMaterial
     {
         $rawMaterial = $this->update($rawMaterial, $modelData);
+
+        if ($rawMaterial->wasChanged('org_stock_id') && $rawMaterial->org_stock_id) {
+            RawMaterialHydrateFromOrgStock::run($rawMaterial);
+        }
+
         if ($rawMaterial->wasChanged('state')) {
             GroupHydrateRawMaterials::dispatch($rawMaterial->group);
             OrganisationHydrateRawMaterials::dispatch($rawMaterial->organisation);

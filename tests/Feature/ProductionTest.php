@@ -868,3 +868,30 @@ test('raw material stores with defaults and only human fields', function () {
         ->and($rawMaterial->trade_unit_id)->toBeNull()
         ->and($rawMaterial->org_stock_id)->toBeNull();
 });
+
+test('raw material linked to org stock derives quantities from it', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['quantity_in_locations' => 321.5]);
+
+    $rawMaterial = StoreRawMaterial::make()->action($this->production, [
+        'type'         => RawMaterialTypeEnum::STOCK->value,
+        'code'         => 'LINKED1',
+        'description'  => 'Linked raw material',
+        'unit'         => RawMaterialUnitEnum::UNIT->value,
+        'org_stock_id' => $orgStock->id,
+    ]);
+
+    expect((float)$rawMaterial->quantity_on_location)->toBe(321.5)
+        ->and($rawMaterial->org_stock_id)->toBe($orgStock->id);
+
+    $orgStock->update(['quantity_in_locations' => 10]);
+    \App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock::run($rawMaterial->refresh());
+
+    expect((float)$rawMaterial->refresh()->quantity_on_location)->toBe(10.0);
+});

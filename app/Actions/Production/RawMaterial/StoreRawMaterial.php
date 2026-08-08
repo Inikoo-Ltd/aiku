@@ -9,6 +9,7 @@
 namespace App\Actions\Production\RawMaterial;
 
 use App\Actions\Production\Production\Hydrators\ProductionHydrateRawMaterials;
+use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRawMaterials;
@@ -41,6 +42,10 @@ class StoreRawMaterial extends OrgAction
         /** @var RawMaterial $rawMaterial */
         $rawMaterial = $production->rawMaterials()->create($modelData);
         $rawMaterial->stats()->create();
+
+        if ($rawMaterial->org_stock_id) {
+            RawMaterialHydrateFromOrgStock::run($rawMaterial);
+        }
 
         GroupHydrateRawMaterials::dispatch($production->group);
         OrganisationHydrateRawMaterials::dispatch($production->organisation);
