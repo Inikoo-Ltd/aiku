@@ -125,10 +125,10 @@ class IndexStockDeliveries extends OrgAction
             'stock_deliveries.date',
         ]);
 
-        if ($organisationAgent) {
+        if ($organisationAgent || $this->parent instanceof Agent || $this->parent instanceof Supplier) {
             $query
                 ->leftJoin('organisations', 'stock_deliveries.organisation_id', 'organisations.id')
-                ->addSelect(['organisations.name as organisation_name']);
+                ->addSelect(['organisations.name as organisation_name', 'organisations.slug as organisation_slug']);
         }
 
         return $query

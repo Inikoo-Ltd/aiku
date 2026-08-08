@@ -32,6 +32,7 @@ class StockDeliveryResource extends JsonResource
             'state_icon'    => $this->state->stateIcon()[$this->state->value],
             'date'          => $this->date,
             'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
         ];
     }
 }

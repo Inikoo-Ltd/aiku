@@ -15,17 +15,15 @@ defineProps<{
     tab?: string
 }>()
 
-function stockDeliveryRoute(stockDelivery: { } ) {
-    switch (route().current()) {
-        case 'grp.org.procurement.stock_deliveries.index':
-            return route(
-                'grp.org.procurement.stock_deliveries.show',
-                [route().params['organisation'], stockDelivery.slug]);
-        default:
-            return route(
-                'grp.org.procurement.stock_deliveries.show',
-                [route().params['organisation'], stockDelivery.slug]);
+function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: string }) {
+    const organisation = route().params['organisation'] ?? stockDelivery.organisation_slug
+    if (!organisation) {
+        return null
     }
+
+    return route(
+        'grp.org.procurement.stock_deliveries.show',
+        [organisation, stockDelivery.slug])
 }
 </script>
 
@@ -36,9 +34,10 @@ function stockDeliveryRoute(stockDelivery: { } ) {
         </template>
 
         <template #cell(reference)="{ item: stockDelivery }">
-            <Link :href="stockDeliveryRoute(stockDelivery)" class="primaryLink">
+            <Link v-if="stockDeliveryRoute(stockDelivery)" :href="stockDeliveryRoute(stockDelivery)" class="primaryLink">
                 {{ stockDelivery['reference'] }}
             </Link>
+            <span v-else>{{ stockDelivery['reference'] }}</span>
         </template>
 
         <template #cell(date)="{ item }">
