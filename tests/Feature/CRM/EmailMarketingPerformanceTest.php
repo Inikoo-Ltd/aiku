@@ -328,7 +328,7 @@ it('charges automated marketing for its sends, at the same rate as any other ema
     expect($outbox)->not->toBeNull();
 
     foreach (range(1, 500) as $ignored) {
-        $outbox->dispatchedEmails()->create(['data' => []]);
+        $outbox->dispatchedEmails()->create(['data' => [], 'sent_at' => now()]);
     }
 
     $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
@@ -337,4 +337,19 @@ it('charges automated marketing for its sends, at the same rate as any other ema
     expect($channel)->not->toBeNull()
         ->and($channel['spend'])->toBeGreaterThan(0.0)
         ->and($channel['spend_is_estimated'])->toBeTrue();
+});
+
+it('does not charge automated marketing for emails that were never sent', function () {
+    $outbox = $this->shop->outboxes()->where('code', 'oos_notification')->first();
+
+    $spend = fn () => collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        ->firstWhere('type', 'email-automated')['spend'] ?? 0.0;
+
+    $before = $spend();
+
+    foreach (range(1, 500) as $ignored) {
+        $outbox->dispatchedEmails()->create(['data' => [], 'sent_at' => null]);
+    }
+
+    expect($spend())->toBe($before);
 });
