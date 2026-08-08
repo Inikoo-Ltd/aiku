@@ -57,44 +57,60 @@ class StoreEmailTrackingEvent extends OrgAction
                     ? TrafficSourcesTypeEnum::fromMailshotType($mailshot->type?->value ?? $mailshot->type)
                     : TrafficSourcesTypeEnum::EMAIL_AUTOMATED;
 
-                RecordTrafficSourceVisit::run($dispatchedEmail->outbox?->shop_id, $channel);
-
                 /* Email needs the fraud record more than the storefront does: security scanners
                    click every link in every message, and without the user agent on record they are
-                   indistinguishable from readers. Guarded on ipAddress so historical Aurora imports,
-                   which replay these events without one, record nothing. */
-                $shop = $dispatchedEmail->outbox?->shop;
-                $ip   = Arr::get($emailTrackingEvent->data, 'ipAddress');
+                   indistinguishable from readers - 40 of the first day's 46 newsletter clicks were
+                   Microsoft's scanner. So nothing is counted here. The burst counter is written now,
+                   and the visit and the click row are decided two minutes later, once the burst is
+                   over and the counter can tell a scanner from a reader. Guarded on ipAddress so
+                   historical Aurora imports, which replay these events without one, count nothing. */
+                $shop        = $dispatchedEmail->outbox?->shop;
+                $ip          = Arr::get($emailTrackingEvent->data, 'ipAddress');
+                $campaignRef = $mailshot
+                    ? ($channel === TrafficSourcesTypeEnum::NEWSLETTER
+                        ? RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX
+                        : RecordEmailClickTouchpoint::MARKETING_CAMPAIGN_REF_PREFIX).$mailshot->id
+                    : RecordEmailClickTouchpoint::OUTBOX_CAMPAIGN_REF_PREFIX.$outboxCode;
 
                 if ($shop && $ip && $channel) {
+                    RecordTrafficSourceClick::countScannerClick($ip, $campaignRef);
+
                     RecordTrafficSourceClick::dispatch([
-                        'shop_id'      => $shop->id,
-                        'website_id'   => $shop->website?->id,
-                        'type'         => $channel->value,
-                        'campaign_ref' => $mailshot
-                            ? ($channel === TrafficSourcesTypeEnum::NEWSLETTER
-                                ? RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX
-                                : RecordEmailClickTouchpoint::MARKETING_CAMPAIGN_REF_PREFIX).$mailshot->id
-                            : RecordEmailClickTouchpoint::OUTBOX_CAMPAIGN_REF_PREFIX.$outboxCode,
-                        'click_id'     => null,
-                        'ip'           => $ip,
-                        'country_code' => null,
-                        'user_agent'   => Arr::get($emailTrackingEvent->data, 'userAgent'),
-                        'url'          => Arr::get($emailTrackingEvent->data, 'l'),
-                        'is_repeat'    => false,
-                    ]);
+                        'shop_id'       => $shop->id,
+                        'website_id'    => $shop->website?->id,
+                        'type'          => $channel->value,
+                        'campaign_ref'  => $campaignRef,
+                        'click_id'      => null,
+                        'ip'            => $ip,
+                        'country_code'  => null,
+                        'user_agent'    => Arr::get($emailTrackingEvent->data, 'userAgent'),
+                        'url'           => Arr::get($emailTrackingEvent->data, 'l'),
+                        'is_repeat'     => false,
+                        'check_scanner' => true,
+                        'count_visit'   => true,
+                    ])->delay(now()->addMinutes(2));
+                } elseif ($channel && ($emailTrackingEvent->created_at ?? now())->gt(now()->subHour())) {
+                    /* No IP means no scanner check is possible; a live event without one still
+                       deserves its visit. The recency guard keeps Aurora replays of historic
+                       clicks, which also carry no IP, from counting as today's traffic. */
+                    RecordTrafficSourceVisit::run($dispatchedEmail->outbox?->shop_id, $channel);
                 }
             }
 
             if ($mailshot || $outboxCode) {
                 $clickedAt = $emailTrackingEvent->created_at ?? now();
 
+                /* Delayed for the same reason as the click row: the touch decision needs the scanner
+                   burst to be over. Two minutes is invisible to attribution and conclusive for a
+                   burst that finishes in under thirty seconds. */
+                $touchDelay = $ip ? now()->addMinutes(2) : null;
+
                 foreach ($dispatchedEmail->customers as $customer) {
-                    RecordEmailClickTouchpoint::dispatch($customer, $clickedAt, $mailshot, $outboxCode);
+                    RecordEmailClickTouchpoint::dispatch($customer, $clickedAt, $mailshot, $outboxCode, $ip)->delay($touchDelay);
                 }
 
                 foreach ($dispatchedEmail->prospects as $prospect) {
-                    RecordEmailClickTouchpoint::dispatch($prospect, $clickedAt, $mailshot, $outboxCode);
+                    RecordEmailClickTouchpoint::dispatch($prospect, $clickedAt, $mailshot, $outboxCode, $ip)->delay($touchDelay);
                 }
             }
         } elseif ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::OPENED) {
