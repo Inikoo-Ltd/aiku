@@ -13,6 +13,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionState
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class FetchAuroraPurchaseOrderTransaction extends FetchAurora
 {
@@ -37,7 +38,11 @@ class FetchAuroraPurchaseOrderTransaction extends FetchAurora
 
         $historicSupplierProduct = null;
         if ($purchaseOrder->parent_type != 'OrgPartner') {
-            $historicSupplierProduct = $this->parseHistoricSupplierProduct($this->organisation->id, $this->auroraModelData->{'Supplier Part Historic Key'});
+            try {
+                $historicSupplierProduct = $this->parseHistoricSupplierProduct($this->organisation->id, $this->auroraModelData->{'Supplier Part Historic Key'});
+            } catch (Throwable $e) {
+                print "PO  ".$this->auroraModelData->{'Purchase Order Key'}."  historic supplier product ".$this->auroraModelData->{'Supplier Part Historic Key'}." failed: ".$e->getMessage()."\n";
+            }
         }
 
 
