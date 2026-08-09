@@ -90,7 +90,8 @@ class IndexStockDeliveries extends OrgAction
         $query = QueryBuilder::for(StockDelivery::class);
 
         if ($this->parent instanceof OrgAgent) {
-            $query->where('stock_deliveries.organisation_id', $this->parent->agent->organisation->id);
+            $query->where('stock_deliveries.organisation_id', $this->parent->organisation_id)
+                ->where('stock_deliveries.agent_id', $this->parent->agent_id);
         } elseif ($this->parent instanceof OrgPartner) {
             $query->where('stock_deliveries.organisation_id', $this->parent->partner->id);
         } elseif ($this->parent instanceof OrgSupplier) {
