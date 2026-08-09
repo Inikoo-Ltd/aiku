@@ -1165,6 +1165,8 @@ test('UI Index org agent stock deliveries shows deliveries with empty between fi
     $data        = $response->viewData('page')['props']['data'];
     $deliveryIds = collect($data['data'] ?? $data)->pluck('id');
     expect($deliveryIds->contains($agentStockDelivery->id))->toBeTrue();
+
+    expect($this->orgAgent->stats->refresh()->number_stock_deliveries)->toBeGreaterThanOrEqual(1);
 });
 
 test('UI create stock delivery', function () {
