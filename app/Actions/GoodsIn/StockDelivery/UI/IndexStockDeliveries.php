@@ -54,11 +54,21 @@ class IndexStockDeliveries extends OrgAction
 
     protected function getElementGroups(): array
     {
+        $counts = [];
+        if (isset($this->parent)) {
+            $countsQuery = $this->applyParentFilter(StockDelivery::query());
+            $counts      = $countsQuery
+                ->selectRaw('stock_deliveries.state, count(*) as total')
+                ->groupBy('stock_deliveries.state')
+                ->pluck('total', 'state')
+                ->all();
+        }
+
         $elements = [];
         foreach (StockDeliveryStateEnum::cases() as $case) {
             $elements[$case->value] = [
                 __(ucfirst(str_replace('_', ' ', $case->value))),
-                null,
+                $counts[$case->value] ?? 0,
             ];
         }
 
@@ -73,21 +83,16 @@ class IndexStockDeliveries extends OrgAction
         ];
     }
 
-    public function handle($prefix = null): LengthAwarePaginator
+    private function isAgentContext(): bool
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->where('stock_deliveries.reference', 'ILIKE', "$value%");
-            });
-        });
+        return $this->parent instanceof OrgAgent
+            || $this->parent instanceof Agent
+            || (bool) $this->getParentOrganisationAgent($this->parent);
+    }
 
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
-
+    private function applyParentFilter($query)
+    {
         $organisationAgent = $this->getParentOrganisationAgent($this->parent);
-
-        $query = QueryBuilder::for(StockDelivery::class);
 
         if ($this->parent instanceof OrgAgent) {
             $query->where('stock_deliveries.organisation_id', $this->parent->organisation_id)
@@ -107,6 +112,27 @@ class IndexStockDeliveries extends OrgAction
         } elseif ($this->parent instanceof Organisation) {
             $query->where('stock_deliveries.organisation_id', $this->parent->id);
         }
+
+        return $query;
+    }
+
+    public function handle($prefix = null): LengthAwarePaginator
+    {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->where('stock_deliveries.reference', 'ILIKE', "$value%");
+            });
+        });
+
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
+        $organisationAgent = $this->getParentOrganisationAgent($this->parent);
+
+        $query = QueryBuilder::for(StockDelivery::class);
+
+        $this->applyParentFilter($query);
 
         foreach ($this->getElementGroups() as $key => $elementGroup) {
             $query->whereElementGroup(
@@ -130,6 +156,27 @@ class IndexStockDeliveries extends OrgAction
             $query
                 ->leftJoin('organisations', 'stock_deliveries.organisation_id', 'organisations.id')
                 ->addSelect(['organisations.name as organisation_name', 'organisations.slug as organisation_slug']);
+        }
+
+        if ($this->isAgentContext()) {
+            $query
+                ->leftJoin('currencies', 'currencies.id', 'stock_deliveries.currency_id')
+                ->leftJoin('organisations as delivery_organisations', 'delivery_organisations.id', 'stock_deliveries.organisation_id')
+                ->leftJoin('currencies as org_currencies', 'org_currencies.id', 'delivery_organisations.currency_id')
+                ->leftJoin('groups as delivery_groups', 'delivery_groups.id', 'stock_deliveries.group_id')
+                ->leftJoin('currencies as grp_currencies', 'grp_currencies.id', 'delivery_groups.currency_id')
+                ->addSelect([
+                    'stock_deliveries.number_stock_delivery_items_except_cancelled',
+                    'stock_deliveries.number_stock_delivery_items',
+                    'stock_deliveries.cbm',
+                    'stock_deliveries.gross_weight',
+                    'stock_deliveries.cost_total',
+                    'stock_deliveries.grp_exchange',
+                    'stock_deliveries.org_exchange',
+                    'currencies.code as currency_code',
+                    'org_currencies.code as org_currency_code',
+                    'grp_currencies.code as grp_currency_code',
+                ]);
         }
 
         return $query
@@ -166,13 +213,24 @@ class IndexStockDeliveries extends OrgAction
             }
 
             $table
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+
+            if (!$this->isAgentContext()) {
+                $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
+            }
 
             if ($this->getParentOrganisationAgent($this->parent)) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
+            }
+
+            if ($this->isAgentContext()) {
+                $table
+                    ->column(key: 'items', label: __('Items'), canBeHidden: false, align: 'right')
+                    ->column(key: 'cbm', label: __('CBM'), canBeHidden: false, align: 'right')
+                    ->column(key: 'gross_weight', label: __('Weight'), canBeHidden: false, align: 'right')
+                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right');
             }
 
             $table->defaultSort('-date');

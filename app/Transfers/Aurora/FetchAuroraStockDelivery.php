@@ -101,10 +101,12 @@ class FetchAuroraStockDelivery extends FetchAurora
             "reference" => $this->auroraModelData->{'Supplier Delivery Public ID'} ?? $this->auroraModelData->{'Supplier Delivery Key'},
             "state"     => $state,
 
-            "cost_items" => $this->auroraModelData->{'Supplier Delivery Items Amount'},
-            // "cost_shipping" => $this->auroraModelData->{'Supplier Delivery Shipping Net Amount'},
+            "cost_items"    => $this->auroraModelData->{'Supplier Delivery Items Amount'},
+            "cost_shipping" => $this->auroraModelData->{'Supplier Delivery Shipping Net Amount'},
+            "cost_total"    => $this->auroraModelData->{'Supplier Delivery Total Amount'},
 
-            //  "cost_total" => $this->auroraModelData->{'Supplier Delivery Total Amount'},
+            "cbm"          => $this->auroraModelData->{'Supplier Delivery CBM'},
+            "gross_weight" => $this->auroraModelData->{'Supplier Delivery Weight'},
 
             "source_id" => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Delivery Key'},
 

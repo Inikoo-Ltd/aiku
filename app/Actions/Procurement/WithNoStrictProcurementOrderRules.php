@@ -43,6 +43,11 @@ trait WithNoStrictProcurementOrderRules
         $rules['placed_at']    = ['sometimes', 'nullable', 'date'];
         $rules['cancelled_at']  = ['sometimes', 'nullable', 'date'];
 
+        $rules['cbm']           = ['sometimes', 'nullable', 'numeric'];
+        $rules['gross_weight']  = ['sometimes', 'nullable', 'numeric'];
+        $rules['cost_shipping'] = ['sometimes', 'nullable', 'numeric'];
+        $rules['cost_total']    = ['sometimes', 'nullable', 'numeric'];
+
         return $rules;
     }
 

@@ -17,6 +17,7 @@ use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurcha
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
@@ -1167,6 +1168,41 @@ test('UI Index org agent stock deliveries shows deliveries with empty between fi
     expect($deliveryIds->contains($agentStockDelivery->id))->toBeTrue();
 
     expect($this->orgAgent->stats->refresh()->number_stock_deliveries)->toBeGreaterThanOrEqual(1);
+});
+
+test('UI Index org agent stock deliveries shows container columns and state counts', function () {
+    StoreStockDelivery::make()->action(
+        $this->orgAgent,
+        [
+            'reference'   => 'AGENT-DELIVERY-2',
+            'date'        => date('Y-m-d'),
+            'currency_id' => $this->organisation->currency_id,
+        ],
+        strict: false,
+    );
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.org_agents.show.stock-deliveries.index', [$this->organisation->slug, $this->orgAgent->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDeliveries')
+            ->has('data');
+    });
+
+    $data  = $response->viewData('page')['props']['data'];
+    $items = collect($data['data'] ?? $data);
+    expect($items->first())->toHaveKeys(['items', 'cbm', 'gross_weight', 'amount', 'state_label']);
+
+    $reflection      = new ReflectionMethod(IndexStockDeliveries::class, 'getElementGroups');
+    $reflection->setAccessible(true);
+    $indexAction      = IndexStockDeliveries::make();
+    $parentReflection = new ReflectionProperty(IndexStockDeliveries::class, 'parent');
+    $parentReflection->setAccessible(true);
+    $parentReflection->setValue($indexAction, $this->orgAgent);
+
+    $stateElements = $reflection->invoke($indexAction)['state']['elements'];
+    expect(collect($stateElements)->pluck(1)->sum())->toBeGreaterThanOrEqual(1);
 });
 
 test('UI create stock delivery', function () {
