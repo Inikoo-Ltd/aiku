@@ -35,6 +35,12 @@ class SyncProductExclusiveCustomers extends OrgAction
             'exclusive_for_customer_id' => $customerIds[0] ?? null,
         ]);
 
+        // Becoming exclusive has to take the product off the public site, otherwise it stays
+        // listed and a customer's private range is visible to everyone.
+        if ($customerIds && $product->refresh()->is_for_sale) {
+            UpdateProduct::make()->action($product, ['is_for_sale' => false]);
+        }
+
         foreach (array_unique(array_merge($before, $customerIds)) as $customerId) {
             CustomerHydrateExclusiveProducts::dispatch($customerId);
         }

@@ -565,7 +565,10 @@ class Product extends Model implements Auditable, HasMedia
     public function scopeVisibleToCustomer(Builder $query, ?int $customerId): Builder
     {
         return $query->where(function (Builder $query) use ($customerId) {
-            $query->whereNull('products.exclusive_for_customer_id');
+            $query->whereNotExists(function ($sub) {
+                $sub->from('product_has_exclusive_customers')
+                    ->whereColumn('product_has_exclusive_customers.product_id', 'products.id');
+            });
 
             if ($customerId) {
                 $query->orWhereExists(function ($sub) use ($customerId) {
@@ -577,9 +580,14 @@ class Product extends Model implements Auditable, HasMedia
         });
     }
 
+    /**
+     * Read from the pivot, never from exclusive_for_customer_id. Aurora rewrites that column on
+     * every product fetch from its own single-customer field, and it holds nothing for the ranges
+     * sold to the AW group companies, so trusting it would quietly make those products public.
+     */
     public function isExclusive(): bool
     {
-        return $this->exclusive_for_customer_id !== null;
+        return $this->exclusiveCustomers()->exists();
     }
 
     public function isExclusiveFor(?int $customerId): bool
