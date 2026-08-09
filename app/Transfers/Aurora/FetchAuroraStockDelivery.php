@@ -98,7 +98,7 @@ class FetchAuroraStockDelivery extends FetchAurora
             'parent_code' => $this->auroraModelData->{'Supplier Delivery Parent Code'},
             'parent_name' => $this->auroraModelData->{'Supplier Delivery Parent Name'},
 
-            "reference" => $this->auroraModelData->{'Supplier Delivery Public ID'} ?? $this->auroraModelData->{'Supplier Delivery Key'},
+            "reference" => (string)($this->auroraModelData->{'Supplier Delivery Public ID'} ?? $this->auroraModelData->{'Supplier Delivery Key'}),
             "state"     => $state,
 
             "cost_items" => $this->auroraModelData->{'Supplier Delivery Items Amount'} ?? null,
