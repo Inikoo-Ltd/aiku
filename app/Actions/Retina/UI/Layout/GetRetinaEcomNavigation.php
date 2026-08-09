@@ -8,14 +8,16 @@
 
 namespace App\Actions\Retina\UI\Layout;
 
+use App\Models\CRM\WebUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaEcomNavigation
 {
     use AsAction;
 
-    public function handle(): array
+    public function handle(WebUser $webUser): array
     {
+        $customer        = $webUser->customer;
         $groupNavigation = [];
 
         $groupNavigation['dashboard'] = [
@@ -91,6 +93,20 @@ class GetRetinaEcomNavigation
                     ]
             ]
         ];
+
+        if ($customer && $customer->number_exclusive_products > 0) {
+            $groupNavigation['exclusive_products'] = [
+                'label'   => __('Exclusive Products'),
+                'icon'    => ['fal', 'fa-gem'],
+                'root'    => 'retina.exclusive_products.',
+                'route'   => [
+                    'name' => 'retina.exclusive_products.dashboard'
+                ],
+                'topMenu' => [
+                    'subSections' => []
+                ]
+            ];
+        }
 
         $groupNavigation['basket'] = [
             'label'   => __('Basket'),

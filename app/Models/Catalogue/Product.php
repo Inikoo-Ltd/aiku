@@ -37,6 +37,7 @@ use App\Models\Traits\HasSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -545,6 +546,53 @@ class Product extends Model implements Auditable, HasMedia
     public function exclusiveForCustomer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Every customer allowed to buy this product. exclusive_for_customer_id holds the primary one
+     * and marks the product as exclusive at all; this is the full list.
+     */
+    public function exclusiveCustomers(): BelongsToMany
+    {
+        return $this->belongsToMany(Customer::class, 'product_has_exclusive_customers')
+            ->withTimestamps();
+    }
+
+    /**
+     * Products a given customer may see: everything public, plus the ones sold exclusively to them.
+     * Pass null for an anonymous visitor, who sees only public products.
+     */
+    public function scopeVisibleToCustomer(Builder $query, ?int $customerId): Builder
+    {
+        return $query->where(function (Builder $query) use ($customerId) {
+            $query->whereNull('products.exclusive_for_customer_id');
+
+            if ($customerId) {
+                $query->orWhereExists(function ($sub) use ($customerId) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                        ->where('product_has_exclusive_customers.customer_id', $customerId);
+                });
+            }
+        });
+    }
+
+    public function isExclusive(): bool
+    {
+        return $this->exclusive_for_customer_id !== null;
+    }
+
+    public function isExclusiveFor(?int $customerId): bool
+    {
+        if (!$this->isExclusive()) {
+            return true;
+        }
+
+        if (!$customerId) {
+            return false;
+        }
+
+        return $this->exclusiveCustomers()->whereKey($customerId)->exists();
     }
 
     public function containedByCollections(): MorphToMany

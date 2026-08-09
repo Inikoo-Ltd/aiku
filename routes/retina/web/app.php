@@ -45,6 +45,10 @@ Route::middleware(
         ->name("catalogue.")
         ->group(__DIR__."/catalogue.php");
 
+    Route::prefix("exclusive-products")
+        ->name("exclusive_products.")
+        ->group(__DIR__."/exclusive_products.php");
+
     Route::prefix("/")
         ->name("ecom.")
         ->group(__DIR__."/ecom.php");
