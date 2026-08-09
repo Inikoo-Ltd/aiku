@@ -21,7 +21,7 @@ use Throwable;
 
 class FetchAuroraProducts extends FetchAuroraAction
 {
-    public string $commandSignature = 'fetch:products {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
+    public string $commandSignature = 'fetch:products {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset} {--F|force : Overwrite the aiku record even though the organisation already runs on aiku}';
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Product
     {
