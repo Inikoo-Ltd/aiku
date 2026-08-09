@@ -2836,25 +2836,31 @@ test('warehouse packing change recomputes product pick quantity', function () {
         ->and((int) $row->divisor)->toBe(1);
 });
 
-test('two master shops can each have a sub department with the same code', function () {
-    $sharedCode = 'SHARED'.uniqid();
+test('two master shops can each have a department and sub department with the same code', function () {
+    $sharedDepartmentCode    = 'SHDEP'.uniqid();
+    $sharedSubDepartmentCode = 'SHSUB'.uniqid();
 
+    $departments    = [];
     $subDepartments = [];
+
     foreach ([1, 2] as $n) {
         $masterShop = createFreshMasterShop();
 
-        $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
-            'code' => 'DEP'.uniqid(),
-            'name' => "Department $n",
+        $departments[] = $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+            'code' => $sharedDepartmentCode,
+            'name' => "Shared department $n",
         ]);
 
         $subDepartments[] = StoreMasterSubDepartment::make()->action($masterDepartment, [
-            'code' => $sharedCode,
+            'code' => $sharedSubDepartmentCode,
             'name' => "Shared sub department $n",
         ]);
     }
 
-    expect($subDepartments[0]->code)->toBe($subDepartments[1]->code)
+    expect($departments[0]->code)->toBe($departments[1]->code)
+        ->and($departments[0]->id)->not->toBe($departments[1]->id)
+        ->and($departments[0]->master_shop_id)->not->toBe($departments[1]->master_shop_id)
+        ->and($subDepartments[0]->code)->toBe($subDepartments[1]->code)
         ->and($subDepartments[0]->id)->not->toBe($subDepartments[1]->id)
         ->and($subDepartments[0]->master_shop_id)->not->toBe($subDepartments[1]->master_shop_id);
 });
