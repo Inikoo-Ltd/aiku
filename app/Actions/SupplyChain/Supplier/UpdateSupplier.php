@@ -9,7 +9,6 @@
 namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -26,7 +25,6 @@ class UpdateSupplier extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithSupplierJsonColumns;
-    use WithSupplyChainEditAuthorisation;
 
     private Supplier $supplier;
     private bool $action = false;

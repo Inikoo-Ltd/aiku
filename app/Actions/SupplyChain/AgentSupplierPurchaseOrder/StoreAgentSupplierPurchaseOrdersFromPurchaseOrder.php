@@ -52,7 +52,9 @@ class StoreAgentSupplierPurchaseOrdersFromPurchaseOrder extends OrgAction
                 $agentSupplierPurchaseOrder = StoreAgentSupplierPurchaseOrder::make()->action(
                     purchaseOrder: $purchaseOrder,
                     supplier: $supplier,
-                    modelData: []
+                    modelData: [
+                        'currency_id' => $purchaseOrder->currency_id,
+                    ]
                 );
             }
 
@@ -61,12 +63,15 @@ class StoreAgentSupplierPurchaseOrdersFromPurchaseOrder extends OrgAction
                 ->update(['agent_supplier_purchase_order_id' => $agentSupplierPurchaseOrder->id]);
 
             $updateData = [
-                'state'        => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
-                'cost_items'   => $transactions->sum('net_amount'),
-                'cost_total'   => $transactions->sum('net_amount'),
-                'date'         => now(),
-                'submitted_at' => now(),
+                'cost_items' => $transactions->sum('net_amount'),
+                'cost_total' => $transactions->sum('net_amount'),
             ];
+
+            if (!$agentSupplierPurchaseOrder->state || $agentSupplierPurchaseOrder->state == AgentSupplierPurchaseOrderStateEnum::IN_PROCESS) {
+                $updateData['state']        = AgentSupplierPurchaseOrderStateEnum::SUBMITTED;
+                $updateData['date']         = now();
+                $updateData['submitted_at'] = now();
+            }
 
             if ($agentSupplierPurchaseOrder->estimated_delivery_days === null) {
                 $deliveryDays = $transactions->max('delivery_time');

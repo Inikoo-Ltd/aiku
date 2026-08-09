@@ -146,8 +146,15 @@ class FetchMetaAdsCosts extends Command
         while ($url !== null && !isset($seen[$url])) {
             $seen[$url] = true;
 
-            $response = Http::timeout(60)->get($url, $query);
-            $query    = [];
+            /* The next link already carries its own paging parameters, and passing a query array
+               alongside it - even an empty one - replaces them. That asked Meta for page one again,
+               counted its spend twice, and left the loop to stop on its own repeated-page guard with
+               every later page unread. */
+            $response = $query === null
+                ? Http::timeout(60)->get($url)
+                : Http::timeout(60)->get($url, $query);
+
+            $query = null;
 
             if ($response->failed()) {
                 throw new \RuntimeException(

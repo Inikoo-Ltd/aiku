@@ -18,7 +18,6 @@ use App\Models\Production\JobOrderItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -35,7 +34,7 @@ class StoreJobOrderItem extends OrgAction
                 data_set(
                     $modelData,
                     'reference',
-                    Str::random(10) //TODO: make a reference generator for Job Order Item
+                    $jobOrder->reference.'-'.($jobOrder->jobOrderItems()->count() + 1)
                 );
             }
         }

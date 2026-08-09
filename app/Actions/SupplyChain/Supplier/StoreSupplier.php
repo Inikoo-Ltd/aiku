@@ -14,7 +14,6 @@ use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromFreeSupplier;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromSupplierInAgent;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
-use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -38,7 +37,6 @@ class StoreSupplier extends OrgAction
     use WithModelAddressActions;
     use WithNoStrictRules;
     use WithSupplierJsonColumns;
-    use WithSupplyChainEditAuthorisation;
 
     private ?Agent $agent = null;
 

@@ -30,8 +30,12 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        if ($purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED) {
-            abort(422, __('Only submitted purchase orders can be cancelled'));
+        if (!in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])) {
+            abort(422, __('Only submitted or confirmed purchase orders can be cancelled'));
+        }
+
+        if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED && $purchaseOrder->stockDeliveries()->exists()) {
+            abort(422, __('A confirmed purchase order with stock deliveries cannot be cancelled'));
         }
 
         $purchaseOrder->purchaseOrderTransactions()->update([

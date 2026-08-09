@@ -64,6 +64,13 @@ class ReceiveJobOrderIntoStock extends OrgAction
         }
 
         DB::transaction(function () use ($items, $jobOrder, $location) {
+            $lockedState = JobOrder::lockForUpdate()->find($jobOrder->id)->state;
+            if ($lockedState != JobOrderStateEnum::CONFIRMED) {
+                throw ValidationException::withMessages([
+                    'state' => __('Only a confirmed job order can be received into stock'),
+                ]);
+            }
+
             foreach ($items as $item) {
                 $producedQuantity = $this->producedQuantity($item);
 
@@ -157,7 +164,9 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 ->first();
 
             if (!$deductionLocationOrgStock) {
-                continue;
+                throw ValidationException::withMessages([
+                    'location_id' => __('Raw material :code has no stock location to deduct from', ['code' => $orgStock->code]),
+                ]);
             }
 
             StoreOrgStockMovement::make()->action($orgStock, $deductionLocationOrgStock->location, [

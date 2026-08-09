@@ -99,11 +99,6 @@ class StoreRawMaterial extends OrgAction
         ];
     }
 
-    // public function afterValidator($validator)
-    // {
-    //     dd($validator);
-    // }
-
     public function htmlResponse(RawMaterial $rawMaterial): RedirectResponse
     {
         $production   = $rawMaterial->production;
