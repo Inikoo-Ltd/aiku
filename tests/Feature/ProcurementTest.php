@@ -10,6 +10,7 @@
 
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\HousekeepAgentSupplierPurchaseOrders;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrdersFromPurchaseOrder;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
@@ -375,6 +376,18 @@ test('link purchase order transaction to agent supplier purchase order', functio
     expect($agentSupplierPurchaseOrder->purchaseOrderTransactions()->count())->toBe(1)
         ->and($purchaseOrderTransaction->refresh()->agentSupplierPurchaseOrder->id)->toBe($agentSupplierPurchaseOrder->id);
 })->depends('create agent supplier purchase order', 'add item to purchase order');
+
+test('housekeeping flags legacy stalled agent supplier purchase orders', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
+    $agentSupplierPurchaseOrder->update(['date' => now()->subYears(2)]);
+
+    $flagged = HousekeepAgentSupplierPurchaseOrders::run();
+    expect($flagged)->toBeGreaterThanOrEqual(1)
+        ->and(data_get($agentSupplierPurchaseOrder->fresh()->data, 'housekeeping.reason'))->toBe('legacy stalled order, pre-aiku');
+
+    $unflagged = HousekeepAgentSupplierPurchaseOrders::run(365, true);
+    expect($unflagged)->toBeGreaterThanOrEqual(1)
+        ->and(data_get($agentSupplierPurchaseOrder->fresh()->data, 'housekeeping'))->toBeNull();
+})->depends('create agent supplier purchase order');
 
 test('UI index agent supplier purchase orders in organisation', function () {
     $this->withoutExceptionHandling();

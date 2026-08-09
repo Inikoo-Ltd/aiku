@@ -56,7 +56,8 @@ class ShowSupplyChainControl extends OrgAction
             ->leftJoin('currencies', 'currencies.id', 'agent_supplier_purchase_orders.currency_id')
             ->where('agent_supplier_purchase_orders.group_id', $this->group->id)
             ->whereNotIn('agent_supplier_purchase_orders.delivery_state', ['received', 'checked', 'placed', 'cancelled'])
-            ->where('agent_supplier_purchase_orders.state', '!=', 'cancelled');
+            ->where('agent_supplier_purchase_orders.state', '!=', 'cancelled')
+            ->whereRaw("(agent_supplier_purchase_orders.data -> 'housekeeping') IS NULL");
     }
 
     private function stalledAspos(): array
@@ -201,8 +202,8 @@ class ShowSupplyChainControl extends OrgAction
                 'agents.id',
                 'agents.code',
                 'agents.slug',
-                DB::raw("count(*) filter (where agent_supplier_purchase_orders.id is not null and agent_supplier_purchase_orders.delivery_state not in ('received','checked','placed','cancelled') and agent_supplier_purchase_orders.state != 'cancelled') as open_aspos"),
-                DB::raw("max($ageExpr) filter (where agent_supplier_purchase_orders.delivery_state not in ('received','checked','placed','cancelled') and agent_supplier_purchase_orders.state != 'cancelled') as oldest_stalled_days"),
+                DB::raw("count(*) filter (where agent_supplier_purchase_orders.id is not null and agent_supplier_purchase_orders.delivery_state not in ('received','checked','placed','cancelled') and agent_supplier_purchase_orders.state != 'cancelled' and (agent_supplier_purchase_orders.data -> 'housekeeping') is null) as open_aspos"),
+                DB::raw("max($ageExpr) filter (where agent_supplier_purchase_orders.delivery_state not in ('received','checked','placed','cancelled') and agent_supplier_purchase_orders.state != 'cancelled' and (agent_supplier_purchase_orders.data -> 'housekeeping') is null) as oldest_stalled_days"),
                 DB::raw("count(*) filter (where agent_supplier_purchase_orders.state != 'cancelled') as total_aspos"),
                 DB::raw("count(*) filter (where agent_supplier_purchase_orders.delivery_state in ('received','checked','placed') and agent_supplier_purchase_orders.state != 'cancelled') as delivered_aspos"),
             ])
@@ -219,6 +220,7 @@ class ShowSupplyChainControl extends OrgAction
             ->whereIn('suppliers.agent_id', $agentIds)
             ->whereNotIn('agent_supplier_purchase_orders.delivery_state', ['received', 'checked', 'placed', 'cancelled'])
             ->where('agent_supplier_purchase_orders.state', '!=', 'cancelled')
+            ->whereRaw("(agent_supplier_purchase_orders.data -> 'housekeeping') IS NULL")
             ->whereNotNull('agent_supplier_purchase_orders.deposit_amount')
             ->select(['suppliers.agent_id', 'currencies.code as currency_code', DB::raw('sum(agent_supplier_purchase_orders.deposit_amount) as total')])
             ->groupBy('suppliers.agent_id', 'currencies.code')
