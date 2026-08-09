@@ -328,7 +328,12 @@ test('create agent supplier purchase order', function (PurchaseOrder $purchaseOr
         ->and($agentSupplierPurchaseOrder->supplier_id)->toBe($supplier->id)
         ->and($agentSupplierPurchaseOrder->group_id)->toBe($supplier->group_id)
         ->and($agentSupplierPurchaseOrder->reference)->toBe($supplier->code.'-'.$purchaseOrder->reference)
-        ->and($agentSupplierPurchaseOrder->currency_id)->toBe($supplier->currency_id);
+        ->and($agentSupplierPurchaseOrder->currency_id)->toBe($supplier->currency_id)
+        ->and($this->agent->stats->refresh()->number_agent_supplier_purchase_orders)->toBeGreaterThanOrEqual(1);
+
+    if ($purchaseOrder->parent instanceof OrgAgent) {
+        expect($purchaseOrder->parent->stats->refresh()->number_agent_supplier_purchase_orders)->toBeGreaterThanOrEqual(1);
+    }
 
     return $agentSupplierPurchaseOrder;
 })->depends('create purchase order independent supplier');
@@ -419,7 +424,8 @@ test('UI index agent supplier purchase orders in org agent', function () {
             ->component('SupplyChain/AgentSupplierPurchaseOrders')
             ->has('title')
             ->has('breadcrumbs')
-            ->has('data');
+            ->has('data')
+            ->has('pageHead.subNavigation');
     });
 });
 
@@ -1135,6 +1141,30 @@ test('UI Index stock deliveries', function () {
             )
             ->has('data');
     });
+});
+
+test('UI Index org agent stock deliveries shows deliveries with empty between filter', function () {
+    $agentStockDelivery = StoreStockDelivery::make()->action(
+        $this->orgAgent,
+        [
+            'reference'   => 'AGENT-DELIVERY-1',
+            'date'        => date('Y-m-d'),
+            'currency_id' => $this->organisation->currency_id,
+        ]
+    );
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.org_agents.show.stock-deliveries.index', [$this->organisation->slug, $this->orgAgent->slug]).'?between[date]=');
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDeliveries')
+            ->has('data');
+    });
+
+    $data        = $response->viewData('page')['props']['data'];
+    $deliveryIds = collect($data['data'] ?? $data)->pluck('id');
+    expect($deliveryIds->contains($agentStockDelivery->id))->toBeTrue();
 });
 
 test('UI create stock delivery', function () {

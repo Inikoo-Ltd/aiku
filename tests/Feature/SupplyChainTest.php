@@ -606,6 +606,20 @@ test('UI index agent supplier purchase orders in supplier', function () {
     });
 });
 
+test('UI index agent supplier purchase orders in agent', function () {
+    $agent = Agent::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agents.show.agent_supplier_purchase_orders.index', [$agent->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/AgentSupplierPurchaseOrders')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data')
+            ->has('pageHead.subNavigation');
+    });
+});
+
 test('UI index stock deliveries in agent', function () {
     $agent = Agent::first();
     $this->withoutExceptionHandling();

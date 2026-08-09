@@ -74,6 +74,7 @@ trait WithOrgAgentSubNavigation
                     "icon"    => ["fal", "fa-clipboard-list"],
                     "tooltip" => __("Supplier Purchase Orders"),
                 ],
+                "number"   => $parent->stats->number_agent_supplier_purchase_orders,
             ],
             [
                 "label"    => __("Stock Deliveries"),

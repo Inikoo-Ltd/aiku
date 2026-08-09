@@ -55,6 +55,7 @@ trait WithAgentSubNavigation
                 ],
             ],
             [
+                "number"   => $parent->stats->number_agent_supplier_purchase_orders,
                 "label"    => __("Purchase Orders"),
                 "route"     => [
                     "name"       => "grp.supply-chain.agents.show.agent_supplier_purchase_orders.index",

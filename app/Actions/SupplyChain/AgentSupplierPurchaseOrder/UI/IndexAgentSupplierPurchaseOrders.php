@@ -9,7 +9,9 @@
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Http\Resources\SupplyChain\AgentSupplierPurchaseOrdersResource;
 use App\InertiaTable\InertiaTable;
@@ -29,6 +31,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexAgentSupplierPurchaseOrders extends OrgAction
 {
+    use WithOrgAgentSubNavigation;
+    use WithAgentSubNavigation;
+
+    private ?OrgAgent $orgAgentParent = null;
+
+    private ?Agent $agentParent = null;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -138,6 +147,7 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
 
     public function inAgent(Agent $agent, ActionRequest $request): LengthAwarePaginator
     {
+        $this->agentParent = $agent;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($agent);
@@ -154,6 +164,7 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
 
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
     {
+        $this->orgAgentParent = $orgAgent;
         $this->initialisation($organisation, $request);
 
         return $this->handle($orgAgent->agent);
@@ -173,6 +184,35 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $agentSupplierPurchaseOrders, ActionRequest $request): Response
     {
+        $title         = __('Agent supplier purchase orders');
+        $icon          = [
+            'icon'  => ['fal', 'fa-clipboard-list'],
+            'title' => __('Agent supplier purchase orders'),
+        ];
+        $afterTitle    = null;
+        $iconRight     = null;
+        $subNavigation = null;
+
+        if ($this->orgAgentParent) {
+            $title         = $this->orgAgentParent->agent->organisation->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-people-arrows'],
+                'title' => __('Agent supplier purchase orders'),
+            ];
+            $afterTitle    = ['label' => __('Supplier Purchase Orders')];
+            $iconRight     = ['icon' => 'fal fa-clipboard-list'];
+            $subNavigation = $this->getOrgAgentNavigation($this->orgAgentParent);
+        } elseif ($this->agentParent) {
+            $title         = $this->agentParent->organisation->name;
+            $icon          = [
+                'icon'  => ['fal', 'fa-people-arrows'],
+                'title' => __('Agent supplier purchase orders'),
+            ];
+            $afterTitle    = ['label' => __('Purchase Orders')];
+            $iconRight     = ['icon' => 'fal fa-clipboard-list'];
+            $subNavigation = $this->getAgentNavigation($this->agentParent);
+        }
+
         return Inertia::render(
             'SupplyChain/AgentSupplierPurchaseOrders',
             [
@@ -182,11 +222,11 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
                 ),
                 'title'       => __('Agent supplier purchase orders'),
                 'pageHead'    => [
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-clipboard-list'],
-                        'title' => __('Agent supplier purchase orders')
-                    ],
-                    'title' => __('Agent supplier purchase orders'),
+                    'icon'          => $icon,
+                    'title'         => $title,
+                    'afterTitle'    => $afterTitle,
+                    'iconRight'     => $iconRight,
+                    'subNavigation' => $subNavigation,
                 ],
                 'data'        => AgentSupplierPurchaseOrdersResource::collection($agentSupplierPurchaseOrders),
             ]

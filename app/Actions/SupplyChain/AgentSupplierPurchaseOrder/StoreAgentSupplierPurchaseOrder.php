@@ -10,10 +10,13 @@
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateAgentSupplierPurchaseOrders;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
+use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateAgentSupplierPurchaseOrders;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
+use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\Supplier;
@@ -50,6 +53,13 @@ class StoreAgentSupplierPurchaseOrder extends OrgAction
 
         /** @var AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder */
         $agentSupplierPurchaseOrder = $supplier->agentSupplierPurchaseOrder()->create($modelData);
+
+        if ($supplier->agent_id) {
+            AgentHydrateAgentSupplierPurchaseOrders::dispatch($supplier->agent)->delay($this->hydratorsDelay);
+        }
+        if ($purchaseOrder->parent instanceof OrgAgent) {
+            OrgAgentHydrateAgentSupplierPurchaseOrders::dispatch($purchaseOrder->parent)->delay($this->hydratorsDelay);
+        }
 
         return $agentSupplierPurchaseOrder;
     }
