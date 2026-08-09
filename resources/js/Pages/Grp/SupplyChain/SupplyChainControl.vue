@@ -8,6 +8,8 @@
 import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
+import { trans } from 'laravel-vue-i18n'
+import { useFormatTime } from '@/Composables/useFormatTime'
 import { routeType } from '@/types/route'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -90,37 +92,37 @@ function poRoute(row: PoRow): routeType {
 
     <div class="mx-4 my-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div class="rounded-lg border border-gray-200 p-4">
-            <div class="text-xs uppercase text-gray-500">{{ __('Stalled ASPOs') }}</div>
+            <div class="text-xs uppercase text-gray-500">{{ trans('Stalled ASPOs') }}</div>
             <div class="text-2xl font-semibold">{{ stalled_aspos.total }}</div>
         </div>
         <div v-for="exp in deposits_at_risk.exposure" :key="exp.currency_code" class="rounded-lg border border-gray-200 p-4">
-            <div class="text-xs uppercase text-gray-500">{{ __('Deposit exposure') }} ({{ exp.currency_code }})</div>
+            <div class="text-xs uppercase text-gray-500">{{ trans('Deposit exposure') }} ({{ exp.currency_code }})</div>
             <div class="text-2xl font-semibold">{{ exp.total }}</div>
         </div>
         <div class="rounded-lg border border-gray-200 p-4">
-            <div class="text-xs uppercase text-gray-500">{{ __('POs without agent action') }}</div>
+            <div class="text-xs uppercase text-gray-500">{{ trans('POs without agent action') }}</div>
             <div class="text-2xl font-semibold">{{ pos_without_action.total }}</div>
         </div>
     </div>
 
     <div class="mx-4 my-6">
-        <h2 class="mb-2 text-base font-semibold">{{ __('Stalled agent buys') }}</h2>
+        <h2 class="mb-2 text-base font-semibold">{{ trans('Stalled agent buys') }}</h2>
         <div class="mb-2 flex gap-4 text-xs text-gray-500">
-            <span>{{ __('60-180d') }}: {{ stalled_aspos.buckets['60_180'] }}</span>
-            <span>{{ __('180-365d') }}: {{ stalled_aspos.buckets['180_365'] }}</span>
-            <span class="font-semibold text-red-600">{{ __('>1y') }}: {{ stalled_aspos.buckets.over_1y }}</span>
+            <span>{{ trans('60-180d') }}: {{ stalled_aspos.buckets['60_180'] }}</span>
+            <span>{{ trans('180-365d') }}: {{ stalled_aspos.buckets['180_365'] }}</span>
+            <span class="font-semibold text-red-600">{{ trans('>1y') }}: {{ stalled_aspos.buckets.over_1y }}</span>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead>
                     <tr class="text-left text-xs uppercase text-gray-500">
-                        <th class="py-1 pr-3">{{ __('Reference') }}</th>
-                        <th class="py-1 pr-3">{{ __('Agent') }}</th>
-                        <th class="py-1 pr-3">{{ __('Supplier') }}</th>
-                        <th class="py-1 pr-3">{{ __('Date') }}</th>
-                        <th class="py-1 pr-3">{{ __('Estimated') }}</th>
-                        <th class="py-1 pr-3">{{ __('Days stalled') }}</th>
-                        <th class="py-1 pr-3">{{ __('Cost') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Reference') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Agent') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Supplier') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Date') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Estimated') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Days stalled') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Cost') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -128,8 +130,8 @@ function poRoute(row: PoRow): routeType {
                         <td class="py-1 pr-3"><Link :href="route(aspoRoute(row.slug).name, aspoRoute(row.slug).parameters)" class="text-blue-600">{{ row.reference }}</Link></td>
                         <td class="py-1 pr-3">{{ row.agent_code ?? '-' }}</td>
                         <td class="py-1 pr-3">{{ row.supplier_code ?? '-' }}</td>
-                        <td class="py-1 pr-3">{{ row.date }}</td>
-                        <td class="py-1 pr-3">{{ row.estimated_received_at ?? '-' }}</td>
+                        <td class="py-1 pr-3">{{ useFormatTime(row.date) }}</td>
+                        <td class="py-1 pr-3">{{ row.estimated_received_at ? useFormatTime(row.estimated_received_at) : '-' }}</td>
                         <td class="py-1 pr-3 font-semibold">{{ row.days_stalled }}</td>
                         <td class="py-1 pr-3">{{ row.cost_total }} {{ row.currency_code }}</td>
                     </tr>
@@ -139,17 +141,17 @@ function poRoute(row: PoRow): routeType {
     </div>
 
     <div class="mx-4 my-6">
-        <h2 class="mb-2 text-base font-semibold">{{ __('Deposits at risk') }}</h2>
+        <h2 class="mb-2 text-base font-semibold">{{ trans('Deposits at risk') }}</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead>
                     <tr class="text-left text-xs uppercase text-gray-500">
-                        <th class="py-1 pr-3">{{ __('Reference') }}</th>
-                        <th class="py-1 pr-3">{{ __('Agent') }}</th>
-                        <th class="py-1 pr-3">{{ __('Supplier') }}</th>
-                        <th class="py-1 pr-3">{{ __('Deposit') }}</th>
-                        <th class="py-1 pr-3">{{ __('Paid at') }}</th>
-                        <th class="py-1 pr-3">{{ __('Days since') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Reference') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Agent') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Supplier') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Deposit') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Paid at') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Days since') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -158,7 +160,7 @@ function poRoute(row: PoRow): routeType {
                         <td class="py-1 pr-3">{{ row.agent_code ?? '-' }}</td>
                         <td class="py-1 pr-3">{{ row.supplier_code ?? '-' }}</td>
                         <td class="py-1 pr-3">{{ row.deposit_amount }} {{ row.currency_code }}</td>
-                        <td class="py-1 pr-3">{{ row.deposit_paid_at }}</td>
+                        <td class="py-1 pr-3">{{ useFormatTime(row.deposit_paid_at) }}</td>
                         <td class="py-1 pr-3">{{ row.days_since }}</td>
                     </tr>
                 </tbody>
@@ -167,16 +169,16 @@ function poRoute(row: PoRow): routeType {
     </div>
 
     <div class="mx-4 my-6">
-        <h2 class="mb-2 text-base font-semibold">{{ __('Purchase orders without agent action') }}</h2>
+        <h2 class="mb-2 text-base font-semibold">{{ trans('Purchase orders without agent action') }}</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead>
                     <tr class="text-left text-xs uppercase text-gray-500">
-                        <th class="py-1 pr-3">{{ __('Reference') }}</th>
-                        <th class="py-1 pr-3">{{ __('Organisation') }}</th>
-                        <th class="py-1 pr-3">{{ __('Agent') }}</th>
-                        <th class="py-1 pr-3">{{ __('Submitted') }}</th>
-                        <th class="py-1 pr-3">{{ __('Days waiting') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Reference') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Organisation') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Agent') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Submitted') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Days waiting') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -184,7 +186,7 @@ function poRoute(row: PoRow): routeType {
                         <td class="py-1 pr-3"><Link :href="route(poRoute(row).name, poRoute(row).parameters)" class="text-blue-600">{{ row.reference }}</Link></td>
                         <td class="py-1 pr-3">{{ row.organisation_name }}</td>
                         <td class="py-1 pr-3">{{ row.agent_code ?? '-' }}</td>
-                        <td class="py-1 pr-3">{{ row.submitted_at }}</td>
+                        <td class="py-1 pr-3">{{ useFormatTime(row.submitted_at) }}</td>
                         <td class="py-1 pr-3">{{ row.days_waiting }}</td>
                     </tr>
                 </tbody>
@@ -193,16 +195,16 @@ function poRoute(row: PoRow): routeType {
     </div>
 
     <div class="mx-4 my-6">
-        <h2 class="mb-2 text-base font-semibold">{{ __('Agent scorecard') }}</h2>
+        <h2 class="mb-2 text-base font-semibold">{{ trans('Agent scorecard') }}</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead>
                     <tr class="text-left text-xs uppercase text-gray-500">
-                        <th class="py-1 pr-3">{{ __('Agent') }}</th>
-                        <th class="py-1 pr-3">{{ __('Open ASPOs') }}</th>
-                        <th class="py-1 pr-3">{{ __('Oldest stalled') }}</th>
-                        <th class="py-1 pr-3">{{ __('Deposits outstanding') }}</th>
-                        <th class="py-1 pr-3">{{ __('Delivered / total') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Agent') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Open ASPOs') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Oldest stalled') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Deposits outstanding') }}</th>
+                        <th class="py-1 pr-3">{{ trans('Delivered / total') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
