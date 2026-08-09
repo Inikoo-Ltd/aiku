@@ -393,7 +393,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 })->select('env=prod|staging');
 
-set('keep_releases', 25);
+set('keep_releases', 20);
 
 set('shared_dirs', ['storage', 'private', 'local_storage']);
 set('shared_files', [
@@ -458,6 +458,11 @@ task('deploy:translations:setup-guess-language', function () {
 });
 
 
+desc('Strip node_modules from all but the 5 newest releases');
+task('deploy:prune-node-modules', function () {
+    run("ls -1t {{deploy_path}}/releases | tail -n +6 | while read r; do rm -rf \"{{deploy_path}}/releases/\$r/node_modules\"; done");
+});
+
 desc('Deploys your project');
 task('deploy', [
     'deploy:unlock',
@@ -475,6 +480,7 @@ task('deploy', [
     'deploy:build',
     'deploy:save-ssr-checksums',
     'deploy:publish',
+    'deploy:prune-node-modules',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'deploy:restart-owl',
