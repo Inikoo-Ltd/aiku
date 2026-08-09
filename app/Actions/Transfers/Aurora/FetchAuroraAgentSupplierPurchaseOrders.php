@@ -14,6 +14,7 @@ use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Transfers\SourceOrganisationService;
 use Exception;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraAgentSupplierPurchaseOrders extends FetchAuroraAction
@@ -29,7 +30,25 @@ class FetchAuroraAgentSupplierPurchaseOrders extends FetchAuroraAction
 
         $modelData = $data['agent_supplier_purchase_order'];
 
-        if ($agentSupplierPurchaseOrder = AgentSupplierPurchaseOrder::withTrashed()->where('source_id', $modelData['source_id'])->first()) {
+        $agentSupplierPurchaseOrder = AgentSupplierPurchaseOrder::withTrashed()->where('source_id', $modelData['source_id'])->first();
+
+        if (!$agentSupplierPurchaseOrder) {
+            /* Aurora holds double-submitted duplicates of the same agent buy (same PO+supplier,
+               same reference); merge them onto the first-fetched row instead of tripping the
+               unique (purchase_order_id, supplier_id) index. */
+            $agentSupplierPurchaseOrder = AgentSupplierPurchaseOrder::where('purchase_order_id', $data['purchase_order']->id)
+                ->where('supplier_id', $data['supplier']->id)
+                ->first();
+            if ($agentSupplierPurchaseOrder) {
+                $sourceData = explode(':', $modelData['source_id']);
+                DB::connection('aurora')->table('Agent Supplier Purchase Order Dimension')
+                    ->where('Agent Supplier Purchase Order Key', $sourceData[1])
+                    ->update(['aiku_id' => $agentSupplierPurchaseOrder->id]);
+                $modelData = Arr::except($modelData, ['source_id', 'reference']);
+            }
+        }
+
+        if ($agentSupplierPurchaseOrder) {
             try {
                 $agentSupplierPurchaseOrder = UpdateAgentSupplierPurchaseOrder::make()->action(
                     agentSupplierPurchaseOrder: $agentSupplierPurchaseOrder,
