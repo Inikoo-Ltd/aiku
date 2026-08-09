@@ -47,7 +47,7 @@ class UpdateArtefact extends OrgAction
                 'sometimes',
                 'required',
                 new AlphaDashDot(),
-                'max:32',
+                'max:64',
                 Rule::notIn(['export', 'create', 'upload']),
                 new IUnique(
                     table: 'artefacts',

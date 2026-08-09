@@ -17,6 +17,7 @@ use App\Models\Production\Artefact;
 use App\Models\Production\RawMaterial;
 use App\Models\Production\RecipeStepRawMaterial;
 use App\Transfers\SourceOrganisationService;
+use Exception;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -39,17 +40,29 @@ class FetchAuroraArtefacts extends FetchAuroraAction
         if ($artefactData) {
             if ($artefact = Artefact::withTrashed()->where('source_id', $artefactData['artefact']['source_id'])
                 ->first()) {
-                UpdateArtefact::make()->action(
-                    artefact: $artefact,
-                    modelData: $artefactData['artefact'],
-                    hydratorsDelay: $this->hydratorsDelay
-                );
+                try {
+                    UpdateArtefact::make()->action(
+                        artefact: $artefact,
+                        modelData: $artefactData['artefact'],
+                        hydratorsDelay: $this->hydratorsDelay
+                    );
+                } catch (Exception $e) {
+                    $this->recordError($this->organisationSource, $e, $artefactData['artefact'], 'Artefact', 'update');
+
+                    return null;
+                }
             } else {
-                $artefact = StoreArtefact::make()->action(
-                    production: $artefactData['production'],
-                    modelData: $artefactData['artefact'],
-                    hydratorsDelay: $this->hydratorsDelay
-                );
+                try {
+                    $artefact = StoreArtefact::make()->action(
+                        production: $artefactData['production'],
+                        modelData: $artefactData['artefact'],
+                        hydratorsDelay: $this->hydratorsDelay
+                    );
+                } catch (Exception $e) {
+                    $this->recordError($this->organisationSource, $e, $artefactData['artefact'], 'Artefact', 'store');
+
+                    return null;
+                }
 
                 $sourceData = explode(':', $artefact->source_id);
                 DB::connection('aurora')->table('Supplier Part Dimension')
