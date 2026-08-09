@@ -520,6 +520,23 @@ test('UI supply chain dashboard', function () {
     });
 });
 
+test('UI supply chain control', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.control.dashboard'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/SupplyChainControl')
+            ->has('title')
+            ->has('pageHead')
+            ->has('breadcrumbs', 3)
+            ->has('stalled_aspos')
+            ->has('deposits_at_risk')
+            ->has('pos_without_action')
+            ->has('agent_scorecard');
+    });
+});
+
 test('UI create suppliers product in supplier', function () {
     $this->withoutExceptionHandling();
     $supplier = Supplier::first();

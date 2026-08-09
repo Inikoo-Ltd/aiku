@@ -92,6 +92,12 @@ class ShowSupplyChainDashboard extends OrgAction
                             ],
 
                         ],
+                        [
+                            'name'      => __('Command & Control'),
+                            'shortName' => __('control'),
+                            'icon'      => ['fal', 'fa-radar'],
+                            'route'      => ['name' => 'grp.supply-chain.control.dashboard'],
+                        ],
                     ],
 
                 ],
@@ -142,6 +148,12 @@ class ShowSupplyChainDashboard extends OrgAction
                                                 'number' => AgentSupplierPurchaseOrder::where('group_id', $this->group->id)->count()
                                             ],
 
+                                        ],
+                                        [
+                                            'name'      => __('Command & Control'),
+                                            'shortName' => __('Control'),
+                                            'icon'      => ['fal', 'fa-radar'],
+                                            'route'      => ['name' => 'grp.supply-chain.control.dashboard'],
                                         ],
                                     ],
                                     // 'mode'  => 'compact'
