@@ -81,6 +81,7 @@ class ShowJobOrder extends OrgAction
                 'code'       => $artefact->code,
                 'name'       => $artefact->name,
                 'has_recipe' => $artefact->manufacture_tasks_count > 0,
+                'recommended_batch_size' => $artefact->recommended_batch_size,
             ])->values();
 
         return Inertia::render(

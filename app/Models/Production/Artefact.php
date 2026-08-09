@@ -33,6 +33,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property string|null $description
  * @property int|null $stock_family_id
+ * @property int|null $recommended_batch_size
  * @property ArtefactStateEnum $state
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data

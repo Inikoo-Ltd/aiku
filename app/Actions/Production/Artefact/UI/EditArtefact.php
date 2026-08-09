@@ -95,6 +95,12 @@ class EditArtefact extends OrgAction
                                     'value'    => $artefact->name,
                                     'required' => true
                                 ],
+                                'recommended_batch_size' => [
+                                    'type'     => 'input',
+                                    'label'    => __('Recommended batch size'),
+                                    'value'    => $artefact->recommended_batch_size,
+                                    'required' => false
+                                ],
                                 'trade_unit_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Trade unit'),

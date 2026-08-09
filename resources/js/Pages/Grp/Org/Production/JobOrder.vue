@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { ref, computed, watch } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -48,7 +48,7 @@ const props = defineProps<{
         produced_quantity: number
         tasks: ItemTask[]
     }[]
-    artefact_options: { id: number, code: string, name: string, has_recipe: boolean }[]
+    artefact_options: { id: number, code: string, name: string, has_recipe: boolean, recommended_batch_size: number | null }[]
     add_item_route: null | { name: string, parameters: object }
     confirm_route: null | { name: string, parameters: object }
     receive_route: null | { name: string, parameters: object }
@@ -68,6 +68,16 @@ function confirmJobOrder() {
 const newArtefactId = ref<number | null>(null)
 const newQuantity = ref<number | null>(null)
 const processing = ref(false)
+
+const selectedArtefactOption = computed(() =>
+    props.artefact_options.find(option => option.id === newArtefactId.value) ?? null
+)
+
+watch(newArtefactId, () => {
+    if (!newQuantity.value && selectedArtefactOption.value?.recommended_batch_size) {
+        newQuantity.value = selectedArtefactOption.value.recommended_batch_size
+    }
+})
 
 function addItem() {
     if (!props.add_item_route || !newArtefactId.value || !newQuantity.value) return
@@ -244,6 +254,12 @@ function receiveIntoStock() {
             <div>
                 <label class="block text-xs text-gray-500 mb-1">{{ trans('Quantity') }}</label>
                 <input type="number" min="1" v-model.number="newQuantity" class="w-24 rounded border-gray-300 text-sm" />
+                <div
+                    v-if="selectedArtefactOption?.recommended_batch_size && newQuantity !== selectedArtefactOption.recommended_batch_size"
+                    class="text-xs text-gray-400 mt-1"
+                >
+                    {{ trans('recommended batch') }}: {{ selectedArtefactOption.recommended_batch_size }}
+                </div>
             </div>
             <button
                 type="button"

@@ -63,6 +63,12 @@ class CreateArtefact extends OrgAction
                                     'value'    => '',
                                     'required' => true
                                 ],
+                                'recommended_batch_size' => [
+                                    'type'     => 'input',
+                                    'label'    => __('Recommended batch size'),
+                                    'value'    => '',
+                                    'required' => false
+                                ],
                                 'trade_unit_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Trade unit'),

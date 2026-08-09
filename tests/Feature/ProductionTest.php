@@ -532,7 +532,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 4)
+            ->has('formData.blueprint.0.fields', 5)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -940,14 +940,23 @@ test('artefact links to trade unit and org stock', function () {
     $tradeUnit = $stock->tradeUnits()->first();
 
     $artefact = StoreArtefact::make()->action($this->production, [
-        'code'          => 'LINKEDART1',
-        'name'          => 'Linked artefact',
-        'trade_unit_id' => $tradeUnit?->id,
-        'org_stock_id'  => $orgStock->id,
+        'code'                    => 'LINKEDART1',
+        'name'                    => 'Linked artefact',
+        'trade_unit_id'           => $tradeUnit?->id,
+        'org_stock_id'            => $orgStock->id,
+        'recommended_batch_size'  => 250,
     ]);
 
     expect($artefact->org_stock_id)->toBe($orgStock->id)
-        ->and($artefact->trade_unit_id)->toBe($tradeUnit?->id);
+        ->and($artefact->trade_unit_id)->toBe($tradeUnit?->id)
+        ->and($artefact->recommended_batch_size)->toBe(250);
+
+    $artefactWithoutBatchSize = StoreArtefact::make()->action($this->production, [
+        'code' => 'LINKEDART2',
+        'name' => 'Linked artefact without batch size',
+    ]);
+
+    expect($artefactWithoutBatchSize->recommended_batch_size)->toBeNull();
 });
 
 test('completed job order is received into stock with a batch code', function () {

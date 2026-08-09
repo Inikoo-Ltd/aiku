@@ -74,6 +74,7 @@ class UpdateArtefact extends OrgAction
                 'nullable',
                 Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
             ],
+            'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
         ];
     }
 
