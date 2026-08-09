@@ -112,12 +112,12 @@ Route::prefix('supplier-products')->as('org_supplier_products.')->group(function
 Route::prefix('shopping-list')->as('shopping_list.')->group(function () {
     Route::get('', IndexShoppingListItems::class)->name('index');
     Route::get('board', ShowShoppingListBoard::class)->name('board');
+    Route::post('cherry-pick', [CherryPickShoppingListItems::class, 'inOrganisation'])->name('cherry_pick');
     Route::post('{orgSupplierProduct}', StoreShoppingListItem::class)->name('store');
     Route::patch('{shoppingListItem}', UpdateShoppingListItem::class)->name('update');
     Route::delete('{shoppingListItem}', DeleteShoppingListItem::class)->name('destroy');
     Route::post('{shoppingListItem}/propose-dismiss', ProposeDismissShoppingListItem::class)->name('propose_dismiss');
     Route::post('{shoppingListItem}/resolve-dismiss', ResolveDismissShoppingListItem::class)->name('resolve_dismiss');
-    Route::post('cherry-pick', [CherryPickShoppingListItems::class, 'inOrganisation'])->name('cherry_pick');
 });
 
 Route::prefix('agent-supplier-purchase-orders')->as('agent_supplier_purchase_orders.')->group(function () {

@@ -15,6 +15,12 @@ use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
+use App\Actions\Inventory\OrgStock\StoreOrgStock;
+use App\Models\Goods\Stock;
+use App\Models\Inventory\OrgStock;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\ShoppingListItem;
 use App\Models\SupplyChain\Agent;
@@ -69,7 +75,7 @@ class CherryPickShoppingListItems extends OrgAction
                 ->orderBy('local_priority')
                 ->first();
 
-            $orgStock = $pivot?->orgStock;
+            $orgStock = $pivot?->orgStock ?? $this->resolveOrCreateOrgStock($item);
 
             if (!$orgStock) {
                 $skipped[] = ['id' => $item->id, 'reason' => 'org stock could not be resolved'];
@@ -151,7 +157,42 @@ class CherryPickShoppingListItems extends OrgAction
         return $this->handle($agent, $request->input('lines', []));
     }
 
-    public function inOrganisation(Organisation $organisation, ActionRequest $request): array
+    private function resolveOrCreateOrgStock(ShoppingListItem $item): ?OrgStock
+    {
+        $tradeUnitIds = DB::table('model_has_trade_units')
+            ->where('model_type', 'SupplierProduct')
+            ->where('model_id', $item->supplier_product_id)
+            ->pluck('trade_unit_id');
+
+        if ($tradeUnitIds->isEmpty()) {
+            return null;
+        }
+
+        $orgStock = OrgStock::where('organisation_id', $item->organisation_id)
+            ->whereIn('id', DB::table('model_has_trade_units')
+                ->where('model_type', 'OrgStock')
+                ->whereIn('trade_unit_id', $tradeUnitIds)
+                ->pluck('model_id'))
+            ->first();
+
+        if ($orgStock) {
+            return $orgStock;
+        }
+
+        $stock = Stock::whereIn('id', DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->whereIn('trade_unit_id', $tradeUnitIds)
+            ->pluck('model_id'))
+            ->first();
+
+        if (!$stock) {
+            return null;
+        }
+
+        return StoreOrgStock::make()->action($item->organisation, $stock);
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): RedirectResponse
     {
         $agent = $this->getOrganisationAgent($organisation);
         abort_unless($agent, 404);
@@ -159,7 +200,13 @@ class CherryPickShoppingListItems extends OrgAction
         $this->agent = $agent;
         $this->initialisation($organisation, $request);
 
-        return $this->handle($agent, $request->input('lines', []));
+        $result = $this->handle($agent, $request->input('lines', []));
+
+        return Redirect::back()->with('notification', [
+            'status'  => $result['skipped'] === [] ? 'success' : 'warning',
+            'title'   => __('Purchase orders'),
+            'message' => __(':picked lines picked, :skipped skipped', ['picked' => $result['picked'], 'skipped' => count($result['skipped'])]),
+        ]);
     }
 
     public function action(Agent $agent, array $lines): array
