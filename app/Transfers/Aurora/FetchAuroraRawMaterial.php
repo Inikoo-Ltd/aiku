@@ -12,6 +12,8 @@ use App\Enums\Production\RawMaterial\RawMaterialStateEnum;
 use App\Enums\Production\RawMaterial\RawMaterialStockStatusEnum;
 use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
+use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -66,6 +68,8 @@ class FetchAuroraRawMaterial extends FetchAurora
             default => RawMaterialStockStatusEnum::OPTIMAL,
         };
 
+        $typeKeySourceId = $this->organisation->id.':'.$this->auroraModelData->{'Raw Material Type Key'};
+
         $this->parsedData['raw_material'] = [
             'type'                 => $type,
             'state'                => $state,
@@ -77,6 +81,8 @@ class FetchAuroraRawMaterial extends FetchAurora
             'stock_status'         => $stockStatus,
             'created_at'           => $this->parseDatetime($this->auroraModelData->{'Raw Material Creation Date'}),
             'source_id'            => $this->organisation->id.':'.$this->auroraModelData->{'Raw Material Key'},
+            'trade_unit_id'        => TradeUnit::where('source_id', $typeKeySourceId)->first()?->id,
+            'org_stock_id'         => OrgStock::where('source_id', $typeKeySourceId)->first()?->id,
         ];
     }
 

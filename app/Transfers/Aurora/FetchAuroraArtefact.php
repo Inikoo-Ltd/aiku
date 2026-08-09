@@ -9,6 +9,7 @@
 namespace App\Transfers\Aurora;
 
 use App\Enums\Production\Artefact\ArtefactStateEnum;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -88,11 +89,28 @@ class FetchAuroraArtefact extends FetchAurora
         $code = str_replace('&', 'and', $code);
         $code = $this->cleanTradeUnitReference($code);
 
+        $productionPartData = DB::connection('aurora')
+            ->table('Production Part Dimension')
+            ->where('Production Part Supplier Part Key', $this->auroraModelData->{'Supplier Part Key'})
+            ->first();
+
+        $recommendedBatchSize = null;
+        $orgStockId           = null;
+        if ($productionPartData) {
+            $recommendedBatchSize = $productionPartData->{'Production Part Batch Size'} ?: null;
+            $orgStockId           = OrgStock::where(
+                'source_id',
+                $this->organisation->id.':'.$auroraPartData->{'Part SKU'}
+            )->first()?->id;
+        }
+
         $this->parsedData['artefact'] =
             [
                 'code'          => $code,
                 'name'          => $name,
                 'trade_unit_id' => $this->parsedData['trade_unit']?->id,
+                'org_stock_id'  => $orgStockId,
+                'recommended_batch_size' => $recommendedBatchSize,
 
                 'cost'                  => round($this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0, 2),
                 'units_per_pack'        => $auroraPartData->{'Part Units Per Package'},
