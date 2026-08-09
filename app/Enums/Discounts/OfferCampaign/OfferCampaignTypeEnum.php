@@ -21,6 +21,7 @@ enum OfferCampaignTypeEnum: string
     case SHOP_OFFERS = 'shop-offers';
     case CATEGORY_OFFERS = 'category-offers';
     case PRODUCT_OFFERS = 'product-offers';
+    case STEP_OFFERS = 'step-offers';
     case DISCRETIONARY = 'discretionary';
     case SHIPPING = 'shipping';
     case GIFT = 'gift';
@@ -37,6 +38,7 @@ enum OfferCampaignTypeEnum: string
             'shop-offers'     => __('Shop offers'),
             'category-offers' => __('Category offers'),
             'product-offers'  => __('Product offers'),
+            'step-offers'     => __('Step offers'),
             'discretionary'   => __('Discretionary discounts'),
             'shipping'        => __('Shipping discount'),
             'gift'            => __('Gifts'),
@@ -54,6 +56,7 @@ enum OfferCampaignTypeEnum: string
             'shop-offers'     => 'SO',
             'category-offers' => 'CO',
             'product-offers'  => 'PO',
+            'step-offers'     => 'ST',
             'discretionary'   => 'DI',
             'shipping'        => 'SH',
             'gift'            => 'GI',
@@ -97,6 +100,11 @@ enum OfferCampaignTypeEnum: string
             'product-offers'  => [
                 'icon'    => 'fal fa-box',
                 'tooltip' => self::from('product-offers')->labels()['product-offers'] ?? 'Unknown',
+                'class'   => '',
+            ],
+            'step-offers'     => [
+                'icon'    => 'fal fa-sort-amount-up',
+                'tooltip' => self::from('step-offers')->labels()['step-offers'] ?? 'Unknown',
                 'class'   => '',
             ],
             'discretionary'   => [

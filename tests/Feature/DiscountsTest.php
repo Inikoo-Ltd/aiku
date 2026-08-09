@@ -1618,6 +1618,8 @@ describe('calculate order discounts', function () {
             ->and($offer->status)->toBeTrue()
             ->and($offer->trigger_type)->toBe('Product')
             ->and($offer->type)->toBe('Product Quantity Ordered')
+            ->and($offer->offerCampaign->type)->toBe(OfferCampaignTypeEnum::STEP_OFFERS)
+            ->and($offer->code)->toBe('st-'.strtolower($this->product->code))
             ->and($offer->allowance_signature)->toBe('product:'.$this->product->id.':percentage_off:1-0.15,5-0.25')
             ->and(Arr::get($offer->offerAllowances->first()->data, 'steps.0.min_quantity'))->toBe(1);
 
