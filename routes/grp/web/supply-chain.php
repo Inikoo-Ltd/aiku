@@ -26,10 +26,12 @@ use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\UI\ShowSupplierProduct;
 use App\Actions\SupplyChain\UI\ShowSupplyChainControl;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
+use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowSupplyChainDashboard::class)->name('dashboard');
 Route::get('control', ShowSupplyChainControl::class)->name('control.dashboard');
+Route::get('shopping-list', [ShowShoppingListBoard::class, 'asGroupController'])->name('shopping_list.board');
 
 
 Route::prefix("agents")->name("agents.")->group(

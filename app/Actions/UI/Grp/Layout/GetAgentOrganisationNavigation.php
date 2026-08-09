@@ -98,6 +98,15 @@ class GetAgentOrganisationNavigation
                                 'parameters' => [$organisation->slug],
                             ]
                         ],
+                        [
+                            'label' => __('Shopping List Board'),
+                            'icon'  => ['fal', 'fa-shopping-basket'],
+                            'root'  => 'grp.org.procurement.shopping_list.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.shopping_list.board',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
                     ]
                 ]
             ];

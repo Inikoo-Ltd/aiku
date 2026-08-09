@@ -107,6 +107,7 @@ class IndexOrgSupplierProducts extends OrgAction
             'supplier_products.code',
             'supplier_products.name',
             'supplier_products.cost',
+            'supplier_products.units_per_carton',
             'currencies.code as currency_code',
         ]);
 
@@ -153,6 +154,11 @@ class IndexOrgSupplierProducts extends OrgAction
             }
 
             $table->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency');
+
+            if ($parent instanceof Organisation && !$this->getParentOrganisationAgent($parent)) {
+                $table->column(key: 'add', label: '', canBeHidden: false);
+            }
+
             $table->defaultSort('code');
         };
     }

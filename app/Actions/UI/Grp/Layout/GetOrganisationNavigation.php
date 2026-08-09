@@ -178,6 +178,15 @@ class GetOrganisationNavigation
                                 'parameters' => [$organisation->slug],
                             ]
                         ],
+                        [
+                            'label' => __('Shopping List'),
+                            'icon'  => ['fal', 'fa-shopping-basket'],
+                            'root'  => 'grp.org.procurement.shopping_list.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.shopping_list.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
                     ]
                 ]
             ];

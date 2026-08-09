@@ -98,6 +98,12 @@ class ShowSupplyChainDashboard extends OrgAction
                             'icon'      => ['fal', 'fa-radar'],
                             'route'      => ['name' => 'grp.supply-chain.control.dashboard'],
                         ],
+                        [
+                            'name'      => __('Shopping List Board'),
+                            'shortName' => __('shopping list'),
+                            'icon'      => ['fal', 'fa-shopping-basket'],
+                            'route'      => ['name' => 'grp.supply-chain.shopping_list.board'],
+                        ],
                     ],
 
                 ],

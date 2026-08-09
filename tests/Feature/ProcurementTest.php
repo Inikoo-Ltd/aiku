@@ -50,6 +50,16 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
+use App\Actions\Procurement\ShoppingListItem\CherryPickShoppingListItems;
+use App\Actions\Procurement\ShoppingListItem\DeleteShoppingListItem;
+use App\Actions\Procurement\ShoppingListItem\ProposeDismissShoppingListItem;
+use App\Actions\Procurement\ShoppingListItem\ResolveDismissShoppingListItem;
+use App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem;
+use App\Actions\Procurement\ShoppingListItem\UpdateShoppingListItem;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Goods\StockHasSupplierProduct;
+use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
+use App\Models\Procurement\ShoppingListItem;
 use App\Actions\SupplyChain\Agent\HydrateAgents;
 use App\Actions\SupplyChain\Agent\Search\ReindexAgentSearch;
 use App\Actions\SupplyChain\Agent\StoreAgent;
@@ -1589,4 +1599,153 @@ test('agent organisation creates a supplier under its own agent', function () {
         ->assertSessionHasNoErrors();
 
     expect(Supplier::where('agent_id', $ownAgent->id)->where('code', $storeData['code'])->exists())->toBeTrue();
+});
+
+describe('shopping list', function () {
+    beforeEach(function () {
+        $stockHasSupplierProduct = StockHasSupplierProduct::firstOrCreate(
+            ['stock_id' => $this->stock->id, 'supplier_product_id' => $this->supplierProduct->id],
+            ['available' => true]
+        );
+
+        OrgStockHasOrgSupplierProduct::firstOrCreate(
+            ['org_stock_id' => $this->orgStocks[0]->id, 'org_supplier_product_id' => $this->orgSupplierProduct->id],
+            ['stock_has_supplier_product_id' => $stockHasSupplierProduct->id, 'status' => true, 'local_priority' => 0]
+        );
+    });
+
+    test('store shopping list item denormalises and snapshots', function () {
+        $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, [
+            'quantity_units' => 100,
+        ]);
+
+        expect($item)->toBeInstanceOf(ShoppingListItem::class)
+            ->and($item->group_id)->toBe($this->orgSupplierProduct->group_id)
+            ->and($item->organisation_id)->toBe($this->orgSupplierProduct->organisation_id)
+            ->and($item->org_supplier_product_id)->toBe($this->orgSupplierProduct->id)
+            ->and($item->supplier_product_id)->toBe($this->supplierProduct->id)
+            ->and($item->supplier_id)->toBe($this->supplierProduct->supplier_id)
+            ->and($item->agent_id)->toBe($this->agent->id)
+            ->and($item->units_per_pack_snapshot)->toBe($this->supplierProduct->units_per_pack)
+            ->and($item->units_per_carton_snapshot)->toBe($this->supplierProduct->units_per_carton)
+            ->and((float) $item->quantity_units)->toBe(100.0)
+            ->and($item->state)->toBe(ShoppingListItemStateEnum::OPEN);
+
+        return $item;
+    });
+
+    test('update shopping list item while open', function () {
+        $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 50]);
+
+        $item = UpdateShoppingListItem::make()->action($item, ['quantity_units' => 75, 'notes' => 'more please']);
+
+        expect((float) $item->quantity_units)->toBe(75.0)
+            ->and($item->notes)->toBe('more please');
+
+        return $item;
+    });
+
+    test('propose dismiss requires a reason', function () {
+        $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 10]);
+
+        expect(fn () => ProposeDismissShoppingListItem::make()->action($item, []))
+            ->toThrow(ValidationException::class);
+    });
+
+    test('propose dismiss, reinstate, propose again, accept', function () {
+        $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 10]);
+
+        $item = ProposeDismissShoppingListItem::make()->action($item, ['dismiss_reason' => 'not needed right now']);
+        expect($item->state)->toBe(ShoppingListItemStateEnum::DISMISS_PROPOSED)
+            ->and($item->dismiss_reason)->toBe('not needed right now');
+
+        $item = ResolveDismissShoppingListItem::make()->action($item, false);
+        expect($item->state)->toBe(ShoppingListItemStateEnum::OPEN)
+            ->and($item->dismiss_reason)->toBeNull()
+            ->and($item->dismiss_proposed_at)->toBeNull();
+
+        $item = ProposeDismissShoppingListItem::make()->action($item, ['dismiss_reason' => 'still not needed']);
+        $item = ResolveDismissShoppingListItem::make()->action($item, true);
+
+        expect($item->state)->toBe(ShoppingListItemStateEnum::DISMISSED)
+            ->and($item->resolved_at)->not->toBeNull();
+    });
+
+    test('delete shopping list item while open', function () {
+        $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 10]);
+
+        DeleteShoppingListItem::make()->action($item);
+
+        expect(ShoppingListItem::find($item->id))->toBeNull();
+    });
+
+    test('cherry pick full quantity creates or reuses purchase order and marks item ordered', function () {
+        $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 60]);
+
+        $result = CherryPickShoppingListItems::make()->action($this->agent, [
+            ['id' => $item->id],
+        ]);
+
+        expect($result['picked'])->toBe(1)
+            ->and($result['skipped'])->toBe([])
+            ->and($result['purchase_orders'])->toHaveCount(1);
+
+        $purchaseOrder = $result['purchase_orders'][0];
+        expect($purchaseOrder->parent_type)->toBe('OrgAgent')
+            ->and($purchaseOrder->parent_id)->toBe($this->orgAgent->id);
+
+        $item = $item->fresh();
+        expect($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)
+            ->and($item->purchase_order_transaction_id)->not->toBeNull();
+
+        $transaction = $item->purchase_order_transaction_id
+            ? \App\Models\Procurement\PurchaseOrderTransaction::find($item->purchase_order_transaction_id)
+            : null;
+        expect($transaction)->not->toBeNull()
+            ->and((float) $transaction->quantity_ordered)->toBe(60.0);
+    });
+
+    test('cherry pick partial quantity splits the line and keeps parent created_at', function () {
+        $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 100]);
+        $originalCreatedAt = $item->created_at;
+
+        $result = CherryPickShoppingListItems::make()->action($this->agent, [
+            ['id' => $item->id, 'quantity_units' => 40],
+        ]);
+
+        expect($result['picked'])->toBe(1);
+
+        $item = $item->fresh();
+        expect($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)
+            ->and((float) $item->quantity_units)->toBe(40.0);
+
+        $child = ShoppingListItem::where('parent_id', $item->id)->first();
+        expect($child)->not->toBeNull()
+            ->and((float) $child->quantity_units)->toBe(60.0)
+            ->and($child->state)->toBe(ShoppingListItemStateEnum::OPEN)
+            ->and($child->created_at->eq($originalCreatedAt))->toBeTrue();
+    });
+
+    test('shopping list index page renders', function () {
+        $this->withoutExceptionHandling();
+        $response = $this->get(route('grp.org.procurement.shopping_list.index', [$this->organisation->slug]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page->component('Procurement/ShoppingListItems');
+        });
+    });
+
+    test('shopping list board renders for group and agent organisation', function () {
+        $this->withoutExceptionHandling();
+
+        $this->get(route('grp.supply-chain.shopping_list.board'))
+            ->assertInertia(function (AssertableInertia $page) {
+                $page->component('SupplyChain/ShoppingListBoard');
+            });
+
+        $this->get(route('grp.org.procurement.shopping_list.board', [$this->agent->organisation->slug]))
+            ->assertInertia(function (AssertableInertia $page) {
+                $page->component('Procurement/ShoppingListBoard');
+            });
+    });
 });
