@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Transfers\Aurora\FetchAuroraArtefacts;
 use App\Actions\Transfers\Aurora\FetchAuroraCustomers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeliveryNotes;
 use App\Actions\Transfers\Aurora\FetchAuroraJobOrders;
@@ -38,6 +39,7 @@ it('only lets a departed organisation keep the fetchers it has no aiku replaceme
 })->with([
     'purchase orders still come from aurora' => [FetchAuroraPurchaseOrders::class, true],
     'job orders still come from aurora'      => [FetchAuroraJobOrders::class, true],
+    'artefacts still come from aurora'       => [FetchAuroraArtefacts::class, true],
     'raw materials still come from aurora'   => [FetchAuroraRawMaterials::class, true],
     'suppliers still come from aurora'       => [FetchAuroraSuppliers::class, true],
     'timesheets are the clocking machine'    => [FetchAuroraTimesheets::class, true],

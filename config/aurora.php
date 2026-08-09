@@ -24,6 +24,7 @@ return [
     'allowed_fetchers' => [
         'Agents',
         'AgentSupplierPurchaseOrders',
+        'Artefacts',
         'ClockingMachines',
         'JobOrders',
         'OrgStockMovements',
