@@ -45,6 +45,8 @@ trait WithNoStrictProcurementOrderRules
 
         $rules['cbm']           = ['sometimes', 'nullable', 'numeric'];
         $rules['gross_weight']  = ['sometimes', 'nullable', 'numeric'];
+        $rules['cost_items']    = ['sometimes', 'nullable', 'numeric'];
+        $rules['cost_extra']    = ['sometimes', 'nullable', 'numeric'];
         $rules['cost_shipping'] = ['sometimes', 'nullable', 'numeric'];
         $rules['cost_total']    = ['sometimes', 'nullable', 'numeric'];
 
