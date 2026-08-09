@@ -74,9 +74,9 @@ class UndispatchStockDelivery extends OrgAction
     private function previousStockDeliveryState(StockDelivery $stockDelivery): StockDeliveryStateEnum
     {
         return match (true) {
-            (bool) Arr::get($stockDelivery->data, 'ready_to_ship_at') => StockDeliveryStateEnum::READY_TO_SHIP,
-            (bool) Arr::get($stockDelivery->data, 'confirmed_at')     => StockDeliveryStateEnum::CONFIRMED,
-            default                                                   => StockDeliveryStateEnum::IN_PROCESS,
+            $stockDelivery->ready_to_ship_at !== null => StockDeliveryStateEnum::READY_TO_SHIP,
+            $stockDelivery->confirmed_at !== null     => StockDeliveryStateEnum::CONFIRMED,
+            default                                   => StockDeliveryStateEnum::IN_PROCESS,
         };
     }
 

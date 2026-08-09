@@ -6,7 +6,6 @@ use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateStockDeliveryStateFromItems
@@ -49,12 +48,12 @@ class UpdateStockDeliveryStateFromItems
             return $stockDelivery;
         }
 
-        $stockDelivery->update(['state' => $newState]);
-
         $timestampKey = $newState->value . '_at';
-        if (!Arr::get($stockDelivery->data, $timestampKey)) {
-            $stockDelivery->update(['data->' . $timestampKey => now()->toIso8601String()]);
-        }
+
+        $stockDelivery->update([
+            'state'       => $newState,
+            $timestampKey => $stockDelivery->{$timestampKey} ?? now(),
+        ]);
 
         UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
 

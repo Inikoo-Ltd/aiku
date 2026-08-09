@@ -139,6 +139,14 @@ class ShowStockDelivery extends OrgAction
                     fn () => $this->getItems($stockDelivery)
                     : Inertia::optional(fn () => $this->getItems($stockDelivery)),
 
+                StockDeliveryTabsEnum::PENDING_ITEMS->value => $this->tab == StockDeliveryTabsEnum::PENDING_ITEMS->value ?
+                    fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::PENDING_ITEMS->value, stateFilter: $this->pendingItemStates()))
+                    : Inertia::optional(fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::PENDING_ITEMS->value, stateFilter: $this->pendingItemStates()))),
+
+                StockDeliveryTabsEnum::DONE_ITEMS->value => $this->tab == StockDeliveryTabsEnum::DONE_ITEMS->value ?
+                    fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::DONE_ITEMS->value, stateFilter: $this->doneItemStates()))
+                    : Inertia::optional(fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::DONE_ITEMS->value, stateFilter: $this->doneItemStates()))),
+
                 StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value => $this->tab == StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value ?
                     fn () => StockDeliveryUnderOverDeliveredItemResource::collection(IndexStockDeliveryUnderOverDeliveredItems::run($stockDelivery, StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))
                     : Inertia::optional(fn () => StockDeliveryUnderOverDeliveredItemResource::collection(IndexStockDeliveryUnderOverDeliveredItems::run($stockDelivery, StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))),
@@ -152,6 +160,8 @@ class ShowStockDelivery extends OrgAction
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value))),
             ]
         )->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::ITEMS->value))
+            ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::PENDING_ITEMS->value))
+            ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::DONE_ITEMS->value))
             ->table(IndexStockDeliveryUnderOverDeliveredItems::make()->tableStructure(prefix: StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))
             ->table(IndexAttachments::make()->tableStructure(prefix: StockDeliveryTabsEnum::ATTACHMENTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: StockDeliveryTabsEnum::HISTORY->value));
@@ -216,7 +226,23 @@ class ShowStockDelivery extends OrgAction
             ->where('unit_quantity_placed', '>', 0)
             ->exists();
 
-        return match ($stockDelivery->state) {
+        $pdfButton = [
+            'type'   => 'button',
+            'style'  => 'tertiary',
+            'label'  => 'PDF',
+            'target' => '_blank',
+            'icon'   => 'fal fa-file-pdf',
+            'key'    => 'action',
+            'route'  => [
+                'name'       => 'grp.org.procurement.stock_deliveries.pdf',
+                'parameters' => [
+                    'organisation'  => $stockDelivery->organisation->slug,
+                    'stockDelivery' => $stockDelivery->slug,
+                ],
+            ],
+        ];
+
+        $actions = match ($stockDelivery->state) {
             StockDeliveryStateEnum::IN_PROCESS,
             StockDeliveryStateEnum::CONFIRMED,
             StockDeliveryStateEnum::READY_TO_SHIP => [
@@ -383,6 +409,8 @@ class ShowStockDelivery extends OrgAction
             ],
             default => [],
         };
+
+        return array_merge($actions, [$pdfButton]);
     }
 
     public function getStateLabels(StockDelivery $stockDelivery): array
@@ -464,10 +492,10 @@ class ShowStockDelivery extends OrgAction
         foreach (StockDeliveryStateEnum::cases() as $case) {
             $timestamp = match ($case) {
                 StockDeliveryStateEnum::IN_PROCESS    => $stockDelivery->created_at,
-                StockDeliveryStateEnum::CONFIRMED     => Arr::get($stockDelivery->data, 'confirmed_at'),
-                StockDeliveryStateEnum::READY_TO_SHIP => Arr::get($stockDelivery->data, 'ready_to_ship_at'),
-                StockDeliveryStateEnum::BOOKING_IN    => Arr::get($stockDelivery->data, 'booking_in_at'),
-                StockDeliveryStateEnum::BOOKED_IN     => Arr::get($stockDelivery->data, 'booked_in_at'),
+                StockDeliveryStateEnum::CONFIRMED     => $stockDelivery->confirmed_at,
+                StockDeliveryStateEnum::READY_TO_SHIP => $stockDelivery->ready_to_ship_at,
+                StockDeliveryStateEnum::BOOKING_IN    => $stockDelivery->booking_in_at,
+                StockDeliveryStateEnum::BOOKED_IN     => $stockDelivery->booked_in_at,
                 default                               => $stockDelivery->{$case->snake() . '_at'} ?: null
             };
 
@@ -530,6 +558,19 @@ class ShowStockDelivery extends OrgAction
                 ],
             ],
         );
+    }
+
+    private function pendingItemStates(): array
+    {
+        return StockDeliveryItemStateEnum::valuesExcept([
+            StockDeliveryItemStateEnum::PLACED->value,
+            StockDeliveryItemStateEnum::CANCELLED->value,
+        ]);
+    }
+
+    private function doneItemStates(): array
+    {
+        return [StockDeliveryItemStateEnum::PLACED->value, StockDeliveryItemStateEnum::CANCELLED->value];
     }
 
     private function getItems(StockDelivery $stockDelivery): AnonymousResourceCollection

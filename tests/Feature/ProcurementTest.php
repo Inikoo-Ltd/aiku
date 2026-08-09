@@ -27,6 +27,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
 use App\Actions\Inventory\Location\StoreLocation;
@@ -1134,6 +1135,37 @@ test('UI show stock delivery', function () {
     });
 });
 
+test('UI show stock delivery pending and done item tabs', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PENDING-DONE-TABS', [10, 10]);
+    $items         = $stockDelivery->items()->orderBy('id')->get();
+
+    UpdateStateToConfirmedStockDeliveryItem::make()->action($items[0]);
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDelivery')
+            ->has('tabs.navigation.'.StockDeliveryTabsEnum::PENDING_ITEMS->value)
+            ->has('tabs.navigation.'.StockDeliveryTabsEnum::DONE_ITEMS->value);
+    });
+
+    $pendingResponse = $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::PENDING_ITEMS->value);
+    $pendingResponse->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDelivery')
+            ->has(StockDeliveryTabsEnum::PENDING_ITEMS->value.'.data', 2);
+    });
+
+    $doneResponse = $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::DONE_ITEMS->value);
+    $doneResponse->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDelivery')
+            ->has(StockDeliveryTabsEnum::DONE_ITEMS->value.'.data', 0);
+    });
+});
+
 test('UI edit stock delivery', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.procurement.stock_deliveries.edit', [$this->organisation->slug, $this->stockDelivery->slug]));
@@ -1216,7 +1248,22 @@ test('under delivered stock delivery item is placed and books in the delivery', 
 
     expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(8.0)
         ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED)
-        ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
+        ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN)
+        ->and($stockDelivery->fresh()->booked_in_at)->not->toBeNull();
+});
+
+test('stock delivery item confirmation sets confirmed_at real column', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'CONFIRM-TS', [10]);
+
+    expect($stockDelivery->confirmed_at)->toBeNull();
+
+    UpdateStateToConfirmedStockDeliveryItem::make()->action($stockDelivery->items()->first());
+
+    $stockDelivery = $stockDelivery->fresh();
+
+    expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::CONFIRMED)
+        ->and($stockDelivery->confirmed_at)->not->toBeNull()
+        ->and($stockDelivery->data)->not->toHaveKey('confirmed_at');
 });
 
 test('UI show stock delivery under over delivered items tab', function () {
@@ -1266,7 +1313,7 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
     $this->get($url)->assertInertia(function (AssertableInertia $page) {
         $page
             ->where('queryBuilderProps.items.elementGroups.state.elements.placed.1', 0)
-            ->has('tabs.navigation', 4)
+            ->has('tabs.navigation', 6)
             ->missing('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value);
     });
 
@@ -1284,7 +1331,7 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
 
     $response->assertOk()
         ->assertJsonPath('props.queryBuilderProps.items.elementGroups.state.elements.placed.1', 1)
-        ->assertJsonCount(5, 'props.tabs.navigation')
+        ->assertJsonCount(7, 'props.tabs.navigation')
         ->assertJsonPath(
             'props.tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value.'.title',
             StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->blueprint()['title']

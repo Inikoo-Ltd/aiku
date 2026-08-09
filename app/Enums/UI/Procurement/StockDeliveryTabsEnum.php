@@ -17,6 +17,8 @@ enum StockDeliveryTabsEnum: string
     use HasTabs;
 
     case ITEMS                = 'items';
+    case PENDING_ITEMS        = 'pending_items';
+    case DONE_ITEMS           = 'done_items';
     case UNDER_OVER_DELIVERED = 'under_over_delivered';
     case SHOWCASE             = 'showcase';
     case ATTACHMENTS          = 'attachments';
@@ -28,6 +30,14 @@ enum StockDeliveryTabsEnum: string
             StockDeliveryTabsEnum::ITEMS                => [
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
+            ],
+            StockDeliveryTabsEnum::PENDING_ITEMS        => [
+                'title' => __('Pending Items'),
+                'icon'  => 'fal fa-clipboard-list-check',
+            ],
+            StockDeliveryTabsEnum::DONE_ITEMS           => [
+                'title' => __('Done Items'),
+                'icon'  => 'fal fa-clipboard-check',
             ],
             StockDeliveryTabsEnum::UNDER_OVER_DELIVERED => [
                 'title' => __('Under/Over delivered items'),
