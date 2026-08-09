@@ -1210,3 +1210,20 @@ test('a job order cannot be released while an artefact is not compliant', functi
 
     $this->artefact->complianceItems()->delete();
 });
+
+test('a raw material can be updated while keeping its own code', function () {
+    $rawMaterial = StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::STOCK->value,
+        'code'        => 'SELFCODE1',
+        'description' => 'Self code raw material',
+        'unit'        => RawMaterialUnitEnum::UNIT->value,
+    ]);
+
+    $updated = UpdateRawMaterial::make()->action($rawMaterial, [
+        'code'        => 'SELFCODE1',
+        'description' => 'Renamed while keeping the code',
+    ]);
+
+    expect($updated->code)->toBe('SELFCODE1')
+        ->and($updated->description)->toBe('Renamed while keeping the code');
+});

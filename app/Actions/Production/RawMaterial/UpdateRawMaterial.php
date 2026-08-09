@@ -73,7 +73,7 @@ class UpdateRawMaterial extends OrgAction
                         [
                             'column'    => 'id',
                             'value'     => $this->rawMaterial->id,
-                            'operation' => '!='
+                            'operator'  => '!='
                         ]
 
                     ]

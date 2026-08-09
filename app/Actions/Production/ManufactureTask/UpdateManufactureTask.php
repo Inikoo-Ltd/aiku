@@ -58,7 +58,7 @@ class UpdateManufactureTask extends OrgAction
                         [
                             'column'    => 'id',
                             'value'     => $this->manufactureTask->id,
-                            'operation' => '!='
+                            'operator'  => '!='
                         ]
 
                     ]
