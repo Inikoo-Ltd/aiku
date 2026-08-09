@@ -56,6 +56,7 @@ use App\Actions\SupplyChain\Supplier\HydrateSuppliers;
 use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -328,12 +329,18 @@ test('update agent supplier purchase order', function (AgentSupplierPurchaseOrde
             'state'          => AgentSupplierPurchaseOrderStateEnum::CONFIRMED,
             'delivery_state' => AgentSupplierPurchaseOrderDeliveryStateEnum::CONFIRMED,
             'cost_total'     => 1234.56,
+            'deposit_amount' => 100.50,
+            'deposit_paid_at' => now()->subDay(),
+            'estimated_delivery_days' => 14,
         ]
     );
 
     expect($updated->state)->toBe(AgentSupplierPurchaseOrderStateEnum::CONFIRMED)
         ->and($updated->delivery_state)->toBe(AgentSupplierPurchaseOrderDeliveryStateEnum::CONFIRMED)
-        ->and((float)$updated->cost_total)->toBe(1234.56);
+        ->and((float)$updated->cost_total)->toBe(1234.56)
+        ->and((float)$updated->deposit_amount)->toBe(100.50)
+        ->and($updated->deposit_paid_at)->not->toBeNull()
+        ->and($updated->estimated_delivery_days)->toBe(14);
 })->depends('create agent supplier purchase order');
 
 test('add item to purchase order', function (PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct) {
@@ -421,6 +428,18 @@ test('UI show agent supplier purchase order', function (AgentSupplierPurchaseOrd
             )
             ->has('showcase.supplier')
             ->where('showcase.number_transactions', 1);
+    });
+})->depends('create agent supplier purchase order');
+
+test('UI edit agent supplier purchase order', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.edit', [$agentSupplierPurchaseOrder->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($agentSupplierPurchaseOrder) {
+        $page
+            ->component('EditModel')
+            ->has('formData.args.updateRoute')
+            ->where('formData.args.updateRoute.name', 'grp.models.agent_supplier_purchase_order.update')
+            ->where('formData.args.updateRoute.parameters', $agentSupplierPurchaseOrder->id);
     });
 })->depends('create agent supplier purchase order');
 
@@ -539,6 +558,13 @@ test('create purchase order by agent', function () {
 
 test('submit agent purchase order consolidates into agent supplier purchase orders', function (PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct) {
     expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS);
+
+    UpdateSupplierProduct::make()->action(
+        $orgSupplierProduct->supplierProduct,
+        ['delivery_time' => 21],
+        strict: false
+    );
+
     $purchaseOrderTransaction = StorePurchaseOrderTransaction::make()->action(
         $purchaseOrder,
         $orgSupplierProduct->supplierProduct->historicSupplierProduct,
@@ -548,6 +574,9 @@ test('submit agent purchase order consolidates into agent supplier purchase orde
 
     $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder);
 
+    expect($purchaseOrder->estimated_delivery_days)->toBe(21)
+        ->and($purchaseOrder->estimated_received_at)->not->toBeNull();
+
     $supplier = $orgSupplierProduct->supplierProduct->supplier;
     $agentSupplierPurchaseOrder = AgentSupplierPurchaseOrder::where('purchase_order_id', $purchaseOrder->id)
         ->where('supplier_id', $supplier->id)
@@ -556,7 +585,9 @@ test('submit agent purchase order consolidates into agent supplier purchase orde
     expect($agentSupplierPurchaseOrder)->not->toBeNull()
         ->and($agentSupplierPurchaseOrder->state)->toBe(AgentSupplierPurchaseOrderStateEnum::SUBMITTED)
         ->and($purchaseOrderTransaction->refresh()->agent_supplier_purchase_order_id)->toBe($agentSupplierPurchaseOrder->id)
-        ->and((float)$agentSupplierPurchaseOrder->cost_total)->toBe((float)$purchaseOrderTransaction->net_amount);
+        ->and((float)$agentSupplierPurchaseOrder->cost_total)->toBe((float)$purchaseOrderTransaction->net_amount)
+        ->and($agentSupplierPurchaseOrder->estimated_delivery_days)->toBe(21)
+        ->and($agentSupplierPurchaseOrder->estimated_received_at)->not->toBeNull();
 
     StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder->refresh());
     expect(AgentSupplierPurchaseOrder::where('purchase_order_id', $purchaseOrder->id)->count())->toBe(1);

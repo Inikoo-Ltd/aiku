@@ -8,6 +8,7 @@
 
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\SupplyChain\Agent\UI\CreateAgent;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\EditAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\IndexAgentSupplierPurchaseOrders;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\Agent\UI\EditAgent;
@@ -117,5 +118,6 @@ Route::prefix("agent-supplier-purchase-orders")->name("agent_supplier_purchase_o
     function () {
         Route::get('', IndexAgentSupplierPurchaseOrders::class)->name('index');
         Route::get('/{agentSupplierPurchaseOrder}', ShowAgentSupplierPurchaseOrder::class)->name('show');
+        Route::get('/{agentSupplierPurchaseOrder}/edit', EditAgentSupplierPurchaseOrder::class)->name('edit');
     }
 );

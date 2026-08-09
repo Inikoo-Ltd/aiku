@@ -84,6 +84,9 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
                 'agent_supplier_purchase_orders.delivery_state',
                 'agent_supplier_purchase_orders.date',
                 'agent_supplier_purchase_orders.cost_total',
+                'agent_supplier_purchase_orders.deposit_amount',
+                'agent_supplier_purchase_orders.deposit_paid_at',
+                'agent_supplier_purchase_orders.estimated_received_at',
                 'currencies.code as currency_code',
                 'suppliers.code as supplier_code',
                 'suppliers.slug as supplier_slug',
@@ -120,6 +123,8 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
                 ->column(key: 'delivery_state', label: __('Delivery'), canBeHidden: false)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true)
                 ->column(key: 'cost_total', label: __('Amount'), canBeHidden: false, sortable: true)
+                ->column(key: 'deposit_amount', label: __('Deposit'), canBeHidden: false)
+                ->column(key: 'estimated_received_at', label: __('Expected'), canBeHidden: false)
                 ->defaultSort('-date');
         };
     }

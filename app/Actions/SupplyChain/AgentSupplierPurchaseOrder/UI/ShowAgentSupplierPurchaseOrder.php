@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -54,10 +55,21 @@ class ShowAgentSupplierPurchaseOrder extends OrgAction
         return $this->handle($agentSupplierPurchaseOrder);
     }
 
+    private const DELIVERY_DONE_STATES = [
+        AgentSupplierPurchaseOrderDeliveryStateEnum::RECEIVED,
+        AgentSupplierPurchaseOrderDeliveryStateEnum::CHECKED,
+        AgentSupplierPurchaseOrderDeliveryStateEnum::PLACED,
+        AgentSupplierPurchaseOrderDeliveryStateEnum::CANCELLED,
+    ];
+
     public function htmlResponse(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): Response
     {
         $supplier      = $agentSupplierPurchaseOrder->supplier;
         $purchaseOrder = $agentSupplierPurchaseOrder->purchaseOrder;
+
+        $isOverdue = $agentSupplierPurchaseOrder->estimated_received_at
+            && $agentSupplierPurchaseOrder->estimated_received_at->isPast()
+            && !in_array($agentSupplierPurchaseOrder->delivery_state, self::DELIVERY_DONE_STATES, true);
 
         return Inertia::render(
             'SupplyChain/AgentSupplierPurchaseOrder',
@@ -74,18 +86,35 @@ class ShowAgentSupplierPurchaseOrder extends OrgAction
                         'icon'  => ['fal', 'fa-clipboard-list'],
                         'title' => __('Agent supplier purchase order')
                     ],
-                    'title' => $agentSupplierPurchaseOrder->reference,
+                    'title'   => $agentSupplierPurchaseOrder->reference,
+                    'actions' => $this->canEdit ? [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'edit',
+                            'tooltip' => __('Edit agent supplier purchase order'),
+                            'label'   => __('Edit'),
+                            'route'   => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ]
+                    ] : [],
                 ],
                 'showcase'    => [
-                    'reference'      => $agentSupplierPurchaseOrder->reference,
-                    'state'          => $agentSupplierPurchaseOrder->state->labels()[$agentSupplierPurchaseOrder->state->value],
-                    'delivery_state' => $agentSupplierPurchaseOrder->delivery_state->value,
-                    'date'           => $agentSupplierPurchaseOrder->date,
-                    'confirmed_at'   => $agentSupplierPurchaseOrder->confirmed_at,
-                    'cancelled_at'   => $agentSupplierPurchaseOrder->cancelled_at,
-                    'cost_total'     => $agentSupplierPurchaseOrder->cost_total,
-                    'currency_code'  => $agentSupplierPurchaseOrder->currency->code,
-                    'notes'          => $agentSupplierPurchaseOrder->notes,
+                    'reference'             => $agentSupplierPurchaseOrder->reference,
+                    'state'                 => $agentSupplierPurchaseOrder->state->labels()[$agentSupplierPurchaseOrder->state->value],
+                    'delivery_state'        => $agentSupplierPurchaseOrder->delivery_state->value,
+                    'date'                  => $agentSupplierPurchaseOrder->date,
+                    'confirmed_at'          => $agentSupplierPurchaseOrder->confirmed_at,
+                    'cancelled_at'          => $agentSupplierPurchaseOrder->cancelled_at,
+                    'cost_total'            => $agentSupplierPurchaseOrder->cost_total,
+                    'currency_code'         => $agentSupplierPurchaseOrder->currency->code,
+                    'notes'                 => $agentSupplierPurchaseOrder->notes,
+                    'deposit_amount'        => $agentSupplierPurchaseOrder->deposit_amount,
+                    'deposit_paid_at'       => $agentSupplierPurchaseOrder->deposit_paid_at,
+                    'balance_paid_at'       => $agentSupplierPurchaseOrder->balance_paid_at,
+                    'estimated_received_at' => $agentSupplierPurchaseOrder->estimated_received_at,
+                    'is_overdue'            => $isOverdue,
                     'supplier'       => $supplier ? [
                         'code'  => $supplier->code,
                         'name'  => $supplier->name,

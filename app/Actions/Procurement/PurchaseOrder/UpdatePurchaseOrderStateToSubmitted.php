@@ -48,10 +48,24 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
             'state' => PurchaseOrderTransactionStateEnum::SUBMITTED,
         ]);
 
-        $purchaseOrder = $this->update($purchaseOrder, [
+        $updateData = [
             'state'        => PurchaseOrderStateEnum::SUBMITTED,
             'submitted_at' => now(),
-        ]);
+        ];
+
+        if ($purchaseOrder->estimated_delivery_days === null) {
+            $deliveryDays = $purchaseOrder->purchaseOrderTransactions()
+                ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
+                ->selectRaw("max((supplier_products.data->>'delivery_time')::int) as delivery_days")
+                ->value('delivery_days');
+
+            if ($deliveryDays !== null) {
+                $updateData['estimated_delivery_days'] = $deliveryDays;
+                $updateData['estimated_received_at']   = $updateData['submitted_at']->clone()->addDays($deliveryDays);
+            }
+        }
+
+        $purchaseOrder = $this->update($purchaseOrder, $updateData);
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 

@@ -38,9 +38,10 @@ class FetchAuroraAgentSupplierPurchaseOrder extends FetchAurora
         $this->parsedData['supplier']       = $supplier;
         $this->parsedData['purchase_order'] = $purchaseOrder;
 
-        $createdAt   = $this->parseDatetime($this->auroraModelData->{'Agent Supplier Purchase Order Creation Date'});
-        $confirmedAt = $this->parseDatetime($this->auroraModelData->{'Agent Supplier Purchase Order Confirm Date'});
-        $cancelledAt = $this->parseDatetime($this->auroraModelData->{'Agent Supplier Purchase Order Cancelled Date'});
+        $createdAt           = $this->parseDatetime($this->auroraModelData->{'Agent Supplier Purchase Order Creation Date'});
+        $confirmedAt         = $this->parseDatetime($this->auroraModelData->{'Agent Supplier Purchase Order Confirm Date'});
+        $cancelledAt         = $this->parseDatetime($this->auroraModelData->{'Agent Supplier Purchase Order Cancelled Date'});
+        $estimatedReceivedAt = $this->parseDatetime($this->auroraModelData->{'Agent Supplier Purchase Order Estimated Receiving Date'});
 
         $state = match ($this->auroraModelData->{'Agent Supplier Purchase Order State'}) {
             'InProcess' => AgentSupplierPurchaseOrderStateEnum::IN_PROCESS,
@@ -65,6 +66,7 @@ class FetchAuroraAgentSupplierPurchaseOrder extends FetchAurora
             'date'            => $date,
             'confirmed_at'    => $confirmedAt,
             'cancelled_at'    => $cancelledAt,
+            'estimated_received_at' => $estimatedReceivedAt,
             'cost_total'      => $this->auroraModelData->{'Agent Supplier Purchase Order Amount'} ?? 0,
             'currency_id'     => $this->parseCurrencyID($this->auroraModelData->{'Agent Supplier Purchase Order Currency Code'}),
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Agent Supplier Purchase Order Key'},

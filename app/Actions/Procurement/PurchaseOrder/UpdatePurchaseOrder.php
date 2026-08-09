@@ -69,6 +69,7 @@ class UpdatePurchaseOrder extends OrgAction
             'terms_and_conditions' => ['sometimes', 'nullable', 'string'],
             'estimated_production_date' => ['sometimes', 'nullable', 'date'],
             'estimated_receiving_date'  => ['sometimes', 'nullable', 'date'],
+            'estimated_delivery_days'   => ['sometimes', 'nullable', 'integer', 'min:0'],
         ];
 
         if ($this->strict) {

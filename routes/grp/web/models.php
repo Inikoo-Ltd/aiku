@@ -429,6 +429,7 @@ use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\SysAdmin\Guest\DeleteGuest;
@@ -1190,6 +1191,7 @@ Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
 Route::patch('/supplier/{supplier:id}', UpdateSupplier::class)->name('supplier.update');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}', UpdateOrgSupplierProduct::class)->name('org_supplier_product.update');
+Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}', UpdateAgentSupplierPurchaseOrder::class)->name('agent_supplier_purchase_order.update');
 
 Route::patch('/org-supplier/{orgSupplier:id}', UpdateOrgSupplier::class)->name('org_supplier.update');
 

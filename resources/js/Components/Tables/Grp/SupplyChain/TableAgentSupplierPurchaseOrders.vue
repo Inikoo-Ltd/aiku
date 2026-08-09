@@ -41,5 +41,13 @@ function aspoRoute(aspo: { slug: string }) {
         <template #cell(cost_total)="{ item: aspo }">
             {{ aspo.cost_total }} {{ aspo.currency_code }}
         </template>
+        <template #cell(deposit_amount)="{ item: aspo }">
+            {{ aspo.deposit_amount != null ? `${aspo.deposit_amount} ${aspo.currency_code}` : '-' }}
+        </template>
+        <template #cell(estimated_received_at)="{ item: aspo }">
+            <span :class="aspo.is_overdue ? 'text-red-600 font-medium' : ''">
+                {{ aspo.estimated_received_at ? useFormatTime(aspo.estimated_received_at) : '-' }}
+            </span>
+        </template>
     </Table>
 </template>

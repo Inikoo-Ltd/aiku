@@ -34,7 +34,7 @@ class StoreAgentSupplierPurchaseOrdersFromPurchaseOrder extends OrgAction
 
         $transactionsBySupplier = $purchaseOrder->purchaseOrderTransactions()
             ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
-            ->select('purchase_order_transactions.id', 'purchase_order_transactions.net_amount', 'supplier_products.supplier_id')
+            ->selectRaw("purchase_order_transactions.id, purchase_order_transactions.net_amount, supplier_products.supplier_id, (supplier_products.data->>'delivery_time')::int as delivery_time")
             ->get()
             ->groupBy('supplier_id');
 
@@ -60,15 +60,26 @@ class StoreAgentSupplierPurchaseOrdersFromPurchaseOrder extends OrgAction
                 ->whereIn('purchase_order_transactions.id', $transactions->pluck('id'))
                 ->update(['agent_supplier_purchase_order_id' => $agentSupplierPurchaseOrder->id]);
 
+            $updateData = [
+                'state'        => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
+                'cost_items'   => $transactions->sum('net_amount'),
+                'cost_total'   => $transactions->sum('net_amount'),
+                'date'         => now(),
+                'submitted_at' => now(),
+            ];
+
+            if ($agentSupplierPurchaseOrder->estimated_delivery_days === null) {
+                $deliveryDays = $transactions->max('delivery_time');
+
+                if ($deliveryDays !== null) {
+                    $updateData['estimated_delivery_days'] = $deliveryDays;
+                    $updateData['estimated_received_at']   = now()->addDays($deliveryDays);
+                }
+            }
+
             UpdateAgentSupplierPurchaseOrder::make()->action(
                 $agentSupplierPurchaseOrder,
-                [
-                    'state'        => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
-                    'cost_items'   => $transactions->sum('net_amount'),
-                    'cost_total'   => $transactions->sum('net_amount'),
-                    'date'         => now(),
-                    'submitted_at' => now(),
-                ],
+                $updateData,
                 strict: false
             );
 

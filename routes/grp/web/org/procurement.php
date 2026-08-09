@@ -26,6 +26,7 @@ use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UI\EditOrgSupplierProduct;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\EditAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\IndexAgentSupplierPurchaseOrders;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurchaseOrder;
 use App\Actions\Procurement\OrgSupplierProducts\UI\IndexOrgSupplierProducts;
@@ -103,6 +104,7 @@ Route::prefix('supplier-products')->as('org_supplier_products.')->group(function
 Route::prefix('agent-supplier-purchase-orders')->as('agent_supplier_purchase_orders.')->group(function () {
     Route::get('', [IndexAgentSupplierPurchaseOrders::class, 'inOrganisation'])->name('index');
     Route::get('{agentSupplierPurchaseOrder}', [ShowAgentSupplierPurchaseOrder::class, 'inOrganisation'])->name('show');
+    Route::get('{agentSupplierPurchaseOrder}/edit', [EditAgentSupplierPurchaseOrder::class, 'inOrganisation'])->name('edit');
 });
 
 Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {

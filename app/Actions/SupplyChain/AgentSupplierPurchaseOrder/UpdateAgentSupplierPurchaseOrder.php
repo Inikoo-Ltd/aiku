@@ -42,7 +42,11 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        if (str_starts_with($request->route()->getName(), 'grp.org.')) {
+            return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        }
+
+        return $request->user()->authTo('supply-chain.edit');
     }
 
     public function rules(): array
@@ -60,6 +64,11 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
             'cost_shipping'  => ['sometimes', 'required', 'numeric', 'min:0'],
             'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
             'date'           => ['sometimes', 'required'],
+            'deposit_amount'           => ['sometimes', 'numeric', 'min:0'],
+            'deposit_paid_at'          => ['sometimes', 'nullable', 'date'],
+            'balance_paid_at'          => ['sometimes', 'nullable', 'date'],
+            'estimated_delivery_days'  => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'estimated_received_at'   => ['sometimes', 'nullable', 'date'],
         ];
 
         if ($this->strict) {
@@ -87,6 +96,14 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
         }
 
         return $rules;
+    }
+
+    public function asController(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): AgentSupplierPurchaseOrder
+    {
+        $this->agentSupplierPurchaseOrder = $agentSupplierPurchaseOrder;
+        $this->initialisationFromGroup($agentSupplierPurchaseOrder->group, $request);
+
+        return $this->handle($agentSupplierPurchaseOrder, $this->validatedData);
     }
 
     public function action(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): AgentSupplierPurchaseOrder

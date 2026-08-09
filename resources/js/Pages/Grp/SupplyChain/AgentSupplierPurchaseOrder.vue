@@ -24,6 +24,11 @@ const props = defineProps<{
         cost_total: number
         currency_code: string
         notes?: string
+        deposit_amount?: number
+        deposit_paid_at?: string
+        balance_paid_at?: string
+        estimated_received_at?: string
+        is_overdue: boolean
         supplier?: { code: string, name: string, route: { name: string, parameters: string[] } }
         purchase_order?: { reference: string }
         number_transactions: number
@@ -69,6 +74,20 @@ const props = defineProps<{
 
             <dt class="text-gray-500">{{ trans('Amount') }}</dt>
             <dd>{{ showcase.cost_total }} {{ showcase.currency_code }}</dd>
+
+            <dt class="text-gray-500">{{ trans('Deposit') }}</dt>
+            <dd>{{ showcase.deposit_amount != null ? `${showcase.deposit_amount} ${showcase.currency_code}` : '-' }}</dd>
+
+            <dt class="text-gray-500">{{ trans('Balance paid') }}</dt>
+            <dd>{{ showcase.balance_paid_at ? useFormatTime(showcase.balance_paid_at) : '-' }}</dd>
+
+            <dt class="text-gray-500">{{ trans('Expected by') }}</dt>
+            <dd>
+                {{ showcase.estimated_received_at ? useFormatTime(showcase.estimated_received_at) : '-' }}
+                <span v-if="showcase.is_overdue" class="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                    {{ trans('Overdue') }}
+                </span>
+            </dd>
 
             <dt class="text-gray-500">{{ trans('Transactions') }}</dt>
             <dd>{{ showcase.number_transactions }}</dd>
