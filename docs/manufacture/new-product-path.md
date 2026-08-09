@@ -11,8 +11,8 @@ noted.
 1. Identity        trade unit (new or existing)
 2. Artefact        the factory's definition of the thing        [BUILT]
 3. Raw materials   choose existing / create from supplier       [partially BUILT]
-4. Recipe          tasks in order + raw materials per step      [tasks BUILT, materials GAP]
-5. Pay & batch     piece rate, targets, recommended batch size  [pay BUILT, batch size GAP]
+4. Recipe          tasks in order + raw materials per step      [BUILT]
+5. Pay & batch     piece rate, targets, recommended batch size  [BUILT]
 6. Compliance      tests, barcode, tariff code, label           [GAP]
 7. Go live         producible on the floor + sellable online    [floor BUILT, product shortcut GAP]
 ```
@@ -51,11 +51,11 @@ artefact batch is produced.
 
 - Tasks with position + units-per-artefact: recipe editor on the artefact
   page. [BUILT]
-- **Per-step raw material consumption**: new pivot
-  `manufacture_task_raw_materials` scoped to the artefact recipe step —
-  (artefact_manufacture_task_id, raw_material_id, quantity_per_unit,
-  waste_percentage). This is what lets a job order reserve/deduct inputs
-  and cost a batch. [GAP — next model addition]
+- **Per-step raw material consumption**: `recipe_step_raw_materials`
+  (artefact_manufacture_task_id, raw_material_id, quantity_per_unit).
+  Editable per step with line costs and a subtotal; receiving a job order
+  deducts these from the input org stocks. Waste percentage not modelled —
+  consumption is assumed to equal the recipe. [BUILT]
 
 ### 5. Pay & batch [pay BUILT, batch size GAP]
 
@@ -63,10 +63,9 @@ artefact batch is produced.
   reward terms already on ManufactureTask, snapshotted into every session.
   [BUILT] (bonus formula blocked on management answering what the targets
   mean.)
-- **Recommended batch size**: how many units one production run should
-  make (mixing vats, oven trays, sanity). Proposed: `recommended_batch_size`
-  on the artefact; job order creation pre-fills item quantity with it and
-  warns when deviating. [GAP — one column + form field]
+- **Recommended batch size**: `recommended_batch_size` on the artefact,
+  imported from Aurora where it exists; job order items pre-fill from it
+  and hint when the quantity deviates. [BUILT]
 
 ### 6. Compliance [GAP — the important part]
 
@@ -101,16 +100,19 @@ own — added to the management questions.
   shop, gated on compliance green. [GAP — shortcut over existing product
   creation]
 
-## Suggested build order
+## Remaining build order
 
-1. `manufacture_task_raw_materials` pivot + recipe editor extension (unlocks
-   costing and future deduction; pure aiku, no dependencies).
-2. `recommended_batch_size` on artefact + job order pre-fill (trivial).
-3. Compliance checklist model + artefact gate (needs management to define
+1. Compliance checklist model + artefact gate (needs management to define
    required items per category — ask, but the model can be built with the
    type list configurable).
-4. Create-from-supplier raw material shortcut UI.
-5. Sell-online shortcut (compliance-gated).
+2. Create-from-supplier raw material shortcut UI.
+3. Sell-online shortcut (compliance-gated).
+4. Waste percentage on recipe steps, if the floor shows recipe and reality
+   diverge.
+
+Done: recipe raw materials with costing and deduction, recommended batch
+size, and the Aurora import that brings raw materials, artefacts, batch
+sizes and recipe ratios in without anyone typing them.
 
 ## Open questions for management (add to questions doc)
 
@@ -118,6 +120,10 @@ own — added to the management questions.
   market? Who owns keeping them current?
 - Who assigns barcodes and tariff codes today, and from what range?
 - What are the real recommended batch sizes per product family?
+
+See also [pilot-checklist.md](pilot-checklist.md) for the rollout gates,
+including dropping the manufacture fetchers from `allowed_fetchers` at
+cutover so Aurora stops mastering artefacts.
 
 ---
 *Living design doc; update as pieces land.*
