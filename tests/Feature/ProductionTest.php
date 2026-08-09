@@ -1142,3 +1142,71 @@ test('completed job order into stock converts units and deducts raw materials', 
     $inputLocationOrgStock->refresh();
     expect((float) $inputLocationOrgStock->quantity)->toBe(95.0);
 });
+
+test('artefact compliance status reflects its items', function () {
+    $status = \App\Actions\Production\Artefact\GetArtefactComplianceStatus::run($this->artefact);
+    expect($status['status'])->toBe(\App\Enums\Production\Artefact\ArtefactComplianceStatusEnum::NOT_CONFIGURED);
+
+    $item = \App\Models\Production\ArtefactComplianceItem::create([
+        'group_id'        => $this->artefact->group_id,
+        'organisation_id' => $this->artefact->organisation_id,
+        'artefact_id'     => $this->artefact->id,
+        'type'            => \App\Enums\Production\Artefact\ArtefactComplianceTypeEnum::CERTIFICATE,
+        'reference'       => 'CERT-1',
+        'is_required'     => true,
+        'valid_until'     => now()->addYear(),
+    ]);
+    $status = \App\Actions\Production\Artefact\GetArtefactComplianceStatus::run($this->artefact->refresh());
+    expect($status['status'])->toBe(\App\Enums\Production\Artefact\ArtefactComplianceStatusEnum::OK);
+
+    $problemItem = \App\Models\Production\ArtefactComplianceItem::create([
+        'group_id'        => $this->artefact->group_id,
+        'organisation_id' => $this->artefact->organisation_id,
+        'artefact_id'     => $this->artefact->id,
+        'type'            => \App\Enums\Production\Artefact\ArtefactComplianceTypeEnum::SAFETY_TEST,
+        'reference'       => null,
+        'is_required'     => true,
+    ]);
+    $status = \App\Actions\Production\Artefact\GetArtefactComplianceStatus::run($this->artefact->refresh());
+    expect($status['status'])->toBe(\App\Enums\Production\Artefact\ArtefactComplianceStatusEnum::PROBLEM);
+
+    $problemItem->update([
+        'reference'   => 'SAFE-1',
+        'valid_until' => now()->addDays(10),
+    ]);
+    $status = \App\Actions\Production\Artefact\GetArtefactComplianceStatus::run($this->artefact->refresh());
+    expect($status['status'])->toBe(\App\Enums\Production\Artefact\ArtefactComplianceStatusEnum::EXPIRING);
+
+    $problemItem->update(['valid_until' => now()->subDay()]);
+    $status = \App\Actions\Production\Artefact\GetArtefactComplianceStatus::run($this->artefact->refresh());
+    expect($status['status'])->toBe(\App\Enums\Production\Artefact\ArtefactComplianceStatusEnum::PROBLEM);
+
+    $item->delete();
+    $problemItem->delete();
+});
+
+test('a job order cannot be released while an artefact is not compliant', function () {
+    \App\Models\Production\ArtefactComplianceItem::create([
+        'group_id'        => $this->artefact->group_id,
+        'organisation_id' => $this->artefact->organisation_id,
+        'artefact_id'     => $this->artefact->id,
+        'type'            => \App\Enums\Production\Artefact\ArtefactComplianceTypeEnum::CERTIFICATE,
+        'reference'       => null,
+        'is_required'     => true,
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, [
+        'artefact_id' => $this->artefact->id,
+        'quantity'    => 5,
+    ]);
+
+    expect(fn () => ConfirmJobOrder::make()->action($jobOrder))->toThrow(ValidationException::class);
+
+    $jobOrder = ConfirmJobOrder::make()->action($jobOrder, ['compliance_override' => true]);
+
+    expect($jobOrder->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and($jobOrder->data['compliance_override']['artefacts'])->toBe([$this->artefact->code]);
+
+    $this->artefact->complianceItems()->delete();
+});

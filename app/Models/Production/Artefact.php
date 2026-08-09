@@ -16,6 +16,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -51,6 +52,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\ArtefactStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactComplianceItem> $complianceItems
  * @property-read Stock|null $stock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newQuery()
@@ -120,6 +122,11 @@ class Artefact extends Model implements Auditable
         return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks')
             ->withPivot('id', 'position', 'units_per_artefact')
             ->orderByPivot('position');
+    }
+
+    public function complianceItems(): HasMany
+    {
+        return $this->hasMany(ArtefactComplianceItem::class);
     }
 
 

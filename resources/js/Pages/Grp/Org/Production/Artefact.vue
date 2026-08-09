@@ -12,6 +12,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import TableArtefactRecipe from "@/Components/Tables/Grp/Org/Production/TableArtefactRecipe.vue"
+import TableArtefactCompliance from "@/Components/Tables/Grp/Org/Production/TableArtefactCompliance.vue"
 import ArtefactShowcase from "@/Components/Showcases/Grp/ArtefactShowcase.vue"
 
 const props = defineProps<{
@@ -20,6 +21,7 @@ const props = defineProps<{
     tabs: TSTabs
     showcase?: {}
     manufacture_tasks?:{}
+    compliance?: {}
     history?: {}
 
 
@@ -33,6 +35,7 @@ const component = computed(() => {
     const components: Component = {
         showcase: ArtefactShowcase,
         manufacture_tasks: TableArtefactRecipe,
+        compliance: TableArtefactCompliance,
         history: TableHistories,
     }
 

@@ -133,6 +133,24 @@ class ShowCraftsDashboard extends OrgAction
                                 'number' => $production->artefacts()->whereDoesntHave('manufactureTasks')->count()
                             ],
                         ],
+                        [
+                            'name'  => __('Compliance problems'),
+                            'icon'  => ['fal', 'fa-clipboard-check'],
+                            'route' => [
+                                'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index' => [
+                                'number' => $production->artefacts()->whereHas('complianceItems', function ($query) {
+                                    $query->where('is_required', true)
+                                        ->where(function ($query) {
+                                            $query->whereNull('reference')
+                                                ->orWhere('reference', '')
+                                                ->orWhere('valid_until', '<', now());
+                                        });
+                                })->count()
+                            ],
+                        ],
                     ],
                 ],
                 'tabs'                             => [

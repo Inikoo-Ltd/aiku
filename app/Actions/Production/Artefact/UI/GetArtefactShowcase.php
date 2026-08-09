@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
+use App\Actions\Production\Artefact\GetArtefactComplianceStatus;
 use App\Models\Production\Artefact;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -17,10 +18,14 @@ class GetArtefactShowcase
 
     public function handle(Artefact $artefact): array
     {
+        $compliance = GetArtefactComplianceStatus::run($artefact);
+
         return [
-            'code'  => $artefact->code,
-            'name'  => $artefact->name,
-            'state' => $artefact->state,
+            'code'              => $artefact->code,
+            'name'              => $artefact->name,
+            'state'             => $artefact->state,
+            'compliance_status' => $compliance['status'],
+            'compliance_label'  => $compliance['label'],
             'trade_unit' => $artefact->tradeUnit ? [
                 'id'   => $artefact->tradeUnit->id,
                 'code' => $artefact->tradeUnit->code,

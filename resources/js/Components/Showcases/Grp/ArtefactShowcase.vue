@@ -5,6 +5,8 @@ interface ArtefactShowcaseData {
     code: string
     name: string
     state: string
+    compliance_status: string
+    compliance_label: string
     trade_unit: { id: number, code: string, name: string } | null
     org_stock: { id: number, code: string, quantity_in_locations: number | string } | null
     manufacture_tasks: {
@@ -26,7 +28,13 @@ defineProps<{
     <div class="p-4">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 class="text-lg font-semibold text-gray-900">{{ data.name }}</h2>
-            <p class="text-sm text-gray-500 mb-6">{{ data.code }}</p>
+            <p class="text-sm text-gray-500 mb-2">{{ data.code }}</p>
+            <span class="inline-block text-xs px-2 py-1 rounded border mb-6" :class="{
+                'bg-gray-100 text-gray-600 border-gray-200': data.compliance_status === 'not_configured',
+                'bg-green-50 text-green-700 border-green-200': data.compliance_status === 'ok',
+                'bg-amber-50 text-amber-700 border-amber-200': data.compliance_status === 'expiring',
+                'bg-red-50 text-red-700 border-red-200': data.compliance_status === 'problem',
+            }">{{ data.compliance_label }}</span>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                 <div>

@@ -399,11 +399,14 @@ use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransacti
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Production\Artefact\AttachManufactureTaskToArtefact;
 use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
+use App\Actions\Production\Artefact\DeleteArtefactComplianceItem;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
 use App\Actions\Production\Artefact\StoreArtefact;
+use App\Actions\Production\Artefact\StoreArtefactComplianceItem;
 use App\Actions\Production\Artefact\UpdateArtefact;
+use App\Actions\Production\Artefact\UpdateArtefactComplianceItem;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Actions\Production\JobOrder\StoreJobOrder;
@@ -1220,6 +1223,9 @@ Route::post('/artefact/{artefact:id}/manufacture-task/attach', AttachManufacture
 Route::delete('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}', DetachManufactureTaskFromArtefact::class)->name('artefact.manufacture-task.detach')->withoutScopedBindings();
 Route::post('/recipe-step/{recipeStep:id}/raw-material/attach', AttachRawMaterialToRecipeStep::class)->name('recipe-step.raw-material.attach')->withoutScopedBindings();
 Route::delete('/recipe-step/{recipeStep:id}/raw-material/{rawMaterial:id}', DetachRawMaterialFromRecipeStep::class)->name('recipe-step.raw-material.detach')->withoutScopedBindings();
+Route::post('/artefact/{artefact:id}/compliance-item', StoreArtefactComplianceItem::class)->name('artefact.compliance-item.store')->withoutScopedBindings();
+Route::patch('/compliance-item/{artefactComplianceItem:id}', UpdateArtefactComplianceItem::class)->name('artefact.compliance-item.update')->withoutScopedBindings();
+Route::delete('/compliance-item/{artefactComplianceItem:id}', DeleteArtefactComplianceItem::class)->name('artefact.compliance-item.delete')->withoutScopedBindings();
 Route::post('/job-order-item-task/{jobOrderItemTask:id}/session', StartManufactureTaskSession::class)->name('job-order-item-task.session.store')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/close', CloseManufactureTaskSession::class)->name('manufacture-task-session.close')->withoutScopedBindings();
 

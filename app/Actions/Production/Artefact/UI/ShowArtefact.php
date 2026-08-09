@@ -130,6 +130,10 @@ class ShowArtefact extends OrgAction
                     ? fn () => GetArtefactManufactureTasks::run($artefact)
                     : Inertia::optional(fn () => GetArtefactManufactureTasks::run($artefact)),
 
+                ArtefactTabsEnum::COMPLIANCE->value => $this->tab == ArtefactTabsEnum::COMPLIANCE->value
+                    ? fn () => GetArtefactCompliance::run($artefact)
+                    : Inertia::optional(fn () => GetArtefactCompliance::run($artefact)),
+
                 // ArtefactTabsEnum::LOCATIONS->value => $this->tab == ArtefactTabsEnum::LOCATIONS->value
                 //     ?
                 //     fn () => LocationResource::collection(
