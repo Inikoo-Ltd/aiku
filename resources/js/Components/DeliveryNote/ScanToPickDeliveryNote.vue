@@ -31,6 +31,8 @@ const emits = defineEmits<{
 
 type ScanStatus = "picked" | "already_picked" | "no_stock" | "not_found" | "wrong_state" | "error"
 
+// delivery_note and picking_session_state only come back when the panel is picking a whole picking
+// session, where the picker has to be told which order the scan just went into.
 type ScanOutcome = {
     status: ScanStatus
     message: string
@@ -45,8 +47,14 @@ type ScanOutcome = {
         location_code: string | null
         location_org_stock_id: number | null
     } | null
+    delivery_note?: {
+        id: number
+        reference: string
+        state: string
+    } | null
     row: Record<string, any> | null
     delivery_note_state: string
+    picking_session_state?: string
     remaining_to_pick: number
 }
 
@@ -219,6 +227,12 @@ const applyOutcome = (outcome: ScanOutcome) => {
                     class="flex items-center gap-1.5 whitespace-nowrap rounded bg-white/70 px-2 py-1 font-mono text-base font-bold">
                     <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-sm" fixed-width aria-hidden="true" />
                     {{ lastOutcome.item.location_code }}
+                </div>
+                <div
+                    v-if="lastOutcome.delivery_note?.reference"
+                    v-tooltip="ctrans('It belongs to this order')"
+                    class="whitespace-nowrap rounded bg-white/70 px-2 py-1 font-mono text-base font-bold">
+                    {{ lastOutcome.delivery_note.reference }}
                 </div>
                 <div class="min-w-0">
                     <div class="font-semibold truncate">{{ lastOutcome.message }}</div>

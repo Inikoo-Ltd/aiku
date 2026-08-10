@@ -9,15 +9,12 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
-use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -31,6 +28,7 @@ class PickDeliveryNoteItemByScan extends OrgAction
 {
     use WithDeliveryNoteItemUI;
     use WithScannedDeliveryNoteItemMatching;
+    use WithScannedDeliveryNoteItemPicking;
 
     protected User $user;
 
@@ -71,7 +69,7 @@ class PickDeliveryNoteItemByScan extends OrgAction
             );
         }
 
-        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('orgStock')->get();
+        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'shop', 'deliveryNote'])->get();
         $matchedItems      = $this->matchItems($deliveryNoteItems, $scanned);
 
         // The 'pick the rest' button targets the exact item that was just scanned, so a delivery note
@@ -105,28 +103,8 @@ class PickDeliveryNoteItemByScan extends OrgAction
             );
         }
 
-        $location = $this->pickingLocation($deliveryNote, $itemToPick, $requestedLocation);
-
-        if (!$location) {
-            return $this->outcome(
-                $deliveryNote,
-                'no_stock',
-                __('No picking location holds stock for :code', ['code' => $itemToPick->orgStock?->code ?? $scanned]),
-                $scanned,
-                $itemToPick,
-                knownItems: $deliveryNoteItems
-            );
-        }
-
-        $remainingBefore = static::quantityLeftToPick($itemToPick);
-
-        // 'Pick all' passes no quantity, meaning whatever is still missing on the line. Either way the
-        // location cannot hand over more than it holds, which is the same clamp PickAllItem applies.
-        $quantityToPick = min(
-            $requestedQuantity ?? $remainingBefore,
-            $remainingBefore,
-            (float)$location->quantity
-        );
+        $location       = $this->pickingLocation($itemToPick, $requestedLocation);
+        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $requestedQuantity) : 0;
 
         if ($quantityToPick <= 0) {
             return $this->outcome(
@@ -139,12 +117,6 @@ class PickDeliveryNoteItemByScan extends OrgAction
                 knownItems: $deliveryNoteItems
             );
         }
-
-        StorePicking::make()->action($itemToPick, $user, [
-            'location_org_stock_id' => $location->id,
-            'quantity'              => $quantityToPick,
-            'picker_user_id'        => $user->id,
-        ]);
 
         $itemToPick->refresh();
         $deliveryNote->refresh();
@@ -165,55 +137,6 @@ class PickDeliveryNoteItemByScan extends OrgAction
             ]);
 
         return $this->outcome($deliveryNote, 'picked', $message, $scanned, $itemToPick, $tab, location: $location);
-    }
-
-    /**
-     * What is still missing on the line, mirroring the quantity_to_pick the picking table shows:
-     * anything already picked, written off as not picked or parked as waiting is not pickable.
-     */
-    public static function quantityLeftToPick(DeliveryNoteItem $deliveryNoteItem): float
-    {
-        return max(0, round(
-            (float)$deliveryNoteItem->quantity_required
-            - (float)$deliveryNoteItem->quantity_picked
-            - (float)$deliveryNoteItem->quantity_not_picked
-            - (float)$deliveryNoteItem->quantity_waiting_warehouse
-            - (float)$deliveryNoteItem->quantity_waiting_crm,
-            3
-        ));
-    }
-
-    /**
-     * The location the picker is sent to is the one the table would have preselected: the shop's
-     * default picking location first, then picking priority. Following that order rather than
-     * hunting for a location that covers the whole line keeps the scan and the screen in agreement
-     * about which shelf to walk to.
-     */
-    protected function pickingLocation(DeliveryNote $deliveryNote, DeliveryNoteItem $deliveryNoteItem, ?int $requestedLocationOrgStockId): ?object
-    {
-        $defaultLocationColumn = $deliveryNote->shop->type == ShopTypeEnum::B2B
-            ? 'location_org_stocks.default_wholesale_picking_location'
-            : 'location_org_stocks.default_dropshipping_picking_location';
-
-        $locations = DB::table('location_org_stocks')
-            ->leftJoin('locations', 'locations.id', '=', 'location_org_stocks.location_id')
-            ->where('location_org_stocks.org_stock_id', $deliveryNoteItem->org_stock_id)
-            ->where('location_org_stocks.warehouse_id', $deliveryNote->warehouse_id)
-            ->where('location_org_stocks.quantity', '>', 0)
-            ->orderByRaw("$defaultLocationColumn desc")
-            ->orderBy('location_org_stocks.picking_priority')
-            ->select([
-                'location_org_stocks.id',
-                'location_org_stocks.quantity',
-                'locations.code as location_code',
-            ])
-            ->get();
-
-        if ($requestedLocationOrgStockId) {
-            return $locations->firstWhere('id', (int)$requestedLocationOrgStockId) ?? $locations->first();
-        }
-
-        return $locations->first();
     }
 
     /**

@@ -69,6 +69,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\PackDeliveryNoteItemByScan;
 use App\Actions\Dispatching\DeliveryNoteItem\PickDeliveryNoteItemByScan;
 use App\Actions\Dispatching\PickingSession\Json\FetchPickingSessionItemRow;
 use App\Actions\Dispatching\PickingSession\PackPickingSessionItemByScan;
+use App\Actions\Dispatching\PickingSession\PickPickingSessionItemByScan;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
@@ -262,6 +263,7 @@ Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNote
 Route::get('picking-session/{pickingSession:id}/delivery-notes', GetDeliveryNotesForPickingSession::class)->name('picking_session.delivery_notes.index');
 Route::get('picking-session/{pickingSession:id}/item-row', FetchPickingSessionItemRow::class)->name('picking_session_item_row');
 Route::post('picking-session/{pickingSession:id}/pack-by-scan', PackPickingSessionItemByScan::class)->name('picking_session.pack_by_scan');
+Route::post('picking-session/{pickingSession:id}/pick-by-scan', PickPickingSessionItemByScan::class)->name('picking_session.pick_by_scan');
 Route::get('picking-session/{pickingSession:id}/pallet-returns', GetPalletReturnsForPickingSession::class)->name('picking_session.pallet_returns.index');
 
 Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
