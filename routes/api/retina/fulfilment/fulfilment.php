@@ -54,5 +54,5 @@ Route::prefix('clients')->as('clients.')->group(function () {
 
 });
 Route::prefix('sku')->as('sku.')->group(function () {
-    Route::get('', GetSKUs::class)->name('index');
+    Route::get('{portfolio:id}', GetSKUs::class)->name('index');
 });
