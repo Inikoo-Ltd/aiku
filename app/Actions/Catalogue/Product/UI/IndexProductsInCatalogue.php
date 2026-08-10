@@ -335,8 +335,8 @@ class IndexProductsInCatalogue extends OrgAction
                 'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
                     'parameters' => [
-                        $this->organisation->slug,
-                        $this->shop->slug
+                        $shop->organisation->slug,
+                        $shop->slug
                     ]
                 ],
                 'number' => $stats->number_current_products
@@ -348,8 +348,8 @@ class IndexProductsInCatalogue extends OrgAction
                 'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.products.in_process_products.index',
                     'parameters' => [
-                        $this->organisation->slug,
-                        $this->shop->slug
+                        $shop->organisation->slug,
+                        $shop->slug
                     ]
                 ],
                 'number' => $stats->number_products_state_in_process
@@ -360,8 +360,8 @@ class IndexProductsInCatalogue extends OrgAction
                 'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.products.discontinued_products.index',
                     'parameters' => [
-                        $this->organisation->slug,
-                        $this->shop->slug
+                        $shop->organisation->slug,
+                        $shop->slug
                     ]
                 ],
                 'number' => $stats->number_products_state_discontinued,
@@ -374,12 +374,29 @@ class IndexProductsInCatalogue extends OrgAction
                 'route'  => [
                     'name'       => 'grp.org.shops.show.catalogue.products.all_products.index',
                     'parameters' => [
-                        $this->organisation->slug,
-                        $this->shop->slug
+                        $shop->organisation->slug,
+                        $shop->slug
                     ]
                 ],
                 'number' => $stats->number_products,
                 'align'  => 'right'
+            ],
+
+            [
+                'label'    => __('Sales'),
+                'root'     => 'grp.org.shops.show.catalogue.products.sales',
+                'route'    => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.sales',
+                    'parameters' => [
+                        $shop->organisation->slug,
+                        $shop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-money-bill-wave'],
+                    'tooltip' => __('Sales')
+                ],
+                'align'    => 'right'
             ],
 
         ];
@@ -427,7 +444,7 @@ class IndexProductsInCatalogue extends OrgAction
         /** @var Shop $shop */
         $shop = $request->route('shop');
 
-        $navigation    = ProductsTabsEnum::navigationExcept([ProductsTabsEnum::INDEX_ORDERING]);
+        $navigation    = ProductsTabsEnum::navigationExcept([ProductsTabsEnum::INDEX_ORDERING, ProductsTabsEnum::SALES]);
         $subNavigation = $this->getShopProductsSubNavigation($shop);
 
         $title = __('Products');
@@ -489,14 +506,10 @@ class IndexProductsInCatalogue extends OrgAction
                     fn () => $this->displayProductsShopTypeDependant($products, $shop)
                     : Inertia::optional(fn () => $this->displayProductsShopTypeDependant($products, $shop)),
 
-                ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
-                    fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))
-                    : Inertia::optional(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))),
 
 
             ]
-        )->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket))
-            ->table(IndexProducts::make()->tableStructure(shop: $shop, prefix: ProductsTabsEnum::SALES->value));
+        )->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value, bucket: $this->bucket));
     }
 
     public function displayProductsShopTypeDependant(LengthAwarePaginator $products, Shop $shop): AnonymousResourceCollection
@@ -595,7 +608,8 @@ class IndexProductsInCatalogue extends OrgAction
                     trim('('.__('Discontinued').') '.$suffix)
                 )
             ),
-            'grp.org.shops.show.catalogue.products.all_products.index' =>
+            'grp.org.shops.show.catalogue.products.all_products.index',
+            'grp.org.shops.show.catalogue.products.sales' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(

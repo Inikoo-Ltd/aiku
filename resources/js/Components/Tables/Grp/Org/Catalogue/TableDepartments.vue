@@ -37,6 +37,7 @@ function departmentRoute(department: Department) {
 
     switch (current) {
         case "grp.org.shops.show.catalogue.departments.index":
+        case "grp.org.shops.show.catalogue.departments.sales":
         case "grp.org.shops.show.catalogue.collections.show":
         case "grp.org.shops.show.catalogue.dashboard":
             return route(
@@ -76,7 +77,7 @@ function departmentRoute(department: Department) {
 
 
 function subDepartmentsRoute(department: Department) {
-    if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
+    if (["grp.org.shops.show.catalogue.departments.index", "grp.org.shops.show.catalogue.departments.sales"].includes(route().current() as string)) {
         return route(
             "grp.org.shops.show.catalogue.departments.show.sub_departments.index",
             [
@@ -89,7 +90,7 @@ function subDepartmentsRoute(department: Department) {
 }
 
 function subCollectionsRoute(department: Department) {
-    if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
+    if (["grp.org.shops.show.catalogue.departments.index", "grp.org.shops.show.catalogue.departments.sales"].includes(route().current() as string)) {
         return route(
             "grp.org.shops.show.catalogue.departments.show.collection.index",
             [
@@ -103,7 +104,7 @@ function subCollectionsRoute(department: Department) {
 
 
 function familyRoute(department: Department) {
-    if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
+    if (["grp.org.shops.show.catalogue.departments.index", "grp.org.shops.show.catalogue.departments.sales"].includes(route().current() as string)) {
         return route(
             "grp.org.shops.show.catalogue.departments.show.families.index",
             [
@@ -115,7 +116,7 @@ function familyRoute(department: Department) {
 }
 
 function productRoute(department: Department) {
-    if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
+    if (["grp.org.shops.show.catalogue.departments.index", "grp.org.shops.show.catalogue.departments.sales"].includes(route().current() as string)) {
         return route(
             "grp.org.shops.show.catalogue.departments.show.products.index",
             [
