@@ -73,6 +73,7 @@ class IndexClockings extends OrgAction
                     'clockings.type',
                     'clockings.notes',
                     'clockings.organisation_id',
+                    'clockings.image_id',
                     'workplaces.slug as workplace_slug',
                     'clocking_machines.slug as clocking_machine_slug',
                     'clockings.clocking_machine_id',
@@ -93,6 +94,7 @@ class IndexClockings extends OrgAction
                     ->where('clockings.subject_type', '=', 'Employee');
             })
             ->leftJoin('organisations', 'clockings.organisation_id', 'organisations.id')
+            ->with('image')
             ->allowedSorts(['clocked_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

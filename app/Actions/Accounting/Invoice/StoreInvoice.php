@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\Accounting\Payment\PastPay\FinalizeOrderWithPastpay;
 use App\Actions\CRM\Customer\MatchCustomerProspects;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
+use App\Actions\CRM\TrafficSource\Hydrator\RefreshCustomerTrafficSourceStats;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -229,6 +230,12 @@ class StoreInvoice extends OrgAction
         }
 
         RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
+
+        /* Revenue only becomes real when it is invoiced, and nothing else refreshes the channel
+           rollups at that moment: a touch attaching refreshes them, an order submit refreshes them, a
+           cancellation refreshes them - raising the invoice did not, so a channel's revenue on the
+           traffic sources listing stayed at whatever it was when its last touch landed. */
+        RefreshCustomerTrafficSourceStats::dispatch($invoice->customer)->delay($this->hydratorsDelay + 120);
 
         if ($invoice->customer && $invoice->shop->is_aiku) {
             MatchCustomerProspects::dispatch($invoice->customer);

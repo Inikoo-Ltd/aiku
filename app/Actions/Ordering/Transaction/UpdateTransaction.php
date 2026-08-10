@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\LogBasketEvent;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -89,6 +90,7 @@ class UpdateTransaction extends OrgAction
             data_set($modelData, 'grp_net_amount', $grpExchange * $netAmount);
         }
 
+        $quantityBefore = (float) $transaction->quantity_ordered;
         $this->update($transaction, $modelData, ['data']);
 
         if ($this->strict) {
@@ -98,6 +100,16 @@ class UpdateTransaction extends OrgAction
             if (Arr::hasAny($changes, ['quantity_ordered', 'net_amount', 'gross_amount'])) {
                 OrderHydrateCategoriesData::run($transaction->order);
                 CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping, $calculateDiscounts);
+
+                if (Arr::has($changes, 'quantity_ordered')) {
+                    $delta = (float) $transaction->quantity_ordered - $quantityBefore;
+                    LogBasketEvent::run(
+                        $transaction->order->fresh(),
+                        $delta > 0 ? 'up' : 'down',
+                        $transaction,
+                        $delta
+                    );
+                }
             }
         }
 

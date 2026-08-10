@@ -8,6 +8,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -104,5 +105,10 @@ class JobOrderItem extends Model
     {
         return $this->belongsTo(Artefact::class);
 
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(JobOrderItemTask::class)->orderBy('position');
     }
 }

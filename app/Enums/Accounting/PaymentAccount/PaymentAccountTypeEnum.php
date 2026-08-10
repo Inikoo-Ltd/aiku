@@ -27,6 +27,12 @@ enum PaymentAccountTypeEnum: string
     case PASTPAY = 'pastpay';
     case CASH_ON_DELIVERY = 'cash_on_delivery';
 
+    public const MANUALLY_SETTLED = [self::PASTPAY, self::CASH_ON_DELIVERY, self::BANK];
+
+    public function isManuallySettled(): bool
+    {
+        return in_array($this, self::MANUALLY_SETTLED, true);
+    }
 
     public static function labels(): array
     {

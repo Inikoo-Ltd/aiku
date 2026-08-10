@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersDeliveryStateFromStockDelivery;
@@ -17,16 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpsertStockDeliveryItemPlaced extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     private StockDeliveryItem $stockDeliveryItem;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function rules(): array
     {

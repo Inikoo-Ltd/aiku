@@ -43,6 +43,10 @@ class StoreMasterSubDepartment extends OrgAction
 
     public function rules(): array
     {
+        $masterShopId = $this->parent instanceof MasterShop
+            ? $this->parent->id
+            : $this->parent->master_shop_id;
+
         return [
             'code'        => [
                 'required',
@@ -51,7 +55,8 @@ class StoreMasterSubDepartment extends OrgAction
                 new IUnique(
                     table: 'master_product_categories',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->group->id],
+                        ['column' => 'type', 'value' => MasterProductCategoryTypeEnum::SUB_DEPARTMENT->value],
+                        ['column' => 'master_shop_id', 'value' => $masterShopId],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
@@ -65,6 +70,7 @@ class StoreMasterSubDepartment extends OrgAction
 
     public function action(MasterProductCategory $masterDepartment, array $modelData, bool $createChildren = true): MasterProductCategory
     {
+        $this->parent   = $masterDepartment;
         $this->asAction = true;
         $this->initialisationFromGroup(group(), $modelData);
 

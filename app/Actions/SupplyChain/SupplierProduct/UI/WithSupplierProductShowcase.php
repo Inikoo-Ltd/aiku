@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\SupplierProduct\UI;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Agent;
@@ -18,20 +19,62 @@ use App\Models\SupplyChain\SupplierProduct;
 
 trait WithSupplierProductShowcase
 {
-    protected function getSupplierProductShowcase(SupplierProduct $supplierProduct): array
+    protected function getSupplierProductShowcase(SupplierProduct $supplierProduct, bool $withSupplyChainLink = false, ?int $organisationId = null): array
     {
         $supplierProduct->loadMissing(['currency', 'supplier', 'agent', 'tradeUnits', 'stocks']);
 
         return [
-            'product'     => $this->getSupplierProductDetails($supplierProduct),
+            'product'     => $this->getSupplierProductDetails($supplierProduct, $withSupplyChainLink),
             'costs'       => $this->getSupplierProductCosts($supplierProduct),
             'packaging'   => $this->getSupplierProductPackaging($supplierProduct),
             'trade_units' => $this->getSupplierProductTradeUnits($supplierProduct),
             'stocks'      => $this->getSupplierProductStocks($supplierProduct),
+            'composition' => $this->getSupplierProductComposition($supplierProduct, $organisationId),
         ];
     }
 
-    private function getSupplierProductDetails(SupplierProduct $supplierProduct): array
+    /**
+     * Read-only mirror of the master product composition triangle: this supplier
+     * product's trade units, and the org stocks each trade unit is packed into
+     * (scoped to one organisation for the org-level showcase).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSupplierProductComposition(SupplierProduct $supplierProduct, ?int $organisationId = null): array
+    {
+        return $supplierProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($organisationId) {
+            $orgStocks = $tradeUnit->orgStocks()
+                ->when($organisationId, fn ($query) => $query->where('org_stocks.organisation_id', $organisationId))
+                ->with('organisation:id,code,slug')
+                ->get();
+
+            return [
+                'code'       => $tradeUnit->code,
+                'name'       => $tradeUnit->name,
+                'slug'       => $tradeUnit->slug,
+                'quantity'   => (float) $tradeUnit->pivot->quantity,
+                'route'      => [
+                    'name'       => 'grp.goods.trade-units.show',
+                    'parameters' => ['tradeUnit' => $tradeUnit->slug],
+                ],
+                'org_stocks' => $orgStocks->map(fn (OrgStock $orgStock) => [
+                    'code'         => $orgStock->code,
+                    'slug'         => $orgStock->slug,
+                    'quantity'     => (float) $orgStock->quantity_in_locations,
+                    'organisation' => [
+                        'code' => $orgStock->organisation->code,
+                        'slug' => $orgStock->organisation->slug,
+                    ],
+                    'route'        => [
+                        'name'       => 'grp.majordomo.redirect_org_stock',
+                        'parameters' => ['orgStock' => $orgStock->id],
+                    ],
+                ])->all(),
+            ];
+        })->all();
+    }
+
+    private function getSupplierProductDetails(SupplierProduct $supplierProduct, bool $withSupplyChainLink): array
     {
         return [
             'code'         => $supplierProduct->code,
@@ -44,7 +87,7 @@ trait WithSupplierProductShowcase
             ],
             'is_available' => $supplierProduct->is_available,
             'composition'  => $supplierProduct->trade_unit_composition?->value,
-            'route'        => $supplierProduct->supplier ? [
+            'route'        => $withSupplyChainLink && $supplierProduct->supplier ? [
                 'name'       => 'grp.supply-chain.suppliers.supplier_products.show',
                 'parameters' => [
                     'supplier'        => $supplierProduct->supplier->slug,
@@ -202,7 +245,7 @@ trait WithSupplierProductShowcase
 
         return [
             [
-                'label'       => __('Purchase orders'),
+                'label'       => __('Purchase Orders'),
                 'count'       => $stats->number_purchase_orders,
                 'description' => __('open').': '.$stats->number_open_purchase_orders,
             ],
@@ -211,11 +254,11 @@ trait WithSupplierProductShowcase
                 'count' => $stats->number_stock_deliveries,
             ],
             [
-                'label' => __('Ordered items'),
+                'label' => __('Ordered Items'),
                 'count' => $stats->number_purchase_order_transactions,
             ],
             [
-                'label' => __('Delivered items'),
+                'label' => __('Delivered Items'),
                 'count' => $stats->number_stock_delivery_items,
             ],
         ];

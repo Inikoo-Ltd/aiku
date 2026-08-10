@@ -138,6 +138,11 @@ Route::middleware(
     Route::prefix("sysadmin")
         ->name("sysadmin.")
         ->group(__DIR__."/sysadmin.php");
+    Route::prefix("marketing")
+        ->name("marketing.")
+        ->group(function () {
+            Route::get('/', [App\Actions\UI\Marketing\ShowAggregatedMarketingDashboard::class, 'inGroup'])->name('dashboard');
+        });
     Route::prefix("org/{organisation}")
         ->name("org.")
         ->group(__DIR__."/org/org.php");

@@ -23,6 +23,7 @@ import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelI
 import PickingItemActionsPanel from "@/Components/Warehouse/DeliveryNotes/PickingItemActionsPanel.vue"
 import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import TrolleyChipsManager from "@/Components/Warehouse/DeliveryNotes/TrolleyChipsManager.vue"
 
 library.add(faTruck, faHandHoldingBox, faHourglassStart, faDolly, faSkull, faCircle)
 
@@ -33,6 +34,7 @@ const props = defineProps<{
     tab?: string
     allowStockControllerSetNotPicked: boolean
     isStillPicking: boolean
+    isReadOnly?: boolean
     waitingType?: string
     highlightDeliveryNoteSlug?: string
 }>()
@@ -106,6 +108,16 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
                     :href="routeToDeliveryNote(item.delivery_note_slug)"
                 />
             </div>
+            <TrolleyChipsManager
+                class="mt-1"
+                :deliveryNote="{
+                    id: item.delivery_note_id,
+                    slug: item.delivery_note_slug,
+                    reference: item.delivery_note_reference,
+                }"
+                :trolleys="item.trolleys"
+                :isEditable="!isReadOnly"
+            />
         </template>
 
         <template #cell(items)="{ item: deliveryNoteRow }">
@@ -150,10 +162,6 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
                         <!-- Section: Waiting for warehouse -->
                         <div v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0" class="flex gap-x-4 mt-2 items-center w-full">
                             <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(deliveryItem.quantity_waiting_warehouse)" :fractionData="getWaitingWarehouseFractional(deliveryItem)" />
-                            <span v-if="deliveryItem.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 border rounded px-1.5 py-0.5">
-                                <FontAwesomeIcon icon="fal fa-dolly-flatbed-alt" fixed-width aria-hidden="true" />
-                                {{ deliveryItem.trolley_names }}
-                            </span>
                             <span class="ml-8 mr-4 whitespace-nowrap">--></span>
                             <div class="flex justify-end w-full">
                                 <PickingItemActionsPanel

@@ -58,22 +58,39 @@ class OmegaManyInvoice extends OrgAction
             $query->where('invoice_category_id', $invoiceCategory->id);
         }
 
+        $maxInvoices = 3000;
+        $count       = (clone $query)->count();
+        if ($count > $maxInvoices) {
+            return response(
+                __('Too many invoices to export (:count). Please narrow the date range (max :max).', ['count' => $count, 'max' => $maxInvoices]),
+                422,
+                ['Content-Type' => 'text/plain']
+            );
+        }
+
         set_time_limit(0);
         ini_set('max_execution_time', 0);
 
         return response()->stream(
             function () use ($query) {
-                $page    = 1;
-                $perPage = 100;
-                do {
-                    $chunk = $query->forPage($page, $perPage)->get();
-                    foreach ($chunk as $invoice) {
-                        echo OmegaInvoice::run($invoice);
+                $query
+                    ->with([
+                        'shop.organisation',
+                        'shop.taxNumber',
+                        'order',
+                        'customer',
+                        'taxCategory',
+                        'currency',
+                        'address',
+                        'originalInvoice.address',
+                    ])
+                    ->chunkById(500, function ($chunk) {
+                        foreach ($chunk as $invoice) {
+                            echo OmegaInvoice::run($invoice);
+                        }
                         ob_flush();
                         flush();
-                    }
-                    $page++;
-                } while ($chunk->isNotEmpty());
+                    });
             },
             200,
             [

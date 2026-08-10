@@ -20,7 +20,6 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -128,42 +127,21 @@ class EditMasterProductComposition extends OrgAction
 
     public function getBlueprint(MasterAsset $masterProduct): array
     {
-        $packedIn = $masterProduct->getStockPackedInByTradeUnit();
+        $packedIn = $masterProduct->getEffectiveStockPackedInByTradeUnit();
 
         /*
          * A master covers several organisations and each warehouse can pack the same trade
          * unit differently. The editor shows every organisation's packed_in and lets it be
          * edited in place, because the org stock is the physical reality.
          */
-        $packedInByOrg = DB::table('model_has_trade_units')
-            ->join('org_stocks', 'org_stocks.id', '=', 'model_has_trade_units.model_id')
-            ->join('organisations', 'organisations.id', '=', 'org_stocks.organisation_id')
-            ->where('model_has_trade_units.model_type', 'OrgStock')
-            ->whereIn('model_has_trade_units.trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
-            ->whereNull('org_stocks.deleted_at')
-            ->select([
-                'model_has_trade_units.trade_unit_id',
-                'org_stocks.id as org_stock_id',
-                'organisations.code as org_code',
-                'model_has_trade_units.quantity',
-            ])
-            ->orderBy('organisations.code')
-            ->get()
-            ->groupBy('trade_unit_id');
+        $packedInByOrg = $masterProduct->getStockPackedInByOrganisationAndTradeUnit();
 
         $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn, $packedInByOrg) {
             /** @var MorphPivot $pivot */
             $pivot    = $tradeUnit->getRelationValue('pivot');
             $quantity = $pivot->getAttribute('quantity');
 
-            /*
-             * The warehouses' own packing wins over the group stock's when they all agree:
-             * a product of 4 units packed in 4s picks 1 SKO, whatever the group stock says.
-             */
-            $orgPackings      = ($packedInByOrg->get($tradeUnit->id) ?? collect())->pluck('quantity')->map(fn ($packing) => (float) $packing)->unique();
-            $packedInQuantity = $orgPackings->count() === 1 && $orgPackings->first() > 0
-                ? $orgPackings->first()
-                : Arr::get($packedIn, $tradeUnit->id, 1);
+            $packedInQuantity = Arr::get($packedIn, $tradeUnit->id, 1);
             $fraction         = $quantity / $packedInQuantity;
 
             return array_merge(
@@ -172,11 +150,7 @@ class EditMasterProductComposition extends OrgAction
                     'packed_in'        => $packedInQuantity,
                     'fraction'         => $fraction,
                     'pick_fractional'  => riseDivisor(divideWithRemainder(findSmallestFactors($fraction)), $packedInQuantity),
-                    'packed_in_by_org' => ($packedInByOrg->get($tradeUnit->id) ?? collect())->map(fn ($orgStockPivot) => [
-                        'org_stock_id' => $orgStockPivot->org_stock_id,
-                        'org_code'     => $orgStockPivot->org_code,
-                        'packed_in'    => (float) $orgStockPivot->quantity,
-                    ])->values()->all(),
+                    'packed_in_by_org' => ($packedInByOrg->get($tradeUnit->id) ?? collect())->values()->all(),
                 ],
                 $tradeUnit->toArray()
             );

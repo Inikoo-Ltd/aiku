@@ -87,6 +87,20 @@ const props = defineProps<{
             name: string | null
             route: routeType
         }[]
+        composition: {
+            code: string
+            name: string | null
+            slug: string
+            quantity: number
+            route: routeType
+            org_stocks: {
+                code: string
+                slug: string
+                quantity: number
+                organisation: { code: string; slug: string }
+                route: routeType
+            }[]
+        }[]
         parties: {
             label: string
             icon: string
@@ -262,6 +276,31 @@ const availabilityBadge = (isAvailable: boolean) =>
                     </div>
                     <ProductUnitLabel :units="tradeUnit.units" :unit="tradeUnit.unit ?? undefined" />
                 </Link>
+            </div>
+        </section>
+
+        <!-- Same triangle as the master product composition page, read-only here -->
+        <section v-if="data.composition.length" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                <Icon :data="{ icon: 'fal fa-cubes' }" />
+                {{ trans("Composition") }}
+            </h3>
+            <div class="flex flex-col gap-4">
+                <div v-for="tradeUnit in data.composition" :key="tradeUnit.slug">
+                    <Link :href="route(tradeUnit.route.name, tradeUnit.route.parameters)"
+                        class="text-sm font-medium text-gray-700 hover:text-indigo-600">
+                        {{ tradeUnit.code }} <span class="text-gray-400 font-normal">{{ tradeUnit.name }}</span>
+                    </Link>
+                    <div v-if="tradeUnit.org_stocks.length" class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        <Link v-for="orgStock in tradeUnit.org_stocks" :key="orgStock.slug"
+                            :href="route(orgStock.route.name, orgStock.route.parameters)"
+                            class="flex items-baseline justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-xs transition hover:border-gray-300 hover:bg-gray-50">
+                            <span class="truncate text-gray-700">{{ orgStock.code }}</span>
+                            <span class="shrink-0 text-gray-400">{{ orgStock.organisation.code }}</span>
+                        </Link>
+                    </div>
+                    <p v-else class="mt-1 text-xs text-gray-400">{{ trans("No org stock linked") }}</p>
+                </div>
             </div>
         </section>
 

@@ -47,7 +47,6 @@ class ShowAgent extends OrgAction
 
     public function htmlResponse(Agent $agent, ActionRequest $request): Response
     {
-        // dd($agent);
         return Inertia::render(
             'SupplyChain/Agent',
             [
@@ -70,35 +69,6 @@ class ShowAgent extends OrgAction
                         ],
                     'subNavigation' => $this->getAgentNavigation($agent),
                     'title'   => $agent->organisation->name,
-                    // 'actions' => [
-                    //     $this->canEdit ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'edit',
-                    //         'route' => [
-                    //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ]
-                    //     ] : false,
-                    //     $this->canDelete ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'delete',
-                    //         'route' => [
-                    //             'name'       => 'grp.org.procurement.marketplace.agents.remove',
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ]
-                    //     ] : false,
-                    //     $this->canEdit ? [
-                    //         'type'  => 'button',
-                    //         'style' => 'create',
-                    //         'route' => [
-                    //             'name'       => 'grp.org.procurement.marketplace.agents.show.suppliers.create',
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ],
-                    //         'label' => __('supplier')
-                    //     ] : false,
-                    // ],
-
-
                 ],
                 'tabs'                         => [
                     'current'    => $this->tab,

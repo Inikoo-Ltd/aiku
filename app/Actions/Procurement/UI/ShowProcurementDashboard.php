@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
@@ -29,15 +30,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowProcurementDashboard extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use AsAction;
     use WithInertia;
     use WithAgentOrganisation;
 
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
 
 
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest

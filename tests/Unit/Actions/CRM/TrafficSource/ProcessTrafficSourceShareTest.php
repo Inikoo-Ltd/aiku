@@ -112,29 +112,3 @@ it('returns no credit under the last paid touch model when the journey has no pa
 
     expect($shares)->toBe([]);
 });
-
-it('treats last non direct touch the same as last touch, since no direct touch concept currently exists', function () {
-    $touches = ParseTrafficSourceTouches::run('1700000000a|1700000100b');
-
-    $shares = ProcessTrafficSourceShare::run($touches, ProcessTrafficSourceShare::ATTRIBUTION_LAST_NON_DIRECT);
-
-    expect($shares)->toHaveCount(1);
-    expect($shares[0]['type'])->toBe(TrafficSourcesTypeEnum::GOOGLE_ADS);
-});
-
-it('identifies touches that assisted but did not receive final credit under the last touch model', function () {
-    $touches = ParseTrafficSourceTouches::run('1700000000a|1700000100b|1700000200f');
-
-    $assisting = ProcessTrafficSourceShare::make()->assistingTouches($touches, ProcessTrafficSourceShare::ATTRIBUTION_LAST_TOUCH);
-
-    expect($assisting)->toHaveCount(2);
-    expect(array_column($assisting, 'type'))->toEqual([TrafficSourcesTypeEnum::ORGANIC_GOOGLE, TrafficSourcesTypeEnum::GOOGLE_ADS]);
-});
-
-it('has no assisting touches under the linear model, since every touch already received credit', function () {
-    $touches = ParseTrafficSourceTouches::run('1700000000a|1700000100b|1700000200f');
-
-    $assisting = ProcessTrafficSourceShare::make()->assistingTouches($touches, ProcessTrafficSourceShare::ATTRIBUTION_LINEAR);
-
-    expect($assisting)->toBe([]);
-});

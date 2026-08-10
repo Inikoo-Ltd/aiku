@@ -17,7 +17,6 @@ use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydrateSupplierProducts;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductSuppliers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSupplierProducts;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Traits\WithPullIntoJsonColumn;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
@@ -33,20 +32,8 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreSupplierProduct extends OrgAction
 {
     use WithNoStrictRules;
-    use WithPullIntoJsonColumn;
+    use WithSupplierProductJsonColumns;
     use WithSupplyChainEditAuthorisation;
-
-    private const DATA_FIELDS = [
-        'minimum_carton_order',
-        'delivery_time',
-    ];
-
-    private const NULLABLE_NUMERIC_FIELDS = [
-        'cbm',
-        'extra_costs',
-        'minimum_carton_order',
-        'delivery_time',
-    ];
 
     public bool $skipHistoric = false;
     private int $supplier_id;
@@ -57,7 +44,7 @@ class StoreSupplierProduct extends OrgAction
     public function handle(Supplier $supplier, array $modelData): SupplierProduct
     {
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
-        $modelData  = $this->pullIntoJsonColumn($modelData, 'data', self::DATA_FIELDS);
+        $modelData  = $this->pullSupplierProductJsonColumns($modelData);
 
         data_set($modelData, 'group_id', $supplier->group_id);
         data_set($modelData, 'state', SupplierProductStateEnum::ACTIVE, overwrite: false);
@@ -135,12 +122,11 @@ class StoreSupplierProduct extends OrgAction
             'cbm'                  => ['sometimes', 'nullable', 'numeric'],
             'extra_costs'          => ['sometimes', 'nullable', 'numeric', 'min:0'],
 
-            'minimum_carton_order' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'delivery_time'        => ['sometimes', 'nullable', 'integer', 'min:0'],
-
             'trade_units'          => ['sometimes', 'nullable', 'array'],
             'trade_units.*'        => ['integer', 'exists:trade_units,id'],
         ];
+
+        $rules = array_merge($rules, $this->supplierProductJsonFieldRules());
 
         if (!$this->strict) {
             $rules                = $this->noStrictStoreRules($rules);
@@ -150,13 +136,15 @@ class StoreSupplierProduct extends OrgAction
         return $rules;
     }
 
-    public function prepareForValidation(ActionRequest $request): void
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Supplier $supplier, ActionRequest $request): SupplierProduct
     {
-        foreach (self::NULLABLE_NUMERIC_FIELDS as $field) {
-            if ($this->has($field) && $this->get($field) === '') {
-                $this->set($field, null);
-            }
-        }
+        $this->supplier_id = $supplier->id;
+        $this->initialisationFromGroup($supplier->group, $request);
+
+        return $this->handle($supplier, $this->validatedData);
     }
 
     /**
@@ -175,17 +163,6 @@ class StoreSupplierProduct extends OrgAction
         $this->strict         = $strict;
 
         $this->initialisationFromGroup($supplier->group, $modelData);
-
-        return $this->handle($supplier, $this->validatedData);
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function asController(Supplier $supplier, ActionRequest $request): SupplierProduct
-    {
-        $this->supplier_id = $supplier->id;
-        $this->initialisationFromGroup($supplier->group, $request);
 
         return $this->handle($supplier, $this->validatedData);
     }

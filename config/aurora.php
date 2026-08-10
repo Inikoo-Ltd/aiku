@@ -22,10 +22,16 @@ return [
      * rule that keeps Aurora off existing rows lives in WithFetchStock, not here.
      */
     'allowed_fetchers' => [
+        'Agents',
+        'AgentSupplierPurchaseOrders',
+        'Artefacts',
         'ClockingMachines',
+        'JobOrders',
         'OrgStockMovements',
+        'PurchaseOrgStockMovements',
         'PurchaseOrders',
         'PurchaseOrderTransactions',
+        'RawMaterials',
         'StockDeliveries',
         'StockDeliveryItems',
         'Stocks',

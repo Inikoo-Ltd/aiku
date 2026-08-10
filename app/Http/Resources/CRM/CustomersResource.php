@@ -29,6 +29,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $sales_org_currency_all
  * @property mixed $sales_grp_currency_all
  * @property mixed $number_invoices_type_invoice
+ * @property mixed $attribution_share
  * @property mixed $number_current_portfolios
  * @property mixed $currency_code
  * @property bool $is_dropshipping
@@ -70,6 +71,8 @@ class CustomersResource extends JsonResource
             'number_customer_sales_channels'  => $this->number_customer_sales_channels,
             'last_invoiced_at'                => $this->last_invoiced_at,
             'number_invoices_type_invoice'    => $this->number_invoices_type_invoice,
+            /* Only present when the listing is scoped to a traffic source, which joins it in. */
+            'attribution_share'               => $this->attribution_share ?? null,
             'sales_all'                       => $this->sales_all,
             'sales_org_currency_all'          => $this->sales_org_currency_all,
             'sales_grp_currency_all'          => $this->sales_grp_currency_all,

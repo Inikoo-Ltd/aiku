@@ -46,7 +46,7 @@ class StoreTimeTracker extends OrgAction
             );
         }
 
-        TimesheetHydrateTimeTrackers::dispatch($timesheet);
+        TimesheetHydrateTimeTrackers::dispatch($timesheet->id);
 
         return $timeTracker;
     }

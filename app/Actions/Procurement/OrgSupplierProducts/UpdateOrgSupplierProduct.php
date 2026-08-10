@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplierProducts;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSupplierProducts;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateOrgSupplierProducts;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrgSupplierProduct extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
 
 
@@ -39,15 +41,6 @@ class UpdateOrgSupplierProduct extends OrgAction
         return $orgSupplierProduct;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction = true) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.".$this->organisation->id.".edit");
-    }
-
     public function rules(ActionRequest $request): array
     {
         return [
@@ -56,6 +49,13 @@ class UpdateOrgSupplierProduct extends OrgAction
             'state'     => ['sometimes', 'required', Rule::enum(OrgSupplierProductStateEnum::class)],
             'is_available'    => ['sometimes', 'required', 'boolean'],
         ];
+    }
+
+    public function asController(OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
+    {
+        $this->initialisation($orgSupplierProduct->organisation, $request);
+
+        return $this->handle($orgSupplierProduct, $this->validatedData);
     }
 
     public function action(OrgSupplierProduct $orgSupplierProduct, $modelData, $hydratorsDelay = 0): OrgSupplierProduct

@@ -45,9 +45,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $reference
  * @property StockDeliveryStateEnum $state
  * @property \Illuminate\Support\Carbon $date latest relevant date
+ * @property \Illuminate\Support\Carbon|null $confirmed_at
+ * @property \Illuminate\Support\Carbon|null $ready_to_ship_at
  * @property \Illuminate\Support\Carbon|null $dispatched_at
  * @property \Illuminate\Support\Carbon|null $received_at
  * @property \Illuminate\Support\Carbon|null $checked_at
+ * @property \Illuminate\Support\Carbon|null $booking_in_at
+ * @property \Illuminate\Support\Carbon|null $booked_in_at
  * @property \Illuminate\Support\Carbon|null $placed_at
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property \Illuminate\Support\Carbon|null $not_received_at
@@ -125,9 +129,13 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'cost_data'       => 'array',
         'state'           => StockDeliveryStateEnum::class,
         'date'            => 'datetime',
+        'confirmed_at'    => 'datetime',
+        'ready_to_ship_at' => 'datetime',
         'dispatched_at'   => 'datetime',
         'received_at'     => 'datetime',
         'checked_at'      => 'datetime',
+        'booking_in_at'   => 'datetime',
+        'booked_in_at'    => 'datetime',
         'placed_at'       => 'datetime',
         'cancelled_at'    => 'datetime',
         'not_received_at' => 'datetime',

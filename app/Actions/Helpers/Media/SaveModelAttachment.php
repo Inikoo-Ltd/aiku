@@ -23,6 +23,7 @@ use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SaveModelAttachment extends OrgAction
@@ -61,6 +62,21 @@ class SaveModelAttachment extends OrgAction
                 'data'     => '{}'
             ]
         );
+
+        $sourceId = Arr::get($pivotData, 'source_id');
+        if ($sourceId) {
+            $existingPivot = DB::table('model_has_attachments')->where('source_id', $sourceId)->first();
+            if ($existingPivot) {
+                DB::table('model_has_attachments')->where('id', $existingPivot->id)->update(
+                    array_merge(
+                        Arr::only($pivotData, ['caption', 'last_fetched_at', 'scope', 'sub_scope']),
+                        ['media_id' => $media->id]
+                    )
+                );
+
+                return $media;
+            }
+        }
 
         if ($model->attachments()->where('media_id', $media->id)->exists()) {
 

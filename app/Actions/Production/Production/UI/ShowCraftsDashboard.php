@@ -86,6 +86,73 @@ class ShowCraftsDashboard extends OrgAction
 
 
                 ],
+                'flatTreeMaps' => [
+                    [
+                        [
+                            'name'  => __('Raw materials'),
+                            'icon'  => ['fal', 'fa-network-wired'],
+                            'route' => [
+                                'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index' => [
+                                'number' => $production->stats->number_raw_materials
+                            ],
+                        ],
+                        [
+                            'name'  => __('Artefacts'),
+                            'icon'  => ['fal', 'fa-hamsa'],
+                            'route' => [
+                                'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index' => [
+                                'number' => $production->stats->number_artefacts
+                            ],
+                        ],
+                        [
+                            'name'  => __('Manufacture tasks'),
+                            'icon'  => ['fal', 'fa-project-diagram'],
+                            'route' => [
+                                'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index' => [
+                                'number' => $production->stats->number_manufacture_tasks
+                            ],
+                        ],
+                        [
+                            'name'      => __('Artefacts without recipe'),
+                            'shortName' => __('no recipe'),
+                            'icon'      => ['fal', 'fa-exclamation-triangle'],
+                            'route'     => [
+                                'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index'     => [
+                                'number' => $production->artefacts()->whereDoesntHave('manufactureTasks')->count()
+                            ],
+                        ],
+                        [
+                            'name'  => __('Compliance problems'),
+                            'icon'  => ['fal', 'fa-clipboard-check'],
+                            'route' => [
+                                'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index' => [
+                                'number' => $production->artefacts()->whereHas('complianceItems', function ($query) {
+                                    $query->where('is_required', true)
+                                        ->where(function ($query) {
+                                            $query->whereNull('reference')
+                                                ->orWhere('reference', '')
+                                                ->orWhere('valid_until', '<', now());
+                                        });
+                                })->count()
+                            ],
+                        ],
+                    ],
+                ],
                 'tabs'                             => [
 
                     'current'    => $this->tab,

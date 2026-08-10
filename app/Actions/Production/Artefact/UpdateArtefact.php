@@ -47,7 +47,7 @@ class UpdateArtefact extends OrgAction
                 'sometimes',
                 'required',
                 new AlphaDashDot(),
-                'max:32',
+                'max:64',
                 Rule::notIn(['export', 'create', 'upload']),
                 new IUnique(
                     table: 'artefacts',
@@ -64,6 +64,17 @@ class UpdateArtefact extends OrgAction
             ],
             'name'            => ['sometimes', 'required', 'string', 'max:255'],
             'stock_family_id' => ['sometimes', 'nullable', 'exists:stock_families,id'],
+            'trade_unit_id'   => [
+                'sometimes',
+                'nullable',
+                Rule::exists('trade_units', 'id')->where('group_id', $this->organisation->group_id),
+            ],
+            'org_stock_id'    => [
+                'sometimes',
+                'nullable',
+                Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
+            ],
+            'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
         ];
     }
 

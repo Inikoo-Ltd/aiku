@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -84,36 +85,8 @@ class GeneratePackagingReport extends Command
     {
         $this->info('Generating exports.csv...');
 
-        $query = DB::table('org_stock_movements as osm')
-            ->join('org_stocks as os', 'osm.org_stock_id', '=', 'os.id')
-            ->join('stocks as s', 'os.stock_id', '=', 's.id')
-            ->leftJoin('stock_families as sf', 's.stock_family_id', '=', 'sf.id')
-            ->leftJoin('delivery_note_items as dni', function ($join) {
-                $join->on('osm.operation_id', '=', 'dni.id')
-                    ->where('osm.operation_type', '=', 'DeliveryNoteItem');
-            })
-            ->leftJoin('delivery_notes as dn', 'dni.delivery_note_id', '=', 'dn.id')
-            ->leftJoin('countries as c', 'dn.delivery_country_id', '=', 'c.id')
-            ->select(
-                's.code as Part Reference',
-                DB::raw('ROUND(COALESCE(s.gross_weight / 1000.0, 0), 2) as "Part Package Weight"'),
-                'sf.code as Category Code',
-                DB::raw('SUM(ABS(osm.quantity)) as total_quantity'),
-                DB::raw('ROUND(SUM(ABS(osm.quantity) * COALESCE(s.gross_weight / 1000.0, 0)), 2) as total_weight'),
-                DB::raw('STRING_AGG(DISTINCT c.code, \',\') as countries')
-            )
-            ->where('osm.date', '>=', $startDate . ' 00:00:00')
-            ->where('osm.date', '<=', $endDate . ' 23:59:59')
-            ->where('osm.flow', '=', 'out')
-            ->where('osm.type', '=', 'picked')
-            ->where('c.code', '!=', 'GB')
-            ->whereNotNull('c.code')
-            ->groupBy('s.id', 's.code', 's.gross_weight', 'sf.code');
-
-        if ($organisationSlug) {
-            $query->join('organisations as org', 'osm.organisation_id', '=', 'org.id')
-                ->where('org.slug', '=', $organisationSlug);
-        }
+        $query = $this->dispatchedGoodsQuery($startDate, $endDate, $organisationSlug)
+            ->where('c.code', '!=', 'GB');
 
         $results = $query->get();
 
@@ -125,40 +98,45 @@ class GeneratePackagingReport extends Command
     {
         $this->info('Generating sales_uk.csv...');
 
-        $query = DB::table('org_stock_movements as osm')
-            ->join('org_stocks as os', 'osm.org_stock_id', '=', 'os.id')
-            ->join('stocks as s', 'os.stock_id', '=', 's.id')
-            ->leftJoin('stock_families as sf', 's.stock_family_id', '=', 'sf.id')
-            ->leftJoin('delivery_note_items as dni', function ($join) {
-                $join->on('osm.operation_id', '=', 'dni.id')
-                    ->where('osm.operation_type', '=', 'DeliveryNoteItem');
-            })
-            ->leftJoin('delivery_notes as dn', 'dni.delivery_note_id', '=', 'dn.id')
-            ->leftJoin('countries as c', 'dn.delivery_country_id', '=', 'c.id')
-            ->select(
-                's.code as Part Reference',
-                DB::raw('ROUND(COALESCE(s.gross_weight / 1000.0, 0), 2) as "Part Package Weight"'),
-                'sf.code as Category Code',
-                DB::raw('SUM(ABS(osm.quantity)) as total_quantity'),
-                DB::raw('ROUND(SUM(ABS(osm.quantity) * COALESCE(s.gross_weight / 1000.0, 0)), 2) as total_weight'),
-                DB::raw('STRING_AGG(DISTINCT c.code, \',\') as countries')
-            )
-            ->where('osm.date', '>=', $startDate . ' 00:00:00')
-            ->where('osm.date', '<=', $endDate . ' 23:59:59')
-            ->where('osm.flow', '=', 'out')
-            ->where('osm.type', '=', 'picked')
-            ->where('c.code', '=', 'GB')
-            ->groupBy('s.id', 's.code', 's.gross_weight', 'sf.code');
-
-        if ($organisationSlug) {
-            $query->join('organisations as org', 'osm.organisation_id', '=', 'org.id')
-                ->where('org.slug', '=', $organisationSlug);
-        }
+        $query = $this->dispatchedGoodsQuery($startDate, $endDate, $organisationSlug)
+            ->where('c.code', '=', 'GB');
 
         $results = $query->get();
 
         $this->writeCsv($outputDir . '/sales_uk.csv', $results);
         $this->info("✓ sales_uk.csv generated with " . count($results) . " records");
+    }
+
+    /**
+     * Dispatched delivery note items grouped by stock, the source of truth for outbound
+     * quantities: org_stock_movements does not keep a link back to the delivery note.
+     */
+    protected function dispatchedGoodsQuery(string $startDate, string $endDate, ?string $organisationSlug): Builder
+    {
+        $query = DB::table('delivery_note_items as dni')
+            ->join('delivery_notes as dn', 'dni.delivery_note_id', '=', 'dn.id')
+            ->join('stocks as s', 'dni.stock_id', '=', 's.id')
+            ->join('countries as c', 'dn.delivery_country_id', '=', 'c.id')
+            ->leftJoin('stock_families as sf', 's.stock_family_id', '=', 'sf.id')
+            ->select(
+                's.code as Part Reference',
+                DB::raw('ROUND(COALESCE(s.gross_weight / 1000.0, 0), 2) as "Part Package Weight"'),
+                'sf.code as Category Code',
+                DB::raw('SUM(dni.quantity_dispatched) as total_quantity'),
+                DB::raw('ROUND(SUM(dni.quantity_dispatched * COALESCE(s.gross_weight / 1000.0, 0)), 2) as total_weight'),
+                DB::raw('STRING_AGG(DISTINCT c.code, \',\') as countries')
+            )
+            ->where('dn.dispatched_at', '>=', $startDate . ' 00:00:00')
+            ->where('dn.dispatched_at', '<=', $endDate . ' 23:59:59')
+            ->where('dni.quantity_dispatched', '>', 0)
+            ->groupBy('s.id', 's.code', 's.gross_weight', 'sf.code');
+
+        if ($organisationSlug) {
+            $query->join('organisations as org', 'dn.organisation_id', '=', 'org.id')
+                ->where('org.slug', '=', $organisationSlug);
+        }
+
+        return $query;
     }
 
     protected function generateImports(string $startDate, string $endDate, string $outputDir, ?string $organisationSlug): void

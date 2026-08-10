@@ -23,6 +23,7 @@ import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelI
 import LabelItemsWaitingForWarehouse from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForWarehouse.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
+import TrolleyChipsManager from "@/Components/Warehouse/DeliveryNotes/TrolleyChipsManager.vue"
 
 library.add(faHandHoldingBox, faDolly, faMapMarkerAlt, faHourglassStart, faSkull, faCircle)
 
@@ -117,10 +118,15 @@ const getWaitingCrmFractional = (item: any) => {
                 />
             </div>
             <div class="flex gap-x-2 mt-1 flex-wrap">
-                <span v-if="item.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 border rounded px-1.5 py-0.5">
-                    <FontAwesomeIcon icon="fal fa-dolly-flatbed-alt" fixed-width aria-hidden="true" />
-                    {{ item.trolley_names }}
-                </span>
+                <TrolleyChipsManager
+                    :deliveryNote="{
+                        id: item.delivery_note_id,
+                        slug: item.delivery_note_slug,
+                        reference: item.delivery_note_reference,
+                    }"
+                    :trolleys="item.trolleys"
+                    :isEditable="!isReadOnly"
+                />
                 <span v-if="item.picked_bay_codes" v-tooltip="trans('Picked Bay')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
                     <FontAwesomeIcon icon="fal fa-map-marker-alt" fixed-width aria-hidden="true" />
                     {{ item.picked_bay_codes }}

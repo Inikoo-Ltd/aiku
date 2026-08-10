@@ -90,6 +90,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $cost_duties
  * @property numeric $cost_tax
  * @property numeric $cost_total
+ * @property int|null $estimated_delivery_days
+ * @property \Illuminate\Support\Carbon|null $estimated_received_at
  * @property int $number_stock_deliveries Number supplier deliveries
  * @property int $number_current_stock_deliveries Number supplier deliveries (except: cancelled and not_received)
  * @property int $number_is_costed_stock_deliveries is_costed=true
@@ -161,6 +163,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'cancelled_at'    => 'datetime',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
+        'estimated_received_at' => 'datetime',
     ];
 
 

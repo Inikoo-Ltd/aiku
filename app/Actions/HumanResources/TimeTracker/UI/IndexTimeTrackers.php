@@ -87,6 +87,7 @@ class IndexTimeTrackers extends OrgAction
                     'time_trackers.duration',
                     'time_trackers.id',
                     'time_trackers.status',
+                    'time_trackers.start_clocking_id',
                     'organisations.code as organisation_code'
                 ]
             )

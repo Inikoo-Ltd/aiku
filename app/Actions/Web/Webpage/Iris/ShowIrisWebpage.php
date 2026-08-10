@@ -174,6 +174,13 @@ class ShowIrisWebpage
             }
         }
 
+        // Products sold to named customers only never appear on the public site. Their customers
+        // reach them through retina, which is never cached, so the answer here is the same for
+        // everyone and this 404 is safe to cache.
+        if ($this->getExclusiveProduct($webpageID)) {
+            abort(404, 'Not found');
+        }
+
         if (config('iris.cache.webpage.ttl') == 0) {
             $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
         } else {
@@ -188,6 +195,22 @@ class ShowIrisWebpage
         }
 
         return $webpageData;
+    }
+
+    /**
+     * The product behind this webpage when it is sold to named customers only, otherwise null.
+     */
+    public function getExclusiveProduct(int $webpageID): ?Product
+    {
+        $webpage = DB::table('webpages')->where('id', $webpageID)->select('model_type', 'model_id')->first();
+
+        if (!$webpage || $webpage->model_type != 'Product' || !$webpage->model_id) {
+            return null;
+        }
+
+        $product = Product::find($webpage->model_id);
+
+        return $product && $product->isExclusive() ? $product : null;
     }
 
 

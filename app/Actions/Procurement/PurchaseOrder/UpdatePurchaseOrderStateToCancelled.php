@@ -9,6 +9,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
@@ -22,23 +23,19 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdatePurchaseOrderStateToCancelled extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use AsAction;
     use HasPurchaseOrderHydrators;
     use WithActionUpdate;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
-
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        if ($purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED) {
-            abort(422, __('Only submitted purchase orders can be cancelled'));
+        if (!in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])) {
+            abort(422, __('Only submitted or confirmed purchase orders can be cancelled'));
+        }
+
+        if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED && $purchaseOrder->stockDeliveries()->exists()) {
+            abort(422, __('A confirmed purchase order with stock deliveries cannot be cancelled'));
         }
 
         $purchaseOrder->purchaseOrderTransactions()->update([

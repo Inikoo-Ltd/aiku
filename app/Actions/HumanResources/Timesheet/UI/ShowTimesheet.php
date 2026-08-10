@@ -80,6 +80,10 @@ class ShowTimesheet extends OrgAction
                         ]
                     ] : false,
                 ],
+                'delete_route' => $this->canEdit ? [
+                    'name'       => 'grp.models.timesheet.delete',
+                    'parameters' => ['timesheet' => $timesheet->id],
+                ] : false,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => TimesheetTabsEnum::navigation()

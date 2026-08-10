@@ -140,6 +140,23 @@ class EditOutboxInShop extends OrgAction
                     ]
                 ];
                 break;
+            case OutboxCodeEnum::ABANDONED_CART_REMINDER_1:
+            case OutboxCodeEnum::ABANDONED_CART_REMINDER_2:
+            case OutboxCodeEnum::ABANDONED_CART_REMINDER_3:
+                $fields[] = [
+                    'title' => '',
+                    'fields' => [
+                        'days_after' => [
+                            'type' => 'input_number',
+                            'label' => __('Send After Cart Abandoned (Days)'),
+                            'placeholder' => __('Days after the cart was abandoned'),
+                            'information' => __('Number of days to wait after the cart was abandoned before sending this reminder.'),
+                            'required' => true,
+                            'value' => $outbox->days_after
+                        ],
+                    ]
+                ];
+                break;
             case OutboxCodeEnum::BASKET_LOW_STOCK:
                 $fields[] = [
                     'title' => '',

@@ -720,3 +720,52 @@ test('a product can be priced at zero, free gifts are not editable otherwise', f
 
     expect((float)$product->refresh()->price)->toBe(0.0);
 })->depends('create family');
+
+test('a product can be exclusive to several customers and only they can see it', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    // createCustomer() returns the shop's first customer, so it cannot give three distinct ones
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+
+    $customerA = $newCustomer();
+    $customerB = $newCustomer();
+    $customerC = $newCustomer();
+
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $visibleTo = fn (?int $customerId) => \App\Models\Catalogue\Product::where('shop_id', $shop->id)
+        ->visibleToCustomer($customerId)
+        ->whereKey($product->id)
+        ->exists();
+
+    expect($product->exclusive_for_customer_id)->toBeNull()
+        ->and($visibleTo(null))->toBeTrue()
+        ->and($visibleTo($customerC->id))->toBeTrue();
+
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, [
+        'customer_ids' => [$customerA->id, $customerB->id],
+    ]);
+    $product->refresh();
+
+    expect($product->exclusiveCustomers()->count())->toBe(2)
+        ->and($product->exclusive_for_customer_id)->toBe($customerA->id)
+        ->and($product->isExclusive())->toBeTrue()
+        ->and($visibleTo($customerA->id))->toBeTrue()
+        ->and($visibleTo($customerB->id))->toBeTrue()
+        ->and($visibleTo($customerC->id))->toBeFalse()
+        ->and($visibleTo(null))->toBeFalse();
+
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, [
+        'customer_ids' => [],
+    ]);
+    $product->refresh();
+
+    expect($product->exclusiveCustomers()->count())->toBe(0)
+        ->and($product->exclusive_for_customer_id)->toBeNull()
+        ->and($product->isExclusive())->toBeFalse()
+        ->and($visibleTo(null))->toBeTrue();
+});

@@ -8,8 +8,9 @@
 
 namespace App\Actions\Accounting\Payment;
 
-use App\Actions\Accounting\Traits\AuthorizesAccountingEdit;
+use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Accounting\PaymentAccount\Hydrators\PaymentAccountHydrateCustomers;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -22,7 +23,20 @@ class UpdatePayment extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    use AuthorizesAccountingEdit;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $payment = $request->route()->parameter('payment');
+        if ($payment instanceof Payment && !$payment->paymentAccount?->type?->isManuallySettled()) {
+            return false;
+        }
+
+        return $request->user()->authTo("accounting.{$this->organisation->id}.edit");
+    }
 
     public function handle(Payment $payment, array $modelData): Payment
     {
@@ -34,6 +48,15 @@ class UpdatePayment extends OrgAction
             PaymentAccountHydrateCustomers::dispatch($payment->paymentAccount)->delay($this->hydratorsDelay);
         }
 
+        if (Arr::hasAny($changes, ['amount', 'status', 'state'])) {
+            foreach ($payment->invoices as $invoice) {
+                UpdateInvoicePaymentState::run($invoice);
+            }
+            foreach ($payment->orders as $order) {
+                UpdateOrderPaymentsStatus::run($order);
+            }
+        }
+
         return $payment;
     }
 
@@ -42,6 +65,7 @@ class UpdatePayment extends OrgAction
         $rules = [
             'reference'  => ['sometimes', 'nullable', 'max:255', 'string'],
             'amount'     => ['sometimes', 'decimal:0,2'],
+            'date'       => ['sometimes', 'date'],
             'org_amount' => ['sometimes', 'numeric'],
             'grp_amount' => ['sometimes', 'numeric'],
         ];

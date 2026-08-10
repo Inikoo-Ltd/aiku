@@ -138,6 +138,9 @@ class ShowOutbox extends OrgAction
             OutboxCodeEnum::PROSPECT_CONVERTION_1,
             OutboxCodeEnum::PROSPECT_CONVERTION_2,
             OutboxCodeEnum::PROSPECT_CONVERTION_3,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
         ])) {
             unset($navigation[OutboxTabsEnum::EMAIL_RUNS->value]);
         }

@@ -11,6 +11,7 @@ namespace App\Models\Procurement;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\HistoricSupplierProduct;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Traits\InOrganisation;
@@ -83,6 +84,11 @@ class PurchaseOrderTransaction extends Model
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    public function agentSupplierPurchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(AgentSupplierPurchaseOrder::class);
     }
 
     public function supplierProduct(): BelongsTo

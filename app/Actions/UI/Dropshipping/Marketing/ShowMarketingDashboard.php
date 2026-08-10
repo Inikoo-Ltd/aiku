@@ -9,10 +9,14 @@
 namespace App\Actions\UI\Dropshipping\Marketing;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\CRM\TrafficSource\GetShopAttributionDataQuality;
+use App\Actions\CRM\TrafficSource\GetShopClickFraud;
 use App\Actions\CRM\TrafficSource\GetShopEmailMarketingPerformance;
 use App\Actions\CRM\TrafficSource\GetShopMarketingOverview;
+use App\Actions\CRM\TrafficSource\GetShopOfferPerformance;
 use App\Actions\OrgAction;
 use App\Enums\UI\Marketing\MarketingDashboardTabsEnum;
+use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -27,9 +31,14 @@ class ShowMarketingDashboard extends OrgAction
     }
 
 
+    private MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30;
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): ActionRequest
     {
         $this->initialisationFromShop($shop, $request)->withTab(MarketingDashboardTabsEnum::values());
+
+        $this->period = MarketingPeriodEnum::tryFrom((string) $request->query('period'))
+            ?? MarketingPeriodEnum::LAST_30;
 
         return $request;
     }
@@ -76,9 +85,13 @@ class ShowMarketingDashboard extends OrgAction
                     'navigation' => MarketingDashboardTabsEnum::navigation()
                 ],
                 'marketing_overview' => array_merge(
-                    GetShopMarketingOverview::run($this->shop),
+                    GetShopMarketingOverview::run($this->shop, $this->period),
                     [
-                        'email'                 => GetShopEmailMarketingPerformance::run($this->shop),
+                        'email'                 => GetShopEmailMarketingPerformance::run($this->shop, $this->period),
+                        'period_options'        => collect(MarketingPeriodEnum::cases())->map(fn ($case) => [
+                            'value' => $case->value,
+                            'label' => MarketingPeriodEnum::labels()[$case->value],
+                        ])->all(),
                         'traffic_sources_route' => [
                             'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
                             'parameters' => $request->route()->originalParameters()
@@ -89,6 +102,15 @@ class ShowMarketingDashboard extends OrgAction
                         ],
                     ]
                 ),
+                MarketingDashboardTabsEnum::OFFERS->value => $this->tab == MarketingDashboardTabsEnum::OFFERS->value
+                    ? fn () => GetShopOfferPerformance::run($this->shop, $this->period)
+                    : Inertia::optional(fn () => GetShopOfferPerformance::run($this->shop, $this->period)),
+                MarketingDashboardTabsEnum::DATA_QUALITY->value => $this->tab == MarketingDashboardTabsEnum::DATA_QUALITY->value
+                    ? fn () => GetShopAttributionDataQuality::run($this->shop, $this->period)
+                    : Inertia::optional(fn () => GetShopAttributionDataQuality::run($this->shop, $this->period)),
+                MarketingDashboardTabsEnum::FRAUD->value => $this->tab == MarketingDashboardTabsEnum::FRAUD->value
+                    ? fn () => GetShopClickFraud::run($this->shop, $this->period)
+                    : Inertia::optional(fn () => GetShopClickFraud::run($this->shop, $this->period)),
                 'dashboard_stats'   => [
                     [
                         'name' => __('Newsletters'),

@@ -11,9 +11,10 @@ import { Clocking } from "@/types/clocking"
 import Icon from "@/Components/Icon.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
+import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import DatePicker from 'primevue/datepicker'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faClock, faDoorClosed, faDoorOpen } from "@fal"
+import { faClock, faDoorClosed, faDoorOpen, faTrash } from "@fal"
 import { faEdit, faPlus } from "@fas"
 import { format } from 'date-fns'
 import axios from 'axios'
@@ -27,11 +28,13 @@ const props = defineProps<{
     tab?: string
 }>()
 
-library.add(faClock, faDoorOpen, faDoorClosed, faEdit, faPlus)
+library.add(faClock, faDoorOpen, faDoorClosed, faEdit, faPlus, faTrash)
 
 const isClockOutModalOpen = ref(false)
+const isClockInModalOpen = ref(false)
 const selectedTimeTracker = ref<any | null>(null)
 const clockOutTime = ref<Date | null>(null)
+const clockInTime = ref<Date | null>(null)
 const isSubmitting = ref(false)
 const errorMsg = ref<string | null>(null)
 
@@ -144,6 +147,65 @@ const submitClockOut = async (): Promise<void> => {
     }
 }
 
+const openClockInModal = (timeTracker: any): void => {
+    selectedTimeTracker.value = timeTracker
+    clockInTime.value = timeTracker?.ends_at ? new Date(timeTracker.ends_at) : new Date()
+    errorMsg.value = null
+    isClockInModalOpen.value = true
+}
+
+const closeClockInModal = (): void => {
+    isClockInModalOpen.value = false
+    selectedTimeTracker.value = null
+    clockInTime.value = null
+    errorMsg.value = null
+}
+
+const submitClockIn = async (): Promise<void> => {
+    if (!selectedTimeTracker.value || !clockInTime.value || !selectedTimeTracker.value.clock_in_route) {
+        return
+    }
+
+    isSubmitting.value = true
+    errorMsg.value = null
+
+    try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+        const clockedAtTime = `${format(clockInTime.value, 'HH:mm')}:00`
+
+        await axios.patch(
+            selectedTimeTracker.value.clock_in_route,
+            {
+                clocked_at_time: clockedAtTime,
+                timezone,
+            }
+        )
+
+        notify({
+            title: trans('Success'),
+            text: trans('Clock in added successfully.'),
+            type: 'success',
+        })
+
+        router.reload({
+            only: [props.tab || 'time_trackers', 'timesheet']
+        })
+
+        closeClockInModal()
+    } catch (e: any) {
+        const message = e?.response?.data?.message ?? trans('Failed to add clock in.')
+        errorMsg.value = message
+
+        notify({
+            title: trans('Failed'),
+            text: message,
+            type: 'error',
+        })
+    } finally {
+        isSubmitting.value = false
+    }
+}
+
 </script>
 
 <template>
@@ -174,6 +236,16 @@ const submitClockOut = async (): Promise<void> => {
             <template v-if="canEdit" #cell(action)="{ item: clocking }">
                 <div class="flex items-center gap-x-2 whitespace-nowrap">
                     <Button
+                        v-if="canEdit && clocking.can_add_clock_in"
+                        type="transparent"
+                        size="xs"
+                        :icon="faPlus"
+                        :label="trans('Add clock in')"
+                        class="whitespace-nowrap"
+                        @click="openClockInModal(clocking)"
+                    />
+
+                    <Button
                         v-if="canEdit && clocking.can_add_clock_out"
                         type="transparent"
                         size="xs"
@@ -182,6 +254,23 @@ const submitClockOut = async (): Promise<void> => {
                         class="whitespace-nowrap"
                         @click="openClockOutModal(clocking)"
                     />
+
+                    <ModalConfirmationDelete
+                        v-if="clocking.delete_route"
+                        :routeDelete="clocking.delete_route"
+                        :title="trans('Delete this time tracker?')"
+                        :description="trans('This will also permanently delete the clock in and clock out records for this working period. This action cannot be undone.')"
+                    >
+                        <template #default="{ changeModel }">
+                            <Button
+                                type="cancel"
+                                size="xs"
+                                :icon="faTrash"
+                                :label="trans('Delete')"
+                                @click="changeModel(true)"
+                            />
+                        </template>
+                    </ModalConfirmationDelete>
                 </div>
             </template>
         </Table>
@@ -231,6 +320,62 @@ const submitClockOut = async (): Promise<void> => {
                         :label="trans('Cancel')"
                         :disabled="isSubmitting"
                         @click="closeClockOutModal"
+                    />
+                    <Button
+                        type="primary"
+                        :label="isSubmitting ? trans('Saving...') : trans('Save')"
+                        :disabled="isSubmitting"
+                        nativeType="submit"
+                    />
+                </div>
+            </form>
+        </Modal>
+
+        <Modal
+            :isOpen="isClockInModalOpen"
+            @onClose="closeClockInModal"
+            width="w-full max-w-md"
+        >
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                {{ trans('Add clock in') }}
+            </h2>
+
+            <form @submit.prevent="submitClockIn" class="space-y-4">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ trans('Date') }}
+                        </label>
+                        <div class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-500">
+                            {{ selectedTimeTracker?.ends_at ? useFormatTime(selectedTimeTracker.ends_at) : '-' }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ trans('Clock in time') }}
+                        </label>
+                        <DatePicker
+                            v-model="clockInTime"
+                            timeOnly
+                            hourFormat="24"
+                            showIcon
+                            fluid
+                            class="mt-1"
+                        />
+                    </div>
+
+                    <p v-if="errorMsg" class="text-sm text-red-600">
+                        {{ errorMsg }}
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <Button
+                        type="secondary"
+                        :label="trans('Cancel')"
+                        :disabled="isSubmitting"
+                        @click="closeClockInModal"
                     />
                     <Button
                         type="primary"

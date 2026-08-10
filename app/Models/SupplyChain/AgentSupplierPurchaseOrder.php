@@ -13,6 +13,7 @@ use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrder
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -59,6 +61,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $cost_duties
  * @property numeric $cost_tax
  * @property numeric $cost_total
+ * @property numeric|null $deposit_amount
+ * @property \Illuminate\Support\Carbon|null $deposit_paid_at
+ * @property \Illuminate\Support\Carbon|null $balance_paid_at
+ * @property int|null $estimated_delivery_days
+ * @property \Illuminate\Support\Carbon|null $estimated_received_at
  * @property int $number_stock_deliveries Number supplier deliveries
  * @property int $number_current_stock_deliveries Number supplier deliveries (except: cancelled and not_received)
  * @property int $number_is_costed_stock_deliveries is_costed=true
@@ -126,12 +133,15 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
         'cancelled_at'    => 'datetime',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
+        'deposit_amount'         => 'decimal:2',
+        'deposit_paid_at'        => 'datetime',
+        'balance_paid_at'        => 'datetime',
+        'estimated_received_at'  => 'datetime',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data'      => '{}',
         'cost_data' => '{}',
-        'sources' => '{}',
     ];
 
     protected $guarded = [];
@@ -169,5 +179,10 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function purchaseOrderTransactions(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderTransaction::class);
     }
 }

@@ -35,9 +35,20 @@ class GetTrafficSourceFromUrl
         }
 
         if (array_key_exists('fbclid', $queryParams) && array_key_exists('utm_medium', $queryParams) && $queryParams['utm_medium'] == 'paid') {
-            return
-                TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::META_ADS->value].
-                $this->sanitizeCampaignRef(Arr::get($queryParams, 'utm_campaign'));
+            /* Instagram ads are bought in the same Meta ad account as Facebook ones, so the click id
+               cannot tell them apart; Meta's `{{site_source_name}}` macro can, and the ads already
+               carry it as utm_source (`ig`, `fb`, `an`, `msg`, `th`). Anything that is not Instagram
+               stays under Meta Ads, matching how the spend is split on the cost side. */
+            $isInstagram = in_array(strtolower((string) Arr::get($queryParams, 'utm_source')), ['ig', 'instagram'], true);
+            $campaignRef = $this->sanitizeCampaignRef(Arr::get($queryParams, 'utm_campaign'));
+
+            if ($isInstagram) {
+                return
+                    TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::INSTAGRAM_ADS->value].
+                    ($campaignRef === '' ? '' : TrafficSourcesTypeEnum::INSTAGRAM_CAMPAIGN_PREFIX.$campaignRef);
+            }
+
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::META_ADS->value].$campaignRef;
         }
 
         /* No campaign reference for Bing: msclkid is unique per click, so recording it as a campaign
