@@ -76,6 +76,7 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             'org_stock_id'                             => $this->org_stock_id,
             'batch_code'                               => $this->batch_code,
             'expiry_date'                              => $this->expiry_date,
+            'packed_in'                                => $packedIn,
             'packed_in_message'                        => $packedInMessage,
             'un_numbers'                               => @json_decode($this->un_numbers) ?? null,
             'is_dirty'                                 => $this->is_dirty,

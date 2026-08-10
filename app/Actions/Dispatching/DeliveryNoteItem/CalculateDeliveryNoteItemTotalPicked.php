@@ -22,6 +22,12 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
     use WithNoStrictRules;
     use WithDeliveryNoteItemNoStrictRules;
 
+    /**
+     * Quantities are held to six decimals and a cut of a pack lands on a repeating decimal, so the
+     * comparisons below carry a tolerance rather than asking two floats to be equal.
+     */
+    private const QUANTITY_TOLERANCE = 0.000001;
+
     public function handle(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
     {
         $pickings = $deliveryNoteItem->pickings()->get();
@@ -35,8 +41,15 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
         $totalWaiting   = $deliveryNoteItem->quantity_waiting_warehouse + $deliveryNoteItem->quantity_waiting_crm;
         $totalNotPicked = $pickings->where('type', PickingTypeEnum::NOT_PICK)->sum('quantity');
 
-        $isFullyPicked        = $totalPicked == $deliveryNoteItem->quantity_required;
-        $isMarkedAsUnpickable = ($totalNotPicked + $totalWaiting) == $deliveryNoteItem->quantity_required - $totalPicked;
+        $outstanding = (float)$deliveryNoteItem->quantity_required - (float)$totalPicked;
+
+        /*
+         * Both read as "at least". An item marked as not picked more than once, or holding more in
+         * the waiting buckets than is left to do, is still finished: asking for exact equality left
+         * it unhandled forever, and the picking screen kept offering the button that overshot it.
+         */
+        $isFullyPicked        = $outstanding <= self::QUANTITY_TOLERANCE;
+        $isMarkedAsUnpickable = (float)$totalNotPicked + (float)$totalWaiting >= $outstanding - self::QUANTITY_TOLERANCE;
 
         $isCompleted = $isFullyPicked || $isMarkedAsUnpickable;
 
