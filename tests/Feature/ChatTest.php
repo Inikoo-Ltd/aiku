@@ -1498,7 +1498,9 @@ test('ShareChatSessionToSlack notifies configured channels', function () {
         'updated_at'       => now(),
     ]);
 
-    $result = ShareChatSessionToSlack::make()->handle($chatSession, 'xoxb-fake-token', ['#support']);
+    $result = ShareChatSessionToSlack::make()->handle($chatSession, 'xoxb-fake-token', [
+        ['type' => 'channel', 'id' => 'C0SUPPORT', 'name' => '#support'],
+    ]);
 
     expect($result['succeeded'])->toBe(['#support'])
         ->and($result['failed'])->toBe([]);

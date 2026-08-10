@@ -114,6 +114,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property int $number_stock_deliveries_state_booking_in
  * @property int $number_stock_deliveries_state_booked_in
+ * @property int|null $estimated_delivery_days
+ * @property \Illuminate\Support\Carbon|null $estimated_received_at
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
@@ -161,6 +163,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'cancelled_at'    => 'datetime',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
+        'estimated_received_at' => 'datetime',
     ];
 
 

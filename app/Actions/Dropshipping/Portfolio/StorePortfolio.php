@@ -31,6 +31,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StorePortfolio extends OrgAction
@@ -44,6 +45,8 @@ class StorePortfolio extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData): Portfolio
     {
+        $this->assertItemBelongsToChannelShop($customerSalesChannel, $item);
+
         $rrp = $item->rrp ?? 0;
 
         $pricingType  = Arr::get($customerSalesChannel->settings, 'pricing.type');
@@ -119,6 +122,20 @@ class StorePortfolio extends OrgAction
         ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
 
         return $portfolio;
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function assertItemBelongsToChannelShop(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item): void
+    {
+        if (!$item instanceof Product || $item->shop_id == $customerSalesChannel->shop_id) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'item_id' => __('Product :code belongs to another shop', ['code' => $item->code])
+        ]);
     }
 
     public function getSKU(Product|StoredItem $item): ?string

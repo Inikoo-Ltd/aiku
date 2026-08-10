@@ -22,7 +22,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Helpers\LanguageResource;
-use Illuminate\Support\Facades\DB;
 
 class EditProduct extends OrgAction
 {
@@ -754,11 +753,7 @@ class EditProduct extends OrgAction
 
     private function getTradeUnitsWithPackingData(Product $product)
     {
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $product->tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        $packedIn = $product->getEffectiveStockPackedInByTradeUnit();
 
         return $product->tradeUnits->map(function ($tradeUnit) use ($packedIn) {
             $packedQuantity = max(1, (int)($packedIn[$tradeUnit->id] ?? 0));

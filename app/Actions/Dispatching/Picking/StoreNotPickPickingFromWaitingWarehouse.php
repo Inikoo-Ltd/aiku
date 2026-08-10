@@ -50,7 +50,7 @@ class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
 
 
             $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $user, $modelData);
-            
+
             $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $user);
 
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);

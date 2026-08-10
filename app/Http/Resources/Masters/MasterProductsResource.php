@@ -12,6 +12,7 @@ namespace App\Http\Resources\Masters;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\HasSelfCall;
+use App\Models\Masters\MasterAsset;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
@@ -68,7 +69,7 @@ class MasterProductsResource extends JsonResource
 
         // Don't worry, won't run if relationship is not eager loaded. Will only present from IndexMasterProduct
         if ($masterAsset->relationLoaded('tradeUnits')) {
-            data_set($extraField, 'trade_units', $this->getDataTradeUnit($masterAsset->tradeUnits));
+            data_set($extraField, 'trade_units', $this->getDataTradeUnit($masterAsset));
         }
 
         return [
@@ -145,11 +146,11 @@ class MasterProductsResource extends JsonResource
         ];
     }
 
-    private function getDataTradeUnit($tradeUnits): array
+    private function getDataTradeUnit(MasterAsset $masterAsset): array
     {
-        $packedIn = $tradeUnits->pluck('pivot.quantity', 'id');
+        $packedIn = $masterAsset->getEffectiveStockPackedInByTradeUnit();
 
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
+        return $masterAsset->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
             return array_merge(
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / Arr::get($packedIn, $tradeUnit->id, 1))), Arr::get($packedIn, $tradeUnit->id, 1))],
                 GetTradeUnitShowcase::run($tradeUnit)

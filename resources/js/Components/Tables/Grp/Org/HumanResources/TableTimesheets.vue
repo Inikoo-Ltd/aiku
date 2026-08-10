@@ -119,5 +119,51 @@ const timesheetRoute = (timesheet: Timesheet) => {
             </div>
         </template>
 
+        <!-- Column: Clockings (per-employee summary) -->
+        <template #cell(clockings)="{ item: timesheet }">
+            <div class="tabular-nums text-center">
+                {{ timesheet.clockings }}
+            </div>
+        </template>
+
+        <!-- Column: Paid time -->
+        <template #cell(paid_duration)="{ item: timesheet }">
+            <div class="tabular-nums font-mono">
+                {{ timesheet.paid_duration ? useSecondsToMS(timesheet.paid_duration) : '-' }}
+            </div>
+        </template>
+
+        <!-- Column: Unpaid overtime -->
+        <template #cell(unpaid_overtime_duration)="{ item: timesheet }">
+            <div class="tabular-nums font-mono text-gray-500">
+                {{ timesheet.unpaid_overtime_duration ? useSecondsToMS(timesheet.unpaid_overtime_duration) : '-' }}
+            </div>
+        </template>
+
+        <!-- Column: Paid overtime -->
+        <template #cell(paid_overtime_duration)="{ item: timesheet }">
+            <div class="tabular-nums font-mono text-gray-500">
+                {{ timesheet.paid_overtime_duration ? useSecondsToMS(timesheet.paid_overtime_duration) : '-' }}
+            </div>
+        </template>
+
+        <!-- Column: Worked -->
+        <template #cell(worked)="{ item: timesheet }">
+            <div class="tabular-nums font-mono">
+                {{ timesheet.worked ? useSecondsToMS(timesheet.worked) : '-' }}
+            </div>
+        </template>
+
+        <!-- Columns: weekday breakdown (per-employee day-by-day view) -->
+        <template
+            v-for="day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'work_week', 'weekend']"
+            :key="day"
+            #[`cell(${day})`]="{ item: timesheet }"
+        >
+            <div class="tabular-nums font-mono">
+                {{ timesheet[day] ? useSecondsToMS(timesheet[day]) : '-' }}
+            </div>
+        </template>
+
     </Table>
 </template>

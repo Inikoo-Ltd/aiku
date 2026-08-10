@@ -7,6 +7,7 @@
  */
 
 use App\Actions\GoodsIn\StockDelivery\ExportStockDeliveries;
+use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\CreateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\EditStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
@@ -19,11 +20,25 @@ use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\IndexOrgPartners;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgSupplier\ExportOrgSuppliers;
+use App\Actions\Procurement\OrgSupplier\UI\CreateOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
+use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
+use App\Actions\Procurement\OrgSupplierProducts\UI\EditOrgSupplierProduct;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\EditAgentSupplierPurchaseOrder;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\IndexAgentSupplierPurchaseOrders;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurchaseOrder;
 use App\Actions\Procurement\OrgSupplierProducts\UI\IndexOrgSupplierProducts;
 use App\Actions\Procurement\OrgSupplierProducts\UI\ShowOrgSupplierProduct;
+use App\Actions\Procurement\ShoppingListItem\CherryPickShoppingListItems;
+use App\Actions\Procurement\ShoppingListItem\DeleteShoppingListItem;
+use App\Actions\Procurement\ShoppingListItem\ProposeDismissShoppingListItem;
+use App\Actions\Procurement\ShoppingListItem\ResolveDismissShoppingListItem;
+use App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem;
+use App\Actions\Procurement\ShoppingListItem\UI\IndexShoppingListItems;
+use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
+use App\Actions\Procurement\ShoppingListItem\UpdateShoppingListItem;
 use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\CreatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\EditPurchaseOrder;
@@ -50,12 +65,15 @@ Route::prefix('agents')->as('org_agents.')->group(function () {
         Route::get('suppliers/{orgSupplier}/edit', [EditOrgSupplier::class, 'inOrgAgent'])->name('.suppliers.edit');
         Route::get('supplier-products', [IndexOrgSupplierProducts::class, 'inOrgAgent'])->name('.supplier_products.index');
         Route::get('supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgAgent'])->name('.supplier_products.show');
+        Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inOrgAgent'])->name('.agent_supplier_purchase_orders.index');
     });
 });
 
 Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('', IndexOrgSuppliers::class)->name('index');
     Route::get('export', ExportOrgSuppliers::class)->name('export');
+    Route::get('create', CreateOrgSupplier::class)->name('create');
+    Route::get('create-for-agent', [CreateSupplier::class, 'inOrganisation'])->name('create_for_agent');
     Route::get('{orgSupplier}', ShowOrgSupplier::class)->name('show');
     Route::get('{orgSupplier}/edit', EditOrgSupplier::class)->name('edit');
     Route::get('{orgSupplier}/purchase-order/{purchaseOrder}', [ShowPurchaseOrder::class, 'inOrgSupplier'])->name('show.purchase-orders.show');
@@ -87,8 +105,25 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
 
 Route::prefix('supplier-products')->as('org_supplier_products.')->group(function () {
     Route::get('', IndexOrgSupplierProducts::class)->name('index');
-    //todo  Route::get('export', ExportOrgSupplierProducts::class)->name('export');
     Route::get('{orgSupplierProduct}', ShowOrgSupplierProduct::class)->name('show');
+    Route::get('{orgSupplierProduct}/edit', EditOrgSupplierProduct::class)->name('edit');
+});
+
+Route::prefix('shopping-list')->as('shopping_list.')->group(function () {
+    Route::get('', IndexShoppingListItems::class)->name('index');
+    Route::get('board', ShowShoppingListBoard::class)->name('board');
+    Route::post('cherry-pick', [CherryPickShoppingListItems::class, 'inOrganisation'])->name('cherry_pick');
+    Route::post('{orgSupplierProduct}', StoreShoppingListItem::class)->name('store');
+    Route::patch('{shoppingListItem}', UpdateShoppingListItem::class)->name('update');
+    Route::delete('{shoppingListItem}', DeleteShoppingListItem::class)->name('destroy');
+    Route::post('{shoppingListItem}/propose-dismiss', ProposeDismissShoppingListItem::class)->name('propose_dismiss');
+    Route::post('{shoppingListItem}/resolve-dismiss', ResolveDismissShoppingListItem::class)->name('resolve_dismiss');
+});
+
+Route::prefix('agent-supplier-purchase-orders')->as('agent_supplier_purchase_orders.')->group(function () {
+    Route::get('', [IndexAgentSupplierPurchaseOrders::class, 'inOrganisation'])->name('index');
+    Route::get('{agentSupplierPurchaseOrder}', [ShowAgentSupplierPurchaseOrder::class, 'inOrganisation'])->name('show');
+    Route::get('{agentSupplierPurchaseOrder}/edit', [EditAgentSupplierPurchaseOrder::class, 'inOrganisation'])->name('edit');
 });
 
 Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {
@@ -103,4 +138,5 @@ Route::prefix('stock-deliveries')->as('stock_deliveries.')->group(function () {
     Route::get('create', CreateStockDelivery::class)->name('create');
     Route::get('{stockDelivery}', ShowStockDelivery::class)->name('show');
     Route::get('{stockDelivery}/edit', EditStockDelivery::class)->name('edit');
+    Route::get('{stockDelivery}/pdf', PdfStockDelivery::class)->name('pdf');
 });

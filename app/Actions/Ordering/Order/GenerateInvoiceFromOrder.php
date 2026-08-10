@@ -141,7 +141,13 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
 
-            if ($amountToCredit > 0) {
+            $hasManuallySettledPayment = $order->payments()
+                ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+                ->whereHas('paymentAccount', function ($query) {
+                    $query->whereIn('type', PaymentAccountTypeEnum::MANUALLY_SETTLED);
+                })->exists();
+
+            if ($amountToCredit > 0 && !$hasManuallySettledPayment) {
                 /** @var \App\Models\Accounting\PaymentAccountShop $paymentAccountShop */
                 $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
                 $paymentData        = [
@@ -204,6 +210,13 @@ class GenerateInvoiceFromOrder extends OrgAction
             'net_amount'      => $order->shipping_amount + $order->charges_amount,
         ]);
 
+        foreach ($order->transactions()->where('model_type', 'Adjustment')->get(['tax_category_id', 'net_amount']) as $adjustmentLine) {
+            $lines->push((object)[
+                'tax_category_id' => $adjustmentLine->tax_category_id,
+                'net_amount'      => $adjustmentLine->net_amount,
+            ]);
+        }
+
         $taxBreakdown = $this->getTaxBreakdown($lines, $order->amount_off);
 
         $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
@@ -211,11 +224,12 @@ class GenerateInvoiceFromOrder extends OrgAction
         $totalAmount = $netAmount + $taxAmount;
 
         return [
-            'net_amount'   => $netAmount,
-            'total_amount' => $totalAmount,
-            'tax_amount'   => $taxAmount,
-            'goods_amount' => $itemsNet,
-            'gross_amount' => $itemsGross,
+            'net_amount'    => $netAmount,
+            'total_amount'  => $totalAmount,
+            'tax_amount'    => $taxAmount,
+            'goods_amount'  => $itemsNet,
+            'gross_amount'  => $itemsGross,
+            'tax_breakdown' => $taxBreakdown,
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\GoodsIn\StockDeliveryItem\Traits\WithStockDeliveryItemStatePropagation;
 use App\Actions\OrgAction;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UnreceiveStockDelivery extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use AsAction;
     use HasStockDeliveryHydrators;
     use WithActionUpdate;
@@ -26,15 +28,6 @@ class UnreceiveStockDelivery extends OrgAction
     public int $hydratorsDelay = 0;
 
     private StockDelivery $stockDelivery;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function afterValidator(Validator $validator): void
     {
@@ -77,10 +70,10 @@ class UnreceiveStockDelivery extends OrgAction
     private function previousStockDeliveryState(StockDelivery $stockDelivery): StockDeliveryStateEnum
     {
         return match (true) {
-            $stockDelivery->dispatched_at !== null                    => StockDeliveryStateEnum::DISPATCHED,
-            (bool) Arr::get($stockDelivery->data, 'ready_to_ship_at') => StockDeliveryStateEnum::READY_TO_SHIP,
-            (bool) Arr::get($stockDelivery->data, 'confirmed_at')     => StockDeliveryStateEnum::CONFIRMED,
-            default                                                   => StockDeliveryStateEnum::IN_PROCESS,
+            $stockDelivery->dispatched_at !== null   => StockDeliveryStateEnum::DISPATCHED,
+            $stockDelivery->ready_to_ship_at !== null => StockDeliveryStateEnum::READY_TO_SHIP,
+            $stockDelivery->confirmed_at !== null     => StockDeliveryStateEnum::CONFIRMED,
+            default                                   => StockDeliveryStateEnum::IN_PROCESS,
         };
     }
 

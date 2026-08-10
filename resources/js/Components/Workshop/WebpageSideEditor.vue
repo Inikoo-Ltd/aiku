@@ -94,13 +94,25 @@ const sendBlockUpdate = (block: Daum) => emits('update', block)
 const sendOrderBlock = (block: object) => emits('order', block)
 const sendDeleteBlock = (block: Daum) => emits('delete', block)
 
+const STYLE_TAB_INDEX = 2
+
+const isOpenedBlockEditable = computed(() => {
+	if (openedBlockSideEditor.value === null) {
+		return false
+	}
+
+	const block = props.webpage?.layout?.web_blocks?.[openedBlockSideEditor.value]
+
+	return !!block && getEditPermissions(block.web_block.layout.data)
+})
+
 const tabs = computed(() => {
 	const baseTabs = [
 		{ label: 'Settings', icon: faCogs, tooltip: 'Page Setting' },
 		{ label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks' },
 	]
 
-	if (openedBlockSideEditor.value !== null) {
+	if (isOpenedBlockEditable.value) {
 		baseTabs.push({ label: 'Style', icon: faBrush, tooltip: 'Style' })
 	}
 
@@ -231,11 +243,20 @@ const onClickBlock = (index: number) => {
 
 const onDoubleClickBlock = (index: number) => {
 	openedBlockSideEditor.value = index
-	changeTab(2)
+
+	if (getEditPermissions(props.webpage.layout.web_blocks[index]?.web_block.layout.data)) {
+		changeTab(STYLE_TAB_INDEX)
+	}
 }
 
 watch(openedBlockSideEditor, (newVal) => {
 	if (newVal === null) {
+		changeTab(1)
+	}
+})
+
+watch(isOpenedBlockEditable, (isEditable) => {
+	if (!isEditable && props.selectedTab === STYLE_TAB_INDEX) {
 		changeTab(1)
 	}
 })
@@ -655,7 +676,7 @@ const blockNotEditableVisible = [
 				<!-- Tab 3: Style -->
 				<TabPanel class="w-[340px] h-full p-1.5 flex flex-col">
 					<div class="flex-1 min-h-0 overflow-y-auto pb-14">
-						<template v-if="openedBlockSideEditor !== null">
+						<template v-if="isOpenedBlockEditable">
 							<Collapse :when="true">
 								<div class="p-1 space-y-1.5">
 									<VisibleCheckmark
@@ -704,10 +725,18 @@ const blockNotEditableVisible = [
 							<div
 								class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
 								<FontAwesomeIcon :icon="faBrush" class="text-2xl mb-1 text-slate-300" />
-								<span class="text-xs font-medium">{{ trans('No block selected') }}</span>
-								<span class="text-[11px] text-slate-400">
-									{{ trans('Pick a block in the Layer tab to edit its style.') }}
-								</span>
+								<template v-if="openedBlockSideEditor !== null">
+									<span class="text-xs font-medium">{{ trans('Not editable') }}</span>
+									<span class="text-[11px] text-slate-400">
+										{{ trans('This block is reserved by system. Not editable.') }}
+									</span>
+								</template>
+								<template v-else>
+									<span class="text-xs font-medium">{{ trans('No block selected') }}</span>
+									<span class="text-[11px] text-slate-400">
+										{{ trans('Pick a block in the Layer tab to edit its style.') }}
+									</span>
+								</template>
 							</div>
 						</template>
 					</div>

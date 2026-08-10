@@ -18,10 +18,14 @@ use App\Actions\Chat\Jira\UpdateChatAgentJiraSettings;
 use App\Actions\Chat\ChatSession\AssignChatToAgent;
 use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\ForceDeleteChatAgent;
+use App\Actions\Chat\ChatSession\ForwardChatMessageToSlack;
+use App\Actions\Chat\ChatSession\GetChatMessageSlackSettings;
+use App\Actions\Chat\ChatSession\GetChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\ReopenChatSession;
 use App\Actions\Chat\ChatSession\RestoreChatAgent;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatMessage;
+use App\Actions\Chat\ChatSession\UpdateChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +47,8 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
     Route::patch('/messages/{chatSession:ulid}/{chatMessage}/edit', UpdateChatMessage::class)->name('messages.update');
     Route::post('/messages/{chatMessage}/verify-image', VerifyChatImageMessage::class)->name('messages.verify_image');
+    Route::get('/messages/{chatMessage}/slack-settings', GetChatMessageSlackSettings::class)->name('messages.slack_settings');
+    Route::post('/messages/{chatMessage}/forward-slack', ForwardChatMessageToSlack::class)->name('messages.forward_slack');
     Route::patch('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
     Route::patch('/sessions/{chatSession:ulid}/reopen', ReopenChatSession::class)->name('sessions.reopen');
     Route::name('sessions.jira.')->prefix('sessions/{chatSession:ulid}/jira')->group(function () {
@@ -52,6 +58,10 @@ Route::name('agents.')->prefix('agents')->group(function () {
         Route::get('/priorities', GetChatSessionJiraPriorities::class)->name('priorities');
         Route::get('/labels', GetChatSessionJiraLabels::class)->name('labels');
         Route::post('/ticket', StoreChatSessionJiraTicket::class)->name('ticket');
+    });
+    Route::name('sessions.slack.')->prefix('sessions/{chatSession:ulid}/slack')->group(function () {
+        Route::get('/', GetChatSessionSlackSettings::class)->name('show');
+        Route::put('/', UpdateChatSessionSlackSettings::class)->name('update');
     });
     Route::name('jira.settings.')->prefix('jira/settings')->group(function () {
         Route::get('/', GetChatAgentJiraSettings::class)->name('show');

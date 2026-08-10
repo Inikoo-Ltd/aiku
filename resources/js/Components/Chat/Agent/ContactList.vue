@@ -67,7 +67,7 @@ const closeSidePanel = () => {
 
 // settingchat
 const chatSettingVisible = ref(false)
-const settingInitialTab = ref<"general" | "jira">("general")
+const settingInitialTab = ref<"general" | "jira" | "slack">("general")
 const selectedContact = ref<Contact | null>(null)
 const openGlobalChatSettings = () => {
     settingInitialTab.value = "general"
@@ -462,7 +462,8 @@ onMounted(async () => {
 
         <Dialog v-model:visible="chatSettingVisible" modal header="Chat Settings"
             :style="{ width: '90vw', maxWidth: '560px' }" :breakpoints="{ '640px': '95vw' }">
-            <SettingChat :contact="selectedContact" :initial-tab="settingInitialTab" @close="chatSettingVisible = false" />
+            <SettingChat :contact="selectedContact" :initial-tab="settingInitialTab"
+                :session-ulid="selectedContact?.ulid" @close="chatSettingVisible = false" />
         </Dialog>
 
         <!-- My Chats / Team Chats toggle -->

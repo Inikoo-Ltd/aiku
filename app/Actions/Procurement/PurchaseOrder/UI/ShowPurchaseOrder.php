@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
@@ -41,16 +42,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowPurchaseOrder extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithPurchaseOrderWeightAndVolume;
     use WithAgentOrganisation;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
 
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {

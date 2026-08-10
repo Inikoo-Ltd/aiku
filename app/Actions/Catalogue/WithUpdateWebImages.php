@@ -55,7 +55,7 @@ trait WithUpdateWebImages
             $model->update([
                 'images_updated_at' => now()
             ]);
-        } else if($model instanceof ProductCategory && $model->wasChanged('web_images')) {
+        } elseif ($model instanceof ProductCategory && $model->wasChanged('web_images')) {
             if ($model->webpage) {
                 BreakWebpageCache::run($model->webpage, true);
             }

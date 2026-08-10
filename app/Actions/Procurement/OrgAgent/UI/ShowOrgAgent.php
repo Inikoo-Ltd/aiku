@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgAgent\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
@@ -27,20 +28,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgAgent extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithAgentOrganisation;
 
     public function handle(OrgAgent $orgAgent): OrgAgent
     {
         return $orgAgent;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-        $this->canDelete = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
     public function asController(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): RedirectResponse|OrgAgent

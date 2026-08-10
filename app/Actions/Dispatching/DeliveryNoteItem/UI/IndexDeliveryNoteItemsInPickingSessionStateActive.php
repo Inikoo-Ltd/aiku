@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
+use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -20,6 +21,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
 {
+    use WithDeliveryNoteItemUI;
+
     public function handle(PickingSession $parent, $prefix = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -43,8 +46,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
 
         $query->leftJoin('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id');
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
-        $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
-        $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
+        $this->applyDeliveryNoteItemPickingJoins($query);
 
         $query->where('delivery_note_items.quantity_required', '>', 0);
 

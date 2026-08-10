@@ -18,6 +18,8 @@ use App\Models\Transfers\Fetch;
 use App\Transfers\Aurora\FetchAuroraAdjustment;
 use App\Transfers\Aurora\FetchAuroraAgent;
 use App\Transfers\Aurora\FetchAuroraArtefact;
+use App\Transfers\Aurora\FetchAuroraJobOrder;
+use App\Transfers\Aurora\FetchAuroraRawMaterial;
 use App\Transfers\Aurora\FetchAuroraBackInStockReminder;
 use App\Transfers\Aurora\FetchAuroraBarcode;
 use App\Transfers\Aurora\FetchAuroraCharge;
@@ -76,6 +78,7 @@ use App\Transfers\Aurora\FetchAuroraPortfolio;
 use App\Transfers\Aurora\FetchAuroraProduct;
 use App\Transfers\Aurora\FetchAuroraProductHasOrgStock;
 use App\Transfers\Aurora\FetchAuroraProspect;
+use App\Transfers\Aurora\FetchAuroraAgentSupplierPurchaseOrder;
 use App\Transfers\Aurora\FetchAuroraPurchaseOrder;
 use App\Transfers\Aurora\FetchAuroraPurchaseOrderTransaction;
 use App\Transfers\Aurora\FetchAuroraPurge;
@@ -393,6 +396,11 @@ class AuroraOrganisationService implements SourceOrganisationService
         return (new FetchAuroraPurchaseOrder($this))->fetch($id);
     }
 
+    public function fetchAgentSupplierPurchaseOrder($id): ?array
+    {
+        return (new FetchAuroraAgentSupplierPurchaseOrder($this))->fetch($id);
+    }
+
     public function fetchStockDelivery($id): ?array
     {
         return (new FetchAuroraStockDelivery($this))->fetch($id);
@@ -411,6 +419,16 @@ class AuroraOrganisationService implements SourceOrganisationService
     public function fetchArtefact($id): array
     {
         return (new FetchAuroraArtefact($this))->fetch($id);
+    }
+
+    public function fetchRawMaterial($id): ?array
+    {
+        return (new FetchAuroraRawMaterial($this))->fetch($id);
+    }
+
+    public function fetchJobOrder($id): ?array
+    {
+        return (new FetchAuroraJobOrder($this))->fetch($id);
     }
 
     public function fetchBarcode($id): ?array

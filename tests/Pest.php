@@ -32,6 +32,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\TrafficSource;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Goods\Stock;
@@ -173,6 +174,64 @@ function createShop(): array
 }
 
 /**
+ * A shop of one caller's own, created once per key and reused for every test under that key.
+ *
+ * createShop() hands everybody Shop::first(), which is safe while each test file restores the
+ * database before it runs: the shop is pristine because everything else is gone. It stops being safe
+ * once several subjects share one file and one database, because then each inherits whatever the
+ * ones before it did to that shop.
+ *
+ * Keyed rather than fresh-per-call because a test file's tests always shared their shop; it is only
+ * across files that it was clean. Passing the block name reproduces exactly that: isolation between
+ * subjects, continuity within one.
+ *
+ * @return array{0: Organisation, 1: \App\Models\SysAdmin\User, 2: Shop}
+ *
+ * @throws \Throwable
+ */
+function createOwnShop(string $key): array
+{
+    static $shops = [];
+
+    if (!isset($shops[$key])) {
+        $organisation = createOrganisation();
+        $adminGuest   = createAdminGuest($organisation->group);
+
+        $shop = StoreShop::run($organisation, Shop::factory()->definition());
+        $shop->refresh();
+
+        $shops[$key] = [$organisation, $adminGuest->getUser(), $shop];
+    }
+
+    return $shops[$key];
+}
+
+/**
+ * A customer of one caller's own, created once per key and reused for every test under that key.
+ *
+ * Most of what one subject leaves behind for the next hangs off the customer rather than the shop -
+ * its touch history, its attribution shares, its invoices and orders - and a customer costs a
+ * fraction of what a shop costs to create. Same keying as createOwnShop(): isolation between
+ * subjects, continuity within one.
+ *
+ * @throws \Throwable
+ */
+function createOwnCustomer(Shop $shop, string $key): Customer
+{
+    static $customers = [];
+
+    if (!isset($customers[$key])) {
+        $customers[$key] = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    }
+
+    /* Refreshed, because the model outlives the rows it describes: a fixture reset that clears a
+       column straight through the query builder leaves this instance still holding the old value,
+       and the next ->update() with that same value writes nothing at all. The touch history then
+       silently stays empty and every figure derived from it reads zero. */
+    return $customers[$key]->refresh();
+}
+
+/**
  * @throws \Throwable
  */
 function createFulfilment(Organisation $organisation): Fulfilment
@@ -239,6 +298,76 @@ function createCustomer(Shop $shop): Customer
     }
 
     return $customer;
+}
+
+/**
+ * Marketing revenue is measured from invoices, so tests that assert on attributed revenue need real
+ * ones rather than a hand-set customer_stats rollup.
+ */
+function createInvoiceFor($customer, $shop, string $date, float $net, bool $inProcess = false): void
+{
+    \Illuminate\Support\Facades\DB::table('invoices')->insert([
+        'group_id'        => $shop->group_id,
+        'organisation_id' => $shop->organisation_id,
+        'shop_id'         => $shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'reference'       => 'INV-'.uniqid(),
+        'slug'            => 'inv-'.uniqid(),
+        'type'            => 'invoice',
+        'net_amount'      => $net,
+        'org_net_amount'  => $net,
+        'total_amount'    => $net,
+        'in_process'      => $inProcess,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => $date,
+        'created_at'      => $date,
+        'updated_at'      => $date,
+    ]);
+}
+
+/**
+ * A channel's order count is measured from the orders themselves, since only they carry the date that
+ * says whether the order came after the touch claiming it.
+ */
+function createDispatchedOrderFor($customer, $shop, string $date, string $state = 'dispatched', float $net = 100): void
+{
+    \Illuminate\Support\Facades\DB::table('orders')->insert([
+        'group_id'        => $shop->group_id,
+        'organisation_id' => $shop->organisation_id,
+        'shop_id'         => $shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ord-'.uniqid(),
+        'state'           => $state,
+        'net_amount'      => $net,
+        'org_net_amount'  => $net,
+        'grp_net_amount'  => $net,
+        'status'          => \App\Enums\Ordering\Order\OrderStatusEnum::SETTLED,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => $date,
+        'created_at'      => $date,
+        'updated_at'      => $date,
+    ]);
+}
+
+function createTrafficSource(Shop $shop, string $type, string $name): TrafficSource
+{
+    return TrafficSource::firstOrCreate(
+        [
+            'shop_id' => $shop->id,
+            'type'    => $type,
+        ],
+        [
+            'group_id'        => $shop->group_id,
+            'organisation_id' => $shop->organisation_id,
+            'name'            => $name,
+        ]
+    );
 }
 
 function createTradeUnits(Group $group): array

@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromItems;
 use App\Actions\OrgAction;
@@ -22,19 +23,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDeliveryItem extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
 
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {

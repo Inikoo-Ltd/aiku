@@ -30,12 +30,14 @@ use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
+use App\Models\Traits\HasEffectiveStockPackedIn;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -179,8 +181,6 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_variant_leader
  * @property bool $is_minion_variant
  * @property bool $has_live_webpage
- * @property bool $is_golden_product
- * @property bool $is_in_website live webpage + sellable, mirrored into the search index
  * @property string|null $marketplace_id
  * @property numeric|null $margin
  * @property string|null $marketplace_second_id
@@ -190,8 +190,11 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $index_under_family
  * @property bool $is_on_demand
  * @property bool $not_follow_master_prices
- * @property bool $not_follow_master_media
  * @property string|null $units_review
+ * @property bool $is_in_website
+ * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
+ * @property bool $not_follow_master_media
+ * @property bool $is_golden_product
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -211,6 +214,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Currency $currency
  * @property-read \App\Models\Catalogue\HistoricAsset|null $currentHistoricProduct
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
+ * @property-read LaravelCollection<int, Customer> $exclusiveCustomers
  * @property-read Customer|null $exclusiveForCustomer
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
  * @property-read LaravelCollection<int, Favourite> $favourites
@@ -247,16 +251,17 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts
  * @method static \Database\Factories\Catalogue\ProductFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereLocale(string $column, string $locale)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereLocales(string $column, array $locales)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withTrashed(bool $withTrashed = true)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withoutTrashed()
+ * @method static Builder<static>|Product newModelQuery()
+ * @method static Builder<static>|Product newQuery()
+ * @method static Builder<static>|Product onlyTrashed()
+ * @method static Builder<static>|Product query()
+ * @method static Builder<static>|Product visibleToCustomer(?int $customerId)
+ * @method static Builder<static>|Product whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|Product whereLocale(string $column, string $locale)
+ * @method static Builder<static>|Product whereLocales(string $column, array $locales)
+ * @method static Builder<static>|Product withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Product withoutTrashed()
  * @mixin \Eloquent
  */
 class Product extends Model implements Auditable, HasMedia
@@ -264,6 +269,7 @@ class Product extends Model implements Auditable, HasMedia
     use SoftDeletes;
     use HasSlug;
     use InAssetModel;
+    use HasEffectiveStockPackedIn;
     use HasHistory;
     use HasFactory;
     use HasImage;
@@ -543,6 +549,61 @@ class Product extends Model implements Auditable, HasMedia
     public function exclusiveForCustomer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Every customer allowed to buy this product. exclusive_for_customer_id holds the primary one
+     * and marks the product as exclusive at all; this is the full list.
+     */
+    public function exclusiveCustomers(): BelongsToMany
+    {
+        return $this->belongsToMany(Customer::class, 'product_has_exclusive_customers')
+            ->withTimestamps();
+    }
+
+    /**
+     * Products a given customer may see: everything public, plus the ones sold exclusively to them.
+     * Pass null for an anonymous visitor, who sees only public products.
+     */
+    public function scopeVisibleToCustomer(Builder $query, ?int $customerId): Builder
+    {
+        return $query->where(function (Builder $query) use ($customerId) {
+            $query->whereNotExists(function ($sub) {
+                $sub->from('product_has_exclusive_customers')
+                    ->whereColumn('product_has_exclusive_customers.product_id', 'products.id');
+            });
+
+            if ($customerId) {
+                $query->orWhereExists(function ($sub) use ($customerId) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                        ->where('product_has_exclusive_customers.customer_id', $customerId);
+                });
+            }
+        });
+    }
+
+    /**
+     * Read from the pivot, never from exclusive_for_customer_id. Aurora rewrites that column on
+     * every product fetch from its own single-customer field, and it holds nothing for the ranges
+     * sold to the AW group companies, so trusting it would quietly make those products public.
+     */
+    public function isExclusive(): bool
+    {
+        return $this->exclusiveCustomers()->exists();
+    }
+
+    public function isExclusiveFor(?int $customerId): bool
+    {
+        if (!$this->isExclusive()) {
+            return true;
+        }
+
+        if (!$customerId) {
+            return false;
+        }
+
+        return $this->exclusiveCustomers()->whereKey($customerId)->exists();
     }
 
     public function containedByCollections(): MorphToMany

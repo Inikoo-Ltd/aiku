@@ -1680,6 +1680,46 @@ test('UI Edit Master Product with a trade unit not linked to a stock', function 
         ->and($showcase['trade_units'][0])->toHaveKey('pick_fractional');
 });
 
+test('showcase pick fraction follows org stock packing over group stock packing', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PCK-DEPT-'.uniqid(),
+        'name' => 'Packing Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PCK-FAM-'.uniqid(),
+        'name' => 'Packing Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PCK-AST-'.uniqid(),
+        'name'    => 'Packing Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits()->first();
+    $masterAsset->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+    DB::table('model_has_trade_units')
+        ->where('model_type', 'Stock')
+        ->where('trade_unit_id', $tradeUnit->id)
+        ->update(['quantity' => 12]);
+
+    $orgStock = $this->organisation->orgStocks()->first();
+    $tradeUnit->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+
+    $masterAsset->refresh()->load('tradeUnits');
+
+    expect($masterAsset->getEffectiveStockPackedInByTradeUnit())->toBe([$tradeUnit->id => 1.0])
+        ->and($product->load('tradeUnits')->getEffectiveStockPackedInByTradeUnit())->toBe([$tradeUnit->id => 1.0]);
+
+    $showcase = GetMasterProductShowcase::run($masterAsset);
+    expect($showcase['trade_units'][0]['pick_fractional'])->toEqual([1, [0, 1]]);
+});
+
 
 // ADDITIONAL MASTER ASSET ACTIONS
 
@@ -2599,6 +2639,54 @@ test('minor currency with increment rounds converted prices and rrps up to the s
     expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe(37.84);
 });
 
+test('master asset prices update when stored minor currency has no independent flag', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'PLN' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 4.3],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'NOINDDEP-'.uniqid(),
+        'name' => 'No Independent Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'NOINDFAM-'.uniqid(),
+        'name' => 'No Independent Family',
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'NOINDAST-'.uniqid(),
+        'name'    => 'No Independent Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 5.97,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 5.97, 'independent' => false],
+            'PLN' => ['value' => 25.67],
+        ],
+        'master_rrps'   => [
+            'EUR' => ['value' => 19.98, 'independent' => false],
+            'PLN' => ['value' => 85.91],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => ['EUR' => ['value' => 8.8, 'independent' => false]],
+        'master_rrps'   => ['EUR' => ['value' => 29.9, 'independent' => false]],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'EUR.value'))->toBe(8.8)
+        ->and(data_get($masterAsset->master_rrps, 'EUR.value'))->toBe(29.9);
+});
+
 test('master shop currencies rate can restrict to open shops only', function () {
     $masterShop = createFreshMasterShop();
     $masterShop->update(['price_exchanges' => [
@@ -2746,4 +2834,33 @@ test('warehouse packing change recomputes product pick quantity', function () {
     expect((float) $row->quantity)->toBe(0.5)
         ->and((int) $row->dividend)->toBe(4)
         ->and((int) $row->divisor)->toBe(1);
+});
+
+test('two master shops can each have a department and sub department with the same code', function () {
+    $sharedDepartmentCode    = 'SHDEP'.uniqid();
+    $sharedSubDepartmentCode = 'SHSUB'.uniqid();
+
+    $departments    = [];
+    $subDepartments = [];
+
+    foreach ([1, 2] as $n) {
+        $masterShop = createFreshMasterShop();
+
+        $departments[] = $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+            'code' => $sharedDepartmentCode,
+            'name' => "Shared department $n",
+        ]);
+
+        $subDepartments[] = StoreMasterSubDepartment::make()->action($masterDepartment, [
+            'code' => $sharedSubDepartmentCode,
+            'name' => "Shared sub department $n",
+        ]);
+    }
+
+    expect($departments[0]->code)->toBe($departments[1]->code)
+        ->and($departments[0]->id)->not->toBe($departments[1]->id)
+        ->and($departments[0]->master_shop_id)->not->toBe($departments[1]->master_shop_id)
+        ->and($subDepartments[0]->code)->toBe($subDepartments[1]->code)
+        ->and($subDepartments[0]->id)->not->toBe($subDepartments[1]->id)
+        ->and($subDepartments[0]->master_shop_id)->not->toBe($subDepartments[1]->master_shop_id);
 });

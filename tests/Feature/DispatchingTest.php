@@ -449,7 +449,8 @@ test('store picking', function (DeliveryNote $deliveryNote) {
         ->and(intval($picking->quantity))->toBe(5)
         ->and(intval($picking->deliveryNoteItem->quantity_picked))->toBe(5)
         ->and($picking->deliveryNoteItem->is_handled)->toBeFalse()
-        ->and($picking->location_id)->toBe($locationOrgStock->location_id);
+        ->and($picking->location_id)->toBe($locationOrgStock->location_id)
+        ->and($picking->last_picked_at)->not->toBeNull();
 
     $picking->refresh();
 
@@ -483,7 +484,12 @@ test('pack item', function (Picking $picking) {
 
     expect($packing)->toBeInstanceOf(Packing::class)
         ->and(intval($packing->quantity))->toBe(10)
-        ->and(intval($packing->deliveryNoteItem->quantity_packed))->toBe(10);
+        ->and(intval($packing->deliveryNoteItem->quantity_packed))->toBe(10)
+        ->and($packing->queued_at)->not->toBeNull()
+        ->and($packing->packing_at)->not->toBeNull()
+        ->and($packing->done_at)->not->toBeNull()
+        ->and($packing->done_at->gte($packing->packing_at))->toBeTrue()
+        ->and($packing->packing_at->gte($packing->queued_at))->toBeTrue();
 
     $packing->refresh();
 
@@ -1594,7 +1600,8 @@ test('picking upsert from waiting warehouse and magic place', function () {
     expect($magicPicking)->toBeInstanceOf(Picking::class)
         ->and($magicPicking->type)->toBe(PickingTypeEnum::MAGIC_PICK)
         ->and($magicPicking->location_id)->toBeNull()
-        ->and(floatval($magicPicking->quantity))->toBe(3.0);
+        ->and(floatval($magicPicking->quantity))->toBe(3.0)
+        ->and($magicPicking->last_picked_at)->not->toBeNull();
 });
 
 test('picking and delivery note item repairs and reindex', function () {
@@ -1832,6 +1839,17 @@ test('only dispatch supervisors can cancel a delivery note', function () {
     setPermissionsTeamId($user->group_id);
     $user->syncRoles($originalRoles);
     actingAs($user->refresh());
+});
+
+test('cancelling an order cancels its delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders->first();
+
+    actingAs($this->adminGuest->getUser());
+    patch(route('grp.models.order.state.cancelled', $order->id))->assertSessionHasNoErrors();
+
+    expect($order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
 });
 
 test('UI show delivery note richer states and tabs', function () {
@@ -2170,7 +2188,10 @@ test('marks record as failed with a clear message when sku is not found', functi
 
 test('org stock notes and consumables reach the picking screen', function () {
     /** @var DeliveryNoteItem $deliveryNoteItem */
-    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')
+        ->where('quantity_required', '>', 0)
+        ->whereHas('deliveryNote', fn ($query) => $query->has('deliveryNoteItems', '=', 1))
+        ->firstOrFail();
 
     UpdateOrgStock::make()->action(
         orgStock: $deliveryNoteItem->orgStock,
@@ -2221,7 +2242,9 @@ test('repair ial01 org stock consumables dry run writes nothing', function () {
 
 test('ial01 bom removal is blocked until a consumable replaces the instruction', function () {
     /** @var DeliveryNoteItem $deliveryNoteItem */
-    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')
+        ->whereHas('transaction', fn ($query) => $query->where('model_type', 'Product'))
+        ->firstOrFail();
     $orgStock         = $deliveryNoteItem->orgStock;
     $product          = $deliveryNoteItem->transaction->model;
 
@@ -2502,7 +2525,7 @@ test('sync required pick quantity updates delivery note items in place', functio
     $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
 
     $transaction = $this->order->transactions()->where('model_type', 'Product')->first();
-    $transaction->updateQuietly(['quantity_ordered' => 4]);
+    $transaction->updateQuietly(['quantity_ordered' => 4, 'quantity_bonus' => 0]);
 
     $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
         'reference'        => 'SYNC-'.$orgStock->id,
@@ -2593,6 +2616,27 @@ test('after rolling back the picking the new composition can be applied and the 
         ->and($deliveryNoteItem->composition_dirty_quantity_required)->toBeNull();
 })->depends('composition change flags packed items dirty instead of rewriting them');
 
+test('composition change flags items with picks dirty even in a synced state', function (DeliveryNoteItem $deliveryNoteItem) {
+    $deliveryNoteItem->updateQuietly([
+        'state'           => DeliveryNoteItemStateEnum::HANDLING,
+        'quantity_picked' => 5,
+    ]);
+
+    DB::table('product_has_org_stocks')
+        ->where('org_stock_id', $deliveryNoteItem->org_stock_id)
+        ->update(['quantity' => 9]);
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($deliveryNoteItem->orgStock);
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(28.0)
+        ->and($deliveryNoteItem->composition_dirty_at)->not->toBeNull()
+        ->and((float) $deliveryNoteItem->composition_dirty_quantity_required)->toBe(36.0);
+
+    expect(fn () => ApplyNewCompositionToDeliveryNoteItem::make()->handle($deliveryNoteItem))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+})->depends('composition change flags packed items dirty instead of rewriting them');
+
 test('picking an item auto ignores zero quantity items and hides them from the index', function () {
     $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
         'reference'        => 'ZQ123456',
@@ -2668,4 +2712,55 @@ test('waiting quantities never exceed what is still unpicked', function () {
     // Everything is now picked or with CRM: nothing left to park anywhere.
     expect(fn () => \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 5]))
         ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+});
+
+test('a redefined pack does not change what an already sold box means', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $transaction = $item->transaction;
+    $product     = $transaction->model;
+
+    $required = fn () => (float)\App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
+        ->getQuantityRequired($item->orgStock()->first(), \App\Models\Dispatching\DeliveryNoteItem::find($item->id));
+
+    $unitsSold = (float)$product->units;
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $item->org_stock_id],
+        ['quantity' => 3]
+    );
+
+    $soldAs = \App\Models\Catalogue\HistoricAsset::create([
+        'group_id'        => $product->group_id,
+        'organisation_id' => $product->organisation_id,
+        'asset_id'        => $product->asset_id,
+        'status'          => true,
+        'model_type'      => 'Product',
+        'model_id'        => $product->id,
+        'code'            => $product->code,
+        'name'            => $product->name,
+        'price'           => $product->price,
+        'unit'            => $product->unit,
+        'units'           => $unitsSold,
+    ]);
+    \Illuminate\Support\Facades\DB::table('transactions')->where('id', $transaction->id)
+        ->update(['historic_asset_id' => $soldAs->id]);
+
+    $beforeRedefinition = $required();
+    expect($beforeRedefinition)->toBeGreaterThan(0.0);
+
+    /*
+     * The pack is doubled — twice the units, twice the pick — written straight to the
+     * tables because hydrators derive units and a product update mints a fresh historic
+     * asset, either of which would replace the pack this order was sold at. What the
+     * customer bought has not changed, so neither may the quantity to pick.
+     */
+    \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)
+        ->update(['units' => $unitsSold * 2]);
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')
+        ->where('product_id', $product->id)->where('org_stock_id', $item->org_stock_id)
+        ->update(['quantity' => 6]);
+    \Illuminate\Support\Facades\DB::table('transactions')->where('id', $transaction->id)
+        ->update(['historic_asset_id' => $soldAs->id]);
+
+    expect($required())->toBe($beforeRedefinition);
 });

@@ -41,7 +41,7 @@ class EditAgent extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit marketplace agent'),
+                'title'       => __('Edit agent'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $agent,
                     $request->route()->originalParameters()
@@ -180,8 +180,7 @@ class EditAgent extends OrgAction
         }
 
         return match ($routeName) {
-            'grp.supply-chain.agents.edit',
-            'grp.org.procurement.marketplace.agents.edit' => [
+            'grp.supply-chain.agents.edit' => [
                 'label' => $agent->name,
                 'route' => [
                     'name'       => $routeName,

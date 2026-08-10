@@ -1,4 +1,4 @@
-@php($taxBreakdown = $document->taxBreakdown())
+@php($taxBreakdown = $taxBreakdownOverride ?? $document->taxBreakdown())
 
 @forelse($taxBreakdown as $tax)
     <tr>

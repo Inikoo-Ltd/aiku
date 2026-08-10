@@ -150,15 +150,15 @@ test('seed offer campaigns', function () {
     $this->group->refresh();
     $this->organisation->refresh();
 
-    expect($this->group->discountsStats->number_offer_campaigns)->toBe(11)
-        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
-        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(11)
-        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
-        ->and($shop->discountsStats->number_offer_campaigns)->toBe(11)
-        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11);
+    expect($this->group->discountsStats->number_offer_campaigns)->toBe(12)
+        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(11)
+        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(12)
+        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(12)
+        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(11)
+        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(12)
+        ->and($shop->discountsStats->number_offer_campaigns)->toBe(12)
+        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(11)
+        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(12);
 });
 
 test('update offer campaign', function () {
@@ -1618,6 +1618,8 @@ describe('calculate order discounts', function () {
             ->and($offer->status)->toBeTrue()
             ->and($offer->trigger_type)->toBe('Product')
             ->and($offer->type)->toBe('Product Quantity Ordered')
+            ->and($offer->offerCampaign->type)->toBe(OfferCampaignTypeEnum::STEP_OFFERS)
+            ->and($offer->code)->toBe('st-'.strtolower($this->product->code))
             ->and($offer->allowance_signature)->toBe('product:'.$this->product->id.':percentage_off:1-0.15,5-0.25')
             ->and(Arr::get($offer->offerAllowances->first()->data, 'steps.0.min_quantity'))->toBe(1);
 

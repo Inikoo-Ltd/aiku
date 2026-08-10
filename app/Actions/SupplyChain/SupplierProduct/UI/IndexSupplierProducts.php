@@ -17,6 +17,7 @@ use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Exports\SupplyChain\SupplierProductTemplateExport;
 use App\Http\Resources\SupplyChain\SupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SupplyChain\Agent;
@@ -85,6 +86,7 @@ class IndexSupplierProducts extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(SupplierProduct::class);
+        $queryBuilder->leftJoin('currencies', 'supplier_products.currency_id', 'currencies.id');
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -103,6 +105,8 @@ class IndexSupplierProducts extends OrgAction
                 'supplier_products.code',
                 'supplier_products.slug',
                 'supplier_products.name',
+                'supplier_products.cost',
+                'currencies.code as currency_code',
             ])
             ->leftJoin('supplier_product_stats', 'supplier_product_stats.supplier_product_id', 'supplier_products.id')
             ->when($parent, function ($query) use ($parent) {
@@ -121,7 +125,7 @@ class IndexSupplierProducts extends OrgAction
                     }
                 }
             })
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -152,6 +156,7 @@ class IndexSupplierProducts extends OrgAction
                 ->withLabelRecord([__('Supplier Product'), __('Supplier Products')])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'currency')
                 ->defaultSort('code');
         };
     }
@@ -270,12 +275,24 @@ class IndexSupplierProducts extends OrgAction
             $spreadsheetRoutes = [
                 'event'           => 'action-progress',
                 'channel'         => 'grp.personal.'.$this->group->id,
-                'required_fields' => ["id:_supplier_part_key", "supplier's_product_code", "units_per_sko", "skos_per_carton", "carton_cbm", "unit_cost", "availability", "supplier's_unit_description"],
+                'required_fields' => array_map(
+                    fn ($heading) => strtolower(str_replace(' ', '_', trim($heading))),
+                    SupplierProductTemplateExport::HEADINGS
+                ),
+                'template'        => [
+                    'label' => __('Download template (.xlsx)'),
+                ],
                 'route'           => [
-                    'upload' => [
+                    'upload'   => [
                         'name'       => 'grp.models.supplier.supplier-product.import',
                         'parameters' => [
                             'supplier' => $this->scope->id,
+                        ],
+                    ],
+                    'download' => [
+                        'name'       => 'grp.supply-chain.suppliers.supplier_products.uploads.templates',
+                        'parameters' => [
+                            'supplier' => $this->scope->slug,
                         ],
                     ],
                 ],
@@ -312,7 +329,7 @@ class IndexSupplierProducts extends OrgAction
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'label' => __('Supplier products'),
+                        'label' => __('Supplier Products'),
                         'icon'  => 'fal fa-bars',
                         'route' => $routeParameters,
                     ],

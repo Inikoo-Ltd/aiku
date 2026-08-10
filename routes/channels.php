@@ -62,6 +62,10 @@ Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });
 
+Broadcast::channel('grp.employee.{employeeID}.clocking', function (User $user, int $employeeID) {
+    return $user->employees()->where('id', $employeeID)->exists();
+});
+
 Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {
     return MasterShop::where('id', $masterShopId)->value('group_id') === $user->group_id;
 });
@@ -138,6 +142,10 @@ Broadcast::channel("updateWebblocks.{websiteSlug}", function () {
 });
 
 Broadcast::channel("grp.{organisation}.stock_movement", function () {
+    return true;
+});
+
+Broadcast::channel("grp.{order}.transaction_update", function (User $user) {
     return true;
 });
 

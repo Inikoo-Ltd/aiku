@@ -9,7 +9,6 @@
 namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -23,15 +22,37 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateSupplier extends OrgAction
 {
-    use WithSupplyChainEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithSupplierJsonColumns;
 
     private Supplier $supplier;
     private bool $action = false;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($this->supplier->agent && $request->user()->authTo("procurement.{$this->supplier->agent->organisation_id}.edit")) {
+            return true;
+        }
+
+        return $request->user()->authTo('supply-chain.edit');
+    }
+
     public function handle(Supplier $supplier, array $modelData): Supplier
     {
+        $leavingContainer = Arr::exists($modelData, 'delivery_type')
+            && Arr::get($modelData, 'delivery_type') !== 'container';
+
+        if ($leavingContainer) {
+            Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);
+        }
+
+        $modelData = $this->pullSupplierJsonColumns($modelData);
+
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
             Arr::forget($modelData, 'address');
@@ -44,6 +65,10 @@ class UpdateSupplier extends OrgAction
         }
 
         $supplier = $this->update($supplier, $modelData, ['data', 'settings']);
+
+        if ($leavingContainer) {
+            $supplier->update(['data' => Arr::except($supplier->data, self::CONTAINER_ONLY_FIELDS)]);
+        }
 
         if ($supplier->wasChanged(['name', 'code'])) {
             foreach ($supplier->orgSuppliers as $orgSupplier) {
@@ -62,7 +87,7 @@ class UpdateSupplier extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code'            => [
                 'sometimes',
                 'required',
                 'max:32',
@@ -79,14 +104,16 @@ class UpdateSupplier extends OrgAction
                     ]
                 ),
             ],
-            'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'        => ['sometimes', 'nullable', 'email'],
-            'phone'        => ['sometimes', 'nullable', new Phone()],
-            'address'      => ['sometimes', 'required', new ValidAddress()],
-            'currency_id'  => ['sometimes', 'required', 'exists:currencies,id'],
+            'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email'           => ['sometimes', 'nullable', 'email'],
+            'phone'           => ['sometimes', 'nullable', new Phone()],
+            'address'         => ['sometimes', 'required', new ValidAddress()],
+            'currency_id'     => ['sometimes', 'required', 'exists:currencies,id'],
         ];
+
+        $rules = array_merge($rules, $this->supplierJsonFieldRules());
 
         if (!$this->strict) {
             $rules['phone']       = ['sometimes', 'nullable', 'max:255'];
@@ -97,20 +124,6 @@ class UpdateSupplier extends OrgAction
         return $rules;
     }
 
-    public function action(Supplier $supplier, array $modelData, int $hydratorsDelay = 0, $strict = true, bool $audit = true): Supplier
-    {
-        if (!$audit) {
-            Supplier::disableAuditing();
-        }
-        $this->supplier       = $supplier;
-        $this->asAction       = true;
-        $this->strict         = $strict;
-        $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisationFromGroup($supplier->group, $modelData);
-
-        return $this->handle($supplier, $this->validatedData);
-    }
-
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
         $this->supplier = $supplier;
@@ -119,6 +132,20 @@ class UpdateSupplier extends OrgAction
         return $this->handle($supplier, $this->validatedData);
     }
 
+    public function action(Supplier $supplier, array $modelData, int $hydratorsDelay = 0, $strict = true, bool $audit = true): Supplier
+    {
+        if (!$audit) {
+            Supplier::disableAuditing();
+        }
+
+        $this->supplier       = $supplier;
+        $this->asAction       = true;
+        $this->strict         = $strict;
+        $this->hydratorsDelay = $hydratorsDelay;
+        $this->initialisationFromGroup($supplier->group, $modelData);
+
+        return $this->handle($supplier, $this->validatedData);
+    }
 
     public function jsonResponse(Supplier $supplier): SupplierResource
     {

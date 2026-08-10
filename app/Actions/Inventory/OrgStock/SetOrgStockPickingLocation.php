@@ -1,0 +1,78 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 19 May 2025 11:05:58 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Inventory\OrgStock;
+
+use App\Models\Inventory\OrgStock;
+use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class SetOrgStockPickingLocation implements ShouldBeUnique
+{
+    use AsAction;
+
+    public string $jobQueue = 'hydrators-slave';
+
+    public function getJobUniqueId(int|null $orgStockId): string
+    {
+        return $orgStockId ?? 'empty';
+    }
+
+    public function handle(int|null $orgStockId): void
+    {
+        if (!$orgStockId) {
+            return;
+        }
+        $orgStock = OrgStock::find($orgStockId);
+
+        if (!$orgStock) {
+            return;
+        }
+
+        $locationOrgStocks = $orgStock->locationOrgStocks;
+
+        $pickLocationId = fn (string $defaultFlag) => (
+            $locationOrgStocks->firstWhere($defaultFlag, true)
+            ?? $locationOrgStocks->sortBy(fn ($locationOrgStock) => $locationOrgStock->picking_priority ?? PHP_INT_MAX)->first()
+        )?->location_id;
+
+        $orgStock->update([
+            'picking_location_id'              => $pickLocationId('default_wholesale_picking_location') ?? $orgStock->picking_location_id,
+            'picking_dropshipping_location_id' => $pickLocationId('default_dropshipping_picking_location') ?? $orgStock->picking_dropshipping_location_id,
+        ]);
+    }
+
+
+    public string $commandSignature = 'repair:org_stock_location_ids';
+
+    public function asCommand(Command $command): void
+    {
+        $count = OrgStock::whereNull('picking_location_id')
+            ->orWhereNull('picking_dropshipping_location_id')
+            ->count();
+
+        $bar = $command->getOutput()->createProgressBar($count);
+        $bar->setFormat('debug');
+        $bar->start();
+
+        OrgStock::orderBy('id')
+            ->where(function ($query) {
+                $query->whereNull('picking_location_id')
+                    ->orWhereNull('picking_dropshipping_location_id');
+            })
+            ->chunk(100, function (Collection $models) use ($bar) {
+                foreach ($models as $model) {
+                    $this->handle($model->id);
+                    $bar->advance();
+                }
+            });
+    }
+
+}

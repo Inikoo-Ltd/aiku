@@ -23,7 +23,7 @@ import { set as setLodash, debounce, kebabCase } from 'lodash-es'
 import CountUp from 'vue-countup-v3'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang} from '@fal'
+import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang, faExclamationTriangle} from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
@@ -33,7 +33,8 @@ import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
 import TableRows from './TableRows.vue'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
-library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy)
+import { Message } from 'primevue'
+library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy, faExclamationTriangle)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -238,8 +239,31 @@ const props = defineProps(
             type: Boolean,
             default: false,
             required: false,
+        },
+        warning: {
+            type: Object,
+            default: () => {
+                return {};
+            },
+            required: false
+        },
+        showWarningMessage: {
+            type: Boolean,
+            default: false,
+            required: false,
         }
     });
+
+const isWarningVisible = ref(props.showWarningMessage)
+
+watch(
+    () => props.showWarningMessage,
+    (showWarningMessage) => {
+        if (showWarningMessage) {
+            isWarningVisible.value = true
+        }
+    }
+)
 
 // Flatten a row into a stable list of primitives for v-memo. Nested objects/arrays are stringified
 // so a change inside them is detected; the row re-renders only when one of these values changes.
@@ -332,6 +356,9 @@ const compResourceData = computed(() => {
 // }, {
 //     deep: true
 // })
+
+// requestAnimationFrame is frozen in hidden tabs, leaving CountUp stuck on its first frame
+const mountedWhileHidden = document.hidden
 
 // Meta Page (Previous/next link, current page, data per page)
 const compResourceMeta = computed(() => {
@@ -942,6 +969,16 @@ const virtualBottomSpacerHeight = computed(() => {
 
 const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?? 0) + (props.isCheckBox ? 1 : 0))
 
+const severityMap: Record<string, string> = {
+  warning: "warn",
+  success: "success",
+  info: "info",
+  error: "error"
+}
+
+const getSeverity = (type?: string) => {
+  return type ? severityMap[type.toLowerCase()] || "info" : "info"
+}
 </script>
 
 <template>
@@ -971,8 +1008,37 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
         </slot>
 
         <!--suppress HtmlUnknownAttribute -->
-        <fieldset v-else ref="tableFieldset" :key="`table-${name}`" :dusk="`table-${name}`" class="min-w-0"
-            :class="{ 'opacity-75': isVisiting || isParentLoading }">
+        <fieldset v-else ref="tableFieldset" :key="`table-${name}`" :dusk="`table-${name}`" class="min-w-0" :class="{ 'opacity-75': isVisiting || isParentLoading }">
+            <Message
+                v-if="warning && showWarningMessage && isWarningVisible"
+                :severity="getSeverity(warning.type)"
+                @close="isWarningVisible = false"
+            >
+                <div class="flex items-start gap-3">
+                    <!-- Icon -->
+                    <FontAwesomeIcon v-if="warning.icon" :icon="warning.icon" class="w-4 h-4 flex-shrink-0 my-auto" :class="[
+                        getSeverity(warning.type) === 'warn' ? 'text-yellow-800' :
+                            getSeverity(warning.type) === 'success' ? 'text-green-800' :
+                                getSeverity(warning.type) === 'error' ? 'text-red-800' :
+                                    'text-blue-500'
+                    ]" />
+
+                    <!-- Content -->
+                    <div class="flex flex-col">
+                        <div class="text-md font-semibold">
+                            {{ warning?.title }}
+                        </div>
+                        <div v-if="warning?.text" :class="[
+                            getSeverity(warning.type) === 'warn' ? 'text-yellow-600/80' :
+                                getSeverity(warning.type) === 'success' ? 'text-green-500' :
+                                    getSeverity(warning.type) === 'error' ? 'text-red-500' :
+                                        'text-blue-500'
+                        ]" class="text-sm">
+                            {{ warning?.text }}
+                        </div>
+                    </div>
+                </div>
+            </Message>
             <div class="py-2 sm:py-0 my-0">
                 <!-- Wrapper -->
 
@@ -1003,7 +1069,8 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                             <div class="grid justify-end items-center text-base font-normal text-gray-700">
                                 <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
                                     <span class="font-semibold tabular-nums">
-                                        <CountUp :endVal="compResourceMeta?.total || 0" :duration="1.2"
+                                        <template v-if="mountedWhileHidden">{{ locale.number(compResourceMeta?.total || 0) }}</template>
+                                        <CountUp v-else :endVal="compResourceMeta?.total || 0" :duration="1.2"
                                             :scrollSpyOnce="true" :options="{
                                             formattingFn: (number) => locale.number(number)
                                         }" />
@@ -1164,7 +1231,8 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                         <div class="grid justify-end items-center text-base font-normal text-gray-700">
                                             <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
                                                 <span class="font-semibold tabular-nums">
-                                                    <CountUp :endVal="compResourceMeta?.total || 0" :duration="1.2"
+                                                    <template v-if="mountedWhileHidden">{{ locale.number(compResourceMeta?.total || 0) }}</template>
+                                                    <CountUp v-else :endVal="compResourceMeta?.total || 0" :duration="1.2"
                                                         :scrollSpyOnce="true" :options="{
                                                         formattingFn: (number) => locale.number(number)
                                                     }" />
@@ -1288,18 +1356,22 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                         <tr v-for="{ data: item, index: key } in virtualList"
                                             :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
                                             v-memo="virtualRowMemo ? virtualRowMemo(item, key) : [{}]"
-                                            class="" :class="[
-                                                    {
-                                                        'bg-gray-50': striped && key % 2,
-                                                    },
-                                                    selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
-                                                        ? 'bg-green-100/70'
-                                                        : striped
-                                                            ? 'bg-gray-200 hover:bg-gray-300'
-                                                            : rowColorFunction(item)
-                                                                ? rowColorFunction(item)
-                                                                : 'hover:bg-gray-50'
-                                                ]">
+                                            class="" 
+                                            :class="[
+                                                {
+                                                    'bg-gray-50': striped && key % 2,
+                                                },
+                                                selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
+                                                    ? 'bg-green-100/70'
+                                                    : striped
+                                                        ? 'bg-gray-200 hover:bg-gray-300'
+                                                        : rowColorFunction(item)
+                                                            ? rowColorFunction(item)
+                                                            : 'hover:bg-gray-50',
+                                                
+                                                ]"
+                                        >
+
                                                 <td v-if="isCheckBox" key="checkbox" class="">
                                                     <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
                                                         <FontAwesomeIcon v-if="disabledCheckbox(item)"

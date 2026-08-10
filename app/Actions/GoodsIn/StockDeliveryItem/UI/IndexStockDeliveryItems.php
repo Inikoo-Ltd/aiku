@@ -43,7 +43,7 @@ class IndexStockDeliveryItems extends OrgAction
         ];
     }
 
-    public function handle(StockDelivery $parent, ?string $prefix = null): LengthAwarePaginator
+    public function handle(StockDelivery $parent, ?string $prefix = null, array|StockDeliveryItemStateEnum|null $stateFilter = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -62,6 +62,14 @@ class IndexStockDeliveryItems extends OrgAction
         $query->leftJoin('supplier_products as sp', 'sp.id', '=', 'stock_delivery_items.supplier_product_id');
         $query->leftJoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftJoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
+
+        if ($stateFilter) {
+            if (is_array($stateFilter)) {
+                $query->whereIn('stock_delivery_items.state', $stateFilter);
+            } else {
+                $query->where('stock_delivery_items.state', $stateFilter);
+            }
+        }
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $query->whereElementGroup(

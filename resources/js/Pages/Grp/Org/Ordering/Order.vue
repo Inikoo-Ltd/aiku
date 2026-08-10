@@ -28,6 +28,7 @@ import { Tabs as TSTabs } from "@/types/Tabs"
 import "@vuepic/vue-datepicker/dist/main.css"
 import "@/Composables/Icon/PalletDeliveryStateEnum"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import OrderMarketingJourney from "@/Components/Showcases/Grp/OrderMarketingJourney.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 import axios from "axios"
@@ -120,6 +121,7 @@ const props = defineProps<{
     tabs: TSTabs
 
     products?: TableTS
+    marketing?: InstanceType<typeof OrderMarketingJourney>['$props']['data']
     shop_type: 'b2b' | 'dropshipping'
     data?: {
         data: {
@@ -287,6 +289,7 @@ const props = defineProps<{
         icon: string
     }
     is_faire_order: boolean
+    allow_order_modification: boolean
 }>()
 
 
@@ -300,6 +303,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: OrderProductTable,
+        marketing: OrderMarketingJourney,
         returns: TableDeliveryNotes,
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
@@ -1812,6 +1816,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <NeedToPayV2 :totalAmount="box_stats.products.payment.total_amount"
                                     :paidAmount="box_stats.products.payment.paid_amount"
                                     :payAmount="box_stats.products.payment.pay_amount"
+                                    :writeOff="box_stats.products.payment.write_off"
                                     :balance="box_stats?.customer?.balance" :payments="payments_data"
                                     :currencyCode="currency.code" :toBePaidBy="data?.data?.to_be_paid_by"
                                     :order="data?.data" :handleTabUpdate="handleTabUpdate">
@@ -2365,8 +2370,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </BoxStatPallet>
     </div>
 
-    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
-        @update:tab="handleTabUpdate" />
+    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
@@ -2375,6 +2379,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             @update:tab="handleTabUpdate" :ref="(e) => _refComponents = e"
             :routesProductsListModification="routes.products_list_modification"
             :is_shop_external
+            :allow_order_modification
         />
     </div>
 

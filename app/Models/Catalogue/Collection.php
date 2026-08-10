@@ -54,7 +54,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property int|null $webpage_id
- * @property bool $is_in_website has a live webpage, mirrored into the search index
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
  * @property int|null $master_collection_id
@@ -68,6 +67,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $description_title_i8n
  * @property string|null $description_extra_i8n
  * @property HealthRankEnum|null $health_rank
+ * @property bool $is_in_website
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families

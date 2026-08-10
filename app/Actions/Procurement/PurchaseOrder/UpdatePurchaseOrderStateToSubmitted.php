@@ -8,6 +8,8 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrdersFromPurchaseOrder;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
@@ -22,20 +24,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use AsAction;
     use HasPurchaseOrderHydrators;
 
     private PurchaseOrder $purchaseOrder;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function afterValidator(Validator $validator): void
     {
@@ -54,14 +48,30 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
             'state' => PurchaseOrderTransactionStateEnum::SUBMITTED,
         ]);
 
-        $purchaseOrder = $this->update($purchaseOrder, [
+        $updateData = [
             'state'        => PurchaseOrderStateEnum::SUBMITTED,
             'submitted_at' => now(),
-        ]);
+        ];
+
+        if ($purchaseOrder->estimated_delivery_days === null) {
+            $deliveryDays = $purchaseOrder->purchaseOrderTransactions()
+                ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
+                ->selectRaw("max((supplier_products.data->>'delivery_time')::int) as delivery_days")
+                ->value('delivery_days');
+
+            if ($deliveryDays !== null) {
+                $updateData['estimated_delivery_days'] = $deliveryDays;
+                $updateData['estimated_received_at']   = $updateData['submitted_at']->clone()->addDays($deliveryDays);
+            }
+        }
+
+        $purchaseOrder = $this->update($purchaseOrder, $updateData);
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 
         $this->purchaseOrderHydrate($purchaseOrder);
+
+        StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
 
         // TODO: Decide whether submitting should transmit the order to the supplier/agent
         // (system-sent email + PDF) or whether that is done manually by the web user outside aiku.

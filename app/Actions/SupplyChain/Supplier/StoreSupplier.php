@@ -14,7 +14,6 @@ use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromFreeSupplier;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromSupplierInAgent;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
-use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -37,31 +36,22 @@ class StoreSupplier extends OrgAction
 {
     use WithModelAddressActions;
     use WithNoStrictRules;
-    use WithSupplyChainEditAuthorisation;
+    use WithSupplierJsonColumns;
 
-    private const DATA_FIELDS = [
-        'delivery_type',
-        'incoterm',
-        'port_of_export',
-        'port_of_import',
-        'production_waiting_time',
-        'delivery_time',
-    ];
+    private ?Agent $agent = null;
 
-    private const CONTAINER_ONLY_FIELDS = [
-        'incoterm',
-        'port_of_export',
-        'port_of_import',
-    ];
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
 
-    private const SETTINGS_FIELDS = [
-        'default_product_allow_on_demand',
-        'default_product_country_origin',
-        'payment_terms',
-        'order_number_prefix',
-        'minimum_order',
-        'cooling_period',
-    ];
+        if ($this->agent && $request->user()->authTo("procurement.{$this->agent->organisation_id}.edit")) {
+            return true;
+        }
+
+        return $request->user()->authTo('supply-chain.edit');
+    }
 
     /**
      * @throws \Throwable
@@ -79,8 +69,7 @@ class StoreSupplier extends OrgAction
             Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);
         }
 
-        $modelData = $this->pullIntoJsonColumn($modelData, 'data', self::DATA_FIELDS);
-        $modelData = $this->pullIntoJsonColumn($modelData, 'settings', self::SETTINGS_FIELDS);
+        $modelData = $this->pullSupplierJsonColumns($modelData);
 
         if ($parent instanceof Agent) {
             data_set($modelData, 'group_id', $parent->group_id);
@@ -131,7 +120,7 @@ class StoreSupplier extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'                            => [
+            'code'            => [
                 'required',
                 'max:32',
                 'alpha_dash',
@@ -142,31 +131,19 @@ class StoreSupplier extends OrgAction
                     ]
                 ),
             ],
-            'contact_name'                    => ['nullable', 'string', 'max:255'],
-            'contact_website'                 => ['nullable', 'string', 'max:255'],
-            'company_name'                    => ['nullable', 'string', 'max:255'],
-            'email'                           => ['nullable', 'email'],
-            'phone'                           => ['nullable', new Phone()],
-            'address'                         => ['required', new ValidAddress()],
-            'currency_id'                     => ['required', 'exists:currencies,id'],
-            'status'                          => ['sometimes', 'required', 'boolean'],
-            'scope_type'                      => ['string', Rule::in(['Group', 'Organisation'])],
-            'scope_id'                        => ['integer'],
-
-            'delivery_type'                   => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
-            'incoterm'                        => ['sometimes', 'nullable', 'string', 'max:8'],
-            'port_of_export'                  => ['sometimes', 'nullable', 'string', 'max:255'],
-            'port_of_import'                  => ['sometimes', 'nullable', 'string', 'max:255'],
-            'production_waiting_time'         => ['sometimes', 'nullable', 'integer', 'min:0'],
-            'delivery_time'                   => ['sometimes', 'nullable', 'integer', 'min:0'],
-
-            'default_product_allow_on_demand' => ['sometimes', 'boolean'],
-            'default_product_country_origin'  => ['sometimes', 'nullable', 'exists:countries,id'],
-            'payment_terms'                   => ['sometimes', 'nullable', 'string', 'max:255'],
-            'order_number_prefix'             => ['sometimes', 'nullable', 'string', 'max:16'],
-            'minimum_order'                   => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'cooling_period'                  => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'contact_name'    => ['nullable', 'string', 'max:255'],
+            'contact_website' => ['nullable', 'string', 'max:255'],
+            'company_name'    => ['nullable', 'string', 'max:255'],
+            'email'           => ['nullable', 'email'],
+            'phone'           => ['nullable', new Phone()],
+            'address'         => ['required', new ValidAddress()],
+            'currency_id'     => ['required', 'exists:currencies,id'],
+            'status'          => ['sometimes', 'required', 'boolean'],
+            'scope_type'      => ['string', Rule::in(['Group', 'Organisation'])],
+            'scope_id'        => ['integer'],
         ];
+
+        $rules = array_merge($rules, $this->supplierJsonFieldRules());
 
         if (!$this->strict) {
             $rules['phone']       = ['sometimes', 'nullable', 'max:255'];
@@ -227,6 +204,7 @@ class StoreSupplier extends OrgAction
      */
     public function inAgent(Agent $agent, ActionRequest $request): Supplier
     {
+        $this->agent = $agent;
         $this->initialisationFromGroup($agent->group, $request);
 
         return $this->handle($agent, $this->validatedData);
@@ -239,25 +217,6 @@ class StoreSupplier extends OrgAction
         }
 
         return Redirect::route('grp.supply-chain.suppliers.show', $supplier->slug);
-    }
-
-    protected function pullIntoJsonColumn(array $modelData, string $column, array $fields): array
-    {
-        foreach ($fields as $field) {
-            if (!array_key_exists($field, $modelData)) {
-                continue;
-            }
-
-            $value = Arr::pull($modelData, $field);
-
-            if ($value === null || $value === '') {
-                continue;
-            }
-
-            $modelData[$column][$field] = $value;
-        }
-
-        return $modelData;
     }
 
     protected function getGroup(Group|Agent $parent): Group

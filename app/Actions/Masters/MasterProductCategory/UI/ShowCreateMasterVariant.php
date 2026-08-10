@@ -22,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowCreateMasterVariant extends OrgAction
 {
     use WithMastersEditAuthorisation;
-    
+
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();

@@ -99,6 +99,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Ordering\SalesChannel;
@@ -248,6 +249,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, TestEmailRecipient> $testEmailRecipients
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopTimeSeries> $timeSeries
  * @property-read Timezone $timezone
+ * @property-read LaravelCollection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read LaravelCollection<int, TopUp> $topUps
  * @property-read LaravelCollection<int, TrafficSource> $trafficSources
  * @property-read LaravelCollection<int, Transaction> $transactions
@@ -276,6 +278,7 @@ class Shop extends Model implements HasMedia, Auditable
     use HasImage;
     use WithFaireApi;
     use WithReviewIOApi;
+    use HasApiTokens;
 
     protected $casts = [
         'data'                         => 'array',

@@ -32,6 +32,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property numeric|null $cogs_org_currency
+ * @property numeric|null $cogs_grp_currency
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockTimeSeriesRecord query()

@@ -11,6 +11,7 @@ namespace App\Models\Procurement;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\HistoricSupplierProduct;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Traits\InOrganisation;
@@ -50,6 +51,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $last_fetched_at
  * @property string|null $deleted_at
  * @property string|null $source_id
+ * @property int|null $agent_supplier_purchase_order_id
+ * @property-read AgentSupplierPurchaseOrder|null $agentSupplierPurchaseOrder
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricSupplierProduct|null $historicSupplierProduct
  * @property-read OrgStock|null $orgStock
@@ -83,6 +86,11 @@ class PurchaseOrderTransaction extends Model
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    public function agentSupplierPurchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(AgentSupplierPurchaseOrder::class);
     }
 
     public function supplierProduct(): BelongsTo

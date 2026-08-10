@@ -78,6 +78,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_active_announcements
  * @property int $number_inactive_announcements
  * @property int $number_webpages_sub_type_mailshot
+ * @property int $number_webpages_sub_type_davids_travel_blog
+ * @property int $number_webpages_sub_type_tips
  * @property-read \App\Models\Web\Website|null $website
  * @method static Builder<static>|WebsiteStats newModelQuery()
  * @method static Builder<static>|WebsiteStats newQuery()
