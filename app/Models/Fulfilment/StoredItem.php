@@ -127,12 +127,6 @@ class StoredItem extends Model implements Auditable
         return $this->hasMany(PalletStoredItem::class);
     }
 
-
-    public function tiktokPortfolio(): MorphOne
-    {
-        return $this->morphOne(TiktokUserHasProduct::class, 'productable');
-    }
-
     public function portfolio(): MorphOne
     {
         return $this->morphOne(Portfolio::class, 'item');

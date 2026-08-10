@@ -33,11 +33,9 @@ class SyncAllRetinaStoredItemsToPortfolios extends RetinaAction
             ]);
         }
 
-        if (!empty($itemsToSync)) {
-            StoreRetinaProductManual::make()->action($customerSalesChannel, [
-                'items' => $storedItemIds
-            ]);
-        }
+        StoreRetinaProductManual::make()->action($customerSalesChannel, [
+            'items' => $storedItemIds
+        ]);
 
         return $customerSalesChannel;
     }
