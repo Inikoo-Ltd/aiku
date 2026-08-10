@@ -102,7 +102,7 @@ const timesheetRoute = (timesheet: Timesheet) => {
         </template>
 
         <template #cell(notes)="{ item: timesheet }">
-            <div class="max-w-xs truncate text-gray-600">
+            <div class="max-w-[10rem] truncate text-gray-600" :title="timesheet.notes || undefined">
                 {{ timesheet.notes || "-" }}
             </div>
         </template>

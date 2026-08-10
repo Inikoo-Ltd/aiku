@@ -9,6 +9,7 @@
 namespace App\Enums\Helpers\TimeSeries;
 
 use App\Enums\EnumHelperTrait;
+use Illuminate\Support\Carbon;
 
 enum TimeSeriesFrequencyEnum: string
 {
@@ -39,6 +40,20 @@ enum TimeSeriesFrequencyEnum: string
             self::MONTHLY => 'M',
             self::QUARTERLY => 'Q',
             self::YEARLY => 'Y',
+        };
+    }
+
+    /**
+     * Earliest possible start of a period of this frequency that is still running at the given date.
+     */
+    public function earliestPeriodStart(Carbon $date): Carbon
+    {
+        return match ($this) {
+            self::DAILY => $date->copy()->subDay(),
+            self::WEEKLY => $date->copy()->subWeek(),
+            self::MONTHLY => $date->copy()->subMonth(),
+            self::QUARTERLY => $date->copy()->subQuarter(),
+            self::YEARLY => $date->copy()->subYear(),
         };
     }
 
