@@ -38,9 +38,20 @@ class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
 
 
         return DB::transaction(function () use ($deliveryNoteItem, $modelData, $user) {
-            $quantity = max(Arr::get($modelData, 'quantity', 0), $deliveryNoteItem->quantity_waiting_warehouse);
+            /*
+             * Only what is actually parked here can be taken out of it. Asking for the larger of the
+             * two drained the bucket past empty and left it negative, and a negative bucket is added
+             * back by every formula that subtracts it, so the screen then offered more than the
+             * order ever required.
+             */
+            $quantityStillWaitingForWarehouse = (float)$deliveryNoteItem->quantity_waiting_warehouse;
+            $quantityToNotPick                = min((float)Arr::get($modelData, 'quantity', 0), $quantityStillWaitingForWarehouse);
 
-            $newQuantityWaitingWarehouse = $deliveryNoteItem->quantity_waiting_warehouse - $quantity;
+            if ($quantityToNotPick <= 0) {
+                return null;
+            }
+
+            $newQuantityWaitingWarehouse = round($quantityStillWaitingForWarehouse - $quantityToNotPick, 6);
 
             $deliveryNoteItem->update([
                 'quantity_waiting_warehouse' => $newQuantityWaitingWarehouse,
@@ -48,9 +59,10 @@ class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
+            data_set($modelData, 'quantity', $quantityToNotPick);
 
             $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $user, $modelData);
-            
+
             $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $user);
 
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
@@ -72,7 +84,7 @@ class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if (!$request->has('quantity')) {
-            $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
+            $this->set('quantity', $this->deliveryNoteItem->quantity_waiting_warehouse);
         }
     }
 
