@@ -77,6 +77,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\Task;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
@@ -619,6 +620,12 @@ class Shop extends Model implements HasMedia, Auditable
     public function collections(): MorphToMany
     {
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
+    }
+
+    /** Inverse of User::authorisedShops(); holding the shop still says nothing about the permissions on it. */
+    public function authorisedUsers(): MorphToMany
+    {
+        return $this->morphToMany(User::class, 'model', 'user_has_authorised_models')->withTimestamps();
     }
 
 
