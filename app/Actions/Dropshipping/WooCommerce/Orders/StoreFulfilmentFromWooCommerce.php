@@ -13,6 +13,7 @@ use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedWooCommerceAddress;
+use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -23,6 +24,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
+use function Sentry\captureMessage;
 
 class StoreFulfilmentFromWooCommerce extends OrgAction
 {
@@ -38,7 +40,6 @@ class StoreFulfilmentFromWooCommerce extends OrgAction
     {
         $fulfilmentCustomer = $wooCommerceUser->customer->fulfilmentCustomer;
         $wooProducts = collect(Arr::get($wooOrderData, 'line_items', []));
-        $storedItemModels = $this->digestWooProducts($wooCommerceUser, $wooOrderData);
 
         $wooUserHasProductExists = $wooCommerceUser->customerSalesChannel->portfolios()
             ->whereIn('platform_product_id', $wooProducts->pluck('product_id'))->exists();
@@ -57,12 +58,30 @@ class StoreFulfilmentFromWooCommerce extends OrgAction
             'is_collection'             => false
         ]);
 
-        StoreStoredItemsToReturn::make()->action(
-            palletReturn: $palletReturn,
-            modelData: [
-                'stored_items' => $storedItemModels
-            ]
-        );
+        foreach ($wooProducts as $wooProduct) {
+            /** @var Portfolio $portfolio */
+            $portfolio = $wooCommerceUser->customerSalesChannel->portfolios()
+                ->where('platform_product_id', $wooProduct['product_id'])->first();
+
+            if ($portfolio) {
+                /** @var StoredItem $storedItem */
+                $storedItem = $portfolio->item;
+                if (!$storedItem) {
+                    captureMessage('Portfolio '.$portfolio->id.' does not have a product');
+                    continue;
+                }
+
+                $palletStoredItem = $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
+
+                if(!$palletStoredItem) {
+                    continue;
+                }
+
+                AttachRetinaStoredItemToReturn::run($palletReturn, $palletStoredItem, [
+                    'quantity_ordered' => $wooProduct['quantity']
+                ]);
+            }
+        }
 
         SubmitAndConfirmPalletReturn::run($palletReturn, []);
     }
@@ -92,34 +111,4 @@ class StoreFulfilmentFromWooCommerce extends OrgAction
 
         return new Address($address);
     }
-
-
-    public function digestWooProducts(WooCommerceUser $wooCommerceUser, array $wooOrderData): array
-    {
-        $storedItemModels = [];
-        $wooProducts = Arr::get($wooOrderData, 'line_items', []);
-
-        foreach ($wooProducts as $wooProduct) {
-            /** @var Portfolio $portfolio */
-            $portfolio = $wooCommerceUser->customerSalesChannel->portfolios()
-                ->where('platform_product_id', $wooProduct['product_id'])->first();
-
-            if ($portfolio) {
-                /** @var StoredItem $product */
-                $storedItem = $portfolio->item;
-                if (!$storedItem) {
-                    \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
-                    continue;
-                }
-
-                $storedItemModels[$storedItem->id] = [
-                    'quantity' => $wooProduct['quantity']
-                ];
-            }
-        }
-
-        return $storedItemModels;
-    }
-
-
 }

@@ -24,9 +24,16 @@ You need three things:
 1. **Access to the Google Ads account** with permission to create scripts. In Google Ads terms
    this is "Standard" or "Admin" access. If you can see **Tools & Settings** in the top menu and
    there is a **Scripts** entry under **Bulk Actions**, you have it.
-2. **Your shop code.** This is the short code Aiku uses for the shop the Ads account advertises,
-   e.g. `aw` or `uk`. If you do not know it, ask whoever gave you the token — it is written on
-   the same message.
+2. **Your shop slug.** This is the short name Aiku uses for the shop the Ads account advertises,
+   e.g. `uk`. It is written on the same message as your token — use exactly what it says, in
+   lower case.
+
+   Two things it is **not**, both of which get you rejected with a 403:
+
+   - It is not the website address. `ancientwisdom.biz` is the website `aw`, but the shop it
+     belongs to is `uk`.
+   - It is not the shop's display code. Aiku matches this value exactly, letter for letter, so
+     the code `UK` is not accepted where the slug `uk` is meant.
 3. **Your token.** This is a long secret string, roughly like
    `47|kQ8vNc3ZpR9wLxT2mF6yH4bJ0sD1aG5eU7iO`. See the next section for how to get one.
 
@@ -89,14 +96,14 @@ Near the top of what you just pasted there is a short block that looks like this
 var CONFIG = {
   ENDPOINT: 'https://aiku.io/webhooks/traffic-source-costs',
   TOKEN: 'PASTE-YOUR-TOKEN-HERE',
-  SHOP: 'PASTE-YOUR-SHOP-CODE-HERE'
+  SHOP: 'PASTE-YOUR-SHOP-SLUG-HERE'
 };
 ```
 
 Replace the two placeholder texts, keeping the quote marks around them:
 
 - `PASTE-YOUR-TOKEN-HERE` → your token.
-- `PASTE-YOUR-SHOP-CODE-HERE` → your shop code, e.g. `aw`.
+- `PASTE-YOUR-SHOP-SLUG-HERE` → your shop slug, e.g. `uk`.
 
 Leave `ENDPOINT` alone unless the message that came with your token gave you a different address
 (it will have, if you are setting this up against a test environment).
@@ -107,7 +114,7 @@ A filled-in version looks like:
 var CONFIG = {
   ENDPOINT: 'https://aiku.io/webhooks/traffic-source-costs',
   TOKEN: '47|kQ8vNc3ZpR9wLxT2mF6yH4bJ0sD1aG5eU7iO',
-  SHOP: 'aw'
+  SHOP: 'uk'
 };
 ```
 
@@ -131,8 +138,8 @@ If you skip this, the script fails the first time it runs with a permissions err
 You want to see two lines roughly like:
 
 ```
-Sending 6 campaign(s) for 2026-08-06, total 153.22 GBP for shop aw.
-OK — {"shop":"aw","source":"google-ads","stored":6,"errors":[]}
+Sending 6 campaign(s) for 2026-08-06, total 153.22 GBP for shop uk.
+OK — {"shop":"uk","source":"google-ads","stored":6,"errors":[]}
 ```
 
 `stored: 6` means six campaign-days of spend were saved. If you see something else, jump to
@@ -195,8 +202,9 @@ One of three things:
 
 1. The token was typed or pasted incompletely. It must include the number and the `|` bar at the
    start. Re-copy it in full.
-2. The `SHOP` code in the script is not the shop the token belongs to. Check the message the
-   token came in.
+2. The `SHOP` value in the script is not the shop the token belongs to. It must be the shop
+   **slug**, matched exactly and in lower case — not the website address, and not the shop's
+   display code. Check the message the token came in.
 3. The token has been cancelled. Ask for a new one.
 
 ### "Aiku could not read the data (422)"
@@ -289,7 +297,7 @@ sees a token, and a token is only ever good for one shop.
 
 ## What actually gets sent (for the curious)
 
-One request per account per day. It contains: the shop code, the word `google-ads`, the account's
+One request per account per day. It contains: the shop slug, the word `google-ads`, the account's
 currency, and one line per campaign with the date, the Google campaign id, the campaign name, the
 campaign type and the amount spent. No customer data, no order data, nothing personal. Campaign
 ids are the same numbers Google shows in your Ads account, which is how Aiku lines the cost up

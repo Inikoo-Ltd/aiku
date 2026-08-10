@@ -308,9 +308,8 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('{masterProduct}/composition', EditMasterProductComposition::class)->name('composition');
                 Route::get('{masterProduct}/invoices', [IndexInvoicesInProduct::class, 'inMaster'])->name('invoices');
                 Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMaster'])->name('products');
+                Route::get('{masterProduct}/sales', IndexProductsInMasterProductSales::class)->name('show.sales');
             });
-               
-            Route::get('{masterProduct}/sales', IndexProductsInMasterProductSales::class)->name('show.sales');
 
             Route::prefix('products')->as('.products.')->group(function () {
                 Route::get('/mismatched-families', [IndexProductsWithMismatchedFamily::class, 'inMasterShop'])->name('mismatched_families');
