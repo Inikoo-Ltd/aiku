@@ -11,6 +11,7 @@ namespace App\Actions\Web\WebLayoutTemplate;
 
 use App\Actions\OrgAction;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\SysAdmin\User;
 use App\Models\Web\WebLayoutTemplate;
 use App\Models\Web\Webpage;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreWebLayoutTemplate extends OrgAction
 {
+    private User $user;
+
     public function handle(Webpage $webpage, array $modelData): void
     {
         if (in_array($webpage->type, [WebpageTypeEnum::STOREFRONT, WebpageTypeEnum::BLOG])) {
@@ -26,6 +29,7 @@ class StoreWebLayoutTemplate extends OrgAction
 
         data_set($modelData, 'type', class_basename($webpage));
         data_set($modelData, 'scope', $webpage->type);
+        data_set($modelData, 'author_id', $this->user->id);
 
         WebLayoutTemplate::create($modelData);
     }
@@ -40,6 +44,7 @@ class StoreWebLayoutTemplate extends OrgAction
 
     public function asController(Webpage $webpage, ActionRequest $request): void
     {
+        $this->user = $request->user();
         $this->initialisationFromGroup($webpage->group, $request);
 
         $this->handle($webpage, $this->validatedData);

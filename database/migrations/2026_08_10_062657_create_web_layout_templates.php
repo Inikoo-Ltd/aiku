@@ -13,6 +13,7 @@ return new class () extends Migration {
             $table->string('type')->index();
             $table->string('scope')->index();
             $table->jsonb('blocks')->default('{}');
+            $table->unsignedInteger('author_id')->references('id')->on('user')->nullable();
             $table->timestampsTz();
         });
     }

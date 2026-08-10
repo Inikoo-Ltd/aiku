@@ -13,24 +13,55 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Web\WebLayoutTemplatesResource;
 use App\Models\Web\WebLayoutTemplate;
 use App\Models\Web\Webpage;
-use Illuminate\Database\Eloquent\Collection;
+use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWebLayoutTemplates extends OrgAction
 {
-    public function handle(Webpage $webpage): Collection
+    public function handle(Webpage $webpage, ?string $prefix = null): LengthAwarePaginator
     {
-        return WebLayoutTemplate::where('type', class_basename($webpage))
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('web_layout_templates.name', $value)
+                    ->orWhereStartWith('user.username', $value);
+            });
+        });
+
+        $query = QueryBuilder::for(WebLayoutTemplate::class)
+            ->where('type', class_basename($webpage))
             ->where('scope', $webpage->type)
-            ->orderBy('name')
-            ->get();
+            ->leftJoin('users', 'users.id', 'web_layout_templates.author_id')
+            ->orderBy('name');
+
+        return $query
+            ->select([
+                'web_layout_templates.id',
+                'web_layout_templates.name',
+                'web_layout_templates.type',
+                'web_layout_templates.scope',
+                'user.username'
+            ])
+            ->allowedSorts([
+                'name',
+                'username',
+            ])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
-    public function asController(Webpage $webpage, ActionRequest $request): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $layoutTemplates): AnonymousResourceCollection
+    {
+        return WebLayoutTemplatesResource::collection($layoutTemplates);
+    }
+
+    public function asController(Webpage $webpage, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromGroup($webpage->group, $request);
 
-        return WebLayoutTemplatesResource::collection($this->handle($webpage));
+        return $this->handle($webpage);
     }
 }
