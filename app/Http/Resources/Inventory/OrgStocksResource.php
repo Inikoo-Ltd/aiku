@@ -87,6 +87,7 @@ class OrgStocksResource extends JsonResource
             'invoices_ly'                       => $this->invoices_ly ?? 0,
             'invoices_delta'                    => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
             'gross_profit'                      => $this->gross_profit ?? 0,
+            'gross_profit_percentage'           => $this->gross_profit_percentage !== null ? (float) $this->gross_profit_percentage : null,
             'potential_sales'                   => $this->potential_sales ?? 0,
             'on_the_way_po_value'               => $this->on_the_way_po_value ?? 0,
             'on_the_way_po_count'               => $this->on_the_way_po_count ?? 0,

@@ -174,6 +174,7 @@ class IndexOrgStockFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
 
             $selects[] = $this->grossProfitSelect($timeSeriesData['alias']);
+            $selects[] = $this->grossProfitPercentageSelect($timeSeriesData['alias']);
         } else {
             $selects[] = $this->stockCoverSelect($this->joinTrailingYearCogs($queryBuilder, $organisation), 365);
             $selects[] = $this->stockTurnSelect($this->joinLast3MonthsSales($queryBuilder, $organisation));
@@ -279,6 +280,15 @@ class IndexOrgStockFamilies extends OrgAction
     {
         return DB::raw(
             "COALESCE($alias.sales_org_currency_external, 0) - COALESCE($alias.cogs_org_currency, 0) as gross_profit"
+        );
+    }
+
+    protected function grossProfitPercentageSelect(string $alias): Expression
+    {
+        return DB::raw(
+            "CASE WHEN COALESCE($alias.sales_org_currency_external, 0) <> 0"
+            ." THEN ROUND(((COALESCE($alias.sales_org_currency_external, 0) - COALESCE($alias.cogs_org_currency, 0)) / $alias.sales_org_currency_external * 100)::numeric, 1)"
+            .' ELSE NULL END as gross_profit_percentage'
         );
     }
 

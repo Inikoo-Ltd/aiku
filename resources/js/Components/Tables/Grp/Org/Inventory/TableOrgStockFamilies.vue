@@ -102,7 +102,11 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
         </template>
 
         <template #cell(gross_profit)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.gross_profit) }}</span>
+            <span
+                v-tooltip="item.gross_profit_percentage !== null ? `${item.gross_profit_percentage}%` : undefined"
+                class="tabular-nums"
+                :class="item.gross_profit_percentage !== null ? 'cursor-help' : ''"
+            >{{ locale.currencyFormat(item.currency_code, item.gross_profit) }}</span>
         </template>
 
         <template #cell(stock_turn)="{ item }">
