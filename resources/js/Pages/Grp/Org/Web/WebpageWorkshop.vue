@@ -520,11 +520,26 @@ const onCreateTemplate = (payload: {
     fieldValue: any
   }>
 }) => {
-  console.log('createTemplate', payload);
-  notify({
-    title: trans("Create as template"),
-    text: trans("Saving templates is not available yet."),
-    type: "warn"
+  isCreatingTemplate.value = true;
+
+  axios.post(
+    route('grp.models.webpage.store_as_template', { webpage: data.value.id }),
+    payload
+  ).then(() => {
+    isCreateTemplateDialogVisible.value = false;
+    notify({
+      title: trans("Success"),
+      text: trans("Template has been created"),
+      type: "success"
+    });
+  }).catch(error => {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  }).finally(() => {
+    isCreatingTemplate.value = false;
   });
 };
 
