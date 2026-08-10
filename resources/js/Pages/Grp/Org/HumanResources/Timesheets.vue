@@ -50,6 +50,7 @@ const props = defineProps<{
         navigation: any
     }
     employeeOptions?: { value: number; label: string }[]
+    employeeContext?: { id: number; slug: string; name: string } | null
     employees?: {}
     employee?: {}
 }>()
@@ -63,7 +64,7 @@ const createTimesheetForm = useForm<{
     clock_out: string
     notes: string
 }>({
-    employee_id: null,
+    employee_id: props.employeeContext?.id ?? null,
     date: '',
     clock_in: '',
     clock_out: '',
@@ -73,6 +74,7 @@ const createTimesheetForm = useForm<{
 const openCreateTimesheetModal = () => {
     createTimesheetForm.reset()
     createTimesheetForm.clearErrors()
+    createTimesheetForm.employee_id = props.employeeContext?.id ?? null
     showCreateTimesheetModal.value = true
 }
 
@@ -186,7 +188,7 @@ const exportEmployeeIds = ref<number[]>([])
 const exportType = ref<'xlsx' | 'csv'>('xlsx')
 
 const openExportModal = () => {
-    exportEmployeeIds.value = []
+    exportEmployeeIds.value = props.employeeContext ? [props.employeeContext.id] : []
     exportType.value = 'xlsx'
     showExportModal.value = true
 }
@@ -201,10 +203,13 @@ const submitExport = () => {
         : 'grp.org.hr.timesheets.export_by_date'
 
     const params: Record<string, any> = { ...(route().params as Record<string, any>) }
+    delete params.employee
     params.type = exportType.value
 
-    if (exportEmployeeIds.value.length) {
-        params.employee_id = exportEmployeeIds.value
+    const employeeIds = props.employeeContext ? [props.employeeContext.id] : exportEmployeeIds.value
+
+    if (employeeIds.length) {
+        params.employee_id = employeeIds
     } else {
         delete params.employee_id
     }
@@ -266,7 +271,11 @@ const submitExport = () => {
                 <label class="block text-sm font-medium text-gray-700">
                     {{ trans('Employee') }}
                 </label>
+                <div v-if="employeeContext" class="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                    {{ employeeContext.name }}
+                </div>
                 <Select
+                    v-else
                     v-model="createTimesheetForm.employee_id"
                     :options="employeeOptions"
                     optionLabel="label"
@@ -367,9 +376,14 @@ const submitExport = () => {
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Employees') }} <span class="text-gray-400 font-normal">({{ trans('leave empty for everyone') }})</span>
+                    {{ trans('Employees') }}
+                    <span v-if="!employeeContext" class="text-gray-400 font-normal">({{ trans('leave empty for everyone') }})</span>
                 </label>
+                <div v-if="employeeContext" class="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                    {{ employeeContext.name }}
+                </div>
                 <MultiSelect
+                    v-else
                     v-model="exportEmployeeIds"
                     :options="employeeOptions"
                     optionLabel="label"

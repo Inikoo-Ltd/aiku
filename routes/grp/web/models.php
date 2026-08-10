@@ -294,6 +294,7 @@ use App\Actions\Helpers\Tag\StoreTag;
 use App\Actions\Helpers\Tag\UpdateTag;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
+use App\Actions\HumanResources\Clocking\StoreManualClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\Timesheet\DeleteTimesheet;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
@@ -1456,6 +1457,7 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
     Route::delete('clocking/{clocking:id}', DeleteClocking::class)->name('clocking.delete');
 });
 Route::delete('timesheet/{timesheet:id}', DeleteTimesheet::class)->name('timesheet.delete');
+Route::post('timesheet/{timesheet:id}/clocking', StoreManualClocking::class)->name('timesheet.clocking.store');
 Route::patch('time-tracker/{timeTracker:id}/clock-in', ClockInTimeTracker::class)->name('time-tracker.clock-in');
 Route::patch('time-tracker/{timeTracker:id}/clock-out', ClockOutTimeTracker::class)->name('time-tracker.clock-out');
 Route::delete('time-tracker/{timeTracker:id}', DeleteTimeTracker::class)->name('time-tracker.delete');

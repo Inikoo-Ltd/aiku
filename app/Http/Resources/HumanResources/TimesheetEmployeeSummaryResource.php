@@ -28,6 +28,7 @@ class TimesheetEmployeeSummaryResource extends JsonResource
             'subject_type'             => $this->subject_type,
             'subject_id'               => $this->subject_id,
             'subject_name'             => $this->subject_name,
+            'subject_slug'             => $this->subject_slug ?? null,
             'job_position'             => $this->job_position ?: '-',
             'timesheet_count'          => (int) $this->timesheet_count,
             'clockings'                => (int) $this->clockings,
