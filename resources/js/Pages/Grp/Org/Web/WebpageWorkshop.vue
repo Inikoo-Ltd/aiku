@@ -30,6 +30,7 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Dialog from 'primevue/dialog';
 import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
+import CreateTemplateDialog from '@/Components/Workshop/CreateTemplateDialog.vue'
 
 import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
@@ -44,7 +45,8 @@ import {
   faUndo,
   faRedo,
   faChevronRight,
-  faSync
+  faSync,
+  faLayerPlus
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -104,6 +106,8 @@ const imageUploadSetting = ref(null)
 const activeChildBlockArray = ref<number | null>(null);
 const activeChildBlockArrayBlock = ref<number | null>(null);
 const sideKey = ref(1);
+const isCreateTemplateDialogVisible = ref(false);
+const isCreatingTemplate = ref(false);
 
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
@@ -502,6 +506,28 @@ const setHideBlock = (block: Daum) => {
   onSaveWorkshop(block);
 };
 
+const onCreateTemplate = (payload: {
+  name: string,
+  scope: 'shown' | 'all',
+  blocks: Array<{
+    id: number,
+    type: string,
+    position: number,
+    show: boolean,
+    visibility: any,
+    web_block_id: number | undefined,
+    web_block_type_id: number | undefined,
+    fieldValue: any
+  }>
+}) => {
+  console.log('createTemplate', payload);
+  notify({
+    title: trans("Create as template"),
+    text: trans("Saving templates is not available yet."),
+    type: "warn"
+  });
+};
+
 
 
 const saveState = () => {
@@ -593,6 +619,7 @@ onMounted(() => {
   layout.leftSidebar.show = false
   const handleMessage = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return;
+    if (isCreateTemplateDialogVisible.value) return;
     const { key, value } = event.data;
     switch (key) {
       case 'autosave':
@@ -791,6 +818,16 @@ console.log('props_workshop',props)
             {{ trans('Saving..') }}
           </span>
 
+          <!-- Create as template -->
+          <button type="button" v-tooltip.bottom="trans('Pick the blocks to keep and save this page as a template')"
+            @click="isCreateTemplateDialogVisible = true"
+            class="h-7 flex items-center gap-1.5 px-2 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+            <FontAwesomeIcon :icon="faLayerPlus" fixed-width />
+            <span class="text-xs font-medium">{{ trans('Create as template') }}</span>
+          </button>
+
+          <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
+
           <!-- Reload preview -->
           <button type="button" v-tooltip.bottom="trans('Reload preview')"
             @click="sendToIframe({ key: 'reload', value: {} })"
@@ -832,6 +869,13 @@ console.log('props_workshop',props)
       </div>
     </div>
   </div>
+
+  <CreateTemplateDialog
+    v-model:visible="isCreateTemplateDialogVisible"
+    :webpage="data"
+    :previewSrc="iframeSrc"
+    :isLoading="isCreatingTemplate"
+    @create="onCreateTemplate" />
 
   <Dialog v-model:visible="dialogUploadImageVisible" modal header="Upload Image" :style="{ width: '80rem' }"
     @hide="() => closeUploadImage(false)">
