@@ -863,6 +863,10 @@ const selectedExtendedColumns = ref<string[]>(extendedColumns.map((c) => c.key))
 
 const selectedProductStates = ref<string[]>(["active"])
 const selectedProductAvailibility = ref<string[]>([])
+const includeBundles = ref(false)
+const csvDownloadUrl = computed(
+	() => downloadUrl("csv", { include_bundles: includeBundles.value ? 1 : 0 }) as string
+)
 const excludedColumns = computed(() => {
 	return extendedColumns.filter((col) => !selectedExtendedColumns.value.includes(col.key))
 })
@@ -891,6 +895,7 @@ const onDownloadExtendedProperties = () => {
 		columns: selectedExtendedColumns.value,
 		product_states: selectedProductStates.value,
 		product_availability: selectedProductAvailibility.value,
+		include_bundles: includeBundles.value ? 1 : 0,
 	})
 
 	if (!url) {
@@ -984,7 +989,7 @@ const layout = inject("layout", layoutStructure)
 			<div
 				class="inline-flex items-center rounded-md border overflow-hidden"
 				v-if="props.product_count">
-				<a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
+				<a :href="csvDownloadUrl" target="_blank" rel="noopener">
 					<Button
 						:icon="faDownload"
 						label="CSV"
@@ -1013,6 +1018,23 @@ const layout = inject("layout", layoutStructure)
 
 						<div class="p-4 overflow-y-auto space-y-5 text-sm">
 							<div>
+								<div class="font-medium text-gray-800 mb-2">
+									{{ trans("Bundles") }}
+								</div>
+								<label
+									class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+									<input
+										type="checkbox"
+										v-model="includeBundles"
+										class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+									<span>{{ trans("Include bundles") }}</span>
+								</label>
+								<div class="mt-1 pl-1 text-xs text-gray-500">
+									{{ trans("Applies to both CSV exports. Off by default.") }}
+								</div>
+							</div>
+
+							<div class="border-t pt-4">
 								<div class="font-medium text-gray-800 mb-2">
 									{{ trans("Columns to Export") }}
 								</div>
