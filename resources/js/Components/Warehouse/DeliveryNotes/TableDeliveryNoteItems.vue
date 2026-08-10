@@ -26,6 +26,8 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton, Dialog } from "primevue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import FractionDisplayFE from "@/Components/DataDisplay/FractionDisplayFE.vue"
+import { useUnitsOverPack } from "@/Composables/useFractionUnits"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
@@ -376,19 +378,63 @@ const GetQuantityToPickFractional = (item) => {
     }else return item.quantity_to_pick_fractional
 }
 
+/*
+ * A part of an outer can be left waiting by any shop now that ecom replaces a product in part, not
+ * only by dropshipping, so what decides the fraction is the pack the item comes in. An item packed
+ * individually has nothing to cut and reads as a plain count.
+ */
 const GetWaitingWarehouseFractional = (item) => {
-    if (props.shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_warehouse_fractional_ds
     }
     return null
 }
 
 const GetWaitingCrmFractional = (item) => {
-    if (props.shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_crm_fractional_ds
     }
     return null
 }
+
+const GetQuantityToPackFractional = (item) => {
+    if (Number(item?.packed_in) > 1) {
+        return item?.quantity_to_pack_fractional
+    }
+    return null
+}
+
+/*
+ * A quantity as the two halves of a fraction: single items over the pack they come in, which is how
+ * the warehouse reads a cut. A whole pack then falls back to the plain count it is instead of 4/4,
+ * and an item packed individually has nothing to cut so it keeps a denominator of 1.
+ */
+const quantityInUnitsOverPack = (quantity: any, item: Record<string, any>): { numerator: number; denominator: number } => {
+    const denominator = Number(item?.packed_in) > 1 ? Number(item.packed_in) : 1
+
+    return {
+        numerator: Math.round((Number(quantity) || 0) * denominator),
+        denominator,
+    }
+}
+
+/* Only a real cut is printed as a fraction, and only that needs room under the line. */
+const hasCutToShow = (quantity: any, item: Record<string, any>): boolean => {
+    const { numerator, denominator } = quantityInUnitsOverPack(quantity, item)
+
+    return denominator > 1 && numerator % denominator !== 0
+}
+
+/*
+ * The count sits inside the sentence, so the translated sentence is split around its placeholder and
+ * the fraction rendered into the gap. Translating the words on either side as their own keys would
+ * fix the English word order onto every other language.
+ */
+const packLabelAroundCount = computed(() => {
+    return ctrans('Pack :countToPack items')
+        .split(':countToPack')
+        .map(part => part.trim())
+})
 
 // Dropshipping items are picked in fractions (e.g. 1/3), so the picking input must
 // step by 1/packed_in instead of whole units. Non-dropshipping keeps whole-unit steps.
@@ -510,6 +556,7 @@ const urlItemsWaitingWarehouse = computed(() => {
         organisation: currentRouteParams.organisation,
         warehouse: currentRouteParams.warehouse,
         shopType: props.shop_type,
+        ...(currentRouteParams.deliveryNote ? { highlight_delivery_note: currentRouteParams.deliveryNote } : {}),
     })
 })
 
@@ -630,6 +677,7 @@ const onSubmitSplitPicking = () => {
 // Section: Undo Quantity Waiting Warehouse
 const isOpenModalUndoWaitingWarehouse = ref(false)
 const selectedItemToUndoWaitingWarehouse = ref(null)
+const undoWaitingWarehouseInUnitsOverPack = computed(() => useUnitsOverPack(GetWaitingWarehouseFractional(selectedItemToUndoWaitingWarehouse.value)))
 const isLoadingUndoWaitingWarehouse = ref(false)
 const onSetItemToUndoWaitingWarehouse = () => {
     router.post(route('grp.models.delivery_note_item.undo_set_as_waiting_warehouse', {
@@ -964,21 +1012,24 @@ const hasDirtyDeliveryNoteItem = computed(() => {
         </template>
 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
-            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
-            <span v-else>{{ item.quantity_picked }}</span>
-            
+            <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_picked, item)" />
+
             <!-- <span v-if="Number(item.quantity_not_picked) > 0" v-tooltip="ctrans('Not picked')"  class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_not_picked) }}
             </span> -->
 
             <!-- Number: waiting warehouse -->
-            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="urlItemsWaitingWarehouse" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
-                {{ Number(item.quantity_waiting_warehouse) }}
+            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="urlItemsWaitingWarehouse" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2"
+                :class="hasCutToShow(item.quantity_waiting_warehouse, item) ? 'pb-1.5' : ''"
+            >
+                <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_waiting_warehouse, item)" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </Link>
-            <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
-                {{ Number(item.quantity_waiting_warehouse) }}
+            <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2"
+                :class="hasCutToShow(item.quantity_waiting_warehouse, item) ? 'pb-1.5' : ''"
+            >
+                <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_waiting_warehouse, item)" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </span>
@@ -988,18 +1039,18 @@ const hasDirtyDeliveryNoteItem = computed(() => {
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
                 :href="urlItemsWaitingCrm"
+                v-tooltip="ctrans('Waiting for customer services')"
+                class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2"
+                :class="hasCutToShow(item.quantity_waiting_crm, item) ? 'pb-1.5' : ''"
             >
-                <span v-tooltip="ctrans('Waiting for customer services')"  class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2">
-                    {{ Number(item.quantity_waiting_crm) }}
-                </span>
+                <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_waiting_crm, item)" />
             </Link>
 
 
         </template>
 
         <template #cell(quantity_packed)="{ item: item, proxyItem }">
-            <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
-            <span v-else>{{ item.quantity_packed }}</span>
+            <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_packed, item)" />
 
         </template>
 
@@ -1314,7 +1365,7 @@ const hasDirtyDeliveryNoteItem = computed(() => {
                 </div>
             </div>
 
-            <div v-else-if="Number(itemValue.quantity_waiting_warehouse) < 1 && Number(itemValue.quantity_waiting_crm) < 1" class="flex justify-between gap-x-2 gap-y-1">
+            <div v-else-if="Number(itemValue.quantity_waiting_warehouse) <= 0 && Number(itemValue.quantity_waiting_crm) <= 0" class="flex justify-between gap-x-2 gap-y-1">
                 <div v-if="!itemValue.is_handled" class="text-gray-400 italic text-sm">
                     {{ ctrans("No quantity to pick") }}
                 </div>
@@ -1371,7 +1422,7 @@ const hasDirtyDeliveryNoteItem = computed(() => {
 
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
-                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_to_pack ?? item.quantity_picked) })"
+                        :label="GetQuantityToPackFractional(item) ? undefined : ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_to_pack ?? item.quantity_picked) })"
                         type="secondary"
                         xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
@@ -1384,7 +1435,15 @@ const hasDirtyDeliveryNoteItem = computed(() => {
                                 deliveryNoteItem: item.id
                             }
                         }"
-                    />
+                    >
+                        <template v-if="GetQuantityToPackFractional(item)" #label>
+                            <span class="inline-flex items-center gap-x-1">
+                                {{ packLabelAroundCount[0] }}
+                                <FractionDisplay :fractionData="GetQuantityToPackFractional(item)" />
+                                {{ packLabelAroundCount[1] }}
+                            </span>
+                        </template>
+                    </ButtonWithLink>
                     <ButtonWithLink
                         v-if="item.is_done_packing || item.is_partially_packed"
                         v-tooltip="item.is_partially_packed ? ctrans('Undo all packing on this item') : ctrans('Undo packing')"
@@ -1723,8 +1782,14 @@ const hasDirtyDeliveryNoteItem = computed(() => {
                             <div class="text- opacity-75">
                                 {{ selectedItemToUndoWaitingWarehouse?.org_stock_name ?? '-' }}
                             </div>
-                            <div class="text-sm text-red-500 opacity-75 italic">
-                                {{ ctrans("Quantity waiting for warehouse") }}: {{ Number(selectedItemToUndoWaitingWarehouse?.quantity_waiting_warehouse) }}
+                            <div class="text-sm text-red-500 opacity-75 italic inline-flex items-center gap-x-1">
+                                {{ ctrans("Quantity waiting for warehouse") }}:
+                                <FractionDisplayFE
+                                    v-if="undoWaitingWarehouseInUnitsOverPack"
+                                    :numerator="undoWaitingWarehouseInUnitsOverPack.numerator"
+                                    :denominator="undoWaitingWarehouseInUnitsOverPack.denominator"
+                                />
+                                <template v-else>{{ Number(selectedItemToUndoWaitingWarehouse?.quantity_waiting_warehouse) }}</template>
                             </div>
                         </div>
                     </div>

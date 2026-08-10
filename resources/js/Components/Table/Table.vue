@@ -357,6 +357,9 @@ const compResourceData = computed(() => {
 //     deep: true
 // })
 
+// requestAnimationFrame is frozen in hidden tabs, leaving CountUp stuck on its first frame
+const mountedWhileHidden = document.hidden
+
 // Meta Page (Previous/next link, current page, data per page)
 const compResourceMeta = computed(() => {
     if (Object.keys(props.resource || {}).length === 0) {
@@ -1066,7 +1069,8 @@ const getSeverity = (type?: string) => {
                             <div class="grid justify-end items-center text-base font-normal text-gray-700">
                                 <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
                                     <span class="font-semibold tabular-nums">
-                                        <CountUp :endVal="compResourceMeta?.total || 0" :duration="1.2"
+                                        <template v-if="mountedWhileHidden">{{ locale.number(compResourceMeta?.total || 0) }}</template>
+                                        <CountUp v-else :endVal="compResourceMeta?.total || 0" :duration="1.2"
                                             :scrollSpyOnce="true" :options="{
                                             formattingFn: (number) => locale.number(number)
                                         }" />
@@ -1227,7 +1231,8 @@ const getSeverity = (type?: string) => {
                                         <div class="grid justify-end items-center text-base font-normal text-gray-700">
                                             <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
                                                 <span class="font-semibold tabular-nums">
-                                                    <CountUp :endVal="compResourceMeta?.total || 0" :duration="1.2"
+                                                    <template v-if="mountedWhileHidden">{{ locale.number(compResourceMeta?.total || 0) }}</template>
+                                                    <CountUp v-else :endVal="compResourceMeta?.total || 0" :duration="1.2"
                                                         :scrollSpyOnce="true" :options="{
                                                         formattingFn: (number) => locale.number(number)
                                                     }" />

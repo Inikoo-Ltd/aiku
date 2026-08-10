@@ -37,21 +37,37 @@ class GetAgentShowcase
                     'label' => __('Suppliers'),
                     'icon'  => 'fal fa-person-dolly',
                     'count' => $agent->stats->number_active_suppliers,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.agents.show.suppliers.index',
+                        'parameters' => [$agent->slug],
+                    ],
                 ],
                 [
                     'label' => __('Products'),
                     'icon'  => 'fal fa-box-usd',
                     'count' => $agent->stats->number_current_supplier_products,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.agents.show.supplier_products.index',
+                        'parameters' => [$agent->slug],
+                    ],
                 ],
                 [
                     'label' => __('Purchase Orders'),
                     'icon'  => 'fal fa-clipboard-list',
                     'count' => $agent->stats->number_purchase_orders,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.agents.show.agent_supplier_purchase_orders.index',
+                        'parameters' => [$agent->slug],
+                    ],
                 ],
                 [
                     'label' => __('Deliveries'),
                     'icon'  => 'fal fa-truck-container',
                     'count' => $agent->stats->number_stock_deliveries,
+                    'route' => [
+                        'name'       => 'grp.supply-chain.agents.show.stock_deliveries.index',
+                        'parameters' => [$agent->slug],
+                    ],
                 ],
             ],
         ];

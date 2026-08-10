@@ -94,7 +94,6 @@ use App\Audits\Transformer\RelationTransformer;
  * @property Carbon|null $dispatched_at
  * @property Carbon|null $cancelled_at
  * @property Carbon|null $settled_at dispatched_at|cancelled_at
- * @property bool $is_invoiced
  * @property bool|null $is_handling_on_hold
  * @property bool|null $can_dispatch
  * @property string|null $customer_notes
@@ -172,6 +171,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property int|null $discounted_shipping_offer_id
  * @property bool $is_pastpay
  * @property bool $is_bypass_platform_update
+ * @property string|null $private_warehouse_note
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -200,8 +200,8 @@ use App\Audits\Transformer\RelationTransformer;
  * @property-read Shop|null $shop
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
+ * @property-read Collection<int, TrafficSource> $trafficSources
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
- * @property-read Collection<int, \App\Models\CRM\TrafficSource> $trafficSources
  * @method static \Database\Factories\Ordering\OrderFactory factory($count = null, $state = [])
  * @method static Builder<static>|Order newModelQuery()
  * @method static Builder<static>|Order newQuery()
@@ -538,7 +538,7 @@ class Order extends Model implements HasMedia, Auditable
     public function trafficSources(): MorphToMany
     {
         return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
-            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model', 'first_touch_at', 'last_touch_at'])
             ->withTimestamps();
     }
 

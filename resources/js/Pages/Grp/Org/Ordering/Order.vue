@@ -28,6 +28,7 @@ import { Tabs as TSTabs } from "@/types/Tabs"
 import "@vuepic/vue-datepicker/dist/main.css"
 import "@/Composables/Icon/PalletDeliveryStateEnum"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import OrderMarketingJourney from "@/Components/Showcases/Grp/OrderMarketingJourney.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 import axios from "axios"
@@ -120,6 +121,7 @@ const props = defineProps<{
     tabs: TSTabs
 
     products?: TableTS
+    marketing?: InstanceType<typeof OrderMarketingJourney>['$props']['data']
     shop_type: 'b2b' | 'dropshipping'
     data?: {
         data: {
@@ -301,6 +303,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         transactions: OrderProductTable,
+        marketing: OrderMarketingJourney,
         returns: TableDeliveryNotes,
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,

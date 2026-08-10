@@ -88,6 +88,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $contact_name_components
  * @property string|null $post_source_id
  * @property int $number_dispatched_emails
+ * @property string|null $traffic_sources
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -97,6 +98,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Shop|null $shop
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
+ * @property-read Collection<int, \App\Models\CRM\TrafficSource> $trafficSources
  * @method static \Database\Factories\CRM\ProspectFactory factory($count = null, $state = [])
  * @method static Builder<static>|Prospect newModelQuery()
  * @method static Builder<static>|Prospect newQuery()
@@ -260,7 +262,7 @@ class Prospect extends Model implements Auditable
     public function trafficSources(): MorphToMany
     {
         return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
-            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model', 'first_touch_at', 'last_touch_at'])
             ->withTimestamps();
     }
 

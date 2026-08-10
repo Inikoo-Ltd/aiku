@@ -1,18 +1,42 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, useForm } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import Modal from '@/Components/Utils/Modal.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import Select from 'primevue/select'
+import MultiSelect from 'primevue/multiselect'
+import DatePicker from 'primevue/datepicker'
+import Textarea from 'primevue/textarea'
 import TableTimesheets from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheets.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { format, startOfWeek, startOfMonth, startOfQuarter, startOfYear, addDays } from 'date-fns'
+import { trans } from 'laravel-vue-i18n'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
-
-// Import Icons
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInfoCircle } from '@fal'
-import { trans } from 'laravel-vue-i18n'
-library.add(faInfoCircle)
+import {
+    faCalendarDay,
+    faUsers,
+    faUser,
+    faThList,
+    faStopwatch,
+    faExclamationCircle,
+    faSackDollar,
+    faCoins,
+    faBriefcase,
+} from '@fal'
+library.add(
+    faCalendarDay,
+    faUsers,
+    faUser,
+    faThList,
+    faStopwatch,
+    faExclamationCircle,
+    faSackDollar,
+    faCoins,
+    faBriefcase,
+)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -21,83 +45,183 @@ const props = defineProps<{
         current: string,
         navigation: any
     }
-    statistics: {
-        on_time: number,
-        late_clock_in: number,
-        early_clock_out: number,
-        no_clock_out: number,
-        invalid: number,
-        absent: number,
-        total: number
+    employee_view: {
+        current: string,
+        navigation: any
     }
+    employeeOptions?: { value: number; label: string }[]
+    employeeContext?: { id: number; slug: string; name: string } | null
     employees?: {}
     employee?: {}
 }>()
 
+const showCreateTimesheetModal = ref(false)
 
-const currentTab = ref(props.tabs?.current || 'employees')
+const createTimesheetForm = useForm<{
+    employee_id: number | null
+    date: string
+    clock_in: string
+    clock_out: string
+    notes: string
+}>({
+    employee_id: props.employeeContext?.id ?? null,
+    date: '',
+    clock_in: '',
+    clock_out: '',
+    notes: '',
+})
+
+const openCreateTimesheetModal = () => {
+    createTimesheetForm.reset()
+    createTimesheetForm.clearErrors()
+    createTimesheetForm.employee_id = props.employeeContext?.id ?? null
+    showCreateTimesheetModal.value = true
+}
+
+const closeCreateTimesheetModal = () => {
+    showCreateTimesheetModal.value = false
+    createTimesheetForm.reset()
+    createTimesheetForm.clearErrors()
+}
+
+const submitCreateTimesheet = () => {
+    createTimesheetForm.post(route('grp.org.hr.timesheets.store', route().params), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeCreateTimesheetModal()
+        },
+    })
+}
+
+const parseYmdDate = (value: string): Date | null => {
+    if (!value) {
+        return null
+    }
+
+    const [year, month, day] = value.split('-').map(Number)
+    if (!year || !month || !day) {
+        return null
+    }
+
+    return new Date(year, month - 1, day)
+}
+
+const formatYmdDate = (date: Date | null): string => {
+    if (!date) {
+        return ''
+    }
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
+const parseHmTime = (value: string): Date | null => {
+    if (!value) {
+        return null
+    }
+
+    const [hours, minutes] = value.split(':').map(Number)
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+        return null
+    }
+
+    const date = new Date()
+    date.setHours(hours, minutes, 0, 0)
+
+    return date
+}
+
+const formatHmTime = (date: Date | null): string => {
+    if (!date) {
+        return ''
+    }
+
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+
+    return `${hours}:${minutes}`
+}
+
+const timesheetDateModel = computed<Date | null>({
+    get: () => parseYmdDate(createTimesheetForm.date),
+    set: (value) => {
+        createTimesheetForm.date = formatYmdDate(value)
+    },
+})
+
+const clockInModel = computed<Date | null>({
+    get: () => parseHmTime(createTimesheetForm.clock_in),
+    set: (value) => {
+        createTimesheetForm.clock_in = formatHmTime(value)
+    },
+})
+
+const clockOutModel = computed<Date | null>({
+    get: () => parseHmTime(createTimesheetForm.clock_out),
+    set: (value) => {
+        createTimesheetForm.clock_out = formatHmTime(value)
+    },
+})
+
+
+const currentTab = ref(props.tabs?.current || 'employee')
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const currentData = computed(() => {
     return (props as any)[currentTab.value]
 })
 
-const periodParam = computed(() => {
-    const params = (route().params as any)
-    return params?.period ?? null
-})
+const currentEmployeeView = ref(props.employee_view?.current || 'overview')
 
-function periodLabel(period: any) {
-    if (!period) return false
-
-    if (period.day) {
-        // May 28th, 2024
-        const date = new Date(period.day.slice(0, 4), period.day.slice(4, 6) - 1, period.day.slice(6, 8))
-        return `${format(date, 'MMMM do, yyyy')}`
-    }
-
-    if (period.week) {
-        // May 26th, 2024 - June 1st, 2024
-        const year = period.week.slice(0, 4)
-        const weekNumber = parseInt(period.week.slice(4), 10)
-        const startOfTheWeek = startOfWeek(addDays(new Date(year, 0, 1), (weekNumber - 1) * 7))
-        return `${format(startOfTheWeek, 'MMMM do, yyyy')} - ${format(addDays(startOfTheWeek, 6), 'MMMM do, yyyy')}`
-    }
-
-    if (period.month) {
-        // May 2024
-        const year = period.month.slice(0, 4)
-        const monthNumber = period.month.slice(4, 6) - 1
-        const startOfTheMonth = startOfMonth(new Date(year, monthNumber))
-        return `${format(startOfTheMonth, 'MMMM yyyy')}`
-    }
-
-    if (period.quarter) {
-        // April 2024 - June 2024
-        const year = period.quarter.slice(0, 4)
-        const quarterNumber = parseInt(period.quarter.slice(5), 10)
-        const startOfTheQuarter = startOfQuarter(new Date(year, (quarterNumber - 1) * 3))
-        return `${format(startOfTheQuarter, 'MMMM yyyy')} - ${format(addDays(startOfTheQuarter, 89), 'MMMM yyyy')}`
-    }
-
-    if (period.year) {
-        // 2024
-        const year = period.year
-        const startOfTheYear = startOfYear(new Date(year))
-        return `${format(startOfTheYear, 'yyyy')}`
-    }
-}
-
-function applyStatus(status: string | null) {
+function handleEmployeeViewUpdate(view: string) {
+    currentEmployeeView.value = view
     const params = new URLSearchParams(location.search)
-    if (status) {
-        params.set('timesheet_status', status)
-    } else {
-        params.delete('timesheet_status')
-    }
-    const url = location.pathname + (params.toString() ? `?${params.toString()}` : '')
-    router.get(url, {}, { preserveState: true, preserveScroll: true })
+    params.set('view', view)
+    router.get(location.pathname + `?${params.toString()}`, {}, { preserveState: true, preserveScroll: true })
 }
+
+const showExportModal = ref(false)
+const exportEmployeeIds = ref<number[]>([])
+const exportType = ref<'xlsx' | 'csv'>('xlsx')
+
+const openExportModal = () => {
+    exportEmployeeIds.value = props.employeeContext ? [props.employeeContext.id] : []
+    exportType.value = 'xlsx'
+    showExportModal.value = true
+}
+
+const closeExportModal = () => {
+    showExportModal.value = false
+}
+
+const submitExport = () => {
+    const routeName = currentTab.value === 'employee'
+        ? 'grp.org.hr.timesheets.export_by_employee'
+        : 'grp.org.hr.timesheets.export_by_date'
+
+    const params: Record<string, any> = { ...(route().params as Record<string, any>) }
+    delete params.employee
+    params.type = exportType.value
+
+    const employeeIds = props.employeeContext ? [props.employeeContext.id] : exportEmployeeIds.value
+
+    if (employeeIds.length) {
+        params.employee_id = employeeIds
+    } else {
+        delete params.employee_id
+    }
+
+    if (currentTab.value === 'employee') {
+        params.view = currentEmployeeView.value
+    }
+
+    window.location.href = route(routeName, params)
+    closeExportModal()
+}
+
 </script>
 
 <template>
@@ -105,67 +229,193 @@ function applyStatus(status: string | null) {
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead">
-        <template #afterTitle>
-            <div v-if="periodParam" class="flex font-normal text-lg leading-none h-full text-gray-400">
-                <div>({{ periodLabel(periodParam) }})</div>
-            </div>
+        <template #button-export-timesheets="{ action }">
+            <Button
+                :icon="action.icon"
+                :label="action.label"
+                :style="action.style"
+                @click="openExportModal"
+            />
+        </template>
+
+        <template #button-timesheet="{ action }">
+            <Button
+                :icon="action.icon"
+                :label="action.label"
+                :style="action.style"
+                @click="openCreateTimesheetModal"
+            />
         </template>
     </PageHeading>
 
-    <!-- STATISTICS CARDS SECTION -->
-    <div class="mt-4 bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6">
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center divide-x divide-gray-100">
-            <button type="button" @click="applyStatus('on_time')" class="px-2">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.on_time }}</div>
-                <div class="text-xs text-gray-500 mt-1">{{ trans("On time") }}</div>
-            </button>
+    <Tabs v-if="Object.keys(tabs.navigation || {}).length" :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-            <button type="button" @click="applyStatus('late_clock_in')" class="px-2">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.late_clock_in }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Late clock in") }}
-                </div>
-            </button>
+    <Tabs
+        v-if="currentTab === 'employee' && Object.keys(employee_view.navigation || {}).length"
+        :current="currentEmployeeView"
+        :navigation="employee_view.navigation"
+        @update:tab="handleEmployeeViewUpdate"
+        class="mt-2"
+    />
 
-            <button type="button" @click="applyStatus('early_clock_out')" class="px-2">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.early_clock_out }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Early clock out") }}
-                </div>
-            </button>
-
-            <button type="button" @click="applyStatus('no_clock_out')" class="px-2">
-                <div class="text-lg font-bold text-blue-600 flex justify-center items-center gap-1">
-                    {{ statistics.no_clock_out }}
-                    <font-awesome-icon :icon="['fal', 'info-circle']" class="text-gray-400 text-[10px]" />
-                </div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("No clock out") }}
-                </div>
-            </button>
-
-            <button type="button" @click="applyStatus('invalid')" class="px-2">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.invalid }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Invalid") }}
-                </div>
-            </button>
-
-            <button type="button" @click="applyStatus(null)" class="px-2 border-r-0 lg:border-r">
-                <div class="text-lg font-bold text-blue-600">{{ statistics.absent }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Absent") }}
-                </div>
-            </button>
-
-            <button type="button" @click="applyStatus(null)" class="px-2 border-l border-gray-200">
-                <div class="text-lg font-bold text-gray-800">{{ statistics.total }}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ trans("Total Logs") }}
-                </div>
-            </button>
-        </div>
-    </div>
     <!-- TABLE -->
-    <TableTimesheets :key="currentTab" :tab="currentTab" :data="currentData" />
+    <TableTimesheets :key="`${currentTab}-${currentEmployeeView}`" :tab="currentTab" :data="currentData" />
+
+    <Modal :isOpen="showCreateTimesheetModal" @onClose="closeCreateTimesheetModal" width="w-full max-w-lg">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+            {{ trans('Add timesheet') }}
+        </h2>
+
+        <form class="space-y-4" @submit.prevent="submitCreateTimesheet">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Employee') }}
+                </label>
+                <div v-if="employeeContext" class="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                    {{ employeeContext.name }}
+                </div>
+                <Select
+                    v-else
+                    v-model="createTimesheetForm.employee_id"
+                    :options="employeeOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    filter
+                    class="mt-1 w-full"
+                    :placeholder="trans('Select employee')"
+                />
+                <div v-if="createTimesheetForm.errors.employee_id" class="mt-1 text-sm text-red-600">
+                    {{ createTimesheetForm.errors.employee_id }}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Date') }}
+                </label>
+                <DatePicker
+                    v-model="timesheetDateModel"
+                    class="mt-1 w-full"
+                    dateFormat="yy-mm-dd"
+                    showIcon
+                />
+                <div v-if="createTimesheetForm.errors.date" class="mt-1 text-sm text-red-600">
+                    {{ createTimesheetForm.errors.date }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">
+                        {{ trans('Clock in') }} <span class="text-gray-400 font-normal">({{ trans('optional') }})</span>
+                    </label>
+                    <DatePicker
+                        v-model="clockInModel"
+                        timeOnly
+                        hourFormat="24"
+                        class="mt-1 w-full"
+                        showIcon
+                    />
+                    <div v-if="createTimesheetForm.errors.clock_in" class="mt-1 text-sm text-red-600">
+                        {{ createTimesheetForm.errors.clock_in }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">
+                        {{ trans('Clock out') }} <span class="text-gray-400 font-normal">({{ trans('optional') }})</span>
+                    </label>
+                    <DatePicker
+                        v-model="clockOutModel"
+                        timeOnly
+                        hourFormat="24"
+                        :disabled="!createTimesheetForm.clock_in"
+                        class="mt-1 w-full"
+                        showIcon
+                    />
+                    <div v-if="createTimesheetForm.errors.clock_out" class="mt-1 text-sm text-red-600">
+                        {{ createTimesheetForm.errors.clock_out }}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Notes') }} <span class="text-gray-400 font-normal">({{ trans('optional') }})</span>
+                </label>
+                <Textarea
+                    v-model="createTimesheetForm.notes"
+                    rows="3"
+                    class="mt-1 block w-full"
+                />
+                <div v-if="createTimesheetForm.errors.notes" class="mt-1 text-sm text-red-600">
+                    {{ createTimesheetForm.errors.notes }}
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <Button type="tertiary" @click="closeCreateTimesheetModal">
+                    {{ trans('Cancel') }}
+                </Button>
+                <Button type="save" :loading="createTimesheetForm.processing" @click="submitCreateTimesheet">
+                    {{ trans('Save') }}
+                </Button>
+            </div>
+        </form>
+    </Modal>
+
+    <Modal :isOpen="showExportModal" @onClose="closeExportModal" width="w-full max-w-lg">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+            {{ trans('Export timesheets') }}
+        </h2>
+
+        <p class="text-sm text-gray-500 mb-4">
+            {{ trans('Exports whatever is currently on screen: the active tab, date range and view.') }}
+        </p>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Employees') }}
+                    <span v-if="!employeeContext" class="text-gray-400 font-normal">({{ trans('leave empty for everyone') }})</span>
+                </label>
+                <div v-if="employeeContext" class="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                    {{ employeeContext.name }}
+                </div>
+                <MultiSelect
+                    v-else
+                    v-model="exportEmployeeIds"
+                    :options="employeeOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    filter
+                    :maxSelectedLabels="3"
+                    class="mt-1 w-full"
+                    :placeholder="trans('All employees')"
+                />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Format') }}
+                </label>
+                <Select
+                    v-model="exportType"
+                    :options="[{ label: 'Excel (.xlsx)', value: 'xlsx' }, { label: 'CSV (.csv)', value: 'csv' }]"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="mt-1 w-full"
+                />
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2">
+            <Button type="tertiary" @click="closeExportModal">
+                {{ trans('Cancel') }}
+            </Button>
+            <Button type="save" @click="submitExport">
+                {{ trans('Export') }}
+            </Button>
+        </div>
+    </Modal>
 </template>

@@ -12,7 +12,12 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Enums\UI\Production\ProductionTabsEnum;
+use App\Models\Production\JobOrderItemTask;
+use App\Models\Production\ManufactureTaskSession;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ProductionResource;
 use App\Models\Production\Production;
@@ -79,24 +84,159 @@ class ShowOperationsDashboard extends OrgAction
                             'title' => __('Factory operations')
                         ],
                     'title'   => __('Operations'),
-                    'actions' => [
-                        $this->canEdit ?
-                            [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('New job order'),
-                                'label'   => __('job order'),
-                                'route'   => [
-                                    'name'       => 'grp.org.productions.show.job-orders.create',
-                                    'parameters' => $request->route()->originalParameters()
-                                ]
-                            ]
-                            : null,
-                        $this->canEdit ? $this->getEditActionIcon($request) : null,
+                    'actions' => [],
 
+
+                ],
+                'flatTreeMaps' => [
+                    [
+                        [
+                            'name'  => __('Job orders'),
+                            'icon'  => ['fal', 'fa-sort-shapes-down'],
+                            'route' => [
+                                'name'       => 'grp.org.productions.show.operations.job-orders.index',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index' => [
+                                'number' => $production->jobOrders()
+                                    ->whereIn('state', [
+                                        JobOrderStateEnum::IN_PROCESS,
+                                        JobOrderStateEnum::SUBMITTED,
+                                        JobOrderStateEnum::CONFIRMED,
+                                    ])->count()
+                            ],
+                        ],
+                        [
+                            'name'      => __('Tasks in queue'),
+                            'shortName' => __('queue'),
+                            'icon'      => ['fal', 'fa-tasks'],
+                            'route'     => [
+                                'name'       => 'grp.org.productions.show.floor',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index'     => [
+                                'number' => JobOrderItemTask::where('production_id', $production->id)
+                                    ->where('state', '!=', JobOrderItemTaskStateEnum::DONE)
+                                    ->count()
+                            ],
+                        ],
+                        [
+                            'name'      => __('Working now'),
+                            'shortName' => __('working'),
+                            'icon'      => ['fal', 'fa-user-hard-hat'],
+                            'route'     => [
+                                'name'       => 'grp.org.productions.show.floor',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index'     => [
+                                'number' => ManufactureTaskSession::where('production_id', $production->id)
+                                    ->where('state', ManufactureTaskSessionStateEnum::OPEN)
+                                    ->count()
+                            ],
+                        ],
+                        [
+                            'name'      => __('Made today'),
+                            'shortName' => __('today'),
+                            'icon'      => ['fal', 'fa-cubes'],
+                            'route'     => [
+                                'name'       => 'grp.org.productions.show.floor',
+                                'parameters' => $request->route()->originalParameters()
+                            ],
+                            'index'     => [
+                                'number' => (int)ManufactureTaskSession::where('production_id', $production->id)
+                                    ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+                                    ->whereDate('ended_at', now()->toDateString())
+                                    ->sum('quantity_made')
+                            ],
+                        ],
                     ],
-
-
+                ],
+                'command_control' => [
+                    'payroll_export_route' => [
+                        'name'       => 'grp.org.productions.show.operations.payroll.export',
+                        'parameters' => $request->route()->originalParameters()
+                    ],
+                    'floor_route' => [
+                        'name'       => 'grp.org.productions.show.floor',
+                        'parameters' => $request->route()->originalParameters()
+                    ],
+                    'open_session' => ($openSession = ManufactureTaskSession::where('user_id', $request->user()->id)
+                        ->where('state', ManufactureTaskSessionStateEnum::OPEN)
+                        ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask'])
+                        ->first()) ? [
+                            'id'         => $openSession->id,
+                            'started_at' => $openSession->started_at,
+                            'task'       => [
+                                'task_name'           => $openSession->manufactureTask->name,
+                                'artefact_code'       => $openSession->jobOrderItemTask->jobOrderItem->artefact->code,
+                                'artefact_name'       => $openSession->jobOrderItemTask->jobOrderItem->artefact->name,
+                                'job_order_reference' => $openSession->jobOrderItemTask->jobOrder->reference,
+                                'quantity_made'       => (float)$openSession->jobOrderItemTask->quantity_made,
+                                'quantity_required'   => (float)$openSession->jobOrderItemTask->quantity_required,
+                            ],
+                            'close_route' => [
+                                'name'       => 'grp.models.manufacture-task-session.close',
+                                'parameters' => ['manufactureTaskSession' => $openSession->id],
+                            ],
+                        ] : null,
+                    'working_now' => ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
+                        ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::OPEN)
+                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder'])
+                        ->orderBy('started_at')
+                        ->get()
+                        ->map(fn (ManufactureTaskSession $session) => [
+                            'id'                  => $session->id,
+                            'worker'              => $session->user->contact_name ?: $session->user->username,
+                            'task_name'           => $session->manufactureTask->name,
+                            'artefact_code'       => $session->jobOrderItemTask->jobOrderItem->artefact->code,
+                            'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
+                            'started_at'          => $session->started_at,
+                            'quantity_made'       => (float)$session->jobOrderItemTask->quantity_made,
+                            'quantity_required'   => (float)$session->jobOrderItemTask->quantity_required,
+                        ]),
+                    'today_sessions' => ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
+                        ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::CLOSED)
+                        ->whereDate('ended_at', now()->toDateString())
+                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact'])
+                        ->orderByDesc('ended_at')
+                        ->limit(30)
+                        ->get()
+                        ->map(fn (ManufactureTaskSession $session) => [
+                            'id'            => $session->id,
+                            'worker'        => $session->user->contact_name ?: $session->user->username,
+                            'task_name'     => $session->manufactureTask->name,
+                            'artefact_code' => $session->jobOrderItemTask->jobOrderItem->artefact->code,
+                            'ended_at'      => $session->ended_at,
+                            'quantity_made' => (float)$session->quantity_made,
+                            'void_route'    => [
+                                'name'       => 'grp.models.manufacture-task-session.void',
+                                'parameters' => ['manufactureTaskSession' => $session->id],
+                            ],
+                        ]),
+                    'queue'       => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
+                        ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
+                        ->with(['jobOrderItem.artefact', 'jobOrder', 'manufactureTask'])
+                        ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
+                        ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
+                        ->orderBy('job_orders.date')
+                        ->orderBy('job_order_item_tasks.position')
+                        ->select('job_order_item_tasks.*')
+                        ->limit(20)
+                        ->get()
+                        ->map(fn (JobOrderItemTask $task) => [
+                            'id'                  => $task->id,
+                            'state'               => $task->state,
+                            'task_name'           => $task->manufactureTask->name,
+                            'artefact_code'       => $task->jobOrderItem->artefact->code,
+                            'artefact_name'       => $task->jobOrderItem->artefact->name,
+                            'job_order_reference' => $task->jobOrder->reference,
+                            'quantity_made'       => (float)$task->quantity_made,
+                            'quantity_required'   => (float)$task->quantity_required,
+                            'start_route'         => [
+                                'name'       => 'grp.models.job-order-item-task.session.store',
+                                'parameters' => ['jobOrderItemTask' => $task->id],
+                            ],
+                        ]),
                 ],
                 'tabs'                             => [
 

@@ -77,7 +77,6 @@ class UpdateStockDeliveryStateFromGoodsIn
             StockDeliveryStateEnum::BOOKING_IN->value => 'booking_in_at',
             StockDeliveryStateEnum::BOOKED_IN->value  => 'booked_in_at',
         ];
-        $dataFields = ['booking_in_at', 'booked_in_at'];
 
         $states   = array_keys($sequence);
         $newIndex = array_search($newState->value, $states, true);
@@ -90,15 +89,10 @@ class UpdateStockDeliveryStateFromGoodsIn
             }
 
             $field = $sequence[$stateValue];
-            $isData = in_array($field, $dataFields, true);
-            $key    = $isData ? 'data->' . $field : $field;
 
-            if ($index === $newIndex) {
-                $current      = $isData ? Arr::get($stockDelivery->data, $field) : $stockDelivery->{$field};
-                $update[$key] = $current ?? ($isData ? now()->toIso8601String() : now());
-            } else {
-                $update[$key] = null;
-            }
+            $update[$field] = $index === $newIndex
+                ? ($stockDelivery->{$field} ?? now())
+                : null;
         }
 
         return $update;

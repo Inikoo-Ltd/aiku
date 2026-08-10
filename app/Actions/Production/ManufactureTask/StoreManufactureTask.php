@@ -87,12 +87,6 @@ class StoreManufactureTask extends OrgAction
         ];
     }
 
-    //     public function afterValidator($validator)
-    // {
-    //     dd($validator);
-    // }
-
-
     public function action(Production $production, array $modelData): ManufactureTask
     {
         $this->asAction       = true;

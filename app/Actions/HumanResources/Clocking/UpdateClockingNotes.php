@@ -95,7 +95,7 @@ class UpdateClockingNotes
             }
 
             if ($timeTracker->starts_at && $timeTracker->ends_at) {
-                $timeTracker->duration = $timeTracker->starts_at->diffInSeconds($timeTracker->ends_at);
+                $timeTracker->duration = (int) $timeTracker->starts_at->diffInSeconds($timeTracker->ends_at);
             }
 
             $timeTracker->save();
@@ -109,7 +109,7 @@ class UpdateClockingNotes
             'end_at'   => $endAt,
         ]);
 
-        TimesheetHydrateTimeTrackers::dispatch($timesheet);
+        TimesheetHydrateTimeTrackers::run($timesheet->id);
     }
 
     protected function hydrateSubjectClockings(Clocking $clocking): void

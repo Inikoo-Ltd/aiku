@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
@@ -26,16 +27,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use AsAction;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function handle(PurchaseOrder $purchaseOrder): StockDelivery
     {

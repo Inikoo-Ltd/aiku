@@ -99,13 +99,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_org_stock_movements_type_audit
  * @property numeric $stock_value
- * @property numeric $stock_commercial_value
  * @property numeric $on_the_way_po_value
  * @property int $on_the_way_po_count
  * @property float|null $week_of_cover
  * @property int $number_products
  * @property int $number_stock_deliveries_state_booking_in
  * @property int $number_stock_deliveries_state_booked_in
+ * @property numeric $stock_commercial_value
+ * @property int $number_org_stock_movements_type_production
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newQuery()

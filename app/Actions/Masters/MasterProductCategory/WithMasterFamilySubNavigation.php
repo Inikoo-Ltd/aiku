@@ -98,7 +98,7 @@ trait WithMasterFamilySubNavigation
             ];
         } elseif (in_array(request()->route()->getName(), [
             "grp.masters.master_shops.show.master_family.mismatch_detected.show",
-            "grp.masters.master_shops.show.master_family.mismatch_detected.families", 
+            "grp.masters.master_shops.show.master_family.mismatch_detected.families",
             "grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index"
         ])) {
             $routeFamily = [
@@ -122,7 +122,7 @@ trait WithMasterFamilySubNavigation
             ];
         } elseif (in_array(request()->route()->getName(), [
             "grp.masters.master_shops.show.master_family.missing_image.show",
-            "grp.masters.master_shops.show.master_family.missing_image.families", 
+            "grp.masters.master_shops.show.master_family.missing_image.families",
             "grp.masters.master_shops.show.master_family.missing_image.master_products.index"
         ])) {
             $routeFamily = [

@@ -24,4 +24,15 @@ trait HasTabs
             ->mapWithKeys(fn ($case) => [$case->value => $case->blueprint()])
             ->all();
     }
+
+    /**
+     * @param  array<string>  $values
+     */
+    public static function navigationOnly(array $values): array
+    {
+        return collect(self::cases())
+            ->filter(fn ($case) => in_array($case->value, $values, true))
+            ->mapWithKeys(fn ($case) => [$case->value => $case->blueprint()])
+            ->all();
+    }
 }

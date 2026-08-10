@@ -88,6 +88,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property int $number_stock_delivery_items_under_delivered unit_quantity_checked < unit_quantity
  * @property int $number_stock_delivery_items_over_delivered unit_quantity_checked > unit_quantity
+ * @property \Illuminate\Support\Carbon|null $confirmed_at
+ * @property \Illuminate\Support\Carbon|null $ready_to_ship_at
+ * @property \Illuminate\Support\Carbon|null $booking_in_at
+ * @property \Illuminate\Support\Carbon|null $booked_in_at
+ * @property numeric|null $cbm carton cubic meters
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
@@ -125,9 +130,13 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'cost_data'       => 'array',
         'state'           => StockDeliveryStateEnum::class,
         'date'            => 'datetime',
+        'confirmed_at'    => 'datetime',
+        'ready_to_ship_at' => 'datetime',
         'dispatched_at'   => 'datetime',
         'received_at'     => 'datetime',
         'checked_at'      => 'datetime',
+        'booking_in_at'   => 'datetime',
+        'booked_in_at'    => 'datetime',
         'placed_at'       => 'datetime',
         'cancelled_at'    => 'datetime',
         'not_received_at' => 'datetime',

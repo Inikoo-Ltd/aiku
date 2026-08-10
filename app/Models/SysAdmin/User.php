@@ -85,6 +85,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $employed_in_organisation_id
  * @property bool $can_use_mcp
  * @property bool $can_use_mcp_sql
+ * @property int|null $timezone_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedDigitalAgencyOrganisations
@@ -100,6 +101,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $employees
  * @property-read \App\Models\Notifications\FcmToken|null $fcmToken
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Notifications\FcmToken> $fcmTokens
+ * @property-read string $timezone_name
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Guest> $guests
  * @property-read \App\Models\Helpers\Media|null $image
@@ -117,6 +119,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OutBoxHasSubscriber> $subscribedOutboxes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Task> $tasks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserTimeSeries> $timeSeries
+ * @property-read Timezone|null $timezone
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserHasAuthorisedModels> $userAuthorisedModels
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserFailedLogIn> $userFailedLogins

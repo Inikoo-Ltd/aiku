@@ -2525,7 +2525,7 @@ test('sync required pick quantity updates delivery note items in place', functio
     $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
 
     $transaction = $this->order->transactions()->where('model_type', 'Product')->first();
-    $transaction->updateQuietly(['quantity_ordered' => 4]);
+    $transaction->updateQuietly(['quantity_ordered' => 4, 'quantity_bonus' => 0]);
 
     $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
         'reference'        => 'SYNC-'.$orgStock->id,
@@ -2616,6 +2616,27 @@ test('after rolling back the picking the new composition can be applied and the 
         ->and($deliveryNoteItem->composition_dirty_quantity_required)->toBeNull();
 })->depends('composition change flags packed items dirty instead of rewriting them');
 
+test('composition change flags items with picks dirty even in a synced state', function (DeliveryNoteItem $deliveryNoteItem) {
+    $deliveryNoteItem->updateQuietly([
+        'state'           => DeliveryNoteItemStateEnum::HANDLING,
+        'quantity_picked' => 5,
+    ]);
+
+    DB::table('product_has_org_stocks')
+        ->where('org_stock_id', $deliveryNoteItem->org_stock_id)
+        ->update(['quantity' => 9]);
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($deliveryNoteItem->orgStock);
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(28.0)
+        ->and($deliveryNoteItem->composition_dirty_at)->not->toBeNull()
+        ->and((float) $deliveryNoteItem->composition_dirty_quantity_required)->toBe(36.0);
+
+    expect(fn () => ApplyNewCompositionToDeliveryNoteItem::make()->handle($deliveryNoteItem))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+})->depends('composition change flags packed items dirty instead of rewriting them');
+
 test('picking an item auto ignores zero quantity items and hides them from the index', function () {
     $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
         'reference'        => 'ZQ123456',
@@ -2699,9 +2720,16 @@ test('a redefined pack does not change what an already sold box means', function
     $transaction = $item->transaction;
     $product     = $transaction->model;
 
-    // Sold as a 3 piece box; the delivery note item was built from that.
-    $product->update(['units' => 3]);
-    $historicAsset = \App\Models\Catalogue\HistoricAsset::create([
+    $required = fn () => (float)\App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
+        ->getQuantityRequired($item->orgStock()->first(), \App\Models\Dispatching\DeliveryNoteItem::find($item->id));
+
+    $unitsSold = (float)$product->units;
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $item->org_stock_id],
+        ['quantity' => 3]
+    );
+
+    $soldAs = \App\Models\Catalogue\HistoricAsset::create([
         'group_id'        => $product->group_id,
         'organisation_id' => $product->organisation_id,
         'asset_id'        => $product->asset_id,
@@ -2712,26 +2740,27 @@ test('a redefined pack does not change what an already sold box means', function
         'name'            => $product->name,
         'price'           => $product->price,
         'unit'            => $product->unit,
-        'units'           => 3,
+        'units'           => $unitsSold,
     ]);
-    $transaction->update(['historic_asset_id' => $historicAsset->id, 'quantity_ordered' => 3]);
+    \Illuminate\Support\Facades\DB::table('transactions')->where('id', $transaction->id)
+        ->update(['historic_asset_id' => $soldAs->id]);
 
-    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->updateOrInsert(
-        ['product_id' => $product->id, 'org_stock_id' => $item->org_stock_id],
-        ['quantity' => 3]
-    );
+    $beforeRedefinition = $required();
+    expect($beforeRedefinition)->toBeGreaterThan(0.0);
 
-    $required = \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
-        ->getQuantityRequired($item->orgStock, $item->refresh());
-    expect(floatval($required))->toBe(9.0);
-
-    // The product is redefined as a 6 piece box picking 6: the sold box must still mean 3.
-    $product->update(['units' => 6]);
+    /*
+     * The pack is doubled — twice the units, twice the pick — written straight to the
+     * tables because hydrators derive units and a product update mints a fresh historic
+     * asset, either of which would replace the pack this order was sold at. What the
+     * customer bought has not changed, so neither may the quantity to pick.
+     */
+    \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)
+        ->update(['units' => $unitsSold * 2]);
     \Illuminate\Support\Facades\DB::table('product_has_org_stocks')
         ->where('product_id', $product->id)->where('org_stock_id', $item->org_stock_id)
         ->update(['quantity' => 6]);
+    \Illuminate\Support\Facades\DB::table('transactions')->where('id', $transaction->id)
+        ->update(['historic_asset_id' => $soldAs->id]);
 
-    $required = \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
-        ->getQuantityRequired($item->orgStock, $item->refresh());
-    expect(floatval($required))->toBe(9.0);
+    expect($required())->toBe($beforeRedefinition);
 });

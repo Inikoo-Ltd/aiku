@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
@@ -36,11 +37,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $source_id
  * @property int $number_email_tracking_events
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
  * @property-read \App\Models\Comms\EmailAddress|null $emailAddress
  * @property-read \App\Models\Comms\EmailCopy|null $emailCopy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailTrackingEvent> $emailTrackingEvents
  * @property-read \App\Models\Comms\Mailshot|null $mailshot
  * @property-read \App\Models\Comms\Outbox|null $outbox
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Prospect> $prospects
+ * @property-read \App\Models\Comms\Mailshot|null $sentMailshot
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail query()
@@ -69,9 +73,33 @@ class DispatchedEmail extends Model
         return $this->belongsTo(EmailAddress::class);
     }
 
+    /**
+     * `dispatched_emails.mailshot_id` was dropped in May 2025, so this belongsTo resolves against a
+     * column that no longer exists and always returns null. Kept only so existing callers keep
+     * compiling; anything that needs the mailshot must use `sentMailshot()`.
+     *
+     * @deprecated Use sentMailshot()
+     */
     public function mailshot(): BelongsTo
     {
         return $this->belongsTo(Mailshot::class);
+    }
+
+    /**
+     * The mailshot this email was actually sent for, resolved through mailshot_recipients, which is
+     * where the link has lived since the column was dropped. Null for transactional mail, which is
+     * how a marketing touch is told apart from an order confirmation.
+     */
+    public function sentMailshot(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Mailshot::class,
+            MailshotRecipient::class,
+            'dispatched_email_id',
+            'id',
+            'id',
+            'mailshot_id'
+        );
     }
 
     public function outbox(): BelongsTo

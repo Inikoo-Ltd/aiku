@@ -24,15 +24,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $traffic_source_id
  * @property int|null $traffic_source_campaign_id
  * @property \Illuminate\Support\Carbon $date
- * @property string $amount
- * @property string $org_amount
- * @property string $source_amount
+ * @property numeric $amount
+ * @property numeric $org_amount
+ * @property numeric $source_amount
  * @property int $source_currency_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read TrafficSource $trafficSource
- * @property-read TrafficSourceCampaign|null $trafficSourceCampaign
+ * @property numeric $grp_amount
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read Currency $sourceCurrency
+ * @property-read \App\Models\CRM\TrafficSource $trafficSource
+ * @property-read \App\Models\CRM\TrafficSourceCampaign|null $trafficSourceCampaign
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCost newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCost newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCost query()
  * @mixin \Eloquent
  */
 class TrafficSourceCost extends Model

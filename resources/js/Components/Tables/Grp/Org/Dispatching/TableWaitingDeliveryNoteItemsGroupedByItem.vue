@@ -20,18 +20,26 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import LabelItemsWaitingForWarehouse from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForCrm.vue"
 import PickingItemActionsPanel from "@/Components/Warehouse/DeliveryNotes/PickingItemActionsPanel.vue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import TrolleyChipsManager from "@/Components/Warehouse/DeliveryNotes/TrolleyChipsManager.vue"
 
 library.add(faHandHoldingBox, faHourglassStart, faTruck, faSkull, faCircle)
 
 const locale = inject("locale", aikuLocaleStructure)
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     allowStockControllerSetNotPicked: boolean
     isStillPicking: boolean
+    isReadOnly?: boolean
     waitingType?: string
+    highlightDeliveryNoteSlug?: string
 }>()
+
+const isHighlightedDeliveryNote = (deliveryItem: any) => {
+    return Boolean(props.highlightDeliveryNoteSlug) && deliveryItem.delivery_note_slug === props.highlightDeliveryNoteSlug
+}
 
 const routeToDeliveryNote = (slug: string) => {
     return route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
@@ -39,6 +47,25 @@ const routeToDeliveryNote = (slug: string) => {
         (route().params as RouteParams).warehouse,
         slug,
     ])
+}
+
+/*
+ * A part of an outer can be left waiting by any shop now that ecom replaces a product in part, not
+ * only by dropshipping, so what decides the fraction is the pack the item comes in. An item packed
+ * individually has nothing to cut and reads as a plain count.
+ */
+const getWaitingWarehouseFractional = (deliveryItem: any) => {
+    if (Number(deliveryItem?.packed_in) > 1) {
+        return deliveryItem?.quantity_waiting_warehouse_fractional_ds
+    }
+    return null
+}
+
+const getWaitingCrmFractional = (deliveryItem: any) => {
+    if (Number(deliveryItem?.packed_in) > 1) {
+        return deliveryItem?.quantity_waiting_crm_fractional_ds
+    }
+    return null
 }
 </script>
 
@@ -61,6 +88,7 @@ const routeToDeliveryNote = (slug: string) => {
                     v-for="deliveryItem in stockRow.delivery_notes"
                     :key="deliveryItem.id"
                     class="py-3 first:pt-1"
+                    :class="isHighlightedDeliveryNote(deliveryItem) ? 'bg-amber-100 -mx-2 px-2 rounded' : ''"
                 >
                     <div class="flex flex-col gap-y-1">
                         <!-- Delivery note reference + notes -->
@@ -97,36 +125,44 @@ const routeToDeliveryNote = (slug: string) => {
                             />
                         </div>
 
+                        <TrolleyChipsManager
+                            :deliveryNote="{
+                                id: deliveryItem.delivery_note_id,
+                                slug: deliveryItem.delivery_note_slug,
+                                reference: deliveryItem.delivery_note_reference,
+                            }"
+                            :trolleys="deliveryItem.trolleys"
+                            :isEditable="!isReadOnly"
+                        />
+
                         <!-- Pickings list -->
                         <ol v-if="deliveryItem.pickings?.length" class="space-y-1 list-disc ml-4">
                             <li v-for="picking in deliveryItem.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                                 <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
                                     <span class="text-xs">{{ picking.location_code }}</span>
-                                    <span v-tooltip="trans('Total picked in this location')" class="text-gray-500 whitespace-nowrap text-xs">
+                                    <span v-tooltip="trans('Total picked in this location')" class="inline-flex items-center gap-x-1 text-gray-500 whitespace-nowrap text-xs">
                                         <FontAwesomeIcon icon="fal fa-hand-holding-box" fixed-width aria-hidden="true" />
-                                        {{ picking.quantity_picked }}
+                                        <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
+                                        <template v-else>{{ picking.quantity_picked }}</template>
                                     </span>
                                 </div>
 
-                                <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 text-xs">
+                                <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')" class="inline-flex items-center gap-x-1 text-red-500 text-xs">
                                     <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
-                                    {{ picking.quantity_picked }}
+                                    <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
+                                    <template v-else>{{ picking.quantity_picked }}</template>
                                 </div>
                             </li>
                         </ol>
 
                         <!-- Waiting labels + picking actions -->
                         <div class="flex gap-x-4">
-                            <LabelItemsWaitingForCrm v-if="Number(deliveryItem.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(deliveryItem.quantity_waiting_crm)" />
+                            <LabelItemsWaitingForCrm v-if="Number(deliveryItem.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(deliveryItem.quantity_waiting_crm)" :fractionData="getWaitingCrmFractional(deliveryItem)" />
                         </div>
 
                         <!-- Actions: picking engine -->
                         <div v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0" class="flex gap-x-4 items-center w-full">
-                            <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(deliveryItem.quantity_waiting_warehouse)" />
-                            <span v-if="deliveryItem.trolley_names" v-tooltip="trans('Trolley')" class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 border rounded px-1.5 py-0.5">
-                                <FontAwesomeIcon icon="fal fa-dolly-flatbed-alt" fixed-width aria-hidden="true" />
-                                {{ deliveryItem.trolley_names }}
-                            </span>
+                            <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(deliveryItem.quantity_waiting_warehouse)" :fractionData="getWaitingWarehouseFractional(deliveryItem)" />
                             <span class="ml-8 mr-4 whitespace-nowrap">--></span>
                             <div class="flex justify-end w-full">
                                 <PickingItemActionsPanel

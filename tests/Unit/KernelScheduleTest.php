@@ -81,5 +81,15 @@ test('neither master nor slave schedules register when both flags are disabled',
     config(['app.master' => false, 'app.slave' => false]);
 
     expect(scheduledEventIds(rebuildSchedule()))
-        ->toEqualCanonicalizing(['horizon:snapshot', 'cloudflare:reload', 'nightowl:prune', 'search:propose-synonyms']);
+        ->toEqualCanonicalizing(
+            [
+                'cloudflare:reload',
+                'horizon:snapshot',
+                'nightowl:prune',
+                'prune-traffic-source-clicks',
+                'search:propose-synonyms',
+                'traffic-source:collect-visits',
+                'traffic-source:fetch-meta-costs --days=2'
+            ]
+        );
 });

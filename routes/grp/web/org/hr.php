@@ -35,8 +35,11 @@ use App\Actions\HumanResources\Employee\UI\IndexEmployees;
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\HumanResources\JobPosition\UI\IndexJobPositions;
 use App\Actions\HumanResources\JobPosition\UI\ShowJobPosition;
+use App\Actions\HumanResources\Timesheet\ExportTimesheetsByDate;
+use App\Actions\HumanResources\Timesheet\ExportTimesheetsByEmployee;
 use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheet;
 use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheets;
+use App\Actions\HumanResources\Timesheet\StoreManualTimesheet;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\HumanResources\Timesheet\UI\ShowTimesheet;
 use App\Actions\HumanResources\Overtime\UI\IndexOvertime;
@@ -134,7 +137,10 @@ Route::patch('/holiday-years/{holidayYear}', UpdateHolidayYear::class)->name('ho
 Route::patch('/holiday-years/{holidayYear}/activate', ActivateHolidayYear::class)->name('holiday_years.activate');
 
 Route::get('/timesheets', IndexTimesheets::class)->name('timesheets.index');
+Route::post('/timesheets', StoreManualTimesheet::class)->name('timesheets.store');
 Route::get('/timesheets-export', PdfTimesheets::class)->name('timesheets.export');
+Route::get('/timesheets/export/by-date', ExportTimesheetsByDate::class)->name('timesheets.export_by_date');
+Route::get('/timesheets/export/by-employee', ExportTimesheetsByEmployee::class)->name('timesheets.export_by_employee');
 Route::get('/timesheets/{timesheet}', ShowTimesheet::class)->name('timesheets.show');
 
 Route::get('/workplaces', IndexWorkplaces::class)->name('workplaces.index');

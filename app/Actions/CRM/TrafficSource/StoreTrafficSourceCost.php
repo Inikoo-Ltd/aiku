@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceCampaignHydrateStats;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCosts;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
@@ -40,6 +41,7 @@ class StoreTrafficSourceCost
 
         $shopCurrency = $trafficSource->shop->currency;
         $orgCurrency  = $trafficSource->organisation->currency;
+        $grpCurrency  = $trafficSource->group->currency;
 
         $trafficSourceCost = TrafficSourceCost::updateOrCreate(
             [
@@ -55,10 +57,15 @@ class StoreTrafficSourceCost
                 'source_currency_id' => $sourceCurrency->id,
                 'amount'             => $sourceAmount * $this->rate($sourceCurrency, $shopCurrency, $date),
                 'org_amount'         => $sourceAmount * $this->rate($sourceCurrency, $orgCurrency, $date),
+                'grp_amount'         => $sourceAmount * $this->rate($sourceCurrency, $grpCurrency, $date),
             ]
         );
 
         TrafficSourceHydrateCosts::dispatch($trafficSource);
+
+        if ($trafficSourceCost->trafficSourceCampaign) {
+            TrafficSourceCampaignHydrateStats::dispatch($trafficSourceCost->trafficSourceCampaign);
+        }
 
         return $trafficSourceCost;
     }

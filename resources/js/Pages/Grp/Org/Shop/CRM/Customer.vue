@@ -15,6 +15,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import CustomerShowcase from "@/Components/Showcases/Grp/CustomerShowcase.vue"
 import CustomerTimeline from "@/Components/Showcases/Grp/CustomerTimeline.vue"
+import CustomerJourney from "@/Components/Showcases/Grp/CustomerJourney.vue"
 import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ModelDetails from "@/Components/ModelDetails.vue"
@@ -27,7 +28,7 @@ import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn } from "@fal"
+import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute } from "@fal"
 import { routeType } from "@/types/route"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue"
@@ -40,7 +41,7 @@ import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 
-library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn)
+library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute)
 
 
 const props = defineProps<{
@@ -69,6 +70,7 @@ const props = defineProps<{
     favourites?: {}
     reminders?: {}
     timeline?: {}
+    journey?: {}
     history?: {}
     credit_transactions?: {}
     payments?: {}
@@ -119,6 +121,7 @@ const component = computed(() => {
     const components: Component = {
         showcase: CustomerShowcase,
         timeline: CustomerTimeline,
+        journey: CustomerJourney,
         products: TableProducts,
         orders: TableOrders,
         details: ModelDetails,

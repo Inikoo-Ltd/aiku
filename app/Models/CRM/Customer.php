@@ -152,6 +152,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $fiscal_name
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
+ * @property-read Collection<int, Product> $allExclusiveProducts
  * @property-read Collection<int, AllegroUser> $allegroUsers
  * @property-read Collection<int, AmazonUser> $amazonUsers
  * @property-read MediaCollection<int, Media> $attachments
@@ -621,6 +622,16 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Product::class, 'exclusive_for_customer_id');
     }
 
+    /**
+     * Every product this customer may buy exclusively. exclusiveProducts() only finds the ones
+     * where they are the primary customer, which undercounts anything shared with another customer.
+     */
+    public function allExclusiveProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_has_exclusive_customers')
+            ->withTimestamps();
+    }
+
     public function trafficSource(): BelongsTo
     {
         return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
@@ -629,7 +640,7 @@ class Customer extends Model implements HasMedia, Auditable
     public function trafficSources(): MorphToMany
     {
         return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
-            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model', 'first_touch_at', 'last_touch_at'])
             ->withTimestamps();
     }
 

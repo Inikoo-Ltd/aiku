@@ -80,6 +80,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 uses()->group('base');
 
@@ -347,6 +348,8 @@ test('UI show payment', function (Payment $payment) {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->where('title', $payment->reference)
+                    ->has('actions', 1)
+                    ->where('actions.0.style', 'edit')
                     ->etc()
             )
             ->has('tabs');
@@ -391,6 +394,57 @@ test(
         return $updatedPayment;
     }
 )->depends('create payment');
+
+test('update manually settled payment via route', function (Payment $payment) {
+    expect($payment->paymentAccount->type->isManuallySettled())->toBeTrue();
+
+    $response = patch(
+        route('grp.models.payment.update', $payment->id),
+        [
+            'amount' => 123.45,
+            'date'   => '2026-08-07',
+        ]
+    );
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+    expect((float)$payment->refresh()->amount)->toBe(123.45);
+})->depends('create payment');
+
+test('payment on non manually settled account cannot be edited', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(2);
+
+    $paymentAccount = $this->shop->paymentAccountShops()
+        ->where('type', PaymentAccountTypeEnum::ACCOUNT)
+        ->first()->paymentAccount;
+
+    $customer = StoreCustomer::make()->action(
+        $this->shop,
+        Customer::factory()->definition()
+    );
+
+    $payment = StorePayment::make()->action(
+        customer: $customer,
+        paymentAccount: $paymentAccount,
+        modelData: Payment::factory()->definition()
+    );
+
+    expect($payment->paymentAccount->type->isManuallySettled())->toBeFalse();
+
+    get(
+        route(
+            'grp.org.accounting.payments.edit',
+            [$this->organisation->slug, $payment->id]
+        )
+    )->assertForbidden();
+
+    patch(
+        route('grp.models.payment.update', $payment->id),
+        ['amount' => 999.99]
+    )->assertForbidden();
+
+    expect((float)$payment->refresh()->amount)->not->toBe(999.99);
+});
 
 test('create and set success 1st top up', function ($payment) {
     $topUp = StoreTopUp::make()->action($payment, [

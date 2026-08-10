@@ -71,6 +71,11 @@ class DeliveryNoteItemsCrmWaitingResource extends JsonResource
             $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
         }
 
+        $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_crm ?? 0) == ($this->quantity_waiting_crm ?? 0) && $packedIn > 1) {
+            $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
+        }
+
         return [
             'id'                             => $this->id,
             'is_picked'                      => $isPicked,
@@ -85,6 +90,7 @@ class DeliveryNoteItemsCrmWaitingResource extends JsonResource
             'quantity_dispatched'            => $this->quantity_dispatched,
             'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
             'quantity_waiting_crm'           => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds' => $waitingCrmFractionalDS,
             'org_stock_id'                   => $this->org_stock_id,
             'org_stock_code'                 => $this->org_stock_code,
             'org_stock_slug'                 => $this->org_stock_slug,

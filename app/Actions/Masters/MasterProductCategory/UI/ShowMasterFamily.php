@@ -327,7 +327,7 @@ class ShowMasterFamily extends OrgAction
 
     public function getBreadcrumbs(MasterProductCategory $masterFamily, string $routeName, array $routeParameters, $suffix = null): array
     {
-        $headCrumb = function (MasterProductCategory $masterFamily, array $routeParameters, $suffix,  $suffixIndex = '') {
+        $headCrumb = function (MasterProductCategory $masterFamily, array $routeParameters, $suffix, $suffixIndex = '') {
             return [
 
                 [
