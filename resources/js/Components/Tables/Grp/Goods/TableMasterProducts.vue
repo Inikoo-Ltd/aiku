@@ -73,7 +73,7 @@ function masterProductRoute(masterProduct: MasterProduct) {
                 masterProduct: masterProduct.slug
             }
         )
-    } else if (route().current() == "grp.masters.master_shops.show.master_departments.show.master_products.index") {
+    } else if (route().current() == "grp.masters.master_shops.show.master_departments.show.master_products.index" || route().current() == "grp.masters.master_shops.show.master_departments.show.master_products.sales") {
         return route(
             "grp.masters.master_shops.show.master_departments.show.master_products.show",
             {
@@ -82,7 +82,7 @@ function masterProductRoute(masterProduct: MasterProduct) {
                 masterProduct: masterProduct.slug
             }
         )
-    } else if (route().current() == "grp.masters.master_shops.show.master_families.master_products.index") {
+    } else if (route().current() == "grp.masters.master_shops.show.master_families.master_products.index" || route().current() == "grp.masters.master_shops.show.master_families.master_products.sales") {
         return route(
             "grp.masters.master_shops.show.master_families.master_products.show",
             {

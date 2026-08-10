@@ -35,6 +35,8 @@ class UpdateTransaction extends OrgAction
         if (Arr::has($modelData, 'units_ordered')) {
             $unitsOrders = Arr::pull($modelData, 'units_ordered');
             $product     = $transaction->model;
+            
+            // TODO: below should be $units = $transaction->historicAsset?->units ?? $transaction->model->units;
             $units       = $product->units;
             if ($units == 0) {
                 abort(423);

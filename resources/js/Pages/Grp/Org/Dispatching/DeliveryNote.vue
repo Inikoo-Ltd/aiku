@@ -64,7 +64,7 @@ import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
-import axios from "axios";
+import ScanToPickDeliveryNote from "@/Components/DeliveryNote/ScanToPickDeliveryNote.vue"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
@@ -157,6 +157,9 @@ const props = defineProps<{
 	order_slug?: string
 	consumables?: { code: string, quantity: number }[]
 	scan_to_pack?: {
+		scan_route: routeType
+	}
+	scan_to_pick?: {
 		scan_route: routeType
 	}
 }>();
@@ -378,15 +381,17 @@ const debReloadPage = debounce(() => {
     })
 }, 1200)
 
-// A scan packs one item, so only the scanned row and the counters change. Patching that row in
-// place keeps the packer on the same scroll position instead of re-rendering the whole page.
-const onItemPackedByScan = (outcome: {
+type ScanOutcome = {
 	status: string
 	item?: { id: number } | null
 	row?: Record<string, any> | null
 	delivery_note_state?: string
-}) => {
-	if (outcome.status !== 'packed' || !outcome.item?.id) {
+}
+
+// A scan touches one item, so only the scanned row and the counters change. Patching that row in
+// place keeps the operator on the same scroll position instead of re-rendering the whole page.
+const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
+	if (outcome.status !== successStatus || !outcome.item?.id) {
 		return
 	}
 
@@ -405,10 +410,20 @@ const onItemPackedByScan = (outcome: {
 			}
 		}
 	}
+}
+
+const onItemPackedByScan = (outcome: ScanOutcome) => {
+	patchRowScannedBy(outcome, 'packed')
 
 	if (outcome.delivery_note_state === 'packed') {
 		debReloadPage()
 	}
+}
+
+// Finishing the picking does not move the delivery note on its own, the picker still presses the
+// button for that, so a picking scan never has a state change to reload for.
+const onItemPickedByScan = (outcome: ScanOutcome) => {
+	patchRowScannedBy(outcome, 'picked')
 }
 
 const selectSocketBasedPlatform = (porto) => {
@@ -775,6 +790,14 @@ const stopSocketListener = () => {
 		:warehouse
 		:quick_pickers
 		:isEditable="is_editable"
+	/>
+
+	<!-- Section: Scan a barcode to pick the matching item straight away -->
+	<ScanToPickDeliveryNote
+		v-if="scan_to_pick"
+		:scanRoute="scan_to_pick.scan_route"
+		:tab="currentTab"
+		@scanned="onItemPickedByScan"
 	/>
 
 	<!-- Section: Scan a barcode to pack the matching item straight away -->

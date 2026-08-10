@@ -131,7 +131,8 @@ function collectionRoute(collection: Collection) {
     if (currentRoute === "grp.org.shops.show.catalogue.collections.show" ||
         currentRoute === "grp.org.shops.show.catalogue.collections.index" ||
         currentRoute === "grp.org.shops.show.catalogue.dashboard" ||
-        currentRoute === "grp.org.shops.show.catalogue.collections.active.index"
+        currentRoute === "grp.org.shops.show.catalogue.collections.active.index" ||
+        currentRoute === "grp.org.shops.show.catalogue.collections.sales"
     ) {
         return route(
             "grp.org.shops.show.catalogue.collections.show",
