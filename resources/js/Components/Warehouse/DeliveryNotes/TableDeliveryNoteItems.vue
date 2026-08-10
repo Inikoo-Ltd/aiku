@@ -405,6 +405,27 @@ const GetQuantityToPackFractional = (item) => {
 }
 
 /*
+ * A quantity as the two halves of a fraction: single items over the pack they come in, which is how
+ * the warehouse reads a cut. A whole pack then falls back to the plain count it is instead of 4/4,
+ * and an item packed individually has nothing to cut so it keeps a denominator of 1.
+ */
+const quantityInUnitsOverPack = (quantity: any, item: Record<string, any>): { numerator: number; denominator: number } => {
+    const denominator = Number(item?.packed_in) > 1 ? Number(item.packed_in) : 1
+
+    return {
+        numerator: Math.round((Number(quantity) || 0) * denominator),
+        denominator,
+    }
+}
+
+/* Only a real cut is printed as a fraction, and only that needs room under the line. */
+const hasCutToShow = (quantity: any, item: Record<string, any>): boolean => {
+    const { numerator, denominator } = quantityInUnitsOverPack(quantity, item)
+
+    return denominator > 1 && numerator % denominator !== 0
+}
+
+/*
  * The count sits inside the sentence, so the translated sentence is split around its placeholder and
  * the fraction rendered into the gap. Translating the words on either side as their own keys would
  * fix the English word order onto every other language.
@@ -991,27 +1012,24 @@ const hasDirtyDeliveryNoteItem = computed(() => {
         </template>
 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
-            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
-            <span v-else>{{ item.quantity_picked }}</span>
-            
+            <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_picked, item)" />
+
             <!-- <span v-if="Number(item.quantity_not_picked) > 0" v-tooltip="ctrans('Not picked')"  class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_not_picked) }}
             </span> -->
 
             <!-- Number: waiting warehouse -->
             <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="urlItemsWaitingWarehouse" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2"
-                :class="GetWaitingWarehouseFractional(item) ? 'pb-1.5' : ''"
+                :class="hasCutToShow(item.quantity_waiting_warehouse, item) ? 'pb-1.5' : ''"
             >
-                <FractionDisplay v-if="GetWaitingWarehouseFractional(item)" :fractionData="GetWaitingWarehouseFractional(item)" />
-                <template v-else>{{ Number(item.quantity_waiting_warehouse) }}</template>
+                <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_waiting_warehouse, item)" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </Link>
             <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2"
-                :class="GetWaitingWarehouseFractional(item) ? 'pb-1.5' : ''"
+                :class="hasCutToShow(item.quantity_waiting_warehouse, item) ? 'pb-1.5' : ''"
             >
-                <FractionDisplay v-if="GetWaitingWarehouseFractional(item)" :fractionData="GetWaitingWarehouseFractional(item)" />
-                <template v-else>{{ Number(item.quantity_waiting_warehouse) }}</template>
+                <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_waiting_warehouse, item)" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </span>
@@ -1021,19 +1039,18 @@ const hasDirtyDeliveryNoteItem = computed(() => {
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
                 :href="urlItemsWaitingCrm"
-                v-tooltip="ctrans('Waiting for customer services')" 
+                v-tooltip="ctrans('Waiting for customer services')"
                 class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2"
+                :class="hasCutToShow(item.quantity_waiting_crm, item) ? 'pb-1.5' : ''"
             >
-                <FractionDisplay v-if="GetWaitingCrmFractional(item)" :fractionData="GetWaitingCrmFractional(item)" />
-                <template v-else>{{ Number(item.quantity_waiting_crm) }}</template>
+                <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_waiting_crm, item)" />
             </Link>
 
 
         </template>
 
         <template #cell(quantity_packed)="{ item: item, proxyItem }">
-            <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
-            <span v-else>{{ item.quantity_packed }}</span>
+            <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_packed, item)" />
 
         </template>
 
