@@ -64,7 +64,7 @@ import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
-import axios from "axios";
+import ScanToPickDeliveryNote from "@/Components/DeliveryNote/ScanToPickDeliveryNote.vue"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
@@ -157,6 +157,9 @@ const props = defineProps<{
 	order_slug?: string
 	consumables?: { code: string, quantity: number }[]
 	scan_to_pack?: {
+		scan_route: routeType
+	}
+	scan_to_pick?: {
 		scan_route: routeType
 	}
 }>();
@@ -378,15 +381,26 @@ const debReloadPage = debounce(() => {
     })
 }, 1200)
 
-// A scan packs one item, so only the scanned row and the counters change. Patching that row in
-// place keeps the packer on the same scroll position instead of re-rendering the whole page.
-const onItemPackedByScan = (outcome: {
+// Only the header actions change when the last item leaves the shelf, so nothing else is asked for
+// and the picker keeps the table rows and scroll position the scans just built up.
+const debReloadPageHead = debounce(() => {
+	router.reload({
+		only: ['pageHead']
+	})
+}, 1200)
+
+type ScanOutcome = {
 	status: string
 	item?: { id: number } | null
 	row?: Record<string, any> | null
 	delivery_note_state?: string
-}) => {
-	if (outcome.status !== 'packed' || !outcome.item?.id) {
+	remaining_to_pick?: number
+}
+
+// A scan touches one item, so only the scanned row and the counters change. Patching that row in
+// place keeps the operator on the same scroll position instead of re-rendering the whole page.
+const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
+	if (outcome.status !== successStatus || !outcome.item?.id) {
 		return
 	}
 
@@ -405,9 +419,25 @@ const onItemPackedByScan = (outcome: {
 			}
 		}
 	}
+}
+
+const onItemPackedByScan = (outcome: ScanOutcome) => {
+	patchRowScannedBy(outcome, 'packed')
 
 	if (outcome.delivery_note_state === 'packed') {
 		debReloadPage()
+	}
+}
+
+// Finishing the picking does not move the delivery note on its own, the picker still presses
+// "Finish picking" for that, and that button only exists once nothing is left to pick. The scan that
+// empties the note has to bring the header back or the picker would be stuck on a page with no way
+// forward until they refresh it themselves.
+const onItemPickedByScan = (outcome: ScanOutcome) => {
+	patchRowScannedBy(outcome, 'picked')
+
+	if (outcome.remaining_to_pick === 0) {
+		debReloadPageHead()
 	}
 }
 
@@ -775,6 +805,14 @@ const stopSocketListener = () => {
 		:warehouse
 		:quick_pickers
 		:isEditable="is_editable"
+	/>
+
+	<!-- Section: Scan a barcode to pick the matching item straight away -->
+	<ScanToPickDeliveryNote
+		v-if="scan_to_pick"
+		:scanRoute="scan_to_pick.scan_route"
+		:tab="currentTab"
+		@scanned="onItemPickedByScan"
 	/>
 
 	<!-- Section: Scan a barcode to pack the matching item straight away -->

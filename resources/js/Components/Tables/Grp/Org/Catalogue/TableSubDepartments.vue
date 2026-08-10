@@ -57,7 +57,7 @@ function subDepartmentRoute(SubDepartment: SubDepartmentx) {
                 (route().params as RouteParams).shop,
                 (route().params as RouteParams).department,
                 SubDepartment.slug])
-    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.index") {
+    } else if (["grp.org.shops.show.catalogue.sub_departments.index", "grp.org.shops.show.catalogue.sub_departments.sales"].includes(currentRoute as string)) {
         return route(
             "grp.org.shops.show.catalogue.sub_departments.show",
             [
@@ -88,7 +88,7 @@ function familiesRoute(SubDepartment: SubDepartmentx) {
                 (route().params as RouteParams).shop,
                 (route().params as RouteParams).department,
                 SubDepartment.slug])
-    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.index") {
+    } else if (["grp.org.shops.show.catalogue.sub_departments.index", "grp.org.shops.show.catalogue.sub_departments.sales"].includes(currentRoute as string)) {
         return route(
             "grp.org.shops.show.catalogue.sub_departments.show.families.index",
             [
@@ -110,7 +110,7 @@ function productsRoute(SubDepartment: SubDepartmentx) {
                 (route().params as RouteParams).shop,
                 (route().params as RouteParams).department,
                 SubDepartment.slug])
-    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.index") {
+    } else if (["grp.org.shops.show.catalogue.sub_departments.index", "grp.org.shops.show.catalogue.sub_departments.sales"].includes(currentRoute as string)) {
         return route(
             "grp.org.shops.show.catalogue.sub_departments.show.products.index",
             [

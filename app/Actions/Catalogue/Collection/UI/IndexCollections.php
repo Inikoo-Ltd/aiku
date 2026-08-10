@@ -257,7 +257,7 @@ class IndexCollections extends OrgAction
         $container = null;
 
         $subNavigation = $this->getCollectionsSubNavigation($this->shop);
-        $navigation    = CollectionsTabsEnum::navigation();
+        $navigation    = CollectionsTabsEnum::navigationExcept([CollectionsTabsEnum::SALES]);
 
         $title     = __('Collections');
         $icon      = [
@@ -411,6 +411,7 @@ class IndexCollections extends OrgAction
 
         return match ($routeName) {
             'grp.org.shops.show.catalogue.collections.index',
+            'grp.org.shops.show.catalogue.collections.sales',
             'grp.org.shops.show.catalogue.collections.create' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),

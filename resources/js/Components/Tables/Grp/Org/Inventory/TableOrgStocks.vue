@@ -447,7 +447,11 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         </template>
 
         <template #cell(gross_profit)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.gross_profit) }}</span>
+            <span
+                v-tooltip="item.gross_profit_percentage !== null ? `${item.gross_profit_percentage}%` : undefined"
+                class="tabular-nums"
+                :class="item.gross_profit_percentage !== null ? 'cursor-help' : ''"
+            >{{ locale.currencyFormat(item.currency_code, item.gross_profit) }}</span>
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">

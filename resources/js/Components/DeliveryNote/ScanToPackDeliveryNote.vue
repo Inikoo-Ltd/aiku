@@ -6,15 +6,15 @@
 -->
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import { computed, ref } from "vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle } from "@fal"
-import { debounce } from "lodash-es"
 import ToggleSwitch from "primevue/toggleswitch"
 import { ctrans } from "@/Composables/useTrans"
 import { playNotificationSound } from "@/Composables/useNotificationSound"
+import { useBarcodeScanner, useScanQueue } from "@/Composables/useBarcodeScanner"
 import { routeType } from "@/types/route"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Toggle from "../Pure/Toggle.vue"
@@ -63,29 +63,15 @@ type PendingScan = { code: string; quantity: number | null; itemId?: number }
 
 type ScanLogEntry = ScanOutcome & { key: number }
 
-// A keyboard wedge scanner types the whole code in a few milliseconds. Anything typed faster than
-// this threshold is treated as machine input, which is what lets us auto submit codes coming from
-// scanners configured without an Enter suffix without also submitting half typed manual entries.
-const MACHINE_KEYSTROKE_INTERVAL_MS = 40
-const IDLE_SUBMIT_DELAY_MS = 120
-const MIN_MACHINE_CODE_LENGTH = 3
 const MAX_LOG_ENTRIES = 8
 
-const buffer = ref("")
-const inputElement = ref<HTMLInputElement | null>(null)
-const isListening = ref(true)
 const isProcessing = ref(false)
-const queuedCount = ref(0)
 const packedCount = ref(0)
 const remainingToPack = ref<number | null>(null)
 const lastOutcome = ref<ScanOutcome | null>(null)
 const scanLog = ref<ScanLogEntry[]>([])
 
-let lastKeystrokeAt = 0
-let looksLikeMachineInput = false
 let logKey = 0
-const pendingScans: PendingScan[] = []
-let isDraining = false
 
 const statusStyles: Record<ScanStatus, { wrapper: string; icon: string; iconClass: string }> = {
     packed: { wrapper: "border-green-500 bg-green-50 text-green-800", icon: "fal fa-check-circle", iconClass: "text-green-600" },
@@ -98,70 +84,13 @@ const statusStyles: Record<ScanStatus, { wrapper: string; icon: string; iconClas
 
 const lastOutcomeStyle = computed(() => (lastOutcome.value ? statusStyles[lastOutcome.value.status] : statusStyles.error))
 
-// Keystrokes are only hijacked while the packer is not interacting with something else, so the
-// scanner works without ever clicking the field but the table search, modals and buttons still
-// behave normally.
-const shouldIgnoreKeydown = (element: EventTarget | null) => {
-    const node = element as HTMLElement | null
+const { queuedCount, enqueueScan } = useScanQueue<PendingScan>((scan) => submitScan(scan))
 
-    if (!node || node === inputElement.value) {
-        return false
-    }
-
-    if (document.querySelector(".p-dialog, [role='dialog']")) {
-        return true
-    }
-
-    return (
-        node.tagName === "INPUT" ||
-        node.tagName === "TEXTAREA" ||
-        node.tagName === "SELECT" ||
-        node.tagName === "BUTTON" ||
-        node.tagName === "A" ||
-        node.getAttribute("role") === "button" ||
-        node.isContentEditable
-    )
-}
-
-// A scanner configured without an Enter suffix never terminates the code, so the quiet gap right
-// after a burst of machine speed keystrokes is what marks the code as complete.
-const submitWhenScannerWentQuiet = debounce(() => {
-    if (looksLikeMachineInput && buffer.value.trim().length >= MIN_MACHINE_CODE_LENGTH) {
-        flushBuffer()
-    }
-}, IDLE_SUBMIT_DELAY_MS)
-
-const registerKeystroke = () => {
-    const now = performance.now()
-    looksLikeMachineInput = now - lastKeystrokeAt < MACHINE_KEYSTROKE_INTERVAL_MS
-    lastKeystrokeAt = now
-
-    submitWhenScannerWentQuiet()
-}
-
-const clearBuffer = () => {
-    submitWhenScannerWentQuiet.cancel()
-    buffer.value = ""
-    looksLikeMachineInput = false
-}
-
-const flushBuffer = () => {
-    submitWhenScannerWentQuiet.cancel()
-
-    const code = buffer.value.trim()
-    buffer.value = ""
-    looksLikeMachineInput = false
-
-    if (!code) {
-        return
-    }
-
-    // One scan is one physical item, which is what makes partial packing natural: scan as many times
-    // as went into the box, and use the pack-the-rest button to finish the line in one go.
-    pendingScans.push({ code, quantity: 1 })
-    queuedCount.value = pendingScans.length
-    drainQueue()
-}
+// One scan is one physical item, which is what makes partial packing natural: scan as many times
+// as went into the box, and use the pack-the-rest button to finish the line in one go.
+const { buffer, inputElement, isListening, registerKeystroke, clearBuffer, flushBuffer } = useBarcodeScanner(
+    (code) => enqueueScan({ code, quantity: 1 })
+)
 
 const packRestOfLastScannedItem = () => {
     const outcome = lastOutcome.value
@@ -170,26 +99,8 @@ const packRestOfLastScannedItem = () => {
         return
     }
 
-    pendingScans.push({ code: outcome.scanned, quantity: null, itemId: outcome.item.id })
-    queuedCount.value = pendingScans.length
     inputElement.value?.focus()
-    drainQueue()
-}
-
-const drainQueue = async () => {
-    if (isDraining) {
-        return
-    }
-
-    isDraining = true
-
-    while (pendingScans.length) {
-        const scan = pendingScans.shift() as PendingScan
-        queuedCount.value = pendingScans.length
-        await submitScan(scan)
-    }
-
-    isDraining = false
+    enqueueScan({ code: outcome.scanned, quantity: null, itemId: outcome.item.id })
 }
 
 const submitScan = async ({ code, quantity, itemId }: PendingScan) => {
@@ -244,52 +155,6 @@ const applyOutcome = (outcome: ScanOutcome) => {
 
     emits("scanned", outcome)
 }
-
-const onKeydown = (event: KeyboardEvent) => {
-    if (!isListening.value) {
-        return
-    }
-
-    if (event.target === inputElement.value) {
-        return
-    }
-
-    if (shouldIgnoreKeydown(event.target) || event.ctrlKey || event.metaKey || event.altKey) {
-        return
-    }
-
-    if (event.key === "Enter") {
-        if (buffer.value) {
-            event.preventDefault()
-            flushBuffer()
-        }
-        return
-    }
-
-    if (event.key === "Escape") {
-        clearBuffer()
-        return
-    }
-
-    if (event.key.length !== 1) {
-        return
-    }
-
-    event.preventDefault()
-    buffer.value += event.key
-    registerKeystroke()
-    inputElement.value?.focus()
-}
-
-onMounted(() => {
-    window.addEventListener("keydown", onKeydown)
-    inputElement.value?.focus()
-})
-
-onBeforeUnmount(() => {
-    window.removeEventListener("keydown", onKeydown)
-    submitWhenScannerWentQuiet.cancel()
-})
 </script>
 
 <template>

@@ -13,6 +13,7 @@ use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -65,32 +66,78 @@ class IndexProductsInMasterProduct extends OrgAction
         ]);
         $queryBuilder->where('shops.state', '!=', ShopStateEnum::CLOSED->value);
 
+        $selects = [
+            'products.id',
+            'products.code',
+            'products.name',
+            'products.state',
+            'products.price',
+            'products.created_at',
+            'products.updated_at',
+            'products.slug',
+            'products.rrp',
+            'products.unit',
+            'products.units',
+            'products.asset_id',
+            'products.master_product_id',
+            'products.available_quantity',
+            'products.is_for_sale',
+            'shops.name as shop_name',
+            'shops.code as shop_code',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+        ];
+
+        $allowedSorts = ['code', 'name', 'shop_code', 'units'];
+
+        if ($prefix === IndexProductsInMasterProductSales::PREFIX) {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'asset_time_series',
+                timeSeriesRecordsTable: 'asset_time_series_records',
+                foreignKey: 'asset_id',
+                aggregateColumns: [
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices',
+                    'refunds'                     => 'refunds',
+                    'dropshippers'                => 'dropshippers',
+                    'listings'                    => 'listings',
+                    'sold'                        => 'sold'
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true,
+                localKey: 'asset_id',
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['refunds'];
+            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+            $selects[] = $timeSeriesData['selectRaw']['listings'];
+            $selects[] = $timeSeriesData['selectRaw']['sold'];
+
+            $allowedSorts = array_merge($allowedSorts, [
+                'sales_grp_currency_external',
+                'invoices',
+                'refunds',
+                'dropshippers',
+                'listings',
+                'sold',
+            ]);
+        } else {
+            $selects[] = 'currencies.code as currency_code';
+            $queryBuilder->with('orgStocks');
+        }
+
         $queryBuilder
             ->defaultSort('products.code', 'products.id')
-            ->select([
-                'products.id',
-                'products.code',
-                'products.name',
-                'products.state',
-                'products.price',
-                'products.created_at',
-                'products.updated_at',
-                'products.slug',
-                'products.rrp',
-                'products.unit',
-                'products.units',
-                'products.asset_id',
-                'products.master_product_id',
-                'products.available_quantity',
-                'products.is_for_sale',
-                'shops.name as shop_name',
-                'shops.code as shop_code',
-                'currencies.code as currency_code',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
-            ])
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id')
-            ->with('orgStocks');
+            ->select($selects)
+            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
+
+        if ($prefix === IndexProductsInMasterProductSales::PREFIX) {
+            $queryBuilder->selectRaw("'{$masterAsset->group->currency->code}' as currency_code");
+        }
 
         foreach (IndexProductsInCatalogue::make()->getElementGroups($masterAsset) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -101,7 +148,7 @@ class IndexProductsInMasterProduct extends OrgAction
             );
         }
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'shop_code', 'units'])
+        return $queryBuilder->allowedSorts($allowedSorts)
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -124,6 +171,12 @@ class IndexProductsInMasterProduct extends OrgAction
                 );
             }
 
+            $isSales = $prefix === IndexProductsInMasterProductSales::PREFIX;
+
+            if ($isSales) {
+                $table->betweenDates(['date']);
+            }
+
             $table
                 ->withGlobalSearch()
                 ->withEmptyState(
@@ -134,11 +187,22 @@ class IndexProductsInMasterProduct extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'actions', label: '', canBeHidden: false);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($isSales) {
+                $table->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'listings', label: __('Total Listing'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'refunds', label: __('Refunds'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
+            } else {
+                $table->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'actions', label: '', canBeHidden: false);
+            }
         };
     }
 

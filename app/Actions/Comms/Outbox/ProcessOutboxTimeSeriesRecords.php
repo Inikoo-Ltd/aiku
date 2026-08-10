@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\OutboxTimeSeries;
 use App\Traits\BuildsAggregatedTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsAggregatedTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -60,16 +62,16 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
             ? $this->fetchDailyResults($outbox, $timeSeries, $from, $to)
             : $this->fetchAggregatedResults($timeSeries, $from, $to);
 
+        $rows = [];
+
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'outbox_time_series_id' => $timeSeries->id,
-                    'period'                => $period,
-                    'frequency'             => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'outbox_time_series_id' => $timeSeries->id,
+                'period'                => $period,
+                'frequency'             => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'              => $periodFrom,
                     'to'                => $periodTo,
                     'runs'              => $result->runs,
@@ -79,8 +81,10 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
                     'bounced_emails'    => $result->bounced_emails,
                     'unsubscribed'      => $result->unsubscribed,
                 ]
-            );
+            ];
         }
+
+        $this->syncTimeSeriesRecords($timeSeries, $rows, ['outbox_time_series_id', 'period', 'frequency'], $from, $to);
     }
 
     protected function fetchDailyResults(Outbox $outbox, OutboxTimeSeries $timeSeries, string $from, string $to): Collection
