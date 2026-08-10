@@ -10,10 +10,13 @@ namespace App\Models\Production;
 
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Goods\Stock;
+use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\OrgStock;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -31,6 +34,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property string|null $description
  * @property int|null $stock_family_id
+ * @property int|null $recommended_batch_size
  * @property ArtefactStateEnum $state
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
@@ -38,12 +42,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property int|null $trade_unit_id
+ * @property int|null $org_stock_id
+ * @property-read \App\Models\Goods\TradeUnit|null $tradeUnit
+ * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTask> $manufactureTasks
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\ArtefactStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactComplianceItem> $complianceItems
  * @property-read Stock|null $stock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newQuery()
@@ -87,6 +96,16 @@ class Artefact extends Model implements Auditable
             ->saveSlugsTo('slug');
     }
 
+    public function tradeUnit(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnit::class);
+    }
+
+    public function orgStock(): BelongsTo
+    {
+        return $this->belongsTo(OrgStock::class);
+    }
+
     public function stock(): BelongsTo
     {
         return $this->belongsTo(Stock::class);
@@ -100,7 +119,14 @@ class Artefact extends Model implements Auditable
 
     public function manufactureTasks()
     {
-        return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks');
+        return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks')
+            ->withPivot('id', 'position', 'units_per_artefact')
+            ->orderByPivot('position');
+    }
+
+    public function complianceItems(): HasMany
+    {
+        return $this->hasMany(ArtefactComplianceItem::class);
     }
 
 

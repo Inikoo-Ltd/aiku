@@ -79,6 +79,17 @@ class GetGroupNavigation
         }
 
 
+        if (\App\Models\Catalogue\Shop::pluck('id')->contains(fn ($shopId) => $user->authTo("marketing.$shopId.view"))) {
+            $groupNavigation['marketing'] = [
+                'label' => __('Group Marketing'),
+                'icon'  => ['fal', 'fa-bullhorn'],
+                'root'  => 'grp.marketing.',
+                'route' => [
+                    'name' => 'grp.marketing.dashboard',
+                ],
+            ];
+        }
+
         $groupNavigation['chat'] = [
             'label'   => __('Chat'),
             'tooltip' => __('Chat'),

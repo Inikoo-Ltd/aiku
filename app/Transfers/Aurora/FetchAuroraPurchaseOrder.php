@@ -30,8 +30,6 @@ class FetchAuroraPurchaseOrder extends FetchAurora
 
 
         if (in_array($this->auroraModelData->{'Purchase Order Parent'}, ['Parcel', 'Container'])) {
-            print_r($this->auroraModelData);
-
             return;
         }
 
@@ -156,6 +154,7 @@ class FetchAuroraPurchaseOrder extends FetchAurora
         return DB::connection("aurora")
             ->table("Purchase Order Dimension")
             ->where("Purchase Order Key", $id)
+            ->whereIn("Purchase Order Type", ["Parcel", "Container"])
             ->first();
     }
 

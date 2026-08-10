@@ -1680,6 +1680,46 @@ test('UI Edit Master Product with a trade unit not linked to a stock', function 
         ->and($showcase['trade_units'][0])->toHaveKey('pick_fractional');
 });
 
+test('showcase pick fraction follows org stock packing over group stock packing', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PCK-DEPT-'.uniqid(),
+        'name' => 'Packing Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PCK-FAM-'.uniqid(),
+        'name' => 'Packing Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PCK-AST-'.uniqid(),
+        'name'    => 'Packing Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits()->first();
+    $masterAsset->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+    DB::table('model_has_trade_units')
+        ->where('model_type', 'Stock')
+        ->where('trade_unit_id', $tradeUnit->id)
+        ->update(['quantity' => 12]);
+
+    $orgStock = $this->organisation->orgStocks()->first();
+    $tradeUnit->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+
+    $masterAsset->refresh()->load('tradeUnits');
+
+    expect($masterAsset->getEffectiveStockPackedInByTradeUnit())->toBe([$tradeUnit->id => 1.0])
+        ->and($product->load('tradeUnits')->getEffectiveStockPackedInByTradeUnit())->toBe([$tradeUnit->id => 1.0]);
+
+    $showcase = GetMasterProductShowcase::run($masterAsset);
+    expect($showcase['trade_units'][0]['pick_fractional'])->toEqual([1, [0, 1]]);
+});
+
 
 // ADDITIONAL MASTER ASSET ACTIONS
 
@@ -2794,4 +2834,33 @@ test('warehouse packing change recomputes product pick quantity', function () {
     expect((float) $row->quantity)->toBe(0.5)
         ->and((int) $row->dividend)->toBe(4)
         ->and((int) $row->divisor)->toBe(1);
+});
+
+test('two master shops can each have a department and sub department with the same code', function () {
+    $sharedDepartmentCode    = 'SHDEP'.uniqid();
+    $sharedSubDepartmentCode = 'SHSUB'.uniqid();
+
+    $departments    = [];
+    $subDepartments = [];
+
+    foreach ([1, 2] as $n) {
+        $masterShop = createFreshMasterShop();
+
+        $departments[] = $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+            'code' => $sharedDepartmentCode,
+            'name' => "Shared department $n",
+        ]);
+
+        $subDepartments[] = StoreMasterSubDepartment::make()->action($masterDepartment, [
+            'code' => $sharedSubDepartmentCode,
+            'name' => "Shared sub department $n",
+        ]);
+    }
+
+    expect($departments[0]->code)->toBe($departments[1]->code)
+        ->and($departments[0]->id)->not->toBe($departments[1]->id)
+        ->and($departments[0]->master_shop_id)->not->toBe($departments[1]->master_shop_id)
+        ->and($subDepartments[0]->code)->toBe($subDepartments[1]->code)
+        ->and($subDepartments[0]->id)->not->toBe($subDepartments[1]->id)
+        ->and($subDepartments[0]->master_shop_id)->not->toBe($subDepartments[1]->master_shop_id);
 });

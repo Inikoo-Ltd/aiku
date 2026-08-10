@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
@@ -21,10 +22,10 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Production\Production;
 use App\Rules\IUnique;
 use Illuminate\Validation\Validator;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreStockDelivery extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use HasStockDeliveryHydrators;
     use WithPrepareDeliveryStoreFields;
     use WithNoStrictRules;
@@ -46,15 +47,6 @@ class StoreStockDelivery extends OrgAction
         $this->runStockDeliveryHydrators($stockDelivery);
 
         return $stockDelivery;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
     }
 
     public function rules(): array

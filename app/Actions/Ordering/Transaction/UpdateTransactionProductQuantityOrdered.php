@@ -28,6 +28,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -212,5 +213,10 @@ class UpdateTransactionProductQuantityOrdered extends OrgAction
     public function jsonResponse(Transaction $transaction): Transaction
     {
         return $transaction;
+    }
+
+    public function htmlResponse(Transaction $transaction): RedirectResponse
+    {
+        return back();
     }
 }

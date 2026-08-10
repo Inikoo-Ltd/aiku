@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\Timesheet\UI;
 
+use App\Actions\HumanResources\Timesheet\CalculateTimesheetOvertime;
 use App\Models\HumanResources\Timesheet;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -25,14 +26,19 @@ class GetTimesheetShowcase
             $workEndAt = $workEndAt?->copy()->subHour();
         }
 
+        $overtime = CalculateTimesheetOvertime::run($timesheet);
+
         return [
-            'work_start_at'      => $workStartAt,
-            'work_end_at'        => $workEndAt,
-            'work_duration'      => $timesheet->working_duration,
-            'breaks_duration'    => $timesheet->breaks_duration,
-            'total_duration'     => $timesheet->total_duration,
-            'overtime'           => $timesheet->overtime,
-            'about'              => $timesheet->about
+            'work_start_at'            => $workStartAt,
+            'work_end_at'              => $workEndAt,
+            'work_duration'            => $timesheet->working_duration,
+            'breaks_duration'          => $timesheet->breaks_duration,
+            'total_duration'           => $timesheet->total_duration,
+            'paid_duration'            => $overtime['paid_duration'],
+            'unpaid_overtime_duration' => $overtime['unpaid_overtime_duration'],
+            'paid_overtime_duration'   => $overtime['paid_overtime_duration'],
+            'overtime'                 => $overtime['unpaid_overtime_duration'] + $overtime['paid_overtime_duration'],
+            'about'                    => $timesheet->about
         ];
     }
 }

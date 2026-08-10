@@ -3,11 +3,13 @@
 namespace App\Actions\Production\RawMaterial;
 
 use App\Actions\Production\Production\Hydrators\ProductionHydrateRawMaterials;
+use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRawMaterials;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Production\RawMaterial\RawMaterialStateEnum;
+use App\Enums\Production\RawMaterial\RawMaterialStockStatusEnum;
 use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Production\Production;
@@ -28,6 +30,11 @@ class UpdateRawMaterial extends OrgAction
     public function handle(RawMaterial $rawMaterial, array $modelData): RawMaterial
     {
         $rawMaterial = $this->update($rawMaterial, $modelData);
+
+        if ($rawMaterial->wasChanged('org_stock_id') && $rawMaterial->org_stock_id) {
+            RawMaterialHydrateFromOrgStock::run($rawMaterial);
+        }
+
         if ($rawMaterial->wasChanged('state')) {
             GroupHydrateRawMaterials::dispatch($rawMaterial->group);
             OrganisationHydrateRawMaterials::dispatch($rawMaterial->organisation);
@@ -66,7 +73,7 @@ class UpdateRawMaterial extends OrgAction
                         [
                             'column'    => 'id',
                             'value'     => $this->rawMaterial->id,
-                            'operation' => '!='
+                            'operator'  => '!='
                         ]
 
                     ]
@@ -75,6 +82,18 @@ class UpdateRawMaterial extends OrgAction
             'description' => ['sometimes', 'string', 'max:255'],
             'unit'        => ['sometimes', Rule::enum(RawMaterialUnitEnum::class)],
             'unit_cost'   => ['sometimes', 'numeric', 'min:0'],
+            'quantity_on_location' => ['sometimes', 'nullable', 'numeric'],
+            'stock_status' => ['sometimes', Rule::enum(RawMaterialStockStatusEnum::class)],
+            'trade_unit_id' => [
+                'sometimes',
+                'nullable',
+                Rule::exists('trade_units', 'id')->where('group_id', $this->organisation->group_id),
+            ],
+            'org_stock_id' => [
+                'sometimes',
+                'nullable',
+                Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
+            ],
         ];
     }
 

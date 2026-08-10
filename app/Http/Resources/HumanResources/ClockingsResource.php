@@ -37,10 +37,15 @@ class ClockingsResource extends JsonResource
             'clocked_at'               => $clockedAt,
             'media_slug'               => $this->media_slug,
             'media_id'                 => $this->media_id,
+            'photo'                    => $this->imageSources(),
             'clocking_machine_slug'    => $this->clocking_machine_slug,
             'employee_name'            => $this->employee_name,
             'clocking_machine_name'    => $this->clocking_machine_name,
-            'clocking_machine_qr_code' => $this->clocking_machine_qr_code
+            'clocking_machine_qr_code' => $this->clocking_machine_qr_code,
+            'delete_route'             => [
+                'name'       => 'grp.models.clocking-machine.clocking.delete',
+                'parameters' => ['clocking' => $this->id],
+            ],
         ];
     }
 }

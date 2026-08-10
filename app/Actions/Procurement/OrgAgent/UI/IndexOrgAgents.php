@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgAgent\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Http\Resources\Procurement\OrgAgentsResource;
@@ -25,11 +26,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgAgents extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
-
+    use WithProcurementAuthorisation;
     public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

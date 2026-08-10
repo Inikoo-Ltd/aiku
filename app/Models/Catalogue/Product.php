@@ -30,12 +30,14 @@ use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
+use App\Models\Traits\HasEffectiveStockPackedIn;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -264,6 +266,7 @@ class Product extends Model implements Auditable, HasMedia
     use SoftDeletes;
     use HasSlug;
     use InAssetModel;
+    use HasEffectiveStockPackedIn;
     use HasHistory;
     use HasFactory;
     use HasImage;
@@ -543,6 +546,61 @@ class Product extends Model implements Auditable, HasMedia
     public function exclusiveForCustomer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Every customer allowed to buy this product. exclusive_for_customer_id holds the primary one
+     * and marks the product as exclusive at all; this is the full list.
+     */
+    public function exclusiveCustomers(): BelongsToMany
+    {
+        return $this->belongsToMany(Customer::class, 'product_has_exclusive_customers')
+            ->withTimestamps();
+    }
+
+    /**
+     * Products a given customer may see: everything public, plus the ones sold exclusively to them.
+     * Pass null for an anonymous visitor, who sees only public products.
+     */
+    public function scopeVisibleToCustomer(Builder $query, ?int $customerId): Builder
+    {
+        return $query->where(function (Builder $query) use ($customerId) {
+            $query->whereNotExists(function ($sub) {
+                $sub->from('product_has_exclusive_customers')
+                    ->whereColumn('product_has_exclusive_customers.product_id', 'products.id');
+            });
+
+            if ($customerId) {
+                $query->orWhereExists(function ($sub) use ($customerId) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                        ->where('product_has_exclusive_customers.customer_id', $customerId);
+                });
+            }
+        });
+    }
+
+    /**
+     * Read from the pivot, never from exclusive_for_customer_id. Aurora rewrites that column on
+     * every product fetch from its own single-customer field, and it holds nothing for the ranges
+     * sold to the AW group companies, so trusting it would quietly make those products public.
+     */
+    public function isExclusive(): bool
+    {
+        return $this->exclusiveCustomers()->exists();
+    }
+
+    public function isExclusiveFor(?int $customerId): bool
+    {
+        if (!$this->isExclusive()) {
+            return true;
+        }
+
+        if (!$customerId) {
+            return false;
+        }
+
+        return $this->exclusiveCustomers()->whereKey($customerId)->exists();
     }
 
     public function containedByCollections(): MorphToMany

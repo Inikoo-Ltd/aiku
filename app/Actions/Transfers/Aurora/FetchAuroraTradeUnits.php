@@ -48,6 +48,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         $tradeUnitData = $organisationSource->fetchTradeUnit($organisationSourceId);
 
         if ($tradeUnitData) {
+            $tradeUnit     = null;
             $metaTradeUnit = TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->first();
             if ($metaTradeUnit) {
                 // Trade units carry group_id only: every organisation reads the same row
@@ -60,10 +61,12 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                 // used to be trusted for them via sk, which deleted and rewrote the whole
                 // trade_unit_has_ingredients set on each fetch.
 
-                $this->fetchTradeUnitProductPropertiesInfo(
-                    $tradeUnit,
-                );
-                $this->processFetchAttachments($tradeUnit, 'Part', $tradeUnitData['trade_unit']['source_id']);
+                if ($tradeUnit) {
+                    $this->fetchTradeUnitProductPropertiesInfo(
+                        $tradeUnit,
+                    );
+                    $this->processFetchAttachments($tradeUnit, 'Part', $tradeUnitData['trade_unit']['source_id']);
+                }
             }
 
 

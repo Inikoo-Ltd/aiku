@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
@@ -21,21 +22,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class FinishStockDeliveryCosting extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use HasStockDeliveryHydrators;
     use WithActionUpdate;
 
     public int $hydratorsDelay = 0;
 
     private StockDelivery $stockDelivery;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-    }
 
     public function afterValidator(Validator $validator): void
     {

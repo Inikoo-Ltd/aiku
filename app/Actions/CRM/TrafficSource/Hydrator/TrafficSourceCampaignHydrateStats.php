@@ -8,6 +8,9 @@
 
 namespace App\Actions\CRM\TrafficSource\Hydrator;
 
+use App\Actions\CRM\TrafficSource\GetAttributionWindow;
+use App\Actions\CRM\TrafficSource\WithAttributionWindow;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class TrafficSourceCampaignHydrateStats implements ShouldBeUnique
 {
     use AsAction;
+    use WithAttributionWindow;
 
     public int $jobUniqueFor = 3600;
 
@@ -38,15 +42,36 @@ class TrafficSourceCampaignHydrateStats implements ShouldBeUnique
      */
     public function handle(TrafficSourceCampaign $campaign): void
     {
-        $attribution = DB::table('model_has_traffic_sources')
-            ->join('customer_stats', 'customer_stats.customer_id', '=', 'model_has_traffic_sources.model_id')
-            ->where('model_has_traffic_sources.traffic_source_campaign_id', $campaign->id)
-            ->where('model_has_traffic_sources.model_type', 'Customer')
+        $window = GetAttributionWindow::run($campaign->trafficSource->shop);
+
+        $customers = DB::table('model_has_traffic_sources as p')
+            ->join('customers', 'customers.id', '=', 'p.model_id')
+            ->where('p.traffic_source_campaign_id', $campaign->id)
+            ->where('p.model_type', 'Customer')
+            ->tap(fn ($query) => $this->constrainToTouchWindow($query, 'customers.created_at', $window))
+            ->sum('p.share');
+
+        $purchases = DB::table('model_has_traffic_sources as p')
+            ->join('orders', 'orders.customer_id', '=', 'p.model_id')
+            ->where('p.traffic_source_campaign_id', $campaign->id)
+            ->where('p.model_type', 'Customer')
+            ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+            ->whereNull('orders.deleted_at')
+            ->tap(fn ($query) => $this->constrainToTouchWindow($query, 'orders.date', $window))
+            ->sum('p.share');
+
+        $revenue = DB::table('invoices')
+            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
+                $join->on('p.model_id', '=', 'invoices.customer_id')
+                    ->where('p.model_type', '=', 'Customer');
+
+                $this->constrainToAttributionWindow($join, $window);
+            })
+            ->where('p.traffic_source_campaign_id', $campaign->id)
+            ->where('invoices.in_process', false)
             ->select(
-                DB::raw('COALESCE(SUM(model_has_traffic_sources.share), 0) as customers'),
-                DB::raw('COALESCE(SUM(customer_stats.number_orders_state_dispatched * model_has_traffic_sources.share), 0) as purchases'),
-                DB::raw('COALESCE(SUM(customer_stats.sales_all * model_has_traffic_sources.share), 0) as revenue'),
-                DB::raw('COALESCE(SUM(customer_stats.sales_org_currency_all * model_has_traffic_sources.share), 0) as org_revenue'),
+                DB::raw('COALESCE(SUM(invoices.net_amount * p.share), 0) as revenue'),
+                DB::raw('COALESCE(SUM(invoices.org_net_amount * p.share), 0) as org_revenue'),
             )
             ->first();
 
@@ -61,10 +86,10 @@ class TrafficSourceCampaignHydrateStats implements ShouldBeUnique
         $campaign->stats()->updateOrCreate(
             ['traffic_source_campaign_id' => $campaign->id],
             [
-                'number_customers'           => $attribution->customers,
-                'number_customer_purchases'  => $attribution->purchases,
-                'total_customer_revenue'     => $attribution->revenue,
-                'org_total_customer_revenue' => $attribution->org_revenue,
+                'number_customers'           => $customers,
+                'number_customer_purchases'  => $purchases,
+                'total_customer_revenue'     => $revenue->revenue,
+                'org_total_customer_revenue' => $revenue->org_revenue,
                 'total_cost'                 => $cost->total,
                 'org_total_cost'             => $cost->org_total,
             ]

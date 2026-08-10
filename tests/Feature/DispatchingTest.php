@@ -2525,7 +2525,7 @@ test('sync required pick quantity updates delivery note items in place', functio
     $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
 
     $transaction = $this->order->transactions()->where('model_type', 'Product')->first();
-    $transaction->updateQuietly(['quantity_ordered' => 4]);
+    $transaction->updateQuietly(['quantity_ordered' => 4, 'quantity_bonus' => 0]);
 
     $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
         'reference'        => 'SYNC-'.$orgStock->id,
@@ -2614,6 +2614,27 @@ test('after rolling back the picking the new composition can be applied and the 
     expect((float) $deliveryNoteItem->quantity_required)->toBe(28.0)
         ->and($deliveryNoteItem->composition_dirty_at)->toBeNull()
         ->and($deliveryNoteItem->composition_dirty_quantity_required)->toBeNull();
+})->depends('composition change flags packed items dirty instead of rewriting them');
+
+test('composition change flags items with picks dirty even in a synced state', function (DeliveryNoteItem $deliveryNoteItem) {
+    $deliveryNoteItem->updateQuietly([
+        'state'           => DeliveryNoteItemStateEnum::HANDLING,
+        'quantity_picked' => 5,
+    ]);
+
+    DB::table('product_has_org_stocks')
+        ->where('org_stock_id', $deliveryNoteItem->org_stock_id)
+        ->update(['quantity' => 9]);
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($deliveryNoteItem->orgStock);
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(28.0)
+        ->and($deliveryNoteItem->composition_dirty_at)->not->toBeNull()
+        ->and((float) $deliveryNoteItem->composition_dirty_quantity_required)->toBe(36.0);
+
+    expect(fn () => ApplyNewCompositionToDeliveryNoteItem::make()->handle($deliveryNoteItem))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 })->depends('composition change flags packed items dirty instead of rewriting them');
 
 test('picking an item auto ignores zero quantity items and hides them from the index', function () {

@@ -22,6 +22,7 @@ use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Reviews\MasterAssetReviewStat;
 use App\Models\SysAdmin\Group;
+use App\Models\Traits\HasEffectiveStockPackedIn;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InMasterShop;
@@ -210,6 +211,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use InMasterShop;
+    use HasEffectiveStockPackedIn;
 
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 

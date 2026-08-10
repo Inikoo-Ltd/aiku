@@ -94,7 +94,6 @@ use App\Audits\Transformer\RelationTransformer;
  * @property Carbon|null $dispatched_at
  * @property Carbon|null $cancelled_at
  * @property Carbon|null $settled_at dispatched_at|cancelled_at
- * @property bool $is_invoiced
  * @property bool|null $is_handling_on_hold
  * @property bool|null $can_dispatch
  * @property string|null $customer_notes
@@ -538,7 +537,7 @@ class Order extends Model implements HasMedia, Auditable
     public function trafficSources(): MorphToMany
     {
         return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
-            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model'])
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model', 'first_touch_at', 'last_touch_at'])
             ->withTimestamps();
     }
 

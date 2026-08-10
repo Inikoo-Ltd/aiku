@@ -19,15 +19,29 @@ const props = defineProps<{
         totals: {
             spend: number
             revenue: number
+            pending: number
             registrations: number
             invoices: number
             roas: number | null
             cac: number | null
         }
+        baseline: {
+            registrations: number
+            orders: number
+            revenue: number
+        }
         channels: {
             name: string
             type: string
+            group: string
+            group_label: string
+            group_position: number
+            unsubscribed: number
+            orders: number
             spend: number
+            spend_is_estimated?: boolean
+            visits: number
+            orders: number
             revenue: number
             registrations: number
             roas: number | null
@@ -36,6 +50,12 @@ const props = defineProps<{
         period_label: string
         from: string | null
         period_options: { value: string, label: string }[]
+        referrers: {
+            host: string
+            visitors: number
+            registrations: number
+            revenue: number
+        }[]
         campaigns: {
             name: string
             channel: string
@@ -104,6 +124,51 @@ const sparkline = computed(() => {
         endY: y(days[days.length - 1].amount),
     }
 })
+
+/* The same grouping and the same explanations the org and group dashboards carry: a shop manager
+   reading this screen should not have to learn a second vocabulary to compare with the level above. */
+/* Same toggle as the organisation and group screens. */
+const showChannelDetail = ref(true)
+
+const groupedChannels = computed(() => {
+    const groups: Record<string, any> = {}
+
+    for (const channel of props.overview.channels) {
+        const key = channel.group ?? 'other'
+
+        groups[key] ??= {
+            key,
+            label: channel.group_label ?? key,
+            position: channel.group_position ?? 9,
+            channels: [],
+            visits: 0, orders: 0, spend: 0, pending: 0, revenue: 0, registrations: 0,
+        }
+
+        const g = groups[key]
+        g.channels.push(channel)
+        g.visits += channel.visits ?? 0
+        g.orders += channel.orders ?? 0
+        g.spend += channel.spend ?? 0
+        g.pending += channel.pending ?? 0
+        g.revenue += channel.revenue ?? 0
+        g.registrations += channel.registrations ?? 0
+    }
+
+    return Object.values(groups).sort((a: any, b: any) => a.position - b.position)
+})
+
+const columnHelp: Record<string, string> = {
+    visits: trans('Arrivals from this channel, how many of them bought, and the rate between the two. Not unique people: each browser counts once per channel per day, so the same person on two days, or on phone and laptop, counts each time - the same way the ad platforms count their clicks. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked.'),
+    spend: trans('Ad spend imported for this channel over the period. Email spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
+    awaiting: trans('Value of orders already placed but not invoiced yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
+    revenue: trans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it.'),
+    registrations: trans('Customers who signed up after arriving through this channel. A red figure beside it is subscribers lost over the same emails, not subtracted from it.'),
+    orders: trans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships.'),
+    roas: trans('Revenue divided by spend. Blank while money is still awaiting invoice.'),
+}
+
+const count = (value: number) => Number.isInteger(value) ? value.toString() : value.toFixed(2)
+const pctOf = (part: number, whole: number) => whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
 
 const roasIsGood = computed(() => (props.overview.totals.roas ?? 0) >= 1)
 
@@ -180,8 +245,15 @@ const typeLabel: Record<string, string> = {
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('Attributed revenue') }}</div>
+                <div class="text-xs text-gray-500">{{ trans('Revenue marketing touched') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">{{ money(overview.totals.revenue) }}</div>
+                <div class="mt-0.5 text-xs text-gray-400">
+                    {{ trans('of') }} {{ money(overview.baseline?.revenue ?? 0) }} {{ trans('taken in total') }}
+                </div>
+                <!-- Invoicing runs a day or two behind orders; this is what today's marketing already sold -->
+                <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-amber-600">
+                    + {{ money(overview.totals.pending) }} {{ trans('placed, awaiting invoice') }}
+                </div>
             </div>
 
             <div class="bg-white p-5">
@@ -192,10 +264,15 @@ const typeLabel: Record<string, string> = {
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('Attributed customers') }}</div>
+                <div class="text-xs text-gray-500">{{ trans('New customers marketing touched') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">
                     {{ fmtShare(overview.totals.registrations) }}
-                    <span class="text-sm text-gray-400">· {{ fmtShare(overview.totals.invoices) }} {{ trans('invoices') }}</span>
+                    <span class="text-sm text-gray-400">{{ trans('of') }} {{ overview.baseline?.registrations ?? 0 }}</span>
+                </div>
+                <!-- Sign-ups nobody in marketing can claim: the trade that arrives regardless -->
+                <div v-if="(overview.baseline?.registrations ?? 0) > 0 && overview.totals.registrations === 0"
+                     class="mt-0.5 text-xs text-[#d03b3b]">
+                    {{ trans('none of this period\'s sign-ups came through marketing') }}
                 </div>
             </div>
         </div>
@@ -228,6 +305,13 @@ const typeLabel: Record<string, string> = {
                         <div v-if="channel.registrations > 0" class="text-xs text-gray-400 tabular-nums">
                             {{ fmtShare(channel.registrations) }} {{ trans('registrations') }}
                         </div>
+                        <!-- Visits it sent against how many bought: people arrived and nobody ordered
+                             is the case worth seeing, so it is the one in red. -->
+                        <div v-if="channel.visits > 0" class="text-xs tabular-nums"
+                             :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                            {{ locale.number(channel.visits) }} {{ trans('visits') }} ·
+                            {{ fmtShare(channel.orders ?? 0) }} {{ trans('bought') }}
+                        </div>
                     </div>
 
                     <div class="space-y-0.5">
@@ -256,6 +340,76 @@ const typeLabel: Record<string, string> = {
                         · {{ trans('spend') }} {{ money(channel.spend) }} · {{ trans('revenue') }} {{ money(channel.revenue) }}
                     </div>
                 </Link>
+            </div>
+
+            <!-- The detail under the bars: same table, same wording and same tooltips as the
+                 organisation and group dashboards, so the levels can be read against each other. -->
+            <div v-if="overview.channels.length" class="mt-5">
+                <div class="flex justify-end">
+                    <button type="button" @click="showChannelDetail = !showChannelDetail"
+                            class="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1">
+                        {{ showChannelDetail ? trans('Collapse') : trans('Expand') }}
+                    </button>
+                </div>
+                <table class="mt-2 w-full text-xs overflow-x-auto">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-100">
+                            <th class="text-left font-normal py-1.5 pr-2">{{ trans('Channel') }}</th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Visits') }}<sup v-tooltip="columnHelp.visits" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}<sup v-tooltip="columnHelp.spend" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Awaiting invoice') }}<sup v-tooltip="columnHelp.awaiting" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}<sup v-tooltip="columnHelp.revenue" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}<sup v-tooltip="columnHelp.registrations" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Orders') }}<sup v-tooltip="columnHelp.orders" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}<sup v-tooltip="columnHelp.roas" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                        </tr>
+                    </thead>
+                    <tbody v-for="group in groupedChannels" :key="group.key">
+                        <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
+                            <td class="py-1 pr-2 text-xs leading-tight">{{ group.label }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ group.visits > 0 ? locale.number(group.visits) : '' }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ money(group.spend) }}</td>
+                            <td class="text-right px-2 tabular-nums" :class="group.pending > 0 ? 'text-amber-700' : ''">
+                                {{ group.pending > 0 ? money(group.pending) : '' }}
+                            </td>
+                            <td class="text-right px-2 tabular-nums">{{ money(group.revenue) }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ count(group.registrations) }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ count(group.orders) }}</td>
+                            <td class="text-right pl-2 tabular-nums">
+                                {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
+                            </td>
+                        </tr>
+                        <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type" class="border-b border-gray-50 text-gray-600">
+                            <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap"
+                                :class="channel.visits > 0 && channel.orders === 0 ? 'text-[#d03b3b]' : ''">
+                                <template v-if="channel.visits > 0">
+                                    {{ locale.number(channel.visits) }}
+                                    <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                                        · {{ count(channel.orders) }} {{ trans('bought') }} · {{ pctOf(channel.orders, channel.visits) }}
+                                    </span>
+                                </template>
+                                <span v-else class="text-gray-300">—</span>
+                            </td>
+                            <td class="text-right px-2 tabular-nums">
+                                <span v-if="channel.spend_is_estimated" class="text-xs text-gray-400 mr-1"
+                                      :title="trans('Estimated from emails sent')">{{ trans('est.') }}</span>{{ money(channel.spend) }}
+                            </td>
+                            <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-amber-600' : 'text-gray-300'">
+                                {{ money(channel.pending) }}
+                            </td>
+                            <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                {{ count(channel.registrations) }}<span v-if="channel.unsubscribed > 0" class="text-[#d03b3b]"> −{{ locale.number(channel.unsubscribed) }}</span>
+                            </td>
+                            <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
+                            <td class="text-right pl-2 tabular-nums"
+                                :class="channel.roas === null ? 'text-gray-300' : channel.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                                {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div v-else class="mt-4 py-8 text-center">
@@ -303,6 +457,36 @@ const typeLabel: Record<string, string> = {
             </table>
         </div>
 
+        <!-- Top referrers: the sites sending people here, invisible before the referral channel existed -->
+        <div v-if="overview.referrers?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-sm font-medium text-gray-800">{{ trans('Top referrers') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">{{ overview.period_label.toLowerCase() }}</span>
+                </div>
+            </div>
+
+            <table class="mt-4 w-full text-xs">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-100">
+                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Site') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Visitors') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Revenue') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="referrer in overview.referrers" :key="referrer.host"
+                        class="border-b border-gray-50 text-gray-600">
+                        <td class="py-2 pr-2 text-gray-700 truncate max-w-[18rem]">{{ referrer.host }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ fmtShare(referrer.visitors) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ fmtShare(referrer.registrations) }}</td>
+                        <td class="text-right pl-2 tabular-nums">{{ money(referrer.revenue) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <!-- Email marketing: does what we send earn sales, or just unsubscribes? -->
         <div v-if="overview.email" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <div class="flex items-center justify-between">
@@ -336,7 +520,7 @@ const typeLabel: Record<string, string> = {
                     <div class="text-sm text-gray-800 tabular-nums">{{ money(overview.email.totals.estimated_cost) }}</div>
                 </div>
                 <div>
-                    <span class="text-xs text-gray-500">{{ trans('Attributed revenue') }}</span>
+                    <span class="text-xs text-gray-500">{{ trans('Revenue marketing touched') }}</span>
                     <div class="text-sm tabular-nums"
                         :class="overview.email.totals.attributed_revenue >= overview.email.totals.estimated_cost ? 'text-[#006300]' : 'text-[#d03b3b]'">
                         {{ money(overview.email.totals.attributed_revenue) }}

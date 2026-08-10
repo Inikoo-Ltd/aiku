@@ -3,16 +3,17 @@
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
 use App\Actions\GoodsIn\StockDeliveryItem\Traits\WithStockDeliveryItemStatePropagation;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateStateToReadyToShipStockDeliveryItem
+class UpdateStateToReadyToShipStockDeliveryItem extends OrgAction
 {
-    use AsAction;
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use WithStockDeliveryItemStatePropagation;
 
@@ -34,11 +35,16 @@ class UpdateStateToReadyToShipStockDeliveryItem
 
     public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): StockDeliveryItem
     {
+        $this->initialisation($stockDeliveryItem->organisation, $request);
+
         return $this->handle($stockDeliveryItem);
     }
 
     public function action(StockDeliveryItem $stockDeliveryItem): StockDeliveryItem
     {
+        $this->asAction = true;
+        $this->initialisation($stockDeliveryItem->organisation, []);
+
         return $this->handle($stockDeliveryItem);
     }
 

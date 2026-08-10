@@ -94,6 +94,14 @@ function formatDate(date: Date | null) {
 
 const isLoadingSubmit = ref(false)
 
+const isBuyXGetFree = computed(() => allowanceType.value === 'free' && typeOffer.value === 'quantity')
+const isMinAmountGift = computed(() => allowanceType.value === 'free' && typeOffer.value === 'amount')
+
+const giftProductId = computed(() => freeSameAsProduct.value
+    ? (productId.value || props.product_id)
+    : freeProductId.value
+)
+
 const buildAllowancePayload = () => {
     if (allowanceType.value === 'percentage') {
         return {
@@ -103,9 +111,7 @@ const buildAllowancePayload = () => {
 
     return {
         free_quantity: freeQuantity.value != null ? Math.floor(freeQuantity.value) : null,
-        free_product_id: freeSameAsProduct.value
-            ? (productId.value || props.product_id)
-            : freeProductId.value,
+        free_product_id: giftProductId.value,
     }
 }
 
@@ -118,21 +124,24 @@ const submitGiftOffer = () => {
         trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
         trigger_data_item_amount: offerAmount.value,
         ...buildAllowancePayload(),
-        product_id: productId.value || props.product_id,
-        quantity: quantity.value,
+        ...(isMinAmountGift.value
+            ? {
+                min_order_amount: offerAmount.value,
+                product_id: giftProductId.value,
+                quantity: freeQuantity.value != null ? Math.floor(freeQuantity.value) : null,
+            }
+            : {
+                product_id: productId.value || props.product_id,
+                quantity: quantity.value,
+            }),
         duration: dateType.value,
         start_at: formatDate(startDate.value),
         end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
     }
 
-    const isBuyXGetFree = allowanceType.value === 'free'
-        && typeOffer.value === 'quantity'
-
-    const isProductPercentage = allowanceType.value === 'percentage'
-
-    const routeName = isBuyXGetFree
+    const routeName = isBuyXGetFree.value
         ? 'grp.models.bogo_offer.store'
-        : isProductPercentage
+        : allowanceType.value === 'percentage'
             ? 'grp.models.product_offer.store'
             : 'grp.models.gift_offer.store'
 
@@ -223,22 +232,22 @@ watch([startDate, endDate], () => {
     }
 })
 
+const enforceMinimumFreeQuantityTrigger = () => {
+    if (isBuyXGetFree.value && (offerQtyItems.value ?? 0) < 2) {
+        offerQtyItems.value = 2
+    }
+}
+
 watch(typeOffer, (val) => {
     if (val === 'quantity') {
         offerAmount.value = 0
+        enforceMinimumFreeQuantityTrigger()
     } else if (val === 'amount') {
         offerQtyItems.value = 1
     }
 })
 
-watch(allowanceType, (val) => {
-    if (val === 'free') {
-        typeOffer.value = 'quantity'
-        if ((offerQtyItems.value ?? 0) < 2) {
-            offerQtyItems.value = 2
-        }
-    }
-})
+watch(allowanceType, enforceMinimumFreeQuantityTrigger)
 
 watch(freeSameAsProduct, (isSame) => {
     if (isSame) {
@@ -258,9 +267,7 @@ const isFormInvalid = computed(() => {
     if (allowanceType.value === 'free') {
         if (!freeQuantity.value) return true
         if (!freeSameAsProduct.value && !freeProductId.value) return true
-        if (typeOffer.value !== 'quantity') return true
-        if ((offerQtyItems.value ?? 0) < 2) return true
-        if (freeQuantity.value >= (offerQtyItems.value ?? 0)) return true
+        if (isBuyXGetFree.value && freeQuantity.value >= (offerQtyItems.value ?? 0)) return true
     }
     if (typeOffer.value === 'quantity' && !offerQtyItems.value) return true
     if (typeOffer.value === 'amount' && !offerAmount.value) return true
@@ -354,7 +361,7 @@ resetForm()
                             <div class="space-y-2 flex-1">
                                 <div class="flex items-center gap-2">
                                     <RadioButton v-model="typeOffer" inputId="type-amount" name="amount" value="amount"
-                                        size="small" :disabled="allowanceType === 'free'" />
+                                        size="small" />
                                     <label for="type-amount" class="cursor-pointer">{{ trans('By minimum amount')
                                         }}</label>
                                 </div>
@@ -410,7 +417,7 @@ resetForm()
                                     :suffix="' ' + ((freeQuantity ?? 0) > 1 ? trans('items') : trans('item'))" />
                                 <span>{{ trans('for free') }}</span>
                             </div>
-                            <span class="text-sm text-red-500" v-if="(freeQuantity ?? 0) >= (offerQtyItems ?? 0)">
+                            <span class="text-sm text-red-500" v-if="isBuyXGetFree && (freeQuantity ?? 0) >= (offerQtyItems ?? 0)">
                                 {{ trans('Free quantity must be less than the minimum quantity to qualify for the offer') }}
                             </span>
 

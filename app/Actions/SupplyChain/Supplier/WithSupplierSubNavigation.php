@@ -42,6 +42,17 @@ trait WithSupplierSubNavigation
                     "tooltip" => __("Products"),
                 ],
             ],
+            [
+                "label"    => __("Purchase Orders"),
+                "route"     => [
+                    "name"       => "grp.supply-chain.suppliers.agent_supplier_purchase_orders.index",
+                    "parameters" => [$parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-clipboard-list"],
+                    "tooltip" => __("Purchase Orders"),
+                ],
+            ],
             // wait purchase order:
             // [
             //     "number"   => $parent->stats->number_purchase_orders,

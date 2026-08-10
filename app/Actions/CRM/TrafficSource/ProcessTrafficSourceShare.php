@@ -17,7 +17,6 @@ class ProcessTrafficSourceShare
 
     public const ATTRIBUTION_FIRST_TOUCH      = 'first_touch';
     public const ATTRIBUTION_LAST_TOUCH       = 'last_touch';
-    public const ATTRIBUTION_LAST_NON_DIRECT  = 'last_non_direct_touch';
     public const ATTRIBUTION_LAST_PAID_TOUCH  = 'last_paid_touch';
     public const ATTRIBUTION_LINEAR           = 'linear';
 
@@ -36,8 +35,7 @@ class ProcessTrafficSourceShare
 
         return match ($attributionModel) {
             self::ATTRIBUTION_FIRST_TOUCH     => $this->firstTouch($touches),
-            self::ATTRIBUTION_LAST_TOUCH,
-            self::ATTRIBUTION_LAST_NON_DIRECT => $this->lastTouch($touches),
+            self::ATTRIBUTION_LAST_TOUCH      => $this->lastTouch($touches),
             self::ATTRIBUTION_LAST_PAID_TOUCH => $this->lastPaidTouch($touches),
             default                            => $this->linear($touches),
         };
@@ -64,35 +62,6 @@ class ProcessTrafficSourceShare
         $firstKey      = $this->touchKey($touches[0]);
 
         return [$this->buildResult($lastPaidTouch, 1.0, $this->touchKey($lastPaidTouch) === $firstKey)];
-    }
-
-    /**
-     * Identifies which unique touches in a journey assisted the conversion without receiving the
-     * final credit under the given attribution model (i.e. every eligible touch except the one(s)
-     * that ended up with credit). Used to report assisted vs primary conversions/revenue.
-     *
-     * @param array<int, array{timestamp: int|null, abbr: string, type: TrafficSourcesTypeEnum, campaign_ref: string|null}> $touches
-     *
-     * @return array<int, array{type: TrafficSourcesTypeEnum, campaign_ref: string|null}>
-     */
-    public function assistingTouches(array $touches, string $attributionModel = self::ATTRIBUTION_LINEAR): array
-    {
-        $credited = collect($this->handle($touches, $attributionModel))
-            ->map(fn (array $share) => $this->touchKey(['type' => $share['type'], 'campaign_ref' => $share['campaign_ref']]))
-            ->all();
-
-        $assisting = [];
-
-        foreach ($this->uniqueTouches($touches) as $key => $touch) {
-            if (!in_array($key, $credited, true)) {
-                $assisting[] = [
-                    'type'         => $touch['type'],
-                    'campaign_ref' => $touch['campaign_ref'],
-                ];
-            }
-        }
-
-        return $assisting;
     }
 
     /**

@@ -9,6 +9,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
@@ -67,6 +68,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\Sowing> $sowings
  * @property-read \App\Models\GoodsIn\StockDelivery|null $stockDelivery
  * @property-read SupplierProduct|null $supplierProduct
+ * @property-read OrgStock|null $orgStock
  * @method static \Database\Factories\GoodsIn\StockDeliveryItemFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockDeliveryItem newModelQuery()
  * @method static Builder<static>|StockDeliveryItem newQuery()
@@ -110,6 +112,11 @@ class StockDeliveryItem extends Model
     public function supplierProduct(): BelongsTo
     {
         return $this->belongsTo(SupplierProduct::class);
+    }
+
+    public function orgStock(): BelongsTo
+    {
+        return $this->belongsTo(OrgStock::class);
     }
 
     public function sowings(): HasMany

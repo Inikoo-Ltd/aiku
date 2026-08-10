@@ -99,6 +99,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Ordering\SalesChannel;
@@ -276,6 +277,7 @@ class Shop extends Model implements HasMedia, Auditable
     use HasImage;
     use WithFaireApi;
     use WithReviewIOApi;
+    use HasApiTokens;
 
     protected $casts = [
         'data'                         => 'array',

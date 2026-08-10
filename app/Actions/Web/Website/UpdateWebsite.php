@@ -209,7 +209,7 @@ class UpdateWebsite extends OrgAction
                         ],
                         [
                             'column'    => 'status',
-                            'operation' => '=',
+                            'operator'  => '=',
                             'value'     => true
                         ],
                         [
@@ -296,7 +296,7 @@ class UpdateWebsite extends OrgAction
                         ],
                         [
                             'column'    => 'status',
-                            'operation' => '=',
+                            'operator'  => '=',
                             'value'     => true
                         ],
                         [

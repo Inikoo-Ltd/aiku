@@ -24,7 +24,8 @@ class ApplyNewCompositionToDeliveryNoteItem extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
     {
-        if (!in_array($deliveryNoteItem->state, SyncDeliveryNoteItemsRequiredPickQuantity::SYNCED_STATES)) {
+        if (!in_array($deliveryNoteItem->state, SyncDeliveryNoteItemsRequiredPickQuantity::SYNCED_STATES)
+            || SyncDeliveryNoteItemsRequiredPickQuantity::make()->hasPhysicalWork($deliveryNoteItem)) {
             throw new HttpException(422, __('Roll back the picking first: this item is :state and its physical work still stands.', ['state' => $deliveryNoteItem->state->value]));
         }
 

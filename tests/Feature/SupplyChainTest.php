@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductShowcase;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
@@ -21,8 +22,12 @@ use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Imports\SupplyChain\SupplierProductImport;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Upload;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgAgentStats;
 use App\Models\Procurement\OrgSupplier;
@@ -187,6 +192,68 @@ test('create supplier product in agent supplier', function ($supplier) {
         ->and($this->group->supplyChainStats->number_supplier_products_in_agents)->toBe(1);
 })->depends('create supplier in agent');
 
+test('import supplier product row creates trade unit and stock family', function ($supplier) {
+    $upload = Upload::create([
+        'group_id'          => $this->group->id,
+        'organisation_id'   => $this->organisation->id,
+        'model'             => 'SupplierProduct',
+        'parent_type'       => $supplier->getMorphClass(),
+        'parent_id'         => $supplier->id,
+        'original_filename' => 'supplier_products.xlsx',
+        'filename'          => 'supplier_products.xlsx',
+        'filesize'          => 0,
+    ]);
+
+    $import = new SupplierProductImport($supplier, $upload);
+
+    $row = collect([
+        'id_supplier_part_key'                => 'new',
+        'suppliers_product_code'               => 'IMP-SUP-001',
+        'suppliers_unit_description'           => 'Imported unit',
+        'family'                               => 'IMP-FAM',
+        'part_reference'                       => 'IMP-TU-001',
+        'unit_label'                           => 'Imported trade unit',
+        'units_per_sko'                        => 12,
+        'skos_per_carton'                      => 4,
+        'minimum_order_cartons'                => 1,
+        'average_delivery_time_days'           => 21,
+        'carton_cbm'                           => 0.08,
+        'unit_cost'                            => 1.25,
+        'unit_extra_costs'                     => 0,
+        'unit_recommended_description_website' => 'Imported product description',
+        'unit_barcode_ean_13_for_website'      => '5000000000001',
+        'unit_weight_kg'                       => 0.5,
+        'unit_dimensions_l_x_w_x_h_in_cm'      => '10 x 5 x 3',
+        'country_of_origin'                    => 'GBR',
+    ]);
+
+    $uploadRecord = $upload->records()->create(['values' => $row->all(), 'row_number' => 2]);
+    $import->storeModel($row, $uploadRecord);
+
+    $tradeUnit = TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-001')->first();
+    expect($tradeUnit)->not->toBeNull()
+        ->and($tradeUnit->name)->toBe('Imported trade unit')
+        ->and($tradeUnit->description)->toBe('Imported product description');
+
+    $stockFamily = StockFamily::where('group_id', $this->group->id)->where('code', 'IMP-FAM')->first();
+    expect($stockFamily)->not->toBeNull();
+
+    $supplierProduct = SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->first();
+    expect($supplierProduct)->not->toBeNull()
+        ->and((int)$supplierProduct->tradeUnits()->first()->pivot->quantity)->toBe(12);
+
+    $uploadRecord->refresh();
+    expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::COMPLETE->value);
+
+    $secondRow          = clone $row;
+    $secondUploadRecord = $upload->records()->create(['values' => $secondRow->all(), 'row_number' => 3]);
+    $import->storeModel($secondRow, $secondUploadRecord);
+
+    expect(TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-001')->count())->toBe(1)
+        ->and(StockFamily::where('group_id', $this->group->id)->where('code', 'IMP-FAM')->count())->toBe(1)
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->count())->toBe(1);
+})->depends('create supplier in agent');
+
 
 test('UI show suppliers product in supplier', function (SupplierProduct $supplierProduct) {
     $this->withoutExceptionHandling();
@@ -200,7 +267,6 @@ test('UI show suppliers product in supplier', function (SupplierProduct $supplie
             ->component('SupplyChain/SupplierProduct')
             ->has('title')
             ->has('pageHead')
-            ->has('supplier')
             ->has('tabs')
             ->has('breadcrumbs', 4);
     });
@@ -215,6 +281,9 @@ test('UI show supplier product in supply chain', function (SupplierProduct $supp
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('SupplyChain/SupplierProduct');
     });
+
+    $showcase = GetSupplierProductShowcase::run($supplierProduct);
+    expect($showcase['composition'])->toBeArray();
 })->depends('create supplier product independent supplier');
 
 
@@ -451,6 +520,23 @@ test('UI supply chain dashboard', function () {
     });
 });
 
+test('UI supply chain control', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.control.dashboard'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/SupplyChainControl')
+            ->has('title')
+            ->has('pageHead')
+            ->has('breadcrumbs', 3)
+            ->has('stalled_aspos')
+            ->has('deposits_at_risk')
+            ->has('pos_without_action')
+            ->has('agent_scorecard');
+    });
+});
+
 test('UI create suppliers product in supplier', function () {
     $this->withoutExceptionHandling();
     $supplier = Supplier::first();
@@ -507,6 +593,59 @@ test('UI show supplier', function () {
     });
 });
 
+test('UI index agent supplier purchase orders in supplier', function () {
+    $supplier = Supplier::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.suppliers.agent_supplier_purchase_orders.index', [$supplier->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/AgentSupplierPurchaseOrders')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data');
+    });
+});
+
+test('UI index agent supplier purchase orders in agent', function () {
+    $agent = Agent::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agents.show.agent_supplier_purchase_orders.index', [$agent->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/AgentSupplierPurchaseOrders')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data')
+            ->has('pageHead.subNavigation');
+    });
+});
+
+test('UI index stock deliveries in agent', function () {
+    $agent = Agent::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agents.show.stock_deliveries.index', [$agent->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDeliveries')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data');
+    });
+});
+
+test('UI index stock deliveries in supplier', function () {
+    $supplier = Supplier::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.suppliers.stock_deliveries.index', [$supplier->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDeliveries')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data');
+    });
+});
+
 test('UI show supplier navigation follows the free bucket', function () {
     $this->withoutExceptionHandling();
 
@@ -552,6 +691,26 @@ test('UI edit supplier', function () {
                     ->etc()
             )
             ->has('formData');
+    });
+});
+
+test('UI edit supplier product', function () {
+    $supplierProduct = SupplierProduct::first();
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.supplier_products.edit', [$supplierProduct->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($supplierProduct) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $supplierProduct->code)
+                    ->etc()
+            )
+            ->has('formData.args.updateRoute')
+            ->has('formData.blueprint.0.fields.code');
     });
 });
 

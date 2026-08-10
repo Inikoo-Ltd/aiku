@@ -406,7 +406,17 @@ class IndexCustomers extends OrgAction
 
             $allowedSort = array_merge(['organisation_name', 'shop_name'], $allowedSort);
         } elseif (class_basename($parent) == 'TrafficSource') {
-            $queryBuilder->where('customers.traffic_source_id', $parent->id);
+            /* customers.traffic_source_id was dropped in July 2025 when attribution became
+               many-to-many: a customer can be credited to several sources, each with a share. The
+               link lives in model_has_traffic_sources now, and the share rides along so the listing
+               can show how much of each customer this source actually earned. */
+            $queryBuilder
+                ->join('model_has_traffic_sources', function ($join) use ($parent) {
+                    $join->on('model_has_traffic_sources.model_id', '=', 'customers.id')
+                        ->where('model_has_traffic_sources.model_type', '=', 'Customer')
+                        ->where('model_has_traffic_sources.traffic_source_id', '=', $parent->id);
+                })
+                ->addSelect('model_has_traffic_sources.share as attribution_share');
         } elseif (class_basename($parent) == 'Organisation') {
             $queryBuilder
                 ->where('customers.organisation_id', $parent->id)
@@ -575,6 +585,12 @@ class IndexCustomers extends OrgAction
                 ->column(key: 'last_invoiced_at', label: __('Last Invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
                 ->column(key: 'number_invoices_type_invoice', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'sales_all', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true);
+
+            /* A customer touched by several channels is only partly this source's, so show the share
+               rather than implying the source earned the whole of the sales beside it. */
+            if ($parent instanceof TrafficSource) {
+                $table->column(key: 'attribution_share', label: __('Attribution'), canBeHidden: true, sortable: true);
+            }
 
             $table->column(
                 key: 'tags',

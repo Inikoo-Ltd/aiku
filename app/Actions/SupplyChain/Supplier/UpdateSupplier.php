@@ -9,7 +9,6 @@
 namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -26,10 +25,22 @@ class UpdateSupplier extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithSupplierJsonColumns;
-    use WithSupplyChainEditAuthorisation;
 
     private Supplier $supplier;
     private bool $action = false;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($this->supplier->agent && $request->user()->authTo("procurement.{$this->supplier->agent->organisation_id}.edit")) {
+            return true;
+        }
+
+        return $request->user()->authTo('supply-chain.edit');
+    }
 
     public function handle(Supplier $supplier, array $modelData): Supplier
     {

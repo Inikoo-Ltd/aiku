@@ -173,6 +173,13 @@ class StoreOrganisation extends OrgAction
             );
             $organisation->serialReferences()->create(
                 [
+                    'model'           => SerialReferenceModelEnum::JOB_ORDER,
+                    'organisation_id' => $organisation->id,
+                    'format'          => 'JO'.$organisation->slug.'-%04d'
+                ]
+            );
+            $organisation->serialReferences()->create(
+                [
                     'model'           => SerialReferenceModelEnum::STOCK_DELIVERY,
                     'organisation_id' => $organisation->id,
                     'format'          => 'SD'.$organisation->slug.'-%04d'

@@ -73,6 +73,7 @@ use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\UI\Grp\Layout\GetShopNavigation;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -93,6 +94,7 @@ use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Models\Ordering\UpcomingTransaction;
+use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\PaymentServiceProvider;
@@ -1226,6 +1228,83 @@ test('Pay order attaches payment to invoice when invoice exists', function () {
     $invoice->refresh();
 
     expect($payment->invoices()->where('invoices.id', $invoice->id)->exists())->toBeTrue();
+});
+
+test('invoice from overpaid order credits excess to customer balance', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Cash Account Excess',
+        ]
+    );
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => 100.00,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $excessCreditsBefore = CreditTransaction::where('customer_id', $this->customer->id)
+        ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
+
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
+
+    $excessCreditsAfter = CreditTransaction::where('customer_id', $this->customer->id)
+        ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
+
+    expect($invoice)->toBeInstanceOf(Invoice::class)
+        ->and($excessCreditsAfter)->toBe($excessCreditsBefore + 1);
+});
+
+test('invoice from overpaid order with manually settled payment does not credit excess', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $orderData = Order::factory()->definition();
+    data_set($orderData, 'billing_address', $billingAddress);
+    data_set($orderData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $orderData);
+
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::BANK->value)->first(),
+        [
+            'code' => 'ACC'.mt_rand(1000, 9999),
+            'name' => 'Bank Account Excess',
+        ]
+    );
+
+    expect($paymentAccount->type->isManuallySettled())->toBeTrue();
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount' => 100.00,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $excessCreditsBefore = CreditTransaction::where('customer_id', $this->customer->id)
+        ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
+
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
+
+    $excessCreditsAfter = CreditTransaction::where('customer_id', $this->customer->id)
+        ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
+
+    expect($invoice)->toBeInstanceOf(Invoice::class)
+        ->and($excessCreditsAfter)->toBe($excessCreditsBefore)
+        ->and($order->refresh()->payments()->count())->toBe(1);
 });
 
 test('create shipping zone schema', function () {

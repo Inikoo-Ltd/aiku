@@ -35,7 +35,7 @@ class CloseTimeTracker extends OrgAction
 
         $timeTracker->update(
             [
-                'duration' => $timeTracker->starts_at->diffInSeconds($timeTracker->ends_at)
+                'duration' => (int) $timeTracker->starts_at->diffInSeconds($timeTracker->ends_at)
             ]
         );
 
@@ -46,7 +46,7 @@ class CloseTimeTracker extends OrgAction
             GuestHydrateTimeTracker::dispatch($timeTracker->subject)->delay($this->hydratorsDelay);
         }
 
-        TimesheetHydrateTimeTrackers::dispatch($timeTracker->timesheet)->delay($this->hydratorsDelay);
+        TimesheetHydrateTimeTrackers::dispatch($timeTracker->timesheet->id)->delay($this->hydratorsDelay);
         return $timeTracker;
     }
 

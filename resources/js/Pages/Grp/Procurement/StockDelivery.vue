@@ -133,6 +133,8 @@ const props = defineProps<{
 		distributeExtraCostRoute: routeType | null
 	}
 	items?: {}
+	pending_items?: {}
+	done_items?: {}
 	under_over_delivered?: {}
 	showcase?: {}
 	attachments?: {}
@@ -147,6 +149,8 @@ const isModalUploadOpen = ref(false)
 const component = computed(() => {
 	const components: Component = {
 		items: TableStockDeliveryItems,
+		pending_items: TableStockDeliveryItems,
+		done_items: TableStockDeliveryItems,
 		under_over_delivered: TableStockDeliveryItems,
 		showcase: ProcurementOrderData,
 		attachments: TableAttachments,

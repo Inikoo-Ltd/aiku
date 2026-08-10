@@ -24,6 +24,7 @@ use App\Rules\AlphaDashDotSpaceSlashParenthesisPlus;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateSupplierProduct extends OrgAction
 {
@@ -137,6 +138,14 @@ class UpdateSupplierProduct extends OrgAction
         }
 
         return $rules;
+    }
+
+    public function asController(SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct
+    {
+        $this->supplierProduct = $supplierProduct;
+        $this->initialisationFromGroup($supplierProduct->group, $request);
+
+        return $this->handle($supplierProduct, $this->validatedData);
     }
 
     public function action(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): SupplierProduct
