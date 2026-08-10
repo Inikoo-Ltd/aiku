@@ -29,6 +29,13 @@ interface CostRow {
     deleteRoute: routeType | null
 }
 
+interface AvailableDeposit {
+    id: number
+    reference: string | null
+    unapplied_amount: number
+    currency_code: string
+}
+
 const props = defineProps<{
     costing: {
         is_costed: boolean
@@ -36,9 +43,37 @@ const props = defineProps<{
         checklist: CostRow[]
         agent_invoice_missing: boolean
         storeCostRoute: routeType
+        deposits: {
+            applied: { id: number, amount: number, reference: string | null, deleteRoute: routeType | null }[]
+            applied_total: number
+            agent_invoice_amount: number
+            balance_due: number
+            available: AvailableDeposit[]
+            applyRoute: routeType
+        }
     }
     canEdit: boolean
 }>()
+
+const selectedDepositId = ref<number | null>(null)
+const applyAmount = ref<string>("")
+
+const applyDeposit = () => {
+    if (!selectedDepositId.value || !applyAmount.value) return
+
+    router.post(
+        route(props.costing.deposits.applyRoute.name, props.costing.deposits.applyRoute.parameters),
+        { aspo_deposit_id: selectedDepositId.value, amount: Number(applyAmount.value) },
+        { preserveScroll: true, onError, onSuccess: () => { selectedDepositId.value = null; applyAmount.value = "" } }
+    )
+}
+
+const unapplyDeposit = (application: { deleteRoute: routeType | null }) => {
+    if (!application.deleteRoute) return
+    if (!window.confirm(trans("Remove this deposit application? This is audited and visible to org staff and the agent."))) return
+
+    router.delete(route(application.deleteRoute.name, application.deleteRoute.parameters), { preserveScroll: true, onError })
+}
 
 const locale = useLocaleStore()
 const loading = ref<string | null>(null)
@@ -177,5 +212,50 @@ const removeExtra = (row: CostRow) => {
             <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
             {{ trans("Add extra expense") }}
         </button>
+
+        <div class="mt-4 pt-3 border-t border-gray-200 text-sm">
+            <div class="font-medium mb-1">{{ trans("Settlement") }}</div>
+            <div v-for="application in costing.deposits.applied" :key="application.id" class="flex items-center gap-3">
+                <span>{{ application.reference || application.id }}</span>
+                <span>{{ application.amount }} {{ costing.currency }}</span>
+                <button
+                    v-if="canEdit && application.deleteRoute"
+                    type="button"
+                    class="text-gray-400 hover:text-red-500"
+                    :title="trans('Un-apply deposit (audited)')"
+                    @click="unapplyDeposit(application)"
+                >
+                    <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+
+            <div class="mt-1 grid gap-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500">{{ trans("Agent invoice") }}</span>
+                    <span>{{ costing.deposits.agent_invoice_amount }} {{ costing.currency }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500">{{ trans("Deposits applied") }}</span>
+                    <span>{{ Number(costing.deposits.applied_total) > 0 ? '-' : '' }}{{ costing.deposits.applied_total }} {{ costing.currency }}</span>
+                </div>
+                <div class="flex items-center gap-2 font-medium">
+                    <span>{{ trans("Balance due") }}</span>
+                    <span>{{ costing.deposits.balance_due }} {{ costing.currency }}</span>
+                </div>
+            </div>
+
+            <div v-if="canEdit && costing.deposits.available.length" class="mt-2 flex items-center gap-2">
+                <select v-model="selectedDepositId" class="h-7 rounded border-gray-300 text-sm">
+                    <option :value="null">{{ trans("Select a paid deposit") }}</option>
+                    <option v-for="deposit in costing.deposits.available" :key="deposit.id" :value="deposit.id">
+                        {{ deposit.reference || deposit.id }} ({{ deposit.unapplied_amount }} {{ deposit.currency_code }} {{ trans("unapplied") }})
+                    </option>
+                </select>
+                <input v-model="applyAmount" type="number" min="0" step="0.01" class="w-28 h-7 rounded border-gray-300 text-sm" :placeholder="trans('Amount')" />
+                <button type="button" class="text-xs text-gray-500 hover:text-gray-700" @click="applyDeposit">
+                    {{ trans("Apply deposit") }}
+                </button>
+            </div>
+        </div>
     </div>
 </template>

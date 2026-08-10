@@ -579,6 +579,10 @@ class ShowStockDelivery extends OrgAction
 
         $agentInvoice = $costs->firstWhere('type', StockDeliveryCostTypeEnum::AGENT_INVOICE);
 
+        $applications  = $stockDelivery->depositApplications()->orderBy('id')->get();
+        $depositsTotal = (float) $applications->sum('amount');
+        $agentInvoiceAmount = (float) ($agentInvoice?->amount ?? 0);
+
         return [
             'is_costed'                  => $stockDelivery->is_costed,
             'can_edit'                   => $this->canEdit,
@@ -595,6 +599,45 @@ class ShowStockDelivery extends OrgAction
                 'parameters' => ['stockDelivery' => $stockDelivery->id],
                 'method'     => 'patch',
             ] : null,
+            'deposits'                    => $this->getDepositSettlement($stockDelivery, $applications, $agentInvoiceAmount, $depositsTotal),
+        ];
+    }
+
+    private function getDepositSettlement(StockDelivery $stockDelivery, $applications, float $agentInvoiceAmount, float $depositsTotal): array
+    {
+        $availableDeposits = $stockDelivery->agent_id
+            ? \App\Models\SupplyChain\AspoDeposit::where('agent_id', $stockDelivery->agent_id)
+                ->where('state', 'paid_to_supplier')
+                ->get()
+                ->filter(fn ($deposit) => $deposit->unapplied_amount > 0)
+            : collect();
+
+        return [
+            'applied'            => $applications->map(fn ($application) => [
+                'id'     => $application->id,
+                'amount' => $application->amount,
+                'aspo_deposit_id' => $application->aspo_deposit_id,
+                'reference' => $application->aspoDeposit?->reference,
+                'deleteRoute' => $this->canEdit ? [
+                    'name'       => 'grp.models.stock-delivery-deposit-application.delete',
+                    'parameters' => ['stockDeliveryDepositApplication' => $application->id],
+                    'method'     => 'delete',
+                ] : null,
+            ])->all(),
+            'applied_total'      => $depositsTotal,
+            'agent_invoice_amount' => $agentInvoiceAmount,
+            'balance_due'        => $agentInvoiceAmount - $depositsTotal,
+            'available'          => $availableDeposits->map(fn ($deposit) => [
+                'id'                => $deposit->id,
+                'reference'         => $deposit->reference,
+                'unapplied_amount'  => $deposit->unapplied_amount,
+                'currency_code'     => $deposit->currency->code,
+            ])->values()->all(),
+            'applyRoute'         => [
+                'name'       => 'grp.models.stock-delivery.deposit.apply',
+                'parameters' => ['stockDelivery' => $stockDelivery->id],
+                'method'     => 'post',
+            ],
         ];
     }
 
