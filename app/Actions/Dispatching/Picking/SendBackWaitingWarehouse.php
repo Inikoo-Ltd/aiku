@@ -3,6 +3,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -51,6 +52,7 @@ class SendBackWaitingWarehouse extends OrgAction
 
         DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
+        CalculateDeliveryNoteItemTotalPicked::run($deliveryNoteItem);
 
         return $deliveryNoteItem;
     }
