@@ -11,11 +11,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $traffic_source_id
- * @property int $number_customers
- * @property int $number_customer_purchases
+ * @property numeric $number_customers
+ * @property numeric $number_customer_purchases
  * @property numeric $total_customer_revenue
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property numeric $total_cost
+ * @property numeric $org_total_cost
+ * @property numeric $org_total_customer_revenue
  * @property-read \App\Models\CRM\TrafficSource $trafficSource
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceStat newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceStat newQuery()

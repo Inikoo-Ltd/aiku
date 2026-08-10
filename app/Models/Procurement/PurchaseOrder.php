@@ -90,8 +90,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $cost_duties
  * @property numeric $cost_tax
  * @property numeric $cost_total
- * @property int|null $estimated_delivery_days
- * @property \Illuminate\Support\Carbon|null $estimated_received_at
  * @property int $number_stock_deliveries Number supplier deliveries
  * @property int $number_current_stock_deliveries Number supplier deliveries (except: cancelled and not_received)
  * @property int $number_is_costed_stock_deliveries is_costed=true
@@ -116,6 +114,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property int $number_stock_deliveries_state_booking_in
  * @property int $number_stock_deliveries_state_booked_in
+ * @property int|null $estimated_delivery_days
+ * @property \Illuminate\Support\Carbon|null $estimated_received_at
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments

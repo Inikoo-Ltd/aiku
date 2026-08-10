@@ -31,8 +31,6 @@ use App\Models\Traits\HasSearch;
  * @property int|null $sender_id
  * @property string|null $message_text
  * @property int|null $media_id
- * @property bool|null $is_ai_generated
- * @property bool|null $is_validated
  * @property bool $is_read
  * @property \Illuminate\Support\Carbon|null $delivered_at
  * @property \Illuminate\Support\Carbon|null $read_at
@@ -43,6 +41,8 @@ use App\Models\Traits\HasSearch;
  * @property string|null $original_text
  * @property array<array-key, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $edited_at
+ * @property bool|null $is_ai_generated
+ * @property bool|null $is_validated
  * @property-read Media|null $attachment
  * @property-read \App\Models\Chat\ChatSession|null $chatSession
  * @property-read Media|null $image

@@ -171,6 +171,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property int|null $discounted_shipping_offer_id
  * @property bool $is_pastpay
  * @property bool $is_bypass_platform_update
+ * @property string|null $private_warehouse_note
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -199,8 +200,8 @@ use App\Audits\Transformer\RelationTransformer;
  * @property-read Shop|null $shop
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
+ * @property-read Collection<int, TrafficSource> $trafficSources
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
- * @property-read Collection<int, \App\Models\CRM\TrafficSource> $trafficSources
  * @method static \Database\Factories\Ordering\OrderFactory factory($count = null, $state = [])
  * @method static Builder<static>|Order newModelQuery()
  * @method static Builder<static>|Order newQuery()

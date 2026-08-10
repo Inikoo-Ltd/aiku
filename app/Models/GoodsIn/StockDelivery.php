@@ -45,13 +45,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $reference
  * @property StockDeliveryStateEnum $state
  * @property \Illuminate\Support\Carbon $date latest relevant date
- * @property \Illuminate\Support\Carbon|null $confirmed_at
- * @property \Illuminate\Support\Carbon|null $ready_to_ship_at
  * @property \Illuminate\Support\Carbon|null $dispatched_at
  * @property \Illuminate\Support\Carbon|null $received_at
  * @property \Illuminate\Support\Carbon|null $checked_at
- * @property \Illuminate\Support\Carbon|null $booking_in_at
- * @property \Illuminate\Support\Carbon|null $booked_in_at
  * @property \Illuminate\Support\Carbon|null $placed_at
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property \Illuminate\Support\Carbon|null $not_received_at
@@ -92,6 +88,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property int $number_stock_delivery_items_under_delivered unit_quantity_checked < unit_quantity
  * @property int $number_stock_delivery_items_over_delivered unit_quantity_checked > unit_quantity
+ * @property \Illuminate\Support\Carbon|null $confirmed_at
+ * @property \Illuminate\Support\Carbon|null $ready_to_ship_at
+ * @property \Illuminate\Support\Carbon|null $booking_in_at
+ * @property \Illuminate\Support\Carbon|null $booked_in_at
+ * @property numeric|null $cbm carton cubic meters
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments

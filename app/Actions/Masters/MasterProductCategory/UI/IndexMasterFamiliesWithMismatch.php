@@ -14,7 +14,6 @@ use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
-use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;

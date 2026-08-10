@@ -61,11 +61,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $cost_duties
  * @property numeric $cost_tax
  * @property numeric $cost_total
- * @property numeric|null $deposit_amount
- * @property \Illuminate\Support\Carbon|null $deposit_paid_at
- * @property \Illuminate\Support\Carbon|null $balance_paid_at
- * @property int|null $estimated_delivery_days
- * @property \Illuminate\Support\Carbon|null $estimated_received_at
  * @property int $number_stock_deliveries Number supplier deliveries
  * @property int $number_current_stock_deliveries Number supplier deliveries (except: cancelled and not_received)
  * @property int $number_is_costed_stock_deliveries is_costed=true
@@ -90,6 +85,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property int $number_stock_deliveries_state_booking_in
  * @property int $number_stock_deliveries_state_booked_in
+ * @property numeric|null $deposit_amount
+ * @property \Illuminate\Support\Carbon|null $deposit_paid_at
+ * @property \Illuminate\Support\Carbon|null $balance_paid_at
+ * @property int|null $estimated_delivery_days
+ * @property \Illuminate\Support\Carbon|null $estimated_received_at
  * @property-read \App\Models\Helpers\Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Address> $addresses
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
@@ -98,6 +98,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group|null $group
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read PurchaseOrder|null $purchaseOrder
+ * @property-read Collection<int, PurchaseOrderTransaction> $purchaseOrderTransactions
  * @property-read \App\Models\SupplyChain\Supplier|null $supplier
  * @method static Builder<static>|AgentSupplierPurchaseOrder newModelQuery()
  * @method static Builder<static>|AgentSupplierPurchaseOrder newQuery()

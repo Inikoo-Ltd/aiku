@@ -85,8 +85,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $note_to_pickers
  * @property string|null $note_to_packers
  * @property array<array-key, mixed>|null $consumables [{"code": "IAL01", "quantity": 1}] the packer adds per product ordered
+ * @property string|null $barcode
+ * @property bool $independent_barcode
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations

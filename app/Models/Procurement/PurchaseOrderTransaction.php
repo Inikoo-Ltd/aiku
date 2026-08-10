@@ -51,6 +51,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $last_fetched_at
  * @property string|null $deleted_at
  * @property string|null $source_id
+ * @property int|null $agent_supplier_purchase_order_id
+ * @property-read AgentSupplierPurchaseOrder|null $agentSupplierPurchaseOrder
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricSupplierProduct|null $historicSupplierProduct
  * @property-read OrgStock|null $orgStock

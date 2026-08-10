@@ -181,8 +181,6 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_variant_leader
  * @property bool $is_minion_variant
  * @property bool $has_live_webpage
- * @property bool $is_golden_product
- * @property bool $is_in_website live webpage + sellable, mirrored into the search index
  * @property string|null $marketplace_id
  * @property numeric|null $margin
  * @property string|null $marketplace_second_id
@@ -192,8 +190,11 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $index_under_family
  * @property bool $is_on_demand
  * @property bool $not_follow_master_prices
- * @property bool $not_follow_master_media
  * @property string|null $units_review
+ * @property bool $is_in_website
+ * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
+ * @property bool $not_follow_master_media
+ * @property bool $is_golden_product
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -213,6 +214,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Currency $currency
  * @property-read \App\Models\Catalogue\HistoricAsset|null $currentHistoricProduct
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
+ * @property-read LaravelCollection<int, Customer> $exclusiveCustomers
  * @property-read Customer|null $exclusiveForCustomer
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
  * @property-read LaravelCollection<int, Favourite> $favourites
@@ -249,16 +251,17 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Webpage|null $webpage
  * @property-read LaravelCollection<int, WebpageHasProduct> $webpageHasProducts
  * @method static \Database\Factories\Catalogue\ProductFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereLocale(string $column, string $locale)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereLocales(string $column, array $locales)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withTrashed(bool $withTrashed = true)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withoutTrashed()
+ * @method static Builder<static>|Product newModelQuery()
+ * @method static Builder<static>|Product newQuery()
+ * @method static Builder<static>|Product onlyTrashed()
+ * @method static Builder<static>|Product query()
+ * @method static Builder<static>|Product visibleToCustomer(?int $customerId)
+ * @method static Builder<static>|Product whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|Product whereLocale(string $column, string $locale)
+ * @method static Builder<static>|Product whereLocales(string $column, array $locales)
+ * @method static Builder<static>|Product withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Product withoutTrashed()
  * @mixin \Eloquent
  */
 class Product extends Model implements Auditable, HasMedia

@@ -65,6 +65,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
  * @property numeric $extra_costs Estimated percentage of extra costs
+ * @property int|null $minimum_carton_order MOQ in cartons
  * @property-read \App\Models\SupplyChain\Agent|null $agent
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency

@@ -12,7 +12,6 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsWithMismatchFamilyResource;
@@ -39,7 +38,7 @@ class IndexProductsWithMismatchedFamily extends OrgAction
             return true;
         }
 
-        if ($this->parent instanceof MasterShop) {  
+        if ($this->parent instanceof MasterShop) {
             $this->canEdit = $request->user()->authTo("masters.edit");
             $this->canEditPrices = $request->user()->authTo("masters.price_edit");
             $this->canEditOffers = $request->user()->authTo("masters.offer_edit");
@@ -48,7 +47,7 @@ class IndexProductsWithMismatchedFamily extends OrgAction
         } else {
             $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
             $this->canDelete = $request->user()->authTo("products.{$this->shop->id}.edit");
-            
+
             return $request->user()->authTo(
                 [
                     "products.{$this->shop->id}.view",
@@ -65,7 +64,7 @@ class IndexProductsWithMismatchedFamily extends OrgAction
     public function getElementGroups(MasterShop|Shop $parent): array
     {
         $labels = ProductStateEnum::labels();
-        
+
         return [
             'state' => [
                 'label'    => __('State'),
@@ -250,7 +249,7 @@ class IndexProductsWithMismatchedFamily extends OrgAction
                 ),
                 'title'                        => $title,
                 'pageHead'                     => [
-                    'title'         => $title,                    
+                    'title'         => $title,
                     'is_negative'   => true,
                     'model'         => $model,
                     'icon'          => $icon,
@@ -317,7 +316,7 @@ class IndexProductsWithMismatchedFamily extends OrgAction
                         $suffix
                     ),
                 ),
-            
+
             'grp.org.shops.show.catalogue.products.mismatched_families.index', =>
                 array_merge(
                     ShowCatalogue::make()->getBreadcrumbs($routeParameters),
