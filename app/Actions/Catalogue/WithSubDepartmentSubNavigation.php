@@ -32,11 +32,16 @@ trait WithSubDepartmentSubNavigation
             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
             'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
         ];
+        $salesRoute = [
+            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.sales',
+            'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
+        ];
 
         $targetRoutes = [
             'grp.org.shops.show.catalogue.sub_departments.show',
             'grp.org.shops.show.catalogue.sub_departments.show.families.index',
             'grp.org.shops.show.catalogue.sub_departments.show.products.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.sales',
             'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
         ];
 
@@ -55,6 +60,10 @@ trait WithSubDepartmentSubNavigation
             ];
             $collectionsRoute = [
                 'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
+                'parameters' => [$this->organisation->slug, $subDepartment->shop->slug, $subDepartment->slug]
+            ];
+            $salesRoute = [
+                'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.products.sales',
                 'parameters' => [$this->organisation->slug, $subDepartment->shop->slug, $subDepartment->slug]
             ];
         }
@@ -85,6 +94,14 @@ trait WithSubDepartmentSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-cube'],
                     'tooltip' => __('products')
+                ]
+            ],
+            [
+                'label'    => __('Sales'),
+                'route'     => $salesRoute,
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-money-bill-wave'],
+                    'tooltip' => __('products sales')
                 ]
             ],
              [

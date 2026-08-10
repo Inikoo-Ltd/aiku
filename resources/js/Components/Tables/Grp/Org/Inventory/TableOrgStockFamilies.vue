@@ -37,12 +37,6 @@ const getIntervalStateColor = (isPositive: boolean) => {
     return isPositive ? "text-green-500" : "text-red-500"
 }
 
-const stockTurnColor = (stockTurn: number) => {
-    if (stockTurn >= 4) return "text-green-500"
-    if (stockTurn >= 2.5) return "text-blue-500"
-    if (stockTurn >= 1.5) return "text-amber-500"
-    return "text-red-500"
-}
 
 const routeParams = route().params as RouteParams
 
@@ -112,7 +106,7 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
         </template>
 
         <template #cell(stock_turn)="{ item }">
-            <span v-if="item.stock_turn !== null" class="tabular-nums" :class="stockTurnColor(item.stock_turn)">{{ item.stock_turn.toFixed(1) }}&times;</span>
+            <span v-if="item.stock_turn !== null" class="tabular-nums">{{ item.stock_turn.toFixed(1) }}&times;</span>
             <span v-else class="text-gray-400">-</span>
         </template>
 

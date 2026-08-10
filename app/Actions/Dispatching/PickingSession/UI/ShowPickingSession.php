@@ -149,6 +149,27 @@ class ShowPickingSession extends OrgAction
             ];
         }
 
+        /*
+         * The picking counterpart, which only makes sense while the session is still being walked:
+         * once the picking is finished there is nothing left to take off a shelf.
+         */
+        $scanToPick = null;
+        if (
+            (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pick', false)
+            && $pickingSession->state == PickingSessionStateEnum::HANDLING
+            && $pickingSession->type != PickingSessionTypeEnum::FULFILMENT
+        ) {
+            $scanToPick = [
+                'scan_route' => [
+                    'name'       => 'grp.json.picking_session.pick_by_scan',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id,
+                    ],
+                    'method'     => 'post',
+                ],
+            ];
+        }
+
         $props = [
             'title'       => $title . ' (' . $pickingSession->reference . ')',
             'breadcrumbs' => $this->getBreadcrumbs(
@@ -177,6 +198,7 @@ class ShowPickingSession extends OrgAction
             'data' => PickingSessionResource::make($pickingSession),
 
             'scan_to_pack'                => $scanToPack,
+            'scan_to_pick'                => $scanToPick,
             'allow_waiting'               => $allowWaiting,
             'allow_picker_set_not_picked' => !$allowWaiting || (bool)data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false),
 
