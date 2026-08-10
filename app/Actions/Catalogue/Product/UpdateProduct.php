@@ -259,7 +259,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
+        if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit', 'is_golden_product'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
 
             $product->updateQuietly(
