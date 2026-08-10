@@ -701,65 +701,57 @@ class IndexMasterProducts extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.masters.master_products.index' =>
-            array_merge(
+            'grp.masters.master_products.index' => array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => []
-                    ],
-                    $suffix
-                ),
+                $headCrumb([
+                    'name'       => $routeName,
+                    'parameters' => [],
+                ], $suffix),
             ),
+
             'grp.masters.master_shops.show.master_products.index',
-            'grp.masters.master_shops.show.master_products.sales' =>
-            array_merge(
+            'grp.masters.master_shops.show.master_products.sales' => array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => Arr::only($routeParameters, ['masterShop']),
-                    ],
-                    $suffix
-                ),
+                $headCrumb([
+                    'name'       => $routeName,
+                    'parameters' => Arr::only($routeParameters, ['masterShop']),
+                ], $suffix),
             ),
+
+            // Master family routes (index and sales variants)
             'grp.masters.master_shops.show.master_family.missing_image.families',
             'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
             'grp.masters.master_shops.show.master_families.master_products.index',
             'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
-            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index', 'grp.masters.master_shops.show.master_families.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index',
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales', 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.sales', 'grp.masters.master_shops.show.master_families.master_products.sales', 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales' =>
-            array_merge(
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.sales',
+            'grp.masters.master_shops.show.master_families.master_products.sales',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales' => array_merge(
                 ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters,
-                    ],
-                    $suffix
-                ),
+                $headCrumb([
+                    'name'       => $routeName,
+                    'parameters' => $routeParameters,
+                ], $suffix),
             ),
+
             'grp.masters.master_shops.show.master_departments.show.master_products.index',
-            'grp.masters.master_shops.show.master_departments.show.master_products.sales' =>
-            array_merge(
+            'grp.masters.master_shops.show.master_departments.show.master_products.sales' => array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs(
                     $parent->masterShop,
                     $parent,
                     $routeName,
                     $routeParameters
                 ),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
+                $headCrumb([
+                    'name'       => $routeName,
+                    'parameters' => $routeParameters,
+                ], $suffix)
             ),
-            default => []
+
+            default => [],
         };
     }
 
