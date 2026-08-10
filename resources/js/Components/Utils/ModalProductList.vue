@@ -19,6 +19,7 @@ import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "../NumberWithButtonSave.vue"
 import LoadingIcon from "./LoadingIcon.vue"
+import ProductUnitLabel from "./Product/ProductUnitLabel.vue"
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from "@/Composables/useOrderingLevel"
 
 library.add(
@@ -92,6 +93,12 @@ const isRowUnavailable = (data: any): boolean => {
 
 const rowClass = (data: any): string => {
 	return isRowUnavailable(data) ? "row-unavailable" : ""
+}
+
+const pickedUnits = (orgStock: any, row: any) => {
+	const perOuter = Number(orgStock.quantity) || 0
+	const ordered = Number(row?.quantity_ordered) || 0
+	return ordered > 0 ? perOuter * ordered : perOuter
 }
 
 const onQuantityChange = (slotProps: any) => {
@@ -520,10 +527,23 @@ watch(() => model.value, async (newValue) => {
 												<span v-if="isOrderingByLevel && activeLevel !== 'units'" class="font-medium">
 													{{ unitsPerLevel(slotProps.data) }}x
 												</span>
+												<ProductUnitLabel
+													v-else-if="slotProps.data?.units"
+													:units="slotProps.data.units"
+													:unit="slotProps.data.unit"
+													class="mr-1 border-green-600 text-teal-600" />
 												{{ slotProps.data?.name }}
 											</div>
 											<div v-if="typeModel !== 'purchase_order'" class="opacity-60 text-sm italic" :class="slotProps.data?.available_quantity ? '' : 'text-red-500'">
 												{{ trans("Available quantity") }}: {{ slotProps.data?.available_quantity }}
+											</div>
+											<div
+												v-for="orgStock in slotProps.data?.org_stocks || []"
+												:key="orgStock.code"
+												class="text-xs text-teal-600">
+												{{ trans("Picked as") }}: {{ pickedUnits(orgStock, slotProps.data) }} ×
+												<span v-tooltip="orgStock.name">{{ orgStock.code }} ({{ trans("SKOs") }})</span>
+												<span v-if="orgStock.units_per_sku"> ({{ trans("packed in") }} {{ orgStock.units_per_sku }}s)</span>
 											</div>
 										</div>
 									</template>
