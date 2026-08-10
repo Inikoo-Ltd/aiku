@@ -127,6 +127,7 @@ const workshopLoaders: Record<string, AsyncComponentLoader> = {
     'tabs': () => import('@/Components/CMS/Webpage/Tabs/TabsWorkshop.vue'),
     'faq-department': () => import('@/Components/CMS/Webpage/FaqDepartment/FaqDepartmentWorkshop.vue'),
     'top-families': () => import('@/Components/CMS/Webpage/TopFamilies/TopFamiliesWorkshop.vue'),
+    'blog-list': () => import('@/Components/CMS/Webpage/BlogList/BlogListWorkshop.vue'),
 }
 
 const translationLoaders: Record<string, AsyncComponentLoader> = {

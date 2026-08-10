@@ -62,6 +62,26 @@ enum WebpageSubTypeEnum: string
         ];
     }
 
+    /**
+     * @return array<int, self>
+     */
+    public static function blogCategories(): array
+    {
+        return [
+            self::DAVIDS_TRAVEL_BLOG,
+            self::TIPS,
+            self::BLOG,
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function blogCategoryValues(): array
+    {
+        return array_map(fn (self $subType) => $subType->value, self::blogCategories());
+    }
+
     public static function catalogueLabels(): array
     {
         return [
