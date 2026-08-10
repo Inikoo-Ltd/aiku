@@ -39,7 +39,7 @@ Route::prefix('order')->as('order.')->group(function () {
 
 Route::prefix('portfolios')->as('portfolios.')->group(function () {
     Route::get('', GetApiFulfilmentStoredItems::class)->name('index');
-    Route::post('product/{product:id}/store', StoreApiPortfolio::class)->name('store')->withoutScopedBindings()->whereNumber('product');
+    Route::post('sync-all', StoreApiPortfolio::class)->name('store')->withoutScopedBindings()->whereNumber('product');
     Route::get('{portfolio:id}', ShowApiPortfolio::class)->name('show')->whereNumber('portfolio');
     Route::patch('{portfolio:id}/update', UpdateApiPortfolio::class)->name('update')->whereNumber('portfolio');
     Route::delete('{portfolio:id}/delete', DeleteApiPortfolio::class)->name('delete')->whereNumber('portfolio');

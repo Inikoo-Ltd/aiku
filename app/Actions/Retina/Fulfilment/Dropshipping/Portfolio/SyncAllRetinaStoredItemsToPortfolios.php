@@ -40,8 +40,13 @@ class SyncAllRetinaStoredItemsToPortfolios extends RetinaAction
         return $customerSalesChannel;
     }
 
+    public function action(CustomerSalesChannel $customerSalesChannel): void
+    {
+        $this->fulfilmentCustomer = $customerSalesChannel->customer->fulfilmentCustomer;
+        $this->handle($customerSalesChannel);
+    }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request)
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
         $this->initialisation($request);
 
