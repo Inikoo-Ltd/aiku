@@ -213,6 +213,11 @@ class StockDelivery extends Model implements HasMedia, Auditable
         return $this->hasMany(StockDeliveryItem::class);
     }
 
+    public function costs(): HasMany
+    {
+        return $this->hasMany(StockDeliveryCost::class);
+    }
+
     public function parent(): MorphTo
     {
         return $this->morphTo();

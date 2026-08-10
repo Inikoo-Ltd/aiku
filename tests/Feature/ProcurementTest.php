@@ -19,6 +19,10 @@ use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrder
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\RepairStockDeliveryCostings;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
@@ -73,6 +77,7 @@ use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -80,6 +85,7 @@ use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
@@ -1826,5 +1832,87 @@ describe('shopping list', function () {
             ->assertInertia(function (AssertableInertia $page) {
                 $page->component('Procurement/ShoppingListBoard');
             });
+    });
+});
+
+describe('stock delivery costing checklist', function () {
+    beforeEach(function () {
+        $orgSupplier = OrgSupplier::first();
+        $this->costingStockDelivery = StoreStockDelivery::make()->action($orgSupplier, [
+            'reference' => 'COSTING-'.StockDelivery::count(),
+            'date'      => date('Y-m-d'),
+        ], strict: false);
+    });
+
+    test('storing cost rows syncs delivery costs and derives is_costed', function () {
+        $stockDelivery = $this->costingStockDelivery;
+
+        $agentInvoice = StoreStockDeliveryCost::make()->action($stockDelivery, [
+            'type'        => StockDeliveryCostTypeEnum::AGENT_INVOICE->value,
+            'amount'      => 1000,
+            'received_at' => now(),
+        ]);
+        $shipping = StoreStockDeliveryCost::make()->action($stockDelivery, [
+            'type'        => StockDeliveryCostTypeEnum::SHIPPING->value,
+            'amount'      => 200,
+            'received_at' => now(),
+        ]);
+
+        $stockDelivery->refresh();
+        expect($agentInvoice)->toBeInstanceOf(StockDeliveryCost::class)
+            ->and($stockDelivery->costs()->count())->toBe(2)
+            ->and($stockDelivery->is_costed)->toBeFalse();
+
+        $duty = StoreStockDeliveryCost::make()->action($stockDelivery, [
+            'type'  => StockDeliveryCostTypeEnum::DUTY->value,
+            'is_na' => true,
+        ]);
+
+        $stockDelivery->refresh();
+        expect($duty->is_na)->toBeTrue()
+            ->and($stockDelivery->is_costed)->toBeTrue();
+
+        UpdateStockDeliveryCost::make()->action($shipping, ['received_at' => null]);
+        expect($stockDelivery->refresh()->is_costed)->toBeFalse();
+    });
+
+    test('non extra cost types are singletons', function () {
+        $stockDelivery = $this->costingStockDelivery;
+
+        StoreStockDeliveryCost::make()->action($stockDelivery, [
+            'type'   => StockDeliveryCostTypeEnum::SHIPPING->value,
+            'amount' => 100,
+        ]);
+
+        expect(fn () => StoreStockDeliveryCost::make()->action($stockDelivery, [
+            'type'   => StockDeliveryCostTypeEnum::SHIPPING->value,
+            'amount' => 50,
+        ]))->toThrow(ValidationException::class);
+
+        StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::EXTRA->value, 'label' => 'Fine', 'amount' => 10]);
+        $secondExtra = StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::EXTRA->value, 'label' => 'Storage', 'amount' => 20]);
+
+        expect($stockDelivery->costs()->where('type', 'extra')->count())->toBe(2);
+
+        DeleteStockDeliveryCost::make()->action($secondExtra);
+        expect($stockDelivery->costs()->where('type', 'extra')->count())->toBe(1);
+    });
+
+    test('repair creates checklist rows from legacy cost columns', function () {
+        $stockDelivery = $this->costingStockDelivery;
+        $stockDelivery->update([
+            'placed_at'     => now(),
+            'cost_items'    => 500,
+            'cost_shipping' => 100,
+            'cost_duties'   => 0,
+            'is_costed'     => true,
+        ]);
+
+        RepairStockDeliveryCostings::make()->handle($stockDelivery->refresh());
+
+        expect($stockDelivery->costs()->count())->toBe(3)
+            ->and($stockDelivery->costs()->where('type', 'agent_invoice')->value('amount'))->toBe('500.00')
+            ->and($stockDelivery->costs()->where('type', 'shipping')->first()->received_at)->not->toBeNull()
+            ->and($stockDelivery->costs()->where('type', 'duty')->first()->is_na)->toBeTrue();
     });
 });
