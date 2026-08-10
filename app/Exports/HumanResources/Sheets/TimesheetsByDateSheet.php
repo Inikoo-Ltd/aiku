@@ -2,6 +2,7 @@
 
 namespace App\Exports\HumanResources\Sheets;
 
+use App\Actions\HumanResources\Timesheet\CalculateTimesheetOvertime;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Timesheet;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,7 +33,7 @@ class TimesheetsByDateSheet implements FromQuery, ShouldAutoSize, WithHeadings, 
         $query = Timesheet::query()
             ->where('organisation_id', $this->organisationId)
             ->whereBetween('date', [$this->from, $this->to])
-            ->with('subject.jobPositions')
+            ->with(['subject.jobPositions', 'timeTrackers', 'organisation'])
             ->select([
                 'timesheets.*',
                 'first_clocking_notes' => Clocking::query()
@@ -52,7 +53,7 @@ class TimesheetsByDateSheet implements FromQuery, ShouldAutoSize, WithHeadings, 
 
     public function headings(): array
     {
-        return ['Date', 'Name', 'Job Position', 'Start At', 'End At', 'Notes', 'Working', 'Breaks', 'Clock In', 'Clock Out'];
+        return ['Date', 'Name', 'Job Position', 'Start At', 'End At', 'Notes', 'Working', 'Unpaid overtime', 'Breaks', 'Paid time', 'Paid overtime', 'Worked', 'Clock In', 'Clock Out'];
     }
 
     public function title(): string
@@ -69,6 +70,9 @@ class TimesheetsByDateSheet implements FromQuery, ShouldAutoSize, WithHeadings, 
             $jobPosition = $row->subject->job_title ?: '-';
         }
 
+        $overtime = CalculateTimesheetOvertime::run($row);
+        $worked   = $row->working_duration;
+
         return [
             $row->date->format('Y-m-d'),
             $row->subject_name,
@@ -77,7 +81,11 @@ class TimesheetsByDateSheet implements FromQuery, ShouldAutoSize, WithHeadings, 
             $row->end_at?->copy()->setTimezone($this->timezone)->format('H:i') ?: '-',
             $row->first_clocking_notes ?: '-',
             $this->formatDuration($row->working_duration),
+            $this->formatDuration($overtime['unpaid_overtime_duration']),
             $this->formatDuration($row->breaks_duration),
+            $this->formatDuration($overtime['paid_duration']),
+            $this->formatDuration($overtime['paid_overtime_duration']),
+            $this->formatDuration($worked),
             $row->number_time_trackers,
             max(0, $row->number_time_trackers - $row->number_open_time_trackers),
         ];

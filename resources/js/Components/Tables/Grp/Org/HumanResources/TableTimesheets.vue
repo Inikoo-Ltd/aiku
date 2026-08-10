@@ -17,6 +17,15 @@ defineProps<{
 
 const locale = useLocaleStore()
 
+const employeeTimesheetsRoute = (timesheet: Timesheet) => {
+    const params = route().params as Record<string, string | undefined>
+
+    return (route as any)(
+        "grp.org.hr.employees.show.timesheets.index",
+        [params["organisation"], (timesheet as any).subject_slug]
+    )
+}
+
 const timesheetRoute = (timesheet: Timesheet) => {
     const params = route().params as Record<string, string | undefined>
 
@@ -60,7 +69,14 @@ const timesheetRoute = (timesheet: Timesheet) => {
         <!-- Column: Name (Jika ada) -->
         <template #cell(subject_name)="{ item: timesheet }">
             <div class="font-medium text-gray-900">
-                {{ timesheet.subject_name }}
+                <Link
+                    v-if="timesheet.subject_slug"
+                    :href="employeeTimesheetsRoute(timesheet)"
+                    class="primaryLink"
+                >
+                    {{ timesheet.subject_name }}
+                </Link>
+                <span v-else>{{ timesheet.subject_name }}</span>
             </div>
         </template>
 
