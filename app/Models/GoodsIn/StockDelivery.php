@@ -129,22 +129,22 @@ class StockDelivery extends Model implements HasMedia, Auditable
 
 
     protected $casts = [
-        'data'            => 'array',
-        'cost_data'       => 'array',
-        'state'           => StockDeliveryStateEnum::class,
-        'date'            => 'datetime',
-        'confirmed_at'    => 'datetime',
+        'data'             => 'array',
+        'cost_data'        => 'array',
+        'state'            => StockDeliveryStateEnum::class,
+        'date'             => 'datetime',
+        'confirmed_at'     => 'datetime',
         'ready_to_ship_at' => 'datetime',
-        'dispatched_at'   => 'datetime',
-        'received_at'     => 'datetime',
-        'checked_at'      => 'datetime',
-        'booking_in_at'   => 'datetime',
-        'booked_in_at'    => 'datetime',
-        'placed_at'       => 'datetime',
-        'cancelled_at'    => 'datetime',
-        'not_received_at' => 'datetime',
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime',
+        'dispatched_at'    => 'datetime',
+        'received_at'      => 'datetime',
+        'checked_at'       => 'datetime',
+        'booking_in_at'    => 'datetime',
+        'booked_in_at'     => 'datetime',
+        'placed_at'        => 'datetime',
+        'cancelled_at'     => 'datetime',
+        'not_received_at'  => 'datetime',
+        'fetched_at'       => 'datetime',
+        'last_fetched_at'  => 'datetime',
     ];
 
     protected $attributes = [
@@ -180,7 +180,8 @@ class StockDelivery extends Model implements HasMedia, Auditable
 
     public function searchIndexShouldBeUpdated(): bool
     {
-        return $this->wasRecentlyCreated || $this->wasChanged([
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
                 'organisation_id',
                 'state',
                 'reference',
@@ -195,10 +196,10 @@ class StockDelivery extends Model implements HasMedia, Auditable
             'id'              => (string)$this->id,
             'organisation_id' => $this->organisation_id,
             'state'           => $this->state?->value,
-            'reference'       => (string)$this->reference,
+            'reference'       => $this->reference,
             'slug'            => $this->slug,
-            'parent_code'     => (string)$this->parent_code,
-            'parent_name'     => (string)$this->parent_name,
+            'parent_code'     => $this->parent_code,
+            'parent_name'     => $this->parent_name,
             'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
