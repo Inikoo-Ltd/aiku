@@ -1820,6 +1820,50 @@ describe('shopping list', function () {
         });
     });
 
+    test('cherry pick creates an in_process ASPO and reuses it for the same agent-supplier', function () {
+        $item1 = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 30]);
+        $item2 = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 20]);
+
+        $result = CherryPickShoppingListItems::make()->action($this->agent, [
+            ['id' => $item1->id],
+        ]);
+
+        expect($result['agent_supplier_purchase_orders'])->toHaveCount(1);
+        $aspo = $result['agent_supplier_purchase_orders'][0];
+        expect($aspo->state)->toBe(\App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum::IN_PROCESS)
+            ->and($aspo->supplier_id)->toBe($this->supplierProduct->supplier_id);
+
+        $result2 = CherryPickShoppingListItems::make()->action($this->agent, [
+            ['id' => $item2->id],
+        ]);
+
+        expect($result2['agent_supplier_purchase_orders'])->toHaveCount(1)
+            ->and($result2['agent_supplier_purchase_orders'][0]->id)->toBe($aspo->id);
+
+        $transaction1 = \App\Models\Procurement\PurchaseOrderTransaction::find($item1->fresh()->purchase_order_transaction_id);
+        $transaction2 = \App\Models\Procurement\PurchaseOrderTransaction::find($item2->fresh()->purchase_order_transaction_id);
+        expect($transaction1->agent_supplier_purchase_order_id)->toBe($aspo->id)
+            ->and($transaction2->agent_supplier_purchase_order_id)->toBe($aspo->id);
+    });
+
+    test('shopping list board exposes the open ASPO for a supplier', function () {
+        $item = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 30]);
+
+        CherryPickShoppingListItems::make()->action($this->agent, [
+            ['id' => $item->id],
+        ]);
+
+        $secondItem = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 15]);
+
+        $response = $this->get(route('grp.org.procurement.shopping_list.board', [$this->agent->organisation->slug]));
+
+        $response->assertInertia(function (AssertableInertia $page) use ($secondItem) {
+            $agents = $page->toArray()['props']['agents'];
+            $supplier = collect($agents[0]['suppliers'])->firstWhere('supplier_id', $secondItem->supplier_id);
+            expect($supplier['open_agent_supplier_purchase_order'])->not->toBeNull();
+        });
+    });
+
     test('shopping list board renders for group and agent organisation', function () {
         $this->withoutExceptionHandling();
 

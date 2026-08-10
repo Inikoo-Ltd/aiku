@@ -12,8 +12,10 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrder;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Models\Goods\Stock;
@@ -24,6 +26,7 @@ use Illuminate\Support\Facades\Redirect;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\ShoppingListItem;
 use App\Models\SupplyChain\Agent;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -59,6 +62,7 @@ class CherryPickShoppingListItems extends OrgAction
             ->keyBy('id');
 
         $purchaseOrders = [];
+        $agentSupplierPurchaseOrders = [];
         $skipped = [];
         $picked = 0;
 
@@ -93,7 +97,7 @@ class CherryPickShoppingListItems extends OrgAction
 
             $purchaseOrder = $purchaseOrders[$orgAgent->id]
                 ?? $orgAgent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->first()
-                ?? StorePurchaseOrder::make()->action($orgAgent, []);
+                ?? StorePurchaseOrder::make()->action($orgAgent, [])->fresh();
 
             $purchaseOrders[$orgAgent->id] = $purchaseOrder;
 
@@ -109,6 +113,23 @@ class CherryPickShoppingListItems extends OrgAction
                 $orgStock,
                 ['quantity_ordered' => $quantityPicked]
             );
+
+            $aspoKey = $purchaseOrder->id.'-'.$item->supplier_id;
+
+            $agentSupplierPurchaseOrder = $agentSupplierPurchaseOrders[$aspoKey]
+                ?? AgentSupplierPurchaseOrder::where('purchase_order_id', $purchaseOrder->id)
+                    ->where('supplier_id', $item->supplier_id)
+                    ->where('state', AgentSupplierPurchaseOrderStateEnum::IN_PROCESS->value)
+                    ->first()
+                ?? StoreAgentSupplierPurchaseOrder::make()->action(
+                    purchaseOrder: $purchaseOrder,
+                    supplier: $item->supplier,
+                    modelData: []
+                );
+
+            $agentSupplierPurchaseOrders[$aspoKey] = $agentSupplierPurchaseOrder;
+
+            $purchaseOrderTransaction->update(['agent_supplier_purchase_order_id' => $agentSupplierPurchaseOrder->id]);
 
             if ($remainder > 0) {
                 ShoppingListItem::create([
@@ -143,9 +164,10 @@ class CherryPickShoppingListItems extends OrgAction
         }
 
         return [
-            'purchase_orders' => array_values($purchaseOrders),
-            'picked'          => $picked,
-            'skipped'         => $skipped,
+            'purchase_orders'                => array_values($purchaseOrders),
+            'agent_supplier_purchase_orders' => array_values($agentSupplierPurchaseOrders),
+            'picked'                         => $picked,
+            'skipped'                        => $skipped,
         ];
     }
 
