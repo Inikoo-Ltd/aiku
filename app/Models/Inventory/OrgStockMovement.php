@@ -87,7 +87,7 @@ class OrgStockMovement extends Model
             'flow'                  => OrgStockMovementFlowEnum::class,
             'class'                 => OrgStockMovementClassEnum::class,
             'date'                  => 'datetime',
-            'quantity'              => 'decimal:3',
+            'quantity'              => 'decimal:6',
             'audited_quantity'      => 'decimal:6',
             'amount'                => 'decimal:3',
             'grp_amount'            => 'decimal:3',
