@@ -153,7 +153,7 @@ beforeEach(function () {
         data_set($storeData, 'billing_cycle', RentalAgreementBillingCycleEnum::MONTHLY);
         data_set($storeData, 'state', RentalAgreementStateEnum::ACTIVE);
         data_set($storeData, 'username', 'test');
-        data_set($storeData, 'email', 'test@aiku.io');
+        data_set($storeData, 'email', 'tes2t@aiku.io');
 
 
         $rentalAgreement = StoreRentalAgreement::make()->action(

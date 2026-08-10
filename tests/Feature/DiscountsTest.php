@@ -150,15 +150,15 @@ test('seed offer campaigns', function () {
     $this->group->refresh();
     $this->organisation->refresh();
 
-    expect($this->group->discountsStats->number_offer_campaigns)->toBe(11)
-        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
-        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(11)
-        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11)
-        ->and($shop->discountsStats->number_offer_campaigns)->toBe(11)
-        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(10)
-        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(11);
+    expect($this->group->discountsStats->number_offer_campaigns)->toBe(12)
+        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(11)
+        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(12)
+        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(12)
+        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(11)
+        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(12)
+        ->and($shop->discountsStats->number_offer_campaigns)->toBe(12)
+        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(11)
+        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(12);
 });
 
 test('update offer campaign', function () {
