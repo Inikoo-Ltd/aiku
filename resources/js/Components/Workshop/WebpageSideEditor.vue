@@ -27,7 +27,7 @@ import { Collapse } from 'vue-collapsed'
 import { trans } from 'laravel-vue-i18n'
 import WeblockList from '@/Components/CMS/Webpage/WeblockList.vue'
 import WebpageTemplateList from '@/Components/Workshop/WebpageTemplateList.vue'
-import { WebLayoutTemplate } from '@/types/WebLayoutTemplate'
+import { WebLayoutTemplate, WebLayoutTemplateList } from '@/types/WebLayoutTemplate'
 
 import {
 	faBrowser,
@@ -66,13 +66,13 @@ const props = withDefaults(
 		webBlockTypes: Daum
 		selectedTab: Number
 		editable: boolean
-		templates?: WebLayoutTemplate[]
+		templates?: WebLayoutTemplateList
 		isLoadingTemplates?: boolean
 		templatesErrorMessage?: string | null
 		applyingTemplateId?: number | null
 	}>(),
 	{
-		templates: () => [],
+		templates: () => ({ data: [] }),
 		isLoadingTemplates: false,
 		templatesErrorMessage: null,
 		applyingTemplateId: null,
@@ -90,6 +90,8 @@ const emits = defineEmits<{
 	(e: 'onDuplicateBlock', value: Number): void
 	(e: 'update:selectedTab', value: Number): void
 	(e: 'fetchTemplates'): void
+	(e: 'searchTemplates', value: string): void
+	(e: 'navigateTemplates', value: string): void
 	(e: 'useTemplate', value: WebLayoutTemplate): void
 }>()
 
@@ -140,6 +142,10 @@ const requestTemplates = () => {
 	hasRequestedTemplates.value = true
 	emits('fetchTemplates')
 }
+
+const onSearchTemplates = (value: string) => emits('searchTemplates', value)
+
+const onNavigateTemplates = (url: string) => emits('navigateTemplates', url)
 
 const onUseTemplate = (template: WebLayoutTemplate) => emits('useTemplate', template)
 
@@ -787,6 +793,8 @@ const blockNotEditableVisible = [
 						:applyingTemplateId="applyingTemplateId"
 						:editable="editable"
 						@refresh="requestTemplates"
+						@search="onSearchTemplates"
+						@navigate="onNavigateTemplates"
 						@use="onUseTemplate" />
 				</TabPanel>
 			</TabPanels>

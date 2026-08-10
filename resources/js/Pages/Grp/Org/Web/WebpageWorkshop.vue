@@ -36,7 +36,7 @@ import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route";
-import { WebLayoutTemplate } from "@/types/WebLayoutTemplate";
+import { WebLayoutTemplate, WebLayoutTemplateList } from "@/types/WebLayoutTemplate";
 
 import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
@@ -111,7 +111,9 @@ const isCreateTemplateDialogVisible = ref(false);
 const isCreatingTemplate = ref(false);
 const TEMPLATES_INDEX_ROUTE = "grp.models.webpage.index_templates";
 const TEMPLATE_APPLY_ROUTE = "grp.models.webpage.apply_template";
-const templates = ref<WebLayoutTemplate[]>([]);
+const TEMPLATES_PER_PAGE = 10;
+const templates = ref<WebLayoutTemplateList>({ data: [] });
+const templatesSearch = ref("");
 const isLoadingTemplates = ref(false);
 const templatesErrorMessage = ref<string | null>(null);
 const applyingTemplateId = ref<number | null>(null);
@@ -551,21 +553,45 @@ const onCreateTemplate = (payload: {
   });
 };
 
-const fetchTemplates = async () => {
+const buildTemplatesUrl = (url?: string) => {
+  const target = new URL(
+    url || route(TEMPLATES_INDEX_ROUTE, { webpage: data.value.id }),
+    window.location.origin
+  );
+
+  target.searchParams.set("per_page", String(TEMPLATES_PER_PAGE));
+
+  if (templatesSearch.value) {
+    target.searchParams.set("filter[global]", templatesSearch.value);
+  } else {
+    target.searchParams.delete("filter[global]");
+  }
+
+  return target.toString();
+};
+
+const fetchTemplates = async (url?: string) => {
   isLoadingTemplates.value = true;
   templatesErrorMessage.value = null;
 
   try {
-    const response = await axios.get(
-      route(TEMPLATES_INDEX_ROUTE, { webpage: data.value.id })
-    );
+    const response = await axios.get(buildTemplatesUrl(url));
 
-    templates.value = response.data?.data ?? response.data ?? [];
+    templates.value = {
+      data: response.data?.data ?? [],
+      meta: response.data?.meta,
+      links: response.data?.links,
+    };
   } catch (error: any) {
     templatesErrorMessage.value = error?.response?.data?.message || error.message;
   } finally {
     isLoadingTemplates.value = false;
   }
+};
+
+const onSearchTemplates = (value: string) => {
+  templatesSearch.value = value;
+  fetchTemplates();
 };
 
 const applyTemplate = async (template: WebLayoutTemplate) => {
@@ -819,7 +845,9 @@ console.log('props_workshop',props)
           :isLoadingTemplates="isLoadingTemplates"
           :templatesErrorMessage="templatesErrorMessage"
           :applyingTemplateId="applyingTemplateId"
-          @fetchTemplates="fetchTemplates"
+          @fetchTemplates="fetchTemplates()"
+          @searchTemplates="onSearchTemplates"
+          @navigateTemplates="fetchTemplates"
           @useTemplate="applyTemplate"
           @update="onSaveWorkshop"
           @delete="sendDeleteBlock"
