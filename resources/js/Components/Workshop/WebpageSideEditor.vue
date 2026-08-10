@@ -26,6 +26,8 @@ import { Root as RootWebpage } from '@/types/webpageTypes'
 import { Collapse } from 'vue-collapsed'
 import { trans } from 'laravel-vue-i18n'
 import WeblockList from '@/Components/CMS/Webpage/WeblockList.vue'
+import WebpageTemplateList from '@/Components/Workshop/WebpageTemplateList.vue'
+import { WebLayoutTemplate } from '@/types/WebLayoutTemplate'
 
 import {
 	faBrowser,
@@ -42,7 +44,7 @@ import {
 	faPaste,
 	faEdit,
 } from '@fal'
-import { faBrush, faCogs, faExclamationTriangle, faLayerGroup } from '@fas'
+import { faBrush, faCogs, faExclamationTriangle, faLayerGroup, faShapes } from '@fas'
 
 library.add(
 	faBrowser,
@@ -58,12 +60,24 @@ library.add(
 const layout = useLayoutStore()
 const modelModalBlocklist = defineModel()
 
-const props = defineProps<{
-	webpage: RootWebpage
-	webBlockTypes: Daum
-	selectedTab: Number
-	editable:boolean
-}>()
+const props = withDefaults(
+	defineProps<{
+		webpage: RootWebpage
+		webBlockTypes: Daum
+		selectedTab: Number
+		editable: boolean
+		templates?: WebLayoutTemplate[]
+		isLoadingTemplates?: boolean
+		templatesErrorMessage?: string | null
+		applyingTemplateId?: number | null
+	}>(),
+	{
+		templates: () => [],
+		isLoadingTemplates: false,
+		templatesErrorMessage: null,
+		applyingTemplateId: null,
+	}
+)
 
 const emits = defineEmits<{
 	(e: 'add', value: { block: Daum; type: string }): void
@@ -75,6 +89,8 @@ const emits = defineEmits<{
 	(e: 'openBlockList', value: boolean): void
 	(e: 'onDuplicateBlock', value: Number): void
 	(e: 'update:selectedTab', value: Number): void
+	(e: 'fetchTemplates'): void
+	(e: 'useTemplate', value: WebLayoutTemplate): void
 }>()
 
 const confirm = useConfirm()
@@ -95,6 +111,8 @@ const sendOrderBlock = (block: object) => emits('order', block)
 const sendDeleteBlock = (block: Daum) => emits('delete', block)
 
 const STYLE_TAB_INDEX = 2
+const TEMPLATE_TAB_INDEX = 3
+const hasRequestedTemplates = ref(false)
 
 const isOpenedBlockEditable = computed(() => {
 	if (openedBlockSideEditor.value === null) {
@@ -106,18 +124,24 @@ const isOpenedBlockEditable = computed(() => {
 	return !!block && getEditPermissions(block.web_block.layout.data)
 })
 
-const tabs = computed(() => {
-	const baseTabs = [
-		{ label: 'Settings', icon: faCogs, tooltip: 'Page Setting' },
-		{ label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks' },
-	]
+const tabs = computed(() => [
+	{ label: 'Settings', icon: faCogs, tooltip: 'Page Setting', hidden: false },
+	{ label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks', hidden: false },
+	{
+		label: 'Style',
+		icon: faBrush,
+		tooltip: 'Style',
+		hidden: !isOpenedBlockEditable.value,
+	},
+	{ label: 'Template', icon: faShapes, tooltip: 'Page templates', hidden: false },
+])
 
-	if (isOpenedBlockEditable.value) {
-		baseTabs.push({ label: 'Style', icon: faBrush, tooltip: 'Style' })
-	}
+const requestTemplates = () => {
+	hasRequestedTemplates.value = true
+	emits('fetchTemplates')
+}
 
-	return baseTabs
-})
+const onUseTemplate = (template: WebLayoutTemplate) => emits('useTemplate', template)
 
 const filterOptions = [
 	{ label: 'All', value: 'all' },
@@ -255,6 +279,16 @@ watch(openedBlockSideEditor, (newVal) => {
 	}
 })
 
+watch(
+	() => props.selectedTab,
+	(tabIndex) => {
+		if (tabIndex === TEMPLATE_TAB_INDEX && !hasRequestedTemplates.value) {
+			requestTemplates()
+		}
+	},
+	{ immediate: true }
+)
+
 watch(isOpenedBlockEditable, (isEditable) => {
 	if (!isEditable && props.selectedTab === STYLE_TAB_INDEX) {
 		changeTab(1)
@@ -376,12 +410,14 @@ const blockNotEditableVisible = [
 					v-for="(tab, index) in tabs"
 					:key="index"
 					v-tooltip.bottom="tab.tooltip"
+					:disabled="tab.hidden"
 					class="relative flex flex-1 items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium transition-colors focus:outline-none"
-					:class="
+					:class="[
+						tab.hidden ? 'hidden' : '',
 						selectedTab === index
 							? 'bg-white text-theme'
-							: 'text-slate-500 hover:bg-white/60 hover:text-slate-700'
-					">
+							: 'text-slate-500 hover:bg-white/60 hover:text-slate-700',
+					]">
 					<FontAwesomeIcon :icon="tab.icon" class="text-xs" fixed-width />
 					{{ tab.label }}
 					<span
@@ -740,6 +776,18 @@ const blockNotEditableVisible = [
 							</div>
 						</template>
 					</div>
+				</TabPanel>
+
+				<!-- Tab 4: Template -->
+				<TabPanel class="w-[340px] h-full p-1.5 flex flex-col">
+					<WebpageTemplateList
+						:templates="templates"
+						:isLoading="isLoadingTemplates"
+						:errorMessage="templatesErrorMessage"
+						:applyingTemplateId="applyingTemplateId"
+						:editable="editable"
+						@refresh="requestTemplates"
+						@use="onUseTemplate" />
 				</TabPanel>
 			</TabPanels>
 		</TabGroup>

@@ -36,6 +36,7 @@ import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route";
+import { WebLayoutTemplate } from "@/types/WebLayoutTemplate";
 
 import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
@@ -108,6 +109,12 @@ const activeChildBlockArrayBlock = ref<number | null>(null);
 const sideKey = ref(1);
 const isCreateTemplateDialogVisible = ref(false);
 const isCreatingTemplate = ref(false);
+const TEMPLATES_INDEX_ROUTE = "grp.models.webpage.index_templates";
+const TEMPLATE_APPLY_ROUTE = "grp.models.webpage.apply_template";
+const templates = ref<WebLayoutTemplate[]>([]);
+const isLoadingTemplates = ref(false);
+const templatesErrorMessage = ref<string | null>(null);
+const applyingTemplateId = ref<number | null>(null);
 
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
@@ -532,6 +539,7 @@ const onCreateTemplate = (payload: {
       text: trans("Template has been created"),
       type: "success"
     });
+    fetchTemplates();
   }).catch(error => {
     notify({
       title: trans("Something went wrong"),
@@ -541,6 +549,61 @@ const onCreateTemplate = (payload: {
   }).finally(() => {
     isCreatingTemplate.value = false;
   });
+};
+
+const fetchTemplates = async () => {
+  isLoadingTemplates.value = true;
+  templatesErrorMessage.value = null;
+
+  try {
+    const response = await axios.get(
+      route(TEMPLATES_INDEX_ROUTE, { webpage: data.value.id })
+    );
+
+    templates.value = response.data?.data ?? response.data ?? [];
+  } catch (error: any) {
+    templatesErrorMessage.value = error?.response?.data?.message || error.message;
+  } finally {
+    isLoadingTemplates.value = false;
+  }
+};
+
+const applyTemplate = async (template: WebLayoutTemplate) => {
+  applyingTemplateId.value = template.id;
+
+  try {
+    const response = await axios.post(
+      route(TEMPLATE_APPLY_ROUTE, {
+        webpage: data.value.id,
+        webLayoutTemplate: template.id,
+      })
+    );
+
+    const layout = response.data?.layout ?? response.data;
+
+    data.value = { ...data.value, layout };
+    openedBlockSideEditor.value = null;
+    saveState();
+
+    sendToIframe({
+      key: "setWebpage",
+      value: JSON.parse(JSON.stringify(data.value)),
+    });
+
+    notify({
+      title: trans("Success"),
+      text: trans("Template has been applied"),
+      type: "success"
+    });
+  } catch (error: any) {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  } finally {
+    applyingTemplateId.value = null;
+  }
 };
 
 
@@ -752,6 +815,12 @@ console.log('props_workshop',props)
           :webBlockTypes="webBlockTypes"
           v-model:selectedTab="selectedTab"
           :editable="editable"
+          :templates="templates"
+          :isLoadingTemplates="isLoadingTemplates"
+          :templatesErrorMessage="templatesErrorMessage"
+          :applyingTemplateId="applyingTemplateId"
+          @fetchTemplates="fetchTemplates"
+          @useTemplate="applyTemplate"
           @update="onSaveWorkshop"
           @delete="sendDeleteBlock"
           @add="addNewBlock"

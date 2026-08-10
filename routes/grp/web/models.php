@@ -475,6 +475,7 @@ use App\Actions\Web\Redirect\DeleteRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
+use App\Actions\Web\WebLayoutTemplate\IndexWebLayoutTemplates;
 use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
@@ -1141,6 +1142,7 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
 
     Route::post('store-as-template', StoreWebLayoutTemplate::class)->name('store_as_template');
+    Route::get('templates', IndexWebLayoutTemplates::class)->name('index_templates');
 });
 
 Route::patch('website/{website:id}/bulk-offline-webpages', SetWebpageOfflineBulk::class)->name('webpage.set_offline_bulk');
