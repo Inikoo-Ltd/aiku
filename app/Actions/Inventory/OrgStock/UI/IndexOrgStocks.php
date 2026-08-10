@@ -31,7 +31,9 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -53,7 +55,7 @@ class IndexOrgStocks extends OrgAction
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle(parent: $organisation, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle(parent: $organisation, prefix: $this->tab);
     }
 
     public function maya(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
@@ -63,7 +65,7 @@ class IndexOrgStocks extends OrgAction
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle(parent: $organisation, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle(parent: $organisation, prefix: $this->tab);
     }
 
     public function current(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
@@ -72,7 +74,7 @@ class IndexOrgStocks extends OrgAction
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle($this->parent, prefix: $this->tab);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -82,7 +84,7 @@ class IndexOrgStocks extends OrgAction
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle($this->parent, prefix: $this->tab);
     }
 
     public function inProcess(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
@@ -91,7 +93,7 @@ class IndexOrgStocks extends OrgAction
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle($this->parent, prefix: $this->tab);
     }
 
     public function discontinuing(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
@@ -100,7 +102,7 @@ class IndexOrgStocks extends OrgAction
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle($this->parent, prefix: $this->tab);
     }
 
     public function discontinued(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
@@ -109,7 +111,7 @@ class IndexOrgStocks extends OrgAction
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle($this->parent, prefix: $this->tab);
     }
 
     public function abnormality(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
@@ -118,7 +120,7 @@ class IndexOrgStocks extends OrgAction
         $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle($this->parent, prefix: $this->tab);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -128,7 +130,7 @@ class IndexOrgStocks extends OrgAction
         $this->parent = $orgStockFamily;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
-        return $this->handle(parent: $orgStockFamily, prefix: OrgStocksTabsEnum::INDEX->value);
+        return $this->handle(parent: $orgStockFamily, prefix: $this->tab);
     }
 
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
@@ -154,15 +156,14 @@ class IndexOrgStocks extends OrgAction
         return [
             'state' => [
                 'label'    => __('State'),
+                'default'  => OrgStockStateEnum::ACTIVE->value.','.OrgStockStateEnum::DISCONTINUING->value,
                 'elements' => array_merge_recursive(
                     OrgStockStateEnum::labels(),
                     OrgStockStateEnum::count($parent)
                 ),
-
                 'engine' => function ($query, $elements) {
                     $query->whereIn('org_stocks.state', $elements);
                 },
-
             ],
         ];
     }
@@ -187,17 +188,21 @@ class IndexOrgStocks extends OrgAction
         $queryBuilder = QueryBuilder::for(OrgStock::class);
 
         if ($parent instanceof OrgStockFamily) {
+            $organisationId = $parent->organisation_id;
             $queryBuilder->where('org_stock_family_id', $parent->id);
             $queryBuilder->addSelect([
                 'org_stock_families.slug as family_slug',
                 'org_stock_families.code as family_code',
             ]);
         } elseif ($parent instanceof OrgAgent) {
-            $queryBuilder->where('org_stocks.organisation_id', $parent->agent->organisation->id);
+            $organisationId = $parent->agent->organisation->id;
+            $queryBuilder->where('org_stocks.organisation_id', $organisationId);
         } elseif ($parent instanceof OrgPartner) {
-            $queryBuilder->where('org_stocks.organisation_id', $parent->partner->id);
+            $organisationId = $parent->partner->id;
+            $queryBuilder->where('org_stocks.organisation_id', $organisationId);
         } else {
-            $queryBuilder->where('org_stocks.organisation_id', $this->organisation->id);
+            $organisationId = $this->organisation->id;
+            $queryBuilder->where('org_stocks.organisation_id', $organisationId);
         }
 
         if ($this->bucket == 'current') {
@@ -216,7 +221,8 @@ class IndexOrgStocks extends OrgAction
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
                     engine: $elementGroup['engine'],
-                    prefix: $prefix
+                    prefix: $prefix,
+                    default: $elementGroup['default'] ?? null,
                 );
             }
         }
@@ -242,10 +248,11 @@ class IndexOrgStocks extends OrgAction
             'currencies.code as currency_code',
             'warehouses.slug as warehouse_slug',
             'org_stock_stats.stock_value',
+            'org_stock_stats.stock_commercial_value as potential_sales',
             'org_stock_stats.on_the_way_po_value',
             'org_stock_stats.on_the_way_po_count',
             'org_stock_stats.week_of_cover as woc',
-            'org_stock_stats.number_products as product_count'
+            'org_stock_stats.number_products as product_count',
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
@@ -255,6 +262,7 @@ class IndexOrgStocks extends OrgAction
                 foreignKey: 'org_stock_id',
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'cogs_grp_currency'           => 'cogs_grp_currency',
                     'invoices'                    => 'invoices',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
@@ -265,20 +273,9 @@ class IndexOrgStocks extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = $this->grossProfitSelect($timeSeriesData['alias']);
         } else {
-            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
-                timeSeriesTable: 'org_stock_time_series',
-                timeSeriesRecordsTable: 'org_stock_time_series_records',
-                foreignKey: 'org_stock_id',
-                aggregateColumns: [
-                    'sales_org_currency_external' => 'revenue',
-                ],
-                frequency: TimeSeriesFrequencyEnum::DAILY->value,
-                prefix: $prefix,
-                includeLY: false,
-            );
-
-            $selects[] = $timeSeriesData['selectRaw']['revenue'];
+            $selects[] = $this->stockCoverSelect($this->joinTrailingYearCogs($queryBuilder, $organisationId), 365);
         }
 
         $allowedSorts = [
@@ -292,17 +289,17 @@ class IndexOrgStocks extends OrgAction
             'organisation_name',
             'value_in_locations',
             'quantity_available',
+            'potential_sales',
             'on_the_way_po_value',
             'health_rank',
             'week_of_cover',
-            'product_count'
+            'product_count',
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
+            $allowedSorts[] = 'gross_profit';
             $allowedSorts[] = 'invoices';
-        } else {
-            $allowedSorts[] = 'revenue';
         }
 
         return $queryBuilder
@@ -319,6 +316,51 @@ class IndexOrgStocks extends OrgAction
             ->withQueryString();
     }
 
+    protected function joinTrailingYearCogs(QueryBuilder $queryBuilder, int $organisationId): string
+    {
+        $alias = 'cogs_trailing_year';
+
+        $subQuery = DB::table('org_stock_time_series')
+            ->join(
+                'org_stock_time_series_records',
+                'org_stock_time_series_records.org_stock_time_series_id',
+                '=',
+                'org_stock_time_series.id'
+            )
+            ->join('org_stocks', 'org_stocks.id', '=', 'org_stock_time_series.org_stock_id')
+            ->where('org_stocks.organisation_id', $organisationId)
+            ->where('org_stock_time_series.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+            ->where('org_stock_time_series_records.frequency', TimeSeriesFrequencyEnum::MONTHLY->singleLetter())
+            ->where('org_stock_time_series_records.from', '>=', now()->subYear()->startOfMonth())
+            ->groupBy('org_stock_time_series.org_stock_id')
+            ->select('org_stock_time_series.org_stock_id')
+            ->selectRaw('COALESCE(SUM(org_stock_time_series_records.cogs_org_currency), 0) as cogs_org_currency');
+
+        $queryBuilder->leftJoinSub(
+            $subQuery,
+            $alias,
+            fn ($join) => $join->on("$alias.org_stock_id", '=', 'org_stocks.id')
+        );
+
+        return $alias;
+    }
+
+    protected function grossProfitSelect(string $alias): Expression
+    {
+        return DB::raw(
+            "COALESCE($alias.sales_grp_currency_external, 0) - COALESCE($alias.cogs_grp_currency, 0) as gross_profit"
+        );
+    }
+
+    protected function stockCoverSelect(string $alias, int $days): Expression
+    {
+        return DB::raw(
+            "CASE WHEN org_stock_stats.stock_value > 0 AND COALESCE($alias.cogs_org_currency, 0) > 0"
+            ." THEN org_stock_stats.stock_value * 12 * $days / ($alias.cogs_org_currency * 365)"
+            .' ELSE NULL END as stock_cover'
+        );
+    }
+
     public function tableStructure(OrgStockFamily|Organisation|OrgPartner|OrgAgent $parent, ?array $modelOperations = null, $prefix = null, $bucket = null, bool $sales = false): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $bucket, $sales) {
@@ -333,7 +375,8 @@ class IndexOrgStocks extends OrgAction
                     $table->elementGroup(
                         key: $key,
                         label: $elementGroup['label'],
-                        elements: $elementGroup['elements']
+                        elements: $elementGroup['elements'],
+                        default: $elementGroup['default'] ?? null,
                     );
                 }
             }
@@ -349,31 +392,29 @@ class IndexOrgStocks extends OrgAction
                 $table->column(key: 'family_code', label: __('Family'), sortable: true, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
-                ->column(key: 'quantity_available', label: __('Stock'), sortable: true, align: 'right');
+            $table->column(key: 'name', label: __('Name'), sortable: true, searchable: true);
 
             if ($sales) {
                 $table->betweenDates(['date'])
-                    ->column(key: 'stock_value', label: __('Stock Value'), sortable: true, type: 'currency')
-                    ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
                     ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'gross_profit', label: __('Gross Profit'), sortable: true, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), sortable: true, type: 'icon');
             } else {
-                if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
-                    $table
-                        ->column(key: 'sku_value', label: __('Sku value'), sortable: true, type: 'currency')
-                        ->column(key: 'woc', label: __('WOC'), align: 'right')
-                        ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency');
-                }
+                $table
+                    ->column(key: 'product_count', label: __('Products'), canBeHidden: false, sortable: true)
+                    ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'potential_sales', label: __('Potential Sales'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'on_the_way_po_value', label: __("On The Way (PO's)"), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: false, align: 'right');
 
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
                     $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), sortable: true, searchable: true, type: 'date');
                 }
             }
-            $table->column(key: 'product_count', label: __('Used in Products'), sortable: true, searchable: true, align: 'left');
         };
     }
 
@@ -573,10 +614,10 @@ class IndexOrgStocks extends OrgAction
 
                 OrgStocksTabsEnum::INDEX->value => $this->tab == OrgStocksTabsEnum::INDEX->value
                     ? fn () => OrgStocksResource::collection($stocks)
-                    : Inertia::optional(fn () => OrgStocksResource::collection($stocks)),
+                    : Inertia::optional(fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::INDEX->value, bucket: $this->bucket))),
 
                 OrgStocksTabsEnum::SALES->value => $this->tab == OrgStocksTabsEnum::SALES->value
-                    ? fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket))
+                    ? fn () => OrgStocksResource::collection($stocks)
                     : Inertia::optional(fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::INDEX->value, bucket: $this->bucket))

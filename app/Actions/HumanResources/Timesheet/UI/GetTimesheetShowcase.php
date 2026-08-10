@@ -29,6 +29,8 @@ class GetTimesheetShowcase
         $overtime = CalculateTimesheetOvertime::run($timesheet);
 
         return [
+            'id'                        => $timesheet->id,
+            'store_clocking_route'      => route('grp.models.timesheet.clocking.store', $timesheet->id),
             'work_start_at'            => $workStartAt,
             'work_end_at'              => $workEndAt,
             'work_duration'            => $timesheet->working_duration,

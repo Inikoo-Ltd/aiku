@@ -10,6 +10,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoicesInProduct;
 use App\Actions\Catalogue\Collection\UI\CreateCollection;
 use App\Actions\Catalogue\Collection\UI\EditCollection;
 use App\Actions\Catalogue\Collection\UI\IndexCollections;
+use App\Actions\Catalogue\Collection\UI\IndexCollectionsSales;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInProductCategory;
 use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Catalogue\Product\GetProductUploadedImages;
@@ -22,6 +23,7 @@ use App\Actions\Catalogue\Product\UI\IndexPendingBackInStockRemindersProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
+use App\Actions\Catalogue\Product\UI\IndexProductsSales;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithIndependentTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
 use App\Actions\Catalogue\Product\UI\IndexMissingDescriptionProducts;
@@ -37,12 +39,15 @@ use App\Actions\Catalogue\ProductCategory\UI\EditDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\EditFamily;
 use App\Actions\Catalogue\ProductCategory\UI\EditSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
+use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsSales;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesSales;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesGR;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesWithNoDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesWithNoImage;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
+use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartmentsSales;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
@@ -58,6 +63,7 @@ Route::get('', ShowCatalogue::class)->name('dashboard');
 Route::prefix('products')->as('products.')
     ->group(function () {
         Route::get('export', [ExportProducts::class, 'inShop'])->name('export');
+        Route::get('sales', [IndexProductsSales::class, 'inShop'])->name('sales');
 
         Route::prefix('all')->as('all_products.')->group(function () {
             Route::get('', IndexProductsInCatalogue::class)->name('index');
@@ -244,6 +250,7 @@ Route::prefix('products')->as('products.')
 Route::name("departments.")->prefix('departments')
     ->group(function () {
         Route::get('', IndexDepartments::class)->name('index');
+        Route::get('sales', IndexDepartmentsSales::class)->name('sales');
         Route::get('create', CreateDepartment::class)->name('create');
 
 
@@ -277,6 +284,7 @@ Route::name("departments.")->prefix('departments')
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {
                             Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInDepartment'])->name('index');
+                            Route::get('sales', [IndexProductsSales::class, 'inFamilyInDepartment'])->name('sales');
                             Route::get('create', [CreateProduct::class, 'inFamilyInDepartment'])->name('create');
 
                             Route::prefix('{product}')->group(function () {
@@ -288,6 +296,7 @@ Route::name("departments.")->prefix('departments')
             });
             Route::prefix('products')->name('.products.')->group(function () {
                 Route::get('', [IndexProductsInProductCategory::class, 'inDepartment'])->name('index');
+                Route::get('sales', [IndexProductsSales::class, 'inDepartment'])->name('sales');
                 Route::get('{product}', [ShowProduct::class, 'inDepartment'])->name('show');
                 Route::get('edit/{product}', [EditProduct::class, 'inDepartment'])->name('edit');
             });
@@ -317,12 +326,14 @@ Route::name("departments.")->prefix('departments')
                             });
                             Route::prefix('products')->name('.products.')->group(function () {
                                 Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInSubDepartmentInDepartment'])->name('index');
+                                Route::get('sales', [IndexProductsSales::class, 'inFamilyInSubDepartmentInDepartment'])->name('sales');
                                 Route::get('create', [CreateProduct::class, 'inFamilyInSubDepartmentInDepartment'])->name('create');
                             });
                         });
                     });
                     Route::prefix('products')->name('.products.')->group(function () {
                         Route::get('index', [IndexProductsInProductCategory::class, 'inSubDepartmentInDepartment'])->name('index');
+                        Route::get('sales', [IndexProductsSales::class, 'inSubDepartmentInDepartment'])->name('sales');
                     });
                 });
             });
@@ -332,6 +343,7 @@ Route::name("departments.")->prefix('departments')
 Route::name("families.")->prefix('families')
     ->group(function () {
         Route::get('', IndexFamilies::class)->name('index');
+        Route::get('sales', IndexFamiliesSales::class)->name('sales');
         Route::get('gr', IndexFamiliesGR::class)->name('gr.index');
         Route::get('no-department', IndexFamiliesWithNoDepartment::class)->name('no_department.index');
         Route::get('no-images', IndexFamiliesWithNoImage::class)->name('no_image.index');
@@ -350,6 +362,7 @@ Route::name("families.")->prefix('families')
             });
             Route::prefix('products')->name('.products.')->group(function () {
                 Route::get('', [IndexProductsInProductCategory::class, 'inFamily'])->name('index');
+                Route::get('sales', [IndexProductsSales::class, 'inFamily'])->name('sales');
                 Route::get('create', [CreateProduct::class, 'inFamily'])->name('create');
                 Route::get('{product}', [ShowProduct::class, 'inFamily'])->name('show');
                 Route::get('edit/{product}', [EditProduct::class, 'inFamily'])->name('edit');
@@ -360,6 +373,7 @@ Route::name("families.")->prefix('families')
 Route::name("collections.")->prefix('collections')
     ->group(function () {
         Route::get('', IndexCollections::class)->name('index');
+        Route::get('sales', IndexCollectionsSales::class)->name('sales');
         Route::get('active', [IndexCollections::class, 'active'])->name('active.index');
         Route::get('inactive', [IndexCollections::class, 'inactive'])->name('inactive.index');
         Route::get('in-process', [IndexCollections::class, 'inProcess'])->name('in_process.index');
@@ -381,6 +395,7 @@ Route::name("collections.")->prefix('collections')
 Route::name("sub_departments.")->prefix('sub-departments')
     ->group(function () {
         Route::get('', [IndexSubDepartments::class, 'inShop'])->name('index');
+        Route::get('sales', IndexSubDepartmentsSales::class)->name('sales');
         Route::get('{subDepartment}/edit', [EditSubDepartment::class, 'inShop'])->name('edit');
         Route::prefix('{subDepartment}')->name('show')->group(function () {
             Route::get('', [ShowSubDepartment::class, 'inShop']);
@@ -411,6 +426,7 @@ Route::name("sub_departments.")->prefix('sub-departments')
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {
                             Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInSubDepartmentInShop'])->name('index');
+                            Route::get('sales', [IndexProductsSales::class, 'inFamilyInSubDepartmentInShop'])->name('sales');
                             Route::get('create', [CreateProduct::class, 'inFamilyInSubDepartmentInShop'])->name('create');
 
                             Route::prefix('{product}')->group(function () {
@@ -422,6 +438,7 @@ Route::name("sub_departments.")->prefix('sub-departments')
             });
             Route::prefix('products')->name('.products.')->group(function () {
                 Route::get('', [IndexProductsInProductCategory::class, 'inSubDepartmentInShop'])->name('index');
+                Route::get('sales', [IndexProductsSales::class, 'inSubDepartmentInShop'])->name('sales');
                 Route::get('{product}', [ShowProduct::class, 'inSubDepartmentInShop'])->name('show');
                 Route::get('edit/{product}', [EditProduct::class, 'inSubDepartmentInShop'])->name('edit');
             });

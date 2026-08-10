@@ -1005,6 +1005,24 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
+        $scanToPick = null;
+        if (
+            (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pick', false)
+            && $deliveryNote->state == DeliveryNoteStateEnum::HANDLING
+            && $isEditable
+            && $allowAction
+        ) {
+            $scanToPick = [
+                'scan_route' => [
+                    'name'       => 'grp.json.delivery_note.pick_by_scan',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id,
+                    ],
+                    'method'     => 'post',
+                ],
+            ];
+        }
+
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -1167,7 +1185,8 @@ class ShowDeliveryNote extends OrgAction
                 'type' => $deliveryNote->shop?->type?->value,
             ],
             'consumables'                        => GetDeliveryNoteConsumables::run($deliveryNote),
-            'scan_to_pack'                       => $scanToPack
+            'scan_to_pack'                       => $scanToPack,
+            'scan_to_pick'                       => $scanToPick
 
 
         ];

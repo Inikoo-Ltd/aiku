@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Catalogue\WithCatalogueIndexSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -35,6 +36,7 @@ class IndexSubDepartments extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithDepartmentSubNavigation;
+    use WithCatalogueIndexSubNavigation;
 
     private Shop|ProductCategory|Organisation $parent;
     private bool $sales = true;
@@ -258,6 +260,11 @@ class IndexSubDepartments extends OrgAction
 
         $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::MISSING_GR]);
 
+        if ($this->parent instanceof Shop) {
+            unset($navigation[ProductCategoryTabsEnum::SALES->value]);
+            $subNavigation = $this->getSubDepartmentsIndexSubNavigation($this->parent);
+        }
+
         $title      = __('Sub-departments');
         $model      = '';
         $icon       = [
@@ -354,7 +361,8 @@ class IndexSubDepartments extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.sub_departments.index' => array_merge(
+            'grp.org.shops.show.catalogue.sub_departments.index',
+            'grp.org.shops.show.catalogue.sub_departments.sales' => array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [

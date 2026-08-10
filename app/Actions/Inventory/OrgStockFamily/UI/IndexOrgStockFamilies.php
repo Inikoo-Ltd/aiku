@@ -174,13 +174,9 @@ class IndexOrgStockFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
 
             $selects[] = $this->grossProfitSelect($timeSeriesData['alias']);
-
-            $metricAlias = $timeSeriesData['days'] ? $timeSeriesData['alias'] : $this->joinTrailingYearCogs($queryBuilder, $organisation);
-            $metricDays  = $timeSeriesData['days'] ?? 365;
-
-            $selects[] = $this->stockTurnSelect($metricAlias, $metricDays);
         } else {
             $selects[] = $this->stockCoverSelect($this->joinTrailingYearCogs($queryBuilder, $organisation), 365);
+            $selects[] = $this->stockTurnSelect($this->joinLast3MonthsSales($queryBuilder, $organisation));
         }
 
         $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'potential_sales', 'on_the_way_po_value', 'health_rank'];
@@ -189,6 +185,7 @@ class IndexOrgStockFamilies extends OrgAction
             $allowedSorts[] = 'sales_org_currency_external';
             $allowedSorts[] = 'gross_profit';
             $allowedSorts[] = 'invoices';
+        } else {
             $allowedSorts[] = AllowedSort::callback('stock_turn', function ($query, bool $descending) {
                 $query->orderByRaw('stock_turn '.($descending ? 'desc' : 'asc').' nulls last');
             });
@@ -239,11 +236,41 @@ class IndexOrgStockFamilies extends OrgAction
         return $alias;
     }
 
-    protected function stockTurnSelect(string $alias, int $days): Expression
+    protected function joinLast3MonthsSales(QueryBuilder $queryBuilder, Organisation $organisation): string
+    {
+        $alias = 'last_3_months_sales';
+
+        $subQuery = DB::table('org_stock_family_time_series')
+            ->join(
+                'org_stock_family_time_series_records',
+                'org_stock_family_time_series_records.org_stock_family_time_series_id',
+                '=',
+                'org_stock_family_time_series.id'
+            )
+            ->join('org_stock_families', 'org_stock_families.id', '=', 'org_stock_family_time_series.org_stock_family_id')
+            ->where('org_stock_families.organisation_id', $organisation->id)
+            ->where('org_stock_family_time_series.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+            ->where('org_stock_family_time_series_records.frequency', TimeSeriesFrequencyEnum::MONTHLY->singleLetter())
+            ->where('org_stock_family_time_series_records.from', '>=', now()->subMonths(3)->startOfMonth())
+            ->where('org_stock_family_time_series_records.from', '<=', now()->startOfMonth())
+            ->groupBy('org_stock_family_time_series.org_stock_family_id')
+            ->select('org_stock_family_time_series.org_stock_family_id')
+            ->selectRaw('COALESCE(SUM(org_stock_family_time_series_records.sales_org_currency_external), 0) / 3 as avg_sales_3m');
+
+        $queryBuilder->leftJoinSub(
+            $subQuery,
+            $alias,
+            fn ($join) => $join->on("$alias.org_stock_family_id", '=', 'org_stock_families.id')
+        );
+
+        return $alias;
+    }
+
+    protected function stockTurnSelect(string $avgSalesAlias): Expression
     {
         return DB::raw(
-            'CASE WHEN org_stock_family_stats.stock_value > 0'
-            ." THEN COALESCE($alias.cogs_org_currency, 0) / org_stock_family_stats.stock_value * 365 / $days"
+            'CASE WHEN COALESCE('.$avgSalesAlias.'.avg_sales_3m, 0) > 0'
+            .' THEN org_stock_family_stats.stock_commercial_value / '.$avgSalesAlias.'.avg_sales_3m'
             .' ELSE NULL END as stock_turn'
         );
     }
@@ -288,7 +315,6 @@ class IndexOrgStockFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date'])
-                    ->column(key: 'stock_turn', label: __('Turn'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'sales_org_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
@@ -300,6 +326,7 @@ class IndexOrgStockFamilies extends OrgAction
                 $table
                     ->column(key: 'number_current_org_stocks', label: __('SKOs'), canBeHidden: false, sortable: true)
                     ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'stock_turn', label: __('Turn'), tooltip: __('Potential Sales / AVG monthly sales of the last 3 months'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'potential_sales', label: __('Potential Sales'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'on_the_way_po_value', label: __("On The Way (PO's)"), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: false, align: 'right')
