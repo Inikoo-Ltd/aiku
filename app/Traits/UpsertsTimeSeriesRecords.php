@@ -20,12 +20,18 @@ trait UpsertsTimeSeriesRecords
      * yearly stay dense because the showcase charts read them record by record.
      *
      * Periods inside the window that are not in $rows are deleted either way, since the upsert alone
-     * would leave a period that lost its invoices holding its old non zero value.
+     * would leave a period that lost its invoices holding its old non zero value. Only ever call this
+     * where the rows can be rebuilt from source: a series whose source rows are pruned would lose the
+     * history it is the last copy of.
+     *
+     * $scope narrows the delete for series that hold one set of rows per something else, a shop for
+     * instance, so that a run for one of them leaves the others alone.
      *
      * @param array<int, array<string, mixed>> $rows
      * @param array<int, string> $uniqueBy
+     * @param array<string, mixed> $scope
      */
-    protected function syncTimeSeriesRecords(Model $timeSeries, array $rows, array $uniqueBy, string $from, string $to): void
+    protected function syncTimeSeriesRecords(Model $timeSeries, array $rows, array $uniqueBy, string $from, string $to, array $scope = []): void
     {
         if ($this->timeSeriesIsSparse($timeSeries->frequency)) {
             $rows = array_values(array_filter($rows, fn (array $row) => $this->timeSeriesRowHasActivity($row, $uniqueBy)));
@@ -35,6 +41,7 @@ trait UpsertsTimeSeriesRecords
             ->where('frequency', $timeSeries->frequency->singleLetter())
             ->where('from', '>=', $from)
             ->where('from', '<=', $to)
+            ->where($scope)
             ->when($rows !== [], fn ($query) => $query->whereNotIn('period', array_column($rows, 'period')))
             ->delete();
 
@@ -54,7 +61,11 @@ trait UpsertsTimeSeriesRecords
     {
         $metrics = Arr::except($row, [...$uniqueBy, 'period', 'frequency', 'from', 'to']);
 
-        foreach ($metrics as $value) {
+        foreach ($metrics as $column => $value) {
+            if (str_ends_with($column, '_id')) {
+                continue;
+            }
+
             if ($value !== null && $value != 0) {
                 return true;
             }

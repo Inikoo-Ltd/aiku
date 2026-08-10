@@ -28,6 +28,10 @@ class PruneZeroTimeSeriesRecords
         'trade_unit_time_series_records',
         'asset_time_series_records',
         'master_asset_time_series_records',
+        'org_stock_family_time_series_records',
+        'trade_unit_family_time_series_records',
+        'stock_family_time_series_records',
+        'offer_time_series_records',
     ];
 
     private const array NUMERIC_TYPES = ['int2', 'int4', 'int8', 'numeric', 'float4', 'float8'];
