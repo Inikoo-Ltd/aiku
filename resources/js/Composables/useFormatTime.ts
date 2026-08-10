@@ -183,17 +183,18 @@ export const useIsFutureIsAPast = (dateIso: Date | string, additionalSeconds: nu
 }
 
 
-// Method: Convert from '28359' (in seconds) to '7h 52m 39s'
+// Method: Convert from '28359' (in seconds) to '7:52:39'
 export const useSecondsToMS = (seconds?: number) => {
     if (!seconds) return '00:00'
 
-    // Create a duration object with only seconds
-    const duration = intervalToDuration({ start: 0, end: seconds * 1000 }); // Convert seconds to milliseconds
+    const totalSeconds = Math.floor(seconds)
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const secs = totalSeconds % 60
 
-    // console.log('wew', duration)
-    const strHour = duration.hours ? duration.hours : '00'
-    const strMinutes = duration.minutes?.toString().padStart(2, '0') || '00'
-    const strSeconds = duration.seconds?.toString().padStart(2, '0') || '00'
+    const strHour = hours.toString()
+    const strMinutes = minutes.toString().padStart(2, '0')
+    const strSeconds = secs.toString().padStart(2, '0')
 
     return strHour + ':' + strMinutes + ':' + strSeconds
 }

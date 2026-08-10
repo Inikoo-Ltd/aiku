@@ -10,13 +10,13 @@ namespace App\Actions\HumanResources\Timesheet\UI;
 
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\HumanResources\Timesheet\CalculateTimesheetOvertime;
+use App\Actions\HumanResources\Timesheet\ResolveTimesheetDateRange;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\WithTabsBox; // Trait Tabs
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
-use App\Enums\Helpers\Period\PeriodEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\UI\HumanResources\TimesheetEmployeeViewEnum;
 use App\Enums\UI\HumanResources\TimesheetsTabsEnum;
@@ -65,28 +65,7 @@ class IndexTimesheets extends OrgAction
 
     protected function resolvePeriodRange(): ?array
     {
-        $period = request()->input('period');
-
-        if ($period && is_array($period)) {
-            return PeriodEnum::toDateRange($period);
-        }
-
-        $employeesPeriod = request()->input('employees_period');
-
-        if ($employeesPeriod && is_array($employeesPeriod)) {
-            return PeriodEnum::toDateRange($employeesPeriod);
-        }
-
-        $employeePeriod = request()->input('employee_period');
-
-        if ($employeePeriod && is_array($employeePeriod)) {
-            return PeriodEnum::toDateRange($employeePeriod);
-        }
-
-        return [
-            now()->startOfMonth(),
-            now()->endOfMonth(),
-        ];
+        return ResolveTimesheetDateRange::run();
     }
 
     public function handle(Group|Organisation|Employee|Guest $parent, ?string $prefix = null, bool $isTodayTimesheet = false): LengthAwarePaginator
@@ -436,21 +415,6 @@ class IndexTimesheets extends OrgAction
         ];
     }
 
-    protected function getPeriodFilters(): array
-    {
-        $elements = array_merge_recursive(
-            PeriodEnum::labels(),
-            PeriodEnum::date()
-        );
-
-        return [
-            'period' => [
-                'label'    => __('Period'),
-                'elements' => $elements
-            ],
-        ];
-    }
-
     public function tableStructure(Group|Organisation|Employee|Guest $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
@@ -472,15 +436,15 @@ class IndexTimesheets extends OrgAction
                 ->withModelOperations($modelOperations);
 
             if ($prefix === TimesheetsTabsEnum::PER_EMPLOYEE->value) {
+                request()->query->remove("{$prefix}_columns");
+
                 $table->column(key: 'subject_name', label: __('Name'), sortable: true, searchable: true);
 
                 if ($parent instanceof Organisation || $parent instanceof Group) {
                     $table->column(key: 'job_position', label: __('Job Position'));
                 }
 
-                foreach ($this->getPeriodFilters() as $periodFilter) {
-                    $table->periodFilters($periodFilter['elements']);
-                }
+                $table->betweenDates(['date']);
 
                 $employeeView = TimesheetEmployeeViewEnum::tryFrom((string) request()->input('view')) ?? TimesheetEmployeeViewEnum::OVERVIEW;
 
@@ -516,9 +480,7 @@ class IndexTimesheets extends OrgAction
                 $table->column(key: 'job_position', label: __('Job Position'));
             }
 
-            foreach ($this->getPeriodFilters() as $periodFilter) {
-                $table->periodFilters($periodFilter['elements']);
-            }
+            $table->betweenDates(['date']);
 
             $table->column(key: 'start_at', label: __('Start At'))
                 ->column(key: 'end_at', label: __('End At'))
@@ -708,6 +670,13 @@ class IndexTimesheets extends OrgAction
                     'title'         => __('Timesheets'),
                     'icon'          => ['title' => __('Timesheets'), 'icon'  => 'fal fa-stopwatch'],
                     'actions'       => $this->parent instanceof Organisation ? [
+                        [
+                            'type'  => 'button',
+                            'style' => 'secondary',
+                            'key'   => 'export-timesheets',
+                            'label' => __('Export'),
+                            'icon'  => ['fal', 'fa-download'],
+                        ],
                         [
                             'type'  => 'button',
                             'style' => 'create',

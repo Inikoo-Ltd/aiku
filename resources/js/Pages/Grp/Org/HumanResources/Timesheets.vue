@@ -1,23 +1,42 @@
 <script setup lang="ts">
-import { Head, router, useForm, usePage } from '@inertiajs/vue3'
+import { Head, router, useForm } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Select from 'primevue/select'
+import MultiSelect from 'primevue/multiselect'
 import DatePicker from 'primevue/datepicker'
 import Textarea from 'primevue/textarea'
 import TableTimesheets from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheets.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from 'laravel-vue-i18n'
-import { format, startOfWeek, startOfMonth, startOfQuarter, startOfYear, addDays } from 'date-fns'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
-import qs from 'qs'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faCalendarAlt } from '@fal'
-library.add(faCalendarAlt)
+import {
+    faCalendarDay,
+    faUsers,
+    faUser,
+    faThList,
+    faStopwatch,
+    faExclamationCircle,
+    faSackDollar,
+    faCoins,
+    faBriefcase,
+} from '@fal'
+library.add(
+    faCalendarDay,
+    faUsers,
+    faUser,
+    faThList,
+    faStopwatch,
+    faExclamationCircle,
+    faSackDollar,
+    faCoins,
+    faBriefcase,
+)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -162,55 +181,40 @@ function handleEmployeeViewUpdate(view: string) {
     router.get(location.pathname + `?${params.toString()}`, {}, { preserveState: true, preserveScroll: true })
 }
 
-const periodPrefix = computed(() => currentTab.value === 'employee' ? 'employee' : 'employees')
+const showExportModal = ref(false)
+const exportEmployeeIds = ref<number[]>([])
+const exportType = ref<'xlsx' | 'csv'>('xlsx')
 
-const periodParam = computed(() => {
-    const url = usePage().url as string
-    const queryString = url.includes('?') ? url.slice(url.indexOf('?') + 1) : ''
-    const params = qs.parse(queryString) as Record<string, any>
+const openExportModal = () => {
+    exportEmployeeIds.value = []
+    exportType.value = 'xlsx'
+    showExportModal.value = true
+}
 
-    return params?.[`${periodPrefix.value}_period`] ?? params?.period ?? null
-})
+const closeExportModal = () => {
+    showExportModal.value = false
+}
 
-function periodLabel(period: any) {
-    if (!period) return false
+const submitExport = () => {
+    const routeName = currentTab.value === 'employee'
+        ? 'grp.org.hr.timesheets.export_by_employee'
+        : 'grp.org.hr.timesheets.export_by_date'
 
-    if (period.day) {
-        // May 28th, 2024
-        const date = new Date(period.day.slice(0, 4), period.day.slice(4, 6) - 1, period.day.slice(6, 8))
-        return `${format(date, 'MMMM do, yyyy')}`
+    const params: Record<string, any> = { ...(route().params as Record<string, any>) }
+    params.type = exportType.value
+
+    if (exportEmployeeIds.value.length) {
+        params.employee_id = exportEmployeeIds.value
+    } else {
+        delete params.employee_id
     }
 
-    if (period.week) {
-        // May 26th, 2024 - June 1st, 2024
-        const year = period.week.slice(0, 4)
-        const weekNumber = parseInt(period.week.slice(4), 10)
-        const startOfTheWeek = startOfWeek(addDays(new Date(year, 0, 1), (weekNumber - 1) * 7), { weekStartsOn: 1 })
-        return `${format(startOfTheWeek, 'MMMM do, yyyy')} - ${format(addDays(startOfTheWeek, 6), 'MMMM do, yyyy')}`
+    if (currentTab.value === 'employee') {
+        params.view = currentEmployeeView.value
     }
 
-    if (period.month) {
-        // May 2024
-        const year = period.month.slice(0, 4)
-        const monthNumber = period.month.slice(4, 6) - 1
-        const startOfTheMonth = startOfMonth(new Date(year, monthNumber))
-        return `${format(startOfTheMonth, 'MMMM yyyy')}`
-    }
-
-    if (period.quarter) {
-        // April 2024 - June 2024
-        const year = period.quarter.slice(0, 4)
-        const quarterNumber = parseInt(period.quarter.slice(5), 10)
-        const startOfTheQuarter = startOfQuarter(new Date(year, (quarterNumber - 1) * 3))
-        return `${format(startOfTheQuarter, 'MMMM yyyy')} - ${format(addDays(startOfTheQuarter, 89), 'MMMM yyyy')}`
-    }
-
-    if (period.year) {
-        // 2024
-        const year = period.year
-        const startOfTheYear = startOfYear(new Date(year))
-        return `${format(startOfTheYear, 'yyyy')}`
-    }
+    window.location.href = route(routeName, params)
+    closeExportModal()
 }
 
 </script>
@@ -220,6 +224,15 @@ function periodLabel(period: any) {
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead">
+        <template #button-export-timesheets="{ action }">
+            <Button
+                :icon="action.icon"
+                :label="action.label"
+                :style="action.style"
+                @click="openExportModal"
+            />
+        </template>
+
         <template #button-timesheet="{ action }">
             <Button
                 :icon="action.icon"
@@ -239,13 +252,6 @@ function periodLabel(period: any) {
         @update:tab="handleEmployeeViewUpdate"
         class="mt-2"
     />
-
-    <div v-if="periodParam" class="mt-3 mb-1">
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700">
-            <font-awesome-icon :icon="['fal', 'calendar-alt']" class="text-indigo-400" />
-            {{ periodLabel(periodParam) }}
-        </span>
-    </div>
 
     <!-- TABLE -->
     <TableTimesheets :key="`${currentTab}-${currentEmployeeView}`" :tab="currentTab" :data="currentData" />
@@ -347,5 +353,55 @@ function periodLabel(period: any) {
                 </Button>
             </div>
         </form>
+    </Modal>
+
+    <Modal :isOpen="showExportModal" @onClose="closeExportModal" width="w-full max-w-lg">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+            {{ trans('Export timesheets') }}
+        </h2>
+
+        <p class="text-sm text-gray-500 mb-4">
+            {{ trans('Exports whatever is currently on screen: the active tab, date range and view.') }}
+        </p>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Employees') }} <span class="text-gray-400 font-normal">({{ trans('leave empty for everyone') }})</span>
+                </label>
+                <MultiSelect
+                    v-model="exportEmployeeIds"
+                    :options="employeeOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    filter
+                    :maxSelectedLabels="3"
+                    class="mt-1 w-full"
+                    :placeholder="trans('All employees')"
+                />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Format') }}
+                </label>
+                <Select
+                    v-model="exportType"
+                    :options="[{ label: 'Excel (.xlsx)', value: 'xlsx' }, { label: 'CSV (.csv)', value: 'csv' }]"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="mt-1 w-full"
+                />
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2">
+            <Button type="tertiary" @click="closeExportModal">
+                {{ trans('Cancel') }}
+            </Button>
+            <Button type="save" @click="submitExport">
+                {{ trans('Export') }}
+            </Button>
+        </div>
     </Modal>
 </template>
