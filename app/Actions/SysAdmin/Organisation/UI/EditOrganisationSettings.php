@@ -104,6 +104,14 @@ class EditOrganisationSettings extends OrgAction
             ];
         }
 
+        $pickingFields['allow_scan_to_pick'] = [
+            'type'  => 'toggle',
+            'label' => __('Allow pickers to scan items to pick them'),
+            'information'   => __('Scan the items using scanner'),
+            'icon'  => 'fal fa-scanner',
+            'value' => Arr::get($organisation->settings, 'orders.allow_scan_to_pick', false),
+        ];
+
         $pickingFields['allow_scan_to_pack'] = [
             'type'  => 'toggle',
             'label' => __('Allow packers to scan items to pack them'),
