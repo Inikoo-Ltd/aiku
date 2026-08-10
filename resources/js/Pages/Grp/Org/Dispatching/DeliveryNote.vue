@@ -381,11 +381,20 @@ const debReloadPage = debounce(() => {
     })
 }, 1200)
 
+// Only the header actions change when the last item leaves the shelf, so nothing else is asked for
+// and the picker keeps the table rows and scroll position the scans just built up.
+const debReloadPageHead = debounce(() => {
+	router.reload({
+		only: ['pageHead']
+	})
+}, 1200)
+
 type ScanOutcome = {
 	status: string
 	item?: { id: number } | null
 	row?: Record<string, any> | null
 	delivery_note_state?: string
+	remaining_to_pick?: number
 }
 
 // A scan touches one item, so only the scanned row and the counters change. Patching that row in
@@ -420,10 +429,16 @@ const onItemPackedByScan = (outcome: ScanOutcome) => {
 	}
 }
 
-// Finishing the picking does not move the delivery note on its own, the picker still presses the
-// button for that, so a picking scan never has a state change to reload for.
+// Finishing the picking does not move the delivery note on its own, the picker still presses
+// "Finish picking" for that, and that button only exists once nothing is left to pick. The scan that
+// empties the note has to bring the header back or the picker would be stuck on a page with no way
+// forward until they refresh it themselves.
 const onItemPickedByScan = (outcome: ScanOutcome) => {
 	patchRowScannedBy(outcome, 'picked')
+
+	if (outcome.remaining_to_pick === 0) {
+		debReloadPageHead()
+	}
 }
 
 const selectSocketBasedPlatform = (porto) => {

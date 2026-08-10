@@ -157,9 +157,11 @@ watch(() => props.tabs.current, (newTab) => {
     currentTab.value = newTab
 }, { immediate: true })
 
+// A scan that moves the session to another state changes the header actions and the tabs as much as
+// it changes the rows, so pageHead has to come back with it.
 const debReloadPage = debounce(() => {
     router.reload({
-        except: ["auth", "breadcrumbs", "flash", "layout", "localeData", "pageHead", "ziggy"]
+        except: ["auth", "breadcrumbs", "flash", "layout", "localeData", "ziggy"]
     })
 }, 1200)
 
@@ -195,10 +197,17 @@ const onItemPackedByScan = (outcome: ScanOutcome) => {
     }
 }
 
-// Finishing the picking does not move the session on its own, the picker still presses the button
-// for that, so a picking scan never has a state change to reload for.
+// The session finishes its picking by itself once the last item is handled, which swaps the tabs and
+// the buttons the picker works with next. Without this the scan that empties the session would leave
+// them looking at a picking screen that is no longer the truth until they refresh it themselves.
 const onItemPickedByScan = (outcome: ScanOutcome) => {
     patchRowScannedBy(outcome, "picked")
+
+    const sessionState = (props.data as { data?: { state?: string } })?.data?.state
+
+    if (outcome.picking_session_state && outcome.picking_session_state !== sessionState) {
+        debReloadPage()
+    }
 }
 
 
