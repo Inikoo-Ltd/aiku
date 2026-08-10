@@ -32,6 +32,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import Product2Image from "./Product2Image.vue"
+import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductBadge.vue"
 import Image from "@common/Components/Image.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
@@ -80,6 +81,7 @@ interface ProductResource {
     bestseller?: boolean
     is_favourite?: boolean
     is_back_in_stock?: boolean
+    is_golden_product?: boolean
 
     description?: string
     description_extra?: string
@@ -233,6 +235,8 @@ onMounted(() => {
             <div class="col-span-5 self-start">
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
+                        <GoldenProductBadge v-if="product.is_golden_product" class="mb-2" />
+
                         <div class="text-xl font-bold w-[80%]">
                             <span v-if="product.units > 1">{{ product.units }}x</span> {{ product.name }}
                         </div>
@@ -520,6 +524,8 @@ onMounted(() => {
         <div class="px-4 py-4 space-y-5">
 
             <!-- TITLE -->
+            <GoldenProductBadge v-if="product.is_golden_product" />
+
             <h1 class="!text-xl font-bold leading-tight">
                 <span v-if="product.units > 1">{{ product.units }}x</span>
                 {{ product.name }}
