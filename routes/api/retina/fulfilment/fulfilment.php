@@ -34,7 +34,7 @@ Route::prefix('order')->as('order.')->group(function () {
     Route::patch('{palletReturn:id}/submit', SubmitApiPalletReturn::class)->name('submit')->whereNumber('palletReturn');
     Route::post('{palletReturn:id}/cancel', CancelApiPalletReturn::class)->name('cancel')->whereNumber('palletReturn');
     Route::get('{palletReturn:id}/transactions', GetTransactions::class)->name('transaction.index')->whereNumber('palletReturn');
-    Route::post('/{palletReturn:id}/sku/{sku:id}/store', AttachApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings()->whereNumber(['palletReturn', 'sku']);
+    Route::post('/{palletReturn:id}/portfolio/{portfolio:id}/store', AttachApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings()->whereNumber(['palletReturn', 'sku']);
 });
 
 Route::prefix('portfolios')->as('portfolios.')->group(function () {

@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\PalletReturn\SubmitPalletReturn;
 use App\Actions\RetinaApiAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -31,6 +32,10 @@ class SubmitApiPalletReturn extends RetinaApiAction
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
+        if($palletReturn->transactions->count() == 0) {
+            throw ValidationException::withMessages(['message' => 'Please attach at least one transaction to the order.']);
+        }
+
         return SubmitPalletReturn::run($palletReturn, [], true);
     }
 
