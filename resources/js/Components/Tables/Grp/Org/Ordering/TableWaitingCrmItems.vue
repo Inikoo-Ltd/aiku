@@ -92,16 +92,45 @@ const isModalProductsLoading = ref(false)
 const productQuantities = reactive<Record<number, { quantity: number; code: string; name: string; stock: number; units: number; image: any }>>({})
 const isSubmittingReplaceProduct = ref(false)
 
-// Packs are stored as a decimal, the warehouse reads them as "2/16" of an outer.
+/*
+ * Packs are stored as a decimal, the warehouse reads a cut as "2/16" of an outer and whole packs
+ * as the plain count they are, so 4/4 of a 4-pack reads as 1.
+ */
+const waitingQuantityFraction = (item: Record<string, any> | null): { numerator: number; denominator: number } => {
+    const denominator = Number(item?.packed_in) || 1
+
+    return {
+        numerator: Math.round((Number(item?.quantity_waiting_crm) || 0) * denominator),
+        denominator,
+    }
+}
+
+// The same amount written out, for the places that take a string rather than a component.
 const waitingQuantityLabel = (item: Record<string, any> | null): string => {
-    const packedIn = Number(item?.packed_in) || 1
-    const quantity = Number(item?.quantity_waiting_crm) || 0
-    if (packedIn <= 1) {
-        return String(quantity)
+    const { numerator, denominator } = waitingQuantityFraction(item)
+    const wholePacks = Math.floor(numerator / denominator)
+    const cut = numerator % denominator
+
+    if (cut === 0) {
+        return String(wholePacks)
     }
 
-    return `${Math.round(quantity * packedIn)}/${packedIn}`
+    return wholePacks > 0 ? `${wholePacks} ${cut}/${denominator}` : `${cut}/${denominator}`
 }
+
+/*
+ * The quantity sits inside a sentence, so the translation is cut at its placeholder and the
+ * fraction rendered between the two halves.
+ */
+const quantityLabelParts = (translation: string): { before: string; after: string } => {
+    const [before, after = ''] = translation.split(':itemNotPick')
+
+    return { before: before.trim(), after: after.trim() }
+}
+
+const notPickLabelParts = computed(() => quantityLabelParts(ctrans(`Don't pick :itemNotPick items`)))
+
+const replaceLabelParts = computed(() => quantityLabelParts(ctrans('Replace :itemNotPick items')))
 
 // Mirrors the "_ds" fractional shape the backend sends: whole packs read as 32/16, a cut as 2/16.
 const toFractionData = (quantity: number, packedIn: number) => {
@@ -496,11 +525,18 @@ const submitSendBackWarehouse = () => {
                             v-tooltip="ctrans(':itemNotPick items will not picked, and will not billed to customer', { itemNotPick: waitingQuantityLabel(subItem) })"
                             :url="setAsNotPickRoute(subItem)"
                             method="post"
-                            :label="ctrans(`Don't pick :itemNotPick items`, { itemNotPick: waitingQuantityLabel(subItem) })"
                             type="negative"
                             icon="fas fa-skull"
                             size="xs"
-                        />
+                        >
+                            <template #label>
+                                <span class="leading-none tabular-nums inline-flex items-center gap-x-1">
+                                    <span v-if="notPickLabelParts.before">{{ notPickLabelParts.before }}</span>
+                                    <FractionDisplayFE v-bind="waitingQuantityFraction(subItem)" />
+                                    <span v-if="notPickLabelParts.after">{{ notPickLabelParts.after }}</span>
+                                </span>
+                            </template>
+                        </ButtonWithLink>
 
                         <!-- Button: Send back to waiting warehouse -->
                         <Button
@@ -528,7 +564,6 @@ const submitSendBackWarehouse = () => {
                         <!-- Replace Product -->
                         <Button
                             v-else-if="replaceProductRoute(subItem)"
-                            :label="ctrans('Replace :itemNotPick items', { itemNotPick: waitingQuantityLabel(subItem) })"
                             size="xs"
                             type="positive"
                             icon="fal fa-exchange-alt"
@@ -542,7 +577,15 @@ const submitSendBackWarehouse = () => {
                                 order_reference: deliveryNoteRow.order_reference,
                                 organisation_slug: deliveryNoteRow.organisation_slug,
                             })"
-                        />
+                        >
+                            <template #label>
+                                <span class="leading-none tabular-nums inline-flex items-center gap-x-1">
+                                    <span v-if="replaceLabelParts.before">{{ replaceLabelParts.before }}</span>
+                                    <FractionDisplayFE v-bind="waitingQuantityFraction(subItem)" />
+                                    <span v-if="replaceLabelParts.after">{{ replaceLabelParts.after }}</span>
+                                </span>
+                            </template>
+                        </Button>
                     </div>
                 </div>
             </div>
