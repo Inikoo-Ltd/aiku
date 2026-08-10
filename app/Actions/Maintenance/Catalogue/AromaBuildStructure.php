@@ -19,17 +19,21 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
+use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -158,6 +162,15 @@ class AromaBuildStructure
     private const RETIRE_EXCLUSIVE = ['AW', 'BP'];
 
     private const DEAD_FAMILY = 'EXEO';
+
+    /**
+     * Where a retired department's page should send its traffic. Its url disappears with it, so
+     * without this the old address 404s and whatever ranking it had is thrown away. A department
+     * with no entry here falls back to the storefront.
+     */
+    private const RETIRE_REDIRECTS = [
+        'DC' => 'eazycolours',
+    ];
 
     public function handle(Shop $shop, Command $command, bool $live, string $phase): void
     {
@@ -482,6 +495,10 @@ class AromaBuildStructure
         $this->tally('departments retired');
         $this->command->line("  retire $code (detach $families families, $products products)");
 
+        if ($department->webpage && $department->webpage->state == WebpageStateEnum::LIVE) {
+            $this->redirectRetiredPage($department, $code);
+        }
+
         if (!$this->live) {
             return;
         }
@@ -504,6 +521,42 @@ class AromaBuildStructure
                 ->update(['master_department_id' => null, 'master_sub_department_id' => null]);
             DeleteMasterProductCategory::make()->handle($master);
             $this->tally('master departments retired');
+        }
+    }
+
+    private function redirectRetiredPage(ProductCategory $department, string $code): void
+    {
+        $target = null;
+
+        if ($collectionCode = self::RETIRE_REDIRECTS[$code] ?? null) {
+            $target = $this->collection($collectionCode)?->webpage;
+        }
+
+        $target ??= Webpage::where('website_id', $department->webpage->website_id)
+            ->where('type', 'storefront')->whereNull('deleted_at')->first();
+
+        if (!$target || $target->state != WebpageStateEnum::LIVE) {
+            $this->command->warn("  no redirect target for /{$department->webpage->url}");
+            $this->tally('redirects with no target');
+
+            return;
+        }
+
+        $this->tally('redirects created');
+        $this->command->line("    301 /{$department->webpage->url} -> /{$target->url}");
+
+        if (!$this->live) {
+            return;
+        }
+
+        try {
+            StoreRedirect::make()->action($department->webpage, [
+                'type'          => RedirectTypeEnum::PERMANENT,
+                'to_webpage_id' => $target->id,
+            ]);
+        } catch (\Throwable $e) {
+            $this->command->warn('  redirect failed: '.$e->getMessage());
+            $this->tally('redirects failed');
         }
     }
 
