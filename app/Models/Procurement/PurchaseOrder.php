@@ -19,7 +19,9 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
+use App\Models\Traits\HasSearch;
 use Eloquent;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -146,6 +148,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     use HasHistory;
     use InOrganisation;
     use HasAttachments;
+    use HasSearch;
 
     protected $casts = [
         'data'            => 'array',
@@ -198,6 +201,31 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     protected array $auditInclude = [
         'reference',
     ];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'organisation_id',
+                'state',
+                'reference',
+                'parent_code',
+                'parent_name',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'               => (string)$this->id,
+            'organisation_id'  => $this->organisation_id,
+            'state'            => $this->state?->value,
+            'reference'        => (string)$this->reference,
+            'slug'             => $this->slug,
+            'parent_code'      => (string)$this->parent_code,
+            'parent_name'      => (string)$this->parent_name,
+            'created_at'       => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function parent(): MorphTo
     {

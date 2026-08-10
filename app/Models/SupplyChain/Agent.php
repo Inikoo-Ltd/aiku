@@ -17,8 +17,10 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -84,6 +86,7 @@ class Agent extends Model implements HasMedia, Auditable
     use HasHistory;
     use HasImage;
     use InGroup;
+    use HasSearch;
 
     protected $casts = [
         'status'          => 'boolean',
@@ -111,6 +114,22 @@ class Agent extends Model implements HasMedia, Auditable
         'status',
     ];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged(['code', 'name']);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'               => (string)$this->id,
+            'code'             => $this->code,
+            'name'             => (string)$this->name,
+            'slug'             => $this->slug,
+            'created_at'       => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'organisation_ids' => $this->orgAgents()->pluck('organisation_id')->all(),
+        ];
+    }
 
     public function getSlugOptions(): SlugOptions
     {

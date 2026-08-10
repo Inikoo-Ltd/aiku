@@ -2,15 +2,15 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 19 Apr 2026 15:50:41 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Mon, 10 Aug 2026 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SupplyChain\Supplier\Search;
+namespace App\Actions\SupplyChain\Agent\Search;
 
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetSupplierSearchSchema
+class GetAgentSearchSchema
 {
     use AsObject;
 
@@ -24,15 +24,6 @@ class GetSupplierSearchSchema
                         'type' => 'string',
                     ],
                     [
-                        'name'     => 'agent_id',
-                        'type'     => 'int32',
-                        'optional' => true,
-                    ],
-                    [
-                        'name' => 'status',
-                        'type' => 'bool',
-                    ],
-                    [
                         'name' => 'code',
                         'type' => 'string',
                     ],
@@ -41,27 +32,7 @@ class GetSupplierSearchSchema
                         'type' => 'string',
                     ],
                     [
-                        'name' => 'contact_name',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'company_name',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'email',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'phone',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'contact_website',
-                        'type' => 'string',
-                    ],
-                    [
-                        'name' => 'identity_document_number',
+                        'name' => 'slug',
                         'type' => 'string',
                     ],
                     [
@@ -83,7 +54,7 @@ class GetSupplierSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'code,name,contact_name,email,phone,company_name,contact_website,identity_document_number'
+                'query_by' => 'code,name'
             ],
         ];
     }

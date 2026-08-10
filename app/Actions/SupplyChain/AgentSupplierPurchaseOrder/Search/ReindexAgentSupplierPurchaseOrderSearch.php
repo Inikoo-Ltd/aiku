@@ -6,23 +6,23 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Procurement\PurchaseOrder\Search;
+namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder\Search;
 
 use App\Actions\Traits\WithScoutReindex;
-use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexPurchaseOrderSearch
+class ReindexAgentSupplierPurchaseOrderSearch
 {
     use AsAction;
     use WithScoutReindex;
 
-    public string $commandSignature = 'reindex_search:purchase_orders';
+    public string $commandSignature = 'reindex_search:agent_supplier_purchase_orders';
 
 
     public function handle(bool $reindex = true, bool $reset = false): void
     {
-        $this->runScoutReindex(PurchaseOrder::class, $reindex, $reset);
+        $this->runScoutReindex(AgentSupplierPurchaseOrder::class, $reindex, $reset);
     }
 
 
