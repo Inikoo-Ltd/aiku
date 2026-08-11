@@ -10,8 +10,8 @@ namespace App\Actions\UI\Marketing;
 
 use App\Actions\CRM\TrafficSource\GetAggregatedMarketingOverview;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Dashboards\WithMarketingPeriod;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -25,9 +25,9 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowAggregatedMarketingDashboard extends OrgAction
 {
-    private Organisation|Group $parent;
+    use WithMarketingPeriod;
 
-    private MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30;
+    private Organisation|Group $parent;
 
     /**
      * Marketing permissions are shop-scoped - `marketing.<shop_id>.view` - and no unscoped
@@ -51,7 +51,7 @@ class ShowAggregatedMarketingDashboard extends OrgAction
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
-        $this->setPeriod($request);
+        $this->setMarketingPeriod($request->user()->settings);
 
         return $request;
     }
@@ -60,21 +60,16 @@ class ShowAggregatedMarketingDashboard extends OrgAction
     {
         $this->parent = group();
         $this->initialisationFromGroup(group(), $request);
-        $this->setPeriod($request);
+        $this->setMarketingPeriod($request->user()->settings);
 
         return $request;
     }
 
-    private function setPeriod(ActionRequest $request): void
-    {
-        $this->period = MarketingPeriodEnum::tryFrom((string) $request->query('period'))
-            ?? MarketingPeriodEnum::LAST_30;
-    }
-
     public function htmlResponse(ActionRequest $request): Response
     {
-        $isGroup = $this->parent instanceof Group;
-        $title   = $isGroup
+        $isGroup      = $this->parent instanceof Group;
+        $userSettings = $request->user()->settings;
+        $title        = $isGroup
             ? __('Marketing').' ('.__('all organisations').')'
             : __('Marketing').' ('.$this->parent->name.')';
 
@@ -90,15 +85,14 @@ class ShowAggregatedMarketingDashboard extends OrgAction
                     ],
                     'title' => $title,
                 ],
+                'intervals'   => $this->intervalsProp($userSettings),
+                'settings'    => [],
                 'overview'    => array_merge(
-                    GetAggregatedMarketingOverview::run($this->parent, $this->period),
+                    GetAggregatedMarketingOverview::run($this->parent, $this->periodFrom, $this->periodTo),
+                    $this->periodLabels(),
                     [
                         'scope'          => $isGroup ? 'group' : 'organisation',
                         'children_label' => $isGroup ? __('Organisations') : __('Shops'),
-                        'period_options' => collect(MarketingPeriodEnum::cases())->map(fn ($case) => [
-                            'value' => $case->value,
-                            'label' => MarketingPeriodEnum::labels()[$case->value],
-                        ])->all(),
                     ]
                 ),
             ]

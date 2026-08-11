@@ -10,7 +10,6 @@ namespace App\Actions\CRM\TrafficSource;
 
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -33,15 +32,15 @@ class GetShopMarketingOverview
      *
      * All figures are in the shop's currency.
      *
-     * @return array{period: string, period_label: string, from: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
      */
-    public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
+    public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null): array
     {
         /* One window for the whole screen. Everything - revenue, orders, sign-ups, spend, unsubscribes,
            visits, the baseline they are shares of - starts when attribution started recording, so no
            two figures on the page cover different stretches of time. Before that date the report
            reads zero, which is the truthful answer: we were not measuring. */
-        $from = $this->clipToAttributionStart($period->startsAt());
+        $from = $this->clipToAttributionStart($from);
 
         $sources = DB::table('traffic_sources')
             ->where('shop_id', $shop->id)
@@ -50,14 +49,15 @@ class GetShopMarketingOverview
             ->keyBy('id');
 
         $window        = GetAttributionWindow::run($shop);
-        $revenue       = $this->revenueBySource($shop, $from, $window);
-        $pending       = $this->pendingRevenueBySource($shop, $from, $window);
-        $registrations = $this->registrationsBy('traffic_source_id', $shop, $from, $window);
+        $revenue       = $this->revenueBySource($shop, $from, $to, $window);
+        $pending       = $this->pendingRevenueBySource($shop, $from, $to, $window);
+        $registrations = $this->registrationsBy('traffic_source_id', $shop, $from, $to, $window);
         /* Cost is clipped to the same window everything else is measured over. Thirty days of mailshots
            against half a day of attributable return is not a return on ad spend, it is two different
            questions divided by each other. */
         $costFrom      = $from;
-        $spend         = $this->spendBySource($shop, $costFrom);
+        $costTo        = $to;
+        $spend         = $this->spendBySource($shop, $costFrom, $costTo);
         /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
            spend of zero and an infinite return. Estimated from the emails actually dispatched. */
         /* Per email channel: a newsletter and a promotional mailshot cost separately and lose
@@ -67,16 +67,16 @@ class GetShopMarketingOverview
 
         foreach ([TrafficSourcesTypeEnum::NEWSLETTER, TrafficSourcesTypeEnum::MARKETING_MAILSHOT] as $emailChannel) {
             $types                             = GetEstimatedEmailCost::typesFor($emailChannel);
-            $emailCostBy[$emailChannel->value] = GetEstimatedEmailCost::run([$shop->id], $costFrom, $shop->currency, $types);
-            $unsubsBy[$emailChannel->value]    = GetEstimatedEmailCost::unsubscribes([$shop->id], $costFrom, $types);
+            $emailCostBy[$emailChannel->value] = GetEstimatedEmailCost::run([$shop->id], $costFrom, $costTo, $shop->currency, $types);
+            $unsubsBy[$emailChannel->value]    = GetEstimatedEmailCost::unsubscribes([$shop->id], $costFrom, $costTo, $types);
         }
 
         /* Automated marketing is billed per message like everything else we send. */
-        $emailCostBy[TrafficSourcesTypeEnum::EMAIL_AUTOMATED->value] = GetEstimatedEmailCost::automated([$shop->id], $costFrom, $shop->currency);
+        $emailCostBy[TrafficSourcesTypeEnum::EMAIL_AUTOMATED->value] = GetEstimatedEmailCost::automated([$shop->id], $costFrom, $costTo, $shop->currency);
 
         $emailCost = array_sum($emailCostBy);
-        $visits        = $this->visitsBySource($shop, $from);
-        $orders        = $this->ordersBySource($shop, $from, $window);
+        $visits        = $this->visitsBySource($shop, $from, $to);
+        $orders        = $this->ordersBySource($shop, $from, $to, $window);
 
         $channels = $sources
             ->map(fn ($source) => [
@@ -119,9 +119,8 @@ class GetShopMarketingOverview
         $totalPending       = round(array_sum(array_column($channels, 'pending')), 2);
 
         return [
-            'period'        => $period->value,
-            'period_label'  => MarketingPeriodEnum::labels()[$period->value],
             'from'          => $from?->toDateString(),
+            'to'            => $to?->toDateString(),
             'currency_code' => $shop->currency->code,
             'totals'        => [
                 'spend'         => $totalSpend,
@@ -145,11 +144,11 @@ class GetShopMarketingOverview
                ad and mailshot in the period earned us nobody. The remainder is the trade that arrives
                whether we advertise or not. */
             'attribution_started_at' => GetAttributionStartedAt::run()?->toIso8601String(),
-            'baseline'      => $this->baseline($shop, $from),
+            'baseline'      => $this->baseline($shop, $from, $to),
             'channels'      => $channels,
-            'campaigns'     => $this->campaigns($shop, $from),
-            'referrers'     => $this->referrers($shop, $from, $window),
-            'spend_by_day'  => $this->spendByDay($shop, $from),
+            'campaigns'     => $this->campaigns($shop, $from, $to),
+            'referrers'     => $this->referrers($shop, $from, $to, $window),
+            'spend_by_day'  => $this->spendByDay($shop, $from, $to),
         ];
     }
 
@@ -158,7 +157,7 @@ class GetShopMarketingOverview
      * attribution window allows. Without the first condition a click today collects a customer's
      * entire history; without the second it collects their next several years.
      */
-    private function revenueBySource(Shop $shop, ?Carbon $from, int $window)
+    private function revenueBySource(Shop $shop, ?Carbon $from, ?Carbon $to, int $window)
     {
         return DB::table('invoices')
             ->join('model_has_traffic_sources as p', function ($join) use ($window) {
@@ -170,6 +169,7 @@ class GetShopMarketingOverview
             ->where('invoices.shop_id', $shop->id)
             ->where('invoices.in_process', false)
             ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
             ->groupBy('p.traffic_source_id')
             ->select(
                 'p.traffic_source_id',
@@ -191,7 +191,7 @@ class GetShopMarketingOverview
      * something, and it drains into the invoiced figure as invoicing catches up. It can shrink when
      * an order is cancelled, which is why it is labelled pending and never added into revenue.
      */
-    private function pendingRevenueBySource(Shop $shop, ?Carbon $from, int $window)
+    private function pendingRevenueBySource(Shop $shop, ?Carbon $from, ?Carbon $to, int $window)
     {
         return DB::table('orders')
             ->join('model_has_traffic_sources as p', function ($join) use ($window) {
@@ -205,6 +205,7 @@ class GetShopMarketingOverview
             ->whereNull('orders.deleted_at')
             ->tap(fn ($query) => $this->whereNotYetInvoiced($query))
             ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('orders.date', '<=', $to))
             ->groupBy('p.traffic_source_id')
             ->select('p.traffic_source_id', DB::raw('SUM(orders.net_amount * p.share) as amount'))
             ->pluck('amount', 'traffic_source_id');
@@ -227,7 +228,7 @@ class GetShopMarketingOverview
             ->where('invoices.in_process', false));
     }
 
-    private function registrationsBy(string $pivotColumn, Shop $shop, ?Carbon $from, int $window)
+    private function registrationsBy(string $pivotColumn, Shop $shop, ?Carbon $from, ?Carbon $to, int $window)
     {
         return DB::table('customers')
             ->join('model_has_traffic_sources as p', function ($join) use ($window) {
@@ -239,6 +240,7 @@ class GetShopMarketingOverview
             ->where('customers.shop_id', $shop->id)
             ->whereNotNull('p.'.$pivotColumn)
             ->when($from, fn ($query) => $query->where('customers.created_at', '>=', $from))
+            ->when($to, fn ($query) => $query->where('customers.created_at', '<=', $to))
             ->groupBy('p.'.$pivotColumn)
             ->select('p.'.$pivotColumn, DB::raw('SUM(p.share) as registrations'))
             ->pluck('registrations', $pivotColumn);
@@ -266,12 +268,13 @@ class GetShopMarketingOverview
         return $from && $from->isAfter($startedAt) ? $from : $startedAt;
     }
 
-    private function baseline(Shop $shop, ?Carbon $from): array
+    private function baseline(Shop $shop, ?Carbon $from, ?Carbon $to): array
     {
         return [
             'registrations' => (float) DB::table('customers')
                 ->where('shop_id', $shop->id)
                 ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+                ->when($to, fn ($query) => $query->where('created_at', '<=', $to))
                 ->count(),
 
             'orders'        => (float) DB::table('orders')
@@ -279,12 +282,14 @@ class GetShopMarketingOverview
                 ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
                 ->whereNull('deleted_at')
                 ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->when($to, fn ($query) => $query->where('date', '<=', $to))
                 ->count(),
 
             'revenue'       => round((float) DB::table('invoices')
                 ->where('shop_id', $shop->id)
                 ->where('in_process', false)
                 ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->when($to, fn ($query) => $query->where('date', '<=', $to))
                 ->sum('net_amount'), 2),
         ];
     }
@@ -292,7 +297,7 @@ class GetShopMarketingOverview
     /**
      * Orders the channel may claim, so a visit count can be read against what it produced.
      */
-    private function ordersBySource(Shop $shop, ?Carbon $from, int $window)
+    private function ordersBySource(Shop $shop, ?Carbon $from, ?Carbon $to, int $window)
     {
         return DB::table('orders')
             ->join('model_has_traffic_sources as p', function ($join) use ($window) {
@@ -305,6 +310,7 @@ class GetShopMarketingOverview
             ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('orders.deleted_at')
             ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('orders.date', '<=', $to))
             ->groupBy('p.traffic_source_id')
             ->select('p.traffic_source_id', DB::raw('SUM(p.share) as orders'))
             ->pluck('orders', 'traffic_source_id');
@@ -315,21 +321,23 @@ class GetShopMarketingOverview
      * log in or register, so without this a channel we pay for that sends visitors who all leave is
      * simply absent from the report - which is precisely the case worth seeing.
      */
-    private function visitsBySource(Shop $shop, ?Carbon $from)
+    private function visitsBySource(Shop $shop, ?Carbon $from, ?Carbon $to)
     {
         return DB::table('traffic_source_visits')
             ->where('shop_id', $shop->id)
             ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
+            ->when($to, fn ($query) => $query->where('date', '<=', $to->toDateString()))
             ->groupBy('traffic_source_id')
             ->select('traffic_source_id', DB::raw('SUM(visits) as visits'))
             ->pluck('visits', 'traffic_source_id');
     }
 
-    private function spendBySource(Shop $shop, ?Carbon $from)
+    private function spendBySource(Shop $shop, ?Carbon $from, ?Carbon $to)
     {
         return DB::table('traffic_source_costs')
             ->where('shop_id', $shop->id)
             ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
+            ->when($to, fn ($query) => $query->where('date', '<=', $to->toDateString()))
             ->groupBy('traffic_source_id')
             ->select('traffic_source_id', DB::raw('SUM(amount) as spend'))
             ->pluck('spend', 'traffic_source_id');
@@ -345,7 +353,7 @@ class GetShopMarketingOverview
      *
      * @return array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>
      */
-    private function campaigns(Shop $shop, ?Carbon $from, int $limit = 8): array
+    private function campaigns(Shop $shop, ?Carbon $from, ?Carbon $to, int $limit = 8): array
     {
         $window = GetAttributionWindow::run($shop);
 
@@ -360,6 +368,7 @@ class GetShopMarketingOverview
             ->where('invoices.shop_id', $shop->id)
             ->where('invoices.in_process', false)
             ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
             ->groupBy('p.traffic_source_campaign_id')
             ->select(
                 'p.traffic_source_campaign_id as campaign_id',
@@ -368,12 +377,13 @@ class GetShopMarketingOverview
             ->get()
             ->keyBy('campaign_id');
 
-        $registrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $window);
+        $registrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $to, $window);
 
         $spend = DB::table('traffic_source_costs')
             ->whereNotNull('traffic_source_campaign_id')
             ->where('shop_id', $shop->id)
             ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
+            ->when($to, fn ($query) => $query->where('date', '<=', $to->toDateString()))
             ->groupBy('traffic_source_campaign_id')
             ->select('traffic_source_campaign_id', DB::raw('SUM(amount) as spend'))
             ->pluck('spend', 'traffic_source_campaign_id');
@@ -413,7 +423,7 @@ class GetShopMarketingOverview
      *
      * @return array<int, array{host: string, visitors: float, registrations: float, revenue: float}>
      */
-    private function referrers(Shop $shop, ?Carbon $from, int $window, int $limit = 10): array
+    private function referrers(Shop $shop, ?Carbon $from, ?Carbon $to, int $window, int $limit = 10): array
     {
         $referral = DB::table('traffic_sources')
             ->where('shop_id', $shop->id)
@@ -424,7 +434,7 @@ class GetShopMarketingOverview
             return [];
         }
 
-        $registrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $window);
+        $registrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $to, $window);
 
         $revenue = DB::table('invoices')
             ->join('model_has_traffic_sources as p', function ($join) use ($window) {
@@ -437,6 +447,7 @@ class GetShopMarketingOverview
             ->where('invoices.shop_id', $shop->id)
             ->where('invoices.in_process', false)
             ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
             ->groupBy('p.traffic_source_campaign_id')
             ->select('p.traffic_source_campaign_id as campaign_id', DB::raw('SUM(invoices.net_amount * p.share) as revenue'))
             ->pluck('revenue', 'campaign_id');
@@ -469,17 +480,19 @@ class GetShopMarketingOverview
             ->all();
     }
 
-    private function spendByDay(Shop $shop, ?Carbon $from): array
+    private function spendByDay(Shop $shop, ?Carbon $from, ?Carbon $to): array
     {
-        /* The sparkline is a shape, not a ledger: it always shows the recent run of days so the tile
-           reads the same whichever period is selected, and never grows unbounded on all time. */
-        $sparklineFrom = $from && $from->isAfter(now()->subDays(30))
+        /* The sparkline is a shape, not a ledger: it always shows the last run of days in the period,
+           so the tile reads the same whichever period is selected, and never grows unbounded on all time. */
+        $end           = $to ?? now();
+        $sparklineFrom = $from && $from->isAfter($end->copy()->subDays(30))
             ? $from
-            : now()->subDays(30)->startOfDay();
+            : $end->copy()->subDays(30)->startOfDay();
 
         return DB::table('traffic_source_costs')
             ->where('shop_id', $shop->id)
             ->where('date', '>=', $sparklineFrom->toDateString())
+            ->when($to, fn ($query) => $query->where('date', '<=', $to->toDateString()))
             ->groupBy('date')
             ->orderBy('date')
             ->select('date', DB::raw('SUM(amount) as amount'))
