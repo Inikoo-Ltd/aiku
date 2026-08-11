@@ -22,6 +22,7 @@ class WebLayoutTemplatesResource extends JsonResource
             'blocks_count' => count($this->blocks ?? []),
             'author_name'  => $this->username,
             'created_at'   => $this->created_at,
+            'username'     => $this->username,
         ];
     }
 }

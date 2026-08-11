@@ -1,22 +1,32 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { trans } from 'laravel-vue-i18n'
+import { debounce } from 'lodash-es'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faShapes, faSync, faSearch, faExclamationTriangle, faLayerPlus } from '@fal'
+import {
+	faShapes,
+	faSync,
+	faSearch,
+	faExclamationTriangle,
+	faLayerPlus,
+	faChevronLeft,
+	faChevronRight,
+	faUser,
+} from '@fal'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { WebLayoutTemplate } from '@/types/WebLayoutTemplate'
+import { WebLayoutTemplate, WebLayoutTemplateList } from '@/types/WebLayoutTemplate'
 
 const props = withDefaults(
 	defineProps<{
-		templates?: WebLayoutTemplate[]
+		templates?: WebLayoutTemplateList
 		isLoading?: boolean
 		errorMessage?: string | null
 		applyingTemplateId?: number | null
 		editable?: boolean
 	}>(),
 	{
-		templates: () => [],
+		templates: () => ({ data: [] }),
 		isLoading: false,
 		errorMessage: null,
 		applyingTemplateId: null,
@@ -26,24 +36,32 @@ const props = withDefaults(
 
 const emits = defineEmits<{
 	(e: 'refresh'): void
+	(e: 'search', value: string): void
+	(e: 'navigate', value: string): void
 	(e: 'use', value: WebLayoutTemplate): void
 }>()
 
 const search = ref('')
 
-const filteredTemplates = computed(() => {
-	const keyword = search.value.trim().toLowerCase()
+const templateList = computed(() => props.templates?.data ?? [])
 
-	if (!keyword) {
-		return props.templates
-	}
+const meta = computed(() => props.templates?.meta)
 
-	return props.templates.filter((template) =>
-		[template.name, template.scope, template.type]
-			.filter(Boolean)
-			.some((value) => String(value).toLowerCase().includes(keyword))
-	)
-})
+const total = computed(() => meta.value?.total ?? templateList.value.length)
+
+const currentPage = computed(() => meta.value?.current_page ?? 1)
+
+const lastPage = computed(() => meta.value?.last_page ?? 1)
+
+const previousPageUrl = computed(() => props.templates?.links?.prev ?? null)
+
+const nextPageUrl = computed(() => props.templates?.links?.next ?? null)
+
+const hasPagination = computed(() => lastPage.value > 1)
+
+const emitSearch = debounce(() => emits('search', search.value.trim()), 400)
+
+watch(search, () => emitSearch())
 
 const getBlockCount = (template: WebLayoutTemplate) =>
 	template.blocks_count ?? template.blocks?.length ?? 0
@@ -56,6 +74,19 @@ const onUseTemplate = (template: WebLayoutTemplate) => {
 	}
 
 	emits('use', template)
+}
+
+const onGoToPage = (url: string | null) => {
+	if (!url || props.isLoading) {
+		return
+	}
+
+	emits('navigate', url)
+}
+
+const onClearSearch = () => {
+	search.value = ''
+	emitSearch.flush()
 }
 </script>
 
@@ -70,8 +101,8 @@ const onUseTemplate = (template: WebLayoutTemplate) => {
 				<input
 					v-model="search"
 					type="search"
-					:aria-label="trans('Search template')"
-					:placeholder="trans('Search template')"
+					:aria-label="trans('Search template or author')"
+					:placeholder="trans('Search template or author')"
 					class="w-full text-xs border border-slate-300 rounded pl-6 pr-1.5 py-1 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400" />
 			</div>
 			<button
@@ -84,14 +115,14 @@ const onUseTemplate = (template: WebLayoutTemplate) => {
 				<FontAwesomeIcon v-else :icon="faSync" fixed-width />
 			</button>
 			<span
-				v-tooltip="trans('Templates matching this search of the total available')"
+				v-tooltip="trans('Total templates available')"
 				class="shrink-0 text-[10px] tabular-nums text-slate-400">
-				{{ filteredTemplates.length }}/{{ templates.length }}
+				{{ total }}
 			</span>
 		</div>
 
 		<div class="flex-1 min-h-0 overflow-y-auto space-y-0.5 pr-0.5">
-			<template v-if="isLoading && !templates.length">
+			<template v-if="isLoading && !templateList.length">
 				<div
 					v-for="skeleton in 4"
 					:key="skeleton"
@@ -112,9 +143,9 @@ const onUseTemplate = (template: WebLayoutTemplate) => {
 				</button>
 			</div>
 
-			<template v-else-if="filteredTemplates.length">
+			<template v-else-if="templateList.length">
 				<div
-					v-for="template in filteredTemplates"
+					v-for="template in templateList"
 					:key="template.id"
 					class="group flex items-center gap-1.5 rounded px-1.5 py-1 transition-colors hover:bg-slate-100"
 					:class="editable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'"
@@ -130,6 +161,11 @@ const onUseTemplate = (template: WebLayoutTemplate) => {
 						</span>
 						<span class="block text-[10px] leading-tight truncate text-slate-400">
 							{{ getBlockCount(template) }} {{ trans('blocks') }}
+							<template v-if="template.username">
+								·
+								<FontAwesomeIcon :icon="faUser" class="text-[9px]" fixed-width />
+								{{ template.username }}
+							</template>
 							<template v-if="template.created_at">
 								· {{ useFormatTime(template.created_at, { formatTime: 'aiku' }) }}
 							</template>
@@ -161,12 +197,12 @@ const onUseTemplate = (template: WebLayoutTemplate) => {
 				v-else
 				class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
 				<FontAwesomeIcon :icon="faShapes" class="text-2xl mb-1 text-slate-300" />
-				<template v-if="templates.length">
+				<template v-if="search">
 					<span class="text-xs font-medium">{{ trans('No template matches this search') }}</span>
 					<button
 						type="button"
 						class="text-[11px] underline text-slate-500 hover:text-slate-800"
-						@click="search = ''">
+						@click="onClearSearch">
 						{{ trans('Show all templates') }}
 					</button>
 				</template>
@@ -177,6 +213,38 @@ const onUseTemplate = (template: WebLayoutTemplate) => {
 					</span>
 				</template>
 			</div>
+		</div>
+
+		<div
+			v-if="hasPagination"
+			class="shrink-0 mt-1.5 pt-1.5 flex items-center justify-between gap-1.5 border-t border-slate-200">
+			<button
+				type="button"
+				v-tooltip="trans('Previous page')"
+				class="h-6 w-6 flex items-center justify-center rounded text-[11px]"
+				:class="previousPageUrl && !isLoading
+					? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+					: 'text-slate-300 cursor-not-allowed'"
+				:disabled="!previousPageUrl || isLoading"
+				@click="onGoToPage(previousPageUrl)">
+				<FontAwesomeIcon :icon="faChevronLeft" fixed-width />
+			</button>
+
+			<span class="text-[10px] tabular-nums text-slate-400">
+				{{ currentPage }} / {{ lastPage }}
+			</span>
+
+			<button
+				type="button"
+				v-tooltip="trans('Next page')"
+				class="h-6 w-6 flex items-center justify-center rounded text-[11px]"
+				:class="nextPageUrl && !isLoading
+					? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+					: 'text-slate-300 cursor-not-allowed'"
+				:disabled="!nextPageUrl || isLoading"
+				@click="onGoToPage(nextPageUrl)">
+				<FontAwesomeIcon :icon="faChevronRight" fixed-width />
+			</button>
 		</div>
 	</div>
 </template>
