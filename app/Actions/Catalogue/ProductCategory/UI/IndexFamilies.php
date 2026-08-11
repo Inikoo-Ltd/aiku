@@ -129,7 +129,8 @@ class IndexFamilies extends OrgAction
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
                     engine: $elementGroup['engine'],
-                    prefix: $prefix
+                    prefix: $prefix,
+                    default: $elementGroup['default'] ?? null
                 );
             }
         }
@@ -355,7 +356,8 @@ class IndexFamilies extends OrgAction
                     $table->elementGroup(
                         key: $key,
                         label: $elementGroup['label'],
-                        elements: $elementGroup['elements']
+                        elements: $elementGroup['elements'],
+                        default: $elementGroup['default'] ?? null
                     );
                 }
             }
@@ -687,6 +689,7 @@ class IndexFamilies extends OrgAction
             [
                 'state' => [
                     'label'    => __('State'),
+                    'default'  => ProductCategoryStateEnum::ACTIVE->value.','.ProductCategoryStateEnum::DISCONTINUING->value,
                     'elements' => array_merge_recursive(
                         ProductCategoryStateEnum::labels(),
                         ProductCategoryStateEnum::countFamily($parent)
