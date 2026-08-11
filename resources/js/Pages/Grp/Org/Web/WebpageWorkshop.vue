@@ -31,6 +31,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import Dialog from 'primevue/dialog';
 import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
 import CreateTemplateDialog from '@/Components/Workshop/CreateTemplateDialog.vue'
+import ApplyTemplateDialog from '@/Components/Workshop/ApplyTemplateDialog.vue'
 
 import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
@@ -118,6 +119,10 @@ const templatesSearch = ref("");
 const isLoadingTemplates = ref(false);
 const templatesErrorMessage = ref<string | null>(null);
 const applyingTemplateId = ref<number | null>(null);
+const isApplyTemplateDialogVisible = ref(false);
+const isApplyingTemplate = ref(false);
+const selectedTemplate = ref<WebLayoutTemplate | null>(null);
+const templateMerge = ref<{ current: any[], incoming: any[] }>({ current: [], incoming: [] });
 
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
@@ -598,34 +603,17 @@ const onSearchTemplates = (value: string) => {
 const applyTemplate = async (template: WebLayoutTemplate) => {
   applyingTemplateId.value = template.id;
 
-  console.log("SABAR"); 
-  const res = await axios.get(route(TEMPLATE_DETAIL_ROUTE, {webpage: data.value.id, layoutTemplate: applyingTemplateId.value}))
-  console.log('KONTOL', res); return;
-
   try {
-    const response = await axios.post(
-      route(TEMPLATE_APPLY_ROUTE, {
-        webpage: data.value.id,
-        webLayoutTemplate: template.id,
-      })
+    const response = await axios.get(
+      route(TEMPLATE_DETAIL_ROUTE, { webpage: data.value.id, layoutTemplate: template.id })
     );
 
-    const layout = response.data?.layout ?? response.data;
-
-    data.value = { ...data.value, layout };
-    openedBlockSideEditor.value = null;
-    saveState();
-
-    sendToIframe({
-      key: "setWebpage",
-      value: JSON.parse(JSON.stringify(data.value)),
-    });
-
-    notify({
-      title: trans("Success"),
-      text: trans("Template has been applied"),
-      type: "success"
-    });
+    selectedTemplate.value = template;
+    templateMerge.value = {
+      current: response.data?.current ?? [],
+      incoming: response.data?.incoming ?? [],
+    };
+    isApplyTemplateDialogVisible.value = true;
   } catch (error: any) {
     notify({
       title: trans("Something went wrong"),
@@ -635,6 +623,50 @@ const applyTemplate = async (template: WebLayoutTemplate) => {
   } finally {
     applyingTemplateId.value = null;
   }
+};
+
+const onApplyTemplate = (payload: {
+  template_id: number | null,
+  blocks: Array<{
+    source: 'current' | 'incoming',
+    id: number,
+    type: string,
+    show: boolean,
+    visibility: any,
+    position: number
+  }>
+}) => {
+  isApplyingTemplate.value = true;
+
+  console.log(payload)
+  /* axios.post(
+    route(TEMPLATE_APPLY_ROUTE, { webpage: data.value.id }),
+    payload
+  ).then(response => {
+    isApplyTemplateDialogVisible.value = false;
+    data.value = { ...data.value, layout: response.data };
+
+    sendToIframe({
+      key: "setWebpage",
+      value: JSON.parse(JSON.stringify(data.value)),
+    });
+
+    saveState();
+
+    notify({
+      title: trans("Success"),
+      text: trans("Template has been applied"),
+      type: "success"
+    });
+  }).catch(error => {
+    notify({
+      title: trans("Something went wrong"),
+      text: error?.response?.data?.message || error.message,
+      type: "error"
+    });
+  }).finally(() => {
+    isApplyingTemplate.value = false;
+  }); */
 };
 
 
@@ -993,6 +1025,15 @@ console.log('props_workshop',props)
     :previewSrc="iframeSrc"
     :isLoading="isCreatingTemplate"
     @create="onCreateTemplate" />
+
+  <ApplyTemplateDialog
+    v-model:visible="isApplyTemplateDialogVisible"
+    :template="selectedTemplate"
+    :current="templateMerge.current"
+    :incoming="templateMerge.incoming"
+    :webBlocks="data.layout.web_blocks"
+    :isLoading="isApplyingTemplate"
+    @apply="onApplyTemplate" />
 
   <Dialog v-model:visible="dialogUploadImageVisible" modal header="Upload Image" :style="{ width: '80rem' }"
     @hide="() => closeUploadImage(false)">
