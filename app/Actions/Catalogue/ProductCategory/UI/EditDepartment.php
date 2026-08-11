@@ -119,17 +119,17 @@ class EditDepartment extends OrgAction
                     'blueprint' =>
                         array_filter(
                             [
-                                [
-                                    'label'  => __('Id'),
-                                    'icon'   => 'fa-light fa-fingerprint',
-                                    'fields' => [
-                                        'code' => [
-                                            'type'  => 'input',
-                                            'label' => __('Code'),
-                                            'value' => $department->code
-                                        ],
-                                    ]
-                                ],
+                                // [
+                                //     'label'  => __('Id'),
+                                //     'icon'   => 'fa-light fa-fingerprint',
+                                //     'fields' => [
+                                //         'code' => [
+                                //             'type'  => 'input',
+                                //             'label' => __('Code'),
+                                //             'value' => $department->code
+                                //         ],
+                                //     ]
+                                // ],
                                [
                                 'label'  => __('FAQ'),
                                 'icon'   => 'fa-light fa-question-circle',
