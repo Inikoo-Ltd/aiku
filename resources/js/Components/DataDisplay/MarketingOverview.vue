@@ -98,14 +98,15 @@ const props = defineProps<{
 const locale = useLocaleStore()
 const money = (value: number) => locale.currencyFormat(props.overview.currency_code, value)
 
-/* Series colors: categorical slots 1 (revenue) and 2 (spend) of the validated palette. */
-const REVENUE_COLOR = '#2a78d6'
-const SPEND_COLOR = '#eb6834'
+/* Revenue is the accent, spend the neutral reference it is read against. */
+const REVENUE_COLOR = '#006300'
+const SPEND_COLOR = '#6b7280'
+const BAR_TRACK_COLOR = '#f1f1ef'
 
 const maxBarValue = computed(() =>
     Math.max(1, ...props.overview.channels.flatMap(c => [c.spend, c.revenue]))
 )
-const barWidth = (value: number) => `${Math.max(value > 0 ? 1.2 : 0, (value / maxBarValue.value) * 100)}%`
+const barWidth = (value: number) => `${Math.max(value > 0 ? 1.5 : 0, (value / maxBarValue.value) * 100)}%`
 
 const hoveredChannel = ref<string | null>(null)
 
@@ -141,7 +142,7 @@ const groupedChannels = computed(() => {
             label: channel.group_label ?? key,
             position: channel.group_position ?? 9,
             channels: [],
-            visits: 0, orders: 0, spend: 0, pending: 0, revenue: 0, registrations: 0,
+            visits: 0, orders: 0, spend: 0, pending: 0, revenue: 0, registrations: 0, unsubscribed: 0,
         }
 
         const g = groups[key]
@@ -152,6 +153,7 @@ const groupedChannels = computed(() => {
         g.pending += channel.pending ?? 0
         g.revenue += channel.revenue ?? 0
         g.registrations += channel.registrations ?? 0
+        g.unsubscribed += channel.unsubscribed ?? 0
     }
 
     return Object.values(groups).sort((a: any, b: any) => a.position - b.position)
@@ -169,6 +171,8 @@ const columnHelp: Record<string, string> = {
 
 const count = (value: number) => Number.isInteger(value) ? value.toString() : value.toFixed(2)
 const pctOf = (part: number, whole: number) => whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
+const netRegistrations = (registrations: number, unsubscribed: number) =>
+    count(registrations - unsubscribed).replace('-', '−')
 
 const roasIsGood = computed(() => (props.overview.totals.roas ?? 0) >= 1)
 
@@ -178,7 +182,6 @@ const selectPeriod = (period: string) => router.get(
     { period },
     { preserveScroll: true, preserveState: true, replace: true }
 )
-
 const pct = (part: number, whole: number) => whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : '—'
 
 /* Registrations are share-weighted, so a channel can legitimately hold 12.5 of them. */
@@ -251,7 +254,7 @@ const typeLabel: Record<string, string> = {
                     {{ trans('of') }} {{ money(overview.baseline?.revenue ?? 0) }} {{ trans('taken in total') }}
                 </div>
                 <!-- Invoicing runs a day or two behind orders; this is what today's marketing already sold -->
-                <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-amber-600">
+                <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-[#006300]">
                     + {{ money(overview.totals.pending) }} {{ trans('placed, awaiting invoice') }}
                 </div>
             </div>
@@ -294,10 +297,10 @@ const typeLabel: Record<string, string> = {
                 </div>
             </div>
 
-            <div v-if="overview.channels.length" class="mt-4 space-y-1">
+            <div v-if="overview.channels.length" class="mt-4">
                 <Link v-for="channel in overview.channels" :key="channel.type"
                     :href="route(overview.traffic_sources_route.name, overview.traffic_sources_route.parameters)"
-                    class="relative grid grid-cols-[8rem_1fr_4.5rem] md:grid-cols-[11rem_1fr_5rem] items-center gap-x-3 rounded-lg px-2 py-2 hover:bg-gray-50"
+                    class="relative grid grid-cols-[7rem_minmax(0,1fr)_5.5rem_3.5rem] md:grid-cols-[11rem_minmax(0,1fr)_7rem_4rem] items-center gap-x-3 rounded-lg px-2 py-2.5 hover:bg-gray-50"
                     @mouseenter="hoveredChannel = channel.type" @mouseleave="hoveredChannel = null">
 
                     <div class="min-w-0">
@@ -305,27 +308,38 @@ const typeLabel: Record<string, string> = {
                         <div v-if="channel.registrations > 0" class="text-xs text-gray-400 tabular-nums">
                             {{ fmtShare(channel.registrations) }} {{ trans('registrations') }}
                         </div>
-                        <!-- Visits it sent against how many bought: people arrived and nobody ordered
-                             is the case worth seeing, so it is the one in red. -->
                         <div v-if="channel.visits > 0" class="text-xs tabular-nums"
-                             :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                             :class="channel.orders > 0 ? 'text-[#006300]' : 'text-gray-400'">
                             {{ locale.number(channel.visits) }} {{ trans('visits') }} ·
                             {{ fmtShare(channel.orders ?? 0) }} {{ trans('bought') }}
                         </div>
                     </div>
 
-                    <div class="space-y-0.5">
-                        <div class="flex items-center gap-2">
-                            <div class="h-2.5 rounded-r bg-[#2a78d6] min-w-0"
-                                :style="{ width: barWidth(channel.revenue) }" />
-                            <span v-if="channel.revenue > 0"
-                                class="text-xs text-gray-500 tabular-nums whitespace-nowrap">{{ money(channel.revenue) }}</span>
+                    <!-- Both bars grow from the same baseline on one shared scale, so the pair can be
+                         read against each other and across channels without an axis. -->
+                    <div class="space-y-1">
+                        <div class="h-4 flex items-center">
+                            <div class="relative h-2 w-full rounded-r-[3px]" :style="{ background: BAR_TRACK_COLOR }">
+                                <div class="absolute inset-y-0 left-0 rounded-r-[3px]"
+                                    :style="{ width: barWidth(channel.revenue), background: REVENUE_COLOR }" />
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <div class="h-2.5 rounded-r bg-[#eb6834] min-w-0"
-                                :style="{ width: barWidth(channel.spend) }" />
-                            <span v-if="channel.spend > 0"
-                                class="text-xs text-gray-500 tabular-nums whitespace-nowrap">{{ money(channel.spend) }}</span>
+                        <div class="h-4 flex items-center">
+                            <div class="relative h-2 w-full rounded-r-[3px]" :style="{ background: BAR_TRACK_COLOR }">
+                                <div class="absolute inset-y-0 left-0 rounded-r-[3px]"
+                                    :style="{ width: barWidth(channel.spend), background: SPEND_COLOR }" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1 text-xs tabular-nums whitespace-nowrap">
+                        <div class="h-4 flex items-center justify-end"
+                            :class="channel.revenue > 0 ? 'text-gray-700' : 'text-gray-300'">
+                            {{ channel.revenue > 0 ? money(channel.revenue) : '—' }}
+                        </div>
+                        <div class="h-4 flex items-center justify-end"
+                            :class="channel.spend > 0 ? 'text-gray-500' : 'text-gray-300'">
+                            {{ channel.spend > 0 ? money(channel.spend) : '—' }}
                         </div>
                     </div>
 
@@ -334,12 +348,17 @@ const typeLabel: Record<string, string> = {
                         {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}
                     </div>
 
+                    <!-- Opens downward: anchored above, the first row's tooltip fell outside the card. -->
                     <div v-if="hoveredChannel === channel.type"
-                        class="absolute left-2 -top-9 z-10 rounded-md bg-gray-900 px-2.5 py-1.5 text-xs text-white shadow-lg pointer-events-none whitespace-nowrap">
+                        class="absolute left-2 top-full z-20 -mt-1 rounded-md bg-gray-900 px-2.5 py-1.5 text-xs text-white shadow-lg pointer-events-none whitespace-nowrap">
                         {{ channel.name }} · {{ fmtShare(channel.registrations) }} {{ trans('registrations') }}
                         · {{ trans('spend') }} {{ money(channel.spend) }} · {{ trans('revenue') }} {{ money(channel.revenue) }}
                     </div>
                 </Link>
+
+                <p class="mt-2 px-2 text-xs text-gray-400">
+                    {{ trans('One shared scale across every channel; the widest bar is') }} {{ money(maxBarValue) }}
+                </p>
             </div>
 
             <!-- The detail under the bars: same table, same wording and same tooltips as the
@@ -369,11 +388,14 @@ const typeLabel: Record<string, string> = {
                             <td class="py-1 pr-2 text-xs leading-tight">{{ group.label }}</td>
                             <td class="text-right px-2 tabular-nums">{{ group.visits > 0 ? locale.number(group.visits) : '' }}</td>
                             <td class="text-right px-2 tabular-nums">{{ money(group.spend) }}</td>
-                            <td class="text-right px-2 tabular-nums" :class="group.pending > 0 ? 'text-amber-700' : ''">
+                            <td class="text-right px-2 tabular-nums text-gray-500">
                                 {{ group.pending > 0 ? money(group.pending) : '' }}
                             </td>
                             <td class="text-right px-2 tabular-nums">{{ money(group.revenue) }}</td>
-                            <td class="text-right px-2 tabular-nums">{{ count(group.registrations) }}</td>
+                            <td class="text-right px-2 tabular-nums"
+                                :class="group.registrations - group.unsubscribed < 0 ? 'text-[#d03b3b]' : ''">
+                                {{ netRegistrations(group.registrations, group.unsubscribed) }}
+                            </td>
                             <td class="text-right px-2 tabular-nums">{{ count(group.orders) }}</td>
                             <td class="text-right pl-2 tabular-nums">
                                 {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
@@ -381,11 +403,10 @@ const typeLabel: Record<string, string> = {
                         </tr>
                         <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type" class="border-b border-gray-50 text-gray-600">
                             <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
-                            <td class="text-right px-2 tabular-nums whitespace-nowrap"
-                                :class="channel.visits > 0 && channel.orders === 0 ? 'text-[#d03b3b]' : ''">
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
                                 <template v-if="channel.visits > 0">
                                     {{ locale.number(channel.visits) }}
-                                    <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                                    <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : ''">
                                         · {{ count(channel.orders) }} {{ trans('bought') }} · {{ pctOf(channel.orders, channel.visits) }}
                                     </span>
                                 </template>
@@ -395,7 +416,7 @@ const typeLabel: Record<string, string> = {
                                 <span v-if="channel.spend_is_estimated" class="text-xs text-gray-400 mr-1"
                                       :title="trans('Estimated from emails sent')">{{ trans('est.') }}</span>{{ money(channel.spend) }}
                             </td>
-                            <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-amber-600' : 'text-gray-300'">
+                            <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-gray-400' : 'text-gray-300'">
                                 {{ money(channel.pending) }}
                             </td>
                             <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>

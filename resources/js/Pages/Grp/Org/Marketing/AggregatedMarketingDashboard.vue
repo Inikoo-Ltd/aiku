@@ -138,7 +138,7 @@ const groupedChannels = computed(() => {
             label: channel.group_label ?? key,
             position: channel.group_position ?? 9,
             channels: [],
-            visits: 0, orders: 0, spend: 0, pending: 0, revenue: 0, registrations: 0,
+            visits: 0, orders: 0, spend: 0, pending: 0, revenue: 0, registrations: 0, unsubscribed: 0,
         }
 
         const g = groups[key]
@@ -149,6 +149,7 @@ const groupedChannels = computed(() => {
         g.pending += channel.pending ?? 0
         g.revenue += channel.revenue ?? 0
         g.registrations += channel.registrations ?? 0
+        g.unsubscribed += channel.unsubscribed ?? 0
     }
 
     return Object.values(groups).sort((a: any, b: any) => a.position - b.position)
@@ -156,6 +157,9 @@ const groupedChannels = computed(() => {
 
 const share = (part: number, whole: number) =>
     whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
+
+const netRegistrations = (registrations: number, unsubscribed: number) =>
+    count(registrations - unsubscribed).replace('-', '−')
 
 /* Every column says how it was arrived at. These figures each carry a rule that is not guessable
    from the label - what counts as a visit, why revenue lags, which spend is estimated - and a
@@ -211,7 +215,7 @@ const changePeriod = (event: Event) => {
                 <div class="mt-0.5 text-xs text-gray-400">
                     {{ trans('of') }} {{ money(overview.baseline.revenue) }} {{ trans('total') }} · {{ share(overview.totals.revenue, overview.baseline.revenue) }}
                 </div>
-                <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-amber-600">
+                <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-[#006300]">
                     + {{ money(overview.totals.pending) }} {{ trans('sold, awaiting invoice') }}
                 </div>
             </div>
@@ -295,11 +299,14 @@ const changePeriod = (event: Event) => {
                             {{ group.visits > 0 ? locale.number(group.visits) : '' }}
                         </td>
                         <td class="text-right px-2 tabular-nums">{{ money(group.spend) }}</td>
-                        <td class="text-right px-2 tabular-nums" :class="group.pending > 0 ? 'text-amber-700' : ''">
+                        <td class="text-right px-2 tabular-nums text-gray-500">
                             {{ group.pending > 0 ? money(group.pending) : '' }}
                         </td>
                         <td class="text-right px-2 tabular-nums">{{ money(group.revenue) }}</td>
-                        <td class="text-right px-2 tabular-nums">{{ count(group.registrations) }}</td>
+                        <td class="text-right px-2 tabular-nums"
+                            :class="group.registrations - group.unsubscribed < 0 ? 'text-[#d03b3b]' : ''">
+                            {{ netRegistrations(group.registrations, group.unsubscribed) }}
+                        </td>
                         <td class="text-right px-2 tabular-nums">{{ count(group.orders) }}</td>
                         <td class="text-right pl-2 tabular-nums">
                             {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
@@ -310,11 +317,10 @@ const changePeriod = (event: Event) => {
                         <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
                         <!-- Visits it sent, and how many of them bought. The pair is the point: people
                              arrived and nobody ordered is the case worth seeing. -->
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap"
-                            :class="channel.visits > 0 && channel.orders === 0 ? 'text-[#d03b3b]' : ''">
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <template v-if="channel.visits > 0">
                                 {{ locale.number(channel.visits) }}
-                                <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
+                                <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : ''">
                                     · {{ count(channel.orders) }} {{ trans('bought') }} · {{ share(channel.orders, channel.visits) }}
                                 </span>
                             </template>
@@ -326,7 +332,7 @@ const changePeriod = (event: Event) => {
                             <span v-if="channel.spend_is_estimated" class="text-xs text-gray-400 mr-1"
                                   :title="trans('Estimated from emails sent, at the SES per-message price')">{{ trans('est.') }}</span>{{ money(channel.spend) }}
                         </td>
-                        <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-amber-600' : 'text-gray-300'">{{ money(channel.pending) }}</td>
+                        <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-gray-400' : 'text-gray-300'">{{ money(channel.pending) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
                         <!-- Unsubscribes sit beside registrations, never netted off them: losing
                              permission to email somebody is not losing the customer. -->
@@ -384,7 +390,7 @@ const changePeriod = (event: Event) => {
                         <!-- Invoiced, plus what is still awaiting invoice, against everything the
                              business took: the share is the point, not the figure on its own. -->
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            {{ money(child.revenue) }}<span v-if="child.pending > 0" class="text-amber-600"> + {{ money(child.pending) }}</span>
+                            {{ money(child.revenue) }}<span v-if="child.pending > 0" class="text-[#006300]"> + {{ money(child.pending) }}</span>
                             <span class="text-gray-400">/ {{ money(child.revenue_total) }}</span>
                             <span class="text-gray-400">· {{ share(child.revenue + child.pending, child.revenue_total) }}</span>
                         </td>
