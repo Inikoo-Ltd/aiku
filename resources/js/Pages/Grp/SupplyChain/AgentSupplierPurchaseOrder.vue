@@ -10,10 +10,12 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
+import AspoDepositsChecklist from '@/Components/Procurement/AspoDepositsChecklist.vue'
 
 const props = defineProps<{
     pageHead: {}
     title: string
+    deposits: object
     showcase: {
         reference: string
         state: string
@@ -98,4 +100,6 @@ const props = defineProps<{
             </template>
         </dl>
     </div>
+
+    <AspoDepositsChecklist :deposits="deposits" />
 </template>

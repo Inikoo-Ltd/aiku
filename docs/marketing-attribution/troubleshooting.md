@@ -41,13 +41,27 @@ revenue against **that period's** spend. Spend dated outside the selected range 
 nothing to attach touches to, so capture writes the cookie and the attachment then silently drops it.
 New shops and newly added `TrafficSourcesTypeEnum` cases both cause this.
 
+Rather than hard-code the expected count, ask which enum cases have no row at all — a threshold
+written down here goes stale the moment a case is added, and a stale one reports every shop as
+healthy while a whole channel is being dropped. That is exactly what happened with `instagram-ads`
+between 8 and 10 August 2026.
+
 ```sql
 SELECT s.slug, count(ts.id) AS sources
 FROM shops s LEFT JOIN traffic_sources ts ON ts.shop_id = s.id
-GROUP BY 1 HAVING count(ts.id) < 16 ORDER BY 2;
+GROUP BY 1 ORDER BY 2 LIMIT 20;
 ```
 
-Sixteen is the current number of enum cases.
+Every shop should show the same number, and that number should equal
+`count(TrafficSourcesTypeEnum::cases())` — 21 as of 10 August 2026. To find the missing channel
+rather than just the count:
+
+```sql
+SELECT DISTINCT type FROM traffic_sources ORDER BY type;
+```
+
+Compare that against the enum. A case present in the enum and absent here is a channel whose
+touches are being silently discarded.
 
 **Fix.**
 

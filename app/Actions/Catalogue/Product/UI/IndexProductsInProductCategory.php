@@ -294,7 +294,7 @@ class IndexProductsInProductCategory extends OrgAction
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $subNavigation = $this->getDepartmentSubNavigation($productCategory);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $exception     = [];
+            $exception     = [ProductsTabsEnum::SALES];
             $subNavigation = $this->getFamilySubNavigation($productCategory, $this->grandParent ?? $productCategory->shop, $request);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $subNavigation = $this->getSubDepartmentSubNavigation($productCategory);
@@ -431,14 +431,9 @@ class IndexProductsInProductCategory extends OrgAction
                     fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))
                     : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))),
 
-                ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
-                    fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))
-                    : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
-
             ]
         )
-        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value))
-        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::SALES->value));
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value));
     }
 
 
@@ -570,7 +565,8 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.products.index' =>
+            'grp.org.shops.show.catalogue.departments.show.products.index',
+            'grp.org.shops.show.catalogue.departments.show.products.sales' =>
             array_merge(
                 ShowDepartment::make()->getBreadcrumbs(
                     'grp.org.shops.show.catalogue.departments.show',
@@ -584,7 +580,8 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.families.show.products.index' =>
+            'grp.org.shops.show.catalogue.departments.show.families.show.products.index',
+            'grp.org.shops.show.catalogue.departments.show.families.show.products.sales' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
@@ -600,7 +597,8 @@ class IndexProductsInProductCategory extends OrgAction
                 )
             ),
 
-            'grp.org.shops.show.catalogue.families.show.products.index' =>
+            'grp.org.shops.show.catalogue.families.show.products.index',
+            'grp.org.shops.show.catalogue.families.show.products.sales' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
@@ -616,11 +614,13 @@ class IndexProductsInProductCategory extends OrgAction
                 )
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.index',
-            'grp.org.shops.show.catalogue.sub_departments.show.products.index' =>
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.sales',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.sales' =>
             array_merge(
                 ShowSubDepartment::make()->getBreadcrumbs(
                     $productCategory,
-                    preg_replace('/\.products\.index$/', '', $routeName),
+                    preg_replace('/\.products\.(index|sales)$/', '', $routeName),
                     $routeParameters
                 ),
                 $headCrumb(
@@ -631,7 +631,8 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.index' =>
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.index',
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.sales' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
@@ -646,7 +647,8 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index' =>
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.sales' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,

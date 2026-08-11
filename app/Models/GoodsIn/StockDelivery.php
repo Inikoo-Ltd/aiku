@@ -18,7 +18,9 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
+use App\Models\Traits\HasSearch;
 use Eloquent;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -123,25 +125,26 @@ class StockDelivery extends Model implements HasMedia, Auditable
     use InOrganisation;
     use HasAttachments;
     use HasHistory;
+    use HasSearch;
 
 
     protected $casts = [
-        'data'            => 'array',
-        'cost_data'       => 'array',
-        'state'           => StockDeliveryStateEnum::class,
-        'date'            => 'datetime',
-        'confirmed_at'    => 'datetime',
+        'data'             => 'array',
+        'cost_data'        => 'array',
+        'state'            => StockDeliveryStateEnum::class,
+        'date'             => 'datetime',
+        'confirmed_at'     => 'datetime',
         'ready_to_ship_at' => 'datetime',
-        'dispatched_at'   => 'datetime',
-        'received_at'     => 'datetime',
-        'checked_at'      => 'datetime',
-        'booking_in_at'   => 'datetime',
-        'booked_in_at'    => 'datetime',
-        'placed_at'       => 'datetime',
-        'cancelled_at'    => 'datetime',
-        'not_received_at' => 'datetime',
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime',
+        'dispatched_at'    => 'datetime',
+        'received_at'      => 'datetime',
+        'checked_at'       => 'datetime',
+        'booking_in_at'    => 'datetime',
+        'booked_in_at'     => 'datetime',
+        'placed_at'        => 'datetime',
+        'cancelled_at'     => 'datetime',
+        'not_received_at'  => 'datetime',
+        'fetched_at'       => 'datetime',
+        'last_fetched_at'  => 'datetime',
     ];
 
     protected $attributes = [
@@ -175,6 +178,31 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'reference',
     ];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'organisation_id',
+                'state',
+                'reference',
+                'parent_code',
+                'parent_name',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'organisation_id' => $this->organisation_id,
+            'state'           => $this->state?->value,
+            'reference'       => $this->reference,
+            'slug'            => $this->slug,
+            'parent_code'     => $this->parent_code,
+            'parent_name'     => $this->parent_name,
+            'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function purchaseOrders(): BelongsToMany
     {
@@ -184,6 +212,16 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function items(): HasMany
     {
         return $this->hasMany(StockDeliveryItem::class);
+    }
+
+    public function costs(): HasMany
+    {
+        return $this->hasMany(StockDeliveryCost::class);
+    }
+
+    public function depositApplications(): HasMany
+    {
+        return $this->hasMany(StockDeliveryDepositApplication::class);
     }
 
     public function parent(): MorphTo

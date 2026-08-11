@@ -15,6 +15,10 @@ defineProps<{
     tab?: string
 }>()
 
+function amountFormat(amount: number) {
+    return Number(amount).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: string }) {
     const organisation = route().params['organisation'] ?? stockDelivery.organisation_slug
     if (!organisation) {
@@ -52,19 +56,21 @@ function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: s
         </template>
 
         <template #cell(cbm)="{ item }">
-            {{ item.cbm ?? '-' }}
+            {{ item.cbm != null ? `${Number(item.cbm).toLocaleString('en-GB', { maximumFractionDigits: 1 })} m³` : '-' }}
         </template>
 
         <template #cell(gross_weight)="{ item }">
-            {{ item.gross_weight != null ? `${item.gross_weight} kg` : '-' }}
+            {{ item.gross_weight ?? '-' }}
         </template>
 
         <template #cell(amount)="{ item }">
-            <span v-if="item.amount != null">
-                {{ Number(item.amount).toFixed(2) }} {{ item.currency_code }}
-                <template v-if="item.converted_amount != null && item.converted_currency_code && item.converted_currency_code !== item.currency_code">
-                    &asymp; {{ Number(item.converted_amount).toFixed(2) }} {{ item.converted_currency_code }}
-                </template>
+            <span v-if="item.amount != null">{{ amountFormat(item.amount) }} {{ item.currency_code }}</span>
+            <span v-else>-</span>
+        </template>
+
+        <template #cell(converted_amount)="{ item }">
+            <span v-if="item.converted_amount != null && item.converted_currency_code">
+                {{ amountFormat(item.converted_amount) }} {{ item.converted_currency_code }}
             </span>
             <span v-else>-</span>
         </template>

@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class Search extends OrgAction
 {
     protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop', 'chat'];
-    protected const array ORGANISATION_SCOPES = ['accounting', 'hr'];
+    protected const array ORGANISATION_SCOPES = ['accounting', 'hr', 'procurement'];
     protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews', 'billables', 'offers', 'marketing', 'website', 'shop_accounting'];
     protected const array WAREHOUSE_SCOPES = ['inventory', 'dispatching', 'locations'];
 
@@ -43,6 +43,7 @@ class Search extends OrgAction
             'accounting'      => static fn () => SearchAccounting::run($query, $options),
             'shop_accounting' => static fn () => SearchAccounting::run($query, $options),
             'hr'              => static fn () => SearchHr::run($query, $options),
+            'procurement'     => static fn () => SearchProcurement::run($query, $options),
             'catalogue'    => static fn () => SearchCatalogue::run($query, $options),
             'prospects'    => static fn () => SearchProspects::run($query, $options),
             'customers'    => static fn () => SearchCustomers::run($query, $options),
@@ -156,6 +157,7 @@ class Search extends OrgAction
             'grp.org.chat.'                           => 'chat',
             'grp.org.accounting.'                     => 'accounting',
             'grp.org.hr.'                             => 'hr',
+            'grp.org.procurement.'                    => 'procurement',
             'grp.org.shops.show.dashboard'            => 'shop_accounting',
             'grp.org.shops.show.catalogue'            => 'catalogue',
             'grp.org.shops.show.crm.prospects'        => 'prospects',

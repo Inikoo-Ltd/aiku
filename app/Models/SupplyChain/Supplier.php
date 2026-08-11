@@ -162,6 +162,7 @@ class Supplier extends Model implements HasMedia, Auditable
             'contact_website'          => (string)$this->contact_website,
             'identity_document_number' => (string)$this->identity_document_number,
             'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'organisation_ids'         => $this->orgSuppliers()->pluck('organisation_id')->all(),
         ];
     }
 

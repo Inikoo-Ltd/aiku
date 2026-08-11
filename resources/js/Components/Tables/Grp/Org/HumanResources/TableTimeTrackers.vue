@@ -26,6 +26,7 @@ import { useFormatTime, useHMAP } from '@/Composables/useFormatTime'
 const props = defineProps<{
     data: any
     tab?: string
+    storeClockingRoute?: string
 }>()
 
 library.add(faClock, faDoorOpen, faDoorClosed, faEdit, faPlus, faTrash)
@@ -37,6 +38,12 @@ const clockOutTime = ref<Date | null>(null)
 const clockInTime = ref<Date | null>(null)
 const isSubmitting = ref(false)
 const errorMsg = ref<string | null>(null)
+
+const isAddModalOpen = ref(false)
+const newClockedAt = ref<Date | null>(null)
+const newNotes = ref<string>('')
+const isAddSubmitting = ref(false)
+const addErrorMsg = ref<string | null>(null)
 
 const canEdit = computed<boolean>(() => {
     if (!props.data) {
@@ -206,10 +213,73 @@ const submitClockIn = async (): Promise<void> => {
     }
 }
 
+const openAddModal = (): void => {
+    newClockedAt.value = new Date()
+    newNotes.value = ''
+    addErrorMsg.value = null
+    isAddModalOpen.value = true
+}
+
+const closeAddModal = (): void => {
+    isAddModalOpen.value = false
+    newClockedAt.value = null
+    newNotes.value = ''
+    addErrorMsg.value = null
+}
+
+const submitAddClocking = async (): Promise<void> => {
+    if (!props.storeClockingRoute || !newClockedAt.value) {
+        return
+    }
+
+    isAddSubmitting.value = true
+    addErrorMsg.value = null
+
+    try {
+        await axios.post(props.storeClockingRoute, {
+            clocked_at: format(newClockedAt.value, "yyyy-MM-dd'T'HH:mm:ssXXX"),
+            notes: newNotes.value || null,
+        })
+
+        notify({
+            title: trans('Success'),
+            text: trans('Clocking added successfully.'),
+            type: 'success',
+        })
+
+        router.reload({
+            only: [props.tab || 'time_trackers', 'timesheet']
+        })
+
+        closeAddModal()
+    } catch (e: any) {
+        const message = e?.response?.data?.message ?? trans('Failed to add clocking.')
+        addErrorMsg.value = message
+
+        notify({
+            title: trans('Failed'),
+            text: message,
+            type: 'error',
+        })
+    } finally {
+        isAddSubmitting.value = false
+    }
+}
+
 </script>
 
 <template>
     <div>
+        <div v-if="canEdit && storeClockingRoute" class="flex justify-end mb-3">
+            <Button
+                type="secondary"
+                size="xs"
+                :icon="faPlus"
+                :label="trans('Add clocking')"
+                @click="openAddModal"
+            />
+        </div>
+
         <Table :resource="data" :name="tab" class="mt-5">
             <template #cell(slug)="{ item: clocking }">
                 <Link :href="clockingRoute(clocking)">
@@ -381,6 +451,64 @@ const submitClockIn = async (): Promise<void> => {
                         type="primary"
                         :label="isSubmitting ? trans('Saving...') : trans('Save')"
                         :disabled="isSubmitting"
+                        nativeType="submit"
+                    />
+                </div>
+            </form>
+        </Modal>
+
+        <Modal
+            :isOpen="isAddModalOpen"
+            @onClose="closeAddModal"
+            width="w-full max-w-md"
+        >
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                {{ trans('Add Clocking') }}
+            </h2>
+
+            <form @submit.prevent="submitAddClocking" class="space-y-4">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ trans('Clocked At') }}
+                        </label>
+                        <DatePicker
+                            v-model="newClockedAt"
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            showIcon
+                            fluid
+                            class="mt-1"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ trans('Notes') }}
+                        </label>
+                        <textarea
+                            v-model="newNotes"
+                            rows="4"
+                            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                    </div>
+                    <p v-if="addErrorMsg" class="text-sm text-red-600">
+                        {{ addErrorMsg }}
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <Button
+                        type="secondary"
+                        :label="trans('Cancel')"
+                        :disabled="isAddSubmitting"
+                        @click="closeAddModal"
+                    />
+                    <Button
+                        type="primary"
+                        :label="isAddSubmitting ? trans('Saving...') : trans('Save')"
+                        :disabled="isAddSubmitting"
                         nativeType="submit"
                     />
                 </div>

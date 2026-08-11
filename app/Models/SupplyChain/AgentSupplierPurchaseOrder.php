@@ -19,8 +19,10 @@ use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -117,6 +119,7 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
     use HasHistory;
     use InGroup;
     use HasAttachments;
+    use HasSearch;
 
     protected $casts = [
         'data'            => 'array',
@@ -167,6 +170,23 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
         ];
     }
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged(['reference', 'state', 'purchase_order_id']);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'               => (string)$this->id,
+            'reference'        => (string)$this->reference,
+            'slug'             => $this->slug,
+            'state'            => $this->state?->value,
+            'created_at'       => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'organisation_ids' => array_values(array_filter([$this->purchaseOrder?->organisation_id])),
+        ];
+    }
+
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class);
@@ -185,5 +205,10 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
     public function purchaseOrderTransactions(): HasMany
     {
         return $this->hasMany(PurchaseOrderTransaction::class);
+    }
+
+    public function deposits(): HasMany
+    {
+        return $this->hasMany(AspoDeposit::class);
     }
 }

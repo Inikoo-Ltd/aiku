@@ -53,6 +53,7 @@ class StoreAgentSupplierPurchaseOrder extends OrgAction
 
         /** @var AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder */
         $agentSupplierPurchaseOrder = $supplier->agentSupplierPurchaseOrder()->create($modelData);
+        $agentSupplierPurchaseOrder->refresh();
 
         if ($supplier->agent_id) {
             AgentHydrateAgentSupplierPurchaseOrders::dispatch($supplier->agent)->delay($this->hydratorsDelay);

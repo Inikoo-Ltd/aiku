@@ -15,6 +15,7 @@ use App\Actions\Fulfilment\PalletReturn\SubmitPalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
+use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Portfolio;
@@ -26,6 +27,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use function Sentry\captureMessage;
 
 class StoreFulfilmentOrderFromShopify extends OrgAction
 {
@@ -74,32 +76,30 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
                 'shopify_user_id'           => $shopifyUser->id
             ]);
 
-            $storedItemModels = [];
             foreach ($shopifyProducts as $shopifyProduct) {
                 /** @var Portfolio $portfolio */
                 $portfolio = $shopifyUser->customerSalesChannel->portfolios()
                     ->where('platform_product_id', $shopifyProduct['product_id'])->first();
 
                 if ($portfolio) {
-                    /** @var StoredItem $product */
+                    /** @var StoredItem $storedItem */
                     $storedItem = $portfolio->item;
                     if (!$storedItem) {
-                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
+                        captureMessage('Portfolio '.$portfolio->id.' does not have a product');
                         continue;
                     }
 
-                    $storedItemModels[$storedItem->id] = [
-                        'quantity' => $shopifyProduct['quantity']
-                    ];
+                    $palletStoredItem = $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
+
+                    if(!$palletStoredItem) {
+                        continue;
+                    }
+
+                    AttachRetinaStoredItemToReturn::run($palletReturn, $palletStoredItem, [
+                        'quantity_ordered' => $shopifyProduct['quantity']
+                    ]);
                 }
             }
-
-            StoreStoredItemsToReturn::make()->action(
-                palletReturn: $palletReturn,
-                modelData: [
-                    'stored_items' => $storedItemModels
-                ]
-            );
 
             SubmitPalletReturn::run($palletReturn, []);
 

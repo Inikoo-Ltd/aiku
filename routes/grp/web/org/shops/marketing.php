@@ -18,7 +18,6 @@ use App\Actions\Comms\Mailshot\UI\CreateMailshot;
 use App\Actions\Comms\Mailshot\UI\CreateMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\CreateNewsletter;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotWorkshop;
-// use App\Actions\Comms\Mailshot\UI\UpdateMailshotRecipients;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotRecipients;
 use App\Actions\Comms\Mailshot\UI\EditMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
@@ -48,8 +47,6 @@ Route::name("mailshots.")->prefix('mailshots')
         Route::get('{mailshot}/workshop', ShowMailshotWorkshop::class)->name('workshop');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
         Route::get('{mailshot}/recipients', ShowMailshotRecipients::class)->name('recipients');
-        Route::post('{mailshot}/send-test', SendTestEmail::class)->name('send-test');
-        // Route::put('{mailshot}/recipients', UpdateMailshotRecipients::class)->name('recipients.update');
     });
 Route::name("notifications.")->prefix('notifications')
     ->group(function () {

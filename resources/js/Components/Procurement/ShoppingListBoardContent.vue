@@ -33,12 +33,19 @@ interface Product {
     oldest_created_at: string
 }
 
+interface OpenAgentSupplierPurchaseOrder {
+    id: number
+    reference: string
+    slug: string
+}
+
 interface Supplier {
     supplier_id: number
     code: string
     slug: string
     estimated_value: number
     products: Product[]
+    open_agent_supplier_purchase_order: OpenAgentSupplierPurchaseOrder | null
 }
 
 interface AgentGroup {
@@ -94,7 +101,16 @@ function proposeDismiss(line: OrgLine) {
             <div v-for="supplier in agentGroup.suppliers" :key="supplier.supplier_id" class="mt-4 rounded-lg border border-gray-200 p-4">
                 <div class="flex items-center justify-between">
                     <h3 class="font-medium">{{ supplier.code }}</h3>
-                    <span class="text-sm text-gray-500">{{ trans("Estimated value") }}: {{ supplier.estimated_value }}</span>
+                    <div class="flex items-center gap-3">
+                        <a
+                            v-if="supplier.open_agent_supplier_purchase_order"
+                            :href="route('grp.supply-chain.agent_supplier_purchase_orders.show', [supplier.open_agent_supplier_purchase_order.slug])"
+                            class="secondaryLink text-sm"
+                        >
+                            {{ trans("Open ASPO") }}: {{ supplier.open_agent_supplier_purchase_order.reference }}
+                        </a>
+                        <span class="text-sm text-gray-500">{{ trans("Estimated value") }}: {{ supplier.estimated_value }}</span>
+                    </div>
                 </div>
 
                 <div v-for="product in supplier.products" :key="product.supplier_product_id" class="mt-3 border-t border-gray-100 pt-3">

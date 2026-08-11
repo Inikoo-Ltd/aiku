@@ -23,7 +23,7 @@ enum TrafficSourcesTypeEnum: string
      * different string: otherwise the two halves of one Meta campaign fight over a single campaign row
      * and whichever arrives second loses its breakdown.
      */
-    public const INSTAGRAM_CAMPAIGN_PREFIX = 'ig-';
+    public const string INSTAGRAM_CAMPAIGN_PREFIX = 'ig-';
 
     case ORGANIC_GOOGLE = 'organic-google';
     case GOOGLE_ADS = 'google-ads';
@@ -65,7 +65,7 @@ enum TrafficSourcesTypeEnum: string
             self::LINKEDIN_ADS->value      => 'LinkedIn Ads',
             self::ORGANIC_TWITTER->value   => 'Organic Twitter',
             self::TWITTER_ADS->value       => 'Twitter Ads',
-            self::YOUTUBE->value           => 'Youtube',
+            self::YOUTUBE->value           => 'YouTube',
             self::NEWSLETTER->value        => 'Newsletter',
             self::MARKETING_MAILSHOT->value => 'Marketing Mailshots',
             self::EMAIL_AUTOMATED->value   => 'Automatic Marketing',
