@@ -33,13 +33,6 @@ class ShowWarehouse extends OrgAction
         return $warehouse;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("inventory.{$this->warehouse->id}.edit");
-
-        return $request->user()->authTo("inventory.{$this->warehouse->id}.view");
-    }
-
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
     {
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseTabsEnum::values());

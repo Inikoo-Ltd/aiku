@@ -119,7 +119,11 @@ use App\Models\Dispatching\Picking;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Transaction;
 use Config;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\PermissionRegistrar;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
@@ -225,6 +229,25 @@ test('seed warehouse permissions', function () {
     expect($warehouse->roles()->count())->toBe(10);
 });
 
+
+test('stock controllers pass the stock edit authorisation', function () {
+    $warehouse = Warehouse::first();
+    $user      = $this->guest->getUser();
+
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+
+    $user->syncRoles([RolesEnum::getRoleName('stock-controller', $warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    expect($user->refresh()->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation)))->toBeTrue();
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+});
 
 test('create warehouse area', function ($warehouse) {
     $warehouseArea = StoreWarehouseArea::make()->action($warehouse, WarehouseArea::factory()->definition());
