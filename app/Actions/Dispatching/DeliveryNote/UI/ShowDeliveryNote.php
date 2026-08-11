@@ -976,9 +976,7 @@ class ShowDeliveryNote extends OrgAction
          */
         $showChangePickerPacker = $deliveryNote->pickingSessions()->doesntExist();
 
-        // Never on a marketplace order: the customer changes it there and we follow, see SetAsWaitingCrm
-        $allowWaiting = $deliveryNote->shop->type != ShopTypeEnum::EXTERNAL
-            && (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
+        $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
 
         if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
