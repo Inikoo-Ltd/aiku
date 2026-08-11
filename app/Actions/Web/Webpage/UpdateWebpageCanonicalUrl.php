@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage;
 use App\Actions\Traits\WithVarnishBan;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -40,7 +41,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $canonicalPath = match ($webpage->type) {
             WebpageTypeEnum::CATALOGUE => $this->getWebpageTypeCatalogue($webpage),
             WebpageTypeEnum::STOREFRONT => '',
-            WebpageTypeEnum::BLOG => 'blog/'.$webpage->url,
+            WebpageTypeEnum::BLOG => (in_array($webpage->sub_type->value, WebpageSubTypeEnum::blogCategoryValues()) ? str_replace('_', '-', $webpage->sub_type->value).'/' : 'blog/') .$webpage->url,
             default => $webpage->url
         };
 

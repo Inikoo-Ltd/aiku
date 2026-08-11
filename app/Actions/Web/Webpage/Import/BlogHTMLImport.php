@@ -108,7 +108,7 @@ class BlogHTMLImport implements ToCollection
                 'code'          => $url,
                 'url'           => $url,
                 'type'          => WebpageTypeEnum::BLOG,
-                'sub_type'      => WebpageSubTypeEnum::DAVIDS_TRAVEL_BLOG,
+                'sub_type'      => WebpageSubTypeEnum::DAVID_AW_NEWS,
                 'fieldValue'    => [
                     'title'                         => $row[$titleColumnPos],
                     'published_date'                => $row[$publishedColumnPos],
