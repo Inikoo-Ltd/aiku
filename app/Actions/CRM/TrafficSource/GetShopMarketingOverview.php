@@ -32,7 +32,7 @@ class GetShopMarketingOverview
      *
      * All figures are in the shop's currency.
      *
-     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, route: array{name: string, parameters: array<string, mixed>}, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
      */
     public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -44,7 +44,7 @@ class GetShopMarketingOverview
 
         $sources = DB::table('traffic_sources')
             ->where('shop_id', $shop->id)
-            ->select('id', 'name', 'type')
+            ->select('id', 'name', 'type', 'slug')
             ->get()
             ->keyBy('id');
 
@@ -82,6 +82,7 @@ class GetShopMarketingOverview
             ->map(fn ($source) => [
                 'name'          => $source->name,
                 'type'          => $source->type,
+                'route'         => $this->channelRoute($shop, $source->slug),
                 'group'         => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['key'] ?? 'other',
                 'group_label'   => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['label'] ?? __('Other'),
                 'group_position' => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['position'] ?? 9,
@@ -149,6 +150,24 @@ class GetShopMarketingOverview
             'campaigns'     => $this->campaigns($shop, $from, $to),
             'referrers'     => $this->referrers($shop, $from, $to, $window),
             'spend_by_day'  => $this->spendByDay($shop, $from, $to),
+        ];
+    }
+
+    /**
+     * The channel's own page. No period travels with it: that page is the channel's standing
+     * overview, not a slice of this dashboard's window.
+     *
+     * @return array{name: string, parameters: array<string, string>}
+     */
+    private function channelRoute(Shop $shop, string $slug): array
+    {
+        return [
+            'name'       => 'grp.org.shops.show.marketing.traffic_sources.show',
+            'parameters' => [
+                'organisation'  => $shop->organisation->slug,
+                'shop'          => $shop->slug,
+                'trafficSource' => $slug,
+            ],
         ];
     }
 

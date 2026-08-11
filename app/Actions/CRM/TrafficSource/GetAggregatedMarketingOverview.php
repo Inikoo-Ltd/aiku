@@ -95,6 +95,7 @@ class GetAggregatedMarketingOverview
             ->map(fn (string $type) => [
                 'name'          => TrafficSourcesTypeEnum::labels()[$type] ?? $type,
                 'type'          => $type,
+                'route'         => $this->channelRoute($parent, $type),
                 'group'         => TrafficSourcesTypeEnum::tryFrom($type)?->group()['key'] ?? 'other',
                 'group_label'   => TrafficSourcesTypeEnum::tryFrom($type)?->group()['label'] ?? __('Other'),
                 'group_position' => TrafficSourcesTypeEnum::tryFrom($type)?->group()['position'] ?? 9,
@@ -162,6 +163,19 @@ class GetAggregatedMarketingOverview
             'referrers'     => $this->referrers($shops, $from, $to, $revenueColumn, $window ?? 0),
             'children'      => $this->children($parent, $from, $to, $revenueColumn),
         ];
+    }
+
+    /**
+     * The channel's own page at this level. No period travels with it: that page is the channel's
+     * standing overview, not a slice of this dashboard's window.
+     *
+     * @return array{name: string, parameters: array<int, string>}
+     */
+    private function channelRoute(Organisation|Group $parent, string $type): array
+    {
+        return $parent instanceof Organisation
+            ? ['name' => 'grp.org.marketing.channels.show', 'parameters' => [$parent->slug, $type]]
+            : ['name' => 'grp.marketing.channels.show', 'parameters' => [$type]];
     }
 
     /**

@@ -14,6 +14,7 @@ import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { route } from 'ziggy-js'
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { routeType } from '@/types/route'
 import { Intervals, Settings } from '@/types/Components/Dashboard'
 import DashboardSettings from '@/Components/DataDisplay/Dashboard/DashboardSettings.vue'
 
@@ -42,6 +43,7 @@ const props = defineProps<{
         channels: {
             name: string
             type: string
+            route: routeType
             group: string
             group_label: string
             group_position: number
@@ -325,7 +327,10 @@ const columnHelp: Record<string, string> = {
                     </tr>
                     <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
-                        <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
+                        <td class="py-2 pr-2 pl-5">
+                            <Link :href="route(channel.route.name, channel.route.parameters)"
+                                  class="text-gray-500 hover:text-gray-900 hover:underline">{{ channel.name }}</Link>
+                        </td>
                         <!-- Visits it sent, and how many of them bought. The pair is the point: people
                              arrived and nobody ordered is the case worth seeing. -->
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">

@@ -32,6 +32,7 @@ const props = defineProps<{
         channels: {
             name: string
             type: string
+            route: routeType
             group: string
             group_label: string
             group_position: number
@@ -89,7 +90,6 @@ const props = defineProps<{
                 prospects_registered: number
             }[]
         }
-        traffic_sources_route: routeType
         mailshots_route: routeType
     }
 }>()
@@ -292,7 +292,7 @@ const typeLabel: Record<string, string> = {
 
             <div v-if="overview.channels.length" class="mt-4">
                 <Link v-for="channel in overview.channels" :key="channel.type"
-                    :href="route(overview.traffic_sources_route.name, overview.traffic_sources_route.parameters)"
+                    :href="route(channel.route.name, channel.route.parameters)"
                     class="relative grid grid-cols-[7rem_minmax(0,1fr)_5.5rem_3.5rem] md:grid-cols-[11rem_minmax(0,1fr)_7rem_4rem] items-center gap-x-3 rounded-lg px-2 py-2.5 hover:bg-gray-50"
                     @mouseenter="hoveredChannel = channel.type" @mouseleave="hoveredChannel = null">
 
@@ -395,7 +395,10 @@ const typeLabel: Record<string, string> = {
                             </td>
                         </tr>
                         <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type" class="border-b border-gray-50 text-gray-600">
-                            <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
+                            <td class="py-2 pr-2 pl-5">
+                                <Link :href="route(channel.route.name, channel.route.parameters)"
+                                      class="text-gray-500 hover:text-gray-900 hover:underline">{{ channel.name }}</Link>
+                            </td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
                                 <template v-if="channel.visits > 0">
                                     {{ locale.number(channel.visits) }}
