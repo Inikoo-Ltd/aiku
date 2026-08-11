@@ -25,6 +25,7 @@ class FetchWebLayoutTemplateDetail extends OrgAction
 
             return [
                 'id'            => data_get($item, 'id'),
+                'ulid'          => data_get($item, 'ulid'),
                 'show'          => data_get($item, 'show'),
                 'type'          => data_get($item, 'type'),
                 'position'      => data_get($item, 'position'),

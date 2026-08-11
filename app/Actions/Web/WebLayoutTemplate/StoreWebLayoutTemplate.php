@@ -40,6 +40,7 @@ class StoreWebLayoutTemplate extends OrgAction
         return [
             'name'                          => ['required', 'string', Rule::unique('web_layout_templates', 'name')],
             'blocks'                        => ['required', 'array'],
+            'blocks.*.ulid'                 => ['required', 'string'],
             'blocks.*.show'                 => ['required', 'boolean'],
             'blocks.*.type'                 => ['required', 'string'],
             'blocks.*.position'             => ['required', 'numeric'],

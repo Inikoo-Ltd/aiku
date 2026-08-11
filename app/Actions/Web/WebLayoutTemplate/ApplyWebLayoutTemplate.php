@@ -46,7 +46,7 @@ class ApplyWebLayoutTemplate extends OrgAction
                         'show'              => data_get($webBlock, 'show', true),
                     ];
 
-                    $fieldValue = Arr::only(array_find($template->blocks, fn ($item) => $item['type'] == $webBlock['type']), 'fieldValue');
+                    $fieldValue = Arr::only(array_find($template->blocks, fn ($item) => $item['ulid'] == $webBlock['ulid']), 'fieldValue');
 
                     $newBlock = $this->createWebBlock(
                         $webpage,
@@ -78,6 +78,7 @@ class ApplyWebLayoutTemplate extends OrgAction
         return [
             'blocks'                => ['required', 'array'],
             'blocks.*.id'           => ['nullable', 'numeric'],
+            'blocks.*.ulid'         => ['nullable', 'string'],
             'blocks.*.show'         => ['required', 'boolean'],
             'blocks.*.type'         => ['required', 'string'],
             'blocks.*.visibility'   => ['required', 'array'],
