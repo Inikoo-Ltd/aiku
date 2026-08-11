@@ -388,8 +388,8 @@ onBeforeUnmount(() => {
         :ref="(e)=> _render_components = e"
     />
        <Popover ref="popoverRef" appendTo="body" dismissable
-    @hide="onPopoverHide"
-    class="popover-custom w-max max-w-[180px] md:max-w-[200px] lg:max-w-[260px]">
+           @hide="onPopoverHide"
+          class="popover-custom w-max max-w-[180px] md:max-w-[200px] lg:max-w-[260px]">
             <div class="p-4 text-sm break-words">
                 <loading-icon v-if="loadingGetVariants" />
                 <variant-dialog-content 
