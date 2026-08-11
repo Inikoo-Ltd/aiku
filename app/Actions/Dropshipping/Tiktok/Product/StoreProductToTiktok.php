@@ -145,9 +145,9 @@ class StoreProductToTiktok extends RetinaAction
                     'unit' => 'KILOGRAM'
                 ],
                 'package_dimensions' => [
-                    'width' => (string) ceil($w),
-                    'length' => (string) ceil($l),
-                    'height' => (string) ceil($h),
+                    'width' => number_format(ceil($w), 2),
+                    'length' => number_format(ceil($l), 2),
+                    'height' => number_format(ceil($h), 2),
                     'unit' => "CENTIMETER",
                 ],
                 'product_certifications' => $requiredCertifications,

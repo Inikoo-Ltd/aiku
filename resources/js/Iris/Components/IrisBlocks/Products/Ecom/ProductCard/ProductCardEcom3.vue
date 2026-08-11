@@ -67,7 +67,12 @@ const emits = defineEmits<{
 }>()
 
 const _button_variant = ref(null)
+const _button_add_to_cart = ref(null)
 const currency = layout?.iris?.currency
+
+const onOrderStepQuantity = async (quantity: number) => {
+    await _button_add_to_cart.value?.orderQuantity(quantity)
+}
 
 
 const onAddFavourite = (product: ProductResource) => {
@@ -287,6 +292,7 @@ defineExpose({
 
                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
+                        ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
                         :buttonStyle="buttonStyle"  :routeGettransactionProductData/>
@@ -342,7 +348,8 @@ defineExpose({
 
         <div class="mt-auto">
             <section v-if="isPriceVisible">
-                  <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket/>
+                  <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket
+                      :orderQuantity="onOrderStepQuantity"/>
             </section>
             <section v-else class="text-xs leading-tight space-y-1">
 

@@ -1,3 +1,7 @@
+<script lang="ts">
+let openedStepsPopover: { hide: () => void } | null = null
+</script>
+
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref, computed, watch } from "vue"
@@ -14,7 +18,8 @@ import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import { faCheck } from "@far"
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { faCheck, faBadgePercent } from "@far"
 
 library.add(faPlusCircle, faQuestionCircle)
 
@@ -55,6 +60,18 @@ interface ProductResource {
     discounted_profit_per_unit: number
     discounted_margin: number
 
+    step_discount?: {
+        label: string | null
+        steps: {
+            min_quantity: number
+            percentage_off: number
+            percentage_off_label: string
+            price: number
+            price_per_unit: number
+            is_popular: boolean
+        }[]
+    } | null
+
     product_offers_data: {
         number_offers: 1
         offers: {
@@ -91,6 +108,7 @@ const props = defineProps<{
         name: string
     }
     basketButton?: boolean
+    orderQuantity?: (quantity: number) => Promise<void>
 }>()
 
 
@@ -104,7 +122,74 @@ const hasOffer =
     getBestOfferfromComposable(props.product?.product_offers_data)
 
 
+const hasStepDiscount = computed(() => {
+    return (props.product?.step_discount?.steps?.length ?? 0) > 0
+})
+
+const bestStep = computed(() => {
+    const steps = props.product?.step_discount?.steps ?? []
+
+    return steps[steps.length - 1] ?? null
+})
+
+const basketQuantity = computed(() => {
+    return Number(props.hasInBasket?.quantity_ordered_new ?? props.hasInBasket?.quantity_ordered ?? 0)
+})
+
+const activeStep = computed(() => {
+    const reachedSteps = (props.product?.step_discount?.steps ?? [])
+        .filter(step => step.min_quantity <= basketQuantity.value)
+
+    return reachedSteps[reachedSteps.length - 1] ?? null
+})
+
+const displayStep = computed(() => {
+    return activeStep.value ?? bestStep.value
+})
+
+const canOrderStepDiscount = computed(() => {
+    return !!props.orderQuantity
+        && !!props.basketButton
+        && props.product?.stock > 0
+        && !props.product?.is_coming_soon
+        && !props.product?.variant
+})
+
+const pendingStepQuantity = ref<number | null>(null)
+
+const isStepOrderable = (minQuantity: number) => {
+    return canOrderStepDiscount.value
+        && minQuantity <= props.product.stock
+        && minQuantity !== basketQuantity.value
+}
+
+const isStepOverStock = (minQuantity: number) => {
+    return canOrderStepDiscount.value && minQuantity > props.product.stock
+}
+
+const isStepSelected = (minQuantity: number) => {
+    return canOrderStepDiscount.value && minQuantity === basketQuantity.value
+}
+
+const onOrderStep = async (minQuantity: number) => {
+    if (!isStepOrderable(minQuantity) || pendingStepQuantity.value === minQuantity) {
+        return
+    }
+
+    pendingStepQuantity.value = minQuantity
+
+    try {
+        await props.orderQuantity?.(minQuantity)
+    } finally {
+        if (pendingStepQuantity.value === minQuantity) {
+            pendingStepQuantity.value = null
+        }
+    }
+}
+
 const showIntervalOffer = computed(() => {
+    if (hasStepDiscount.value) return false
+
     return getBestOfferfromComposable(props.product?.product_offers_data)?.type
         === 'Category Quantity Ordered Order Interval' && webpage_data?.sub_type != 'family'
 })
@@ -138,6 +223,14 @@ const showLeftBlock = computed(() => {
     return showMemberPrice.value || showDiscount.value
 })
 
+const isDiscountedPriceActive = computed(() => {
+    if (displayStep.value) {
+        return !!activeStep.value
+    }
+
+    return showMemberPrice.value
+})
+
 const bestOfferClass = computed(() => {
     const type = bestOffer?.value?.type
 
@@ -152,20 +245,32 @@ const bestOfferClass = computed(() => {
     return 'text-primary'
 })
 
-watch(
-    () => props.hasInBasket?.quantity_ordered,
-    (newValue) => {
-        // console.log('quantity changed', newValue)
-    },
-    { immediate: true }
-)
+watch(basketQuantity, () => {
+    pendingStepQuantity.value = null
+})
 
 const _popoverProfit = ref(null)
+const _popoverSteps = ref(null)
+
+const onToggleStepsPopover = (event: Event) => {
+    if (openedStepsPopover && openedStepsPopover !== _popoverSteps.value) {
+        openedStepsPopover.hide()
+    }
+
+    openedStepsPopover = _popoverSteps.value
+    _popoverSteps.value?.toggle(event)
+}
+
+const onHideStepsPopover = () => {
+    if (openedStepsPopover === _popoverSteps.value) {
+        openedStepsPopover = null
+    }
+}
 </script>
 
 <template>
     <div
-    class="font-sans border-gray-200 mt-1 mb-[-2px] px-0 tabular-nums leading-none text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
+    class="step-discount-scope font-sans border-gray-200 mt-1 mb-[-2px] px-0 tabular-nums leading-none text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
 
         <!-- HEADER -->
         <div style="margin-bottom: 0.25rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; font-size: 11px;">
@@ -252,7 +357,7 @@ const _popoverProfit = ref(null)
                         </div>
                     </template>
 
-                    <div v-if="!showMemberPrice" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
+                    <div v-if="!isDiscountedPriceActive" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
                         <div class="flex text-xs items-center justify-center rounded-full ">
                             <FontAwesomeIcon :icon="faCheck" />
                         </div>
@@ -260,13 +365,30 @@ const _popoverProfit = ref(null)
                 </div>
             </div>
 
-
             <!-- GR PRICE -->
-            <div v-if="product.discounted_price" class="relative grid items-center gap-x-2 w-full mt-2"
+            <div v-if="product.discounted_price || displayStep" class="relative grid items-center gap-x-2 w-full mt-2"
                 :class="bestOffer?.type == 'Category Quantity Ordered Order Interval'
                     ? 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,75%)] 2xl:grid-cols-[1fr_minmax(0,75%)]'
                     : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,75%)] 2xl:grid-cols-[1fr_minmax(0,75%)]'">
-                <div v-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'">
+                <button v-if="displayStep" type="button"
+                    class="inline-flex items-center gap-1 rounded cursor-pointer transition-all duration-150"
+                    v-tooltip="trans('Buy :qty+ save :off', {
+                        qty: displayStep.min_quantity,
+                        off: displayStep.percentage_off_label,
+                    })" aria-haspopup="true" @click.stop.prevent="onToggleStepsPopover">
+                    <FontAwesomeIcon :icon="faBadgePercent" class="text-lg"
+                        :class="activeStep ? 'step-discount-text' : 'text-[#b3b3b3]'" />
+
+                    <div class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none whitespace-nowrap text-white transform transition-all duration-150"
+                        :class="activeStep ? 'step-discount-bg' : 'bg-[#b3b3b3] border border-transparent'">
+                        <span>
+                            <span class="hidden xl:inline">{{ displayStep.min_quantity }}+ </span>
+                            {{ displayStep.percentage_off_label }}
+                        </span>
+                    </div>
+                </button>
+
+                <div v-else-if="bestOffer?.type == 'Category Quantity Ordered Order Interval'">
                     <MemberPriceLabel :offer="bestOffer" :active="showMemberPrice" />
                 </div>
                 <div v-else class="offer">
@@ -291,7 +413,24 @@ const _popoverProfit = ref(null)
 
 
 
-                <div v-if="bestOffer" class="font-medium text-right min-w-0" :class="bestOfferClass">
+                <div v-if="displayStep" class="font-medium text-right min-w-0 step-discount-text">
+                    <div class="flex items-baseline justify-end gap-0.5 min-w-0">
+                        <div class="min-w-0 flex-1 truncate step-discount-text step-discount-border">
+                            <span class="font-bold" v-if="product.units == 1">{{ locale.currencyFormat(currency?.code, displayStep.price) }} /{{ product.unit }}</span>
+                            <span v-else>
+                                <span class=" text-[8px] sm:text-[9px] md:text-[10px] mr-1 font-bold">
+                                    {{ locale.currencyFormat(currency?.code, displayStep.price) }}
+                                </span>
+                                <span class="font-bold">({{
+                                        locale.currencyFormat(currency?.code, displayStep.price_per_unit) }}
+                                    /{{ product.unit }})
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else-if="bestOffer" class="font-medium text-right min-w-0" :class="bestOfferClass">
                     <div class="flex items-baseline justify-end gap-0.5 min-w-0">
                         <div class="min-w-0 flex-1 truncate text-[#E87928] border-[#E87928]">
                             <span class="font-bold" v-if="product.units == 1">{{ locale.currencyFormat(currency?.code, product.discounted_price) }} /{{ product.unit }}</span>
@@ -310,8 +449,9 @@ const _popoverProfit = ref(null)
                     </div>
                 </div>
 
-                <div v-if="showMemberPrice" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
-                    <div class="flex text-xs items-center justify-center rounded-full text-[#E87928]">
+                <div v-if="isDiscountedPriceActive" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
+                    <div class="flex text-xs items-center justify-center rounded-full"
+                        :class="displayStep ? 'step-discount-text' : 'text-[#E87928]'">
                         <FontAwesomeIcon :icon="faCheck" />
                     </div>
                 </div>
@@ -324,6 +464,50 @@ const _popoverProfit = ref(null)
                 <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
                     template="products_triggers_label" />
             </div>
+
+            <Popover v-if="displayStep" ref="_popoverSteps" class="max-w-[90vw] sm:max-w-[300px]"
+                @hide="onHideStepsPopover">
+                <div class="step-discount-scope p-2 text-xs tabular-nums">
+                    <div v-if="product.step_discount.label" class="font-bold">
+                        {{ product.step_discount.label }}
+                    </div>
+
+                    <div v-if="canOrderStepDiscount" class="mb-1 text-[10px] font-normal text-gray-500">
+                        {{ trans('Select a quantity to order it straight away') }}
+                    </div>
+
+                    <button v-for="step in product.step_discount.steps" :key="step.min_quantity" type="button"
+                        :disabled="!isStepOrderable(step.min_quantity) || pendingStepQuantity === step.min_quantity"
+                        class="step-discount-row flex w-full items-center justify-between gap-3 border-t border-gray-100 px-1 py-1.5 text-left enabled:cursor-pointer disabled:cursor-default"
+                        :class="[
+                            step.is_popular && !isStepSelected(step.min_quantity) ? 'step-discount-surface-soft' : '',
+                            isStepSelected(step.min_quantity) ? 'step-discount-surface step-discount-outline' : '',
+                            isStepOverStock(step.min_quantity) ? 'step-discount-unavailable' : '',
+                        ]"
+                        @click.stop.prevent="onOrderStep(step.min_quantity)">
+                        <span class="flex items-center gap-1.5 whitespace-nowrap font-medium">
+                            <LoadingIcon v-if="pendingStepQuantity === step.min_quantity" class="step-discount-text" />
+
+                            <span v-else-if="canOrderStepDiscount"
+                                class="flex h-3 w-3 shrink-0 items-center justify-center rounded-full border"
+                                :class="activeStep?.min_quantity === step.min_quantity ? 'step-discount-border' : 'border-gray-300'">
+                                <span v-if="activeStep?.min_quantity === step.min_quantity"
+                                    class="h-1.5 w-1.5 rounded-full step-discount-bg" />
+                            </span>
+
+                            {{ step.min_quantity }}+ {{ product.unit }}
+                            <span class="font-normal text-gray-500">−{{ step.percentage_off_label }}</span>
+                        </span>
+
+                        <span class="whitespace-nowrap text-right font-bold step-discount-text">
+                            {{ locale.currencyFormat(currency?.code, step.price) }}
+                            <span v-if="product.units != 1" class="font-normal text-gray-500">
+                                ({{ locale.currencyFormat(currency?.code, step.price_per_unit) }}/{{ product.unit }})
+                            </span>
+                        </span>
+                    </button>
+                </div>
+            </Popover>
         </div>
     </div>
 
@@ -332,6 +516,44 @@ const _popoverProfit = ref(null)
 
 
 <style scoped>
+.step-discount-scope {
+    --step-discount-color: #8E44AD;
+    --step-discount-surface: color-mix(in srgb, var(--step-discount-color) 12%, white);
+    --step-discount-surface-soft: color-mix(in srgb, var(--step-discount-color) 6%, white);
+}
+
+.step-discount-text {
+    color: var(--step-discount-color);
+}
+
+.step-discount-bg {
+    background-color: var(--step-discount-color);
+}
+
+.step-discount-border {
+    border-color: var(--step-discount-color);
+}
+
+.step-discount-outline {
+    box-shadow: inset 0 0 0 1px var(--step-discount-color);
+}
+
+.step-discount-surface {
+    background-color: var(--step-discount-surface);
+}
+
+.step-discount-surface-soft {
+    background-color: var(--step-discount-surface-soft);
+}
+
+.step-discount-row:enabled:hover {
+    background-color: var(--step-discount-surface);
+}
+
+.step-discount-unavailable {
+    @apply opacity-40 grayscale;
+}
+
 .zoom-75 {
     transform-origin: 0 0;
     transform: scale(.9);
