@@ -440,7 +440,7 @@ class IndexMasterFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'last_offers', label: __('Last Offer'), canBeHidden: true, sortable: true)
+                    ->column(key: 'last_offers', label: __('Last Offer'), tooltip: __('Most recent offer per shop for this master family (volume discounts excluded), showing its code, start date and expiration date. The dot indicates freshness: green running, blue scheduled, grey under 3 months, amber 3 to 6 months, red older than 6 months or never offered.'), canBeHidden: true, sortable: true)
                     ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

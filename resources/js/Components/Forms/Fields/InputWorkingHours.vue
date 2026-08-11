@@ -88,7 +88,7 @@ const parseBreaks = (val: any) => {
   return val.map((brk: any) => ({
     in: parseTime(brk?.s),
     out: parseTime(brk?.e),
-    label: brk?.l ?? ''
+    label: brk?.n ?? ''
   }))
 }
 
@@ -223,7 +223,7 @@ const buildPayload = () => {
       .map((brk: any) => ({
         s: formatTime(brk.in),
         e: formatTime(brk.out),
-        l: brk.label ?? ''
+        n: brk.label ?? ''
       }))
 
     if (!s && !e && !b.length) return

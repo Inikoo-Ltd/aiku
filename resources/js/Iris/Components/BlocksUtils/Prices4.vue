@@ -372,8 +372,9 @@ const onHideStepsPopover = () => {
                     : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,75%)] 2xl:grid-cols-[1fr_minmax(0,75%)]'">
                 <button v-if="displayStep" type="button"
                     class="inline-flex items-center gap-1 rounded cursor-pointer transition-all duration-150"
-                    v-tooltip="trans('Buy :qty+ save :off', {
+                    v-tooltip="trans('Buy :qty+ :unit, save :off', {
                         qty: displayStep.min_quantity,
+                        unit: product.unit,
                         off: displayStep.percentage_off_label,
                     })" aria-haspopup="true" @click.stop.prevent="onToggleStepsPopover">
                     <FontAwesomeIcon :icon="faBadgePercent" class="text-lg"

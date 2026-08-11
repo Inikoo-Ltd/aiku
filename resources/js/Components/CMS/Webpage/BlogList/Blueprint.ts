@@ -34,7 +34,7 @@ const categoriesField = {
 		mode: "multiple",
 		placeholder: "All blog categories",
 		options: [
-			{ label: "David's Travel Blog", value: "davids_travel_blog" },
+			{ label: "David's Travel Blog", value: "david_aw_news" },
 			{ label: "Tips", value: "tips" },
 			{ label: "Blog", value: "blog" },
 		],

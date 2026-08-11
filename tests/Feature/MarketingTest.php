@@ -166,7 +166,7 @@ function windowInvoice(string $date, float $net, $customer, $shop): void
 
 function dataQualityCheck(string $key, $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
 {
-    $checks = GetShopAttributionDataQuality::run($shop, $period)['checks'];
+    $checks = GetShopAttributionDataQuality::run($shop, $period->startsAt())['checks'];
 
     return collect($checks)->firstWhere('key', $key);
 }
@@ -730,7 +730,7 @@ describe('attribution window', function () {
         windowInvoice(now()->subDays(400)->toDateTimeString(), 5000, $this->customer, $this->shop);
         windowInvoice(now()->subDays(2)->toDateTimeString(), 300, $this->customer, $this->shop);
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME->startsAt());
 
         // Only the invoice raised after the click counts; the 5,000 predates it.
         expect($overview['totals']['revenue'])->toBe(300.0);
@@ -742,7 +742,7 @@ describe('attribution window', function () {
 
         windowInvoice(now()->subDays(2)->toDateTimeString(), 300, $this->customer, $this->shop);
 
-        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME)['totals']['revenue'])
+        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME->startsAt())['totals']['revenue'])
             ->toBe(0.0);
     });
 
@@ -751,7 +751,7 @@ describe('attribution window', function () {
 
         windowInvoice(now()->subDays(2)->toDateTimeString(), 300, $this->customer, $this->shop);
 
-        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME)['totals']['revenue'])
+        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME->startsAt())['totals']['revenue'])
             ->toBe(300.0);
     });
 
@@ -772,7 +772,7 @@ describe('attribution window', function () {
         windowInvoice(now()->subDays(2)->toDateTimeString(), 300, $this->customer, $this->shop);
 
         // Causality still applies: the pre-touch invoice never counts, window or no window.
-        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME)['totals']['revenue'])
+        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME->startsAt())['totals']['revenue'])
             ->toBe(300.0);
     });
 
@@ -829,7 +829,7 @@ describe('attribution window', function () {
             'updated_at'      => now()->toDateTimeString(),
         ]);
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
         $channel  = collect($overview['channels'])->firstWhere('type', $this->googleAds->type);
 
         expect($channel['revenue'] ?? 0.0)->toBe(0.0);
@@ -1084,7 +1084,7 @@ describe('referral traffic sources', function () {
 
         expect($campaign)->not->toBeNull();
 
-        $referrers = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['referrers'])
+        $referrers = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['referrers'])
             ->keyBy('host');
 
         expect($referrers['esources.co.uk']['registrations'])->toBe(1.0)
@@ -1387,7 +1387,7 @@ describe('campaign stats', function () {
             'traffic_source_campaign_id' => $campaign->id,
         ]);
 
-        $campaigns = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['campaigns'])
+        $campaigns = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['campaigns'])
             ->keyBy('name');
 
         expect($campaigns[$campaign->name]['spend'])->toBe(100.0);
@@ -1410,7 +1410,7 @@ describe('campaign stats', function () {
         createInvoiceFor($customer, $this->shop, now()->subDay()->toDateTimeString(), 400);
         createInvoiceFor($customer, $this->shop, now()->subDay()->toDateTimeString(), 200);
 
-        $campaigns = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['campaigns'])
+        $campaigns = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['campaigns'])
             ->keyBy('name');
 
         expect($campaigns[$campaign->name]['registrations'])->toBe(1.0)
@@ -1432,7 +1432,7 @@ describe('campaign stats', function () {
 
         createInvoiceFor($customer, $this->shop, now()->toDateTimeString(), 400);
 
-        $campaigns = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['campaigns'])
+        $campaigns = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['campaigns'])
             ->keyBy('name');
 
         expect($campaigns[$campaign->name]['registrations'])->toBe(0.0);
@@ -1674,7 +1674,7 @@ describe('traffic source costs', function () {
         $customer->update(['traffic_sources' => now()->subDays(2)->timestamp.'a']);
         App\Actions\CRM\TrafficSource\RecalculateTrafficSourceAttribution::run($customer->fresh());
 
-        $overview = GetShopMarketingOverview::run($this->shop, App\Enums\UI\Marketing\MarketingPeriodEnum::ALL_TIME);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME->startsAt());
         $channels = collect($overview['channels'])->keyBy('type');
 
         expect($overview['totals']['spend'])->toBe(200.0);
@@ -2839,7 +2839,7 @@ describe('email marketing performance', function () {
         $mailshot->stats()->update(['number_dispatched_emails' => 100000]);
         $mailshot->update(['sent_at' => now()->subDay()]);
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
         $channel  = collect($overview['channels'])->firstWhere('type', 'newsletter');
 
         expect($channel['spend'])->toBeGreaterThan(0.0)
@@ -2859,7 +2859,7 @@ describe('email marketing performance', function () {
             'source_currency_id' => $this->shop->currency_id,
         ]);
 
-        $totals = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['totals'];
+        $totals = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['totals'];
 
         expect($totals['spend_ads'])->toBe(200.0)
             ->and($totals['spend_email'])->toBeGreaterThan(0.0)
@@ -2874,7 +2874,7 @@ describe('email marketing performance', function () {
         ]);
         $mailshot->update(['sent_at' => now()->subDay()]);
 
-        $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['channels'])
             ->firstWhere('type', 'newsletter');
 
         expect($channel['unsubscribed'])->toBe(4)
@@ -2890,7 +2890,7 @@ describe('email marketing performance', function () {
             $outbox->dispatchedEmails()->create(['data' => [], 'sent_at' => now()]);
         }
 
-        $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['channels'])
             ->firstWhere('type', 'email-automated');
 
         expect($channel)->not->toBeNull()
@@ -2901,7 +2901,7 @@ describe('email marketing performance', function () {
     it('does not charge automated marketing for emails that were never sent', function () {
         $outbox = $this->shop->outboxes()->where('code', 'oos_notification')->first();
 
-        $spend = fn () => collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        $spend = fn () => collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['channels'])
             ->firstWhere('type', 'email-automated')['spend'] ?? 0.0;
 
         $before = $spend();
@@ -2983,7 +2983,7 @@ describe('offer performance', function () {
     it('counts one redemption per order, however many discounted lines it has', function () {
         redeemOffer($this->customer, $this->shop, $this->offerId, now()->subDay()->toDateTimeString(), $this->campaignId, $this->allowanceId);
 
-        $offer = collect(GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7)['offers'])
+        $offer = collect(GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['offers'])
             ->firstWhere('name', 'Test Offer');
 
         expect($offer['orders'])->toBe(1)
@@ -2992,7 +2992,7 @@ describe('offer performance', function () {
     });
 
     it('reports the shop reach so uptake can be read as a proportion', function () {
-        $performance = GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $performance = GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($performance['reach'])->toHaveKeys(['emailed', 'customers'])
             ->and($performance['reach']['customers'])->toBeGreaterThan(0);
@@ -3001,7 +3001,7 @@ describe('offer performance', function () {
     it('leaves lift empty when nobody was emailed, rather than inventing one', function () {
         redeemOffer($this->customer, $this->shop, $this->offerId, now()->subDay()->toDateTimeString(), $this->campaignId, $this->allowanceId);
 
-        $offer = collect(GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7)['offers'])
+        $offer = collect(GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['offers'])
             ->firstWhere('name', 'Test Offer');
 
         expect($offer['emailed_customers'])->toBe(0)
@@ -3012,7 +3012,7 @@ describe('offer performance', function () {
         $orderId = redeemOffer($this->customer, $this->shop, $this->offerId, now()->subDay()->toDateTimeString(), $this->campaignId, $this->allowanceId);
         DB::table('orders')->where('id', $orderId)->update(['state' => 'cancelled']);
 
-        $offer = collect(GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7)['offers'])
+        $offer = collect(GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['offers'])
             ->firstWhere('name', 'Test Offer');
 
         expect($offer)->toBeNull();
@@ -3023,7 +3023,7 @@ describe('offer performance', function () {
 
         redeemOffer($this->customer, $this->shop, $this->offerId, now()->subDay()->toDateTimeString(), $this->campaignId, $this->allowanceId);
 
-        $offers = GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7)['offers'];
+        $offers = GetShopOfferPerformance::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['offers'];
 
         expect(collect($offers)->firstWhere('name', 'Test Offer'))->toBeNull();
     });
@@ -3077,13 +3077,13 @@ describe('marketing periods', function () {
             'source_currency_id' => $this->shop->currency_id,
         ]);
 
-        $recent = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $recent = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($recent['totals']['revenue'])->toBe(400.0);
         expect($recent['totals']['spend'])->toBe(100.0);
         expect($recent['totals']['roas'])->toBe(4.0);
 
-        $allTime = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME);
+        $allTime = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME->startsAt());
 
         // The -60d invoice postdates the touch and is inside the window, so all-time sees both.
         expect($allTime['totals']['revenue'])->toBe(1400.0);
@@ -3099,7 +3099,7 @@ describe('marketing periods', function () {
         App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices::run($this->customer->id);
         TrafficSourceHydrateCustomers::run($this->googleAds);
 
-        $allTime = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME);
+        $allTime = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME->startsAt());
 
         expect($allTime['totals']['revenue'])
             ->toBe(round((float) $this->googleAds->stats()->first()->total_customer_revenue, 2));
@@ -3113,7 +3113,7 @@ describe('marketing periods', function () {
 
         invoiceOn(now()->subDay()->toDateTimeString(), 1000, $this->customer, $this->shop);
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
         $channels = collect($overview['channels'])->keyBy('type');
 
         expect($channels['google-ads']['revenue'])->toBe(500.0);
@@ -3125,19 +3125,19 @@ describe('marketing periods', function () {
         invoiceOn(now()->subDay()->toDateTimeString(), 500, $this->customer, $this->shop);
         invoiceOn(now()->subDay()->toDateTimeString(), 9999, $this->customer, $this->shop, inProcess: true);
 
-        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['totals']['revenue'])
+        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['totals']['revenue'])
             ->toBe(500.0);
     });
 
     it('reports the selected period back to the dashboard', function () {
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::MONTH_TO_DATE);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::MONTH_TO_DATE->startsAt());
 
-        expect($overview['period'])->toBe('month_to_date');
         expect($overview['from'])->toBe(now()->startOfMonth()->toDateString());
+        expect($overview['to'])->toBeNull();
 
         /* All time means since we started recording, not since the beginning: every figure on the screen
            is capped at the attribution marker, so the window it reports has to say so. */
-        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME)['from'])
+        expect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME->startsAt())['from'])
             ->toBe(App\Actions\CRM\TrafficSource\GetAttributionStartedAt::run()?->toDateString());
     });
 
@@ -3164,7 +3164,7 @@ describe('marketing periods', function () {
         createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted');
         invoiceOn(now()->subDay()->toDateTimeString(), 400, $this->customer, $this->shop);
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($overview['totals']['revenue'])->toBe(400.0)
             ->and($overview['totals']['pending'])->toBe(100.0);
@@ -3181,7 +3181,7 @@ describe('marketing periods', function () {
         invoiceOn(now()->subHour()->toDateTimeString(), 100, $this->customer, $this->shop);
         DB::table('invoices')->where('customer_id', $this->customer->id)->update(['order_id' => $orderId]);
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($overview['totals']['pending'])->toBe(0.0);
     });
@@ -3189,13 +3189,13 @@ describe('marketing periods', function () {
     it('does not count a cancelled order as pending', function () {
         createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'cancelled');
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($overview['totals']['pending'])->toBe(0.0);
     });
 
     it('reports the shop baseline alongside the attributed figures', function () {
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($overview['baseline'])->toHaveKeys(['registrations', 'orders', 'revenue'])
             ->and($overview['baseline']['registrations'])->toBeGreaterThan(0.0);
@@ -3213,7 +3213,7 @@ describe('marketing periods', function () {
             'updated_at'        => now(),
         ]);
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
         $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
 
         expect($channel)->not->toBeNull()
@@ -3231,7 +3231,7 @@ describe('marketing periods', function () {
         ]);
         createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted');
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
         $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
 
         expect($channel['pending'])->toBeGreaterThan(0.0)
@@ -3242,7 +3242,7 @@ describe('marketing periods', function () {
     it('reports orders per channel so a visit count can be read against what it produced', function () {
         createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted');
 
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt());
         $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
 
         expect($channel['orders'])->toBe(1.0);
@@ -3259,13 +3259,13 @@ describe('marketing periods', function () {
 
         /* One window for the whole screen: spend from before we were measuring cannot be set against
            revenue we could not have attributed, or ROAS compares two different stretches of time. */
-        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME);
+        $overview = GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::ALL_TIME->startsAt());
 
         expect($overview['totals']['spend'])->toBe(0.0);
     });
 
     it('groups channels so nineteen rows read as four questions', function () {
-        $groups = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        $groups = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['channels'])
             ->pluck('group', 'type');
 
         expect($groups['google-ads'] ?? null)->toBe('paid');
@@ -3278,7 +3278,7 @@ describe('marketing periods', function () {
     });
 
     it('gives the shop dashboard every field its grouped table needs', function () {
-        $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7)['channels'])
+        $channel = collect(GetShopMarketingOverview::run($this->shop, MarketingPeriodEnum::LAST_7->startsAt())['channels'])
             ->firstWhere('type', 'google-ads');
 
         expect($channel)->toHaveKeys([
@@ -3336,7 +3336,7 @@ describe('the aggregated marketing overview', function () {
             'updated_at'      => now()->subDay()->toDateTimeString(),
         ]);
 
-        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($overview['totals']['revenue'])->toBe(250.0)
             ->and($overview['currency_code'])->toBe($this->organisation->currency->code);
@@ -3348,7 +3348,7 @@ describe('the aggregated marketing overview', function () {
     });
 
     it('links each shop of the organisation to its own dashboard instead of repeating it', function () {
-        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
 
         $child = collect($overview['children'])->firstWhere('slug', $this->shop->slug);
 
@@ -3365,7 +3365,7 @@ describe('the aggregated marketing overview', function () {
         ]);
 
         $group    = $this->organisation->group;
-        $overview = GetAggregatedMarketingOverview::run($group, MarketingPeriodEnum::LAST_7);
+        $overview = GetAggregatedMarketingOverview::run($group, MarketingPeriodEnum::LAST_7->startsAt());
 
         $expected = (float) App\Models\CRM\TrafficSourceCost::where('traffic_source_id', $this->googleAds->id)
             ->sum('grp_amount');
@@ -3379,7 +3379,7 @@ describe('the aggregated marketing overview', function () {
     });
 
     it('links the group children to each organisation dashboard', function () {
-        $overview = GetAggregatedMarketingOverview::run($this->organisation->group, MarketingPeriodEnum::LAST_7);
+        $overview = GetAggregatedMarketingOverview::run($this->organisation->group, MarketingPeriodEnum::LAST_7->startsAt());
 
         $child = collect($overview['children'])->firstWhere('slug', $this->organisation->slug);
 
@@ -3398,7 +3398,7 @@ describe('the aggregated marketing overview', function () {
             'last_touch_at'  => now()->subDay(),
         ]);
 
-        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
         $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
 
         expect($channel['registrations'] ?? 0.0)->toBe(0.0);
@@ -3407,7 +3407,7 @@ describe('the aggregated marketing overview', function () {
     it('shows pending order value in the aggregate, in the parent currency', function () {
         createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted', 100);
 
-        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($overview['totals']['pending'])->toBe(100.0);
 
@@ -3418,7 +3418,7 @@ describe('the aggregated marketing overview', function () {
     it('counts a submitted order in the orders figure without waiting for dispatch', function () {
         createDispatchedOrderFor($this->customer, $this->shop, now()->subHours(2)->toDateTimeString(), 'submitted');
 
-        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
         $channel  = collect($overview['channels'])->firstWhere('type', 'google-ads');
 
         expect($channel['orders'])->toBe(1.0);
@@ -3435,7 +3435,7 @@ describe('the aggregated marketing overview', function () {
     });
 
     it('reports what happened without marketing, so nought attributed can be told from nought happening', function () {
-        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($overview['baseline']['registrations'])->toBeGreaterThan(0.0)
             ->and($overview['baseline'])->toHaveKeys(['registrations', 'orders', 'revenue']);
@@ -3469,7 +3469,7 @@ describe('the aggregated marketing overview', function () {
             'updated_at'      => now()->subHour()->toDateTimeString(),
         ]);
 
-        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7);
+        $overview = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt());
 
         expect($overview['totals']['revenue'])->toBe(100.0)
             ->and($overview['totals']['pending'])->toBe(0.0);
@@ -3496,14 +3496,14 @@ describe('the aggregated marketing overview', function () {
             'last_touch_at'              => now()->subDays(2),
         ]);
 
-        $referrers = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['referrers'];
+        $referrers = GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt())['referrers'];
 
         expect(collect($referrers)->firstWhere('host', 'esources.co.uk'))->not->toBeNull()
             ->and(collect($referrers)->firstWhere('host', 'esources.co.uk')['visitors'])->toBe(1.0);
     });
 
     it('gives each child the total it is a share of, so a zero can be read', function () {
-        $child = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['children'])
+        $child = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt())['children'])
             ->firstWhere('slug', $this->shop->slug);
 
         expect($child)->toHaveKeys(['registrations_total', 'orders_total'])
@@ -3531,7 +3531,7 @@ describe('the aggregated marketing overview', function () {
             'last_touch_at'              => now()->subDays(2),
         ]);
 
-        $entry = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['referrers'])
+        $entry = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt())['referrers'])
             ->firstWhere('host', 'duckduckgo.com');
 
         expect($entry)->not->toBeNull()
@@ -3539,7 +3539,7 @@ describe('the aggregated marketing overview', function () {
     });
 
     it('gives each child its pending and its revenue total, so the share can be read', function () {
-        $child = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['children'])
+        $child = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt())['children'])
             ->firstWhere('slug', $this->shop->slug);
 
         expect($child)->toHaveKeys(['pending', 'revenue_total'])
@@ -3560,7 +3560,7 @@ describe('the aggregated marketing overview', function () {
 
         createTrafficSource($this->shop, 'marketing-mailshot', 'Marketing Mailshots');
 
-        $channel = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7)['channels'])
+        $channel = collect(GetAggregatedMarketingOverview::run($this->organisation, MarketingPeriodEnum::LAST_7->startsAt())['channels'])
             ->firstWhere('type', 'marketing-mailshot');
 
         expect($channel)->not->toBeNull()
