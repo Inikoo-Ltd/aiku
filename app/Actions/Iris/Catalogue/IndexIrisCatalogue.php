@@ -125,7 +125,8 @@ class IndexIrisCatalogue extends IrisAction
     private function queryForProducts(?string $parent = null, ?string $parentKey = null)
     {
         $queryBuilder = QueryBuilder::for(Product::class)
-            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
+            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->where('products.is_for_sale', true);
 
         $parentColumnMap = [
             'department'     => 'department_id',

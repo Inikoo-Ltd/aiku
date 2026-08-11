@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
@@ -32,7 +33,7 @@ class GetShopMarketingOverview
      *
      * All figures are in the shop's currency.
      *
-     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, route: array{name: string, parameters: array<string, mixed>}, registrations_route: array{name: string, parameters: array<string, mixed>}, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
      */
     public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -44,7 +45,7 @@ class GetShopMarketingOverview
 
         $sources = DB::table('traffic_sources')
             ->where('shop_id', $shop->id)
-            ->select('id', 'name', 'type')
+            ->select('id', 'name', 'type', 'slug')
             ->get()
             ->keyBy('id');
 
@@ -82,6 +83,9 @@ class GetShopMarketingOverview
             ->map(fn ($source) => [
                 'name'          => $source->name,
                 'type'          => $source->type,
+                'route'         => $this->channelRoute($shop, $source->slug),
+                'registrations_route' => $this->registrationsRoute($shop, $source->slug, $from, $to),
+                'orders_route'  => $this->ordersRoute($shop, $source->slug, $from, $to),
                 'group'         => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['key'] ?? 'other',
                 'group_label'   => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['label'] ?? __('Other'),
                 'group_position' => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['position'] ?? 9,
@@ -149,6 +153,73 @@ class GetShopMarketingOverview
             'campaigns'     => $this->campaigns($shop, $from, $to),
             'referrers'     => $this->referrers($shop, $from, $to, $window),
             'spend_by_day'  => $this->spendByDay($shop, $from, $to),
+        ];
+    }
+
+    /**
+     * The channel's own page. No period travels with it: that page is the channel's standing
+     * overview, not a slice of this dashboard's window.
+     *
+     * @return array{name: string, parameters: array<string, string>}
+     */
+    private function channelRoute(Shop $shop, string $slug): array
+    {
+        return [
+            'name'       => 'grp.org.shops.show.marketing.traffic_sources.show',
+            'parameters' => [
+                'organisation'  => $shop->organisation->slug,
+                'shop'          => $shop->slug,
+                'trafficSource' => $slug,
+            ],
+        ];
+    }
+
+    /**
+     * The customers the channel signed up, on the channel's own page, over the dashboard's own dates:
+     * the figure being clicked counts a period, so the list it opens has to cover the same one.
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function registrationsRoute(Shop $shop, string $slug, ?Carbon $from, ?Carbon $to): array
+    {
+        $route                      = $this->channelRoute($shop, $slug);
+        $route['parameters']['tab'] = TrafficSourceTabsEnum::CUSTOMERS->value;
+        $route['parameters']        += $this->periodFilter($from, $to, 'created_at');
+
+        return $route;
+    }
+
+    /**
+     * The orders the channel was touched before, on the channel's own page, over the dashboard's
+     * dates.
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function ordersRoute(Shop $shop, string $slug, ?Carbon $from, ?Carbon $to): array
+    {
+        $route                      = $this->channelRoute($shop, $slug);
+        $route['parameters']['tab'] = TrafficSourceTabsEnum::ORDERS->value;
+        $route['parameters']        += $this->periodFilter($from, $to, 'date');
+
+        return $route;
+    }
+
+    /**
+     * The dashboard's window as a table takes it: a between filter on the same column the figure was
+     * counted over. An open-ended period travels as no filter at all.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function periodFilter(?Carbon $from, ?Carbon $to, string $column): array
+    {
+        if (!$from) {
+            return [];
+        }
+
+        return [
+            'between' => [
+                $column => $from->format('Ymd').'-'.($to ?? Carbon::now())->format('Ymd'),
+            ],
         ];
     }
 

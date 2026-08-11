@@ -294,7 +294,16 @@ const tabIconClass = function (
 								v-else-if="tab.icon"
 								:icon="tab.icon"
 								class="h-5 w-5"
-								aria-hidden="true" />
+								aria-hidden="true"
+								:class="
+									tabIconClass(
+										tabSlug === currentTab,
+										tab.type,
+										tab.align,
+										tab.iconClass || ''
+									)
+								"
+							/>
 							<span v-if="tab.type !== 'icon'" class="whitespace-nowrap">{{
 								tab.title
 							}}</span>
