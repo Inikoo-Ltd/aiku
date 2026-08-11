@@ -99,7 +99,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
-        Route::get('/davids-travel-blog', ShowIrisDavidsTravelBlogDashboard::class)->name('iris_davids_travel_blog');
+        Route::get('/david-aw-news', ShowIrisDavidsTravelBlogDashboard::class)->name('iris_davids_travel_blog');
 
         // LLMs.txt for AI crawlers
         Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');
