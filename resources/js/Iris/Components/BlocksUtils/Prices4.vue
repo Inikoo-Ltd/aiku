@@ -1,3 +1,7 @@
+<script lang="ts">
+let openedStepsPopover: { hide: () => void } | null = null
+</script>
+
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref, computed, watch } from "vue"
@@ -156,11 +160,19 @@ const pendingStepQuantity = ref<number | null>(null)
 const isStepOrderable = (minQuantity: number) => {
     return canOrderStepDiscount.value
         && minQuantity <= props.product.stock
-        && minQuantity > basketQuantity.value
+        && minQuantity !== basketQuantity.value
+}
+
+const isStepOverStock = (minQuantity: number) => {
+    return canOrderStepDiscount.value && minQuantity > props.product.stock
+}
+
+const isStepSelected = (minQuantity: number) => {
+    return canOrderStepDiscount.value && minQuantity === basketQuantity.value
 }
 
 const onOrderStep = async (minQuantity: number) => {
-    if (!isStepOrderable(minQuantity) || pendingStepQuantity.value !== null) {
+    if (!isStepOrderable(minQuantity) || pendingStepQuantity.value === minQuantity) {
         return
     }
 
@@ -169,7 +181,9 @@ const onOrderStep = async (minQuantity: number) => {
     try {
         await props.orderQuantity?.(minQuantity)
     } finally {
-        pendingStepQuantity.value = null
+        if (pendingStepQuantity.value === minQuantity) {
+            pendingStepQuantity.value = null
+        }
     }
 }
 
@@ -231,21 +245,32 @@ const bestOfferClass = computed(() => {
     return 'text-primary'
 })
 
-watch(
-    () => props.hasInBasket?.quantity_ordered,
-    (newValue) => {
-        // console.log('quantity changed', newValue)
-    },
-    { immediate: true }
-)
+watch(basketQuantity, () => {
+    pendingStepQuantity.value = null
+})
 
 const _popoverProfit = ref(null)
 const _popoverSteps = ref(null)
+
+const onToggleStepsPopover = (event: Event) => {
+    if (openedStepsPopover && openedStepsPopover !== _popoverSteps.value) {
+        openedStepsPopover.hide()
+    }
+
+    openedStepsPopover = _popoverSteps.value
+    _popoverSteps.value?.toggle(event)
+}
+
+const onHideStepsPopover = () => {
+    if (openedStepsPopover === _popoverSteps.value) {
+        openedStepsPopover = null
+    }
+}
 </script>
 
 <template>
     <div
-    class="font-sans border-gray-200 mt-1 mb-[-2px] px-0 tabular-nums leading-none text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
+    class="step-discount-scope font-sans border-gray-200 mt-1 mb-[-2px] px-0 tabular-nums leading-none text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
 
         <!-- HEADER -->
         <div style="margin-bottom: 0.25rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; font-size: 11px;">
@@ -350,12 +375,12 @@ const _popoverSteps = ref(null)
                     v-tooltip="trans('Buy :qty+ save :off', {
                         qty: displayStep.min_quantity,
                         off: displayStep.percentage_off_label,
-                    })" aria-haspopup="true" @click.stop.prevent="_popoverSteps?.toggle">
+                    })" aria-haspopup="true" @click.stop.prevent="onToggleStepsPopover">
                     <FontAwesomeIcon :icon="faBadgePercent" class="text-lg"
-                        :class="activeStep ? 'text-[#E87928]' : 'text-[#b3b3b3]'" />
+                        :class="activeStep ? 'step-discount-text' : 'text-[#b3b3b3]'" />
 
                     <div class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none whitespace-nowrap text-white transform transition-all duration-150"
-                        :class="activeStep ? 'bg-[#E87928]' : 'bg-[#b3b3b3] border border-transparent'">
+                        :class="activeStep ? 'step-discount-bg' : 'bg-[#b3b3b3] border border-transparent'">
                         <span>
                             <span class="hidden xl:inline">{{ displayStep.min_quantity }}+ </span>
                             {{ displayStep.percentage_off_label }}
@@ -388,9 +413,9 @@ const _popoverSteps = ref(null)
 
 
 
-                <div v-if="displayStep" class="font-medium text-right min-w-0 text-[#E87928]">
+                <div v-if="displayStep" class="font-medium text-right min-w-0 step-discount-text">
                     <div class="flex items-baseline justify-end gap-0.5 min-w-0">
-                        <div class="min-w-0 flex-1 truncate text-[#E87928] border-[#E87928]">
+                        <div class="min-w-0 flex-1 truncate step-discount-text step-discount-border">
                             <span class="font-bold" v-if="product.units == 1">{{ locale.currencyFormat(currency?.code, displayStep.price) }} /{{ product.unit }}</span>
                             <span v-else>
                                 <span class=" text-[8px] sm:text-[9px] md:text-[10px] mr-1 font-bold">
@@ -425,7 +450,8 @@ const _popoverSteps = ref(null)
                 </div>
 
                 <div v-if="isDiscountedPriceActive" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
-                    <div class="flex text-xs items-center justify-center rounded-full text-[#E87928]">
+                    <div class="flex text-xs items-center justify-center rounded-full"
+                        :class="displayStep ? 'step-discount-text' : 'text-[#E87928]'">
                         <FontAwesomeIcon :icon="faCheck" />
                     </div>
                 </div>
@@ -439,8 +465,9 @@ const _popoverSteps = ref(null)
                     template="products_triggers_label" />
             </div>
 
-            <Popover v-if="displayStep" ref="_popoverSteps" class="max-w-[90vw] sm:max-w-[300px]">
-                <div class="p-2 text-xs tabular-nums">
+            <Popover v-if="displayStep" ref="_popoverSteps" class="max-w-[90vw] sm:max-w-[300px]"
+                @hide="onHideStepsPopover">
+                <div class="step-discount-scope p-2 text-xs tabular-nums">
                     <div v-if="product.step_discount.label" class="font-bold">
                         {{ product.step_discount.label }}
                     </div>
@@ -450,25 +477,29 @@ const _popoverSteps = ref(null)
                     </div>
 
                     <button v-for="step in product.step_discount.steps" :key="step.min_quantity" type="button"
-                        :disabled="!isStepOrderable(step.min_quantity) || pendingStepQuantity !== null"
-                        class="flex w-full items-center justify-between gap-3 border-t border-gray-100 px-1 py-1.5 text-left enabled:hover:bg-[#FDF1E6] disabled:cursor-default"
-                        :class="step.is_popular ? 'bg-[#FDF1E6]/60' : ''"
+                        :disabled="!isStepOrderable(step.min_quantity) || pendingStepQuantity === step.min_quantity"
+                        class="step-discount-row flex w-full items-center justify-between gap-3 border-t border-gray-100 px-1 py-1.5 text-left enabled:cursor-pointer disabled:cursor-default"
+                        :class="[
+                            step.is_popular && !isStepSelected(step.min_quantity) ? 'step-discount-surface-soft' : '',
+                            isStepSelected(step.min_quantity) ? 'step-discount-surface step-discount-outline' : '',
+                            isStepOverStock(step.min_quantity) ? 'step-discount-unavailable' : '',
+                        ]"
                         @click.stop.prevent="onOrderStep(step.min_quantity)">
                         <span class="flex items-center gap-1.5 whitespace-nowrap font-medium">
-                            <LoadingIcon v-if="pendingStepQuantity === step.min_quantity" class="text-[#E87928]" />
+                            <LoadingIcon v-if="pendingStepQuantity === step.min_quantity" class="step-discount-text" />
 
                             <span v-else-if="canOrderStepDiscount"
                                 class="flex h-3 w-3 shrink-0 items-center justify-center rounded-full border"
-                                :class="activeStep?.min_quantity === step.min_quantity ? 'border-[#E87928]' : 'border-gray-300'">
+                                :class="activeStep?.min_quantity === step.min_quantity ? 'step-discount-border' : 'border-gray-300'">
                                 <span v-if="activeStep?.min_quantity === step.min_quantity"
-                                    class="h-1.5 w-1.5 rounded-full bg-[#E87928]" />
+                                    class="h-1.5 w-1.5 rounded-full step-discount-bg" />
                             </span>
 
-                            {{ step.min_quantity }}+
+                            {{ step.min_quantity }}+ {{ product.unit }}
                             <span class="font-normal text-gray-500">−{{ step.percentage_off_label }}</span>
                         </span>
 
-                        <span class="whitespace-nowrap text-right font-bold text-[#E87928]">
+                        <span class="whitespace-nowrap text-right font-bold step-discount-text">
                             {{ locale.currencyFormat(currency?.code, step.price) }}
                             <span v-if="product.units != 1" class="font-normal text-gray-500">
                                 ({{ locale.currencyFormat(currency?.code, step.price_per_unit) }}/{{ product.unit }})
@@ -485,6 +516,44 @@ const _popoverSteps = ref(null)
 
 
 <style scoped>
+.step-discount-scope {
+    --step-discount-color: #8E44AD;
+    --step-discount-surface: color-mix(in srgb, var(--step-discount-color) 12%, white);
+    --step-discount-surface-soft: color-mix(in srgb, var(--step-discount-color) 6%, white);
+}
+
+.step-discount-text {
+    color: var(--step-discount-color);
+}
+
+.step-discount-bg {
+    background-color: var(--step-discount-color);
+}
+
+.step-discount-border {
+    border-color: var(--step-discount-color);
+}
+
+.step-discount-outline {
+    box-shadow: inset 0 0 0 1px var(--step-discount-color);
+}
+
+.step-discount-surface {
+    background-color: var(--step-discount-surface);
+}
+
+.step-discount-surface-soft {
+    background-color: var(--step-discount-surface-soft);
+}
+
+.step-discount-row:enabled:hover {
+    background-color: var(--step-discount-surface);
+}
+
+.step-discount-unavailable {
+    @apply opacity-40 grayscale;
+}
+
 .zoom-75 {
     transform-origin: 0 0;
     transform: scale(.9);
