@@ -158,6 +158,11 @@ trait WithRetinaRegistration
 
     public function prepareForValidation(ActionRequest $request): void
     {
+        $this->prepareRetinaRegistrationInputs($request);
+    }
+
+    protected function prepareRetinaRegistrationInputs(ActionRequest $request): void
+    {
         $this->sanitizeInputs();
         $this->set('traffic_sources', $request->cookie('aiku_tsd'));
         $this->set('session_id', $request->session()->getId());
