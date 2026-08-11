@@ -403,9 +403,10 @@ test('delete back in stock reminder', function (BackInStockReminder $reminder) {
 })->depends('add back in stock reminder to customer');
 
 test('create customer note', function (Customer $customer) {
+    $customerNotesCount = $customer->customerNotes()->count();
+
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and($customer->customerNotes)->not->toBeNull()
-        ->and($customer->customerNotes->count())->toBe(2);
+        ->and($customer->customerNotes)->not->toBeNull();
 
     $note = StoreCustomerNote::make()->action(
         $customer,
@@ -419,7 +420,7 @@ test('create customer note', function (Customer $customer) {
     expect($note)->toBeInstanceOf(CustomerNote::class)
         ->and($customer)->toBeInstanceOf(Customer::class)
         ->and($customer->customerNotes)->not->toBeNull()
-        ->and($customer->customerNotes->count())->toBe(3);
+        ->and($customer->customerNotes->count())->toBe($customerNotesCount + 1);
 
     return $note;
 })->depends('create customer');
@@ -1285,6 +1286,10 @@ test('sync customers to google ads uploads hashed identifiers', function () {
     $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $customer->update(['email' => 'match@example.com', 'phone' => '+447911123456']);
 
+    $eligibleCustomersCount = $this->shop->customers()
+        ->where(fn ($query) => $query->whereNotNull('email')->orWhereNotNull('phone'))
+        ->count();
+
     Http::fake([
         'oauth2.googleapis.com/*'             => Http::response(['access_token' => 'fake-access-token']),
         'datamanager.googleapis.com/*'        => Http::response(['requestId' => 'req-1']),
@@ -1292,7 +1297,7 @@ test('sync customers to google ads uploads hashed identifiers', function () {
 
     $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
 
-    expect($result['uploaded'])->toBe(3)
+    expect($result['uploaded'])->toBe($eligibleCustomersCount)
         ->and($result['request_ids'])->toBe(['req-1']);
 
     Http::assertSent(fn ($request) => $request->url() === 'https://oauth2.googleapis.com/token'
