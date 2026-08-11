@@ -10,6 +10,7 @@ import Table from '@/Components/Table/Table.vue'
 import { Clocking } from "@/types/clocking"
 import Icon from "@/Components/Icon.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Modal from '@/Components/Utils/Modal.vue'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import DatePicker from 'primevue/datepicker'
@@ -44,6 +45,13 @@ const newClockedAt = ref<Date | null>(null)
 const newNotes = ref<string>('')
 const isAddSubmitting = ref(false)
 const addErrorMsg = ref<string | null>(null)
+
+const isEditTimeModalOpen = ref(false)
+const editTimeRoute = ref<string | null>(null)
+const editTimeLabel = ref<string>('')
+const editTimeValue = ref<Date | null>(null)
+const isEditTimeSubmitting = ref(false)
+const editTimeErrorMsg = ref<string | null>(null)
 
 const canEdit = computed<boolean>(() => {
     if (!props.data) {
@@ -213,6 +221,59 @@ const submitClockIn = async (): Promise<void> => {
     }
 }
 
+const openEditTimeModal = (route: string, label: string, currentValue: string | null): void => {
+    editTimeRoute.value = route
+    editTimeLabel.value = label
+    editTimeValue.value = currentValue ? new Date(currentValue) : new Date()
+    editTimeErrorMsg.value = null
+    isEditTimeModalOpen.value = true
+}
+
+const closeEditTimeModal = (): void => {
+    isEditTimeModalOpen.value = false
+    editTimeRoute.value = null
+    editTimeValue.value = null
+    editTimeErrorMsg.value = null
+}
+
+const submitEditTime = async (): Promise<void> => {
+    if (!editTimeRoute.value || !editTimeValue.value) {
+        return
+    }
+
+    isEditTimeSubmitting.value = true
+    editTimeErrorMsg.value = null
+
+    try {
+        await axios.patch(editTimeRoute.value, {
+            clocked_at: format(editTimeValue.value, "yyyy-MM-dd'T'HH:mm:ssXXX"),
+        })
+
+        notify({
+            title: trans('Success'),
+            text: trans('Clocking time updated successfully.'),
+            type: 'success',
+        })
+
+        router.reload({
+            only: [props.tab || 'time_trackers', 'clockings', 'timesheet']
+        })
+
+        closeEditTimeModal()
+    } catch (e: any) {
+        const message = e?.response?.data?.message ?? trans('Failed to update clocking time.')
+        editTimeErrorMsg.value = message
+
+        notify({
+            title: trans('Failed'),
+            text: message,
+            type: 'error',
+        })
+    } finally {
+        isEditTimeSubmitting.value = false
+    }
+}
+
 const openAddModal = (): void => {
     newClockedAt.value = new Date()
     newNotes.value = ''
@@ -288,14 +349,32 @@ const submitAddClocking = async (): Promise<void> => {
             </template>
 
             <template #cell(starts_at)="{ item: clocking }">
-                <div :href="'x'">
+                <div class="flex items-center gap-x-1.5">
                     {{ useHMAP(clocking.starts_at) }}
+                    <button
+                        v-if="canEdit && clocking.edit_clock_in_route"
+                        type="button"
+                        class="text-gray-300 hover:text-gray-600"
+                        :aria-label="trans('Edit clock in time')"
+                        @click="openEditTimeModal(clocking.edit_clock_in_route, trans('Edit clock in time'), clocking.starts_at)"
+                    >
+                        <FontAwesomeIcon :icon="faEdit" class="w-3 h-3" />
+                    </button>
                 </div>
             </template>
 
             <template #cell(ends_at)="{ item: clocking }">
-                <div :href="'x'">
+                <div class="flex items-center gap-x-1.5">
                     {{ useHMAP(clocking.ends_at) }}
+                    <button
+                        v-if="canEdit && clocking.edit_clock_out_route"
+                        type="button"
+                        class="text-gray-300 hover:text-gray-600"
+                        :aria-label="trans('Edit clock out time')"
+                        @click="openEditTimeModal(clocking.edit_clock_out_route, trans('Edit clock out time'), clocking.ends_at)"
+                    >
+                        <FontAwesomeIcon :icon="faEdit" class="w-3 h-3" />
+                    </button>
                 </div>
             </template>
 
@@ -509,6 +588,54 @@ const submitAddClocking = async (): Promise<void> => {
                         type="primary"
                         :label="isAddSubmitting ? trans('Saving...') : trans('Save')"
                         :disabled="isAddSubmitting"
+                        nativeType="submit"
+                    />
+                </div>
+            </form>
+        </Modal>
+
+        <Modal
+            :isOpen="isEditTimeModalOpen"
+            @onClose="closeEditTimeModal"
+            width="w-full max-w-md"
+        >
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                {{ editTimeLabel }}
+            </h2>
+
+            <form @submit.prevent="submitEditTime" class="space-y-4">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ trans('Clocked At') }}
+                        </label>
+                        <DatePicker
+                            v-model="editTimeValue"
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            showIcon
+                            fluid
+                            class="mt-1"
+                        />
+                    </div>
+
+                    <p v-if="editTimeErrorMsg" class="text-sm text-red-600">
+                        {{ editTimeErrorMsg }}
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <Button
+                        type="secondary"
+                        :label="trans('Cancel')"
+                        :disabled="isEditTimeSubmitting"
+                        @click="closeEditTimeModal"
+                    />
+                    <Button
+                        type="primary"
+                        :label="isEditTimeSubmitting ? trans('Saving...') : trans('Save')"
+                        :disabled="isEditTimeSubmitting"
                         nativeType="submit"
                     />
                 </div>

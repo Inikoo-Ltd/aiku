@@ -52,9 +52,17 @@ const props = defineProps<{
         paid_overtime_duration?: number
         overtime?: number
         about?: string
+        scheduled_hours?: {
+            source: "employee" | "organisation" | null
+            start_time: string | null
+            end_time: string | null
+            breaks: { name: string | null; start_time: string | null; end_time: string | null }[]
+        }
     }
 
 }>()
+
+const formatHM = (value: string | null | undefined): string => value ? value.slice(0, 5) : "-"
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -111,6 +119,29 @@ const extraProps = computed(() => {
             
             <div class="mt-4 border-t border-gray-100">
                 <dl class="divide-y divide-gray-100">
+                    <div v-if="timesheet.scheduled_hours?.source" class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
+                        <dt class="text-sm text-gray-500">
+                            {{ trans('Scheduled hours') }}
+                            <span class="block text-xs text-gray-400 italic">
+                                {{ timesheet.scheduled_hours.source === 'organisation' ? trans('From organisation default') : trans('Employee schedule') }}
+                            </span>
+                        </dt>
+                        <dd class="mt-1 text-sm font-medium sm:col-span-2 sm:mt-0">
+                            <template v-if="timesheet.scheduled_hours.start_time || timesheet.scheduled_hours.end_time">
+                                {{ formatHM(timesheet.scheduled_hours.start_time) }} – {{ formatHM(timesheet.scheduled_hours.end_time) }}
+                                <div v-if="timesheet.scheduled_hours.breaks?.length" class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                                    <span
+                                        v-for="(brk, index) in timesheet.scheduled_hours.breaks"
+                                        :key="index"
+                                        class="text-xs text-gray-400"
+                                    >
+                                        {{ brk.name || trans('Break') }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}
+                                    </span>
+                                </div>
+                            </template>
+                            <span v-else class="text-gray-400 italic font-light">{{ trans('Not a working day') }}</span>
+                        </dd>
+                    </div>
                     <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
                         <dt class="text-sm text-gray-500">Start</dt>
                         <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ useHMAP(timesheet.work_start_at) }}</dd>
