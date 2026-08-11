@@ -492,7 +492,9 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(last_offer)="{ item: family }">
-            <div v-if="family.last_offer" class="whitespace-nowrap text-xs">
+            <div v-if="family.last_offer" class="flex items-center whitespace-nowrap text-xs">
+                <span v-if="family.offer_freshness" v-tooltip="family.offer_freshness.tooltip"
+                    class="mr-1.5 h-2 w-2 shrink-0 rounded-full" :class="family.offer_freshness.class" />
                 <Link v-if="offerRoute(family)" :href="(offerRoute(family) as string)" class="secondaryLink"
                     v-tooltip="family.last_offer.name">
                 {{ family.last_offer.slug }}
@@ -505,7 +507,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     {{ family.last_offer.end_at ? offerDate(family.last_offer.end_at) : trans('No expiration') }}
                 </span>
             </div>
-            <span v-else class="text-gray-400 italic">-</span>
+            <div v-else class="flex items-center whitespace-nowrap text-xs">
+                <span v-if="family.offer_freshness" v-tooltip="family.offer_freshness.tooltip"
+                    class="mr-1.5 h-2 w-2 shrink-0 rounded-full" :class="family.offer_freshness.class" />
+                <span class="text-gray-400 italic">{{ trans('Never') }}</span>
+            </div>
         </template>
 
         <template #cell(sold)="{ item }">
