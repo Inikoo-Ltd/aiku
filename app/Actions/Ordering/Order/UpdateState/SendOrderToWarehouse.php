@@ -63,7 +63,8 @@ class SendOrderToWarehouse extends OrgAction
             data_set($modelData, 'in_warehouse_at', $date);
         }
 
-        if (!$order->transactions()->where('model_type', 'Product')->exists()) {
+        if (!$order->transactions()->where('model_type', 'Product')->exists()
+            && $order->transactions()->where('model_type', 'Service')->exists()) {
             if ($order->customer) {
                 $modelData['email']        = $order->customer->email;
                 $modelData['phone']        = $order->customer->phone;

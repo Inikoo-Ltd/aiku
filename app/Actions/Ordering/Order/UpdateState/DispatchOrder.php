@@ -62,7 +62,7 @@ class DispatchOrder extends OrgAction
                 $transaction->update($dataToUpdate);
             }
 
-            foreach ($order->transactions()->where('model_type', '!=', 'Product')->get() as $transaction) {
+            foreach ($order->transactions()->where('model_type', 'Service')->get() as $transaction) {
                 $transaction->update([
                     'state'               => TransactionStateEnum::DISPATCHED,
                     'dispatched_at'       => $date,

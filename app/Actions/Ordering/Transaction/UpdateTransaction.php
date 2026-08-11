@@ -170,11 +170,11 @@ class UpdateTransaction extends OrgAction
 
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
+        $this->initialisationFromShop($transaction->shop, $request);
+
         if ($transaction->trashed()) {
             return $transaction;
         }
-
-        $this->initialisationFromShop($transaction->shop, $request);
 
         return $this->handle($transaction, $this->validatedData);
     }
