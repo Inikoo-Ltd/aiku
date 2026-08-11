@@ -12,6 +12,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import TrafficSourceShowcase from '@/Components/Showcases/Grp/TrafficSourceShowcase.vue'
 import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
+import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { capitalize } from '@/Composables/capitalize'
 import { useTabChange } from '@/Composables/tab-change'
@@ -25,6 +26,7 @@ const props = defineProps<{
     }
     overview?: any
     customers?: {}
+    orders?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -34,6 +36,7 @@ const component = computed(() => {
     const components: Component = {
         overview: TrafficSourceShowcase,
         customers: TableCustomers,
+        orders: TableOrders,
     }
 
     return components[currentTab.value]

@@ -11,10 +11,12 @@ namespace App\Actions\UI\Marketing;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\TrafficSource\GetAggregatedChannelShowcase;
 use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
+use App\Actions\Ordering\Order\UI\IndexOrdersInTrafficSource;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -102,15 +104,25 @@ class ShowAggregatedMarketingChannel extends OrgAction
                 TrafficSourceTabsEnum::CUSTOMERS->value => $this->tab == TrafficSourceTabsEnum::CUSTOMERS->value
                     ? fn () => CustomersResource::collection($this->customers())
                     : Inertia::optional(fn () => CustomersResource::collection($this->customers())),
+                TrafficSourceTabsEnum::ORDERS->value => $this->tab == TrafficSourceTabsEnum::ORDERS->value
+                    ? fn () => OrdersResource::collection($this->orders())
+                    : Inertia::optional(fn () => OrdersResource::collection($this->orders())),
             ]
-        )->table(
-            IndexCustomers::make()->tableStructure(
-                $this->parent,
-                [],
-                TrafficSourceTabsEnum::CUSTOMERS->value,
-                $this->channelType
+        )
+            ->table(
+                IndexCustomers::make()->tableStructure(
+                    $this->parent,
+                    [],
+                    TrafficSourceTabsEnum::CUSTOMERS->value,
+                    $this->channelType
+                )
             )
-        );
+            ->table(
+                IndexOrdersInTrafficSource::make()->tableStructure(
+                    $this->parent,
+                    TrafficSourceTabsEnum::ORDERS->value
+                )
+            );
     }
 
     private function customers(): LengthAwarePaginator
@@ -118,6 +130,15 @@ class ShowAggregatedMarketingChannel extends OrgAction
         return IndexCustomers::make()->handle(
             $this->parent,
             TrafficSourceTabsEnum::CUSTOMERS->value,
+            $this->channelType
+        );
+    }
+
+    private function orders(): LengthAwarePaginator
+    {
+        return IndexOrdersInTrafficSource::make()->handle(
+            $this->parent,
+            TrafficSourceTabsEnum::ORDERS->value,
             $this->channelType
         );
     }

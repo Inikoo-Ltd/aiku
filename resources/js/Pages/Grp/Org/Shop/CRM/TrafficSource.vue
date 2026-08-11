@@ -45,6 +45,7 @@ const props = defineProps<{
   }
   overview?: {}
   customers?: {}
+  orders?: {}
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -54,7 +55,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
   const components: Component = {
     overview: TrafficSourceShowcase,
-    customers: TableCustomers
+    customers: TableCustomers,
+    orders: TableOrders
   };
 
   return components[currentTab.value];

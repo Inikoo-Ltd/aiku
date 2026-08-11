@@ -20,6 +20,7 @@ enum TrafficSourceTabsEnum: string
 
     case OVERVIEW  = 'overview';
     case CUSTOMERS = 'customers';
+    case ORDERS    = 'orders';
 
     public function blueprint(): array
     {
@@ -31,6 +32,10 @@ enum TrafficSourceTabsEnum: string
             TrafficSourceTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
                 'icon'  => 'fal fa-users',
+            ],
+            TrafficSourceTabsEnum::ORDERS => [
+                'title' => __('Orders'),
+                'icon'  => 'fal fa-shopping-cart',
             ],
         };
     }

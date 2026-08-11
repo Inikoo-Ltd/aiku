@@ -11,10 +11,12 @@
 namespace App\Actions\CRM\TrafficSource\UI;
 
 use App\Actions\CRM\Customer\UI\IndexCustomers;
+use App\Actions\Ordering\Order\UI\IndexOrdersInTrafficSource;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\CRM\TrafficSourceResource;
+use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSource;
 use App\Models\SysAdmin\Organisation;
@@ -74,8 +76,14 @@ class ShowTrafficSource extends OrgAction
                 ? fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))
                 : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))),
 
+            TrafficSourceTabsEnum::ORDERS->value => $this->tab == TrafficSourceTabsEnum::ORDERS->value
+                ? fn () => OrdersResource::collection(IndexOrdersInTrafficSource::run($trafficSource, TrafficSourceTabsEnum::ORDERS->value))
+                : Inertia::optional(fn () => OrdersResource::collection(IndexOrdersInTrafficSource::run($trafficSource, TrafficSourceTabsEnum::ORDERS->value))),
 
-        ])->table(IndexCustomers::make()->tableStructure($trafficSource, [], TrafficSourceTabsEnum::CUSTOMERS->value));
+
+        ])
+            ->table(IndexCustomers::make()->tableStructure($trafficSource, [], TrafficSourceTabsEnum::CUSTOMERS->value))
+            ->table(IndexOrdersInTrafficSource::make()->tableStructure($trafficSource, TrafficSourceTabsEnum::ORDERS->value));
     }
 
     public function jsonResponse(TrafficSource $trafficSource): TrafficSourceResource
