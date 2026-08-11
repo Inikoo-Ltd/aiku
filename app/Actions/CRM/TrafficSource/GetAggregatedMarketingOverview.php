@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
@@ -36,7 +37,7 @@ class GetAggregatedMarketingOverview
      * campaign table would be a list of other people's campaigns; the children table links down to
      * each organisation instead, and the drill-down continues on that dashboard.
      *
-     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
      */
     public function handle(Organisation|Group $parent, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -96,6 +97,7 @@ class GetAggregatedMarketingOverview
                 'name'          => TrafficSourcesTypeEnum::labels()[$type] ?? $type,
                 'type'          => $type,
                 'route'         => $this->channelRoute($parent, $type),
+                'registrations_route' => $this->registrationsRoute($parent, $type, $from, $to),
                 'group'         => TrafficSourcesTypeEnum::tryFrom($type)?->group()['key'] ?? 'other',
                 'group_label'   => TrafficSourcesTypeEnum::tryFrom($type)?->group()['label'] ?? __('Other'),
                 'group_position' => TrafficSourcesTypeEnum::tryFrom($type)?->group()['position'] ?? 9,
@@ -176,6 +178,44 @@ class GetAggregatedMarketingOverview
         return $parent instanceof Organisation
             ? ['name' => 'grp.org.marketing.channels.show', 'parameters' => [$parent->slug, $type]]
             : ['name' => 'grp.marketing.channels.show', 'parameters' => [$type]];
+    }
+
+    /**
+     * The customers the channel signed up, on the customers tab of that same page, over the
+     * dashboard's own dates: the figure being clicked counts a period, so the list it opens has to
+     * cover the same one.
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function registrationsRoute(Organisation|Group $parent, string $type, ?Carbon $from, ?Carbon $to): array
+    {
+        $parameters = [
+            'channelType' => $type,
+            'tab'         => TrafficSourceTabsEnum::CUSTOMERS->value,
+        ] + $this->periodFilter($from, $to);
+
+        return $parent instanceof Organisation
+            ? ['name' => 'grp.org.marketing.channels.show', 'parameters' => ['organisation' => $parent->slug] + $parameters]
+            : ['name' => 'grp.marketing.channels.show', 'parameters' => $parameters];
+    }
+
+    /**
+     * The dashboard's window as the customers table takes it: a between filter on the same column the
+     * registrations are counted over. An open-ended period travels as no filter at all.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function periodFilter(?Carbon $from, ?Carbon $to): array
+    {
+        if (!$from) {
+            return [];
+        }
+
+        return [
+            'between' => [
+                'created_at' => $from->format('Ymd').'-'.($to ?? Carbon::now())->format('Ymd'),
+            ],
+        ];
     }
 
     /**

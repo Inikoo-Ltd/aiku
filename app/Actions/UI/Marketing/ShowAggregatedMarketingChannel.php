@@ -8,12 +8,16 @@
 
 namespace App\Actions\UI\Marketing;
 
+use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\TrafficSource\GetAggregatedChannelShowcase;
+use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Http\Resources\CRM\CustomersResource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -51,7 +55,7 @@ class ShowAggregatedMarketingChannel extends OrgAction
     {
         $this->parent      = $organisation;
         $this->channelType = $this->resolveChannelType($channelType);
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(TrafficSourceTabsEnum::values());
 
         return $request;
     }
@@ -60,7 +64,7 @@ class ShowAggregatedMarketingChannel extends OrgAction
     {
         $this->parent      = group();
         $this->channelType = $this->resolveChannelType($channelType);
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup(group(), $request)->withTab(TrafficSourceTabsEnum::values());
 
         return $request;
     }
@@ -88,8 +92,33 @@ class ShowAggregatedMarketingChannel extends OrgAction
                         'title' => __('Channel'),
                     ],
                 ],
-                'overview'    => GetAggregatedChannelShowcase::run($this->parent, $this->channelType),
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => TrafficSourceTabsEnum::navigation(),
+                ],
+                TrafficSourceTabsEnum::OVERVIEW->value => $this->tab == TrafficSourceTabsEnum::OVERVIEW->value
+                    ? fn () => GetAggregatedChannelShowcase::run($this->parent, $this->channelType)
+                    : Inertia::optional(fn () => GetAggregatedChannelShowcase::run($this->parent, $this->channelType)),
+                TrafficSourceTabsEnum::CUSTOMERS->value => $this->tab == TrafficSourceTabsEnum::CUSTOMERS->value
+                    ? fn () => CustomersResource::collection($this->customers())
+                    : Inertia::optional(fn () => CustomersResource::collection($this->customers())),
             ]
+        )->table(
+            IndexCustomers::make()->tableStructure(
+                $this->parent,
+                [],
+                TrafficSourceTabsEnum::CUSTOMERS->value,
+                $this->channelType
+            )
+        );
+    }
+
+    private function customers(): LengthAwarePaginator
+    {
+        return IndexCustomers::make()->handle(
+            $this->parent,
+            TrafficSourceTabsEnum::CUSTOMERS->value,
+            $this->channelType
         );
     }
 
