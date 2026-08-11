@@ -216,7 +216,7 @@ class ShowFamily extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Family',
             [
-                'title'            => __('Family'),
+                'title'            => __('Family') . ' ' . $family->code,
                 'breadcrumbs'      => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),

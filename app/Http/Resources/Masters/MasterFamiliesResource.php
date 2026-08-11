@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Enums\Discounts\Offer\OfferFreshnessEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -45,6 +46,12 @@ class MasterFamiliesResource extends JsonResource
     public function toArray($request): array
     {
         $lastOffers = $this->last_offers ? json_decode($this->last_offers, true) : [];
+        $lastOffers = array_map(function (array $offer) {
+            $offer['state']     = $offer['offer_state'] ?? null;
+            $offer['freshness'] = OfferFreshnessEnum::badge($offer);
+
+            return $offer;
+        }, $lastOffers);
 
         return [
             'id'                         => $this->id,
@@ -93,6 +100,7 @@ class MasterFamiliesResource extends JsonResource
             'listings'                   => $this->listings ?? 0,
             'sold'                       => $this->sold ?? 0,
             'last_offers'                => $lastOffers,
+            'offers_freshness'           => OfferFreshnessEnum::worstBadge($lastOffers),
             'mismatch_detected'          => $this->mismatch_detected,
             'health_rank'           => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
