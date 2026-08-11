@@ -845,6 +845,43 @@ class EditShop extends OrgAction
                             'value'       => $this->loadReviewValidationScopes($shop),
                         ],
                     ],
+                ],
+
+                [
+                    'label'  => __('Meta connections'),
+                    'icon'   => 'fa-brands fa-meta',
+                    'fields' => [
+                        'meta_channel' => [
+                            'type'         => 'meta_connections',
+                            'noTitle'      => true,
+                            'noSaveButton' => true,
+                            'full'         => true,
+                            'value'        => null,
+                            'options'      => [
+                                [
+                                    'value'       => 'whatsapp',
+                                    'title'       => __('WhatsApp'),
+                                    'icon'        => ['fab', 'fa-whatsapp'],
+                                    'description' => __('Chat with customers over WhatsApp Business.'),
+                                    'available'   => true,
+                                ],
+                                [
+                                    'value'       => 'instagram',
+                                    'title'       => __('Instagram'),
+                                    'icon'        => ['fab', 'fa-instagram'],
+                                    'description' => __('Instagram Direct messages.'),
+                                    'available'   => false,
+                                ],
+                                [
+                                    'value'       => 'messenger',
+                                    'title'       => __('Facebook Messenger'),
+                                    'icon'        => ['fab', 'fa-facebook-messenger'],
+                                    'description' => __('Messenger conversations from your Page.'),
+                                    'available'   => false,
+                                ],
+                            ],
+                        ],
+                    ],
                 ]
             ],
             'args'      => [
