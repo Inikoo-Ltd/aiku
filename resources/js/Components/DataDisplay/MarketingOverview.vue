@@ -11,7 +11,6 @@ import { useLocaleStore } from '@/Stores/locale'
 import { routeType } from '@/types/route'
 import { route } from 'ziggy-js'
 import { trans } from 'laravel-vue-i18n'
-import { router } from '@inertiajs/vue3'
 
 const props = defineProps<{
     overview: {
@@ -49,7 +48,7 @@ const props = defineProps<{
         period: string
         period_label: string
         from: string | null
-        period_options: { value: string, label: string }[]
+        to: string | null
         referrers: {
             host: string
             visitors: number
@@ -176,12 +175,6 @@ const netRegistrations = (registrations: number, unsubscribed: number) =>
 
 const roasIsGood = computed(() => (props.overview.totals.roas ?? 0) >= 1)
 
-/* Period lives in the URL so a filtered view can be shared, bookmarked and reloaded. */
-const selectPeriod = (period: string) => router.get(
-    window.location.pathname,
-    { period },
-    { preserveScroll: true, preserveState: true, replace: true }
-)
 const pct = (part: number, whole: number) => whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : '—'
 
 /* Registrations are share-weighted, so a channel can legitimately hold 12.5 of them. */
@@ -197,21 +190,9 @@ const typeLabel: Record<string, string> = {
 <template>
     <div class="px-4 py-5 md:px-6 space-y-6">
 
-        <!-- Period filter: one row above everything it governs -->
-        <div class="flex flex-wrap items-center gap-1">
-            <button v-for="option in overview.period_options" :key="option.value"
-                type="button"
-                class="px-2.5 py-1 text-xs rounded-md border transition-colors"
-                :class="option.value === overview.period
-                    ? 'bg-gray-800 text-white border-gray-800'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'"
-                @click="selectPeriod(option.value)">
-                {{ option.label }}
-            </button>
-            <span v-if="overview.from" class="ml-2 text-xs text-gray-400">
-                {{ trans('since') }} {{ overview.from }}
-            </span>
-        </div>
+        <p v-if="overview.from" class="text-xs text-gray-400">
+            {{ trans('measured since') }} {{ overview.from }}<span v-if="overview.to"> {{ trans('to') }} {{ overview.to }}</span>
+        </p>
 
         <!-- KPI row: ROAS is the hero, everything else supports it -->
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-px rounded-xl overflow-hidden bg-gray-200 ring-1 ring-gray-200">

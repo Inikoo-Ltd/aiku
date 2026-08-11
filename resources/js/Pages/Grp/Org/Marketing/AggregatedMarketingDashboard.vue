@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { trans } from 'laravel-vue-i18n'
@@ -14,17 +14,20 @@ import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { route } from 'ziggy-js'
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { Intervals, Settings } from '@/types/Components/Dashboard'
+import DashboardSettings from '@/Components/DataDisplay/Dashboard/DashboardSettings.vue'
 
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    intervals: Intervals
+    settings: Settings
     overview: {
         scope: 'group' | 'organisation'
         children_label: string
         currency_code: string
         period: string
         period_label: string
-        period_options: { value: string, label: string }[]
         totals: {
             spend: number
             spend_ads: number
@@ -53,6 +56,8 @@ const props = defineProps<{
             roas: number | null
         }[]
         attribution_started_at: string | null
+        from: string | null
+        to: string | null
         referrers: {
             host: string
             kind: 'site' | 'search'
@@ -173,19 +178,19 @@ const columnHelp: Record<string, string> = {
     orders: trans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships. Touched, not necessarily caused: a customer who would have reordered anyway and clicked a mailshot first still counts here.'),
     roas: trans('Revenue divided by spend. Blank while money is still awaiting invoice, since a channel that has sold but not yet invoiced has not returned nothing - it has not finished being measured.'),
 }
-
-const changePeriod = (event: Event) => {
-    router.get(
-        window.location.pathname,
-        { period: (event.target as HTMLSelectElement).value },
-        { preserveState: true, preserveScroll: true }
-    )
-}
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <div class="pt-3">
+        <DashboardSettings
+            :intervals="intervals"
+            :settings="settings"
+            currentTab="marketing"
+            :reloadOnly="['overview', 'intervals']"
+        />
+    </div>
 
     <!-- Capped: wider than this and the columns drift so far apart the rows stop reading as rows.
          The space left over carries the referrers list instead. -->
@@ -199,12 +204,6 @@ const changePeriod = (event: Event) => {
                 {{ trans('Everything here counts what marketing touched: sales and sign-ups from people who arrived through an ad, a search, a mailshot or a link from another site, credited to that channel. Touched, not caused — a regular who was going to order anyway still counts if they came through one. It is not the shop\'s total trade.') }}
                 <span class="text-gray-400">{{ trans('All figures in') }} {{ overview.currency_code }}.</span>
             </p>
-            <select :value="overview.period" @change="changePeriod"
-                    class="text-xs border-gray-200 rounded-md py-1 pl-2 pr-7">
-                <option v-for="option in overview.period_options" :key="option.value" :value="option.value">
-                    {{ option.label }}
-                </option>
-            </select>
         </div>
 
         <!-- Headline: the four numbers management asks for -->
