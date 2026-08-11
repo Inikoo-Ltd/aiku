@@ -15,10 +15,12 @@ use App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
+use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\CRM\Customer\SyncCustomersToGoogleAds;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UI\GetCustomerTimeline;
@@ -810,6 +812,34 @@ test('UI Create customer web users', function () {
             )
             ->has('formData');
     });
+});
+
+test('customer with orders can not be deleted', function () {
+    $customer = Customer::whereHas('orders', function ($query) {
+        $query->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING]);
+    })->first();
+
+    if (!$customer) {
+        $this->markTestSkipped('No customer with orders in the test set');
+    }
+
+    expect(DeleteCustomer::canBeDeleted($customer))->toBeFalse();
+
+    $this->delete(route('grp.models.customer.delete', ['customer' => $customer->id]))
+        ->assertStatus(422);
+
+    expect($customer->fresh())->not->toBeNull();
+});
+
+test('customer without orders can be deleted', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    expect(DeleteCustomer::canBeDeleted($customer))->toBeTrue();
+
+    $this->delete(route('grp.models.customer.delete', ['customer' => $customer->id]))
+        ->assertRedirect();
+
+    expect(Customer::find($customer->id))->toBeNull();
 });
 
 test('web user username can not be an email', function (Customer $customer) {
