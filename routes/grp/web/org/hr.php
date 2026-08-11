@@ -23,6 +23,7 @@ use App\Actions\HumanResources\Employee\DownloadEmployeesTemplate;
 use App\Actions\HumanResources\Employee\ExportEmployees;
 use App\Actions\HumanResources\Employee\ExportEmployeeTimesheets;
 use App\Actions\HumanResources\Employee\GeneratePinEmployee;
+use App\Actions\HumanResources\Employee\RegenerateEmployeePin;
 use App\Actions\HumanResources\Employee\GetEmployeesByBirthMonth;
 use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
 use App\Actions\HumanResources\Employee\GetEmployeeContract;
@@ -99,6 +100,7 @@ Route::prefix('employees')->as('employees.')->group(function () {
         Route::get('edit', EditEmployee::class)->name('edit');
 
         Route::get('pin', GeneratePinEmployee::class)->name('generate-pin');
+        Route::post('pin/regenerate', RegenerateEmployeePin::class)->name('regenerate-pin');
 
         Route::as('show.')->group(function () {
             Route::get('/positions', [IndexJobPositions::class,'inEmployee'])->name('positions.index');

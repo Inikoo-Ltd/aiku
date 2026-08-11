@@ -28,7 +28,7 @@ class GetEstimatedEmailCost
      *
      * @param array<int, int>|\Illuminate\Support\Collection<int, int> $shopIds
      */
-    public static function automated($shopIds, ?Carbon $from, Currency $currency): float
+    public static function automated($shopIds, ?Carbon $from, ?Carbon $to, Currency $currency): float
     {
         $codes = (array) config('marketing.attributed_outbox_codes', []);
 
@@ -45,6 +45,7 @@ class GetEstimatedEmailCost
                the unindexed created_at seq-scanned all 320 million rows and cost the dashboard 18
                seconds a load. */
             ->when($from, fn ($query) => $query->where('de.sent_at', '>=', $from))
+            ->when($to, fn ($query) => $query->where('de.sent_at', '<=', $to))
             ->count();
 
         if (!$dispatched) {
@@ -79,11 +80,12 @@ class GetEstimatedEmailCost
      *
      * @param array<int, int>|\Illuminate\Support\Collection<int, int> $shopIds
      */
-    public static function unsubscribes($shopIds, ?Carbon $from, ?array $types = null): int
+    public static function unsubscribes($shopIds, ?Carbon $from, ?Carbon $to, ?array $types = null): int
     {
         return (int) Mailshot::whereIn('mailshots.shop_id', $shopIds)
             ->whereIn('type', $types ?? self::allTypes())
             ->when($from, fn ($query) => $query->whereRaw('COALESCE(mailshots.sent_at, mailshots.created_at) >= ?', [$from]))
+            ->when($to, fn ($query) => $query->whereRaw('COALESCE(mailshots.sent_at, mailshots.created_at) <= ?', [$to]))
             ->join('mailshot_stats', 'mailshot_stats.mailshot_id', '=', 'mailshots.id')
             ->sum('mailshot_stats.number_dispatched_emails_state_unsubscribed');
     }
@@ -100,11 +102,12 @@ class GetEstimatedEmailCost
      *
      * @param array<int, int>|\Illuminate\Support\Collection<int, int> $shopIds
      */
-    public function handle($shopIds, ?Carbon $from, Currency $currency, ?array $types = null): float
+    public function handle($shopIds, ?Carbon $from, ?Carbon $to, Currency $currency, ?array $types = null): float
     {
         $dispatched = Mailshot::whereIn('mailshots.shop_id', $shopIds)
             ->whereIn('type', $types ?? self::allTypes())
             ->when($from, fn ($query) => $query->whereRaw('COALESCE(mailshots.sent_at, mailshots.created_at) >= ?', [$from]))
+            ->when($to, fn ($query) => $query->whereRaw('COALESCE(mailshots.sent_at, mailshots.created_at) <= ?', [$to]))
             ->join('mailshot_stats', 'mailshot_stats.mailshot_id', '=', 'mailshots.id')
             ->sum('mailshot_stats.number_dispatched_emails');
 

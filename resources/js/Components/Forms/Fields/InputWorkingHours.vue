@@ -3,7 +3,7 @@ import { reactive, watch } from 'vue'
 import { get } from 'lodash-es'
 import DatePicker from 'primevue/datepicker'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronCircleDown, faChevronCircleUp } from '@far'
+import { faChevronCircleDown, faChevronCircleUp, faPlus, faTrash } from '@far'
 import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
@@ -12,11 +12,7 @@ const props = defineProps<{
   fieldData?: any
 }>()
 
-/*
-|--------------------------------------------------------------------------
-| TIME HELPERS
-|--------------------------------------------------------------------------
-*/
+
 const parseTime = (val: any) => {
     if (!val) return null
 
@@ -54,11 +50,7 @@ const formatTime = (val: Date | null) => {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| MAPS
-|--------------------------------------------------------------------------
-*/
+
 const dayMap: any = {
   monday: 1,
   tuesday: 2,
@@ -79,20 +71,42 @@ const reverseDayMap: any = {
   7: 'sunday'
 }
 
-/*
-|--------------------------------------------------------------------------
-| STATE
-|--------------------------------------------------------------------------
-*/
+
 const weekTimes: any = reactive({
-  sunday: { in: null, out: null },
-  monday: { in: null, out: null },
-  tuesday: { in: null, out: null },
-  wednesday: { in: null, out: null },
-  thursday: { in: null, out: null },
-  friday: { in: null, out: null },
-  saturday: { in: null, out: null }
+  sunday: { in: null, out: null, breaks: [] },
+  monday: { in: null, out: null, breaks: [] },
+  tuesday: { in: null, out: null, breaks: [] },
+  wednesday: { in: null, out: null, breaks: [] },
+  thursday: { in: null, out: null, breaks: [] },
+  friday: { in: null, out: null, breaks: [] },
+  saturday: { in: null, out: null, breaks: [] }
 })
+
+const parseBreaks = (val: any) => {
+  if (!Array.isArray(val)) return []
+
+  return val.map((brk: any) => ({
+    in: parseTime(brk?.s),
+    out: parseTime(brk?.e),
+    label: brk?.n ?? ''
+  }))
+}
+
+const cloneBreaks = (breaks: any[]) => {
+  return breaks.map((brk: any) => ({
+    in: brk.in ? new Date(brk.in) : null,
+    out: brk.out ? new Date(brk.out) : null,
+    label: brk.label
+  }))
+}
+
+const addBreak = (target: any) => {
+  target.breaks.push({ in: null, out: null, label: '' })
+}
+
+const removeBreak = (target: any, index: number) => {
+  target.breaks.splice(index, 1)
+}
 
 const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
 const weekends = ['saturday', 'sunday']
@@ -103,17 +117,14 @@ const ui = reactive({
 })
 
 const group: any = reactive({
-  weekday: { closed: false, in: null, out: null },
-  weekend: { closed: false, in: null, out: null }
+  weekday: { closed: false, in: null, out: null, breaks: [] },
+  weekend: { closed: false, in: null, out: null, breaks: [] }
 })
 
 let hydrating = false
+let selfUpdate = false
 
-/*
-|--------------------------------------------------------------------------
-| INIT / RESET / EDIT HYDRATE
-|--------------------------------------------------------------------------
-*/
+
 const initFromForm = (val: any) => {
   hydrating = true
 
@@ -135,6 +146,7 @@ const initFromForm = (val: any) => {
   Object.keys(weekTimes).forEach(d => {
     weekTimes[d].in = null
     weekTimes[d].out = null
+    weekTimes[d].breaks = []
   })
 
   // hydrate
@@ -144,6 +156,7 @@ const initFromForm = (val: any) => {
 
     weekTimes[day].in = parseTime(val.data[num]?.s)
     weekTimes[day].out = parseTime(val.data[num]?.e)
+    weekTimes[day].breaks = parseBreaks(val.data[num]?.b)
   })
 
   setTimeout(() => hydrating = false)
@@ -155,27 +168,33 @@ initFromForm(props.form[props.fieldName])
 watch(
   () => props.form[props.fieldName],
   (v) => {
+    if (selfUpdate) {
+      selfUpdate = false
+      return
+    }
     initFromForm(v)
   },
   { deep: true }
 )
 
 
-watch(() => [group.weekday.closed, group.weekday.in, group.weekday.out], () => {
+watch(() => [group.weekday.closed, group.weekday.in, group.weekday.out, group.weekday.breaks], () => {
   if (!group.weekday.closed) return
   weekdays.forEach(d => {
     weekTimes[d].in = group.weekday.in
     weekTimes[d].out = group.weekday.out
+    weekTimes[d].breaks = cloneBreaks(group.weekday.breaks)
   })
-})
+}, { deep: true })
 
-watch(() => [group.weekend.closed, group.weekend.in, group.weekend.out], () => {
+watch(() => [group.weekend.closed, group.weekend.in, group.weekend.out, group.weekend.breaks], () => {
   if (!group.weekend.closed) return
   weekends.forEach(d => {
     weekTimes[d].in = group.weekend.in
     weekTimes[d].out = group.weekend.out
+    weekTimes[d].breaks = cloneBreaks(group.weekend.breaks)
   })
-})
+}, { deep: true })
 
 
 const hasAnyTime = (days: string[]) => {
@@ -199,12 +218,20 @@ const buildPayload = () => {
     const s = formatTime(weekTimes[day].in)
     const e = formatTime(weekTimes[day].out)
 
-    if (!s && !e) return
+    const b = weekTimes[day].breaks
+      .filter((brk: any) => brk.in || brk.out)
+      .map((brk: any) => ({
+        s: formatTime(brk.in),
+        e: formatTime(brk.out),
+        n: brk.label ?? ''
+      }))
+
+    if (!s && !e && !b.length) return
 
     result.data[num] = {
       s,
       e,
-      b: {}
+      b
     }
   })
 
@@ -214,6 +241,7 @@ const buildPayload = () => {
 
 watch(() => weekTimes, () => {
   if (hydrating) return
+  selfUpdate = true
   props.form[props.fieldName] = buildPayload()
 }, { deep: true })
 </script>
@@ -261,24 +289,92 @@ watch(() => weekTimes, () => {
             </div>
           </div>
 
-          <div v-if="(section.key === 'weekday' ? ui.openWeekday : ui.openWeekend) && !group[section.key].closed">
-            <div v-for="d in section.days" :key="d" class="grid grid-cols-3 items-center border-t px-3">
+          <template v-if="group[section.key].closed">
+            <div v-for="(brk, i) in group[section.key].breaks" :key="`${section.key}-break-${i}`"
+              class="grid grid-cols-3 items-center border-t border-dashed px-3 bg-gray-50/40">
 
-              <div class="py-2 text-sm capitalize">
-                {{ trans(d.charAt(0).toUpperCase() + d.slice(1)) }}
+              <div class="py-1 pr-2 pl-5">
+                <input v-model="brk.label" type="text" :placeholder="trans('Break label')" :aria-label="trans('Break label')"
+                  class="w-full text-sm py-1 px-2 border border-gray-300 rounded" />
               </div>
 
               <div class="py-1 pr-2">
-                <DatePicker v-model="weekTimes[d].in" timeOnly fluid :minuteStep="1" :hourStep="1"
-                    :placeholder="trans('Start')" inputClass="text-sm py-1" :showClear="true" />
-
-              </div>
-
-              <div class="py-1">
-                <DatePicker v-model="weekTimes[d].out" timeOnly fluid :placeholder="trans('End')"
+                <DatePicker v-model="brk.in" timeOnly fluid :placeholder="trans('Break start')"
                   inputClass="text-sm py-1" :showClear="true" />
               </div>
 
+              <div class="py-1 flex items-center gap-2">
+                <DatePicker v-model="brk.out" timeOnly fluid :placeholder="trans('Break end')"
+                  inputClass="text-sm py-1" :showClear="true" />
+
+                <div @click="removeBreak(group[section.key], i)"
+                  class="cursor-pointer text-gray-400 hover:text-red-600">
+                  <FontAwesomeIcon :icon="faTrash" />
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t px-3 py-2 pl-5">
+              <div @click="addBreak(group[section.key])"
+                class="inline-flex items-center gap-1 text-xs cursor-pointer text-gray-500 hover:text-gray-800">
+                <FontAwesomeIcon :icon="faPlus" />
+                {{ trans('Add break') }}
+              </div>
+            </div>
+          </template>
+
+          <div v-if="(section.key === 'weekday' ? ui.openWeekday : ui.openWeekend) && !group[section.key].closed">
+            <div v-for="d in section.days" :key="d">
+              <div class="grid grid-cols-3 items-center border-t px-3">
+
+                <div class="py-2 text-sm capitalize">
+                  {{ trans(d.charAt(0).toUpperCase() + d.slice(1)) }}
+                </div>
+
+                <div class="py-1 pr-2">
+                  <DatePicker v-model="weekTimes[d].in" timeOnly fluid :minuteStep="1" :hourStep="1"
+                      :placeholder="trans('Start')" inputClass="text-sm py-1" :showClear="true" />
+
+                </div>
+
+                <div class="py-1">
+                  <DatePicker v-model="weekTimes[d].out" timeOnly fluid :placeholder="trans('End')"
+                    inputClass="text-sm py-1" :showClear="true" />
+                </div>
+
+              </div>
+
+              <div v-for="(brk, i) in weekTimes[d].breaks" :key="`${d}-break-${i}`"
+                class="grid grid-cols-3 items-center border-t border-dashed px-3 bg-gray-50/40">
+
+                <div class="py-1 pr-2 pl-5">
+                  <input v-model="brk.label" type="text" :placeholder="trans('Break label')" :aria-label="trans('Break label')"
+                    class="w-full text-sm py-1 px-2 border border-gray-300 rounded" />
+                </div>
+
+                <div class="py-1 pr-2">
+                  <DatePicker v-model="brk.in" timeOnly fluid :placeholder="trans('Break start')"
+                    inputClass="text-sm py-1" :showClear="true" />
+                </div>
+
+                <div class="py-1 flex items-center gap-2">
+                  <DatePicker v-model="brk.out" timeOnly fluid :placeholder="trans('Break end')"
+                    inputClass="text-sm py-1" :showClear="true" />
+
+                  <div @click="removeBreak(weekTimes[d], i)"
+                    class="cursor-pointer text-gray-400 hover:text-red-600">
+                    <FontAwesomeIcon :icon="faTrash" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="px-3 py-1 pl-5">
+                <div @click="addBreak(weekTimes[d])"
+                  class="inline-flex items-center gap-1 text-xs cursor-pointer text-gray-500 hover:text-gray-800">
+                  <FontAwesomeIcon :icon="faPlus" />
+                  {{ trans('Add break') }}
+                </div>
+              </div>
             </div>
           </div>
 

@@ -76,6 +76,7 @@ class ShowFulfilmentPickingSession extends OrgAction
         $actions    = null;
         $navigation = PickingSessionTabsEnum::navigationExcept([
             PickingSessionTabsEnum::ITEMIZED,
+            PickingSessionTabsEnum::HANDLED,
         ]);
 
         if (array_key_exists(PickingSessionTabsEnum::GROUPED->value, $navigation)) {

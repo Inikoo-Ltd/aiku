@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingS
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\OrgAction;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
+use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedUnhandledResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
 use App\Models\Inventory\PickingSession;
@@ -31,8 +32,12 @@ class FetchPickingSessionItemRow extends OrgAction
     public function handle(PickingSession $pickingSession, ?string $tab, int $rowId): ?JsonResource
     {
         if ($tab == 'grouped') {
-            $items    = IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession, null, deliveryNoteId: $rowId);
-            $resource = PickingSessionDeliveryNoteItemsGroupedResource::class;
+            $isBeingPicked = $pickingSession->state->isBeingPicked();
+
+            $items    = IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession, null, deliveryNoteId: $rowId, onlyUnhandled: $isBeingPicked);
+            $resource = $isBeingPicked
+                ? PickingSessionDeliveryNoteItemsGroupedUnhandledResource::class
+                : PickingSessionDeliveryNoteItemsGroupedResource::class;
         } elseif ($tab == 'items') {
             $items    = IndexDeliveryNoteItemsInPickingSession::run($pickingSession, null, deliveryNoteItemId: $rowId);
             $resource = PickingSessionDeliveryNoteItemsStateUnassignedResource::class;

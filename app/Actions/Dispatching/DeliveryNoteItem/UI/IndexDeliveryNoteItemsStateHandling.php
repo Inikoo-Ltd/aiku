@@ -23,7 +23,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
     use WithDeliveryNoteItemUI;
 
-    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null, bool $onlyUnhandled = false): LengthAwarePaginator
     {
         $globalSearch = $this->getGlobalSearchFilter();
 
@@ -59,6 +59,13 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             $q->where('delivery_note_items.quantity_required', '>', 0)
                 ->orWhere('delivery_note_items.is_dirty', true);
         });
+
+        if ($onlyUnhandled) {
+            $query->where(function ($q) {
+                $q->where('delivery_note_items.is_handled', false)
+                    ->orWhere('delivery_note_items.is_dirty', true);
+            });
+        }
 
         return $query
             ->defaultSort(['locations.sort_code', 'org_stocks.code'])

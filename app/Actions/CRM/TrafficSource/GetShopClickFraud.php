@@ -9,7 +9,7 @@
 namespace App\Actions\CRM\TrafficSource;
 
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
-use App\Enums\UI\Marketing\MarketingPeriodEnum;
+use Illuminate\Support\Carbon;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,15 +26,16 @@ class GetShopClickFraud
      * Clicks only exist since the recorder went live (8 Aug 2026) and are pruned after 90 days, so
      * this reads whichever is shorter: the period or the retention window.
      *
-     * @return array{period: string, period_label: string, from: string|null, totals: array{clicks: int, bots: int, bot_pct: float|null, ips: int, repeats: int}, channels: array<int, array{channel: string, clicks: int, bots: int, bot_pct: float|null}>, suspect_ips: array<int, array{ip: string, country: string|null, clicks: int, bots: int, channels: string, device: string|null, first_seen: string, last_seen: string}>, recent_bots: array<int, array{at: string, channel: string, campaign_ref: string|null, ip: string|null, country: string|null, device: string|null, url: string|null}>}
+     * @return array{from: string|null, to: string|null, totals: array{clicks: int, bots: int, bot_pct: float|null, ips: int, repeats: int}, channels: array<int, array{channel: string, clicks: int, bots: int, bot_pct: float|null}>, suspect_ips: array<int, array{ip: string, country: string|null, clicks: int, bots: int, channels: string, device: string|null, first_seen: string, last_seen: string}>, recent_bots: array<int, array{at: string, channel: string, campaign_ref: string|null, ip: string|null, country: string|null, device: string|null, url: string|null}>}
      */
-    public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
+    public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null): array
     {
-        $from = $period->startsAt()?->max(now()->subDays(90)) ?? now()->subDays(90);
+        $from = $from?->max(now()->subDays(90)) ?? now()->subDays(90);
 
         $base = fn () => DB::table('traffic_source_clicks')
             ->where('shop_id', $shop->id)
-            ->where('created_at', '>=', $from);
+            ->where('created_at', '>=', $from)
+            ->when($to, fn ($query) => $query->where('created_at', '<=', $to));
 
         $totals = $base()
             ->selectRaw('COUNT(*) AS clicks, COUNT(*) FILTER (WHERE is_bot) AS bots,
@@ -96,9 +97,8 @@ class GetShopClickFraud
             ->all();
 
         return [
-            'period'       => $period->value,
-            'period_label' => MarketingPeriodEnum::labels()[$period->value],
             'from'         => $from->toDateString(),
+            'to'           => $to?->toDateString(),
             'totals'       => [
                 'clicks'  => (int) $totals->clicks,
                 'bots'    => (int) $totals->bots,

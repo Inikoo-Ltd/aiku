@@ -37,6 +37,7 @@ const props = defineProps<{
     items: object
     itemized: object
     grouped: object
+    handled?: object
     returnType?: string
     dispatchableReturns?: any[]
     allow_waiting: boolean
@@ -147,7 +148,8 @@ const component = computed(() => {
         : {
             items: TableDeliveryNoteItemInPickingSessions,
             itemized: TableDeliveryNoteItemInPickingSessions,
-            grouped: TableDeliveryNoteItemInPickingSessions
+            grouped: TableDeliveryNoteItemInPickingSessions,
+            handled: TableDeliveryNoteItemInPickingSessions
         }
 
     return componentMap[currentTab.value]
@@ -165,6 +167,19 @@ const debReloadPage = debounce(() => {
     })
 }, 1200)
 
+// The wait is there to keep a burst of scans down to one reload, which is worth it while the picker
+// still has rows to work through. Once the tab is empty there is nothing left to scan into it, so the
+// wait only holds them on a screen whose buttons no longer match the session.
+const reloadPageAfterScan = () => {
+    debReloadPage()
+
+    const currentTabTotal = (props[currentTab.value as keyof typeof props] as { meta?: { total?: number } } | undefined)?.meta?.total
+
+    if (currentTabTotal === 0) {
+        debReloadPage.flush()
+    }
+}
+
 type ScanOutcome = {
     status: string
     item?: { id: number } | null
@@ -177,16 +192,22 @@ type ScanOutcome = {
 // row in place keeps the operator on the same scroll position instead of re-rendering the whole table.
 const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
     if (outcome.status !== successStatus) {
-        return
+        return null
     }
 
     const scannedRowId = currentTab.value === "grouped" ? outcome.delivery_note?.id : outcome.item?.id
     const rows = (props[currentTab.value as keyof typeof props] as { data?: any[] } | undefined)?.data
     const scannedRow = rows?.find((row: any) => row.id === scannedRowId)
 
-    if (scannedRow && outcome.row) {
+    if (!rows || !scannedRow) {
+        return null
+    }
+
+    if (outcome.row) {
         Object.assign(scannedRow, outcome.row)
     }
+
+    return { rows, scannedRow }
 }
 
 const onItemPackedByScan = (outcome: ScanOutcome) => {
@@ -197,16 +218,55 @@ const onItemPackedByScan = (outcome: ScanOutcome) => {
     }
 }
 
+// The picking tabs carry only what is left to do, so a scan that finishes an item has to take its row
+// off the list the same way a reload would: it lives on the handled tab from now on. On the grouped tab
+// the whole delivery note goes once the server stops returning it, which is what an empty row means.
+// The table reads its record count off the paginator rather than off the rows, so the count has to be
+// walked down too, otherwise it keeps announcing items the picker can no longer see.
+const dropScannedRowWhenHandled = (patched: { rows: any[], scannedRow: any }, outcome: ScanOutcome) => {
+    if (currentTab.value !== "itemized" && currentTab.value !== "grouped") {
+        return
+    }
+
+    const isHandled = currentTab.value === "grouped"
+        ? !outcome.row
+        : outcome.row?.is_handled && !outcome.row?.is_dirty
+
+    if (!isHandled) {
+        return
+    }
+
+    patched.rows.splice(patched.rows.indexOf(patched.scannedRow), 1)
+
+    const meta = (props[currentTab.value as keyof typeof props] as { meta?: { total?: number, to?: number } } | undefined)?.meta
+
+    if (typeof meta?.total === "number") {
+        meta.total = Math.max(0, meta.total - 1)
+    }
+
+    if (typeof meta?.to === "number") {
+        meta.to = Math.max(0, meta.to - 1)
+    }
+}
+
 // The session finishes its picking by itself once the last item is handled, which swaps the tabs and
 // the buttons the picker works with next. Without this the scan that empties the session would leave
 // them looking at a picking screen that is no longer the truth until they refresh it themselves.
 const onItemPickedByScan = (outcome: ScanOutcome) => {
-    patchRowScannedBy(outcome, "picked")
+    const patched = patchRowScannedBy(outcome, "picked")
+
+    if (patched) {
+        dropScannedRowWhenHandled(patched, outcome)
+    } else if (currentTab.value === "handled" && outcome.status === "picked") {
+        // Scanned while reading the finished items: the item joins that list, and it is only known
+        // server side which position it takes, so the tab has to come back from the server.
+        debReloadPage()
+    }
 
     const sessionState = (props.data as { data?: { state?: string } })?.data?.state
 
     if (outcome.picking_session_state && outcome.picking_session_state !== sessionState) {
-        debReloadPage()
+        reloadPageAfterScan()
     }
 }
 

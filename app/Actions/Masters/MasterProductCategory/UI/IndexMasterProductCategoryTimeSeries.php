@@ -20,8 +20,8 @@ class IndexMasterProductCategoryTimeSeries extends OrgAction
 {
     public function handle(MasterProductCategory $masterProductCategory, string|null $prefix): LengthAwarePaginator
     {
-        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
+        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::MONTHLY->value);
+        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::MONTHLY;
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);

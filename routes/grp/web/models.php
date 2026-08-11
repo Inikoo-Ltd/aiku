@@ -1043,6 +1043,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::get('convert-to-blog', ConvertMailshotToBlog::class)->name('convert-to-blog')->withoutScopedBindings();
         Route::post('second-wave', SetMailshotSecondWaveStatus::class)->name('second-wave')->withoutScopedBindings();
         Route::patch('second-wave', UpdateMailshotSecondWave::class)->name('second-wave.update')->withoutScopedBindings();
+        Route::post('send-test', SendTestEmail::class)->name('send-test');
     });
 
     Route::name('email-template.')->prefix('email-template')->group(function () {
@@ -1050,6 +1051,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('{emailTemplate:id}', UpdateMailshotTemplate::class)->name('update')->withoutScopedBindings();
         Route::post('{emailTemplate:id}/as-new-template', StoreMailshotAsNewTemplate::class)->name('store.as-new-template')->withoutScopedBindings();
         Route::delete('{emailTemplate:id}', DeleteMailshotTemplate::class)->name('delete')->withoutScopedBindings();
+        Route::post('{emailTemplate:id}/send-test', [SendTestEmail::class, 'asControllerTemplate'])->name('send-test');
     });
 });
 
@@ -1064,7 +1066,7 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
         Route::patch('/', UpdateOutbox::class)->name('update')->withoutScopedBindings();
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
-        Route::post('send/test', SendTestEmail::class)->name('send.test')->withoutScopedBindings();
+        Route::post('send-test', [SendTestEmail::class, 'asControllerFulfillment'])->name('send.test')->withoutScopedBindings();
     });
 });
 

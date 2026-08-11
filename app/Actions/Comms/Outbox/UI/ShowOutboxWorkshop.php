@@ -148,11 +148,10 @@ class ShowOutboxWorkshop extends OrgAction
                     'method' => 'post'
                 ],
                 'sendTestRoute' => $this->parent instanceof Fulfilment ? [
-                    'name' => 'grp.org.fulfilments.show.operations.comms.outboxes.send.test',
+                    'name' => 'grp.models.fulfilment.outboxes.send.test',
                     'parameters' => [
-                        'organisation' => $this->organisation->slug,
-                        'fulfilment' => $this->parent->slug,
-                        'outbox' => $email->outbox->slug
+                        'fulfilment' => $this->parent->id,
+                        'outbox' => $email->outbox->id
                     ]
                 ] : [
                     'name' => 'grp.models.shop.outboxes.send.test',

@@ -39,26 +39,31 @@ enum WebpageSubTypeEnum: string
     case CALL_BACK = 'call_back';
     case APPOINTMENT = 'appointment';
     case PRICING = 'pricing';
-    case BLOG = 'blog';
     case ARTICLE = 'article';
     case MAILSHOT = 'mailshot';
-    case DAVIDS_TRAVEL_BLOG = 'davids_travel_blog';
-    case TIPS = 'tips';
 
+    case BLOG = 'blog';
+    case DAVID_AW_NEWS  = 'david_aw_news';
+    case PRODUCT_GUIDES = 'product_guides';
+    case BUSINESS_TIPS  = 'business_tips';
+    case INSIGHT        = 'insight';
 
     public static function labels(): array
     {
         return [
-            'storefront'  => __('storefront'),
-            'appointment' => __('appointment'),
-            'login'       => __('login'),
-            'register'    => __('register'),
-            'blog'        => __('blog'),
-            'mailshot'    => __('mailshot'),
-            'article'     => __('article'),
-            'content'     => __('content'),
-            'davids_travel_blog' => __("David's Travel Blog"),
-            'tips'               => __('Tips'),
+            'storefront'            => __('Storefront'),
+            'appointment'           => __('Appointment'),
+            'login'                 => __('Login'),
+            'register'              => __('Register'),
+            'mailshot'              => __('Mailshot'),
+            'article'               => __('Article'),
+            'content'               => __('Content'),
+            
+            'blog'                  => __('Blog'),
+            'insight'               => __('Industry & Retail Insights'),
+            'david_aw_news'         => __("David's Travel Blog"),
+            'product_guides'        => __('Product Guides'),
+            'business_tips'         => __('Business Tips'),
         ];
     }
 
@@ -68,9 +73,37 @@ enum WebpageSubTypeEnum: string
     public static function blogCategories(): array
     {
         return [
-            self::DAVIDS_TRAVEL_BLOG,
-            self::TIPS,
             self::BLOG,
+            self::DAVID_AW_NEWS,
+            self::PRODUCT_GUIDES,
+            self::BUSINESS_TIPS,
+            self::INSIGHT,
+        ];
+    }
+
+    public static function blogCategoriesWithLabel(): array
+    {
+        return [
+            [
+                'value' => self::BLOG->value,
+                'label' => __("Blog"),
+            ],
+            [
+                'value' => self::DAVID_AW_NEWS->value,
+                'label' => __("David's Travel Blog"),
+            ],
+            [
+                'value' => self::PRODUCT_GUIDES->value,
+                'label' => __("Product Guides"),
+            ],
+            [
+                'value' => self::BUSINESS_TIPS->value,
+                'label' => __("Business Tips"),
+            ],
+            [
+                'value' => self::INSIGHT->value,
+                'label' => __("Industry & Retail's Insight"),
+            ],
         ];
     }
 
