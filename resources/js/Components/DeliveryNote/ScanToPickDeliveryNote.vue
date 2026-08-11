@@ -243,7 +243,7 @@ const applyOutcome = (outcome: ScanOutcome) => {
                 <div
                     v-if="lastOutcome.item && lastOutcome.item.quantity_to_pick > 0"
                     class="ml-auto flex items-center gap-x-2">
-                    <span class="whitespace-nowrap rounded bg-amber-950 px-2 py-1 text-sm font-bold text-amber-50">
+                    <span class="whitespace-nowrap rounded border border-dashed border-amber-950 px-2 py-1 text-sm font-bold text-amber-800">
                         {{ ctrans(":remaining left on this item", { remaining: lastOutcome.item.quantity_to_pick }) }}
                     </span>
 
