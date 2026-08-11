@@ -131,15 +131,15 @@ class StoreMasterProductFromTradeUnits extends OrgAction
 
         if ($this->get('master_prices')) {
             $this->set('master_prices', collect($this->get('master_prices'))->map(fn ($item) => [
-                'value'         => $item['value'],
-                'independent'   => filter_var($item['independent'], FILTER_VALIDATE_BOOLEAN),
+                'value'         => Arr::get($item, 'value'),
+                'independent'   => filter_var(Arr::get($item, 'independent'), FILTER_VALIDATE_BOOLEAN),
             ])->toArray());
         }
 
         if ($this->get('master_rrps')) {
             $this->set('master_rrps', collect($this->get('master_rrps'))->map(fn ($item) => [
-                'value'         => $item['value'],
-                'independent'   => filter_var($item['independent'], FILTER_VALIDATE_BOOLEAN),
+                'value'         => Arr::get($item, 'value'),
+                'independent'   => filter_var(Arr::get($item, 'independent'), FILTER_VALIDATE_BOOLEAN),
             ])->toArray());
         }
     }
