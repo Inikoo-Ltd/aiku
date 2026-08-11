@@ -208,6 +208,23 @@ trait WithRetinaRegistration
                         ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
+                ...$this->shop->website ? [
+                    new IUnique(
+                        table: 'web_users',
+                        extraConditions: [
+                            ['column' => 'website_id', 'value' => $this->shop->website->id],
+                        ],
+                        message: __('This email is already registered.')
+                    ),
+                    new IUnique(
+                        table: 'web_users',
+                        column: 'username',
+                        extraConditions: [
+                            ['column' => 'website_id', 'value' => $this->shop->website->id],
+                        ],
+                        message: __('This email is already registered.')
+                    ),
+                ] : [],
             ],
             'phone'           => [Arr::get($this->shop->settings, 'registration.require_phone_number', false) ? 'required' : 'nullable', 'max:255'],
             'tiktok_code'     => ['nullable', 'string', 'max:255'],
