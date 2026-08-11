@@ -85,6 +85,7 @@ class GetShopMarketingOverview
                 'type'          => $source->type,
                 'route'         => $this->channelRoute($shop, $source->slug),
                 'registrations_route' => $this->registrationsRoute($shop, $source->slug, $from, $to),
+                'orders_route'  => $this->ordersRoute($shop, $source->slug, $from, $to),
                 'group'         => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['key'] ?? 'other',
                 'group_label'   => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['label'] ?? __('Other'),
                 'group_position' => TrafficSourcesTypeEnum::tryFrom($source->type)?->group()['position'] ?? 9,
@@ -183,18 +184,33 @@ class GetShopMarketingOverview
     {
         $route                      = $this->channelRoute($shop, $slug);
         $route['parameters']['tab'] = TrafficSourceTabsEnum::CUSTOMERS->value;
-        $route['parameters']        += $this->periodFilter($from, $to);
+        $route['parameters']        += $this->periodFilter($from, $to, 'created_at');
 
         return $route;
     }
 
     /**
-     * The dashboard's window as the customers table takes it: a between filter on the same column the
-     * registrations are counted over. An open-ended period travels as no filter at all.
+     * The orders the channel was touched before, on the channel's own page, over the dashboard's
+     * dates.
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function ordersRoute(Shop $shop, string $slug, ?Carbon $from, ?Carbon $to): array
+    {
+        $route                      = $this->channelRoute($shop, $slug);
+        $route['parameters']['tab'] = TrafficSourceTabsEnum::ORDERS->value;
+        $route['parameters']        += $this->periodFilter($from, $to, 'date');
+
+        return $route;
+    }
+
+    /**
+     * The dashboard's window as a table takes it: a between filter on the same column the figure was
+     * counted over. An open-ended period travels as no filter at all.
      *
      * @return array<string, array<string, string>>
      */
-    private function periodFilter(?Carbon $from, ?Carbon $to): array
+    private function periodFilter(?Carbon $from, ?Carbon $to, string $column): array
     {
         if (!$from) {
             return [];
@@ -202,7 +218,7 @@ class GetShopMarketingOverview
 
         return [
             'between' => [
-                'created_at' => $from->format('Ymd').'-'.($to ?? Carbon::now())->format('Ymd'),
+                $column => $from->format('Ymd').'-'.($to ?? Carbon::now())->format('Ymd'),
             ],
         ];
     }

@@ -45,6 +45,7 @@ const props = defineProps<{
             type: string
             route: routeType
             registrations_route: routeType
+            orders_route: routeType
             group: string
             group_label: string
             group_position: number
@@ -359,7 +360,12 @@ const columnHelp: Record<string, string> = {
                                   class="hover:text-gray-900 hover:underline">{{ count(channel.registrations) }}</Link>
                             <template v-else>{{ count(channel.registrations) }}</template><span v-if="channel.unsubscribed > 0" class="text-[#d03b3b]"> −{{ locale.number(channel.unsubscribed) }}</span>
                         </td>
-                        <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
+                        <td class="text-right px-2 tabular-nums">
+                            <Link v-if="channel.orders > 0"
+                                  :href="route(channel.orders_route.name, channel.orders_route.parameters)"
+                                  class="hover:text-gray-900 hover:underline">{{ count(channel.orders) }}</Link>
+                            <template v-else>{{ count(channel.orders) }}</template>
+                        </td>
                         <td class="text-right pl-2 tabular-nums"
                             :class="channel.roas === null ? 'text-gray-300' : channel.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
                             {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}

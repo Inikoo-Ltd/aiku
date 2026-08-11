@@ -98,6 +98,7 @@ class GetAggregatedMarketingOverview
                 'type'          => $type,
                 'route'         => $this->channelRoute($parent, $type),
                 'registrations_route' => $this->registrationsRoute($parent, $type, $from, $to),
+                'orders_route'  => $this->ordersRoute($parent, $type, $from, $to),
                 'group'         => TrafficSourcesTypeEnum::tryFrom($type)?->group()['key'] ?? 'other',
                 'group_label'   => TrafficSourcesTypeEnum::tryFrom($type)?->group()['label'] ?? __('Other'),
                 'group_position' => TrafficSourcesTypeEnum::tryFrom($type)?->group()['position'] ?? 9,
@@ -189,10 +190,31 @@ class GetAggregatedMarketingOverview
      */
     private function registrationsRoute(Organisation|Group $parent, string $type, ?Carbon $from, ?Carbon $to): array
     {
+        return $this->tabRoute($parent, $type, TrafficSourceTabsEnum::CUSTOMERS, $this->periodFilter($from, $to, 'created_at'));
+    }
+
+    /**
+     * The orders the channel was touched before, on the orders tab of that same page, over the
+     * dashboard's own dates.
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function ordersRoute(Organisation|Group $parent, string $type, ?Carbon $from, ?Carbon $to): array
+    {
+        return $this->tabRoute($parent, $type, TrafficSourceTabsEnum::ORDERS, $this->periodFilter($from, $to, 'date'));
+    }
+
+    /**
+     * @param array<string, array<string, string>> $period
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function tabRoute(Organisation|Group $parent, string $type, TrafficSourceTabsEnum $tab, array $period): array
+    {
         $parameters = [
             'channelType' => $type,
-            'tab'         => TrafficSourceTabsEnum::CUSTOMERS->value,
-        ] + $this->periodFilter($from, $to);
+            'tab'         => $tab->value,
+        ] + $period;
 
         return $parent instanceof Organisation
             ? ['name' => 'grp.org.marketing.channels.show', 'parameters' => ['organisation' => $parent->slug] + $parameters]
@@ -200,12 +222,12 @@ class GetAggregatedMarketingOverview
     }
 
     /**
-     * The dashboard's window as the customers table takes it: a between filter on the same column the
-     * registrations are counted over. An open-ended period travels as no filter at all.
+     * The dashboard's window as a table takes it: a between filter on the same column the figure was
+     * counted over. An open-ended period travels as no filter at all.
      *
      * @return array<string, array<string, string>>
      */
-    private function periodFilter(?Carbon $from, ?Carbon $to): array
+    private function periodFilter(?Carbon $from, ?Carbon $to, string $column): array
     {
         if (!$from) {
             return [];
@@ -213,7 +235,7 @@ class GetAggregatedMarketingOverview
 
         return [
             'between' => [
-                'created_at' => $from->format('Ymd').'-'.($to ?? Carbon::now())->format('Ymd'),
+                $column => $from->format('Ymd').'-'.($to ?? Carbon::now())->format('Ymd'),
             ],
         ];
     }
