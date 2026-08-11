@@ -630,6 +630,7 @@ const onApplyTemplate = (payload: {
   blocks: Array<{
     source: 'current' | 'incoming',
     id: number,
+    ulid : ulid,
     type: string,
     show: boolean,
     visibility: any,
@@ -652,6 +653,13 @@ const onApplyTemplate = (payload: {
     });
 
     saveState();
+    router.reload({
+      only: ['webpage'],
+      onSuccess: (newValue) => {
+        data.value = newValue.props.webpage;
+        sideKey.value++;
+      },
+    });
 
     notify({
       title: trans("Success"),
@@ -1012,7 +1020,7 @@ console.log('props_workshop',props)
           <LoadingIcon class="w-16 h-16 text-5xl text-slate-400" />
           <span class="text-sm text-slate-400">{{ trans("Loading preview…") }}</span>
         </div>
-        <iframe ref="_iframe" :src="iframeSrc" :title="props.title"
+        <iframe ref="_iframe" :src="iframeSrc" :title="props.title" :key="sideKey"
           :class="[iframeClass, isIframeLoading ? 'invisible' : '', 'border-0 bg-white']"
           @load="isIframeLoading = false" allowfullscreen />
       </div>

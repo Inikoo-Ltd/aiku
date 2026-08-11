@@ -10,6 +10,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ScreenView from '@/Components/ScreenView.vue'
 import { setIframeView } from '@/Composables/Workshop'
 import { Root as RootWebpage } from '@/types/webpageTypes'
+import { ulid } from 'ulid'
 
 const props = defineProps<{
 	webpage: RootWebpage
@@ -137,6 +138,7 @@ const onCreate = () => {
 		name: templateName.value.trim(),
 		scope: blockScope.value,
 		blocks: selectedBlocks.value.map((block: any) => ({
+			ulid : ulid(),
 			id: block.id,
 			type: block.type,
 			position: getBlockPosition(block),

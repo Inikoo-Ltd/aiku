@@ -4,11 +4,12 @@ import Dialog from 'primevue/dialog'
 import draggable from 'vuedraggable'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faArrowDown, faArrowUp, faCheck, faCodeMerge, faEyeSlash, faGripVertical, faLayerGroup, faLock, faPlus, faTrashAlt } from '@fal'
+import { faArrowDown, faArrowUp, faCheck, faCodeMerge, faExclamationTriangle, faEyeSlash, faGripVertical, faLayerGroup, faLock, faPlus, faTrashAlt } from '@fal'
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { WebLayoutTemplate } from '@/types/WebLayoutTemplate'
+
 
 type MergeSide = 'current' | 'incoming'
 
@@ -197,6 +198,7 @@ const onApply = () => {
 			source: entry.side,
 			id: entry.block.id,
 			type: entry.block.type,
+			ulid : entry.block.ulid,
 			show: !!entry.block.show,
 			visibility: entry.block.visibility ? JSON.parse(JSON.stringify(entry.block.visibility)) : null,
 			must_have: !!entry.block.must_have,
@@ -240,6 +242,17 @@ watch(visible, (isVisible) => {
 
 				<span class="text-[11px] text-slate-400">
 					{{ trans('Pick the blocks you want to keep, the result is what the page will look like') }}
+				</span>
+			</div>
+
+			<!-- Dynamic block warning -->
+			<div class="shrink-0 flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5">
+				<FontAwesomeIcon
+					:icon="faExclamationTriangle"
+					class="mt-px shrink-0 text-[11px] text-amber-500"
+					fixed-width />
+				<span class="text-[11px] leading-tight text-amber-800">
+					{{ trans('Settings on individual or dynamic blocks (Product, Product List, etc) are not passed down from the template to the page') }}
 				</span>
 			</div>
 

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebLayoutTemplate;
 
+use App\Actions\Maintenance\Web\WithRepairWebpages;
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Actions\Web\Webpage\WithStoreWebpage;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ApplyWebLayoutTemplate extends OrgAction
 {
     use WithStoreWebpage;
+    use WithRepairWebpages;
 
     public function handle(Webpage $webpage, array $modelData)
     {
@@ -34,7 +36,7 @@ class ApplyWebLayoutTemplate extends OrgAction
 
             $webBlocks  = data_get($modelData, 'blocks');
 
-            foreach ($webBlocks as $webBlock) {
+            foreach ($webBlocks as $key => $webBlock) {
 
                 // If it's from incoming, the WebBlock will be created based on selected template fieldValue data
                 if (!$webBlock['id']) {
@@ -53,13 +55,17 @@ class ApplyWebLayoutTemplate extends OrgAction
                         $visibility
                     );
 
-                    $webBlock['id'] = $newBlock->id;
+                    data_set($webBlocks, "{$key}.id", $newBlock->id);
                 }
 
                 DB::table('model_has_web_blocks')
                     ->where('id', $webBlock['id'])
                     ->update(['position' => $webBlock['position']]);
             }
+
+            $unusedId = $webpage->modelHasWebBlocks()->whereNotIn('id', data_get($webBlocks, '*.id'))->pluck('id')->toArray();
+
+            $this->deleteWebBlocksByModelHasID($webpage, $unusedId);
 
             return $webpage;
         });
