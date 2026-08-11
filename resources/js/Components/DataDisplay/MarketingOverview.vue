@@ -33,6 +33,7 @@ const props = defineProps<{
             name: string
             type: string
             route: routeType
+            registrations_route: routeType
             group: string
             group_label: string
             group_position: number
@@ -417,7 +418,10 @@ const typeLabel: Record<string, string> = {
                             </td>
                             <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                                {{ count(channel.registrations) }}<span v-if="channel.unsubscribed > 0" class="text-[#d03b3b]"> −{{ locale.number(channel.unsubscribed) }}</span>
+                                <Link v-if="channel.registrations > 0"
+                                      :href="route(channel.registrations_route.name, channel.registrations_route.parameters)"
+                                      class="hover:text-gray-900 hover:underline">{{ count(channel.registrations) }}</Link>
+                                <template v-else>{{ count(channel.registrations) }}</template><span v-if="channel.unsubscribed > 0" class="text-[#d03b3b]"> −{{ locale.number(channel.unsubscribed) }}</span>
                             </td>
                             <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
                             <td class="text-right pl-2 tabular-nums"
