@@ -2931,7 +2931,7 @@ test('two master shops can each have a department and sub department with the sa
         ->and($subDepartments[0]->master_shop_id)->not->toBe($subDepartments[1]->master_shop_id);
 });
 
-test('store master product from trade units with master_prices missing value returns 422 not 500', function () {
+test('store master product from trade units creates even when some master_prices have no value', function () {
     $masterShop   = createFreshMasterShop();
     $masterFamily = StoreMasterProductCategory::make()->action(
         parent: $masterShop,
@@ -2947,6 +2947,7 @@ test('store master product from trade units with master_prices missing value ret
     $response = post(route('grp.models.master_family.store-assets', [$masterFamily->id]), [
         'code'              => 'BSS-TEST-01',
         'name'              => 'Butter Bubble Soap Bundle',
+        'unit'              => 'bundle',
         'masterShop'        => $masterShop->slug,
         'is_minion_variant' => 'false',
         'is_for_sale'       => 'true',
@@ -2954,7 +2955,7 @@ test('store master product from trade units with master_prices missing value ret
             ['id' => $tradeUnits[0]->id, 'quantity' => 1],
         ],
         'master_prices'     => [
-            'EUR' => ['independent' => 'false'],
+            'EUR' => ['value' => '10', 'independent' => 'false'],
             'GBP' => ['independent' => 'false'],
         ],
         'master_rrps'       => [
@@ -2963,5 +2964,10 @@ test('store master product from trade units with master_prices missing value ret
     ]);
 
     expect($response->getStatusCode())->not->toBe(500);
-    $response->assertStatus(302)->assertSessionHasErrors();
+    $response->assertStatus(201);
+
+    $masterAsset = $masterFamily->masterAssets()->where('code', 'BSS-TEST-01')->first();
+    expect($masterAsset)->not->toBeNull()
+        ->and((float) data_get($masterAsset->master_prices, 'EUR.value'))->toBe(10.0)
+        ->and(data_get($masterAsset->master_prices, 'GBP.value'))->toBeNull();
 });
