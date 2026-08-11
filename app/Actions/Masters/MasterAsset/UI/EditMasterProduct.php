@@ -217,6 +217,29 @@ class EditMasterProduct extends OrgAction
             'type_input'        => 'rrp'
         ];
 
+        $saleStatusFields = [];
+
+        if (!$masterProduct->not_for_sale_from_trade_unit) {
+            $saleStatusFields['is_for_sale'] = [
+                'saveConfirmation' => [
+                    'description' => __('Changing the sale status of a master product will affect all products linked to it in all shops.'),
+                ],
+                'type'         => 'toggle',
+                'label'        => __('For Sale'),
+                'value'        => $masterProduct->is_for_sale,
+            ];
+        }
+
+        $saleStatusFields['set_as_discontinuing'] = [
+            'label'           => 'Set as Discontinued',
+            'type'            => 'toggle',
+            'information'     => __('Would set all children products to be discontinuing (Will be discontinued when out of stock)'),
+            'warningText'     => __('Modifying this setting would set all of the children product status to be Discontinuing').'. '.__('Are you sure you want to do this?'),
+            'noSaveButton'    => true,
+            'submitOnConfirm' => true,
+            'value'           => false,
+        ];
+
         return [
             [
                 'label'  => __('Id'),
@@ -376,7 +399,6 @@ class EditMasterProduct extends OrgAction
                     ]
                 ]
             ],
-
             [
                 'label'  => __('Trade units'),
                 'icon'   => 'fa-light fa-atom',
@@ -403,22 +425,10 @@ class EditMasterProduct extends OrgAction
                     ],
                 ],
             ],
-
-            $masterProduct->not_for_sale_from_trade_unit
-                ? []
-                : [
+            [
                 'label'  => __('Sale status'),
                 'icon'   => 'fal fa-cart-arrow-down',
-                'fields' => [
-                    'is_for_sale' => [
-                        'saveConfirmation' => [
-                            'description' => __('Changing the sale status of a master product will affect all products linked to it in all shops.'),
-                        ],
-                        'type'         => 'toggle',
-                        'label'        => __('For Sale'),
-                        'value'        => $masterProduct->is_for_sale,
-                    ],
-                ],
+                'fields' => $saleStatusFields,
             ],
             !$masterProduct->is_single_trade_unit
                 ? []

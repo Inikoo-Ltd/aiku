@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
+use App\Actions\Catalogue\Product\DiscontinueProductFromMasterAsset;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Catalogue\Product\UpdateProduct;
@@ -32,6 +33,7 @@ use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
@@ -78,6 +80,13 @@ class UpdateMasterAsset extends OrgAction
                     'tax_preset' => __('The previous tax change is still repricing baskets, try again when it finishes.'),
                 ]);
             }
+        }
+
+        $willBeDiscontinued = false;
+        if (Arr::has($modelData, 'set_as_discontinuing')) {
+            $willBeDiscontinued = Arr::pull($modelData, 'set_as_discontinuing');
+
+            data_set($modelData, 'status', false);
         }
 
         if (Arr::has($modelData, 'tax_preset')) {
@@ -418,6 +427,10 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if ($willBeDiscontinued) {
+            DiscontinueProductFromMasterAsset::dispatch($masterAsset);
+        }
+
         return $masterAsset;
     }
 
@@ -476,6 +489,8 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps'                   => ['sometimes', 'array'],
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
+
+            'set_as_discontinuing'          => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
