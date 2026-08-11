@@ -24,7 +24,10 @@ class ShowIrisBlogDashboard
 
     private const SUB_TYPES = [
         WebpageSubTypeEnum::BLOG,
-        WebpageSubTypeEnum::TIPS,
+        WebpageSubTypeEnum::DAVID_AW_NEWS,
+        WebpageSubTypeEnum::PRODUCT_GUIDES,
+        WebpageSubTypeEnum::BUSINESS_TIPS,
+        WebpageSubTypeEnum::INSIGHT,
     ];
 
     public function handle(Website $website): LengthAwarePaginator

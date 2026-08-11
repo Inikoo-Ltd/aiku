@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Enums\Discounts\Offer\OfferFreshnessEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Helpers\Media;
@@ -95,6 +96,7 @@ class FamiliesResource extends JsonResource
             'number_current_products'       => $this->number_current_products ?? 0,
             'collections'                   => $collections,
             'last_offer'                    => $lastOffer,
+            'offer_freshness'               => OfferFreshnessEnum::badge($lastOffer),
             'sales_grp_currency_external'   => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
