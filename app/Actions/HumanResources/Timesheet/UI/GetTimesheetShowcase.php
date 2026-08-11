@@ -31,6 +31,7 @@ class GetTimesheetShowcase
 
         return [
             'id'                        => $timesheet->id,
+            'date'                      => $timesheet->date->toDateString(),
             'store_clocking_route'      => route('grp.models.timesheet.clocking.store', $timesheet->id),
             'work_start_at'            => $workStartAt,
             'work_end_at'              => $workEndAt,

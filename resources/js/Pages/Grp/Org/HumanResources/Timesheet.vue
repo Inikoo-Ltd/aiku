@@ -41,6 +41,7 @@ const props = defineProps<{
     clockings?: {}
     timesheet: {
         id?: number
+        date?: string
         store_clocking_route?: string
         work_start_at?: string
         work_end_at?: string
@@ -79,7 +80,10 @@ const component = computed(() => {
 
 const extraProps = computed(() => {
     if (currentTab.value === 'clockings' || currentTab.value === 'time_trackers') {
-        return { storeClockingRoute: props.timesheet.store_clocking_route }
+        return {
+            storeClockingRoute: props.timesheet.store_clocking_route,
+            timesheetDate: props.timesheet.date,
+        }
     }
 
     return {}

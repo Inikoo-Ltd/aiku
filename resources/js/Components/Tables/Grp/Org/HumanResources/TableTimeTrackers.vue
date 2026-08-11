@@ -28,9 +28,22 @@ const props = defineProps<{
     data: any
     tab?: string
     storeClockingRoute?: string
+    timesheetDate?: string
 }>()
 
 library.add(faClock, faDoorOpen, faDoorClosed, faEdit, faPlus, faTrash)
+
+const defaultClockedAt = (): Date => {
+    const now = new Date()
+
+    if (!props.timesheetDate) {
+        return now
+    }
+
+    const [year, month, day] = props.timesheetDate.split('-').map(Number)
+
+    return new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds())
+}
 
 const isClockOutModalOpen = ref(false)
 const isClockInModalOpen = ref(false)
@@ -275,7 +288,7 @@ const submitEditTime = async (): Promise<void> => {
 }
 
 const openAddModal = (): void => {
-    newClockedAt.value = new Date()
+    newClockedAt.value = defaultClockedAt()
     newNotes.value = ''
     addErrorMsg.value = null
     isAddModalOpen.value = true

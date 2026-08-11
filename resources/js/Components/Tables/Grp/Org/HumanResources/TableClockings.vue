@@ -26,8 +26,21 @@ library.add(faEdit, faTrash, faPlus);
 const props = defineProps<{
     data: any,
     tab?: string,
-    storeClockingRoute?: string
+    storeClockingRoute?: string,
+    timesheetDate?: string
 }>()
+
+const defaultClockedAt = (): Date => {
+    const now = new Date();
+
+    if (!props.timesheetDate) {
+        return now;
+    }
+
+    const [year, month, day] = props.timesheetDate.split("-").map(Number);
+
+    return new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+};
 
 const isEditModalOpen = ref(false);
 const selectedClocking = ref<any | null>(null);
@@ -127,7 +140,7 @@ const submitNotes = async () => {
 };
 
 const openAddModal = (): void => {
-    newClockedAt.value = new Date();
+    newClockedAt.value = defaultClockedAt();
     newNotes.value = "";
     addErrorMsg.value = null;
     isAddModalOpen.value = true;
