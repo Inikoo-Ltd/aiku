@@ -56,7 +56,7 @@ class AddRetinaProductToBasket extends RetinaAction
     public function rules(): array
     {
         return [
-            'historic_asset_id' => ['required', Rule::exists('historic_assets', 'id')],
+            'historic_asset_id' => ['required', Rule::exists('historic_assets', 'id')->where('model_type', 'Product')],
         ];
     }
 

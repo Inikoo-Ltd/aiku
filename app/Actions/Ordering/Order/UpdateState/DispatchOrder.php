@@ -62,6 +62,14 @@ class DispatchOrder extends OrgAction
                 $transaction->update($dataToUpdate);
             }
 
+            foreach ($order->transactions()->where('model_type', '!=', 'Product')->get() as $transaction) {
+                $transaction->update([
+                    'state'               => TransactionStateEnum::DISPATCHED,
+                    'dispatched_at'       => $date,
+                    'quantity_dispatched' => $transaction->quantity_ordered,
+                ]);
+            }
+
             $this->update($order, $data);
 
             if ($order->shop->masterShop) {
@@ -110,7 +118,7 @@ class DispatchOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, DeliveryNote $deliveryNote): Order
+    public function action(Order $order, ?DeliveryNote $deliveryNote): Order
     {
         return $this->handle($order, $deliveryNote);
     }

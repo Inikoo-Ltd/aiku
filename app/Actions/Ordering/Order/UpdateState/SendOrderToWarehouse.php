@@ -50,7 +50,7 @@ class SendOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order, array $modelData): DeliveryNote
+    public function handle(Order $order, array $modelData): ?DeliveryNote
     {
         data_set($modelData, 'state', OrderStateEnum::IN_WAREHOUSE);
         $date = now();
@@ -61,6 +61,31 @@ class SendOrderToWarehouse extends OrgAction
 
         if ($order->state == OrderStateEnum::SUBMITTED || $order->in_warehouse_at == null) {
             data_set($modelData, 'in_warehouse_at', $date);
+        }
+
+        if (!$order->transactions()->where('model_type', 'Product')->exists()) {
+            if ($order->customer) {
+                $modelData['email']        = $order->customer->email;
+                $modelData['phone']        = $order->customer->phone;
+                $modelData['contact_name'] = $order->customer->contact_name;
+                $modelData['company_name'] = $order->customer->company_name;
+            }
+            UpdateOrder::make()->action($order, $modelData);
+
+            FinaliseOrder::make()->action($order, true);
+            DispatchOrder::make()->action($order, null);
+
+            if (in_array($order->salesChannel?->type, [
+                SalesChannelTypeEnum::PHONE,
+                SalesChannelTypeEnum::SHOWROOM,
+                SalesChannelTypeEnum::EMAIL,
+                SalesChannelTypeEnum::OTHER
+            ])) {
+                SendNewOrderEmailToSubscribers::dispatch($order->id);
+                SendNewOrderEmailToCustomer::dispatch($order->id);
+            }
+
+            return null;
         }
 
 
@@ -250,7 +275,7 @@ class SendOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, array $modelData): DeliveryNote
+    public function action(Order $order, array $modelData): ?DeliveryNote
     {
         $this->asAction = true;
         $this->order    = $order;
@@ -262,7 +287,7 @@ class SendOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Order $order, ActionRequest $request): DeliveryNote
+    public function asController(Order $order, ActionRequest $request): ?DeliveryNote
     {
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);

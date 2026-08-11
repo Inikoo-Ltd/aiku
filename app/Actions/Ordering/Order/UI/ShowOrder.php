@@ -410,6 +410,12 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
+                    'services_list'              => [
+                        'name'       => 'grp.json.order.services',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
                     'update_discount'            => [
                         'name'       => 'grp.models.order.discount.update',
                         'parameters' => [

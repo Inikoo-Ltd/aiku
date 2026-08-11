@@ -309,6 +309,7 @@ const props = defineProps<{
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
+const currentModalItemType = ref('product')
 const locale = inject("locale", aikuLocaleStructure)
 const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
@@ -498,8 +499,9 @@ const onSubmitNote = async (closePopup: Function) => {
     }
 }
 
-const openModal = (action: any) => {
+const openModal = (action: any, itemType: string = 'product') => {
     currentAction.value = action
+    currentModalItemType.value = itemType
     isModalProductListOpen.value = true
 }
 
@@ -581,6 +583,43 @@ const confirm2 = (action) => {
             )
         },
 
+    });
+};
+
+const invoiceOnlyLoading = ref(false)
+const confirmInvoiceOnly = (action) => {
+    confirm.require({
+        message: ctrans('Generate the invoice and dispatch this order? It only contains services, no goods will be sent to the warehouse.'),
+        header: ctrans('Invoice order'),
+        rejectProps: {
+            label: ctrans('No'),
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: ctrans('Yes, invoice')
+        },
+        accept: () => {
+            router[action.route.method](
+                route(action.route.name, action.route.parameters),
+                {},
+                {
+                    onStart: () => {
+                        invoiceOnlyLoading.value = true
+                    },
+                    onFinish: () => {
+                        invoiceOnlyLoading.value = false
+                    },
+                    onError: () => {
+                        notify({
+                            title: ctrans("Error"),
+                            text: ctrans("Failed to invoice order"),
+                            type: "error",
+                        })
+                    }
+                }
+            )
+        },
     });
 };
 
@@ -1450,7 +1489,22 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <PageHeading :data="pageHead">
         <template #button-add-product="{ action }">
             <div class="relative">
-                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
+                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action, 'product')"
+                    :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+            </div>
+        </template>
+
+        <template #button-invoice-only="{ action }">
+            <div class="relative">
+                <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="invoiceOnlyLoading"
+                    @click="() => confirmInvoiceOnly(action)" :key="`ActionButton${action.label}${action.style}`"
+                    :tooltip="action.tooltip" />
+            </div>
+        </template>
+
+        <template #button-add-service="{ action }">
+            <div class="relative">
+                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action, 'service')"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
             </div>
         </template>
@@ -2519,8 +2573,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         />
     </div>
 
-    <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
-        :current="currentTab" v-model:currentTab="currentTab" :typeModel="'order'" />
+    <ModalProductList v-model="isModalProductListOpen" :fetchRoute="currentModalItemType === 'service' ? routes.services_list : routes.products_list" :action="currentAction"
+        :current="currentTab" v-model:currentTab="currentTab" :typeModel="currentModalItemType === 'service' ? 'service' : 'order'" />
 
     <!-- Section: address edit -->
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-xl">

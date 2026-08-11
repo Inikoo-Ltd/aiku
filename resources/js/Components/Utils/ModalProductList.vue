@@ -16,6 +16,7 @@ import { faBox, faCloud, faCompressWide, faExpandArrowsAlt, faPallet, faSearch, 
 import { faMinus, faPlus, faSave, faUndo } from "@fas"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import { useLocaleStore } from "@/Stores/locale"
 import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "../NumberWithButtonSave.vue"
 import LoadingIcon from "./LoadingIcon.vue"
@@ -85,7 +86,7 @@ const onClickProduct = async (tabSlug: string) => {
 }
 
 const isRowUnavailable = (data: any): boolean => {
-	if (props.typeModel === "purchase_order") {
+	if (props.typeModel === "purchase_order" || props.typeModel === "service") {
 		return false
 	}
 	return !data?.available_quantity || Number(data?.quantity_ordered) > Number(data?.available_quantity)
@@ -307,7 +308,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 							}
 						}
 					)
-			} else if (props.typeModel === "order") {
+			} else if (props.typeModel === "order" || props.typeModel === "service") {
 				// console.log('1111111cccccccc')
 				formProducts
 					.transform(() => ({
@@ -445,7 +446,7 @@ watch(() => model.value, async (newValue) => {
 				<div>
 					<!-- Title -->
 					<div class="flex justify-center py-2 text-gray-600 font-medium mb-3">
-						<h2>{{trans('Products')}}</h2>
+						<h2>{{ typeModel === 'service' ? trans('Services') : trans('Products') }}</h2>
 					</div>
 
 					<!-- Search and Table -->
@@ -512,7 +513,7 @@ watch(() => model.value, async (newValue) => {
 									</div>
 								</template>
 
-								<Column header="Image">
+								<Column v-if="typeModel !== 'service'" header="Image">
 									<template #body="slotProps">
 										<div class="w-16 h-16 rounded">
 											<Image :src="slotProps.data.image_thumbnail" />
@@ -534,7 +535,7 @@ watch(() => model.value, async (newValue) => {
 													class="mr-1 border-green-600 text-teal-600" />
 												{{ slotProps.data?.name }}
 											</div>
-											<div v-if="typeModel !== 'purchase_order'" class="opacity-60 text-sm italic" :class="slotProps.data?.available_quantity ? '' : 'text-red-500'">
+											<div v-if="typeModel !== 'purchase_order' && typeModel !== 'service'" class="opacity-60 text-sm italic" :class="slotProps.data?.available_quantity ? '' : 'text-red-500'">
 												{{ trans("Available quantity") }}: {{ slotProps.data?.available_quantity }}
 											</div>
 											<div
@@ -546,6 +547,13 @@ watch(() => model.value, async (newValue) => {
 												<span v-if="orgStock.units_per_sku"> ({{ trans("packed in") }} {{ orgStock.units_per_sku }}s)</span>
 											</div>
 										</div>
+									</template>
+								</Column>
+								<Column v-if="typeModel === 'service'" header="Price" style="width: 12%">
+									<template #body="slotProps">
+										<span>
+											{{ useLocaleStore().currencyFormat(slotProps.data.currency_code, slotProps.data.price) }}
+										</span>
 									</template>
 								</Column>
 								<Column :header="isOrderingByLevel ? level.quantity : ''" style="width: 8%">
@@ -583,7 +591,7 @@ watch(() => model.value, async (newValue) => {
 								<template #footer>
 									<div class="text-center">
 										Showing
-										{{ products ? products.length : 0 }} products.
+										{{ products ? products.length : 0 }} {{ typeModel === 'service' ? 'services' : 'products' }}.
 									</div>
 								</template>
 							</DataTable>

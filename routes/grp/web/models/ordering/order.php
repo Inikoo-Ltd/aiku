@@ -57,7 +57,7 @@ use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
 
 Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
     Route::delete('', DeleteTransaction::class)->name('delete');
-    Route::patch('', UpdateTransaction::class)->name('update');
+    Route::patch('', UpdateTransaction::class)->name('update')->withTrashed();
     Route::patch('update-quantity-ordered', UpdateTransactionProductQuantityOrdered::class)->name('update_quantity_ordered');
     Route::patch('units', UpdateTransactionUnits::class)->name('update_units');
     Route::patch('update-discretionary-discount', UpdateTransactionDiscretionaryDiscount::class)->name('update_discretionary_discount');

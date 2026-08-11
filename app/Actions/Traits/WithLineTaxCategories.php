@@ -306,7 +306,7 @@ trait WithLineTaxCategories
      */
     public function getOrderTaxBreakdown(Order $order): array
     {
-        $modelTypes = ['Product', 'Charge', 'Adjustment'];
+        $modelTypes = ['Product', 'Service', 'Charge', 'Adjustment'];
         if (!$order->collection_address_id) {
             $modelTypes[] = 'ShippingZone';
         }
