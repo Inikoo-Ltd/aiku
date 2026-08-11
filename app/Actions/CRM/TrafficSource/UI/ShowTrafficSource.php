@@ -47,17 +47,17 @@ class ShowTrafficSource extends OrgAction
 
 
         return Inertia::render('Org/Shop/CRM/TrafficSource', [
-            'title'       => __('TrafficSource details'),
+            'title'       => $trafficSource->name,
             'breadcrumbs' => $this->getBreadcrumbs(
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
             'pageHead'    => [
                 'title' => $trafficSource->name,
-                'model' => __('TrafficSource'),
+                'model' => __('Traffic Source'),
                 'icon'  => [
-                    'icon'  => ['fal', 'fa-TrafficSource'],
-                    'title' => __('TrafficSource')
+                    'icon'  => ['fal', 'fa-traffic-light'],
+                    'title' => __('Traffic Source')
                 ],
                 // 'actions' => $actions,
             ],
@@ -65,6 +65,10 @@ class ShowTrafficSource extends OrgAction
                 'current'    => $this->tab,
                 'navigation' => $navigations,
             ],
+
+            TrafficSourceTabsEnum::OVERVIEW->value => $this->tab == TrafficSourceTabsEnum::OVERVIEW->value
+                ? fn () => GetTrafficSourceShowcase::run($trafficSource)
+                : Inertia::optional(fn () => GetTrafficSourceShowcase::run($trafficSource)),
 
             TrafficSourceTabsEnum::CUSTOMERS->value => $this->tab == TrafficSourceTabsEnum::CUSTOMERS->value
                 ? fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))
