@@ -204,11 +204,29 @@ const props = defineProps<{
     }
 }>()
 
+const getFirstVisibleTab = () => {
+    const keys = Object.keys(props.formData.blueprint || {})
+    for (const key of keys) {
+        const sectionData = props.formData.blueprint[key]
+        const isVisible = !Object.entries(sectionData.fields || {}).every(([fieldKey, field]: any) => field.hidden || fieldKey === 'code')
+        if (isVisible) return key
+    }
+    return 0
+}
+
 const paramsSection = route().params['section'] || 0
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
+
+let initialTab = props.formData?.current || paramsSection
+const isInitialTabVisible = () => {
+    const sectionData = props.formData.blueprint[initialTab]
+    if (!sectionData) return false
+    return !Object.entries(sectionData.fields || {}).every(([fieldKey, field]: any) => field.hidden || fieldKey === 'code')
+}
+
 const currentTab = ref<string | number>(
-    props.formData?.current || paramsSection
+    isInitialTabVisible() ? initialTab : getFirstVisibleTab()
 )
  // if formData.current not exist, take first navigation
 const _buttonRefs = ref([]) // For click linked to Navigation
@@ -348,7 +366,7 @@ const getSeverity = (type?: string) => {
                 <div class="sticky top-16">
                     <template v-for="(sectionData, key) in formData.blueprint">
                         <!-- If Section: all fields is not hidden -->
-                        <div v-if="!(Object.values(sectionData.fields || {}).every((field: any) => field.hidden))"
+                        <div v-if="!(Object.entries(sectionData.fields || {}).every(([key, field]: any) => field.hidden || key === 'code'))"
                             @click="switchTab(key)" :class="[
 								key == currentTab ? `navigationSecondActive` : `navigationSecond`,
 								'cursor-pointer group px-3 py-2 flex items-center text-sm font-medium',
@@ -400,7 +418,7 @@ const getSeverity = (type?: string) => {
 
                 <template v-for="(sectionData, sectionIdx) in formData.blueprint" :key="sectionIdx">
                     <!-- If Section: all fields is not hidden -->
-                    <template v-if="!(Object.values(sectionData.fields || {}).every((field: any) => field.hidden))">
+                    <template v-if="!(Object.entries(sectionData.fields || {}).every(([key, field]: any) => field.hidden || key === 'code'))">
                         <div v-show="sectionIdx == currentTab" class="pt-4">
                             <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`" />
                             <!-- Title -->
@@ -421,7 +439,7 @@ const getSeverity = (type?: string) => {
                                 <template v-for="(fieldData, fieldName, index) in sectionData.fields" :key="index">
                                     <!-- Field: is not hidden and skip price when TBC -->
 
-                                    <div v-if="fieldData && !fieldData?.hidden && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
+                                    <div v-if="fieldData && !fieldData?.hidden && fieldName !== 'code' && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
                                         class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
 
                                         <Action v-if="fieldData.type === 'action'" :action="fieldData.action"
@@ -458,7 +476,7 @@ const getSeverity = (type?: string) => {
         <ul v-else class="space-y-8">
             <template v-for="(sectionData, key) in formData.blueprint">
                 <!-- If Section: all fields is not hidden -->
-                <li v-if="!(Object.values(sectionData.fields || {}).every((field: any) => field.hidden))"
+                <li v-if="!(Object.entries(sectionData.fields || {}).every(([key, field]: any) => field.hidden || key === 'code'))"
                     class="group font-medium" :aria-current="key === currentTab ? 'page' : undefined">
                     <div class="bg-gray-200 py-3 pl-5 flex items-center">
                         <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
@@ -469,7 +487,7 @@ const getSeverity = (type?: string) => {
                     <div class="px-5">
                         <template v-for="(fieldData, fieldName, index) in formData.blueprint[key].fields">
                             <!-- Field: is not hidden and skip price when TBC -->
-                            <div v-if="!fieldData?.hidden && !(['price', 'territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
+                            <div v-if="!fieldData?.hidden && fieldName !== 'code' && !(['price', 'territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
                                 class="py-4">
                                 <Action v-if="fieldData.type === 'action'" :action="fieldData.action"
                                     :dataToSubmit="fieldData.action?.data" />
