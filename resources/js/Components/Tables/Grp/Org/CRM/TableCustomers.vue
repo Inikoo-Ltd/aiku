@@ -35,8 +35,13 @@ function customerRoute(customer: FulfilmentCustomer) {
             return route(
                 "grp.org.shops.show.crm.customers.show",
                 [customer.organisation_slug, customer.shop_slug, customer.slug])
+        case "grp.marketing.channels.show":
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [customer.organisation_slug, customer.shop_slug, customer.slug])
         case "grp.org.overview.customers.index":
         case "grp.org.overview.crm.customers.index":
+        case "grp.org.marketing.channels.show":
             return route(
                 "grp.org.shops.show.crm.customers.show",
                 [(route().params as RouteParams).organisation, customer.shop_slug, customer.slug])

@@ -39,6 +39,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $status
  * @property mixed $address
  * @property mixed $shop_name
+ * @property mixed $shop_slug
+ * @property mixed $organisation_slug
  * @property mixed $balance
  * @property mixed $tags
  * @property mixed $number_customer_sales_channels
@@ -73,6 +75,8 @@ class CustomersResource extends JsonResource
             'number_invoices_type_invoice'    => $this->number_invoices_type_invoice,
             /* Only present when the listing is scoped to a traffic source, which joins it in. */
             'attribution_share'               => $this->attribution_share ?? null,
+            /* Above shop level the row has to say which shop it belongs to for a link to be built. */
+            'shop_slug'                       => $this->shop_slug ?? null,
             'sales_all'                       => $this->sales_all,
             'sales_org_currency_all'          => $this->sales_org_currency_all,
             'sales_grp_currency_all'          => $this->sales_grp_currency_all,
