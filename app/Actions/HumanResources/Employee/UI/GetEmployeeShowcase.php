@@ -40,7 +40,8 @@ class GetEmployeeShowcase
 
         return [
             'employee'              => EmployeeResource::make($employee),
-            'pin'                   => $employee->pin,
+            'pin'                   => $employee->pin ? preg_replace('/^\d+:/', '', $employee->pin) : null,
+            'regenerate_pin_route'  => route('grp.org.hr.employees.regenerate-pin', [$employee->organisation->slug, $employee->slug]),
             'permissions_pictogram' => $pictogram,
             'work_schedule'         => $this->getWorkScheduleData($employee),
         ];
