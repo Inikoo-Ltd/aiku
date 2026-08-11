@@ -129,7 +129,8 @@ class IndexFamilies extends OrgAction
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
                     engine: $elementGroup['engine'],
-                    prefix: $prefix
+                    prefix: $prefix,
+                    default: $elementGroup['default'] ?? null
                 );
             }
         }
@@ -355,7 +356,8 @@ class IndexFamilies extends OrgAction
                     $table->elementGroup(
                         key: $key,
                         label: $elementGroup['label'],
-                        elements: $elementGroup['elements']
+                        elements: $elementGroup['elements'],
+                        default: $elementGroup['default'] ?? null
                     );
                 }
             }
@@ -403,7 +405,7 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'last_offer', label: __('Last Offer'), canBeHidden: true, sortable: true)
+                    ->column(key: 'last_offer', label: __('Last Offer'), tooltip: __('Most recent offer for this family (volume discounts excluded), showing its code, start date and expiration date. The dot indicates freshness: green running, blue scheduled, grey under 3 months, amber 3 to 6 months, red older than 6 months or never offered.'), canBeHidden: true, sortable: true)
                     ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
@@ -687,6 +689,7 @@ class IndexFamilies extends OrgAction
             [
                 'state' => [
                     'label'    => __('State'),
+                    'default'  => ProductCategoryStateEnum::ACTIVE->value.','.ProductCategoryStateEnum::DISCONTINUING->value,
                     'elements' => array_merge_recursive(
                         ProductCategoryStateEnum::labels(),
                         ProductCategoryStateEnum::countFamily($parent)

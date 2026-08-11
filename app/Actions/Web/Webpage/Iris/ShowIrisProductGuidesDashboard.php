@@ -12,11 +12,11 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowIrisDavidsTravelBlogDashboard
+class ShowIrisProductGuidesDashboard
 {
     use AsAction;
 
-    private const SUB_TYPES = [WebpageSubTypeEnum::DAVID_AW_NEWS];
+    private const SUB_TYPES = [WebpageSubTypeEnum::PRODUCT_GUIDES];
 
     public function handle(Website $website): LengthAwarePaginator
     {
@@ -39,7 +39,7 @@ class ShowIrisDavidsTravelBlogDashboard
         return Inertia::render(
             'BlogDashboard',
             [
-                'title' => __("David's Travel Blog"),
+                'title' => __('Product Guides'),
                 'data'  => BlogsIrisResource::collection($blogs),
             ]
         )->table(IndexIrisBlogs::make()->tableStructure($website, IndexIrisBlogs::PREFIX, self::SUB_TYPES));
