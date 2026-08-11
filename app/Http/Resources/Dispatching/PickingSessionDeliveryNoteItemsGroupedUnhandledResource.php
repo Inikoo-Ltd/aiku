@@ -14,8 +14,8 @@ namespace App\Http\Resources\Dispatching;
  */
 class PickingSessionDeliveryNoteItemsGroupedUnhandledResource extends PickingSessionDeliveryNoteItemsGroupedResource
 {
-    protected function onlyUnhandledItems(): bool
+    protected function handledItemsFilter(): ?bool
     {
-        return true;
+        return false;
     }
 }

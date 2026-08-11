@@ -23,7 +23,12 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
     use WithDeliveryNoteItemUI;
 
-    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null, bool $onlyUnhandled = false): LengthAwarePaginator
+    /**
+     * $isHandled splits the delivery note in two: the items the picker still has to walk to, and the
+     * ones already finished. Null keeps them together, which is what every screen outside the picking
+     * tabs asks for. A dirty item counts as unfinished, since it is waiting to be picked again.
+     */
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null, ?bool $isHandled = null): LengthAwarePaginator
     {
         $globalSearch = $this->getGlobalSearchFilter();
 
@@ -60,7 +65,10 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 ->orWhere('delivery_note_items.is_dirty', true);
         });
 
-        if ($onlyUnhandled) {
+        if ($isHandled === true) {
+            $query->where('delivery_note_items.is_handled', true)
+                ->where('delivery_note_items.is_dirty', false);
+        } elseif ($isHandled === false) {
             $query->where(function ($q) {
                 $q->where('delivery_note_items.is_handled', false)
                     ->orWhere('delivery_note_items.is_dirty', true);

@@ -984,6 +984,26 @@ class ShowDeliveryNote extends OrgAction
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
         }
 
+        $hiddenTabs = [];
+        if (!in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, DeliveryNoteStateEnum::PACKED])) {
+            $hiddenTabs = [DeliveryNoteTabsEnum::DONE_ITEMS, DeliveryNoteTabsEnum::PENDING_ITEMS];
+        }
+
+        if ($deliveryNote->state != DeliveryNoteStateEnum::HANDLING) {
+            $hiddenTabs[] = DeliveryNoteTabsEnum::HANDLED_ITEMS;
+        }
+
+        $navigation = DeliveryNoteTabsEnum::navigationExcept($deliveryNote, $hiddenTabs);
+
+        /*
+         * A tab the note no longer offers still arrives in the url, kept by the link somebody followed
+         * or by the tab they were reading before the note moved on, and it would leave them on a table
+         * this state never sends any rows for.
+         */
+        if (!array_key_exists($this->tab, $navigation)) {
+            $this->tab = DeliveryNoteTabsEnum::ITEMS->value;
+        }
+
         $allowScanToPack = (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false);
 
         $scanToPack = null;
@@ -1051,11 +1071,7 @@ class ShowDeliveryNote extends OrgAction
             'is_editable'   => $isEditable,
             'tabs'          => [
                 'current'    => $this->tab,
-                'navigation' => in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, $deliveryNote->state == DeliveryNoteStateEnum::PACKED])
-                    ?
-                    DeliveryNoteTabsEnum::navigation($deliveryNote)
-                    :
-                    DeliveryNoteTabsEnum::navigationExcept($deliveryNote, [DeliveryNoteTabsEnum::DONE_ITEMS, DeliveryNoteTabsEnum::PENDING_ITEMS])
+                'navigation' => $navigation
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
 
@@ -1204,6 +1220,7 @@ class ShowDeliveryNote extends OrgAction
             $inertiaResponse->table(IndexDeliveryNoteItemsStateUnassigned::make()->tableStructure(deliveryNote: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
             $inertiaResponse->table(IndexDeliveryNoteItemsStateHandling::make()->tableStructure(prefix: DeliveryNoteTabsEnum::ITEMS->value, deliveryNote: $deliveryNote, isEditable: $isEditable));
+            $inertiaResponse->table(IndexDeliveryNoteItemsStateHandling::make()->tableStructure(prefix: DeliveryNoteTabsEnum::HANDLED_ITEMS->value, deliveryNote: $deliveryNote, isEditable: $isEditable));
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED) {
             $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value, $isEditable));
             $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, $isEditable));
@@ -1218,6 +1235,11 @@ class ShowDeliveryNote extends OrgAction
         return $inertiaResponse;
     }
 
+    /**
+     * A note that is still being picked keeps the finished items out of the items tab, so the picker
+     * only reads what is left to do, and hands them their own tab to check back on. Once the picking
+     * is over the packer needs the whole list back, since packing works from everything that was picked.
+     */
     public function getItems(DeliveryNote $deliveryNote): array
     {
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
@@ -1228,11 +1250,17 @@ class ShowDeliveryNote extends OrgAction
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
-            return [
-                DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                    : Inertia::optional(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+            $toPick = fn () => DeliveryNoteItemsStateHandlingResource::collection(
+                IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value, isHandled: false)
+            );
 
+            $handled = fn () => DeliveryNoteItemsStateHandlingResource::collection(
+                IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::HANDLED_ITEMS->value, isHandled: true)
+            );
+
+            return [
+                DeliveryNoteTabsEnum::ITEMS->value         => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ? $toPick : Inertia::optional($toPick),
+                DeliveryNoteTabsEnum::HANDLED_ITEMS->value => $this->tab == DeliveryNoteTabsEnum::HANDLED_ITEMS->value ? $handled : Inertia::optional($handled),
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED) {
             return [
