@@ -109,7 +109,8 @@ const activeChildBlockArrayBlock = ref<number | null>(null);
 const sideKey = ref(1);
 const isCreateTemplateDialogVisible = ref(false);
 const isCreatingTemplate = ref(false);
-const TEMPLATES_INDEX_ROUTE = "grp.models.webpage.index_templates";
+const TEMPLATES_INDEX_ROUTE = "grp.json.template_layouts.index";
+const TEMPLATE_DETAIL_ROUTE = "grp.json.template_layouts.detail";
 const TEMPLATE_APPLY_ROUTE = "grp.models.webpage.apply_template";
 const templates = ref<WebLayoutTemplate[]>([]);
 const isLoadingTemplates = ref(false);
@@ -570,6 +571,10 @@ const fetchTemplates = async () => {
 
 const applyTemplate = async (template: WebLayoutTemplate) => {
   applyingTemplateId.value = template.id;
+
+  console.log("SABAR"); 
+  const res = await axios.get(route(TEMPLATE_DETAIL_ROUTE, {webpage: data.value.id, layoutTemplate: applyingTemplateId.value}))
+  console.log('KONTOL', res); return;
 
   try {
     const response = await axios.post(

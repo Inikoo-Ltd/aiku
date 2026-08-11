@@ -26,7 +26,7 @@ class WebLayoutTemplate extends Model implements Auditable
     ];
 
     protected $attributes = [
-        'blocks'                        => 'array',
+        'blocks'                        => '{}',
     ];
 
     protected $guarded = [];

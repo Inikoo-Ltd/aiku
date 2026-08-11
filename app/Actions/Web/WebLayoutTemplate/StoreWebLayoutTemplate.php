@@ -27,8 +27,9 @@ class StoreWebLayoutTemplate extends OrgAction
             abort(422);
         }
 
-        data_set($modelData, 'type', class_basename($webpage));
-        data_set($modelData, 'scope', $webpage->type);
+        data_set($modelData, 'scope', class_basename($webpage));
+        data_set($modelData, 'type', $webpage->type);
+        data_set($modelData, 'sub_type', $webpage->sub_type);
         data_set($modelData, 'author_id', $this->user->id);
 
         WebLayoutTemplate::create($modelData);
@@ -37,8 +38,13 @@ class StoreWebLayoutTemplate extends OrgAction
     public function rules(): array
     {
         return [
-            'name'      => ['required', 'string', Rule::unique('web_layout_templates', 'name')],
-            'blocks'    => ['required', 'array'],
+            'name'                          => ['required', 'string', Rule::unique('web_layout_templates', 'name')],
+            'blocks'                        => ['required', 'array'],
+            'blocks.*.show'                 => ['required', 'boolean'],
+            'blocks.*.type'                 => ['required', 'string'],
+            'blocks.*.position'             => ['required', 'numeric'],
+            'blocks.*.fieldValue'           => ['required', 'array'],
+            'blocks.*.visibility'           => ['required', 'array'],
         ];
     }
 

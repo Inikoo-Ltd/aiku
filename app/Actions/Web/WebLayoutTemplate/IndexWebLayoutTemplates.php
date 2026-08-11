@@ -31,8 +31,9 @@ class IndexWebLayoutTemplates extends OrgAction
         });
 
         $query = QueryBuilder::for(WebLayoutTemplate::class)
-            ->where('type', class_basename($webpage))
-            ->where('scope', $webpage->type)
+            ->where('scope', class_basename($webpage))
+            ->where('type', $webpage->type->value)
+            ->where('sub_type', $webpage->sub_type)
             ->leftJoin('users', 'users.id', 'web_layout_templates.author_id')
             ->orderBy('name');
 
@@ -42,7 +43,7 @@ class IndexWebLayoutTemplates extends OrgAction
                 'web_layout_templates.name',
                 'web_layout_templates.type',
                 'web_layout_templates.scope',
-                'user.username'
+                'users.username'
             ])
             ->allowedSorts([
                 'name',

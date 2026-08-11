@@ -17,8 +17,10 @@ class WebLayoutTemplatesResource extends JsonResource
             'id'           => $this->id,
             'name'         => $this->name,
             'type'         => $this->type,
+            'type'         => $this->sub_type,
             'scope'        => $this->scope,
             'blocks_count' => count($this->blocks ?? []),
+            'author_name'  => $this->username,
             'created_at'   => $this->created_at,
         ];
     }

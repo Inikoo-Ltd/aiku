@@ -10,8 +10,9 @@ return new class () extends Migration {
         Schema::create('web_layout_templates', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique()->index();
-            $table->string('type')->index();
             $table->string('scope')->index();
+            $table->string('type')->index();
+            $table->string('sub_type')->index();
             $table->jsonb('blocks')->default('{}');
             $table->unsignedInteger('author_id')->references('id')->on('user')->nullable();
             $table->timestampsTz();
