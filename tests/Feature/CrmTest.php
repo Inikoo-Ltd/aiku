@@ -20,6 +20,7 @@ use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\SyncCustomersToGoogleAds;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UI\GetCustomerTimeline;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
@@ -79,6 +80,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 
@@ -174,6 +176,36 @@ test('create web user', function (Customer $customer) {
 
     return $customer;
 })->depends('create customer');
+
+test('customer email can not take another web user email', function (Customer $customerWithWebUser) {
+    $otherCustomer = StoreCustomer::make()->action(
+        $this->shop,
+        Customer::factory()->definition(),
+    );
+
+    expect(
+        fn () => UpdateCustomer::make()->action($otherCustomer, ['email' => 'example@mail.com'])
+    )->toThrow(ValidationException::class);
+})->depends('create web user');
+
+test('customer email change follows web user with matching email', function (Customer $customer) {
+    $matchingWebUser = StoreWebUser::make()->action(
+        $customer,
+        [
+            'email'    => $customer->email,
+            'username' => 'matching-web-user',
+            'password' => 'password',
+            'is_root'  => false,
+        ]
+    );
+
+    UpdateCustomer::make()->action($customer, ['email' => 'new-email@mail.com']);
+
+    $rootWebUser = $customer->webUsers()->where('is_root', true)->first();
+
+    expect($matchingWebUser->refresh()->email)->toBe('new-email@mail.com')
+        ->and($rootWebUser->email)->toBe('example@mail.com');
+})->depends('create web user');
 
 
 test('create prospect', function () {
@@ -733,6 +765,7 @@ test('UI edit customer', function () {
                     ->where('name', 'grp.models.customer.update')
                     ->where('parameters', [$customer->id])
             )
+            ->where('formData.blueprint.0.fields.email.value', $customer->email)
             ->has('breadcrumbs', 3);
     });
 });
