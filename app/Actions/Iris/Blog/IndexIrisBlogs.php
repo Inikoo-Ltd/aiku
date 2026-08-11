@@ -24,8 +24,10 @@ class IndexIrisBlogs extends IrisAction
 
     public const SUB_TYPES = [
         WebpageSubTypeEnum::BLOG,
-        WebpageSubTypeEnum::DAVIDS_TRAVEL_BLOG,
-        WebpageSubTypeEnum::TIPS,
+        WebpageSubTypeEnum::DAVID_AW_NEWS,
+        WebpageSubTypeEnum::PRODUCT_GUIDES,
+        WebpageSubTypeEnum::BUSINESS_TIPS,
+        WebpageSubTypeEnum::INSIGHT,
     ];
 
     /**
