@@ -186,12 +186,12 @@ class StoreMasterProductFromTradeUnits extends OrgAction
             'shop_products.*.price'  => [
                 'required',
                 'numeric',
-                'min:0.01'
+                'min:0'
             ],
             'shop_products.*.rrp'    => [
                 'required',
                 'numeric',
-                'min:0.01'
+                'min:0'
             ],
             'shop_products.*.create_in_shop'    => [
                 'required',
@@ -200,16 +200,16 @@ class StoreMasterProductFromTradeUnits extends OrgAction
             'image'                  => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
             'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'   => ['sometimes'],
-            'masterShop'             => ['required'],
+            'masterShop'             => ['sometimes'],
             'is_minion_variant'      => ['required', 'boolean'],
             'is_for_sale'            => ['required', 'boolean'],
             // Master Prices
             'master_prices'                => ['sometimes', 'array'],
-            'master_prices.*.value'        => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'master_prices.*.value'        => ['sometimes', 'nullable', 'numeric', 'gte:0'],
             'master_prices.*.independent'  => ['sometimes', 'boolean'],
             // Master RRPs | This is per unit btw
             'master_rrps'                   => ['sometimes', 'array'],
-            'master_rrps.*.value'           => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'master_rrps.*.value'           => ['sometimes', 'nullable', 'numeric', 'gte:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
         ];
     }
