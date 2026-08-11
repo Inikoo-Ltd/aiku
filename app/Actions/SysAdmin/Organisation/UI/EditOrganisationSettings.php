@@ -66,12 +66,17 @@ class EditOrganisationSettings extends OrgAction
                 'group_weekend' => $hasWeekend,
             ];
 
-            foreach ($workSchedule->days as $day) {
+            foreach ($workSchedule->days()->with('breaks')->get() as $day) {
                 $key = (string)$day->day_of_week;
                 $s = $day->start_time ? Carbon::today()->setTimeFromTimeString($day->start_time)->toIso8601String() : null;
                 $e = $day->end_time ? Carbon::today()->setTimeFromTimeString($day->end_time)->toIso8601String() : null;
 
-                $breaks = (object)[];
+                $breaks = $day->breaks->map(fn ($break) => [
+                    's' => $break->start_time?->format('H:i'),
+                    'e' => $break->end_time?->format('H:i'),
+                    'n' => $break->break_name,
+                    'p' => $break->is_paid,
+                ])->values();
 
                 $scheduleData[$key] = [
                     's' => $s,

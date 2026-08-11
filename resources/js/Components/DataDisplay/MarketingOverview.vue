@@ -32,6 +32,7 @@ const props = defineProps<{
         channels: {
             name: string
             type: string
+            route: routeType
             group: string
             group_label: string
             group_position: number
@@ -89,7 +90,6 @@ const props = defineProps<{
                 prospects_registered: number
             }[]
         }
-        traffic_sources_route: routeType
         mailshots_route: routeType
     }
 }>()
@@ -172,6 +172,18 @@ const count = (value: number) => Number.isInteger(value) ? value.toString() : va
 const pctOf = (part: number, whole: number) => whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
 const netRegistrations = (registrations: number, unsubscribed: number) =>
     count(registrations - unsubscribed).replace('-', '−')
+
+/* Summed from the groups above rather than read off the KPI row, so the last row always adds up to
+   the rows a reader can see. */
+const channelTotals = computed(() => groupedChannels.value.reduce((totals: any, group: any) => ({
+    visits: totals.visits + group.visits,
+    spend: totals.spend + group.spend,
+    pending: totals.pending + group.pending,
+    revenue: totals.revenue + group.revenue,
+    registrations: totals.registrations + group.registrations,
+    unsubscribed: totals.unsubscribed + group.unsubscribed,
+    orders: totals.orders + group.orders,
+}), { visits: 0, spend: 0, pending: 0, revenue: 0, registrations: 0, unsubscribed: 0, orders: 0 }))
 
 const roasIsGood = computed(() => (props.overview.totals.roas ?? 0) >= 1)
 
@@ -280,7 +292,7 @@ const typeLabel: Record<string, string> = {
 
             <div v-if="overview.channels.length" class="mt-4">
                 <Link v-for="channel in overview.channels" :key="channel.type"
-                    :href="route(overview.traffic_sources_route.name, overview.traffic_sources_route.parameters)"
+                    :href="route(channel.route.name, channel.route.parameters)"
                     class="relative grid grid-cols-[7rem_minmax(0,1fr)_5.5rem_3.5rem] md:grid-cols-[11rem_minmax(0,1fr)_7rem_4rem] items-center gap-x-3 rounded-lg px-2 py-2.5 hover:bg-gray-50"
                     @mouseenter="hoveredChannel = channel.type" @mouseleave="hoveredChannel = null">
 
@@ -383,7 +395,10 @@ const typeLabel: Record<string, string> = {
                             </td>
                         </tr>
                         <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type" class="border-b border-gray-50 text-gray-600">
-                            <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
+                            <td class="py-2 pr-2 pl-5">
+                                <Link :href="route(channel.route.name, channel.route.parameters)"
+                                      class="text-gray-500 hover:text-gray-900 hover:underline">{{ channel.name }}</Link>
+                            </td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
                                 <template v-if="channel.visits > 0">
                                     {{ locale.number(channel.visits) }}
@@ -411,6 +426,23 @@ const typeLabel: Record<string, string> = {
                             </td>
                         </tr>
                     </tbody>
+                    <tfoot>
+                        <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
+                            <td class="py-1.5 pr-2">{{ trans('All channels') }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ locale.number(channelTotals.visits) }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ money(channelTotals.spend) }}</td>
+                            <td class="text-right px-2 tabular-nums text-gray-500">{{ money(channelTotals.pending) }}</td>
+                            <td class="text-right px-2 tabular-nums">{{ money(channelTotals.revenue) }}</td>
+                            <td class="text-right px-2 tabular-nums"
+                                :class="channelTotals.registrations - channelTotals.unsubscribed < 0 ? 'text-[#d03b3b]' : ''">
+                                {{ netRegistrations(channelTotals.registrations, channelTotals.unsubscribed) }}
+                            </td>
+                            <td class="text-right px-2 tabular-nums">{{ count(channelTotals.orders) }}</td>
+                            <td class="text-right pl-2 tabular-nums">
+                                {{ channelTotals.spend > 0 && channelTotals.revenue > 0 ? (channelTotals.revenue / channelTotals.spend).toFixed(2) + '×' : '' }}
+                            </td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
 

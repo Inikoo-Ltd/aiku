@@ -18,11 +18,16 @@ enum TrafficSourceTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
+    case OVERVIEW  = 'overview';
     case CUSTOMERS = 'customers';
 
     public function blueprint(): array
     {
         return match ($this) {
+            TrafficSourceTabsEnum::OVERVIEW => [
+                'title' => __('Overview'),
+                'icon'  => 'fal fa-chart-network',
+            ],
             TrafficSourceTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
                 'icon'  => 'fal fa-users',

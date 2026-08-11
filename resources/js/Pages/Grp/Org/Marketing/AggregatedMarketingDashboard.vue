@@ -14,6 +14,7 @@ import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { route } from 'ziggy-js'
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { routeType } from '@/types/route'
 import { Intervals, Settings } from '@/types/Components/Dashboard'
 import DashboardSettings from '@/Components/DataDisplay/Dashboard/DashboardSettings.vue'
 
@@ -42,6 +43,7 @@ const props = defineProps<{
         channels: {
             name: string
             type: string
+            route: routeType
             group: string
             group_label: string
             group_position: number
@@ -165,6 +167,18 @@ const share = (part: number, whole: number) =>
 
 const netRegistrations = (registrations: number, unsubscribed: number) =>
     count(registrations - unsubscribed).replace('-', '−')
+
+/* Summed from the groups above rather than read off the totals card, so the last row always adds up
+   to the rows a reader can see. */
+const channelTotals = computed(() => groupedChannels.value.reduce((totals: any, group: any) => ({
+    visits: totals.visits + group.visits,
+    spend: totals.spend + group.spend,
+    pending: totals.pending + group.pending,
+    revenue: totals.revenue + group.revenue,
+    registrations: totals.registrations + group.registrations,
+    unsubscribed: totals.unsubscribed + group.unsubscribed,
+    orders: totals.orders + group.orders,
+}), { visits: 0, spend: 0, pending: 0, revenue: 0, registrations: 0, unsubscribed: 0, orders: 0 }))
 
 /* Every column says how it was arrived at. These figures each carry a rule that is not guessable
    from the label - what counts as a visit, why revenue lags, which spend is estimated - and a
@@ -313,7 +327,10 @@ const columnHelp: Record<string, string> = {
                     </tr>
                     <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
-                        <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
+                        <td class="py-2 pr-2 pl-5">
+                            <Link :href="route(channel.route.name, channel.route.parameters)"
+                                  class="text-gray-500 hover:text-gray-900 hover:underline">{{ channel.name }}</Link>
+                        </td>
                         <!-- Visits it sent, and how many of them bought. The pair is the point: people
                              arrived and nobody ordered is the case worth seeing. -->
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -345,6 +362,23 @@ const columnHelp: Record<string, string> = {
                         </td>
                     </tr>
                 </tbody>
+                <tfoot>
+                    <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
+                        <td class="py-1.5 pr-2">{{ trans('All channels') }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ locale.number(channelTotals.visits) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ money(channelTotals.spend) }}</td>
+                        <td class="text-right px-2 tabular-nums text-gray-500">{{ money(channelTotals.pending) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ money(channelTotals.revenue) }}</td>
+                        <td class="text-right px-2 tabular-nums"
+                            :class="channelTotals.registrations - channelTotals.unsubscribed < 0 ? 'text-[#d03b3b]' : ''">
+                            {{ netRegistrations(channelTotals.registrations, channelTotals.unsubscribed) }}
+                        </td>
+                        <td class="text-right px-2 tabular-nums">{{ count(channelTotals.orders) }}</td>
+                        <td class="text-right pl-2 tabular-nums">
+                            {{ channelTotals.spend > 0 && channelTotals.revenue > 0 ? (channelTotals.revenue / channelTotals.spend).toFixed(2) + '×' : '' }}
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
 
             <p class="mt-3 text-xs text-gray-400">
