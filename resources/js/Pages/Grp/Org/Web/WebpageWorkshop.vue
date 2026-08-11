@@ -639,7 +639,7 @@ const onApplyTemplate = (payload: {
   isApplyingTemplate.value = true;
 
   console.log(payload)
-  /* axios.post(
+  axios.post(
     route(TEMPLATE_APPLY_ROUTE, { webpage: data.value.id }),
     payload
   ).then(response => {
@@ -666,7 +666,7 @@ const onApplyTemplate = (payload: {
     });
   }).finally(() => {
     isApplyingTemplate.value = false;
-  }); */
+  });
 };
 
 
