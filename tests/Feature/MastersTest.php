@@ -78,6 +78,7 @@ use Inertia\Testing\AssertableInertia;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -2928,4 +2929,39 @@ test('two master shops can each have a department and sub department with the sa
         ->and($subDepartments[0]->code)->toBe($subDepartments[1]->code)
         ->and($subDepartments[0]->id)->not->toBe($subDepartments[1]->id)
         ->and($subDepartments[0]->master_shop_id)->not->toBe($subDepartments[1]->master_shop_id);
+});
+
+test('store master product from trade units with master_prices missing value returns 422 not 500', function () {
+    $masterShop   = createFreshMasterShop();
+    $masterFamily = StoreMasterProductCategory::make()->action(
+        parent: $masterShop,
+        modelData: [
+            'code' => 'MFAM'.uniqid(),
+            'name' => 'Master family',
+            'type' => MasterProductCategoryTypeEnum::FAMILY,
+        ],
+        createChildren: false
+    );
+    $tradeUnits = createTradeUnits($this->group);
+
+    $response = post(route('grp.models.master_family.store-assets', [$masterFamily->id]), [
+        'code'              => 'BSS-TEST-01',
+        'name'              => 'Butter Bubble Soap Bundle',
+        'masterShop'        => $masterShop->slug,
+        'is_minion_variant' => 'false',
+        'is_for_sale'       => 'true',
+        'trade_units'       => [
+            ['id' => $tradeUnits[0]->id, 'quantity' => 1],
+        ],
+        'master_prices'     => [
+            'EUR' => ['independent' => 'false'],
+            'GBP' => ['independent' => 'false'],
+        ],
+        'master_rrps'       => [
+            'EUR' => ['independent' => 'false'],
+        ],
+    ]);
+
+    expect($response->getStatusCode())->not->toBe(500);
+    $response->assertStatus(302)->assertSessionHasErrors();
 });
