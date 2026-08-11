@@ -10,7 +10,7 @@ import { ref } from "vue"
 import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faEye, faEyeSlash } from "@fal"
+import { faEye, faEyeSlash, faPen } from "@fal"
 import PermissionsPictogram from "@/Components/DataDisplay/PermissionsPictogram.vue"
 import { trans } from "laravel-vue-i18n"
 import { Link } from "@inertiajs/vue3"
@@ -20,6 +20,15 @@ const props = defineProps<{
 	data: {
 		employee: any
 		pin: any
+		work_schedule?: {
+			source: "employee" | "organisation" | null
+			days: {
+				day_of_week: number
+				start_time: string | null
+				end_time: string | null
+				breaks: { name: string | null; start_time: string | null; end_time: string | null }[]
+			}[]
+		}
 	}
 }>()
 console.log(props)
@@ -31,6 +40,7 @@ function toggleShowPins() {
 }
 
 const isVisitClockingMachine = ref(false)
+const isVisitWorkingHours = ref(false)
 
 const formatEmergencyContact = (value: any): string => {
 	if (!value) {
@@ -42,6 +52,12 @@ const formatEmergencyContact = (value: any): string => {
 	const parts = [value.contact, value.phone_number, value.address, value.status].filter(Boolean)
 	return parts.length ? parts.join(" | ") : "-"
 }
+
+const dayOfWeekLabels: Record<number, string> = {
+	1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday", 7: "Sunday",
+}
+
+const formatHM = (value: string | null): string => value ? value.slice(0, 5) : "-"
 </script>
 
 <template>
@@ -165,8 +181,9 @@ const formatEmergencyContact = (value: any): string => {
 			</div>
 		</div>
 
+		<div class="mt-4 lg:mt-0 w-full lg:max-w-lg lg:col-span-3 flex flex-col gap-y-4">
 		<div
-			class="mt-4 lg:mt-0 w-full h-fit lg:max-w-lg grid lg:col-span-3 ring-1 ring-gray-300 shadow rounded-2xl py-6 px-4 gap-y-6">
+			class="w-full h-fit grid ring-1 ring-gray-300 shadow rounded-2xl py-6 px-4 gap-y-6">
 			<template v-if="data?.pin">
 				<div class="flex flex-nowrap justify-center gap-2">
 					<div
@@ -210,6 +227,58 @@ const formatEmergencyContact = (value: any): string => {
 						icon="fal fa-plus" />
 				</Link>
 			</template>
+		</div>
+
+		<div
+			class="w-full h-fit grid ring-1 ring-gray-300 shadow rounded-2xl py-6 px-4 gap-y-4">
+			<div class="flex items-center justify-between">
+				<div class="font-semibold">{{ trans("Working hours") }}</div>
+				<div v-if="data?.work_schedule?.source === 'organisation'" class="text-xs text-gray-400 italic">
+					{{ trans("From organisation default") }}
+				</div>
+			</div>
+
+			<template v-if="data?.work_schedule?.days?.length">
+				<div class="divide-y divide-gray-100">
+					<div v-for="day in data.work_schedule.days" :key="day.day_of_week" class="py-2 text-sm">
+						<div class="flex items-center justify-between">
+							<span class="text-gray-500">{{ trans(dayOfWeekLabels[day.day_of_week]) }}</span>
+							<span class="font-medium text-gray-800">
+								{{ formatHM(day.start_time) }} – {{ formatHM(day.end_time) }}
+							</span>
+						</div>
+						<div v-if="day.breaks?.length" class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+							<span
+								v-for="(brk, index) in day.breaks"
+								:key="index"
+								class="text-xs text-gray-400">
+								{{ brk.name || trans("Break") }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}
+							</span>
+						</div>
+					</div>
+				</div>
+			</template>
+
+			<template v-else>
+				<div class="text-center text-gray-400 italic text-sm">
+					{{ trans("No working hours set") }}
+				</div>
+			</template>
+
+			<Link
+				:href="
+					route('grp.org.hr.employees.edit', { ...route().params, section: 'working_hours' })
+				"
+				@start="() => (isVisitWorkingHours = true)"
+				@finish="() => (isVisitWorkingHours = false)"
+				class="mx-auto">
+				<Button
+					type="secondary"
+					:loading="isVisitWorkingHours"
+					:label="trans('Edit working hours')"
+					:icon="faPen" />
+			</Link>
+		</div>
 		</div>
 	</div>
 	<div class="flex py-4 px-8 gap-x-8">

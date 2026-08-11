@@ -433,8 +433,25 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.stock_value) }}</span>
         </template>
 
+        <template #cell(potential_sales)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.potential_sales) }}</span>
+        </template>
+
+        <template #cell(stock_cover)="{ item }">
+            <span v-if="item.stock_cover !== null" class="tabular-nums whitespace-nowrap">{{ item.stock_cover.toFixed(1) }} mo</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
         <template #cell(sales_grp_currency_external)="{ item }">
             <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_grp_currency_external) }}</span>
+        </template>
+
+        <template #cell(gross_profit)="{ item }">
+            <span
+                v-tooltip="item.gross_profit_percentage !== null ? `${item.gross_profit_percentage}%` : undefined"
+                class="tabular-nums"
+                :class="item.gross_profit_percentage !== null ? 'cursor-help' : ''"
+            >{{ locale.currencyFormat(item.currency_code, item.gross_profit) }}</span>
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">

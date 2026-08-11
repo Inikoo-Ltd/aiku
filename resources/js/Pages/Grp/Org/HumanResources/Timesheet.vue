@@ -40,6 +40,8 @@ const props = defineProps<{
     time_trackers?: {}
     clockings?: {}
     timesheet: {
+        id?: number
+        store_clocking_route?: string
         work_start_at?: string
         work_end_at?: string
         work_duration?: string
@@ -65,6 +67,14 @@ const component = computed(() => {
     }
 
     return components[currentTab.value]
+})
+
+const extraProps = computed(() => {
+    if (currentTab.value === 'clockings' || currentTab.value === 'time_trackers') {
+        return { storeClockingRoute: props.timesheet.store_clocking_route }
+    }
+
+    return {}
 })
 
 </script>
@@ -111,7 +121,7 @@ const component = computed(() => {
                     </div>
                     <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
                         <dt class="text-sm text-gray-500">Breaks</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.breaks_duration || '-'}}</dd>
+                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.breaks_duration ? useSecondsToMS(timesheet.breaks_duration) : '-'}}</dd>
                     </div>
                     <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
                         <dt class="text-sm text-gray-500">Total worktime</dt>
@@ -146,5 +156,5 @@ const component = computed(() => {
     <hr class="border-t border-gray-200">
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" v-bind="extraProps"></component>
 </template>

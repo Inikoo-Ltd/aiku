@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +77,14 @@ class ShowShoppingListBoard extends OrgAction
             ])
             ->get();
 
+        $openAspos = DB::table('agent_supplier_purchase_orders')
+            ->whereIn('supplier_id', $rows->pluck('supplier_id')->unique())
+            ->where('state', AgentSupplierPurchaseOrderStateEnum::IN_PROCESS->value)
+            ->whereNull('deleted_at')
+            ->select(['supplier_id', 'id', 'reference', 'slug'])
+            ->get()
+            ->keyBy('supplier_id');
+
         $agents = [];
 
         foreach ($rows->groupBy('agent_id') as $agentRows) {
@@ -121,12 +130,19 @@ class ShowShoppingListBoard extends OrgAction
 
                 usort($products, fn ($a, $b) => ($b['moq_progress'] ?? -1) <=> ($a['moq_progress'] ?? -1));
 
+                $openAspo = $openAspos->get($supplierRow->supplier_id);
+
                 $suppliers[] = [
                     'supplier_id'    => $supplierRow->supplier_id,
                     'code'           => $supplierRow->supplier_code,
                     'slug'           => $supplierRow->supplier_slug,
                     'estimated_value' => round($supplierValue, 2),
                     'products'       => $products,
+                    'open_agent_supplier_purchase_order' => $openAspo ? [
+                        'id'        => $openAspo->id,
+                        'reference' => $openAspo->reference,
+                        'slug'      => $openAspo->slug,
+                    ] : null,
                 ];
             }
 

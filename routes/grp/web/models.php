@@ -264,7 +264,9 @@ use App\Actions\GoodsIn\StockDelivery\UndispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UnreceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
-use App\Actions\GoodsIn\StockDelivery\FinishStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DistributeStockDeliveryExtraCost;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
@@ -294,6 +296,7 @@ use App\Actions\Helpers\Tag\StoreTag;
 use App\Actions\Helpers\Tag\UpdateTag;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
+use App\Actions\HumanResources\Clocking\StoreManualClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\Timesheet\DeleteTimesheet;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
@@ -433,6 +436,13 @@ use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
+use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
+use App\Actions\SupplyChain\AspoDeposit\UpdateAspoDeposit;
+use App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState;
+use App\Actions\SupplyChain\DepositRequest\StoreDepositRequest;
+use App\Actions\SupplyChain\DepositRequest\MarkDepositRequestItemPaid;
+use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit;
+use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryDepositApplication;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\SysAdmin\Guest\DeleteGuest;
@@ -1199,6 +1209,15 @@ Route::patch('/supplier/{supplier:id}', UpdateSupplier::class)->name('supplier.u
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}', UpdateOrgSupplierProduct::class)->name('org_supplier_product.update');
 Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}', UpdateAgentSupplierPurchaseOrder::class)->name('agent_supplier_purchase_order.update');
+Route::post('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}/deposit', StoreAspoDeposit::class)->name('agent_supplier_purchase_order.deposit.store');
+
+Route::name('aspo-deposit.')->prefix('aspo-deposit/{aspoDeposit:id}')->group(function () {
+    Route::patch('update', UpdateAspoDeposit::class)->name('update');
+    Route::patch('state', UpdateAspoDepositState::class)->name('state');
+});
+
+Route::post('/agent/{agent:id}/deposit-request', StoreDepositRequest::class)->name('agent.deposit_request.store');
+Route::patch('/deposit-request-item/{depositRequestItem:id}/mark-paid', MarkDepositRequestItemPaid::class)->name('deposit_request_item.mark_paid');
 
 Route::patch('/org-supplier/{orgSupplier:id}', UpdateOrgSupplier::class)->name('org_supplier.update');
 
@@ -1279,11 +1298,21 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::patch('unreceive', UnreceiveStockDelivery::class)->name('unreceive');
     Route::patch('cancel', CancelStockDelivery::class)->name('cancel');
     Route::patch('start-costing', StartStockDeliveryCosting::class)->name('start-costing');
-    Route::patch('finish-costing', FinishStockDeliveryCosting::class)->name('finish-costing');
     Route::patch('distribute-extra-cost', DistributeStockDeliveryExtraCost::class)->name('distribute-extra-cost');
+    Route::post('cost', StoreStockDeliveryCost::class)->name('cost.store');
+    Route::post('deposit/apply', ApplyStockDeliveryDeposit::class)->name('deposit.apply');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inStockDelivery'])->name('attachment.detach')->withoutScopedBindings();
+});
+
+Route::name('stock-delivery-cost.')->prefix('stock-delivery-cost/{stockDeliveryCost:id}')->group(function () {
+    Route::patch('update', UpdateStockDeliveryCost::class)->name('update');
+    Route::delete('', DeleteStockDeliveryCost::class)->name('delete');
+});
+
+Route::name('stock-delivery-deposit-application.')->prefix('stock-delivery-deposit-application/{stockDeliveryDepositApplication:id}')->group(function () {
+    Route::delete('', DeleteStockDeliveryDepositApplication::class)->name('delete');
 });
 
 Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryItem:id}')->group(function () {
@@ -1460,6 +1489,7 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
     Route::delete('clocking/{clocking:id}', DeleteClocking::class)->name('clocking.delete');
 });
 Route::delete('timesheet/{timesheet:id}', DeleteTimesheet::class)->name('timesheet.delete');
+Route::post('timesheet/{timesheet:id}/clocking', StoreManualClocking::class)->name('timesheet.clocking.store');
 Route::patch('time-tracker/{timeTracker:id}/clock-in', ClockInTimeTracker::class)->name('time-tracker.clock-in');
 Route::patch('time-tracker/{timeTracker:id}/clock-out', ClockOutTimeTracker::class)->name('time-tracker.clock-out');
 Route::delete('time-tracker/{timeTracker:id}', DeleteTimeTracker::class)->name('time-tracker.delete');

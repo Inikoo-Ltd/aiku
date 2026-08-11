@@ -66,6 +66,7 @@ class StorePurchaseOrder extends OrgAction
         }
         /** @var PurchaseOrder $purchaseOrder */
         $purchaseOrder = $parent->purchaseOrders()->create($modelData);
+        $purchaseOrder->refresh();
 
         if ($parent instanceof OrgSupplier) {
             OrgSupplierHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);

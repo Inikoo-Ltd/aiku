@@ -43,6 +43,7 @@ class StoreStockDelivery extends OrgAction
 
         /** @var StockDelivery $stockDelivery */
         $stockDelivery = $parent->stockDeliveries()->create($modelData);
+        $stockDelivery->refresh();
 
         $this->runStockDeliveryHydrators($stockDelivery);
 

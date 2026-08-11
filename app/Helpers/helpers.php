@@ -644,18 +644,21 @@ if (!function_exists('riseDivisor')) {
         }
 
         $divisor = $input[1][1];
-        if ($divisor != 0) {
-            $factor                        = $raiser / $divisor;
-            $dividend                      = $input[1][0] * $factor;
-            $divisor                       = $input[1][1] * $factor;
-            $factoredRequiredFactionalData = [
-                $input[0],
-                [$dividend, $divisor]
-            ];
-            $input                         = $factoredRequiredFactionalData;
+        if ($divisor == 0 || $raiser == 0) {
+            return $input;
         }
 
-        return $input;
+        $whole = $input[0];
+
+        $dividend = round($input[1][0] * ($raiser / $divisor));
+
+        if (abs($dividend) >= abs($raiser)) {
+            $carry     = intdiv((int)$dividend, (int)$raiser);
+            $whole     += $carry;
+            $dividend  -= $carry * $raiser;
+        }
+
+        return [$whole, [$dividend, $raiser]];
     }
 }
 

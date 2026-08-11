@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Procurement;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Helpers\NaturalLanguage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -50,7 +51,7 @@ class StockDeliveryResource extends JsonResource
         if (isset($this->currency_code)) {
             $data['items']        = $this->number_stock_delivery_items_except_cancelled ?: $this->number_stock_delivery_items;
             $data['cbm']          = $this->cbm;
-            $data['gross_weight'] = $this->gross_weight;
+            $data['gross_weight'] = $this->gross_weight !== null ? NaturalLanguage::make()->weight($this->gross_weight * 1000) : null;
             $data['amount']       = $this->cost_total;
             $data['currency_code'] = $this->currency_code;
 

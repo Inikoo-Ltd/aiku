@@ -8,8 +8,10 @@
 
 namespace App\Services;
 
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -377,6 +379,26 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             ->groupBy("$timeSeriesTable.$foreignKey")
             ->select("$timeSeriesTable.$foreignKey");
 
+        $recordsFrequency = TimeSeriesFrequencyEnum::tryFrom($frequency);
+
+        if ($recordsFrequency) {
+            $subQuery->where("$timeSeriesRecordsTable.frequency", $recordsFrequency->singleLetter());
+        }
+
+        if ($hasDateFilter) {
+            $subQuery->where(function ($query) use ($timeSeriesRecordsTable, $recordsFrequency, $startDate, $endDate, $startDateLY, $endDateLY, $includeLY) {
+                $query->where(function ($query) use ($timeSeriesRecordsTable, $recordsFrequency, $startDate, $endDate) {
+                    $this->whereRecordsWithin($query, $timeSeriesRecordsTable, $recordsFrequency, $startDate, $endDate);
+                });
+
+                if ($includeLY) {
+                    $query->orWhere(function ($query) use ($timeSeriesRecordsTable, $recordsFrequency, $startDateLY, $endDateLY) {
+                        $this->whereRecordsWithin($query, $timeSeriesRecordsTable, $recordsFrequency, $startDateLY, $endDateLY);
+                    });
+                }
+            });
+        }
+
         foreach ($timeSeriesFilters as $column => $value) {
             $subQuery->where("{$timeSeriesTable}.{$column}", $value);
         }
@@ -431,5 +453,20 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             'alias' => $alias,
             'days' => $hasDateFilter ? (int) $startDate->diffInDays($endDate) + 1 : null,
         ];
+    }
+
+    private function whereRecordsWithin(
+        Builder $query,
+        string $timeSeriesRecordsTable,
+        ?TimeSeriesFrequencyEnum $frequency,
+        Carbon $startDate,
+        Carbon $endDate
+    ): void {
+        $query->where("$timeSeriesRecordsTable.from", '<=', $endDate->toDateTimeString())
+            ->where("$timeSeriesRecordsTable.to", '>=', $startDate->toDateTimeString());
+
+        if ($frequency) {
+            $query->where("$timeSeriesRecordsTable.from", '>=', $frequency->earliestPeriodStart($startDate)->toDateTimeString());
+        }
     }
 }

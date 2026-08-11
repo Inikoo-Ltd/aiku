@@ -46,36 +46,47 @@ class DistributeStockDeliveryExtraCost extends OrgAction
 
     public function handle(StockDelivery $stockDelivery, array $modelData): StockDelivery
     {
-        $items = $stockDelivery->items()
-            ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
-            ->orderBy('id')
-            ->get();
-
-        if ($items->isEmpty()) {
-            return $stockDelivery;
-        }
-
-        $shares = $this->getShares($items, (int) round((float) $modelData['amount'] * 100), $modelData['type']);
-
-        foreach ($items as $index => $item) {
-            $extra = $shares[$index] / 100;
-
-            $item->update([
-                'cost_extra' => $extra,
-                'cost_total' => (float) $item->cost_items
-                    + $extra
-                    + (float) $item->cost_shipping
-                    + (float) $item->cost_duties
-                    + (float) $item->cost_tax,
-            ]);
-        }
+        self::distribute($stockDelivery, 'cost_extra', (float) $modelData['amount'], $modelData['type']);
 
         StockDeliveriesHydrateCosts::run($stockDelivery);
 
         return $stockDelivery->refresh();
     }
 
-    private function getShares(Collection $items, int $amountInCents, string $type): array
+    public static function distribute(StockDelivery $stockDelivery, string $field, float $amount, string $type = self::DISTRIBUTION_BY_VALUE): void
+    {
+        $items = $stockDelivery->items()
+            ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
+            ->orderBy('id')
+            ->get();
+
+        if ($items->isEmpty()) {
+            return;
+        }
+
+        $shares = self::getShares($items, (int) round($amount * 100), $type);
+
+        foreach ($items as $index => $item) {
+            $share          = $shares[$index] / 100;
+            $costs          = [
+                'cost_extra'    => (float) $item->cost_extra,
+                'cost_shipping' => (float) $item->cost_shipping,
+                'cost_duties'   => (float) $item->cost_duties,
+            ];
+            $costs[$field]  = $share;
+
+            $item->update([
+                $field       => $share,
+                'cost_total' => (float) $item->cost_items
+                    + $costs['cost_extra']
+                    + $costs['cost_shipping']
+                    + $costs['cost_duties']
+                    + (float) $item->cost_tax,
+            ]);
+        }
+    }
+
+    private static function getShares(Collection $items, int $amountInCents, string $type): array
     {
         $weights = $items->map(fn (StockDeliveryItem $item) => max(0, (float) ($item->cost_items ?? $item->net_amount)))->all();
 

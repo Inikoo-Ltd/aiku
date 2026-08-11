@@ -253,7 +253,8 @@ class IndexStockDeliveries extends OrgAction
                     ->column(key: 'items', label: __('Items'), canBeHidden: false, align: 'right')
                     ->column(key: 'cbm', label: __('CBM'), canBeHidden: false, align: 'right')
                     ->column(key: 'gross_weight', label: __('Weight'), canBeHidden: false, align: 'right')
-                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right');
+                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right')
+                    ->column(key: 'converted_amount', label: __('Converted amount'), canBeHidden: false, align: 'right');
             }
 
             $table->defaultSort('-date');

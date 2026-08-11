@@ -354,6 +354,7 @@ class ShowMasterFamily extends OrgAction
             'grp.masters.master_shops.show.master_families.edit',
             'grp.masters.master_shops.show.master_families.create',
             'grp.masters.master_shops.show.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_families.master_products.sales',
             'grp.masters.master_shops.show.master_families.master_products.show' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop),
@@ -413,7 +414,8 @@ class ShowMasterFamily extends OrgAction
                 )
             ),
             'grp.masters.master_shops.show.master_family.mismatch_detected.show',
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index' =>
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index',
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop),
                 $headCrumb(
@@ -433,7 +435,8 @@ class ShowMasterFamily extends OrgAction
                 )
             ),
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
-            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.sales' =>
             array_merge(
                 (new ShowMasterSubDepartment())->getBreadcrumbs($masterFamily->parent, $routeName, $routeParameters),
                 $headCrumb(
@@ -454,7 +457,8 @@ class ShowMasterFamily extends OrgAction
                 )
             ),
             'grp.masters.master_shops.show.master_departments.show.master_families.show',
-            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index' =>
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs($masterFamily->masterShop, $masterFamily->masterDepartment, $routeName, $routeParameters, $suffix),
                 $headCrumb(
@@ -473,7 +477,8 @@ class ShowMasterFamily extends OrgAction
                 )
             ),
             'grp.masters.master_shops.show.master_sub_departments.master_families.show',
-            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales' =>
             array_merge(
                 ShowMasterSubDepartment::make()->getBreadcrumbs($masterFamily->masterSubDepartment, $routeName, $routeParameters, $suffix),
                 $headCrumb(
