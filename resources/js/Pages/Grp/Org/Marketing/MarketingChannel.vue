@@ -6,21 +6,48 @@
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
+import type { Component } from 'vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
+import Tabs from '@/Components/Navigation/Tabs.vue'
 import TrafficSourceShowcase from '@/Components/Showcases/Grp/TrafficSourceShowcase.vue'
+import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { capitalize } from '@/Composables/capitalize'
+import { useTabChange } from '@/Composables/tab-change'
 
-defineProps<{
+const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    overview: any
+    tabs: {
+        current: string
+        navigation: {}
+    }
+    overview?: any
+    customers?: {}
 }>()
+
+const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const component = computed(() => {
+    const components: Component = {
+        overview: TrafficSourceShowcase,
+        customers: TableCustomers,
+    }
+
+    return components[currentTab.value]
+})
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-    <TrafficSourceShowcase :data="overview" />
+    <component
+        :is="component"
+        :data="props[currentTab as keyof typeof props]"
+        :tab="currentTab"
+    />
 </template>
