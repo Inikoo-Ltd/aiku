@@ -20,6 +20,7 @@ use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -104,6 +105,7 @@ class StoreWebUser extends OrgAction
                 'required',
                 'string',
                 'max:255',
+                ...$this->asAction ? [] : [new AlphaDashDot()],
                 new IUnique(
                     table: 'web_users',
                     extraConditions: [

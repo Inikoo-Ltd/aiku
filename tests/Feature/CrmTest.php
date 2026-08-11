@@ -812,6 +812,19 @@ test('UI Create customer web users', function () {
     });
 });
 
+test('web user username can not be an email', function (Customer $customer) {
+    $response = $this->post(
+        route('grp.models.customer.web-user.store', ['customer' => $customer->id]),
+        [
+            'username' => 'someone@mail.com',
+            'email'    => 'someone@mail.com',
+            'password' => 'secret-password',
+        ]
+    );
+
+    $response->assertSessionHasErrors('username');
+})->depends('create web user');
+
 test('UI show customer web users', function () {
     $webUser = WebUser::first();
 
