@@ -38,13 +38,7 @@ class FetchDeliveryNoteItemRow extends OrgAction
             $items    = IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, null, deliveryNoteItemId: $deliveryNoteItem->id);
             $resource = DeliveryNoteItemsStateUnassignedResource::class;
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
-            $isHandled = match ($tab) {
-                'items'         => false,
-                'handled_items' => true,
-                default         => null,
-            };
-
-            $items    = IndexDeliveryNoteItemsStateHandling::run($deliveryNote, null, deliveryNoteItemId: $deliveryNoteItem->id, isHandled: $isHandled);
+            $items    = IndexDeliveryNoteItemsStateHandling::run($deliveryNote, null, deliveryNoteItemId: $deliveryNoteItem->id);
             $resource = DeliveryNoteItemsStateHandlingResource::class;
         } else {
             $stateFilter = match ($tab) {

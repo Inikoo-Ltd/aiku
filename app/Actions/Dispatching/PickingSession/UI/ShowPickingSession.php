@@ -12,7 +12,6 @@ use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
-use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedUnhandledResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\PickingSessionResource;
@@ -109,11 +108,9 @@ class ShowPickingSession extends OrgAction
             ];
             unset($navigation[PickingSessionTabsEnum::ITEMIZED->value]);
             unset($navigation[PickingSessionTabsEnum::GROUPED->value]);
-            unset($navigation[PickingSessionTabsEnum::HANDLED->value]);
         } elseif ($pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED || $pickingSession->state == PickingSessionStateEnum::PACKING_FINISHED) {
             unset($navigation[PickingSessionTabsEnum::ITEMIZED->value]);
             unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
-            unset($navigation[PickingSessionTabsEnum::HANDLED->value]);
         } else {
             unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
         }
@@ -246,20 +243,11 @@ class ShowPickingSession extends OrgAction
         } else {
             $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure(parent: $pickingSession, prefix: PickingSessionTabsEnum::GROUPED->value))
                             ->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure(prefix: PickingSessionTabsEnum::ITEMIZED->value));
-
-            if ($pickingSession->state->isBeingPicked()) {
-                $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure(prefix: PickingSessionTabsEnum::HANDLED->value));
-            }
         }
 
         return $inertiaResponse;
     }
 
-    /**
-     * A session that is still being walked keeps the finished items out of the picking tabs, so the
-     * picker only reads what is left to do. Once the picking is over the packer needs the whole list
-     * back, since packing works from everything that was picked.
-     */
     public function getItems(PickingSession $pickingSession): array
     {
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
@@ -271,30 +259,18 @@ class ShowPickingSession extends OrgAction
             ];
         }
 
-        $isBeingPicked = $pickingSession->state->isBeingPicked();
-
-        $grouped = fn () => $isBeingPicked
-            ? PickingSessionDeliveryNoteItemsGroupedUnhandledResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession, onlyUnhandled: true))
-            : PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession));
-
-        $itemized = fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(
-            IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession, isHandled: $isBeingPicked ? false : null)
+        $grouped = fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(
+            IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession)
         );
 
-        $items = [
+        $itemized = fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(
+            IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession)
+        );
+
+        return [
             PickingSessionTabsEnum::GROUPED->value  => $this->tab == PickingSessionTabsEnum::GROUPED->value ? $grouped : Inertia::optional($grouped),
             PickingSessionTabsEnum::ITEMIZED->value => $this->tab == PickingSessionTabsEnum::ITEMIZED->value ? $itemized : Inertia::optional($itemized),
         ];
-
-        if ($isBeingPicked) {
-            $handled = fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(
-                IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession, isHandled: true)
-            );
-
-            $items[PickingSessionTabsEnum::HANDLED->value] = $this->tab == PickingSessionTabsEnum::HANDLED->value ? $handled : Inertia::optional($handled);
-        }
-
-        return $items;
     }
 
     public function getBreadcrumbs(PickingSession $pickingSession, string $routeName, array $routeParameters, string $suffix = ''): array

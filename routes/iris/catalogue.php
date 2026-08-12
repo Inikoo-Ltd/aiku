@@ -31,6 +31,7 @@ Route::prefix('feeds')->as('feeds.')->group(function () {
     Route::get('product-category/{productCategory}/download.img', [DownloadIrisProduct::class, 'imagesInProductCategory'])->name('product_category.download_img');
     Route::get('product-category/{productCategory}/download.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.download');
     Route::get('shop/{shop}/download.csv', [DownloadIrisProduct::class, 'inShop'])->name('shop.download');
+    Route::get('product/{product}/download.img', [DownloadIrisProduct::class, 'imageInProduct'])->name('product.download_img');
     Route::get('product/{product}/download.csv', [DownloadIrisProduct::class, 'inProduct'])->name('product.download');
 });
 

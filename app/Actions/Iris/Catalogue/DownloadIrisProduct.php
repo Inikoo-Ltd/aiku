@@ -66,4 +66,11 @@ class DownloadIrisProduct extends IrisAction
 
         return $this->handle($product);
     }
+
+    public function imageInProduct(Product $product, ActionRequest $request): BinaryFileResponse|Response
+    {
+        $this->initialisation($request);
+
+        return $this->handle($product, 'products_images');
+    }
 }
