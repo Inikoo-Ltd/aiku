@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { faCrown } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
 </script>
 
 <template>
-    <div class="golden-product-badge" v-tooltip="trans('Golden product')">
-        <FontAwesomeIcon :icon="faCrown" class="w-3 h-3 text-white drop-shadow-sm" />
+    <div class="golden-product-badge" v-tooltip="ctrans('Golden product')">
+        <FontAwesomeIcon :icon="faCrown" class="w-3 h-3 text-white drop-shadow-sm" fixed-width />
     </div>
 </template>
 
