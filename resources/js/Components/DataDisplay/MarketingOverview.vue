@@ -389,7 +389,14 @@ const typeLabel: Record<string, string> = {
                     <tbody v-for="group in groupedChannels" :key="group.key">
                         <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
                             <td class="py-1 pr-2 text-xs leading-tight">{{ group.label }}</td>
-                            <td class="text-right px-2 tabular-nums">{{ group.visits > 0 ? locale.number(group.visits) : '' }}</td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                <template v-if="group.visits > 0">
+                                    {{ locale.number(group.visits) }}
+                                    <span class="text-xs font-normal" :class="group.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                        · {{ count(group.orders) }} {{ trans('bought') }} · {{ pctOf(group.orders, group.visits) }}
+                                    </span>
+                                </template>
+                            </td>
                             <td class="text-right px-2 tabular-nums">{{ money(group.spend) }}</td>
                             <td class="text-right px-2 tabular-nums text-gray-500">
                                 {{ group.pending > 0 ? money(group.pending) : '' }}
@@ -447,7 +454,12 @@ const typeLabel: Record<string, string> = {
                     <tfoot>
                         <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
                             <td class="py-1.5 pr-2">{{ trans('All channels') }}</td>
-                            <td class="text-right px-2 tabular-nums">{{ locale.number(channelTotals.visits) }}</td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                {{ locale.number(channelTotals.visits) }}
+                                <span class="text-xs font-normal" :class="channelTotals.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                    · {{ count(channelTotals.orders) }} {{ trans('bought') }} · {{ pctOf(channelTotals.orders, channelTotals.visits) }}
+                                </span>
+                            </td>
                             <td class="text-right px-2 tabular-nums">{{ money(channelTotals.spend) }}</td>
                             <td class="text-right px-2 tabular-nums text-gray-500">{{ money(channelTotals.pending) }}</td>
                             <td class="text-right px-2 tabular-nums">{{ money(channelTotals.revenue) }}</td>
