@@ -194,6 +194,9 @@ class StorePortfolio extends OrgAction
             'bundle_id'                   => 'sometimes|integer',
             'platform_product_id'         => 'sometimes|string',
             'platform_product_variant_id' => 'sometimes|string',
+            'platform_status'             => 'sometimes|boolean',
+            'has_valid_platform_product_id' => 'sometimes|boolean',
+            'exist_in_platform'           => 'sometimes|boolean',
             'platform_handle'             => 'sometimes|string',
             'last_added_at'               => 'sometimes|date'
         ];
