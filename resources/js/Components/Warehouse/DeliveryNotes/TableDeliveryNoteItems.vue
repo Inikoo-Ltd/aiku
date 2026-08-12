@@ -45,6 +45,7 @@ import SelectPickingLocation from "./SelectPickingLocation.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
 import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
+import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faExclamationTriangle);
 
@@ -57,11 +58,14 @@ const props = defineProps<{
     allowWaiting: boolean
     allowPickerSetNotPicked: boolean
     isEditable: boolean
+    warehouse?: { slug: string }
+    deliveryNote?: { id: number, slug: string }
 }>();
 
 const emit = defineEmits<{
     'update:quantity-to-resend': [itemId: string | number, value: number]
     'validation-error': [itemId: string | number, hasError: boolean]
+    'open-tab': [tabSlug: string]
 }>();
 
 const screenType = inject('screenType', ref('desktop'))
@@ -771,6 +775,22 @@ const hasDirtyDeliveryNoteItem = computed(() => {
             type: 'warning'
         }"
     >
+        <!-- Whichever picking tab runs out of rows offers the step that follows it, right where the
+             picker is already looking. -->
+        <template #button-empty-state="{ action }">
+            <div v-if="action?.key === 'finish-picking' && warehouse && deliveryNote" class="mt-4 flex justify-center">
+                <ButtonSelectBays :warehouse="warehouse" :deliveryNote="deliveryNote" />
+            </div>
+
+            <div v-else-if="action?.key === 'open-todo-items'" class="mt-4 flex justify-center">
+                <Button
+                    :label="trans('Open todo items')"
+                    icon="fal fa-clipboard-list-check"
+                    iconRight="fal fa-arrow-right"
+                    @click="emit('open-tab', 'picking_todo_items')"
+                />
+            </div>
+        </template>
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">

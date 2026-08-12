@@ -26,6 +26,7 @@ import {
 	faClipboardCheck,
 	faClipboardListCheck,
 	faExchange,
+	faBarcodeRead,
 } from "@fal";
 import { faArrowRight, faCheck, faEye, faStar, faTimes } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -53,6 +54,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
 import { get, debounce } from 'lodash-es';
+import axios from "axios";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
@@ -67,13 +69,15 @@ import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDelivery
 import ScanToPickDeliveryNote from "@/Components/DeliveryNote/ScanToPickDeliveryNote.vue"
 
 
-library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
+library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck, faBarcodeRead);
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
     items?: {}
+    picking_todo_items?: {}
+    picking_done_items?: {}
     pending_items?: {}
     done_items?: {}
     tariff_codes?: {}
@@ -161,6 +165,9 @@ const props = defineProps<{
 	}
 	scan_to_pick?: {
 		scan_route: routeType
+		toggle_route: routeType
+		is_on: boolean
+		counts: { all: number, todo: number, done: number }
 	}
 }>();
 
@@ -172,6 +179,8 @@ const showDropdown = ref(false);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
+        picking_todo_items: TableDeliveryNoteItems,
+        picking_done_items: TableDeliveryNoteItems,
         pending_items: TableDeliveryNoteItems,
         done_items: TableDeliveryNoteItems,
         tariff_codes: TableDeliveryNoteTariffCodes,
@@ -180,6 +189,87 @@ const component = computed(() => {
     };
 
     return components[currentTab.value];
+});
+
+// Section: Scan to pick
+// The picker decides per delivery note whether they work it with the scanner, and that same switch
+// decides whether splitting the items into what is left and what is done earns its screen space.
+const PICKING_SCAN_TABS = ["picking_todo_items", "picking_done_items"] as const
+
+// The choice is kept on the delivery note, so a refresh, or somebody taking the note over, lands on
+// the screen the picker left behind. A url naming one of the scan-only tabs turns it on regardless,
+// since that tab has nowhere else to live.
+const isScanToPickOn = ref(
+	props.scan_to_pick?.is_on
+	|| PICKING_SCAN_TABS.includes(props.tabs?.current as typeof PICKING_SCAN_TABS[number])
+)
+const isSavingScanToPick = ref(false)
+const pickingCounts = ref({ all: 0, todo: 0, done: 0, ...props.scan_to_pick?.counts })
+
+// The switch answers immediately and is put back only if the write fails, because a picker holding a
+// scanner should not wait on a round trip to start scanning.
+const toggleScanToPick = async () => {
+	const toggleRoute = props.scan_to_pick?.toggle_route
+
+	if (!toggleRoute || isSavingScanToPick.value) {
+		return
+	}
+
+	const wanted = !isScanToPickOn.value
+	isScanToPickOn.value = wanted
+	isSavingScanToPick.value = true
+
+	try {
+		await axios.patch(route(toggleRoute.name, toggleRoute.parameters), { scan_to_pick: wanted })
+	} catch (error: any) {
+		isScanToPickOn.value = !wanted
+		notify({
+			title: trans("Something went wrong"),
+			text: error?.response?.data?.message || trans("Could not save the scan setting, try again"),
+			type: "error",
+		})
+	} finally {
+		isSavingScanToPick.value = false
+	}
+}
+
+watch(
+	() => props.scan_to_pick?.counts,
+	(counts) => {
+		if (counts) pickingCounts.value = { ...counts }
+	}
+)
+
+// Turning the scanner on means the picker is about to work off what is left, so that is the list they
+// are put in front of. Turning it off takes those tabs away again, and leaving them on one would show
+// a table that is no longer reachable.
+watch(isScanToPickOn, (isOn) => {
+	if (isOn) {
+		handleTabUpdate("picking_todo_items")
+		return
+	}
+
+	if (PICKING_SCAN_TABS.includes(currentTab.value as typeof PICKING_SCAN_TABS[number])) {
+		handleTabUpdate("items")
+	}
+})
+
+const tabsNavigation = computed(() => {
+	const navigation = { ...(props.tabs?.navigation ?? {}) }
+
+	if (!props.scan_to_pick || !isScanToPickOn.value) {
+		for (const tabSlug of PICKING_SCAN_TABS) {
+			delete navigation[tabSlug]
+		}
+
+		return navigation
+	}
+
+	navigation.items = { ...navigation.items, title: trans("All items"), number: pickingCounts.value.all }
+	navigation.picking_todo_items = { ...navigation.picking_todo_items, number: pickingCounts.value.todo }
+	navigation.picking_done_items = { ...navigation.picking_done_items, number: pickingCounts.value.done }
+
+	return navigation
 });
 
 // Section: To Queue
@@ -395,6 +485,7 @@ type ScanOutcome = {
 	row?: Record<string, any> | null
 	delivery_note_state?: string
 	remaining_to_pick?: number
+	counts?: { all: number, todo: number, done: number }
 }
 
 // A scan touches one item, so only the scanned row and the counters change. Patching that row in
@@ -435,6 +526,10 @@ const onItemPackedByScan = (outcome: ScanOutcome) => {
 // forward until they refresh it themselves.
 const onItemPickedByScan = (outcome: ScanOutcome) => {
 	patchRowScannedBy(outcome, 'picked')
+
+	if (outcome.counts) {
+		pickingCounts.value = { ...outcome.counts }
+	}
 
 	if (outcome.remaining_to_pick === 0) {
 		debReloadPageHead()
@@ -807,9 +902,24 @@ const stopSocketListener = () => {
 		:isEditable="is_editable"
 	/>
 
-	<!-- Section: Scan a barcode to pick the matching item straight away -->
+	<!-- Section: Pick this delivery note with a scanner instead of the table buttons -->
+	<div v-if="scan_to_pick" class="px-2 pt-2 flex justify-end">
+		<button
+			type="button"
+			class="inline-flex items-center gap-x-2 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60"
+			:class="isScanToPickOn
+				? 'border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-700'
+				: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'"
+			:disabled="isSavingScanToPick"
+			v-tooltip="isScanToPickOn ? ctrans('Stop picking by scanner') : ctrans('Pick this delivery note by scanning the items')"
+			@click="toggleScanToPick">
+			<FontAwesomeIcon icon="fal fa-barcode-read" fixed-width aria-hidden="true" />
+			{{ isScanToPickOn ? ctrans("Scan to pick: on") : ctrans("Scan to pick: off") }}
+		</button>
+	</div>
+
 	<ScanToPickDeliveryNote
-		v-if="scan_to_pick"
+		v-if="scan_to_pick && isScanToPickOn"
 		:scanRoute="scan_to_pick.scan_route"
 		:tab="currentTab"
 		@scanned="onItemPickedByScan"
@@ -823,7 +933,7 @@ const stopSocketListener = () => {
 		@scanned="onItemPackedByScan"
 	/>
 
-	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+	<Tabs :current="currentTab" :navigation="tabsNavigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
 		<component
@@ -838,8 +948,11 @@ const stopSocketListener = () => {
 			:allowWaiting="allow_waiting"
 			:allowPickerSetNotPicked="allow_picker_set_not_picked"
 			:order_slug="order_slug"
+			:warehouse
+			:deliveryNote="delivery_note"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
-			@validation-error="handleValidationError" />
+			@validation-error="handleValidationError"
+			@open-tab="handleTabUpdate" />
 	</div>
 
 	<!-- Modal: Select picker -->

@@ -22,13 +22,14 @@ use Lorisleiva\Actions\ActionRequest;
  * location the picking table would have preselected, and answers with the refreshed table row so
  * the picking screen can be updated in place without an Inertia round trip.
  *
- * @phpstan-type ScanOutcome array{status: string, message: string, scanned: string, item: array|null, row: array|null, delivery_note_state: string, remaining_to_pick: int}
+ * @phpstan-type ScanOutcome array{status: string, message: string, scanned: string, item: array|null, row: array|null, delivery_note_state: string, remaining_to_pick: int, counts: array{all: int, todo: int, done: int}}
  */
 class PickDeliveryNoteItemByScan extends OrgAction
 {
     use WithDeliveryNoteItemUI;
     use WithScannedDeliveryNoteItemMatching;
     use WithScannedDeliveryNoteItemPicking;
+    use WithDeliveryNoteItemPickingCounts;
 
     protected User $user;
 
@@ -180,6 +181,7 @@ class PickDeliveryNoteItemByScan extends OrgAction
             'row'                 => $row,
             'delivery_note_state' => $deliveryNote->state->value,
             'remaining_to_pick'   => $this->countRemainingToPick($deliveryNote, $knownItems),
+            'counts'              => static::pickingCounts($deliveryNote),
         ];
     }
 

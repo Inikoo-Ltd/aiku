@@ -19,6 +19,8 @@ enum DeliveryNoteTabsEnum: string
     use HasTabsWithIndicator;
 
     case ITEMS = 'items';
+    case PICKING_TODO_ITEMS = 'picking_todo_items';
+    case PICKING_DONE_ITEMS = 'picking_done_items';
     case PENDING_ITEMS = 'pending_items';
     case DONE_ITEMS = 'done_items';
     case TARIFF_CODES = 'tariff_codes';
@@ -33,6 +35,18 @@ enum DeliveryNoteTabsEnum: string
             DeliveryNoteTabsEnum::ITEMS => [
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
+            ],
+
+            DeliveryNoteTabsEnum::PICKING_TODO_ITEMS => [
+                'title'       => __('Todo items'),
+                'icon'        => 'fal fa-clipboard-list-check',
+                'colorScheme' => 'amber',
+            ],
+
+            DeliveryNoteTabsEnum::PICKING_DONE_ITEMS => [
+                'title'       => __('Done items'),
+                'icon'        => 'fal fa-clipboard-check',
+                'colorScheme' => 'green',
             ],
 
             DeliveryNoteTabsEnum::PENDING_ITEMS => [
