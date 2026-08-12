@@ -68,6 +68,9 @@ class UpdateShop extends OrgAction
         $originalReviewSettings   = Arr::get($shop->settings ?? [], 'reviews');
         $reviewRatingLabelsTouched = Arr::exists($modelData, 'review_rating_labels');
 
+        $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
+        $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
+
         if ($reviewRatingLabelsTouched) {
             $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
         }
@@ -563,7 +566,11 @@ class UpdateShop extends OrgAction
         $changes = $shop->getChanges();
         $shop->refresh();
 
-        if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings)) {
+        $contactOptionsPanelChanged =
+            Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel') != $originalViewContactOptionsPanel
+            || Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel') != $originalDataContactOptionsPanel;
+
+        if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings || $contactOptionsPanelChanged)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
 
