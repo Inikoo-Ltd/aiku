@@ -3,7 +3,24 @@ import { ref, inject, onMounted, onBeforeUnmount, watch, computed } from "vue"
 import MessageArea from "@/Components/Chat/Customer/MessageArea.vue"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMessage, faXmark, faEllipsisVertical, faTimesCircle } from "@fortawesome/free-solid-svg-icons"
+import { faMessage, faXmark, faEllipsisVertical, faTimesCircle, faChevronLeft } from "@fortawesome/free-solid-svg-icons"
+import {
+    faWhatsapp,
+    faFacebookF,
+    faFacebookMessenger,
+    faInstagram,
+    faXTwitter,
+    faTelegram,
+    faTiktok,
+    faYoutube,
+    faLinkedinIn,
+    faLine,
+    faWeixin,
+    faPinterest,
+    faSnapchat,
+    faDiscord,
+} from "@fortawesome/free-brands-svg-icons"
+import { library } from "@fortawesome/fontawesome-svg-core"
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
@@ -12,10 +29,17 @@ import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 import OfflineChatForm from "../OfflineChatForm.vue"
-import { router } from "@inertiajs/vue3"
-import { faSpinner } from "@fal"
+import { router, usePage } from "@inertiajs/vue3"
+import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt } from "@fal"
 import { useWindowSize } from "@vueuse/core"
 import { useBundle } from "../../../Composables/useBundle"
+import Image from "@common/Components/Image.vue"
+
+library.add(
+    faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok,
+    faYoutube, faLinkedinIn, faLine, faWeixin, faPinterest, faSnapchat, faDiscord,
+    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt,
+)
 
 interface ChatMessage {
     id: number
@@ -56,6 +80,12 @@ type LocalMessageStatus = "sending" | "sent" | "failed"
 type LocalChatMessage = ChatMessage & {
     _tempId?: string
     _status?: LocalMessageStatus
+}
+
+interface ContactOption {
+    icon: string[] | null
+    label: string
+    url: string
 }
 
 const layout: any = inject("layout", {})
@@ -101,6 +131,58 @@ const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 
 const { width } = useWindowSize()
 const isMobile = computed(() => width.value < 640)
+
+const page = usePage()
+
+const brandColors: Record<string, string> = {
+    whatsapp: "#25D366",
+    "facebook-f": "#1877F2",
+    "facebook-messenger": "#0084FF",
+    instagram: "#E4405F",
+    "x-twitter": "#000000",
+    telegram: "#26A5E4",
+    tiktok: "#000000",
+    youtube: "#FF0000",
+    "linkedin-in": "#0A66C2",
+    line: "#06C755",
+    weixin: "#07C160",
+    pinterest: "#BD081C",
+    snapchat: "#FFFC00",
+    discord: "#5865F2",
+}
+
+const websiteLogo = computed(() => layout?.iris?.header?.header?.data?.fieldValue?.logo)
+
+const configuredContactOptions = computed<ContactOption[]>(
+    () => (page.props?.contact_options_panel as ContactOption[]) ?? []
+)
+
+const isLiveChatOption = (option: ContactOption) => !option.url?.trim()
+
+const contactOptions = computed<ContactOption[]>(() => {
+    const options = configuredContactOptions.value
+
+    if (options.some(isLiveChatOption)) {
+        return options
+    }
+
+    return [{ icon: ["fal", "comments"], label: trans("Livechat"), url: "" }, ...options]
+})
+
+const hasContactOptionsPanel = computed(
+    () => page.props?.show_contact_options_panel === true && configuredContactOptions.value.length > 0
+)
+
+const activeView = ref<"show_contact_options_panel" | "chat">("chat")
+
+const showContactOptions = computed(
+    () => hasContactOptionsPanel.value && activeView.value === "show_contact_options_panel"
+)
+
+const contactOptionIcon = (option: ContactOption) => option.icon ?? faComments
+
+const contactOptionColor = (option: ContactOption) =>
+    brandColors[option.icon?.[1] ?? ""] ?? layout?.app?.theme?.[4]
 
 if (isClient) {
     watch(open, (val) => {
@@ -440,33 +522,52 @@ const closeSession = async () => {
         isClosingSession.value = false
     }
 }
+const startChat = async () => {
+    isCheckingStatus.value = true
+    try {
+        let session = loadChatSession()
+
+        if (!session) {
+            session = await createSession()
+            if (!session) return
+        } else {
+            chatSession.value = session
+        }
+        await checkChatStatus(session.ulid)
+
+        if (statusChat.value) {
+            await initChat()
+        }
+
+    } catch (e) {
+        console.error("Chat status fetch failed", e)
+    } finally {
+        isCheckingStatus.value = false
+    }
+}
+
+const selectContactOption = async (option: ContactOption) => {
+    if (!isLiveChatOption(option)) {
+        window.open(option.url, "_blank", "noopener,noreferrer")
+        return
+    }
+
+    activeView.value = "chat"
+    await startChat()
+}
+
 const toggle = async () => {
     open.value = !open.value
     if (open.value) {
         unreadMessageIds.clear()
         unreadCount.value = 0
 
-        isCheckingStatus.value = true
-        try {
-            let session = loadChatSession()
-
-            if (!session) {
-                session = await createSession()
-                if (!session) return
-            } else {
-                chatSession.value = session
-            }
-            await checkChatStatus(session.ulid)
-
-            if (statusChat.value) {
-                await initChat()
-            }
-
-        } catch (e) {
-            console.error("Chat status fetch failed", e)
-        } finally {
-            isCheckingStatus.value = false
+        if (hasContactOptionsPanel.value) {
+            activeView.value = "show_contact_options_panel"
+            return
         }
+
+        await startChat()
     }
 }
 
@@ -575,7 +676,9 @@ const handleChatFromUrl = async () => {
     window.history.replaceState({}, document.title, cleanUrl)
 
     if (!open.value) {
-        await toggle()
+        open.value = true
+        activeView.value = "chat"
+        await startChat()
     }
 }
 
@@ -663,8 +766,9 @@ if (isClient) {
 
 <template>
     <div>
-        <button ref="buttonRef" @click="toggle" :aria-label="trans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-36 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
-            <FontAwesomeIcon :icon="faMessage" class="text-base" aria-hidden="true" />
+        <button ref="buttonRef" @click="toggle" :aria-label="trans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-20 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
+            <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faMessage" class="text-base"
+                aria-hidden="true" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
                bg-red-500 text-white text-[10px] font-semibold
                rounded-full flex items-center justify-center">
@@ -674,16 +778,73 @@ if (isClient) {
 
         <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95"
             enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
+            leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="contact-options">
+            <div v-if="open && showContactOptions" ref="panelRef"
+                class="fixed z-[70] flex flex-col overflow-hidden bg-white shadow-xl" :class="isMobile
+                    ? 'inset-0 h-[100dvh]'
+                    : ['bottom-[140px] w-[350px] rounded-2xl max-h-[calc(100dvh-12rem)]',
+                        (bundle.open.value || layout?.rightbasket?.show) ? 'right-[430px]' : 'right-3'
+                    ]">
+                <div class="relative shrink-0 px-6 pb-16" :class="isMobile
+                    ? 'pt-[calc(env(safe-area-inset-top)+1.5rem)]'
+                    : 'pt-6'" :style="{
+                        backgroundColor: layout?.app?.theme[4],
+                        color: layout?.app?.theme[5],
+                    }">
+                    <button v-if="isMobile" @click="open = false"
+                        class="absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/10">
+                        <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" />
+                    </button>
+
+                    <Image v-if="websiteLogo?.image?.source" :src="websiteLogo.image.source"
+                        :alt="websiteLogo?.alt ?? ''" class="h-10 w-auto" />
+
+                    <h2 class="mt-8 text-3xl font-bold leading-none">
+                        {{ ctrans("Hello") }}
+                    </h2>
+                    <p class="mt-3 text-sm font-semibold">
+                        {{ ctrans("Contact us through any of the following channels:") }}
+                    </p>
+                </div>
+
+                <div class="relative z-10 -mt-10 flex min-h-0 flex-1 px-4 pb-4">
+                    <div class="flex min-h-0 w-full flex-col rounded-xl bg-white shadow-lg ring-1 ring-black/5">
+                        <p class="shrink-0 px-4 pb-1 pt-3 text-sm text-gray-400">
+                            {{ ctrans("Select") }}
+                        </p>
+
+                        <div class="min-h-0 flex-1 overflow-y-auto pb-2" :class="isMobile ? '' : 'max-h-[300px]'">
+                            <button v-for="(contactOption, index) in contactOptions" :key="index"
+                                @click="selectContactOption(contactOption)"
+                                class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-gray-50">
+                                <FontAwesomeIcon :icon="contactOptionIcon(contactOption)" class="text-lg" fixed-width
+                                    :style="{ color: contactOptionColor(contactOption) }" aria-hidden="true" />
+                                <span class="text-sm text-gray-800">{{ contactOption.label }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="chat">
-            <div v-if="open" ref="panelRef" class="fixed z-[70] bg-[#f6f6f7] border shadow-xl flex flex-col" :class="isMobile
+            <div v-if="open && !showContactOptions" ref="panelRef" class="fixed z-[70] bg-[#f6f6f7] border shadow-xl flex flex-col" :class="isMobile
                 ? 'inset-0 rounded-none h-[100dvh] flex flex-col'
-                : ['bottom-[180px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col',
+                : ['bottom-[140px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col',
                     (bundle.open.value || layout?.rightbasket?.show) ? 'right-[430px]' : 'right-3'
                 ]">
                 <!-- header -->
                 <div class="flex items-center px-4 border-b bg-white" :class="isMobile
                     ? 'pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3'
                     : 'py-3'">
+                    <button v-if="hasContactOptionsPanel" @click="activeView = 'show_contact_options_panel'"
+                        :aria-label="trans('Back')"
+                        class="-ml-2 mr-1 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
+                        <FontAwesomeIcon :icon="faChevronLeft" class="w-3.5 h-3.5" />
+                    </button>
+
                     <span class="text-sm font-semibold">
                         {{ trans("Chat Support") }}
                     </span>

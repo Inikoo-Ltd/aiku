@@ -61,7 +61,7 @@ class HandleIrisInertiaRequests extends Middleware
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,
                 'show_contact_options_panel' => $website->settings['view_contact_options_panel'] ?? false,
-                'contact_options'            => $website->settings['data_contact_options_panel'] ?? [],
+                'contact_options_panel'      => $website->settings['data_contact_options_panel'] ?? [],
                 'iris'     => $this->getIrisData($website),
                 'retina'        => [
                     'type'         => $request->input('shop_type'),
