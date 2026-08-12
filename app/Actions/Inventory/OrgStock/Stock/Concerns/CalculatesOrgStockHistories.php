@@ -24,7 +24,7 @@ use Illuminate\Support\Carbon;
 
 trait CalculatesOrgStockHistories
 {
-    public function getCostPerSku(OrgStock $orgStock, Carbon $date): float
+    public function getLppPerSku(OrgStock $orgStock, Carbon $date): float
     {
         $lastPurchase = OrgStockMovement::on('aiku_no_sticky')->select(['cost_per_sku'])
             ->where('org_stock_id', $orgStock->id)
@@ -93,7 +93,7 @@ trait CalculatesOrgStockHistories
         $wac  = $state['wac'];
         $fifo = $this->fifoPerSkuFromLayers($state['layers']);
         if ($wac === null || $fifo === null) {
-            $lastPurchasePrice = $this->getCostPerSku($orgStock, $date);
+            $lastPurchasePrice = $this->getLppPerSku($orgStock, $date);
         }
 
         return [
@@ -112,7 +112,7 @@ trait CalculatesOrgStockHistories
             ->where('date', '<', $valuationStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
             ->sum('quantity');
 
-        $openingCost = $onHand > 0 ? $this->getCostPerSku($orgStock, $valuationStartDate) : null;
+        $openingCost = $onHand > 0 ? $this->getLppPerSku($orgStock, $valuationStartDate) : null;
 
         return [
             'onHand' => $onHand,
@@ -141,7 +141,7 @@ trait CalculatesOrgStockHistories
                 $state['layers'][] = [$quantity, (float)$cost];
             }
         } elseif ($quantity > 0) {
-            $cost = $this->fifoPerSkuFromLayers($state['layers']) ?? $this->getCostPerSku($orgStock, Carbon::parse($movement->date));
+            $cost = $this->fifoPerSkuFromLayers($state['layers']) ?? $this->getLppPerSku($orgStock, Carbon::parse($movement->date));
             $state['layers'][] = [$quantity, $cost];
         } elseif ($quantity < 0) {
             $this->consumeFifoLayers($state['layers'], -$quantity);
@@ -274,8 +274,8 @@ trait CalculatesOrgStockHistories
         foreach ($orgStockLocationData as $orgStockLocation) {
             if ($orgStockLocation['quantity'] > 0) {
                 $orgStockQuantity += $orgStockLocation['quantity'];
-                $orgStockValue    += $orgStockLocation['org_stock_value'];
-                $grpStockValue    += $orgStockLocation['grp_stock_value'];
+                $orgStockValue    += $orgStockLocation['org_stock_lpp_value'];
+                $grpStockValue    += $orgStockLocation['grp_stock_lpp_value'];
                 if ($wacPerSku !== null) {
                     $orgStockWacValue += $orgStockLocation['org_stock_wac_value'] ?? 0;
                     $grpStockWacValue += $orgStockLocation['grp_stock_wac_value'] ?? 0;
@@ -334,8 +334,8 @@ trait CalculatesOrgStockHistories
             [
                 'group_id'                       => $orgStock->group_id,
                 'group_stock_history_id'         => $groupStockHistory->id,
-                'org_stock_value'                => 0,
-                'grp_stock_value'                => 0,
+                'org_stock_lpp_value'                => 0,
+                'grp_stock_lpp_value'                => 0,
                 'org_stock_commercial_value'     => 0,
                 'grp_stock_commercial_value'     => 0,
                 'number_org_stocks'              => 0,
@@ -357,15 +357,15 @@ trait CalculatesOrgStockHistories
                 'organisation_stock_history_id' => $organisationStockHistory->id,
                 'quantity_in_locations'         => $orgStockQuantity,
                 'number_locations'              => count($orgStockLocationData),
-                'org_stock_value'               => $orgStockValue,
-                'grp_stock_value'               => $grpStockValue,
+                'org_stock_lpp_value'               => $orgStockValue,
+                'grp_stock_lpp_value'               => $grpStockValue,
                 'org_stock_wac_value'           => $orgStockWacValue,
                 'grp_stock_wac_value'           => $grpStockWacValue,
                 'org_stock_fifo_value'          => $orgStockFifoValue,
                 'grp_stock_fifo_value'          => $grpStockFifoValue,
                 'org_stock_commercial_value'    => 0,
                 'grp_stock_commercial_value'    => 0,
-                'value_per_sku'                 => $costPerSku,
+                'lpp_per_sku'                 => $costPerSku,
                 'wac_per_sku'                   => $wacPerSku,
                 'fifo_per_sku'                  => $fifoPerSku,
                 'last_sold_date'                => $lastSoldDate,
@@ -376,16 +376,16 @@ trait CalculatesOrgStockHistories
 
         foreach ($orgStockLocationData as $orgStockLocation) {
             $quantity      = max(0, $orgStockLocation['quantity']);
-            $orgStockValue = max(0, $orgStockLocation['org_stock_value'] ?? $quantity * $costPerSku);
-            $grpStockValue = max(0, $orgStockLocation['grp_stock_value'] ?? $quantity * $costPerSku);
+            $orgStockValue = max(0, $orgStockLocation['org_stock_lpp_value'] ?? $quantity * $costPerSku);
+            $grpStockValue = max(0, $orgStockLocation['grp_stock_lpp_value'] ?? $quantity * $costPerSku);
 
             $updateData = [
                 'org_stock_history_id'          => $orgStockHistory->id,
                 'organisation_stock_history_id' => $orgStockHistory->organisation_stock_history_id,
                 'actual_quantity_in_locations'  => $orgStockLocation['quantity'],
                 'quantity_in_locations'         => $quantity,
-                'org_stock_value'               => $orgStockValue,
-                'grp_stock_value'               => $grpStockValue,
+                'org_stock_lpp_value'               => $orgStockValue,
+                'grp_stock_lpp_value'               => $grpStockValue,
                 'org_stock_wac_value'           => $wacPerSku === null ? null : max(0, $orgStockLocation['org_stock_wac_value'] ?? $quantity * $wacPerSku),
                 'grp_stock_wac_value'           => $wacPerSku === null ? null : max(0, $orgStockLocation['grp_stock_wac_value'] ?? $quantity * $wacPerSku),
                 'org_stock_fifo_value'          => $fifoPerSku === null ? null : max(0, $orgStockLocation['org_stock_fifo_value'] ?? $quantity * $fifoPerSku),

@@ -30,7 +30,7 @@ class CalculateOrgStockHistoricStockHistories
 
         $orgStockLocationData = [];
         $locationsIds         = $this->getLocationsIds($orgStock, $date);
-        $costPerSku           = $this->getCostPerSku($orgStock, $date);
+        $costPerSku           = $this->getLppPerSku($orgStock, $date);
         $valuation            = $this->getValuationPerSku($orgStock, $date);
         $wacPerSku            = $valuation['wac'];
         $fifoPerSku           = $valuation['fifo'];
@@ -53,8 +53,8 @@ class CalculateOrgStockHistoricStockHistories
                     $orgStockLocationData[] = [
                         'location_id'         => $location->id,
                         'quantity'            => $quantity,
-                        'org_stock_value'     => $quantity * $costPerSku,
-                        'grp_stock_value'     => $quantity * $costPerSku * $exchangeRate,
+                        'org_stock_lpp_value'     => $quantity * $costPerSku,
+                        'grp_stock_lpp_value'     => $quantity * $costPerSku * $exchangeRate,
                         'org_stock_wac_value' => $wacPerSku === null ? null : $quantity * $wacPerSku,
                         'grp_stock_wac_value' => $wacPerSku === null ? null : $quantity * $wacPerSku * $exchangeRate,
                         'org_stock_fifo_value' => $fifoPerSku === null ? null : $quantity * $fifoPerSku,

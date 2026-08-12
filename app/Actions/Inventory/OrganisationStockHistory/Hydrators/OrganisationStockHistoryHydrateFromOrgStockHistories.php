@@ -36,9 +36,9 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
         }
 
         $stockData = DB::connection('aiku_no_sticky')->table('org_stock_histories')
-            ->selectRaw('sum(non_moving_1y*value_per_sku) as value_dormant_stock_1y')
-            ->selectRaw('sum(org_stock_value) as org_stock_values')
-            ->selectRaw('sum(grp_stock_value) as grp_stock_values')
+            ->selectRaw('sum(non_moving_1y*lpp_per_sku) as value_dormant_stock_1y')
+            ->selectRaw('sum(org_stock_lpp_value) as org_stock_lpp_values')
+            ->selectRaw('sum(grp_stock_lpp_value) as grp_stock_lpp_values')
             ->selectRaw('sum(org_stock_wac_value) as org_stock_wac_values')
             ->selectRaw('sum(grp_stock_wac_value) as grp_stock_wac_values')
             ->selectRaw('sum(org_stock_fifo_value) as org_stock_fifo_values')
@@ -64,13 +64,13 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
         }
 
         $percentageValueDormantStock1y = 0;
-        if ($stockData->org_stock_values > 0) {
-            $percentageValueDormantStock1y = round(($stockData->value_dormant_stock_1y ?? 0) / $stockData->org_stock_values * 100, 2);
+        if ($stockData->org_stock_lpp_values > 0) {
+            $percentageValueDormantStock1y = round(($stockData->value_dormant_stock_1y ?? 0) / $stockData->org_stock_lpp_values * 100, 2);
         }
 
         $organisationStockHistory->update([
-            'org_stock_value'                   => $stockData->org_stock_values ?? 0,
-            'grp_stock_value'                   => $stockData->grp_stock_values ?? 0,
+            'org_stock_lpp_value'                   => $stockData->org_stock_lpp_values ?? 0,
+            'grp_stock_lpp_value'                   => $stockData->grp_stock_lpp_values ?? 0,
             'org_stock_wac_value'               => $stockData->org_stock_wac_values,
             'grp_stock_wac_value'               => $stockData->grp_stock_wac_values,
             'org_stock_fifo_value'              => $stockData->org_stock_fifo_values,

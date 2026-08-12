@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RollUpWacStockHistories
+class RollUpStockValuations
 {
     use AsAction;
 
@@ -49,7 +49,7 @@ class RollUpWacStockHistories
 
     public function getCommandSignature(): string
     {
-        return 'org_stock:backfill_wac_rollup {organisation : Organisation slug}';
+        return 'org_stock:backfill_valuations_rollup {organisation : Organisation slug}';
     }
 
     public function asCommand(Command $command): int

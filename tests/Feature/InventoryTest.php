@@ -1551,7 +1551,7 @@ test('calculate value location org stock sets value = quantity * cost', function
     CalculateValueLocationOrgStock::run($locationOrgStock->id);
 
     $locationOrgStock->refresh();
-    $expected = (float) $locationOrgStock->quantity * CalculateValueLocationOrgStock::make()->getCostPerSku($locationOrgStock->orgStock, now());
+    $expected = (float) $locationOrgStock->quantity * CalculateValueLocationOrgStock::make()->getLppPerSku($locationOrgStock->orgStock, now());
     expect($expected)->toBe(0.0)
         ->and((float) $locationOrgStock->value)->toBe($expected);
 

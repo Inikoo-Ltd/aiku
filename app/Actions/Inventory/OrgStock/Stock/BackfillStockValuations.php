@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class BackfillWacStockHistories
+class BackfillStockValuations
 {
     use AsAction;
     use CalculatesOrgStockHistories;
@@ -48,7 +48,7 @@ class BackfillWacStockHistories
 
     public function getCommandSignature(): string
     {
-        return 'org_stock:backfill_wac {organisation : Organisation slug} {--sync : Run inline instead of dispatching Horizon jobs}';
+        return 'org_stock:backfill_valuations {organisation : Organisation slug} {--sync : Run inline instead of dispatching Horizon jobs}';
     }
 
     public function asCommand(Command $command): int
@@ -68,14 +68,14 @@ class BackfillWacStockHistories
             ->where('org_stock_histories.organisation_id', $organisation->id)
             ->where('org_stock_histories.date', '>=', $wacStartDate->format('Y-m-d'))
             ->groupBy('org_stock_histories.org_stock_id')
-            ->orderByRaw('max(org_stock_histories.org_stock_value) DESC NULLS LAST')
+            ->orderByRaw('max(org_stock_histories.org_stock_lpp_value) DESC NULLS LAST')
             ->pluck('org_stock_histories.org_stock_id');
 
         if (!$command->option('sync')) {
             foreach ($orgStockIds as $orgStockId) {
                 self::dispatch($orgStockId);
             }
-            $command->info(count($orgStockIds).' backfill jobs dispatched to Horizon; run org_stock:backfill_wac_rollup '.$organisation->slug.' once the queue drains');
+            $command->info(count($orgStockIds).' backfill jobs dispatched to Horizon; run org_stock:backfill_valuations_rollup '.$organisation->slug.' once the queue drains');
 
             return 0;
         }
@@ -91,7 +91,7 @@ class BackfillWacStockHistories
         $command->newLine();
 
         $command->info('Rolling up organisation and group stock histories');
-        RollUpWacStockHistories::run($organisation);
+        RollUpStockValuations::run($organisation);
 
         return 0;
     }
@@ -108,7 +108,7 @@ class BackfillWacStockHistories
             ->get()->all();
 
         $histories = DB::connection('aiku_no_sticky')->table('org_stock_histories')
-            ->select(['id', 'date', 'quantity_in_locations', 'org_stock_value', 'grp_stock_value'])
+            ->select(['id', 'date', 'quantity_in_locations', 'org_stock_lpp_value', 'grp_stock_lpp_value'])
             ->where('org_stock_id', $orgStock->id)
             ->where('date', '>=', $wacStartDate->format('Y-m-d'))
             ->orderBy('date')
@@ -123,8 +123,8 @@ class BackfillWacStockHistories
                 $movementIndex++;
             }
 
-            $effectiveWac  = $state['wac'] ?? $this->getCostPerSku($orgStock, Carbon::parse($history->date));
-            $effectiveFifo = $this->fifoPerSkuFromLayers($state['layers']) ?? $this->getCostPerSku($orgStock, Carbon::parse($history->date));
+            $effectiveWac  = $state['wac'] ?? $this->getLppPerSku($orgStock, Carbon::parse($history->date));
+            $effectiveFifo = $this->fifoPerSkuFromLayers($state['layers']) ?? $this->getLppPerSku($orgStock, Carbon::parse($history->date));
             $exchangeRate  = $this->getExchangeRate($orgStock, $history);
 
             DB::table('org_stock_histories')->where('id', $history->id)->update([
@@ -149,8 +149,8 @@ class BackfillWacStockHistories
 
     private function getExchangeRate(OrgStock $orgStock, object $history): float
     {
-        if ($history->org_stock_value > 0) {
-            return $history->grp_stock_value / $history->org_stock_value;
+        if ($history->org_stock_lpp_value > 0) {
+            return $history->grp_stock_lpp_value / $history->org_stock_lpp_value;
         }
 
         if (!isset($this->exchangeRates[$history->date])) {
