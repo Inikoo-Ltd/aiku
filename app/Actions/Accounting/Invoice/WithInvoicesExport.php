@@ -86,7 +86,7 @@ trait WithInvoicesExport
         if ($invoice->customer->is_fulfilment) {
             $transactionModel = $invoiceTransactions;
         } else {
-            $transactionModel = $invoiceTransactions->where('model_type', 'Product');
+            $transactionModel = $invoiceTransactions->whereIn('model_type', ['Product', 'Service']);
         }
 
         $transactions = $transactionModel->map(function ($transaction) {

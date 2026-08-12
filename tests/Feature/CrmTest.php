@@ -15,11 +15,14 @@ use App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
+use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\CRM\Customer\SyncCustomersToGoogleAds;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UI\GetCustomerTimeline;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
@@ -79,6 +82,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 
@@ -174,6 +178,36 @@ test('create web user', function (Customer $customer) {
 
     return $customer;
 })->depends('create customer');
+
+test('customer email can not take another web user email', function (Customer $customerWithWebUser) {
+    $otherCustomer = StoreCustomer::make()->action(
+        $this->shop,
+        Customer::factory()->definition(),
+    );
+
+    expect(
+        fn () => UpdateCustomer::make()->action($otherCustomer, ['email' => 'example@mail.com'])
+    )->toThrow(ValidationException::class);
+})->depends('create web user');
+
+test('customer email change follows web user with matching email', function (Customer $customer) {
+    $matchingWebUser = StoreWebUser::make()->action(
+        $customer,
+        [
+            'email'    => $customer->email,
+            'username' => 'matching-web-user',
+            'password' => 'password',
+            'is_root'  => false,
+        ]
+    );
+
+    UpdateCustomer::make()->action($customer, ['email' => 'new-email@mail.com']);
+
+    $rootWebUser = $customer->webUsers()->where('is_root', true)->first();
+
+    expect($matchingWebUser->refresh()->email)->toBe('new-email@mail.com')
+        ->and($rootWebUser->email)->toBe('example@mail.com');
+})->depends('create web user');
 
 
 test('create prospect', function () {
@@ -369,9 +403,10 @@ test('delete back in stock reminder', function (BackInStockReminder $reminder) {
 })->depends('add back in stock reminder to customer');
 
 test('create customer note', function (Customer $customer) {
+    $customerNotesCount = $customer->customerNotes()->count();
+
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and($customer->customerNotes)->not->toBeNull()
-        ->and($customer->customerNotes->count())->toBe(2);
+        ->and($customer->customerNotes)->not->toBeNull();
 
     $note = StoreCustomerNote::make()->action(
         $customer,
@@ -385,7 +420,7 @@ test('create customer note', function (Customer $customer) {
     expect($note)->toBeInstanceOf(CustomerNote::class)
         ->and($customer)->toBeInstanceOf(Customer::class)
         ->and($customer->customerNotes)->not->toBeNull()
-        ->and($customer->customerNotes->count())->toBe(3);
+        ->and($customer->customerNotes->count())->toBe($customerNotesCount + 1);
 
     return $note;
 })->depends('create customer');
@@ -733,6 +768,7 @@ test('UI edit customer', function () {
                     ->where('name', 'grp.models.customer.update')
                     ->where('parameters', [$customer->id])
             )
+            ->where('formData.blueprint.0.fields.email.value', $customer->email)
             ->has('breadcrumbs', 3);
     });
 });
@@ -778,6 +814,47 @@ test('UI Create customer web users', function () {
             ->has('formData');
     });
 });
+
+test('customer with orders can not be deleted', function () {
+    $customer = Customer::whereHas('orders', function ($query) {
+        $query->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING]);
+    })->first();
+
+    if (!$customer) {
+        $this->markTestSkipped('No customer with orders in the test set');
+    }
+
+    expect(DeleteCustomer::canBeDeleted($customer))->toBeFalse();
+
+    $this->delete(route('grp.models.customer.delete', ['customer' => $customer->id]))
+        ->assertStatus(422);
+
+    expect($customer->fresh())->not->toBeNull();
+});
+
+test('customer without orders can be deleted', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    expect(DeleteCustomer::canBeDeleted($customer))->toBeTrue();
+
+    $this->delete(route('grp.models.customer.delete', ['customer' => $customer->id]))
+        ->assertRedirect();
+
+    expect(Customer::find($customer->id))->toBeNull();
+});
+
+test('web user username can not be an email', function (Customer $customer) {
+    $response = $this->post(
+        route('grp.models.customer.web-user.store', ['customer' => $customer->id]),
+        [
+            'username' => 'someone@mail.com',
+            'email'    => 'someone@mail.com',
+            'password' => 'secret-password',
+        ]
+    );
+
+    $response->assertSessionHasErrors('username');
+})->depends('create web user');
 
 test('UI show customer web users', function () {
     $webUser = WebUser::first();
@@ -1209,6 +1286,10 @@ test('sync customers to google ads uploads hashed identifiers', function () {
     $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $customer->update(['email' => 'match@example.com', 'phone' => '+447911123456']);
 
+    $eligibleCustomersCount = $this->shop->customers()
+        ->where(fn ($query) => $query->whereNotNull('email')->orWhereNotNull('phone'))
+        ->count();
+
     Http::fake([
         'oauth2.googleapis.com/*'             => Http::response(['access_token' => 'fake-access-token']),
         'datamanager.googleapis.com/*'        => Http::response(['requestId' => 'req-1']),
@@ -1216,7 +1297,7 @@ test('sync customers to google ads uploads hashed identifiers', function () {
 
     $result = SyncCustomersToGoogleAds::make()->handle($this->shop);
 
-    expect($result['uploaded'])->toBe(3)
+    expect($result['uploaded'])->toBe($eligibleCustomersCount)
         ->and($result['request_ids'])->toBe(['req-1']);
 
     Http::assertSent(fn ($request) => $request->url() === 'https://oauth2.googleapis.com/token'

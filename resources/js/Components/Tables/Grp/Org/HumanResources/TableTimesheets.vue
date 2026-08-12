@@ -68,7 +68,7 @@ const timesheetRoute = (timesheet: Timesheet) => {
 
         <!-- Column: Name (Jika ada) -->
         <template #cell(subject_name)="{ item: timesheet }">
-            <div class="font-medium text-gray-900">
+            <div class="font-medium text-gray-900 flex items-center gap-x-1.5">
                 <Link
                     v-if="timesheet.subject_slug"
                     :href="employeeTimesheetsRoute(timesheet)"
@@ -77,6 +77,12 @@ const timesheetRoute = (timesheet: Timesheet) => {
                     {{ timesheet.subject_name }}
                 </Link>
                 <span v-else>{{ timesheet.subject_name }}</span>
+                <span
+                    v-if="(timesheet as any).subject_has_left"
+                    class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-500"
+                >
+                    Left
+                </span>
             </div>
         </template>
 

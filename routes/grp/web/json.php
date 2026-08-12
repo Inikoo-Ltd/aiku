@@ -21,6 +21,7 @@ use App\Actions\Catalogue\Product\Json\GetLastOrderedProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderCharges;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
+use App\Actions\Ordering\Order\Json\GetOrderServices;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
@@ -214,6 +215,7 @@ Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransa
 
 Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');
 Route::get('order/{order:id}/charges', GetOrderCharges::class)->name('order.charges');
+Route::get('order/{order:id}/services', GetOrderServices::class)->name('order.services');
 Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModification::class)->name('order.products_for_modify');
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');

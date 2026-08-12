@@ -75,7 +75,7 @@ class StoreRetinaTransaction extends RetinaAction
     {
         return [
             'quantity'          => ['required', 'numeric', 'min:0'],
-            'historic_asset_id' => ['required', Rule::exists('historic_assets', 'id')],
+            'historic_asset_id' => ['required', Rule::exists('historic_assets', 'id')->where('model_type', 'Product')],
         ];
     }
 

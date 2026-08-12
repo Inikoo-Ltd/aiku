@@ -231,6 +231,16 @@ class GetFaireOrdersInShop extends OrgAction
             ->where('marketplace_id', $item['variant_id'])
             ->first();
 
+        if (!$product && Arr::get($item, 'product_id')) {
+            $faireProduct = $shop->getFaireProduct($item['product_id']);
+            if (Arr::get($faireProduct, 'success') !== false) {
+                GetFaireProducts::make()->upsertFaireProduct($shop, $faireProduct);
+                $product = Product::where('shop_id', $shop->id)
+                    ->where('marketplace_id', $item['variant_id'])
+                    ->first();
+            }
+        }
+
         if (!$product) {
             return [
                 'state' => 'error',

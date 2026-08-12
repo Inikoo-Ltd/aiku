@@ -32,6 +32,26 @@ class EditCustomer extends OrgAction
         return $customer;
     }
 
+    /** @return array<int, array{description: string}> */
+    private function getEmailChangeWarnings(Customer $customer): array
+    {
+        $webUsers = $customer->webUsers()->get(['username', 'email']);
+        if ($webUsers->isEmpty()) {
+            return [];
+        }
+
+        $matchingWebUser = $webUsers->firstWhere('email', $customer->email);
+        if ($matchingWebUser) {
+            return [
+                ['description' => __('Changing this email will also update the login email of web user :username.', ['username' => $matchingWebUser->username])]
+            ];
+        }
+
+        return [
+            ['description' => __('This customer has :count web user(s) with different login emails; changing this email will not affect them.', ['count' => $webUsers->count()])]
+        ];
+    }
+
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): Customer
     {
@@ -60,6 +80,12 @@ class EditCustomer extends OrgAction
                     'type'  => 'input',
                     'label' => __('Company'),
                     'value' => $customer->company_name
+                ],
+                'email'                    => [
+                    'type'  => 'input',
+                    'label' => __('Email'),
+                    'value' => $customer->email,
+                    'information_warning' => $this->getEmailChangeWarnings($customer),
                 ],
                 'phone'                    => [
                     'type'  => 'phone',

@@ -75,6 +75,11 @@ task('deploy:migrate', function () {
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
 
+desc('Stop active cache warming crawls early in deployment');
+task('deploy:stop-crawls', function () {
+    artisan('crawl:stop', ['skipIfNoEnv', 'showOutput'])();
+})->select('env=prod')->once();
+
 
 desc('Modified npm:install');
 task('npm:my_install', function () {
@@ -500,6 +505,7 @@ task('deploy', [
     'debug:writable',
     'deploy:prepare',
     'deploy:vendors',
+    'deploy:stop-crawls',
     'deploy:set-release',
     'artisan:storage:link',
     'artisan:config:cache',

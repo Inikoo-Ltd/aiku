@@ -9,7 +9,6 @@
 namespace App\Actions\CRM\TrafficSource;
 
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
-use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -29,22 +28,19 @@ class GetShopAttributionDataQuality
      * nothing matches all show up as smaller numbers rather than as errors. These checks make each of
      * those failures visible on its own, per shop.
      *
-     * @return array{period: string, period_label: string, from: string|null, capture: array{arrivals: int, identified_pct: float|null, rows: array<int, array{visitor: string, arrivals: int, matched: int, repeat: int, direct: int, unmatched: int, internal: int, identified: string}>, rejected: array<int, array{host: string, hits: int}>}, checks: array<int, array{key: string, label: string, status: string, value: string, hint: string, items: array<int, string>}>}
+     * @return array{from: string|null, to: string|null, capture: array{arrivals: int, identified_pct: float|null, rows: array<int, array{visitor: string, arrivals: int, matched: int, repeat: int, direct: int, unmatched: int, internal: int, identified: string}>, rejected: array<int, array{host: string, hits: int}>}, checks: array<int, array{key: string, label: string, status: string, value: string, hint: string, items: array<int, string>}>}
      */
-    public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
+    public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null): array
     {
-        $from = $period->startsAt();
-
         return [
-            'period'       => $period->value,
-            'period_label' => MarketingPeriodEnum::labels()[$period->value],
             'from'         => $from?->toDateString(),
+            'to'           => $to?->toDateString(),
             'checks'       => [
-                $this->registrationsWithoutAttribution($shop, $from),
+                $this->registrationsWithoutAttribution($shop, $from, $to),
                 $this->sharesNotSummingToOne($shop),
                 $this->missingTrafficSources($shop),
                 $this->neverCreditedTrafficSources($shop),
-                $this->unmatchedCampaignReferences($shop, $from),
+                $this->unmatchedCampaignReferences($shop, $from, $to),
             ],
             'capture' => $this->captureToday(),
         ];
@@ -107,16 +103,18 @@ class GetShopAttributionDataQuality
      * recorded. A shop always has some, since direct and untracked arrivals are real, so this reads as
      * a proportion rather than a count, and only a high one is an alarm.
      */
-    private function registrationsWithoutAttribution(Shop $shop, ?Carbon $from): array
+    private function registrationsWithoutAttribution(Shop $shop, ?Carbon $from, ?Carbon $to): array
     {
         $registrations = DB::table('customers')
             ->where('shop_id', $shop->id)
             ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+            ->when($to, fn ($query) => $query->where('created_at', '<=', $to))
             ->count();
 
         $unattributed = DB::table('customers')
             ->where('shop_id', $shop->id)
             ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+            ->when($to, fn ($query) => $query->where('created_at', '<=', $to))
             ->whereNotExists(fn ($query) => $query
                 ->select(DB::raw(1))
                 ->from('model_has_traffic_sources as p')
@@ -225,7 +223,7 @@ class GetShopAttributionDataQuality
      * their channel, but drop out of every per-campaign figure, so spend imported against the same
      * reference has nothing to compare itself with.
      */
-    private function unmatchedCampaignReferences(Shop $shop, ?Carbon $from): array
+    private function unmatchedCampaignReferences(Shop $shop, ?Carbon $from, ?Carbon $to): array
     {
         /* ponytail: campaign refs live inside the touch string, so they can only be found by parsing
            it. All time would mean parsing every customer the shop ever had on a page load, so the scan
@@ -244,6 +242,7 @@ class GetShopAttributionDataQuality
         DB::table('customers')
             ->where('shop_id', $shop->id)
             ->where('created_at', '>=', $scanFrom)
+            ->when($to, fn ($query) => $query->where('created_at', '<=', $to))
             ->whereNotNull('traffic_sources')
             ->where('traffic_sources', '!=', '')
             ->select('id', 'traffic_sources')

@@ -20,7 +20,11 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
 {
-    public function handle(PickingSession $parent, $prefix = null, ?int $deliveryNoteId = null): LengthAwarePaginator
+    /**
+     * $onlyUnhandled drops the delivery notes whose items are all finished, so while the session is
+     * being picked the list only holds the notes that still have something to walk to.
+     */
+    public function handle(PickingSession $parent, $prefix = null, ?int $deliveryNoteId = null, bool $onlyUnhandled = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -41,8 +45,15 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             $query->where('delivery_notes.id', $deliveryNoteId);
         }
 
-        $query->whereHas('deliveryNoteItems', function ($query) {
+        $query->whereHas('deliveryNoteItems', function ($query) use ($onlyUnhandled) {
             $query->where('quantity_required', '>', 0);
+
+            if ($onlyUnhandled) {
+                $query->where(function ($query) {
+                    $query->where('is_handled', false)
+                        ->orWhere('is_dirty', true);
+                });
+            }
         });
 
         return $query

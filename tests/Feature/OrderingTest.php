@@ -53,6 +53,8 @@ use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
+use App\Actions\Billables\Service\StoreService;
+use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
@@ -89,6 +91,7 @@ use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Purge\PurgeTypeEnum;
+use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -100,6 +103,7 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
+use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\HistoricAsset;
@@ -2236,4 +2240,103 @@ test('write off settles an overpaid order with a positive adjustment', function 
         ->and((float)$order->total_amount)->toBe((float)$order->payment_amount)
         ->and($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
         ->and((float)$adjustmentTransaction->net_amount)->toBeGreaterThan(0);
+});
+
+test('service only order sent to warehouse skips delivery note', function () {
+    $service = StoreService::make()->action($this->shop, [
+        'code'  => 'SRV1',
+        'name'  => 'Service one',
+        'price' => 10,
+        'unit'  => 'each',
+        'state' => ServiceStateEnum::ACTIVE,
+    ]);
+
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+    $modelData        = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    StoreTransaction::make()->action($order, $service->historicAsset, [
+        'quantity_ordered' => 1,
+    ]);
+
+    $order = SubmitOrder::make()->action($order);
+
+    $result = SendOrderToWarehouse::make()->action($order, [
+        'warehouse_id' => $this->warehouse->id,
+    ]);
+
+    $order->refresh();
+
+    expect($result)->toBeNull()
+        ->and($order->deliveryNotes()->count())->toBe(0)
+        ->and($order->state)->toBe(OrderStateEnum::DISPATCHED)
+        ->and($order->invoices()->count())->toBe(1)
+        ->and($order->transactions()->where('model_type', 'Service')->first()->state)->toBe(TransactionStateEnum::DISPATCHED->value);
+});
+
+test('mixed product and service order dispatch', function () {
+    $service = StoreService::make()->action($this->shop, [
+        'code'  => 'SRV2',
+        'name'  => 'Service two',
+        'price' => 10,
+        'unit'  => 'each',
+        'state' => ServiceStateEnum::ACTIVE,
+    ]);
+
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+    $modelData        = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $productTransaction = StoreTransaction::make()->action($order, $this->product->historicAsset, [
+        'quantity_ordered' => 1,
+    ]);
+    $serviceTransaction = StoreTransaction::make()->action($order, $service->historicAsset, [
+        'quantity_ordered' => 1,
+    ]);
+
+    $order = SubmitOrder::make()->action($order);
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, [
+        'warehouse_id' => $this->warehouse->id,
+    ]);
+    $order->refresh();
+
+    expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($deliveryNote->deliveryNoteItems()->where('transaction_id', $serviceTransaction->id)->count())->toBe(0);
+
+    DispatchOrder::make()->action($order, $deliveryNote);
+    $order->refresh();
+
+    expect($order->transactions()->find($serviceTransaction->id)->state)->toBe(TransactionStateEnum::DISPATCHED->value)
+        ->and((float)$order->transactions()->find($serviceTransaction->id)->quantity_dispatched)->toBe(1.0);
+});
+
+test('service transaction defaults net amount to historic asset price times quantity', function () {
+    $service = StoreService::make()->action($this->shop, [
+        'code'  => 'SRV3',
+        'name'  => 'Service three',
+        'price' => 15,
+        'unit'  => 'each',
+        'state' => ServiceStateEnum::ACTIVE,
+    ]);
+
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+    $modelData        = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $serviceTransaction = StoreTransaction::make()->action($order, $service->historicAsset, [
+        'quantity_ordered' => 2,
+    ]);
+
+    expect((float)$serviceTransaction->net_amount)->toBe((float)$service->historicAsset->price * 2)
+        ->and((float)$serviceTransaction->gross_amount)->toBe((float)$service->historicAsset->price * 2);
 });

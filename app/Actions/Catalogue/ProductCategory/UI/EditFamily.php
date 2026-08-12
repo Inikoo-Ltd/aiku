@@ -152,17 +152,17 @@ class EditFamily extends OrgAction
                 'formData' => [
                     'blueprint' => array_filter(
                         [
-                            [
-                                'label'  => __('Id'),
-                                'icon'   => 'fa-light fa-fingerprint',
-                                'fields' => [
-                                    'code' => [
-                                        'type'  => 'input',
-                                        'label' => __('Code'),
-                                        'value' => $family->code
-                                    ],
-                                ]
-                            ],
+                            // [
+                            //     'label'  => __('Id'),
+                            //     'icon'   => 'fa-light fa-fingerprint',
+                            //     'fields' => [
+                            //         'code' => [
+                            //             'type'  => 'input',
+                            //             'label' => __('Code'),
+                            //             'value' => $family->code
+                            //         ],
+                            //     ]
+                            // ],
                             [
                                 'label'  => __('FAQ'),
                                 'icon'   => 'fa-light fa-question-circle',

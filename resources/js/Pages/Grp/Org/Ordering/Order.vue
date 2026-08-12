@@ -103,6 +103,14 @@ import { ctrans } from "@/Composables/useTrans"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
+interface OrderCharge {
+    name: string
+    label: string
+    description: string
+    amount: number
+    currency_code: string
+}
+
 interface UploadSection {
     title: {
         label: string
@@ -131,6 +139,12 @@ const props = defineProps<{
             has_extra_packing: boolean
             has_insurance: boolean
         }
+    }
+
+    charges?: {
+        premium_dispatch: OrderCharge | null
+        extra_packing: OrderCharge | null
+        insurance: OrderCharge | null
     }
 
     pageHead: PageHeadingTypes
@@ -295,6 +309,7 @@ const props = defineProps<{
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
+const currentModalItemType = ref('product')
 const locale = inject("locale", aikuLocaleStructure)
 const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
@@ -484,8 +499,9 @@ const onSubmitNote = async (closePopup: Function) => {
     }
 }
 
-const openModal = (action: any) => {
+const openModal = (action: any, itemType: string = 'product') => {
     currentAction.value = action
+    currentModalItemType.value = itemType
     isModalProductListOpen.value = true
 }
 
@@ -567,6 +583,43 @@ const confirm2 = (action) => {
             )
         },
 
+    });
+};
+
+const invoiceOnlyLoading = ref(false)
+const confirmInvoiceOnly = (action) => {
+    confirm.require({
+        message: ctrans('Generate the invoice and dispatch this order? It only contains services, no goods will be sent to the warehouse.'),
+        header: ctrans('Invoice order'),
+        rejectProps: {
+            label: ctrans('No'),
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: ctrans('Yes, invoice')
+        },
+        accept: () => {
+            router[action.route.method](
+                route(action.route.name, action.route.parameters),
+                {},
+                {
+                    onStart: () => {
+                        invoiceOnlyLoading.value = true
+                    },
+                    onFinish: () => {
+                        invoiceOnlyLoading.value = false
+                    },
+                    onError: () => {
+                        notify({
+                            title: ctrans("Error"),
+                            text: ctrans("Failed to invoice order"),
+                            type: "error",
+                        })
+                    }
+                }
+            )
+        },
     });
 };
 
@@ -784,6 +837,100 @@ const labelToBePaid = (toBePaidValue: string) => {
     }
 
     return ''
+}
+
+// Section: Order charges (priority dispatch, extra packing, insurance)
+const isChargeEditable = computed(() => !['finalised', 'dispatched', 'cancelled'].includes(props.data?.data?.state || ''))
+
+const isLoadingPriorityDispatch = ref(false)
+const isLoadingExtraPacking = ref(false)
+const isLoadingInsurance = ref(false)
+
+const chargeToggles = ref({
+    is_premium_dispatch: props.data?.data?.is_premium_dispatch ?? false,
+    has_extra_packing: props.data?.data?.has_extra_packing ?? false,
+    has_insurance: props.data?.data?.has_insurance ?? false,
+})
+
+watch(() => props.data?.data, (orderData) => {
+    chargeToggles.value.is_premium_dispatch = orderData?.is_premium_dispatch ?? false
+    chargeToggles.value.has_extra_packing = orderData?.has_extra_packing ?? false
+    chargeToggles.value.has_insurance = orderData?.has_insurance ?? false
+}, { deep: true })
+
+const updateOrderCharge = (
+    routeName: string,
+    field: keyof typeof chargeToggles.value,
+    val: boolean,
+    loadingRef: typeof isLoadingPriorityDispatch,
+    successText: string,
+    errorText: string
+) => {
+    const previousValue = chargeToggles.value[field]
+    chargeToggles.value[field] = val
+
+    router.patch(
+        route(routeName, { order: props.data?.data?.id }),
+        { [field]: val },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                loadingRef.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: ctrans("Success"),
+                    text: successText,
+                    type: "success"
+                })
+            },
+            onError: () => {
+                chargeToggles.value[field] = previousValue
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: errorText,
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                loadingRef.value = false
+            },
+        }
+    )
+}
+
+const onChangePriorityDispatch = (val: boolean) => {
+    updateOrderCharge(
+        'grp.models.order.update_premium_dispatch',
+        'is_premium_dispatch',
+        val,
+        isLoadingPriorityDispatch,
+        val ? ctrans("The order is changed to priority dispatch!") : ctrans("The order is no longer on priority dispatch."),
+        ctrans("Failed to update priority dispatch, try again.")
+    )
+}
+
+const onChangeExtraPacking = (val: boolean) => {
+    updateOrderCharge(
+        'grp.models.order.update_extra_packing',
+        'has_extra_packing',
+        val,
+        isLoadingExtraPacking,
+        val ? ctrans("The order is changed to extra packing!") : ctrans("The order is no longer on extra packing."),
+        ctrans("Failed to update extra packing, try again.")
+    )
+}
+
+const onChangeInsurance = (val: boolean) => {
+    updateOrderCharge(
+        'grp.models.order.update_insurance',
+        'has_insurance',
+        val,
+        isLoadingInsurance,
+        val ? ctrans("The order has insurance!") : ctrans("The order no longer has insurance."),
+        ctrans("Failed to update insurance, try again.")
+    )
 }
 
 // Section: change shipping price (in Summary)
@@ -1342,7 +1489,22 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <PageHeading :data="pageHead">
         <template #button-add-product="{ action }">
             <div class="relative">
-                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
+                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action, 'product')"
+                    :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+            </div>
+        </template>
+
+        <template #button-invoice-only="{ action }">
+            <div class="relative">
+                <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="invoiceOnlyLoading"
+                    @click="() => confirmInvoiceOnly(action)" :key="`ActionButton${action.label}${action.style}`"
+                    :tooltip="action.tooltip" />
+            </div>
+        </template>
+
+        <template #button-add-service="{ action }">
+            <div class="relative">
+                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action, 'service')"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
             </div>
         </template>
@@ -2216,6 +2378,34 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         </Modal>
                     </div>
 
+                    <!-- Section: Order charges (priority dispatch, extra packing, insurance) -->
+                    <div v-if="charges?.premium_dispatch || charges?.extra_packing || charges?.insurance"
+                        class="border-b border-gray-300 mb-2 pb-2 space-y-1.5 pr-2">
+                        <div v-for="charge in [
+                                { key: 'premium_dispatch', data: charges?.premium_dispatch, active: chargeToggles.is_premium_dispatch, loading: isLoadingPriorityDispatch, onChange: onChangePriorityDispatch },
+                                { key: 'extra_packing', data: charges?.extra_packing, active: chargeToggles.has_extra_packing, loading: isLoadingExtraPacking, onChange: onChangeExtraPacking },
+                                { key: 'insurance', data: charges?.insurance, active: chargeToggles.has_insurance, loading: isLoadingInsurance, onChange: onChangeInsurance },
+                            ]"
+                            :key="charge.key">
+                            <dl v-if="charge.data" class="flex items-center justify-between gap-x-2">
+                                <dt class="flex items-center gap-x-1.5 text-gray-500">
+                                    <InformationIcon v-if="charge.data.description" :information="charge.data.description" />
+                                    <span>{{ charge.data.label ?? charge.data.name }}</span>
+                                    <span class="text-gray-400" :class="charge.active ? '' : 'opacity-60'">({{ locale.currencyFormat(charge.data.currency_code, charge.data.amount) }})</span>
+                                </dt>
+                                <dd class="flex items-center">
+                                    <Toggle
+                                        :modelValue="charge.active"
+                                        :disabled="charge.loading || !isChargeEditable"
+                                        :loading="charge.loading"
+                                        @update:modelValue="(e: boolean) => charge.onChange(e)"
+                                        size="md"
+                                    />
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
                         <template #cell_charges_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
@@ -2383,8 +2573,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         />
     </div>
 
-    <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
-        :current="currentTab" v-model:currentTab="currentTab" :typeModel="'order'" />
+    <ModalProductList v-model="isModalProductListOpen" :fetchRoute="currentModalItemType === 'service' ? routes.services_list : routes.products_list" :action="currentAction"
+        :current="currentTab" v-model:currentTab="currentTab" :typeModel="currentModalItemType === 'service' ? 'service' : 'order'" />
 
     <!-- Section: address edit -->
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-xl">

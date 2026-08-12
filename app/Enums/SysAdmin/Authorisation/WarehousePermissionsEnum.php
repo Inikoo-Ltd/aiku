@@ -9,6 +9,7 @@
 namespace App\Enums\SysAdmin\Authorisation;
 
 use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\Organisation;
 
 enum WarehousePermissionsEnum: string
 {
@@ -56,6 +57,21 @@ enum WarehousePermissionsEnum: string
         }
 
         return $permissionsNames;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getStockEditPermissionNames(Organisation $organisation): array
+    {
+        $permissionNames = ["inventory.{$organisation->id}.edit"];
+
+        foreach ($organisation->warehouses()->pluck('id') as $warehouseId) {
+            $permissionNames[] = "supervisor-stocks.$warehouseId";
+            $permissionNames[] = "stocks.$warehouseId.edit";
+        }
+
+        return $permissionNames;
     }
 
     public static function getPermissionName(string $rawName, Warehouse $warehouse): string

@@ -64,12 +64,12 @@ class EditMasterCollection extends OrgAction
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
-                                    'code' => [
-                                        'type'     => 'input',
-                                        'label'    => __('Code'),
-                                        'value'    => $masterCollection->code,
-                                        'required' => true
-                                    ],
+                                    // 'code' => [
+                                    //     'type'     => 'input',
+                                    //     'label'    => __('Code'),
+                                    //     'value'    => $masterCollection->code,
+                                    //     'required' => true
+                                    // ],
                                     'name' => [
                                         'type'     => 'input',
                                         'label'    => __('Name'),

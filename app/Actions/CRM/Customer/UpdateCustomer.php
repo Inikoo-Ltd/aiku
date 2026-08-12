@@ -232,16 +232,15 @@ class UpdateCustomer extends OrgAction
 
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::hasAny($changes, ['contact_name', 'email'])) {
-            $rootWebUser = $customer->webUsers->where('is_root', true)->first();
-            if ($rootWebUser) {
-                $rootWebUser->update(
-                    [
-                        'contact_name' => $customer->contact_name,
-                        'email'        => $customer->email
-                    ]
-                );
-            }
+        if (Arr::has($changes, 'contact_name')) {
+            $customer->webUsers()->where('is_root', true)->first()?->update(
+                ['contact_name' => $customer->contact_name]
+            );
+        }
+
+        if (Arr::has($changes, 'email')) {
+            $webUserWithOldEmail = $customer->webUsers()->where('email', Arr::get($staleData, 'email'))->first();
+            $webUserWithOldEmail?->update(['email' => $customer->email]);
         }
 
         if (Arr::has($changes, 'state')) {
@@ -317,6 +316,16 @@ class UpdateCustomer extends OrgAction
                         ['column' => 'id', 'value' => $this->customer->id, 'operator' => '!=']
                     ]
                 ),
+                ...$this->shop->website ? [
+                    new IUnique(
+                        table: 'web_users',
+                        extraConditions: [
+                            ['column' => 'website_id', 'value' => $this->shop->website->id],
+                            ['column' => 'deleted_at', 'operator' => 'null'],
+                            ['column' => 'customer_id', 'value' => $this->customer->id, 'operator' => '!=']
+                        ]
+                    ),
+                ] : [],
             ],
             'phone'                                                 => [
                 'sometimes',

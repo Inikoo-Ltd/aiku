@@ -23,6 +23,8 @@ use App\Actions\Web\Announcement\UpdateAnnouncement;
 use App\Actions\Web\Banner\DeleteBanner;
 use App\Actions\Web\Banner\StoreBanner;
 use App\Actions\Web\Banner\UpdateBanner;
+use App\Actions\Web\Crawl\CrawlWebsite;
+use App\Actions\Web\Crawl\CrawlWebsites;
 use App\Actions\Web\ExternalLink\AttachExternalLinkToWebBlock;
 use App\Actions\Web\ExternalLink\CheckExternalLinkStatus;
 use App\Actions\Web\ExternalLink\StoreExternalLink;
@@ -60,6 +62,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
+use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
@@ -94,11 +97,13 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
@@ -1847,5 +1852,69 @@ describe('checkout abandonment', function () {
         ]);
 
         expect(CheckoutAbandonment::where('order_id', $this->order->id)->value('recovered_at'))->not->toBeNull();
+    });
+});
+
+describe('deployment crawling', function () {
+    test('deployment crawls are delayed and staggered without delaying other crawls', function () {
+        Website::query()->update(['migrated' => false]);
+
+        foreach (range(1, 3) as $index) {
+            Website::factory()->create([
+                'shop_id'         => $this->shop->id,
+                'organisation_id' => $this->organisation->id,
+                'group_id'        => $this->organisation->group_id,
+                'code'            => "crawl-$index",
+                'type'            => WebsiteTypeEnum::INFO,
+                'state'           => WebsiteStateEnum::LIVE,
+                'migrated'        => true,
+                'status'          => true,
+            ]);
+        }
+
+        Queue::fake();
+
+        CrawlWebsites::run(CrawlTriggerEnum::DEPLOYMENT);
+
+        $deploymentDelays = Queue::pushed(JobDecorator::class)
+            ->filter(fn (JobDecorator $job) => $job->decorates(CrawlWebsite::class))
+            ->pluck('delay')
+            ->sort()
+            ->values()
+            ->all();
+
+        expect($deploymentDelays)->toBe([60, 65, 70]);
+
+        Queue::fake();
+
+        CrawlWebsites::run(CrawlTriggerEnum::COMMAND);
+
+        $commandDelays = Queue::pushed(JobDecorator::class)
+            ->filter(fn (JobDecorator $job) => $job->decorates(CrawlWebsite::class))
+            ->pluck('delay')
+            ->values()
+            ->all();
+
+        expect($commandDelays)->toBe([null, null, null]);
+    });
+
+    test('deployment stops active crawls before restarting SSR', function () {
+        $deployFile = file_get_contents(base_path('deploy/deploy.php'));
+
+        preg_match("/task\('deploy', \[(.*?)\]\);/s", $deployFile, $matches);
+
+        $deploymentSteps  = $matches[1] ?? '';
+        $stopCrawls       = strpos($deploymentSteps, "'deploy:stop-crawls'");
+        $terminateHorizon = strpos($deploymentSteps, "'artisan:horizon:terminate'");
+        $restartSsr       = strpos($deploymentSteps, "'deploy:restart-ssr-by-supervisorctl'");
+        $flushVarnish     = strpos($deploymentSteps, "'deploy:flush-varnish'");
+
+        expect($stopCrawls)->not->toBeFalse()
+            ->and($terminateHorizon)->not->toBeFalse()
+            ->and($restartSsr)->not->toBeFalse()
+            ->and($flushVarnish)->not->toBeFalse()
+            ->and($stopCrawls)->toBeLessThan($terminateHorizon)
+            ->and($terminateHorizon)->toBeLessThan($restartSsr)
+            ->and($restartSsr)->toBeLessThan($flushVarnish);
     });
 });

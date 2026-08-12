@@ -400,9 +400,9 @@ class ShowReturnDeliveryNote extends OrgAction
                 'current'    => $this->tab,
                 'navigation' => $returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING
                     ?
-                    DeliveryNoteTabsEnum::navigationExcept($returnDeliveryNote, [DeliveryNoteTabsEnum::TARIFF_CODES])
+                    DeliveryNoteTabsEnum::navigationExcept($returnDeliveryNote, [DeliveryNoteTabsEnum::HANDLED_ITEMS, DeliveryNoteTabsEnum::TARIFF_CODES])
                     :
-                    DeliveryNoteTabsEnum::navigationExcept($returnDeliveryNote, [DeliveryNoteTabsEnum::DONE_ITEMS, DeliveryNoteTabsEnum::PENDING_ITEMS, DeliveryNoteTabsEnum::TARIFF_CODES])
+                    DeliveryNoteTabsEnum::navigationExcept($returnDeliveryNote, [DeliveryNoteTabsEnum::HANDLED_ITEMS, DeliveryNoteTabsEnum::DONE_ITEMS, DeliveryNoteTabsEnum::PENDING_ITEMS, DeliveryNoteTabsEnum::TARIFF_CODES])
             ],
             'address'             => [
                 'delivery' => AddressResource::make($returnDeliveryNote->deliveryNote->deliveryAddress ?? new Address()),

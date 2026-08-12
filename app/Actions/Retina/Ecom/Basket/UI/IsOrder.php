@@ -234,6 +234,16 @@ trait IsOrder
 
         $orderSummary = $itemsData;
 
+        if ($order->services_amount != 0) {
+            $orderSummary[] = [
+                [
+                    'label'       => __('Services'),
+                    'information' => '',
+                    'price_total' => $order->services_amount,
+                ],
+            ];
+        }
+
         $orderSummary[] = [
             [
                 'label'       => __('Charges'),
