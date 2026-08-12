@@ -314,6 +314,8 @@ class UpdateShop extends OrgAction
                     'customer_notification_access_id' => 'settings.email.provider.customer_notification.access_id',
                     'customer_notification_access_key' => 'settings.email.provider.customer_notification.access_key',
                     'customer_notification_region' => 'settings.email.provider.customer_notification.region',
+                    'whatsapp_phone_number_id' => 'settings.whatsapp.phone_number_id',
+                    'whatsapp_waba_id' => 'settings.whatsapp.waba_id',
                     default => $key
                 },
                 $value
@@ -349,6 +351,8 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'customer_notification_access_id');
         data_forget($modelData, 'customer_notification_access_key');
         data_forget($modelData, 'customer_notification_region');
+        data_forget($modelData, 'whatsapp_phone_number_id');
+        data_forget($modelData, 'whatsapp_waba_id');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -840,6 +844,8 @@ class UpdateShop extends OrgAction
             'customer_notification_access_id'                         => ['sometimes', 'nullable', 'string'],
             'customer_notification_access_key'                        => ['sometimes', 'nullable', 'string'],
             'customer_notification_region'                            => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
+            'whatsapp_phone_number_id'                                => ['sometimes', 'nullable', 'string'],
+            'whatsapp_waba_id'                                        => ['sometimes', 'nullable', 'string'],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],

@@ -38,7 +38,6 @@ import FormEditTradeUnit from '@/Components/Forms/Fields/FormEditTradeUnit.vue'
 import TagsTradeUnits from '@/Components/Forms/Fields/TagsTradeUnits.vue'
 import invoiceSerialReferences from '@/Components/Forms/Fields/invoiceSerialReferences.vue'
 import ListSelectorTradeUnit from "@/Components/Forms/Fields/ListSelectorTradeUnit.vue"
-import MetaConnections from '@/Components/Forms/Fields/MetaConnections.vue'
 
 
 const FreeGift = defineAsyncComponent(() => import('@/Components/Forms/Fields/FreeGift.vue'))
@@ -206,7 +205,6 @@ export const componentsList: { [key: string]: Component } = {
     'tags': TagsInput,
     'banned-countries': BannedCountries,
 	field_group: FieldGroup,
-    'meta_connections': MetaConnections,
     'multiple_price_currency' : MultiplePriceCurrency,
     'master_shop_price_exchanges' : MasterShopPriceExchanges
 }

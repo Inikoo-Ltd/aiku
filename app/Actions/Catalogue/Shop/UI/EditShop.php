@@ -851,33 +851,21 @@ class EditShop extends OrgAction
                     'label'  => __('Meta connections'),
                     'icon'   => 'fa-brands fa-meta',
                     'fields' => [
-                        'meta_channel' => [
-                            'type'         => 'meta_connections',
+                        'whatsapp' => [
+                            'type'         => 'field_group',
+                            'label'        => __('WhatsApp'),
                             'noTitle'      => true,
                             'noSaveButton' => true,
-                            'full'         => true,
-                            'value'        => null,
-                            'options'      => [
-                                [
-                                    'value'       => 'whatsapp',
-                                    'title'       => __('WhatsApp'),
-                                    'icon'        => ['fab', 'fa-whatsapp'],
-                                    'description' => __('Chat with customers over WhatsApp Business.'),
-                                    'available'   => true,
+                            'fields'       => [
+                                'whatsapp_phone_number_id' => [
+                                    'type'  => 'input',
+                                    'label' => __('Phone Number ID'),
+                                    'value' => Arr::get($shop->settings, 'whatsapp.phone_number_id', ''),
                                 ],
-                                [
-                                    'value'       => 'instagram',
-                                    'title'       => __('Instagram'),
-                                    'icon'        => ['fab', 'fa-instagram'],
-                                    'description' => __('Instagram Direct messages.'),
-                                    'available'   => false,
-                                ],
-                                [
-                                    'value'       => 'messenger',
-                                    'title'       => __('Facebook Messenger'),
-                                    'icon'        => ['fab', 'fa-facebook-messenger'],
-                                    'description' => __('Messenger conversations from your Page.'),
-                                    'available'   => false,
+                                'whatsapp_waba_id'         => [
+                                    'type'  => 'input',
+                                    'label' => __('WABA ID'),
+                                    'value' => Arr::get($shop->settings, 'whatsapp.waba_id', ''),
                                 ],
                             ],
                         ],

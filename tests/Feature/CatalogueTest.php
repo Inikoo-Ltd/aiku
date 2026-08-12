@@ -55,6 +55,7 @@ use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\Role;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -172,6 +173,19 @@ test('update shop', function (Shop $shop) {
         ->and($shop->organisation->catalogueStats->number_shops)->toBe(2)
         ->and($shop->organisation->catalogueStats->number_shops_state_in_process)->toBe(1)
         ->and($shop->organisation->catalogueStats->number_shops_state_open)->toBe(1);
+})->depends('create shop');
+
+test('update shop whatsapp settings independently', function (Shop $shop) {
+    $shop = UpdateShop::make()->action($shop, ['whatsapp_phone_number_id' => '1234567890']);
+    $shop->refresh();
+
+    expect(Arr::get($shop->settings, 'whatsapp.phone_number_id'))->toBe('1234567890');
+
+    $shop = UpdateShop::make()->action($shop, ['whatsapp_waba_id' => '9876543210']);
+    $shop->refresh();
+
+    expect(Arr::get($shop->settings, 'whatsapp.waba_id'))->toBe('9876543210')
+        ->and(Arr::get($shop->settings, 'whatsapp.phone_number_id'))->toBe('1234567890');
 })->depends('create shop');
 
 test('seed shop permissions from command', function () {
