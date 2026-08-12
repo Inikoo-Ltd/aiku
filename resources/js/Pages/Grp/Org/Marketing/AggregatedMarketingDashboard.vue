@@ -170,6 +170,16 @@ const share = (part: number, whole: number) =>
 
 const unsubscribedHelp = trans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
 
+const childrenTotals = computed(() => props.overview.children.reduce((totals, child) => ({
+    revenue: totals.revenue + child.revenue,
+    pending: totals.pending + child.pending,
+    revenue_total: totals.revenue_total + child.revenue_total,
+    registrations: totals.registrations + child.registrations,
+    registrations_total: totals.registrations_total + child.registrations_total,
+    orders: totals.orders + child.orders,
+    orders_total: totals.orders_total + child.orders_total,
+}), { revenue: 0, pending: 0, revenue_total: 0, registrations: 0, registrations_total: 0, orders: 0, orders_total: 0 }))
+
 const netRegistrations = (registrations: number, unsubscribed: number) =>
     count(registrations - unsubscribed).replace('-', '−')
 
@@ -414,8 +424,6 @@ const columnHelp: Record<string, string> = {
             </p>
         </div>
 
-        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4 items-start">
-
         <!-- The drill-down: link down a level rather than repeat that level's dashboard here -->
         <div v-if="overview.children.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <div>
@@ -428,48 +436,89 @@ const columnHelp: Record<string, string> = {
                 {{ trans('Open one to see its channels, campaigns and mailshots.') }}
             </p>
 
-            <table class="mt-4 w-full text-xs">
+            <!-- Every figure gets a column of its own: what marketing touched, what the whole business
+                 took, and the share between them, so a reader compares down a column instead of
+                 unpicking three numbers crammed into one cell. -->
+            <div class="mt-4 overflow-x-auto">
+            <table class="w-full text-xs">
                 <thead>
+                    <tr class="text-gray-400">
+                        <th rowspan="2" class="text-left font-normal align-bottom py-1.5 pr-2">{{ trans('Name') }}</th>
+                        <th rowspan="2" class="text-left font-normal align-bottom py-1.5 px-2">{{ trans('Best channel') }}</th>
+                        <th colspan="4" class="text-center font-normal py-1.5 px-2 border-l border-gray-100">{{ trans('Revenue') }}</th>
+                        <th colspan="3" class="text-center font-normal py-1.5 px-2 border-l border-gray-100">{{ trans('Registrations') }}</th>
+                        <th colspan="3" class="text-center font-normal py-1.5 px-2 border-l border-gray-100">{{ trans('Orders') }}</th>
+                    </tr>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Name') }}</th>
-                        <th class="text-left font-normal py-1.5 px-2">{{ trans('Best channel') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue touched') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Orders') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2 border-l border-gray-100">{{ trans('Touched') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Awaiting') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('All') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Share') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2 border-l border-gray-100">{{ trans('Touched') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('All') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Share') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2 border-l border-gray-100">{{ trans('Touched') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ trans('All') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Share') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="child in overview.children" :key="child.slug"
                         class="border-b border-gray-50 text-gray-600">
-                        <td class="py-2 pr-2">
+                        <td class="py-2 pr-2 whitespace-nowrap">
                             <Link :href="route(child.route.name, child.route.parameters)"
                                   class="text-gray-700 hover:text-indigo-600">
                                 {{ child.name }}
                             </Link>
                         </td>
-                        <td class="px-2 text-gray-500">{{ child.top_channel ?? '—' }}</td>
-                        <!-- Invoiced, plus what is still awaiting invoice, against everything the
-                             business took: the share is the point, not the figure on its own. -->
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            {{ money(child.revenue) }}<span v-if="child.pending > 0" class="text-[#006300]"> + {{ money(child.pending) }}</span>
-                            <span class="text-gray-400">/ {{ money(child.revenue_total) }}</span>
-                            <span class="text-gray-400">· {{ share(child.revenue + child.pending, child.revenue_total) }}</span>
+                        <td class="px-2 text-gray-500 whitespace-nowrap">{{ child.top_channel ?? '—' }}</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap border-l border-gray-100">{{ money(child.revenue) }}</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap"
+                            :class="child.pending > 0 ? 'text-[#006300]' : 'text-gray-300'">
+                            {{ child.pending > 0 ? money(child.pending) : '—' }}
                         </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap text-gray-400">{{ money(child.revenue_total) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ share(child.revenue + child.pending, child.revenue_total) }}</td>
                         <!-- Against the total, so a zero says marketing reached nobody rather than
                              that nothing happened. -->
-                        <td class="text-right px-2 tabular-nums"
+                        <td class="text-right px-2 tabular-nums border-l border-gray-100"
                             :class="child.registrations_total > 0 && child.registrations === 0 ? 'text-[#d03b3b]' : ''">
                             {{ count(child.registrations) }}
-                            <span class="text-gray-400">/ {{ count(child.registrations_total) }} · {{ share(child.registrations, child.registrations_total) }}</span>
                         </td>
-                        <td class="text-right pl-2 tabular-nums">
+                        <td class="text-right px-2 tabular-nums text-gray-400">{{ count(child.registrations_total) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ share(child.registrations, child.registrations_total) }}</td>
+                        <td class="text-right px-2 tabular-nums border-l border-gray-100"
+                            :class="child.orders_total > 0 && child.orders === 0 ? 'text-[#d03b3b]' : ''">
                             {{ count(child.orders) }}
-                            <span class="text-gray-400">/ {{ count(child.orders_total) }} · {{ share(child.orders, child.orders_total) }}</span>
                         </td>
+                        <td class="text-right px-2 tabular-nums text-gray-400">{{ count(child.orders_total) }}</td>
+                        <td class="text-right pl-2 tabular-nums">{{ share(child.orders, child.orders_total) }}</td>
                     </tr>
                 </tbody>
+                <tfoot>
+                    <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
+                        <td class="py-1.5 pr-2">{{ trans('All') }}</td>
+                        <td class="px-2"></td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap border-l border-gray-100">{{ money(childrenTotals.revenue) }}</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap"
+                            :class="childrenTotals.pending > 0 ? 'text-[#006300]' : 'text-gray-300'">
+                            {{ childrenTotals.pending > 0 ? money(childrenTotals.pending) : '—' }}
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap text-gray-500">{{ money(childrenTotals.revenue_total) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ share(childrenTotals.revenue + childrenTotals.pending, childrenTotals.revenue_total) }}</td>
+                        <td class="text-right px-2 tabular-nums border-l border-gray-100">{{ count(childrenTotals.registrations) }}</td>
+                        <td class="text-right px-2 tabular-nums text-gray-500">{{ count(childrenTotals.registrations_total) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ share(childrenTotals.registrations, childrenTotals.registrations_total) }}</td>
+                        <td class="text-right px-2 tabular-nums border-l border-gray-100">{{ count(childrenTotals.orders) }}</td>
+                        <td class="text-right px-2 tabular-nums text-gray-500">{{ count(childrenTotals.orders_total) }}</td>
+                        <td class="text-right pl-2 tabular-nums">{{ share(childrenTotals.orders, childrenTotals.orders_total) }}</td>
+                    </tr>
+                </tfoot>
             </table>
+            </div>
         </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
 
         <!-- Sites sending people to any shop underneath, pooled by host -->
         <div v-if="overview.referrers?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
