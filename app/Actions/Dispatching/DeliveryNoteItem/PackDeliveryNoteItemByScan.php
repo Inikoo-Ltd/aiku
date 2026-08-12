@@ -28,6 +28,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
 {
     use WithDeliveryNoteItemUI;
     use WithScannedDeliveryNoteItemMatching;
+    use WithDeliveryNoteItemPickingCounts;
 
     protected User $user;
 
@@ -184,6 +185,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
             'row'                 => $row,
             'delivery_note_state' => $deliveryNote->state->value,
             'remaining_to_pack'   => $this->countRemainingToPack($deliveryNote, $knownItems),
+            'counts'              => static::packingCounts($deliveryNote),
         ];
     }
 

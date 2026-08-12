@@ -167,8 +167,8 @@ const props = defineProps<{
 		scan_route: routeType
 		toggle_route: routeType
 		is_on: boolean
-		counts: { all: number, todo: number, done: number }
 	}
+	tab_counts?: { all: number, todo: number, done: number } | null
 }>();
 
 
@@ -204,7 +204,18 @@ const isScanToPickOn = ref(
 	|| PICKING_SCAN_TABS.includes(props.tabs?.current as typeof PICKING_SCAN_TABS[number])
 )
 const isSavingScanToPick = ref(false)
-const pickingCounts = ref({ all: 0, todo: 0, done: 0, ...props.scan_to_pick?.counts })
+
+// Section: Todo/Done counts, shared by the picking tabs and the packing ones since only one pair is
+// ever on screen. Kept apart from tabs.navigation because an action that picks or packs an item
+// reloads this prop but not the tabs, and a scan updates it without reloading anything at all.
+const tabCounts = ref<{ all: number, todo: number, done: number } | null>(props.tab_counts ?? null)
+
+watch(
+	() => props.tab_counts,
+	(counts) => {
+		tabCounts.value = counts ?? null
+	}
+)
 
 // The switch answers immediately and is put back only if the write fails, because a picker holding a
 // scanner should not wait on a round trip to start scanning.
@@ -233,13 +244,6 @@ const toggleScanToPick = async () => {
 	}
 }
 
-watch(
-	() => props.scan_to_pick?.counts,
-	(counts) => {
-		if (counts) pickingCounts.value = { ...counts }
-	}
-)
-
 // Turning the scanner on means the picker is about to work off what is left, so that is the list they
 // are put in front of. Turning it off takes those tabs away again, and leaving them on one would show
 // a table that is no longer reachable.
@@ -254,6 +258,13 @@ watch(isScanToPickOn, (isOn) => {
 	}
 })
 
+// Whichever todo/done pair the note is showing gets the counts, and the plain items tab next to them
+// has to say it holds both, so "Items" on its own would not tell the picker what it is looking at.
+const TODO_DONE_TAB_PAIRS = [
+	["picking_todo_items", "picking_done_items"],
+	["pending_items", "done_items"],
+] as const
+
 const tabsNavigation = computed(() => {
 	const navigation = { ...(props.tabs?.navigation ?? {}) }
 
@@ -261,13 +272,20 @@ const tabsNavigation = computed(() => {
 		for (const tabSlug of PICKING_SCAN_TABS) {
 			delete navigation[tabSlug]
 		}
+	}
 
+	const counts = tabCounts.value
+	const pair = counts ? TODO_DONE_TAB_PAIRS.find(([todo]) => navigation[todo]) : undefined
+
+	if (!counts || !pair) {
 		return navigation
 	}
 
-	navigation.items = { ...navigation.items, title: trans("All items"), number: pickingCounts.value.all }
-	navigation.picking_todo_items = { ...navigation.picking_todo_items, number: pickingCounts.value.todo }
-	navigation.picking_done_items = { ...navigation.picking_done_items, number: pickingCounts.value.done }
+	const [todoTab, doneTab] = pair
+
+	navigation.items = { ...navigation.items, title: trans("All items"), number: counts.all }
+	navigation[todoTab] = { ...navigation[todoTab], number: counts.todo }
+	navigation[doneTab] = { ...navigation[doneTab], number: counts.done }
 
 	return navigation
 });
@@ -515,6 +533,10 @@ const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
 const onItemPackedByScan = (outcome: ScanOutcome) => {
 	patchRowScannedBy(outcome, 'packed')
 
+	if (outcome.counts) {
+		tabCounts.value = { ...outcome.counts }
+	}
+
 	if (outcome.delivery_note_state === 'packed') {
 		debReloadPage()
 	}
@@ -528,7 +550,7 @@ const onItemPickedByScan = (outcome: ScanOutcome) => {
 	patchRowScannedBy(outcome, 'picked')
 
 	if (outcome.counts) {
-		pickingCounts.value = { ...outcome.counts }
+		tabCounts.value = { ...outcome.counts }
 	}
 
 	if (outcome.remaining_to_pick === 0) {

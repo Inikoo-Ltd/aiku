@@ -1015,9 +1015,18 @@ class ShowDeliveryNote extends OrgAction
                     'method'     => 'patch',
                 ],
                 'is_on'        => SetScanToPickDeliveryNote::isScanToPickOn($deliveryNote),
-                'counts'       => static::pickingCounts($deliveryNote),
             ];
         }
+
+        /*
+         * Both the picking and the packing screens split their items into what is left and what is
+         * done, so one pair of counts serves whichever of the two the note is currently on.
+         */
+        $tabCounts = match (true) {
+            $deliveryNote->state == DeliveryNoteStateEnum::HANDLING => static::pickingCounts($deliveryNote),
+            in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, DeliveryNoteStateEnum::PACKED]) => static::packingCounts($deliveryNote),
+            default => null,
+        };
 
         $this->hasPickingScanTabs = $scanToPick !== null;
 
@@ -1231,7 +1240,8 @@ class ShowDeliveryNote extends OrgAction
             ],
             'consumables'                        => GetDeliveryNoteConsumables::run($deliveryNote),
             'scan_to_pack'                       => $scanToPack,
-            'scan_to_pick'                       => $scanToPick
+            'scan_to_pick'                       => $scanToPick,
+            'tab_counts'                         => $tabCounts
 
 
         ];

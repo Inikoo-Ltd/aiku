@@ -50,13 +50,15 @@ enum DeliveryNoteTabsEnum: string
             ],
 
             DeliveryNoteTabsEnum::PENDING_ITEMS => [
-                'title' => __('Pending Items'),
-                'icon'  => 'fal fa-clipboard-list-check',
+                'title'       => __('Todo items'),
+                'icon'        => 'fal fa-clipboard-list-check',
+                'colorScheme' => 'amber',
             ],
 
             DeliveryNoteTabsEnum::DONE_ITEMS => [
-                'title' => __('Done Items'),
-                'icon'  => 'fal fa-clipboard-check',
+                'title'       => __('Done items'),
+                'icon'        => 'fal fa-clipboard-check',
+                'colorScheme' => 'green',
             ],
             DeliveryNoteTabsEnum::TARIFF_CODES => [
                 'title' => __('Tariff codes / Origin'),
