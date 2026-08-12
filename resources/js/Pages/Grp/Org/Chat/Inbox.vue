@@ -14,7 +14,7 @@ import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faGlobe } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faGlobe, faPlus } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import {
     Contact,
@@ -85,6 +85,10 @@ const sidePanelVisible = ref(false)
 
 const chatSettingVisible = ref(false)
 const settingInitialTab = ref<"general" | "jira" | "slack">("general")
+
+const newChatVisible = ref(false)
+const newChatPhone = ref("")
+const newChatMessage = ref("")
 const openChatSettings = () => {
     settingInitialTab.value = "general"
     chatSettingVisible.value = true
@@ -250,6 +254,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     selectedChannel.value = channelKey
     selectedSession.value = null
     messages.value = []
+    newChatVisible.value = false
     clearAgentFilter()
     reloadContacts()
 }
@@ -566,6 +571,39 @@ onUnmounted(() => {
         <SettingChat :initial-tab="settingInitialTab" :session-ulid="selectedSession?.ulid" @close="chatSettingVisible = false" />
     </Dialog>
 
+    <Dialog v-model:visible="newChatVisible" modal :header="trans('New WhatsApp chat')"
+        :style="{ width: '90vw', maxWidth: '440px' }" :breakpoints="{ '640px': '95vw' }">
+        <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-gray-600">{{ trans("Phone number") }}</label>
+                <input v-model="newChatPhone" type="tel" placeholder="+44 7700 900000"
+                    class="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-gray-600">{{ trans("Message") }}</label>
+                <textarea v-model="newChatMessage" rows="4"
+                    class="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1" />
+            </div>
+
+            <p class="text-xs text-gray-400 leading-snug">
+                {{ trans("WhatsApp requires an approved template for the first message to a new contact.") }}
+            </p>
+
+            <div class="flex items-center justify-end gap-2 pt-1">
+                <button type="button" class="px-3 py-1.5 text-sm text-gray-600 rounded-lg hover:bg-gray-100"
+                    @click="newChatVisible = false">
+                    {{ trans("Cancel") }}
+                </button>
+                <!-- ponytail: inert until a Meta send action + a seeded 'whatsapp' meta_channel exist. -->
+                <button type="button" disabled v-tooltip="trans('Coming soon')"
+                    class="px-3 py-1.5 text-sm text-white rounded-lg bg-gray-300 cursor-not-allowed">
+                    {{ trans("Start chat") }}
+                </button>
+            </div>
+        </div>
+    </Dialog>
+
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
         <div class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
@@ -667,6 +705,14 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 self-start">
+                    <button v-if="selectedChannel === 'whatsapp'" type="button"
+                        v-tooltip="trans('New WhatsApp chat')"
+                        class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-green-600 text-[11px] font-medium"
+                        @click="newChatVisible = true">
+                        <FontAwesomeIcon :icon="faPlus" class="text-xs" />
+                        {{ trans("New chat") }}
+                    </button>
+
                     <!-- Filter by agent -->
                     <div class="relative">
                         <button type="button" v-tooltip="trans('Filter by agent')"
