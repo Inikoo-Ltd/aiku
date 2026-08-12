@@ -369,6 +369,14 @@ class UpdateShop extends OrgAction
             $shop->saveQuietly();
         }
 
+        if (Arr::exists($modelData, 'view_contact_options_panel')) {
+            data_set($modelData, 'settings.chat.view_contact_options_panel', (bool) Arr::pull($modelData, 'view_contact_options_panel'));
+        }
+
+        if (Arr::exists($modelData, 'data_contact_options_panel')) {
+            data_set($modelData, 'settings.chat.data_contact_options_panel', Arr::pull($modelData, 'data_contact_options_panel'));
+        }
+
         if (Arr::exists($modelData, 'enable_chat')) {
             $enableChat = Arr::pull($modelData, 'enable_chat');
             UpdateWebsite::make()->action(
@@ -769,6 +777,11 @@ class UpdateShop extends OrgAction
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
             'chat_slack_channels.*'                                   => ['string'],
+            'view_contact_options_panel'                              => ['sometimes', 'boolean'],
+            'data_contact_options_panel'                              => ['sometimes', 'nullable', 'array'],
+            'data_contact_options_panel.*.icon'                       => ['sometimes', 'nullable'],
+            'data_contact_options_panel.*.label'                      => ['sometimes', 'nullable', 'string', 'max:255'],
+            'data_contact_options_panel.*.url'                        => ['sometimes', 'nullable', 'string', 'max:2000'],
             'is_shipping_by_external'                                 => ['sometimes', 'boolean'],
             'portal_link'                                             => ['sometimes', 'nullable', 'string'],
             'widget_key'                                              => ['sometimes', 'nullable', 'string'],
