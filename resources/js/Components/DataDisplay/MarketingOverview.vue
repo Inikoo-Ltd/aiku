@@ -20,6 +20,7 @@ const props = defineProps<{
             revenue: number
             pending: number
             registrations: number
+            unsubscribed: number
             invoices: number
             roas: number | null
             cac: number | null
@@ -32,6 +33,9 @@ const props = defineProps<{
         channels: {
             name: string
             type: string
+            route: routeType
+            registrations_route: routeType
+            orders_route: routeType
             group: string
             group_label: string
             group_position: number
@@ -89,7 +93,6 @@ const props = defineProps<{
                 prospects_registered: number
             }[]
         }
-        traffic_sources_route: routeType
         mailshots_route: routeType
     }
 }>()
@@ -169,6 +172,8 @@ const columnHelp: Record<string, string> = {
 }
 
 const count = (value: number) => Number.isInteger(value) ? value.toString() : value.toFixed(2)
+
+const unsubscribedHelp = trans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
 const pctOf = (part: number, whole: number) => whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
 const netRegistrations = (registrations: number, unsubscribed: number) =>
     count(registrations - unsubscribed).replace('-', '−')
@@ -270,6 +275,11 @@ const typeLabel: Record<string, string> = {
                      class="mt-0.5 text-xs text-[#d03b3b]">
                     {{ trans('none of this period\'s sign-ups came through marketing') }}
                 </div>
+                <div v-if="(overview.totals.unsubscribed ?? 0) > 0"
+                     v-tooltip="unsubscribedHelp"
+                     class="mt-0.5 text-xs text-[#d03b3b] cursor-help">
+                    − {{ locale.number(overview.totals.unsubscribed) }} {{ trans('unsubscribed from our emails') }}
+                </div>
             </div>
         </div>
 
@@ -292,7 +302,7 @@ const typeLabel: Record<string, string> = {
 
             <div v-if="overview.channels.length" class="mt-4">
                 <Link v-for="channel in overview.channels" :key="channel.type"
-                    :href="route(overview.traffic_sources_route.name, overview.traffic_sources_route.parameters)"
+                    :href="route(channel.route.name, channel.route.parameters)"
                     class="relative grid grid-cols-[7rem_minmax(0,1fr)_5.5rem_3.5rem] md:grid-cols-[11rem_minmax(0,1fr)_7rem_4rem] items-center gap-x-3 rounded-lg px-2 py-2.5 hover:bg-gray-50"
                     @mouseenter="hoveredChannel = channel.type" @mouseleave="hoveredChannel = null">
 
@@ -379,7 +389,14 @@ const typeLabel: Record<string, string> = {
                     <tbody v-for="group in groupedChannels" :key="group.key">
                         <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
                             <td class="py-1 pr-2 text-xs leading-tight">{{ group.label }}</td>
-                            <td class="text-right px-2 tabular-nums">{{ group.visits > 0 ? locale.number(group.visits) : '' }}</td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                <template v-if="group.visits > 0">
+                                    {{ locale.number(group.visits) }}
+                                    <span class="text-xs font-normal" :class="group.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                        · {{ count(group.orders) }} {{ trans('bought') }} · {{ pctOf(group.orders, group.visits) }}
+                                    </span>
+                                </template>
+                            </td>
                             <td class="text-right px-2 tabular-nums">{{ money(group.spend) }}</td>
                             <td class="text-right px-2 tabular-nums text-gray-500">
                                 {{ group.pending > 0 ? money(group.pending) : '' }}
@@ -395,7 +412,10 @@ const typeLabel: Record<string, string> = {
                             </td>
                         </tr>
                         <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type" class="border-b border-gray-50 text-gray-600">
-                            <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
+                            <td class="py-2 pr-2 pl-5">
+                                <Link :href="route(channel.route.name, channel.route.parameters)"
+                                      class="text-gray-500 hover:text-gray-900 hover:underline">{{ channel.name }}</Link>
+                            </td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
                                 <template v-if="channel.visits > 0">
                                     {{ locale.number(channel.visits) }}
@@ -414,9 +434,17 @@ const typeLabel: Record<string, string> = {
                             </td>
                             <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                                {{ count(channel.registrations) }}<span v-if="channel.unsubscribed > 0" class="text-[#d03b3b]"> −{{ locale.number(channel.unsubscribed) }}</span>
+                                <Link v-if="channel.registrations > 0"
+                                      :href="route(channel.registrations_route.name, channel.registrations_route.parameters)"
+                                      class="hover:text-gray-900 hover:underline">{{ count(channel.registrations) }}</Link>
+                                <template v-else>{{ count(channel.registrations) }}</template><span v-if="channel.unsubscribed > 0" class="text-[#d03b3b]"> −{{ locale.number(channel.unsubscribed) }}</span>
                             </td>
-                            <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
+                            <td class="text-right px-2 tabular-nums">
+                                <Link v-if="channel.orders > 0"
+                                      :href="route(channel.orders_route.name, channel.orders_route.parameters)"
+                                      class="hover:text-gray-900 hover:underline">{{ count(channel.orders) }}</Link>
+                                <template v-else>{{ count(channel.orders) }}</template>
+                            </td>
                             <td class="text-right pl-2 tabular-nums"
                                 :class="channel.roas === null ? 'text-gray-300' : channel.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
                                 {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}
@@ -426,7 +454,12 @@ const typeLabel: Record<string, string> = {
                     <tfoot>
                         <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
                             <td class="py-1.5 pr-2">{{ trans('All channels') }}</td>
-                            <td class="text-right px-2 tabular-nums">{{ locale.number(channelTotals.visits) }}</td>
+                            <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                                {{ locale.number(channelTotals.visits) }}
+                                <span class="text-xs font-normal" :class="channelTotals.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                    · {{ count(channelTotals.orders) }} {{ trans('bought') }} · {{ pctOf(channelTotals.orders, channelTotals.visits) }}
+                                </span>
+                            </td>
                             <td class="text-right px-2 tabular-nums">{{ money(channelTotals.spend) }}</td>
                             <td class="text-right px-2 tabular-nums text-gray-500">{{ money(channelTotals.pending) }}</td>
                             <td class="text-right px-2 tabular-nums">{{ money(channelTotals.revenue) }}</td>

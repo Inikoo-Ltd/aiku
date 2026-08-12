@@ -378,10 +378,10 @@ const onHideStepsPopover = () => {
                         off: displayStep.percentage_off_label,
                     })" aria-haspopup="true" @click.stop.prevent="onToggleStepsPopover">
                     <FontAwesomeIcon :icon="faBadgePercent" class="text-lg"
-                        :class="activeStep ? 'step-discount-text' : 'text-[#b3b3b3]'" />
+                        :class="activeStep ? 'step-discount-text' : 'step-discount-text-muted'" />
 
                     <div class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none whitespace-nowrap text-white transform transition-all duration-150"
-                        :class="activeStep ? 'step-discount-bg' : 'bg-[#b3b3b3] border border-transparent'">
+                        :class="activeStep ? 'step-discount-bg' : 'step-discount-bg-muted border border-transparent'">
                         <span>
                             <span class="hidden xl:inline">{{ displayStep.min_quantity }}+ </span>
                             {{ displayStep.percentage_off_label }}
@@ -491,7 +491,7 @@ const onHideStepsPopover = () => {
 
                             <span v-else-if="canOrderStepDiscount"
                                 class="flex h-3 w-3 shrink-0 items-center justify-center rounded-full border"
-                                :class="activeStep?.min_quantity === step.min_quantity ? 'step-discount-border' : 'border-gray-300'">
+                                :class="activeStep?.min_quantity === step.min_quantity ? 'step-discount-border' : 'step-discount-border-soft'">
                                 <span v-if="activeStep?.min_quantity === step.min_quantity"
                                     class="h-1.5 w-1.5 rounded-full step-discount-bg" />
                             </span>
@@ -518,9 +518,11 @@ const onHideStepsPopover = () => {
 
 <style scoped>
 .step-discount-scope {
-    --step-discount-color: #8E44AD;
+    --step-discount-color: var(--theme-color-4, #8E44AD);
     --step-discount-surface: color-mix(in srgb, var(--step-discount-color) 12%, white);
     --step-discount-surface-soft: color-mix(in srgb, var(--step-discount-color) 6%, white);
+    --step-discount-border-soft: color-mix(in srgb, var(--step-discount-color) 40%, #9ca3af);
+    --step-discount-muted: color-mix(in srgb, var(--step-discount-color) 25%, #b3b3b3);
 }
 
 .step-discount-text {
@@ -545,6 +547,18 @@ const onHideStepsPopover = () => {
 
 .step-discount-surface-soft {
     background-color: var(--step-discount-surface-soft);
+}
+
+.step-discount-border-soft {
+    border-color: var(--step-discount-border-soft);
+}
+
+.step-discount-text-muted {
+    color: var(--step-discount-muted);
+}
+
+.step-discount-bg-muted {
+    background-color: var(--step-discount-muted);
 }
 
 .step-discount-row:enabled:hover {

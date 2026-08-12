@@ -12,6 +12,7 @@ namespace App\Actions\Billables\Service\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\UI\Fulfilment\ServicesTabsEnum;
 use App\Http\Resources\Fulfilment\ServicesResource;
@@ -29,6 +30,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexShopServices extends OrgAction
 {
+    use WithCatalogueAuthorisation;
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request)->withTab(ServicesTabsEnum::values());
@@ -115,8 +118,18 @@ class IndexShopServices extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $services, ActionRequest $request): Response
     {
-        $actions = null;
-
+        $actions = [
+            $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.billables.services.index' ? [
+                'type'    => 'button',
+                'style'   => 'create',
+                'tooltip' => __('New service'),
+                'label'   => __('Service'),
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.billables.services.create',
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ] : false,
+        ];
 
         return Inertia::render(
             'Org/Billables/Services',

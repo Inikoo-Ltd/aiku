@@ -18,10 +18,14 @@ use App\Actions\Ordering\Order\DeleteOrder;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationArgument;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 
 class DeleteCustomer
 {
@@ -114,6 +118,35 @@ class DeleteCustomer
         return $customer;
     }
 
+
+    public static function canBeDeleted(Customer $customer): bool
+    {
+        return !$customer->orders()
+            ->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])
+            ->exists()
+            && !$customer->invoices()->exists();
+    }
+
+    public function asController(Customer $customer, ActionRequest $request): Customer
+    {
+        if (!$request->user()->authTo("supervisor-crm.{$customer->shop_id}")) {
+            abort(403);
+        }
+
+        if (!$this->canBeDeleted($customer)) {
+            abort(422, 'Customer with orders can not be deleted');
+        }
+
+        return $this->handle($customer);
+    }
+
+    public function htmlResponse(Customer $customer): RedirectResponse
+    {
+        return Redirect::route('grp.org.shops.show.crm.customers.index', [
+            $customer->organisation->slug,
+            $customer->shop->slug,
+        ]);
+    }
 
     public function asCommand(Command $command): int
     {

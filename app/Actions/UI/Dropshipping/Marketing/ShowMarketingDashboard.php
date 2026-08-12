@@ -90,10 +90,6 @@ class ShowMarketingDashboard extends OrgAction
                     $this->periodLabels(),
                     [
                         'email'                 => GetShopEmailMarketingPerformance::run($this->shop, $this->periodFrom, $this->periodTo),
-                        'traffic_sources_route' => [
-                            'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ],
                         'mailshots_route'       => [
                             'name'       => 'grp.org.shops.show.marketing.mailshots.index',
                             'parameters' => $request->route()->originalParameters()

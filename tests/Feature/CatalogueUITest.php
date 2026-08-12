@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
@@ -18,6 +19,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
@@ -26,6 +28,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
+use App\Models\Billables\Service;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -112,6 +115,22 @@ beforeEach(function () {
         $this->shop->refresh();
     }
     $this->charge = $charge;
+
+    $service = Service::first();
+    if (!$service) {
+        $service = StoreService::make()->action(
+            $this->shop,
+            [
+                'code'  => 'MySvc',
+                'name'  => 'My first service',
+                'price' => fake()->numberBetween(100, 2000),
+                'unit'  => 'service',
+                'state' => ServiceStateEnum::ACTIVE,
+            ]
+        );
+        $this->shop->refresh();
+    }
+    $this->service = $service;
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 
     Config::set(
@@ -686,6 +705,50 @@ test('UI show Charges', function () {
 
 test('UI edit Charges', function () {
     $response = get(route('grp.org.shops.show.billables.charges.edit', [$this->organisation->slug, $this->shop->slug, $this->charge->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('pageHead')
+            ->has('formData');
+    });
+});
+
+test('UI create Services', function () {
+    $response = get(route('grp.org.shops.show.billables.services.create', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has('pageHead')
+            ->has('formData');
+    });
+});
+
+test('UI show Services', function () {
+    $response = get(route('grp.org.shops.show.billables.services.show', [$this->organisation->slug, $this->shop->slug, $this->service->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Billables/Service')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('navigation')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->service->name)
+                    ->etc()
+            );
+    });
+});
+
+test('UI edit Services', function () {
+    $response = get(route('grp.org.shops.show.billables.services.edit', [$this->organisation->slug, $this->shop->slug, $this->service->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page

@@ -101,6 +101,7 @@ import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
 import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
 import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
 import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
+import ContactOptionsPanel from '@/Components/Forms/Fields/ContactOptionPanel.vue'
 import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
 
@@ -206,7 +207,8 @@ export const componentsList: { [key: string]: Component } = {
     'banned-countries': BannedCountries,
 	field_group: FieldGroup,
     'multiple_price_currency' : MultiplePriceCurrency,
-    'master_shop_price_exchanges' : MasterShopPriceExchanges
+    'master_shop_price_exchanges' : MasterShopPriceExchanges,
+    'contact_options_panel' : ContactOptionsPanel
 }
 
 export const getComponent = (componentName: string) => {

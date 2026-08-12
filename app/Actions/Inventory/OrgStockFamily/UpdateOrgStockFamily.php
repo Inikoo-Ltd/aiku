@@ -13,6 +13,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStockFamil
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Http\Resources\Inventory\OrgStockFamiliesResource;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -43,7 +44,9 @@ class UpdateOrgStockFamily extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("inventory.{$this->organisation->id}.edit");
+        return $request->user()->authTo(
+            WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation)
+        );
     }
 
     public function rules(): array

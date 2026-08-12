@@ -27,6 +27,9 @@ use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
+use App\Actions\Ordering\Order\UpdateOrderExtraPacking;
+use App\Actions\Ordering\Order\UpdateOrderInsurance;
+use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Actions\Ordering\Order\UpdateOrderReCalculateVAT;
 use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsAuto;
 use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsManual;
@@ -54,7 +57,7 @@ use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
 
 Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
     Route::delete('', DeleteTransaction::class)->name('delete');
-    Route::patch('', UpdateTransaction::class)->name('update');
+    Route::patch('', UpdateTransaction::class)->name('update')->withTrashed();
     Route::patch('update-quantity-ordered', UpdateTransactionProductQuantityOrdered::class)->name('update_quantity_ordered');
     Route::patch('units', UpdateTransactionUnits::class)->name('update_units');
     Route::patch('update-discretionary-discount', UpdateTransactionDiscretionaryDiscount::class)->name('update_discretionary_discount');
@@ -70,6 +73,9 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('write-off-shortfall', WriteOffOrderShortfall::class)->name('write_off_shortfall');
 
     Route::patch('update', UpdateOrder::class)->name('update');
+    Route::patch('update-premium-dispatch', UpdateOrderPremiumDispatch::class)->name('update_premium_dispatch');
+    Route::patch('update-extra-packing', UpdateOrderExtraPacking::class)->name('update_extra_packing');
+    Route::patch('update-insurance', UpdateOrderInsurance::class)->name('update_insurance');
     Route::post('update-faire', UpdateFaireOrder::class)->name('update_faire');
     Route::patch('rollback-dispatch', RollbackDispatchedOrder::class)->name('rollback_dispatch');
     Route::patch('delivery-address-update', UpdateOrderDeliveryAddress::class)->name('delivery_address_update');
