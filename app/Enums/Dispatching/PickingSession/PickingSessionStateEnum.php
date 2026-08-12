@@ -89,13 +89,4 @@ enum PickingSessionStateEnum: string
 
         ];
     }
-
-    /**
-     * The states where somebody is still walking the session, so what is left to pick and what is
-     * already finished are two different lists to them.
-     */
-    public function isBeingPicked(): bool
-    {
-        return in_array($this, [self::HANDLING, self::HANDLING_BLOCKED], true);
-    }
 }

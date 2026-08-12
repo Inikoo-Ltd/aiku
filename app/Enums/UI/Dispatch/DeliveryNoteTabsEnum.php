@@ -19,7 +19,6 @@ enum DeliveryNoteTabsEnum: string
     use HasTabsWithIndicator;
 
     case ITEMS = 'items';
-    case HANDLED_ITEMS = 'handled_items';
     case PENDING_ITEMS = 'pending_items';
     case DONE_ITEMS = 'done_items';
     case TARIFF_CODES = 'tariff_codes';
@@ -61,12 +60,6 @@ enum DeliveryNoteTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
-            ],
-            DeliveryNoteTabsEnum::HANDLED_ITEMS => [
-                'title'     => __('Items handled'),
-                'align'     => 'right',
-                'iconClass' => 'text-green-600',
-                'icon'      => 'fal fa-check-double',
             ],
         };
     }

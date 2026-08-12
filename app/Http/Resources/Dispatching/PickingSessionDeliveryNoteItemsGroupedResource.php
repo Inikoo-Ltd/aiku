@@ -55,13 +55,8 @@ class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
             'delivery_note_has_extra_packing'   => $this->delivery_note_has_extra_packing,
 
             'items' => DeliveryNoteItemsStateHandlingResource::collection(
-                IndexDeliveryNoteItemsStateHandling::run($deliveryNote, ignoreParentPagination: true, isHandled: $this->handledItemsFilter())
+                IndexDeliveryNoteItemsStateHandling::run($deliveryNote, ignoreParentPagination: true)
             )->resolve()
         ];
-    }
-
-    protected function handledItemsFilter(): ?bool
-    {
-        return null;
     }
 }

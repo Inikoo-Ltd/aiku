@@ -19,7 +19,6 @@ enum PickingSessionTabsEnum: string
     case ITEMS = 'items';
     case ITEMIZED = 'itemized';
     case GROUPED = 'grouped';
-    case HANDLED = 'handled';
 
 
     public function blueprint(): array
@@ -37,12 +36,6 @@ enum PickingSessionTabsEnum: string
             PickingSessionTabsEnum::GROUPED => [
                 'title' => __('Group by delivery'),
                 'icon'  => 'fal fa-truck',
-            ],
-            PickingSessionTabsEnum::HANDLED => [
-                'title' => __('Handled'),
-                'align' => 'right',
-                'iconClass' => 'text-green-600',
-                'icon'  => 'fal fa-check-double',
             ],
         };
     }
