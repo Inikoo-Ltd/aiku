@@ -21,8 +21,8 @@ return new class () extends Migration {
             $table->unsignedInteger('meta_chat_session_id')->index()->nullable();
             $table->foreign('meta_chat_session_id')->references('id')->on('meta_chat_sessions')->nullOnDelete();
 
-            $table->unsignedSmallInteger('meta_chat_agent_id')->index()->nullable();
-            $table->foreign('meta_chat_agent_id')->references('id')->on('meta_chat_agents')->nullOnDelete();
+            $table->unsignedSmallInteger('chat_agent_id')->index()->nullable();
+            $table->foreign('chat_agent_id')->references('id')->on('chat_agents')->nullOnDelete();
 
             $table->string('status')->index()->default(ChatAssignmentStatusEnum::PENDING->value);
             $table->string('assigned_by')->index()->default(ChatAssignmentAssignedByEnum::SYSTEM->value);
