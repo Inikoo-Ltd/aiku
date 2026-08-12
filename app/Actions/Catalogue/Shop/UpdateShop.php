@@ -369,19 +369,39 @@ class UpdateShop extends OrgAction
             $shop->saveQuietly();
         }
 
+        $viewContactOptionsPanel = null;
         if (Arr::exists($modelData, 'view_contact_options_panel')) {
-            data_set($modelData, 'settings.chat.view_contact_options_panel', (bool) Arr::pull($modelData, 'view_contact_options_panel'));
+            $viewContactOptionsPanel = (bool) Arr::pull($modelData, 'view_contact_options_panel');
+            data_set($modelData, 'settings.chat.view_contact_options_panel', $viewContactOptionsPanel);
         }
 
+        $dataContactOptionsPanel = null;
         if (Arr::exists($modelData, 'data_contact_options_panel')) {
-            data_set($modelData, 'settings.chat.data_contact_options_panel', Arr::pull($modelData, 'data_contact_options_panel'));
+            $dataContactOptionsPanel = Arr::pull($modelData, 'data_contact_options_panel');
+            $settings = $shop->settings ?? [];
+            data_set($settings, 'chat.data_contact_options_panel', $dataContactOptionsPanel);
+            $shop->settings = $settings;
+            $shop->saveQuietly();
         }
 
-        if (Arr::exists($modelData, 'enable_chat')) {
-            $enableChat = Arr::pull($modelData, 'enable_chat');
+        if (Arr::exists($modelData, 'enable_chat') || !is_null($viewContactOptionsPanel) || !is_null($dataContactOptionsPanel)) {
+            $websiteData = [];
+
+            if (Arr::exists($modelData, 'enable_chat')) {
+                $websiteData['enable_chat'] = Arr::pull($modelData, 'enable_chat');
+            }
+
+            if (!is_null($viewContactOptionsPanel)) {
+                $websiteData['view_contact_options_panel'] = $viewContactOptionsPanel;
+            }
+
+            if (!is_null($dataContactOptionsPanel)) {
+                $websiteData['data_contact_options_panel'] = $dataContactOptionsPanel;
+            }
+
             UpdateWebsite::make()->action(
                 website: $shop->website,
-                modelData: ['enable_chat' => $enableChat],
+                modelData: $websiteData,
                 strict: false
             );
         }
