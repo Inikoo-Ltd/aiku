@@ -15,8 +15,8 @@ var ENDPOINT = 'https://aiku.io/webhooks/traffic-source-costs';
 
 /** One entry per Google Ads account you want uploaded. customerId is the 123-456-7890 number. */
 var ACCOUNTS = [
-  { customerId: '123-456-7890', shop: 'SHOP-CODE', token: 'TOKEN-FOR-THAT-SHOP' }
-  // , { customerId: '098-765-4321', shop: 'OTHER-SHOP', token: 'TOKEN-FOR-OTHER-SHOP' }
+  { customerId: '123-456-7890', shop: 'SHOP-SLUG', token: 'TOKEN-FOR-THAT-SHOP' }
+  // , { customerId: '098-765-4321', shop: 'OTHER-SHOP-SLUG', token: 'TOKEN-FOR-OTHER-SHOP' }
 ];
 
 function main() {

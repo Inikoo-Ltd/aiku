@@ -32,9 +32,14 @@ class StoreNotPickPickingFromWaitingCrm extends OrgAction
     {
         data_set($modelData, 'picker_user_id', $user->id);
 
-        $quantity = max(Arr::get($modelData, 'quantity', 0), $deliveryNoteItem->quantity_waiting_crm);
+        $quantityStillWaitingForCrm = (float)$deliveryNoteItem->quantity_waiting_crm;
+        $quantityToNotPick          = min((float)Arr::get($modelData, 'quantity', 0), $quantityStillWaitingForCrm);
 
-        $newQuantityWaitingCrm = $deliveryNoteItem->quantity_waiting_crm - $quantity;
+        if ($quantityToNotPick <= 0) {
+            return null;
+        }
+
+        $newQuantityWaitingCrm = round($quantityStillWaitingForCrm - $quantityToNotPick, 6);
 
         $deliveryNoteItem->update([
             'quantity_waiting_crm' => $newQuantityWaitingCrm,
@@ -42,6 +47,7 @@ class StoreNotPickPickingFromWaitingCrm extends OrgAction
         ]);
         DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
+        data_set($modelData, 'quantity', $quantityToNotPick);
 
         $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $user, $modelData);
 
@@ -64,7 +70,7 @@ class StoreNotPickPickingFromWaitingCrm extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if (!$request->has('quantity')) {
-            $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
+            $this->set('quantity', $this->deliveryNoteItem->quantity_waiting_crm);
         }
     }
 

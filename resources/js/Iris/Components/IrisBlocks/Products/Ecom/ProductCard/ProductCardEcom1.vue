@@ -64,7 +64,12 @@ const emits = defineEmits<{
 }>()
 
 const _button_variant = ref(null)
+const _button_add_to_cart = ref(null)
 const currency = layout?.iris?.currency
+
+const onOrderStepQuantity = async (quantity: number) => {
+    await _button_add_to_cart.value?.orderQuantity(quantity)
+}
 
 
 const onAddFavourite = (product: ProductResource) => {
@@ -247,6 +252,7 @@ defineExpose({
 
                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
+                        ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :routeGettransactionProductData
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
                         :buttonStyle="buttonStyle" />
@@ -319,7 +325,8 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <Prices4 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket />
+            <Prices4 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket
+                :orderQuantity="onOrderStepQuantity" />
             <div v-else-if="!hideLogin"  class="mt-2">
                 <a :href="urlLoginWithRedirect()" class="w-full">
                     <Button :label="trans('Login or Register for Wholesale Prices')" class="rounded-none" full

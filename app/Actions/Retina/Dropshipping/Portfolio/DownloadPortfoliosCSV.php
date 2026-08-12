@@ -30,7 +30,8 @@ class DownloadPortfoliosCSV extends RetinaAction
         string $exportType = 'portfolio_csv',
         mixed $columns = null,
         mixed $productStates = null,
-        array $productAvailability = []
+        array $productAvailability = [],
+        bool $includeBundles = false
     ): BinaryFileResponse|Response|string {
         $filename = 'portfolio_data_feed_'.$customerSalesChannel->customer->slug.'_'.now()->format('Ymd').'.csv';
 
@@ -62,6 +63,9 @@ class DownloadPortfoliosCSV extends RetinaAction
             ->leftJoin('product_categories as family', 'products.family_id', '=', 'family.id')
             ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('portfolios.status', true)
+            ->when(!$includeBundles, function (Builder $query) {
+                return $query->where('portfolios.is_bundle', false);
+            })
             ->when(count($normalizedProductStates) > 0, function (Builder $query) use ($normalizedProductStates) {
                 return $query->whereIn('products.state', $normalizedProductStates);
             });
@@ -155,8 +159,9 @@ class DownloadPortfoliosCSV extends RetinaAction
         $columns             = $request->input('columns');
         $productStates       = $request->input('product_states');
         $productAvailability = $request->input('product_availability') ?? [];
+        $includeBundles      = $request->boolean('include_bundles');
 
-        return $this->handle($customerSalesChannel, $exportType, $columns, $productStates, $productAvailability);
+        return $this->handle($customerSalesChannel, $exportType, $columns, $productStates, $productAvailability, $includeBundles);
     }
 
     private function extendedPropertiesHeadingMap(): array

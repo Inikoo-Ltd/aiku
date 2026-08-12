@@ -13,6 +13,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\WebUser;
+use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -60,6 +61,7 @@ class UpdateRetinaProfile extends RetinaAction
                 'sometimes',
                 'required',
                 'min:4',
+                new AlphaDashDot(),
                 new IUnique(
                     table: 'web_users',
                     extraConditions: [

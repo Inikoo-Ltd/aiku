@@ -71,6 +71,8 @@ import {
     faClock,
     faCalendarCheck,
     faPercent,
+    faBusinessTime,
+    faChessClock,
     faCameraRetro
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
@@ -143,7 +145,9 @@ library.add(
     faFolderTree,
     faClock,
     faCalendarCheck,
-    faPercent
+    faPercent,
+    faBusinessTime,
+    faChessClock
 )
 
 const props = defineProps<{

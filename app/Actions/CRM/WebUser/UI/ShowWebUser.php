@@ -76,6 +76,7 @@ class ShowWebUser extends OrgAction
             'Org/Shop/CRM/WebUser',
             [
                 'title'       => __('Web user'),
+                'canDelete'   => $this->isSupervisor,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

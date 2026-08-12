@@ -16,8 +16,10 @@ use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -93,6 +95,7 @@ class SupplierProduct extends Model implements Auditable
     use HasFactory;
     use HasHistory;
     use InGroup;
+    use HasSearch;
 
     protected $casts = [
         'cost'                   => 'decimal:4',
@@ -145,6 +148,24 @@ class SupplierProduct extends Model implements Auditable
         'units_per_pack',
         'units_per_carton',
     ];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged(['code', 'name', 'state']);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'               => (string)$this->id,
+            'code'             => $this->code,
+            'name'             => (string)$this->name,
+            'slug'             => $this->slug,
+            'state'            => $this->state?->value,
+            'created_at'       => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'organisation_ids' => $this->orgSupplierProducts()->pluck('organisation_id')->all(),
+        ];
+    }
 
     public function historicSupplierProducts(): HasMany
     {

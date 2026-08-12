@@ -174,11 +174,10 @@ class ShowProspectMailshotWorkshop extends OrgAction
                     'method' => 'post'
                 ],
                 'sendTestRoute' => [
-                    'name' => 'grp.org.shops.show.marketing.mailshots.send-test',
+                    'name' => 'grp.models.shop.mailshot.send-test',
                     'parameters' => [
-                        'organisation' => $this->organisation->slug,
-                        'shop' => $this->shop->slug,
-                        'mailshot' => $mailshot->slug
+                        'shop' => $this->shop->id,
+                        'mailshot' => $mailshot->id
                     ],
                     'method' => 'post'
                 ],

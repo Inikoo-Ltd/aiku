@@ -14,6 +14,8 @@ use App\Actions\Search\Search;
 use App\Actions\Search\SearchSysAdmin;
 use App\Actions\Search\StoreSearchLog;
 use App\Models\Helpers\SearchLog;
+use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\Agent;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -145,6 +147,24 @@ it('collapses type-ahead query refinements into a single search log', function (
     expect(SearchLog::count())->toBe(3);
 
     SearchLog::query()->delete();
+});
+
+it('includes organisation_id in PurchaseOrder toSearchableArray', function () {
+    $purchaseOrder = PurchaseOrder::factory()->make([
+        'organisation_id' => 42,
+        'created_at'      => now(),
+    ]);
+
+    expect($purchaseOrder->toSearchableArray()['organisation_id'])->toBe(42);
+});
+
+it('includes organisation_ids in Agent toSearchableArray', function () {
+    $agent = Agent::factory()->make([
+        'created_at' => now(),
+    ]);
+    $agent->id = 99;
+
+    expect($agent->toSearchableArray())->toHaveKey('organisation_ids');
 });
 
 it('does not cache results for queries longer than two characters', function () {

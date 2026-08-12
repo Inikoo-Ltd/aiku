@@ -8,9 +8,9 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -22,6 +22,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetAggregatedMarketingOverview
 {
     use AsAction;
+    use WithAggregatedChannelQueries;
     use WithAttributionWindow;
 
     /**
@@ -36,15 +37,15 @@ class GetAggregatedMarketingOverview
      * campaign table would be a list of other people's campaigns; the children table links down to
      * each organisation instead, and the drill-down continues on that dashboard.
      *
-     * @return array{period: string, period_label: string, from: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
      */
-    public function handle(Organisation|Group $parent, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
+    public function handle(Organisation|Group $parent, ?Carbon $from = null, ?Carbon $to = null): array
     {
         /* One window for the whole screen. Everything - revenue, orders, sign-ups, spend, unsubscribes,
            visits, the baseline they are shares of - starts when attribution started recording, so no
            two figures on the page cover different stretches of time. Before that date the report reads
            zero, which is the truthful answer: we were not measuring. */
-        $from  = $this->clipToAttributionStart($period->startsAt());
+        $from  = $this->clipToAttributionStart($from);
         $shops = $parent->shops()->with('currency')->get();
 
         $isOrganisation = $parent instanceof Organisation;
@@ -58,12 +59,13 @@ class GetAggregatedMarketingOverview
            different questions divided by each other. Sending is not free either, and nobody invoices
            us for it, so the newsletter's cost is estimated from the emails actually sent. */
         $costFrom      = $from;
+        $costTo        = $to;
 
-        $revenue       = $this->revenueByType($shops, $from, $revenueColumn);
-        $registrations = $this->registrationsByType($shops, $from);
-        $orders        = $this->ordersByType($shops, $from);
-        $pending       = $this->pendingRevenueByType($shops, $from, $isOrganisation ? 'org_net_amount' : 'grp_net_amount');
-        $spend         = $this->spendByType($shops, $costFrom, $costColumn);
+        $revenue       = $this->revenueByType($shops, $from, $to, $revenueColumn);
+        $registrations = $this->registrationsByType($shops, $from, $to);
+        $orders        = $this->ordersByType($shops, $from, $to);
+        $pending       = $this->pendingRevenueByType($shops, $from, $to, $isOrganisation ? 'org_net_amount' : 'grp_net_amount');
+        $spend         = $this->spendByType($shops, $costFrom, $costTo, $costColumn);
         /* Per email channel: a newsletter and a promotional mailshot cost separately and lose
            subscribers separately, so averaging them would hide which one is doing the damage. */
         $emailCostBy = [];
@@ -71,15 +73,15 @@ class GetAggregatedMarketingOverview
 
         foreach ([TrafficSourcesTypeEnum::NEWSLETTER, TrafficSourcesTypeEnum::MARKETING_MAILSHOT] as $emailChannel) {
             $types                             = GetEstimatedEmailCost::typesFor($emailChannel);
-            $emailCostBy[$emailChannel->value] = GetEstimatedEmailCost::run($shops->pluck('id'), $costFrom, $parent->currency, $types);
-            $unsubsBy[$emailChannel->value]    = GetEstimatedEmailCost::unsubscribes($shops->pluck('id'), $costFrom, $types);
+            $emailCostBy[$emailChannel->value] = GetEstimatedEmailCost::run($shops->pluck('id'), $costFrom, $costTo, $parent->currency, $types);
+            $unsubsBy[$emailChannel->value]    = GetEstimatedEmailCost::unsubscribes($shops->pluck('id'), $costFrom, $costTo, $types);
         }
 
         /* Automated marketing is billed per message like everything else we send. */
-        $emailCostBy[TrafficSourcesTypeEnum::EMAIL_AUTOMATED->value] = GetEstimatedEmailCost::automated($shops->pluck('id'), $costFrom, $parent->currency);
+        $emailCostBy[TrafficSourcesTypeEnum::EMAIL_AUTOMATED->value] = GetEstimatedEmailCost::automated($shops->pluck('id'), $costFrom, $costTo, $parent->currency);
 
         $emailCost = array_sum($emailCostBy);
-        $visits        = $this->visitsByType($shops, $from);
+        $visits        = $this->visitsByType($shops, $from, $to);
 
         $channels = collect(array_unique(array_merge(
             $revenue->keys()->all(),
@@ -94,6 +96,9 @@ class GetAggregatedMarketingOverview
             ->map(fn (string $type) => [
                 'name'          => TrafficSourcesTypeEnum::labels()[$type] ?? $type,
                 'type'          => $type,
+                'route'         => $this->channelRoute($parent, $type),
+                'registrations_route' => $this->registrationsRoute($parent, $type, $from, $to),
+                'orders_route'  => $this->ordersRoute($parent, $type, $from, $to),
                 'group'         => TrafficSourcesTypeEnum::tryFrom($type)?->group()['key'] ?? 'other',
                 'group_label'   => TrafficSourcesTypeEnum::tryFrom($type)?->group()['label'] ?? __('Other'),
                 'group_position' => TrafficSourcesTypeEnum::tryFrom($type)?->group()['position'] ?? 9,
@@ -130,9 +135,8 @@ class GetAggregatedMarketingOverview
         $totalPending       = round(array_sum(array_column($channels, 'pending')), 2);
 
         return [
-            'period'        => $period->value,
-            'period_label'  => MarketingPeriodEnum::labels()[$period->value],
             'from'          => $from?->toDateString(),
+            'to'            => $to?->toDateString(),
             'currency_code' => $parent->currency->code,
             'totals'        => [
                 'spend'         => $totalSpend,
@@ -157,10 +161,82 @@ class GetAggregatedMarketingOverview
                every mailshot in the period earned us nobody. The remainder is the trade that arrives
                whether we advertise or not. */
             'attribution_started_at' => GetAttributionStartedAt::run()?->toIso8601String(),
-            'baseline'      => $this->baseline($shops, $from, $revenueColumn),
+            'baseline'      => $this->baseline($shops, $from, $to, $revenueColumn),
             'channels'      => $channels,
-            'referrers'     => $this->referrers($shops, $from, $revenueColumn, $window ?? 0),
-            'children'      => $this->children($parent, $from, $revenueColumn),
+            'referrers'     => $this->referrers($shops, $from, $to, $revenueColumn, $window ?? 0),
+            'children'      => $this->children($parent, $from, $to, $revenueColumn),
+        ];
+    }
+
+    /**
+     * The channel's own page at this level. No period travels with it: that page is the channel's
+     * standing overview, not a slice of this dashboard's window.
+     *
+     * @return array{name: string, parameters: array<int, string>}
+     */
+    private function channelRoute(Organisation|Group $parent, string $type): array
+    {
+        return $parent instanceof Organisation
+            ? ['name' => 'grp.org.marketing.channels.show', 'parameters' => [$parent->slug, $type]]
+            : ['name' => 'grp.marketing.channels.show', 'parameters' => [$type]];
+    }
+
+    /**
+     * The customers the channel signed up, on the customers tab of that same page, over the
+     * dashboard's own dates: the figure being clicked counts a period, so the list it opens has to
+     * cover the same one.
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function registrationsRoute(Organisation|Group $parent, string $type, ?Carbon $from, ?Carbon $to): array
+    {
+        return $this->tabRoute($parent, $type, TrafficSourceTabsEnum::CUSTOMERS, $this->periodFilter($from, $to, 'created_at'));
+    }
+
+    /**
+     * The orders the channel was touched before, on the orders tab of that same page, over the
+     * dashboard's own dates.
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function ordersRoute(Organisation|Group $parent, string $type, ?Carbon $from, ?Carbon $to): array
+    {
+        return $this->tabRoute($parent, $type, TrafficSourceTabsEnum::ORDERS, $this->periodFilter($from, $to, 'date'));
+    }
+
+    /**
+     * @param array<string, array<string, string>> $period
+     *
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function tabRoute(Organisation|Group $parent, string $type, TrafficSourceTabsEnum $tab, array $period): array
+    {
+        $parameters = [
+            'channelType' => $type,
+            'tab'         => $tab->value,
+        ] + $period;
+
+        return $parent instanceof Organisation
+            ? ['name' => 'grp.org.marketing.channels.show', 'parameters' => ['organisation' => $parent->slug] + $parameters]
+            : ['name' => 'grp.marketing.channels.show', 'parameters' => $parameters];
+    }
+
+    /**
+     * The dashboard's window as a table takes it: a between filter on the same column the figure was
+     * counted over. An open-ended period travels as no filter at all.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function periodFilter(?Carbon $from, ?Carbon $to, string $column): array
+    {
+        if (!$from) {
+            return [];
+        }
+
+        return [
+            'between' => [
+                $column => $from->format('Ymd').'-'.($to ?? Carbon::now())->format('Ymd'),
+            ],
         ];
     }
 
@@ -172,24 +248,7 @@ class GetAggregatedMarketingOverview
      *
      * @return array{registrations: float, orders: float, revenue: float}
      */
-    /**
-     * The baseline exists so the attributed figure can be read as a share of it, which only works if
-     * both cover the same stretch of time. Attribution has only been recording since its first touch,
-     * so a 30-day baseline against half a day of tracking reports "marketing achieved 0%" when the
-     * true statement is "we were not recording for most of that window".
-     */
-    private function clipToAttributionStart(?Carbon $from): ?Carbon
-    {
-        $startedAt = GetAttributionStartedAt::run();
-
-        if (!$startedAt) {
-            return $from;
-        }
-
-        return $from && $from->isAfter($startedAt) ? $from : $startedAt;
-    }
-
-    private function baseline(Collection $shops, ?Carbon $from, string $revenueColumn): array
+    private function baseline(Collection $shops, ?Carbon $from, ?Carbon $to, string $revenueColumn): array
     {
         $shopIds = $shops->pluck('id');
 
@@ -197,6 +256,7 @@ class GetAggregatedMarketingOverview
             'registrations' => (float) DB::table('customers')
                 ->whereIn('shop_id', $shopIds)
                 ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+                ->when($to, fn ($query) => $query->where('created_at', '<=', $to))
                 ->count(),
 
             'orders'        => (float) DB::table('orders')
@@ -204,154 +264,16 @@ class GetAggregatedMarketingOverview
                 ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
                 ->whereNull('deleted_at')
                 ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->when($to, fn ($query) => $query->where('date', '<=', $to))
                 ->count(),
 
             'revenue'       => round((float) DB::table('invoices')
                 ->whereIn('shop_id', $shopIds)
                 ->where('in_process', false)
                 ->when($from, fn ($query) => $query->where('date', '>=', $from))
+                ->when($to, fn ($query) => $query->where('date', '<=', $to))
                 ->sum($revenueColumn), 2),
         ];
-    }
-
-    /**
-     * Shops may each override the attribution window, so they are grouped by the window they actually
-     * use and queried once per distinct value - in practice one query, since overrides are rare.
-     *
-     * @param Collection<int, Shop> $shops
-     *
-     * @return Collection<int, array{window: int, shop_ids: array<int, int>}>
-     */
-    private function shopsByWindow(Collection $shops): Collection
-    {
-        return $shops
-            ->groupBy(fn (Shop $shop) => GetAttributionWindow::run($shop))
-            ->map(fn (Collection $group, $window) => [
-                'window'   => (int) $window,
-                'shop_ids' => $group->pluck('id')->all(),
-            ])
-            ->values();
-    }
-
-    /**
-     * @param Collection<int, Shop> $shops
-     */
-    private function revenueByType(Collection $shops, ?Carbon $from, string $revenueColumn, string $groupBy = 'ts.type'): Collection
-    {
-        $totals = collect();
-
-        foreach ($this->shopsByWindow($shops) as $group) {
-            DB::table('invoices')
-                ->join('model_has_traffic_sources as p', function ($join) use ($group) {
-                    $join->on('p.model_id', '=', 'invoices.customer_id')
-                        ->where('p.model_type', '=', 'Customer');
-
-                    $this->constrainToAttributionWindow($join, $group['window']);
-                })
-                ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
-                ->whereIn('invoices.shop_id', $group['shop_ids'])
-                ->where('invoices.in_process', false)
-                ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
-                ->groupBy($groupBy)
-                ->select(DB::raw($groupBy.' as bucket'), DB::raw("SUM(invoices.{$revenueColumn} * p.share) as amount"))
-                ->get()
-                ->each(fn ($row) => $totals[$row->bucket] = ($totals[$row->bucket] ?? 0) + (float) $row->amount);
-        }
-
-        return $totals;
-    }
-
-    /**
-     * @param Collection<int, Shop> $shops
-     */
-    private function registrationsByType(Collection $shops, ?Carbon $from, string $groupBy = 'ts.type'): Collection
-    {
-        $totals = collect();
-
-        foreach ($this->shopsByWindow($shops) as $group) {
-            DB::table('customers')
-                ->join('model_has_traffic_sources as p', function ($join) use ($group) {
-                    $join->on('p.model_id', '=', 'customers.id')
-                        ->where('p.model_type', '=', 'Customer');
-
-                    $this->constrainToTouchWindow($join, 'customers.created_at', $group['window']);
-                })
-                ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
-                ->whereIn('customers.shop_id', $group['shop_ids'])
-                ->when($from, fn ($query) => $query->where('customers.created_at', '>=', $from))
-                ->groupBy($groupBy)
-                ->select(DB::raw($groupBy.' as bucket'), DB::raw('SUM(p.share) as registrations'))
-                ->get()
-                ->each(fn ($row) => $totals[$row->bucket] = ($totals[$row->bucket] ?? 0) + (float) $row->registrations);
-        }
-
-        return $totals;
-    }
-
-    /**
-     * @param Collection<int, Shop> $shops
-     */
-    private function ordersByType(Collection $shops, ?Carbon $from, string $groupBy = 'ts.type'): Collection
-    {
-        $totals = collect();
-
-        foreach ($this->shopsByWindow($shops) as $group) {
-            DB::table('orders')
-                ->join('model_has_traffic_sources as p', function ($join) use ($group) {
-                    $join->on('p.model_id', '=', 'orders.customer_id')
-                        ->where('p.model_type', '=', 'Customer');
-
-                    $this->constrainToTouchWindow($join, 'orders.date', $group['window']);
-                })
-                ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
-                ->whereIn('orders.shop_id', $group['shop_ids'])
-                ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
-                ->whereNull('orders.deleted_at')
-                ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
-                ->groupBy($groupBy)
-                ->select(DB::raw($groupBy.' as bucket'), DB::raw('SUM(p.share) as orders'))
-                ->get()
-                ->each(fn ($row) => $totals[$row->bucket] = ($totals[$row->bucket] ?? 0) + (float) $row->orders);
-        }
-
-        return $totals;
-    }
-
-    /**
-     * The leading indicator: value of orders placed but not yet invoiced, in the parent's currency.
-     * Invoicing runs a day or two behind, and this is what a mailshot sent this morning shows today.
-     *
-     * @param Collection<int, Shop> $shops
-     */
-    private function pendingRevenueByType(Collection $shops, ?Carbon $from, string $amountColumn, string $groupBy = 'ts.type'): Collection
-    {
-        $totals = collect();
-
-        foreach ($this->shopsByWindow($shops) as $group) {
-            DB::table('orders')
-                ->join('model_has_traffic_sources as p', function ($join) use ($group) {
-                    $join->on('p.model_id', '=', 'orders.customer_id')
-                        ->where('p.model_type', '=', 'Customer');
-
-                    $this->constrainToTouchWindow($join, 'orders.date', $group['window']);
-                })
-                ->join('traffic_sources as ts', 'ts.id', '=', 'p.traffic_source_id')
-                ->whereIn('orders.shop_id', $group['shop_ids'])
-                ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
-                ->whereNull('orders.deleted_at')
-                ->whereNotExists(fn ($invoice) => $invoice
-                    ->select(DB::raw(1))
-                    ->from('invoices')
-                    ->whereColumn('invoices.order_id', 'orders.id')
-                    ->where('invoices.in_process', false))
-                ->when($from, fn ($query) => $query->where('orders.date', '>=', $from))
-                ->groupBy($groupBy)
-                ->select(DB::raw($groupBy.' as bucket'), DB::raw("SUM(orders.{$amountColumn} * p.share) as amount"))
-                ->get()
-                ->each(fn ($row) => $totals[$row->bucket] = ($totals[$row->bucket] ?? 0) + (float) $row->amount);
-        }
-
-        return $totals;
     }
 
     /**
@@ -361,7 +283,7 @@ class GetAggregatedMarketingOverview
      *
      * @return Collection<int, array{name: string, amount: float}>
      */
-    private function topChannelByShop(Collection $shops, ?Carbon $from, string $revenueColumn): Collection
+    private function topChannelByShop(Collection $shops, ?Carbon $from, ?Carbon $to, string $revenueColumn): Collection
     {
         $best = collect();
 
@@ -377,6 +299,7 @@ class GetAggregatedMarketingOverview
                 ->whereIn('invoices.shop_id', $group['shop_ids'])
                 ->where('invoices.in_process', false)
                 ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+                ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
                 ->groupBy('invoices.shop_id', 'ts.type')
                 ->select('invoices.shop_id', 'ts.type', DB::raw("SUM(invoices.{$revenueColumn} * p.share) as amount"))
                 ->get()
@@ -405,7 +328,7 @@ class GetAggregatedMarketingOverview
      *
      * @return array<int, array{host: string, kind: string, visitors: float, revenue: float}>
      */
-    private function referrers(Collection $shops, ?Carbon $from, string $revenueColumn, int $window, int $limit = 10): array
+    private function referrers(Collection $shops, ?Carbon $from, ?Carbon $to, string $revenueColumn, int $window, int $limit = 10): array
     {
         /* Search engines belong here as much as directories do: knowing DuckDuckGo sends people is
            what tells you whether it is worth advertising on. They keep their own channel for the
@@ -452,6 +375,7 @@ class GetAggregatedMarketingOverview
             ->whereIn('p.traffic_source_campaign_id', $campaigns->keys())
             ->where('invoices.in_process', false)
             ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
             ->groupBy('p.traffic_source_campaign_id')
             ->select('p.traffic_source_campaign_id as campaign_id', DB::raw("SUM(invoices.{$revenueColumn} * p.share) as revenue"))
             ->pluck('revenue', 'campaign_id');
@@ -473,70 +397,41 @@ class GetAggregatedMarketingOverview
     }
 
     /**
-     * People each channel actually sent us, converted or not — the ones attribution never sees,
-     * because they never logged in or registered.
-     *
-     * @param Collection<int, Shop> $shops
-     */
-    private function visitsByType(Collection $shops, ?Carbon $from): Collection
-    {
-        return DB::table('traffic_source_visits as v')
-            ->join('traffic_sources as ts', 'ts.id', '=', 'v.traffic_source_id')
-            ->whereIn('v.shop_id', $shops->pluck('id'))
-            ->when($from, fn ($query) => $query->where('v.date', '>=', $from->toDateString()))
-            ->groupBy('ts.type')
-            ->select('ts.type', DB::raw('SUM(v.visits) as visits'))
-            ->pluck('visits', 'type');
-    }
-
-    /**
-     * @param Collection<int, Shop> $shops
-     */
-    private function spendByType(Collection $shops, ?Carbon $from, string $costColumn): Collection
-    {
-        return DB::table('traffic_source_costs as c')
-            ->join('traffic_sources as ts', 'ts.id', '=', 'c.traffic_source_id')
-            ->whereIn('c.shop_id', $shops->pluck('id'))
-            ->when($from, fn ($query) => $query->where('c.date', '>=', $from->toDateString()))
-            ->groupBy('ts.type')
-            ->select('ts.type', DB::raw("SUM(c.{$costColumn}) as spend"))
-            ->pluck('spend', 'type')
-            ->map(fn ($amount) => (float) $amount);
-    }
-
-    /**
      * The row under the headline: each shop of an organisation, each organisation of the group, with
      * a link onward. Three queries for the whole table, bucketed by shop and rolled up here - the
      * drill-down is the existing dashboard for that level rather than a repeat of it.
      *
      * @return array<int, array{name: string, slug: string, revenue: float, registrations: float, orders: float, route: array{name: string, parameters: array<int, string>}}>
      */
-    private function children(Organisation|Group $parent, ?Carbon $from, string $revenueColumn): array
+    private function children(Organisation|Group $parent, ?Carbon $from, ?Carbon $to, string $revenueColumn): array
     {
         $shops = $parent->shops()->get();
 
-        $revenue       = $this->revenueByType($shops, $from, $revenueColumn, 'invoices.shop_id');
-        $registrations = $this->registrationsByType($shops, $from, 'customers.shop_id');
-        $orders        = $this->ordersByType($shops, $from, 'orders.shop_id');
-        $topChannel    = $this->topChannelByShop($shops, $from, $revenueColumn);
+        $revenue       = $this->revenueByType($shops, $from, $to, $revenueColumn, 'invoices.shop_id');
+        $registrations = $this->registrationsByType($shops, $from, $to, 'customers.shop_id');
+        $orders        = $this->ordersByType($shops, $from, $to, 'orders.shop_id');
+        $topChannel    = $this->topChannelByShop($shops, $from, $to, $revenueColumn);
 
         /* Each row carries what it is a share of. "0" against no denominator reads as a quiet month;
            "0 of 123" says marketing reached none of the people who signed up. */
         $baselineFrom  = $from;
+        $baselineTo    = $to;
 
         $allRegistrations = DB::table('customers')
             ->whereIn('shop_id', $shops->pluck('id'))
             ->when($baselineFrom, fn ($query) => $query->where('created_at', '>=', $baselineFrom))
+            ->when($baselineTo, fn ($query) => $query->where('created_at', '<=', $baselineTo))
             ->groupBy('shop_id')
             ->select('shop_id', DB::raw('COUNT(*) as total'))
             ->pluck('total', 'shop_id');
 
-        $childPending = $this->pendingRevenueByType($shops, $from, $revenueColumn === 'org_net_amount' ? 'org_net_amount' : 'grp_net_amount', 'orders.shop_id');
+        $childPending = $this->pendingRevenueByType($shops, $from, $to, $revenueColumn === 'org_net_amount' ? 'org_net_amount' : 'grp_net_amount', 'orders.shop_id');
 
         $allRevenue = DB::table('invoices')
             ->whereIn('shop_id', $shops->pluck('id'))
             ->where('in_process', false)
             ->when($baselineFrom, fn ($query) => $query->where('date', '>=', $baselineFrom))
+            ->when($baselineTo, fn ($query) => $query->where('date', '<=', $baselineTo))
             ->groupBy('shop_id')
             ->select('shop_id', DB::raw("SUM({$revenueColumn}) as total"))
             ->pluck('total', 'shop_id');
@@ -546,6 +441,7 @@ class GetAggregatedMarketingOverview
             ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('deleted_at')
             ->when($baselineFrom, fn ($query) => $query->where('date', '>=', $baselineFrom))
+            ->when($baselineTo, fn ($query) => $query->where('date', '<=', $baselineTo))
             ->groupBy('shop_id')
             ->select('shop_id', DB::raw('COUNT(*) as total'))
             ->pluck('total', 'shop_id');

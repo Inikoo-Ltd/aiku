@@ -69,6 +69,12 @@ class GetSupplierSearchSchema
                         'type' => 'int64',
                     ],
                     [
+                        'name'     => 'organisation_ids',
+                        'type'     => 'int64[]',
+                        'facet'    => false,
+                        'optional' => true,
+                    ],
+                    [
                         'name'     => '__soft_deleted',
                         'type'     => 'int32',
                         'optional' => true,

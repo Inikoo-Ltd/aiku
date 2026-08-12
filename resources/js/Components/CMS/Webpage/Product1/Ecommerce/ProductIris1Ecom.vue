@@ -367,7 +367,7 @@ onMounted(async () => {
                             </template>
 
 
-                             <DiscountByType  v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type == 'Category Quantity Ordered Order Interval') && showDiscount" :offers_data="product?.offers_data" template="products_triggers_label" />
+                            <DiscountByType  v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type == 'Category Quantity Ordered Order Interval') && showDiscount" :offers_data="product?.offers_data" template="products_triggers_label" />
 
                             <DiscountByType
                                 v-if="showDiscount && bestOffer.type == 'Category Ordered'"

@@ -18,6 +18,7 @@ use App\Enums\Billables\Rental\RentalStateEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -43,6 +44,7 @@ class StoreService extends OrgAction
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'shop_id', $shop->id);
         data_set($modelData, 'currency_id', $shop->currency_id);
+        data_set($modelData, 'is_public', $shop->type === ShopTypeEnum::FULFILMENT, overwrite: false);
 
 
         /** @var Service $service */
@@ -129,9 +131,17 @@ class StoreService extends OrgAction
 
     public function htmlResponse(Service $service)
     {
-        return Redirect::route('grp.org.fulfilments.show.catalogue.services.show', [
+        if ($service->shop->type === ShopTypeEnum::FULFILMENT) {
+            return Redirect::route('grp.org.fulfilments.show.catalogue.services.show', [
+                'organisation' => $service->organisation->slug,
+                'fulfilment'   => $service->shop->fulfilment->slug,
+                'service'      => $service->slug
+            ]);
+        }
+
+        return Redirect::route('grp.org.shops.show.billables.services.show', [
             'organisation' => $service->organisation->slug,
-            'fulfilment'   => $service->shop->fulfilment->slug,
+            'shop'         => $service->shop->slug,
             'service'      => $service->slug
         ]);
     }
@@ -154,5 +164,11 @@ class StoreService extends OrgAction
         return $this->handle($fulfilment->shop, $this->validatedData);
     }
 
+    public function asController(Shop $shop, ActionRequest $request): Service
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop, $this->validatedData);
+    }
 
 }

@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\AikuSection\StoreAikuSection;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
-use App\Models\Analytics\AikuSection;
 use App\Models\SysAdmin\Group;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,7 +21,7 @@ class SeedAikuSections extends OrgAction
     use AsAction;
     use WithAttachMediaToModel;
 
-    public function handle(Group $group): AikuSection
+    public function handle(Group $group): void
     {
         foreach (AikuSectionEnum::cases() as $case) {
             $code = $case->value;
@@ -50,8 +49,6 @@ class SeedAikuSections extends OrgAction
             //                default => throw new \Exception("Unknown scope type: {$scopeType}"),
             //            };
         }
-
-        return $aikuSection;
     }
 
     public string $commandSignature = 'group:seed_aiku_sections {group : group slug}';

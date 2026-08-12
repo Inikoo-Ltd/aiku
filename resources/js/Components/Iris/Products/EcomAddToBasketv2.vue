@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLongArrowRight } from '@fal'
 import { faPlus, faMinus } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faLongArrowRight, faPlus, faMinus)
 
@@ -77,8 +78,8 @@ const setStatus = (newStatus: typeof status.value) => {
 
 const showWarning = () => {
     notify({
-        title: trans('Stock limit reached'),
-        text: trans('You cannot add more than :stock items.', { stock: String(availableStock.value) }),
+        title: ctrans('Stock limit reached'),
+        text: ctrans('You cannot add more than :stock items.', { stock: String(availableStock.value) }),
         type: 'error'
     })
 }
@@ -171,7 +172,7 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
         setStatus('error')
         notify({
             title: trans('Something went wrong'),
-            text: error.message || trans('Failed to add product to basket'),
+            text: error.response?.data?.message || error.message || ctrans('Failed to add product to basket'),
             type: 'error'
         })
     } finally {
@@ -234,7 +235,7 @@ const onUpdateQuantity = async () => {
         setStatus('error')
         notify({
             title: trans('Something went wrong'),
-            text: error.message || trans('Failed to update product quantity'),
+            text: error.response?.data?.message || error.message || ctrans('Failed to update product quantity'),
             type: 'error'
         })
     } finally {
@@ -373,7 +374,7 @@ defineExpose({ setQuantity })
                 v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" 
                 class="qty-add-btn"
                 icon="fas fa-plus" 
-                :label="trans('Add to basket')" 
+                :label="ctrans('Add to basket')" 
                 type="primary" 
                 size="lg"
                 :loading="isLoadingSubmitQuantityProduct" 
@@ -384,7 +385,7 @@ defineExpose({ setQuantity })
 
         <div v-if="customer.quantity_ordered" class="qty-info">
             <span class="qty-info-label">
-                {{ trans('Current amount in basket') }}:
+                {{ ctrans('Current amount in basket') }}:
             </span>
 
             <!-- WITH OFFER -->

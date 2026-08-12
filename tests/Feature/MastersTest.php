@@ -78,6 +78,7 @@ use Inertia\Testing\AssertableInertia;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -2420,6 +2421,71 @@ test('reprocessing a master asset time series with a mid period window keeps the
         ->and((int) $record->sold)->toBe(2);
 });
 
+test('master asset time series stores no row for periods without activity and drops a period that loses its invoices', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'TS-DEP-'.uniqid(),
+        'name' => 'Time Series Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'TS-FAM-'.uniqid(),
+        'name' => 'Time Series Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'TS-AST-'.uniqid(),
+        'name'    => 'Sparse Time Series Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $customer      = createCustomer($this->shop);
+    $taxCategoryId = DB::table('tax_categories')->value('id');
+    $soldMonth     = now()->subMonth()->startOfMonth();
+    $emptyMonth    = now()->subMonths(2)->startOfMonth();
+
+    $transactionId = DB::table('invoice_transactions')->insertGetId([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'tax_category_id' => $taxCategoryId,
+        'master_asset_id' => $masterAsset->id,
+        'date'            => $soldMonth->copy()->addDays(3),
+        'quantity'        => 1,
+        'net_amount'      => 100,
+        'grp_net_amount'  => 100,
+        'data'            => '{}',
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $records = fn () => DB::table('master_asset_time_series as ts')
+        ->join('master_asset_time_series_records as r', 'r.master_asset_time_series_id', '=', 'ts.id')
+        ->where('ts.master_asset_id', $masterAsset->id)
+        ->where('ts.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+        ->pluck('r.period')
+        ->all();
+
+    $process = fn () => ProcessMasterAssetTimeSeriesRecords::run(
+        $masterAsset->id,
+        TimeSeriesFrequencyEnum::MONTHLY,
+        $emptyMonth->toDateString(),
+        $soldMonth->copy()->endOfMonth()->toDateString()
+    );
+
+    $process();
+
+    expect($records())->toBe([$soldMonth->format('Y-m')]);
+
+    DB::table('invoice_transactions')->where('id', $transactionId)->update(['deleted_at' => now()]);
+
+    $process();
+
+    expect($records())->toBe([]);
+});
+
 test('master product creation seeds minor prices from the official exchange, not live FX', function () {
     $masterShop = createFreshMasterShop();
     $masterShop->update(['price_exchanges' => [
@@ -2863,4 +2929,45 @@ test('two master shops can each have a department and sub department with the sa
         ->and($subDepartments[0]->code)->toBe($subDepartments[1]->code)
         ->and($subDepartments[0]->id)->not->toBe($subDepartments[1]->id)
         ->and($subDepartments[0]->master_shop_id)->not->toBe($subDepartments[1]->master_shop_id);
+});
+
+test('store master product from trade units creates even when some master_prices have no value', function () {
+    $masterShop   = createFreshMasterShop();
+    $masterFamily = StoreMasterProductCategory::make()->action(
+        parent: $masterShop,
+        modelData: [
+            'code' => 'MFAM'.uniqid(),
+            'name' => 'Master family',
+            'type' => MasterProductCategoryTypeEnum::FAMILY,
+        ],
+        createChildren: false
+    );
+    $tradeUnits = createTradeUnits($this->group);
+
+    $response = post(route('grp.models.master_family.store-assets', [$masterFamily->id]), [
+        'code'              => 'BSS-TEST-01',
+        'name'              => 'Butter Bubble Soap Bundle',
+        'unit'              => 'bundle',
+        'masterShop'        => $masterShop->slug,
+        'is_minion_variant' => 'false',
+        'is_for_sale'       => 'true',
+        'trade_units'       => [
+            ['id' => $tradeUnits[0]->id, 'quantity' => 1],
+        ],
+        'master_prices'     => [
+            'EUR' => ['value' => '10', 'independent' => 'false'],
+            'GBP' => ['independent' => 'false'],
+        ],
+        'master_rrps'       => [
+            'EUR' => ['independent' => 'false'],
+        ],
+    ]);
+
+    expect($response->getStatusCode())->not->toBe(500);
+    $response->assertStatus(201);
+
+    $masterAsset = $masterFamily->masterAssets()->where('code', 'BSS-TEST-01')->first();
+    expect($masterAsset)->not->toBeNull()
+        ->and((float) data_get($masterAsset->master_prices, 'EUR.value'))->toBe(10.0)
+        ->and(data_get($masterAsset->master_prices, 'GBP.value'))->toBeNull();
 });

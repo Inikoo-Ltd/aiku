@@ -25,6 +25,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { notify } from "@kyvg/vue3-notification"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
+import ScanToPickDeliveryNote from "@/Components/DeliveryNote/ScanToPickDeliveryNote.vue"
 import { routeType } from "@/types/route"
 import { debounce } from "lodash-es"
 
@@ -42,6 +43,9 @@ const props = defineProps<{
     allow_picker_set_not_picked: boolean
     picker?: { id: number, contact_name: string } | null
     scan_to_pack?: {
+        scan_route: routeType
+    }
+    scan_to_pick?: {
         scan_route: routeType
     }
     routes?: {
@@ -153,22 +157,26 @@ watch(() => props.tabs.current, (newTab) => {
     currentTab.value = newTab
 }, { immediate: true })
 
+// A scan that moves the session to another state changes the header actions and the tabs as much as
+// it changes the rows, so pageHead has to come back with it.
 const debReloadPage = debounce(() => {
     router.reload({
-        except: ["auth", "breadcrumbs", "flash", "layout", "localeData", "pageHead", "ziggy"]
+        except: ["auth", "breadcrumbs", "flash", "layout", "localeData", "ziggy"]
     })
 }, 1200)
 
-// A scan packs one item of one delivery note, so only the row it landed on changes. Patching that
-// row in place keeps the packer on the same scroll position instead of re-rendering the whole table.
-const onItemPackedByScan = (outcome: {
+type ScanOutcome = {
     status: string
     item?: { id: number } | null
     delivery_note?: { id: number } | null
     row?: Record<string, any> | null
     picking_session_state?: string
-}) => {
-    if (outcome.status !== "packed") {
+}
+
+// A scan touches one item of one delivery note, so only the row it landed on changes. Patching that
+// row in place keeps the operator on the same scroll position instead of re-rendering the whole table.
+const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
+    if (outcome.status !== successStatus) {
         return
     }
 
@@ -179,8 +187,25 @@ const onItemPackedByScan = (outcome: {
     if (scannedRow && outcome.row) {
         Object.assign(scannedRow, outcome.row)
     }
+}
+
+const onItemPackedByScan = (outcome: ScanOutcome) => {
+    patchRowScannedBy(outcome, "packed")
 
     if (outcome.picking_session_state === "packing_finished") {
+        debReloadPage()
+    }
+}
+
+// The session finishes its picking by itself once the last item is handled, which swaps the tabs and
+// the buttons the picker works with next. Without this the scan that empties the session would leave
+// them looking at a picking screen that is no longer the truth until they refresh it themselves.
+const onItemPickedByScan = (outcome: ScanOutcome) => {
+    patchRowScannedBy(outcome, "picked")
+
+    const sessionState = (props.data as { data?: { state?: string } })?.data?.state
+
+    if (outcome.picking_session_state && outcome.picking_session_state !== sessionState) {
         debReloadPage()
     }
 }
@@ -255,6 +280,14 @@ const handleModalSuccess = () => {
     <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
         <Timeline :options="timelines" :state="data.data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
     </div>
+    <!-- Section: Scan a barcode to pick the matching item of the delivery note it belongs to -->
+    <ScanToPickDeliveryNote
+        v-if="scan_to_pick"
+        :scanRoute="scan_to_pick.scan_route"
+        :tab="currentTab"
+        @scanned="onItemPickedByScan"
+    />
+
     <!-- Section: Scan a barcode to pack the matching item of the delivery note it belongs to -->
     <ScanToPackDeliveryNote
         v-if="scan_to_pack"

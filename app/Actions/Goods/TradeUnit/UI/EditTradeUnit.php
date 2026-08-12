@@ -142,11 +142,11 @@ class EditTradeUnit extends OrgAction
                             'label'  => __('Id'),
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('Code'),
-                                    'value' => $tradeUnit->code
-                                ],
+                                // 'code' => [
+                                //     'type'  => 'input',
+                                //     'label' => __('Code'),
+                                //     'value' => $tradeUnit->code
+                                // ],
                                 'cpnp_number' => [
                                     'type' => 'input',
                                     'label' => __('CPNP Number'),

@@ -220,17 +220,17 @@ class EditMasterProduct extends OrgAction
         ];
 
         return [
-            [
-                'label'  => __('Id'),
-                'icon'   => 'fa-light fa-fingerprint',
-                'fields' => [
-                    'code' => [
-                        'type'  => 'input',
-                        'label' => __('Code'),
-                        'value' => $masterProduct->code
-                    ],
-                ]
-            ],
+            // [
+            //     'label'  => __('Id'),
+            //     'icon'   => 'fa-light fa-fingerprint',
+            //     'fields' => [
+            //         'code' => [
+            //             'type'  => 'input',
+            //             'label' => __('Code'),
+            //             'value' => $masterProduct->code
+            //         ],
+            //     ]
+            // ],
             [
                 'label'  => __('Name/Description'),
                 'icon'   => 'fa-light fa-tag',

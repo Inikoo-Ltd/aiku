@@ -99,5 +99,15 @@ class OrgAgent extends Model
         return $this->hasMany(OrgSupplierProduct::class);
     }
 
+    protected static function booted(): void
+    {
+        static::saved(function (OrgAgent $orgAgent) {
+            $orgAgent->agent?->searchable();
+        });
+
+        static::deleted(function (OrgAgent $orgAgent) {
+            $orgAgent->agent?->searchable();
+        });
+    }
 
 }

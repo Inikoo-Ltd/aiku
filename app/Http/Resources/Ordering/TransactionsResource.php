@@ -116,6 +116,7 @@ class TransactionsResource extends JsonResource
             'id'                             => $this->id,
             'state'                          => $this->state,
             'status'                         => $this->status,
+            'model_type'                     => $this->model_type,
             'quantity_ordered'               => trimDecimalZeros($quantityOrdered),
             'quantity_ordered_fractional'    => $quantityOrderedFractional,
             'quantity_bonus'                 => trimDecimalZeros($this->quantity_bonus),

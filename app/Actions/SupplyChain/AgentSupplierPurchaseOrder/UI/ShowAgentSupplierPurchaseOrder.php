@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
+use App\Models\Helpers\Currency;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -128,8 +129,73 @@ class ShowAgentSupplierPurchaseOrder extends OrgAction
                     ] : null,
                     'number_transactions' => $agentSupplierPurchaseOrder->purchaseOrderTransactions()->count(),
                 ],
+                'deposits'    => $this->getDeposits($agentSupplierPurchaseOrder),
             ]
         );
+    }
+
+    private function getDeposits(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder): array
+    {
+        $deposits = $agentSupplierPurchaseOrder->deposits()->orderBy('id')->get();
+
+        return [
+            'can_edit' => $this->canEdit,
+            'list'     => $deposits->map(fn ($deposit) => [
+                'id'                  => $deposit->id,
+                'reference'           => $deposit->reference,
+                'amount'              => $deposit->amount,
+                'currency_id'         => $deposit->currency_id,
+                'currency_code'       => $deposit->currency->code,
+                'state'               => $deposit->state->value,
+                'state_label'         => $deposit->state->labels()[$deposit->state->value],
+                'paid_to_supplier_at' => $deposit->paid_to_supplier_at,
+                'unapplied_amount'    => $deposit->unapplied_amount,
+                'notes'               => $deposit->notes,
+                'applications'        => $this->getApplicationHistory($deposit),
+                'updateRoute'         => [
+                    'name'       => 'grp.models.aspo-deposit.update',
+                    'parameters' => ['aspoDeposit' => $deposit->id],
+                    'method'     => 'patch',
+                ],
+                'stateRoute'          => [
+                    'name'       => 'grp.models.aspo-deposit.state',
+                    'parameters' => ['aspoDeposit' => $deposit->id],
+                    'method'     => 'patch',
+                ],
+            ])->all(),
+            'storeRoute' => [
+                'name'       => 'grp.models.agent_supplier_purchase_order.deposit.store',
+                'parameters' => ['agentSupplierPurchaseOrder' => $agentSupplierPurchaseOrder->id],
+                'method'     => 'post',
+            ],
+            'currency_code' => $agentSupplierPurchaseOrder->currency->code,
+            'currency_id'   => $agentSupplierPurchaseOrder->currency_id,
+            'currencies'    => Currency::orderBy('code')->get(['id', 'code'])->toArray(),
+        ];
+    }
+
+    private function getApplicationHistory($deposit): array
+    {
+        return $deposit->stockDeliveryApplications()
+            ->withTrashed()
+            ->with(['stockDelivery', 'createdBy', 'deletedBy'])
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn ($application) => [
+                'id'                    => $application->id,
+                'amount'                => $application->amount,
+                'stock_delivery_reference' => $application->stockDelivery?->reference,
+                'created_by_name'       => $application->createdBy?->contact_name ?? $application->createdBy?->username,
+                'created_at'            => $application->created_at,
+                'is_removed'            => $application->trashed(),
+                'deleted_by_name'       => $application->deletedBy?->contact_name ?? $application->deletedBy?->username,
+                'deleted_at'            => $application->deleted_at,
+                'deleteRoute'           => !$application->trashed() && $this->canEdit ? [
+                    'name'       => 'grp.models.stock-delivery-deposit-application.delete',
+                    'parameters' => ['stockDeliveryDepositApplication' => $application->id],
+                    'method'     => 'delete',
+                ] : null,
+            ])->all();
     }
 
     public function getBreadcrumbs(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, string $routeName, array $routeParameters, string $suffix = ''): array

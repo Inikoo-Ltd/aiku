@@ -85,6 +85,9 @@ class StoreTransaction extends OrgAction
             }
 
             data_set($modelData, 'estimated_weight', $estimatedWeight);
+        } elseif (Arr::get($modelData, 'model_type') == 'Service' && !Arr::exists($modelData, 'net_amount')) {
+            $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+            $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
         } else {
             $net   = Arr::get($modelData, 'net_amount', 0);
             $gross = Arr::get($modelData, 'gross_amount', 0);

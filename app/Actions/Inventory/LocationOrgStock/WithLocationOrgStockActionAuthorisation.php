@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\LocationOrgStock;
 
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithLocationOrgStockActionAuthorisation
@@ -18,7 +19,9 @@ trait WithLocationOrgStockActionAuthorisation
             return true;
         }
 
-        return $request->user()->authTo("inventory.{$this->organisation->id}.edit");
+        return $request->user()->authTo(
+            WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation)
+        );
     }
 
 }

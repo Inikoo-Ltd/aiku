@@ -28,26 +28,25 @@ class StoreRetinaProductManual extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
-        if ($customerSalesChannel) {
-            $downloadPortfolioCustomerSalesChannels = DownloadPortfolioCustomerSalesChannel::where('customer_sales_channel_id', $customerSalesChannel->id)->whereNull('deleted_at')->get();
 
-            $file_paths = $downloadPortfolioCustomerSalesChannels->pluck('file_path')->filter()->values()->toArray();
-            $ids = $downloadPortfolioCustomerSalesChannels->pluck('id')->toArray();
+        $downloadPortfolioCustomerSalesChannels = DownloadPortfolioCustomerSalesChannel::where('customer_sales_channel_id', $customerSalesChannel->id)->whereNull('deleted_at')->get();
 
-            if (!empty($file_paths)) {
-                try {
-                    RemoveFilesFromCatalogueIrisR2::run($file_paths);
-                } catch (\Exception $e) {
-                    Log::error('Failed to remove files from R2: ' . $e->getMessage());
-                }
+        $file_paths = $downloadPortfolioCustomerSalesChannels->pluck('file_path')->filter()->values()->toArray();
+        $ids = $downloadPortfolioCustomerSalesChannels->pluck('id')->toArray();
+
+        if (!empty($file_paths)) {
+            try {
+                RemoveFilesFromCatalogueIrisR2::run($file_paths);
+            } catch (\Exception $e) {
+                Log::error('Failed to remove files from R2: ' . $e->getMessage());
             }
+        }
 
-            if (!empty($ids)) {
-                try {
-                    DownloadPortfolioCustomerSalesChannel::whereIn('id', $ids)->delete();
-                } catch (\Exception $e) {
-                    Log::error('Failed to delete download records: ' . $e->getMessage());
-                }
+        if (!empty($ids)) {
+            try {
+                DownloadPortfolioCustomerSalesChannel::whereIn('id', $ids)->delete();
+            } catch (\Exception $e) {
+                Log::error('Failed to delete download records: ' . $e->getMessage());
             }
         }
 

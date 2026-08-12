@@ -243,7 +243,10 @@ class ShowDeliveryNote extends OrgAction
         }
 
         $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
-            ->where('is_handled', false)
+            ->where(function ($q) {
+                $q->where('is_handled', false)
+                ->orWhere('is_dirty', true);
+            })
             ->exists();
 
         $actions = [];
@@ -973,12 +976,26 @@ class ShowDeliveryNote extends OrgAction
          */
         $showChangePickerPacker = $deliveryNote->pickingSessions()->doesntExist();
 
-        // Never on a marketplace order: the customer changes it there and we follow, see SetAsWaitingCrm
-        $allowWaiting = $deliveryNote->shop->type != ShopTypeEnum::EXTERNAL
-            && (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
+        $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
 
         if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
+        }
+
+        $hiddenTabs = [];
+        if (!in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, DeliveryNoteStateEnum::PACKED])) {
+            $hiddenTabs = [DeliveryNoteTabsEnum::DONE_ITEMS, DeliveryNoteTabsEnum::PENDING_ITEMS];
+        }
+
+        $navigation = DeliveryNoteTabsEnum::navigationExcept($deliveryNote, $hiddenTabs);
+
+        /*
+         * A tab the note no longer offers still arrives in the url, kept by the link somebody followed
+         * or by the tab they were reading before the note moved on, and it would leave them on a table
+         * this state never sends any rows for.
+         */
+        if (!array_key_exists($this->tab, $navigation)) {
+            $this->tab = DeliveryNoteTabsEnum::ITEMS->value;
         }
 
         $allowScanToPack = (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false);
@@ -994,6 +1011,24 @@ class ShowDeliveryNote extends OrgAction
             $scanToPack = [
                 'scan_route' => [
                     'name'       => 'grp.json.delivery_note.pack_by_scan',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id,
+                    ],
+                    'method'     => 'post',
+                ],
+            ];
+        }
+
+        $scanToPick = null;
+        if (
+            (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pick', false)
+            && $deliveryNote->state == DeliveryNoteStateEnum::HANDLING
+            && $isEditable
+            && $allowAction
+        ) {
+            $scanToPick = [
+                'scan_route' => [
+                    'name'       => 'grp.json.delivery_note.pick_by_scan',
                     'parameters' => [
                         'deliveryNote' => $deliveryNote->id,
                     ],
@@ -1030,11 +1065,7 @@ class ShowDeliveryNote extends OrgAction
             'is_editable'   => $isEditable,
             'tabs'          => [
                 'current'    => $this->tab,
-                'navigation' => in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, $deliveryNote->state == DeliveryNoteStateEnum::PACKED])
-                    ?
-                    DeliveryNoteTabsEnum::navigation($deliveryNote)
-                    :
-                    DeliveryNoteTabsEnum::navigationExcept($deliveryNote, [DeliveryNoteTabsEnum::DONE_ITEMS, DeliveryNoteTabsEnum::PENDING_ITEMS])
+                'navigation' => $navigation
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
 
@@ -1164,7 +1195,8 @@ class ShowDeliveryNote extends OrgAction
                 'type' => $deliveryNote->shop?->type?->value,
             ],
             'consumables'                        => GetDeliveryNoteConsumables::run($deliveryNote),
-            'scan_to_pack'                       => $scanToPack
+            'scan_to_pack'                       => $scanToPack,
+            'scan_to_pick'                       => $scanToPick
 
 
         ];
@@ -1206,11 +1238,12 @@ class ShowDeliveryNote extends OrgAction
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
-            return [
-                DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                    : Inertia::optional(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+            $items = fn () => DeliveryNoteItemsStateHandlingResource::collection(
+                IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value)
+            );
 
+            return [
+                DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ? $items : Inertia::optional($items),
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED) {
             return [

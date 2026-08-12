@@ -1,57 +1,29 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 19-11-2024, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2024
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 10 Aug 2026 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Procurement\PurchaseOrder\Search;
 
-use App\Actions\HydrateModel;
+use App\Actions\Traits\WithScoutReindex;
 use App\Models\Procurement\PurchaseOrder;
-use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexPurchaseOrderSearch extends HydrateModel
+class ReindexPurchaseOrderSearch
 {
-    public string $commandSignature = 'search:purchase_orders {organisations?*} {--s|slugs=} ';
+    use AsAction;
+    use WithScoutReindex;
+
+    public string $commandSignature = 'reindex_search:purchase_orders';
 
 
-    public function handle(PurchaseOrder $purchaseOrder): void
+    public function handle(bool $reindex = true, bool $reset = false): void
     {
-
+        $this->runScoutReindex(PurchaseOrder::class, $reindex, $reset);
     }
 
-    protected function getModel(string $slug): PurchaseOrder
-    {
-        return PurchaseOrder::where('slug', $slug)->first();
-    }
 
-    protected function getAllModels(): Collection
-    {
-        return PurchaseOrder::all();
-    }
-
-    protected function loopAll(Command $command): void
-    {
-        $command->info("Reindex Org Suppliers");
-        $count = PurchaseOrder::count();
-
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        PurchaseOrder::chunk(1000, function (Collection $models) use ($bar) {
-            foreach ($models as $model) {
-                $this->handle($model);
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->info("");
-    }
 }

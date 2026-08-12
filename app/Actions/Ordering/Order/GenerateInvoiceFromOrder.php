@@ -205,6 +205,13 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $itemsNet = $lines->sum('net_amount');
 
+        foreach ($order->transactions()->where('model_type', 'Service')->get(['tax_category_id', 'net_amount']) as $serviceLine) {
+            $lines->push((object)[
+                'tax_category_id' => $serviceLine->tax_category_id,
+                'net_amount'      => $serviceLine->net_amount,
+            ]);
+        }
+
         $lines->push((object)[
             'tax_category_id' => $order->tax_category_id,
             'net_amount'      => $order->shipping_amount + $order->charges_amount,
@@ -233,23 +240,25 @@ class GenerateInvoiceFromOrder extends OrgAction
         ];
     }
 
-    public function recalculateTransactionTotals(Transaction $transaction, DeliveryNote $deliveryNote): array
+    public function recalculateTransactionTotals(Transaction $transaction, ?DeliveryNote $deliveryNote): array
     {
         $historicAsset = $transaction->historicAsset;
 
 
         $pickings = [];
 
-        foreach (
-            DB::table('delivery_note_items')->select('quantity_required', 'quantity_picked')->where('transaction_id', $transaction->id)
-                ->where('delivery_note_id', $deliveryNote->id)->get() as $deliveryNoteItem
-        ) {
-            if ($deliveryNoteItem->quantity_required == 0) {
-                $ratioOfPicking = 1;
-            } else {
-                $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
+        if ($deliveryNote) {
+            foreach (
+                DB::table('delivery_note_items')->select('quantity_required', 'quantity_picked')->where('transaction_id', $transaction->id)
+                    ->where('delivery_note_id', $deliveryNote->id)->get() as $deliveryNoteItem
+            ) {
+                if ($deliveryNoteItem->quantity_required == 0) {
+                    $ratioOfPicking = 1;
+                } else {
+                    $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
+                }
+                $pickings[] = $ratioOfPicking;
             }
-            $pickings[] = $ratioOfPicking;
         }
         if (empty($pickings)) {
             //todo: check this or I will reget

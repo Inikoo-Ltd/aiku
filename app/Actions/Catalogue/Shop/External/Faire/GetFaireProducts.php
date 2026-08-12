@@ -75,10 +75,14 @@ class GetFaireProducts extends OrgAction
 
 
         foreach ($faireProducts as $faireProduct) {
-            $faireState = Arr::get($faireProduct, 'lifecycle_state');
-            if (!in_array($faireState, ['PUBLISHED', 'UNPUBLISHED'])) {
-                continue;
-            }
+            $this->upsertFaireProduct($shop, $faireProduct, $command);
+        }
+    }
+
+    public function upsertFaireProduct(Shop $shop, array $faireProduct, ?Command $command = null): void
+    {
+        $faireState = Arr::get($faireProduct, 'lifecycle_state');
+        if (in_array($faireState, ['PUBLISHED', 'UNPUBLISHED'])) {
 
             foreach ($faireProduct['variants'] as $variant) {
                 $faireVariantState = Arr::get($variant, 'lifecycle_state');
