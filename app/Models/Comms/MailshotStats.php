@@ -56,13 +56,6 @@ class MailshotStats extends Model
 
     protected $guarded = [];
 
-    protected function casts(): array
-    {
-        return [
-            'archived_dispatched_emails' => 'array',
-        ];
-    }
-
     public function mailshot(): BelongsTo
     {
         return $this->belongsTo(Mailshot::class);

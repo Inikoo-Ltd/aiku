@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Mailshot\Hydrators;
 
-use App\Actions\Traits\WithArchivedDispatchedEmails;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Events\BroadcastMailshotStats;
@@ -22,7 +21,6 @@ class MailshotHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
-    use WithArchivedDispatchedEmails;
 
     public string $jobQueue = 'analytics';
 
@@ -57,8 +55,6 @@ class MailshotHydrateDispatchedEmails implements ShouldBeUnique
                 }
             )
         );
-
-        $stats = $this->addArchivedDispatchedEmails($mailshot->stats, $stats);
 
         $mailshot->stats()->update($stats);
         MailshotHydrateCumulativeDispatchedEmails::run($mailshot);

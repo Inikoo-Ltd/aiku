@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Mailshot\Hydrators;
 
-use App\Actions\Traits\WithArchivedDispatchedEmails;
 use App\Models\Comms\Mailshot;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +16,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class MailshotHydrateCumulativeDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
-    use WithArchivedDispatchedEmails;
 
 
     public string $jobQueue = 'hydrators-slave';
@@ -54,16 +52,11 @@ class MailshotHydrateCumulativeDispatchedEmails implements ShouldBeUnique
             ->selectRaw('count(*) filter (where number_reads > 0) as opened, count(*) filter (where number_clicks > 0) as clicked')
             ->first();
 
-        $engagementStats = $this->addArchivedDispatchedEmails($mailshotStats, [
-            'number_delivered_open_success'  => $engagement->opened,
-            'number_opened_interact_success' => $engagement->clicked,
-        ]);
+        $stats['number_delivered_open_success'] = $engagement->opened;
+        $stats['number_delivered_open_failure'] = $stats['number_deliveries_success'] - $engagement->opened;
 
-        $stats['number_delivered_open_success'] = $engagementStats['number_delivered_open_success'];
-        $stats['number_delivered_open_failure'] = $stats['number_deliveries_success'] - $stats['number_delivered_open_success'];
-
-        $stats['number_opened_interact_success'] = $engagementStats['number_opened_interact_success'];
-        $stats['number_opened_interact_failure'] = $stats['number_delivered_open_success'] - $stats['number_opened_interact_success'];
+        $stats['number_opened_interact_success'] = $engagement->clicked;
+        $stats['number_opened_interact_failure'] = $stats['number_delivered_open_success'] - $engagement->clicked;
 
         $mailshot->stats->update($stats);
     }

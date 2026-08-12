@@ -62,13 +62,6 @@ class EmailBulkRunStats extends Model
 
     protected $guarded = [];
 
-    protected function casts(): array
-    {
-        return [
-            'archived_dispatched_emails' => 'array',
-        ];
-    }
-
     public function emailBulkRun(): BelongsTo
     {
         return $this->belongsTo(EmailBulkRun::class);

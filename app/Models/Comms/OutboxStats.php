@@ -45,13 +45,6 @@ class OutboxStats extends Model
 
     protected $guarded = [];
 
-    protected function casts(): array
-    {
-        return [
-            'archived_dispatched_emails' => 'array',
-        ];
-    }
-
     public function outbox(): BelongsTo
     {
         return $this->belongsTo(Outbox::class);
