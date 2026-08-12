@@ -216,6 +216,17 @@ class EditOrganisationSettings extends OrgAction
                             ),
                         ],
                         [
+                            'label'  => __('Meta-configuration'),
+                            'icon'   => 'fa-brands fa-meta',
+                            'fields' => [
+                                'meta_access_key' => [
+                                    'type'  => 'input',
+                                    'label' => __('Access Key'),
+                                    'value' => Arr::get($organisation->settings, 'meta.access_key', ''),
+                                ],
+                            ],
+                        ],
+                        [
                             "label" => __("google drive"),
                             "icon" => "fab fa-google",
                             "button" => [
