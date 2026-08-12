@@ -105,7 +105,7 @@ class CreateReturn extends OrgAction
             ],
             'tabs'        => [
                 'current'    => $this->tab,
-                'navigation' => DeliveryNoteTabsEnum::navigationExcept($deliveryNote, [DeliveryNoteTabsEnum::HANDLED_ITEMS, DeliveryNoteTabsEnum::TARIFF_CODES]),
+                'navigation' => DeliveryNoteTabsEnum::navigationExcept($deliveryNote, [DeliveryNoteTabsEnum::TARIFF_CODES]),
             ],
             'delivery_note' => [
                 'id'        => $deliveryNote->id,

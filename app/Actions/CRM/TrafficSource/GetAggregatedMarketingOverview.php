@@ -37,7 +37,7 @@ class GetAggregatedMarketingOverview
      * campaign table would be a list of other people's campaigns; the children table links down to
      * each organisation instead, and the drill-down continues on that dashboard.
      *
-     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, orders: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, registrations_route: array{name: string, parameters: array<string, string>}, spend: float, revenue: float, registrations: float, orders: float, roas: float|null}>, baseline: array{registrations: float, orders: float, revenue: float}, children: array<int, array{name: string, slug: string, revenue: float, registrations: float, registrations_total: int, orders: float, orders_total: int, pending: float, revenue_total: float, top_channel: string|null, route: array{name: string, parameters: array<int, string>}}>}
      */
     public function handle(Organisation|Group $parent, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -147,6 +147,10 @@ class GetAggregatedMarketingOverview
                 'spend_email'   => round($emailCost, 2),
                 'revenue'       => $totalRevenue,
                 'registrations' => $totalRegistrations,
+                /* Beside the sign-ups, never taken off them: an unsubscribe costs permission to email
+                   somebody, not the customer, and netting the two would report a number that means
+                   neither. */
+                'unsubscribed'  => (int) array_sum(array_column($channels, 'unsubscribed')),
                 'orders'        => round(array_sum(array_column($channels, 'orders')), 2),
                 'pending'       => $totalPending,
                 'roas'          => ($totalSpend > 0 && ($totalRevenue > 0 || $totalPending <= 0))

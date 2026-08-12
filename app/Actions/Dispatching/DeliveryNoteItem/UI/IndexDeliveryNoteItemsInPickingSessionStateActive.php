@@ -23,12 +23,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
 {
     use WithDeliveryNoteItemUI;
 
-    /**
-     * $isHandled splits the session's items in two: the ones the picker still has to walk to, and the
-     * ones already finished. Null keeps them together, which is what every screen outside the picking
-     * session tabs asks for.
-     */
-    public function handle(PickingSession $parent, $prefix = null, ?int $deliveryNoteItemId = null, ?bool $isHandled = null): LengthAwarePaginator
+    public function handle(PickingSession $parent, $prefix = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -54,16 +49,6 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
         $this->applyDeliveryNoteItemPickingJoins($query);
 
         $query->where('delivery_note_items.quantity_required', '>', 0);
-
-        if ($isHandled === true) {
-            $query->where('delivery_note_items.is_handled', true)
-                ->where('delivery_note_items.is_dirty', false);
-        } elseif ($isHandled === false) {
-            $query->where(function ($query) {
-                $query->where('delivery_note_items.is_handled', false)
-                    ->orWhere('delivery_note_items.is_dirty', true);
-            });
-        }
 
         return $query
             ->defaultSort('locations.sort_code', 'org_stocks.code')

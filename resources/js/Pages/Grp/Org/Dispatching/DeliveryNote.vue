@@ -74,7 +74,6 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     items?: {}
-    handled_items?: {}
     pending_items?: {}
     done_items?: {}
     tariff_codes?: {}
@@ -173,7 +172,6 @@ const showDropdown = ref(false);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
-        handled_items: TableDeliveryNoteItems,    //  List of items handled (on state Picking)
         pending_items: TableDeliveryNoteItems,
         done_items: TableDeliveryNoteItems,
         tariff_codes: TableDeliveryNoteTariffCodes,
@@ -423,20 +421,6 @@ const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
 	}
 }
 
-// The wait is there to keep a burst of scans down to one reload, which is worth it while the picker
-// still has rows to work through. Once the tab they are reading is empty there is nothing left to
-// scan into it, so the wait only holds them on a screen that no longer matches the delivery note.
-const flushReloadsWhenTabEmptied = () => {
-	const currentTabTotal = (props[currentTab.value as keyof typeof props] as { meta?: { total?: number } } | undefined)?.meta?.total
-
-	if (currentTabTotal !== 0) {
-		return
-	}
-
-	debReloadPage.flush()
-	debReloadPageHead.flush()
-}
-
 const onItemPackedByScan = (outcome: ScanOutcome) => {
 	patchRowScannedBy(outcome, 'packed')
 
@@ -452,17 +436,9 @@ const onItemPackedByScan = (outcome: ScanOutcome) => {
 const onItemPickedByScan = (outcome: ScanOutcome) => {
 	patchRowScannedBy(outcome, 'picked')
 
-	// Scanned while reading the finished items: the item joins that list, and it is only known server
-	// side which position it takes, so the tab has to come back from the server.
-	if (outcome.status === 'picked' && currentTab.value === 'handled_items' && outcome.row) {
-		debReloadPage()
-	}
-
 	if (outcome.remaining_to_pick === 0) {
 		debReloadPageHead()
 	}
-
-	flushReloadsWhenTabEmptied()
 }
 
 const selectSocketBasedPlatform = (porto) => {

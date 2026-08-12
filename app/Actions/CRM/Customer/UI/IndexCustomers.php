@@ -452,6 +452,10 @@ class IndexCustomers extends OrgAction
             $this->applyChannelTypeFilter($queryBuilder, $channelType);
         }
 
+        if ($parent instanceof TrafficSource || $channelType) {
+            $allowedSort[] = 'attribution_share';
+        }
+
         if ($parent instanceof TrafficSource) {
             $queryBuilder->withBetweenDates(['last_invoiced_at', 'registered_at']);
         } else {
