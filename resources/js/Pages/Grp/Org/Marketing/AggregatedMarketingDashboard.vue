@@ -36,6 +36,7 @@ const props = defineProps<{
             revenue: number
             pending: number
             registrations: number
+            unsubscribed: number
             orders: number
             roas: number | null
             cac: number | null
@@ -167,6 +168,8 @@ const groupedChannels = computed(() => {
 const share = (part: number, whole: number) =>
     whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
 
+const unsubscribedHelp = trans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
+
 const netRegistrations = (registrations: number, unsubscribed: number) =>
     count(registrations - unsubscribed).replace('-', '−')
 
@@ -239,6 +242,11 @@ const columnHelp: Record<string, string> = {
                 <div class="mt-1 text-lg tabular-nums">{{ count(overview.totals.registrations) }}</div>
                 <div class="mt-0.5 text-xs" :class="overview.baseline.registrations > 0 && overview.totals.registrations === 0 ? 'text-[#d03b3b]' : 'text-gray-400'">
                     {{ trans('of') }} {{ count(overview.baseline.registrations) }} {{ trans('who signed up') }} · {{ share(overview.totals.registrations, overview.baseline.registrations) }}
+                </div>
+                <div v-if="overview.totals.unsubscribed > 0"
+                     v-tooltip="unsubscribedHelp"
+                     class="mt-0.5 text-xs text-[#d03b3b] cursor-help">
+                    − {{ count(overview.totals.unsubscribed) }} {{ trans('unsubscribed from our emails') }}
                 </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">

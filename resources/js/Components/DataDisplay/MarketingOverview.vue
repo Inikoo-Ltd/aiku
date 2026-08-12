@@ -20,6 +20,7 @@ const props = defineProps<{
             revenue: number
             pending: number
             registrations: number
+            unsubscribed: number
             invoices: number
             roas: number | null
             cac: number | null
@@ -171,6 +172,8 @@ const columnHelp: Record<string, string> = {
 }
 
 const count = (value: number) => Number.isInteger(value) ? value.toString() : value.toFixed(2)
+
+const unsubscribedHelp = trans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
 const pctOf = (part: number, whole: number) => whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
 const netRegistrations = (registrations: number, unsubscribed: number) =>
     count(registrations - unsubscribed).replace('-', '−')
@@ -271,6 +274,11 @@ const typeLabel: Record<string, string> = {
                 <div v-if="(overview.baseline?.registrations ?? 0) > 0 && overview.totals.registrations === 0"
                      class="mt-0.5 text-xs text-[#d03b3b]">
                     {{ trans('none of this period\'s sign-ups came through marketing') }}
+                </div>
+                <div v-if="(overview.totals.unsubscribed ?? 0) > 0"
+                     v-tooltip="unsubscribedHelp"
+                     class="mt-0.5 text-xs text-[#d03b3b] cursor-help">
+                    − {{ locale.number(overview.totals.unsubscribed) }} {{ trans('unsubscribed from our emails') }}
                 </div>
             </div>
         </div>

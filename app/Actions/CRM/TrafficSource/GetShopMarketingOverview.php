@@ -33,7 +33,7 @@ class GetShopMarketingOverview
      *
      * All figures are in the shop's currency.
      *
-     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, route: array{name: string, parameters: array<string, mixed>}, registrations_route: array{name: string, parameters: array<string, mixed>}, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, route: array{name: string, parameters: array<string, mixed>}, registrations_route: array{name: string, parameters: array<string, mixed>}, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
      */
     public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -135,6 +135,10 @@ class GetShopMarketingOverview
                 'spend_email'   => round($emailCost, 2),
                 'revenue'       => $totalRevenue,
                 'registrations' => $totalRegistrations,
+                /* Beside the sign-ups, never taken off them: an unsubscribe costs permission to email
+                   somebody, not the customer, and netting the two would report a number that means
+                   neither. */
+                'unsubscribed'  => (int) array_sum(array_column($channels, 'unsubscribed')),
                 'pending'       => $totalPending,
                 'invoices'      => round(collect($revenue)->sum('invoices'), 2),
                 'roas'          => ($totalSpend > 0 && ($totalRevenue > 0 || $totalPending <= 0))
