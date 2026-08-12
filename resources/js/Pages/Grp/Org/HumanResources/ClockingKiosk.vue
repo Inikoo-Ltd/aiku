@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { computed, onMounted, onUnmounted, ref } from "vue"
-import { faExpand, faCompress, faBackspace, faCheckCircle, faTimesCircle, faBarcode, faCamera } from "@fortawesome/free-solid-svg-icons"
+import { faExpand, faCompress, faBackspace, faCheckCircle, faTimesCircle, faBarcode, faCamera, faCameraRotate } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { QrcodeStream } from "vue-qrcode-reader"
 import axios from "axios"
@@ -42,6 +42,8 @@ const scannerContainer = ref<HTMLElement | null>(null)
 const cameraActive = ref(false)
 const cameraError = ref<string | null>(null)
 const isDetecting = ref(false)
+const cameraFacing = ref<"environment" | "user">("environment")
+const cameraConstraints = computed(() => ({ facingMode: cameraFacing.value }))
 
 const recentCodeCooldownMs = resultDisplayMs
 let lastProcessedCode: string | null = null
@@ -171,6 +173,17 @@ const handleGlobalKeydown = (event: KeyboardEvent) => {
 const startCamera = () => {
 	cameraError.value = null
 	cameraActive.value = true
+}
+
+const selectCameraFacing = (facing: "environment" | "user") => {
+	cameraFacing.value = facing
+	if (cameraActive.value) {
+		scannerCycle.value++
+	}
+}
+
+const switchCamera = () => {
+	selectCameraFacing(cameraFacing.value === "environment" ? "user" : "environment")
 }
 
 const stopCamera = () => {
@@ -492,6 +505,24 @@ onUnmounted(() => {
 										{{ trans("Start the camera so employees can clock in or out by showing their QR code") }}
 									</p>
 									<p v-if="cameraError" class="text-xs sm:text-sm text-red-600">{{ cameraError }}</p>
+
+									<div class="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+										<button
+											type="button"
+											@click="selectCameraFacing('environment')"
+											class="rounded-md px-3 py-1.5 text-xs sm:text-sm font-medium transition"
+											:class="cameraFacing === 'environment' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
+											{{ trans("Rear camera") }}
+										</button>
+										<button
+											type="button"
+											@click="selectCameraFacing('user')"
+											class="rounded-md px-3 py-1.5 text-xs sm:text-sm font-medium transition"
+											:class="cameraFacing === 'user' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
+											{{ trans("Front camera") }}
+										</button>
+									</div>
+
 									<Button :label="trans('Start Camera')" type="primary" size="l" @click="startCamera" />
 								</div>
 
@@ -502,6 +533,7 @@ onUnmounted(() => {
 										@error="onCameraError"
 										@camera-on="onCameraOn"
 										:formats="['qr_code']"
+										:constraints="cameraConstraints"
 										class="h-full w-full" />
 
 									<img
@@ -541,7 +573,15 @@ onUnmounted(() => {
 										<span class="text-xs sm:text-sm font-medium text-white">
 											{{ isSubmitting ? trans("Checking...") : trans("Show your QR code to the camera") }}
 										</span>
-										<Button :label="trans('Stop')" type="secondary" size="xs" @click="stopCamera" />
+										<div class="flex items-center gap-2">
+											<Button
+												:icon="faCameraRotate"
+												type="white"
+												size="xs"
+												@click="switchCamera"
+												:tooltip="trans('Switch camera')" />
+											<Button :label="trans('Stop')" type="white" size="xs" @click="stopCamera" />
+										</div>
 									</div>
 								</div>
 							</div>
