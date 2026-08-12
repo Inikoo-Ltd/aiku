@@ -53,6 +53,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Product\UI\IndexExclusiveProducts;
+use App\Actions\Catalogue\Product\UI\IndexExclusiveProductsCustomers;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\Variant\EditVariant;
 use App\Actions\Catalogue\Variant\ShowVariant;
@@ -63,6 +64,7 @@ Route::get('', ShowCatalogue::class)->name('dashboard');
 
 Route::prefix('exclusive-products')->as('exclusive_products.')->group(function () {
     Route::get('', IndexExclusiveProducts::class)->name('index');
+    Route::get('customers', IndexExclusiveProductsCustomers::class)->name('customers.index');
 });
 
 Route::prefix('products')->as('products.')

@@ -108,6 +108,10 @@ class GetCatalogueShowcase
                     'icon'    => ['icon' => 'fal fa-users', 'class' => ''],
                     'count'   => $numberCustomers,
                     'tooltip' => __('customers'),
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.exclusive_products.customers.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                    ],
                 ],
             ],
         ];

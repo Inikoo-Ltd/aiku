@@ -107,7 +107,6 @@ class IndexExclusiveProducts extends OrgAction
                 ]);
 
             $table
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], sortable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'exclusive_customers', label: __('Sold only to'), canBeHidden: false)
