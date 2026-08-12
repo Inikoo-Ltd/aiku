@@ -157,16 +157,20 @@ class PickDeliveryNoteItemByScan extends OrgAction
         ?Collection $knownItems = null,
         ?object $location = null
     ): array {
-        $row = null;
+        $row     = null;
+        $warning = null;
 
         if ($deliveryNoteItem && $status === 'picked') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
+
+            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
         }
 
         return [
             'status'              => $status,
             'message'             => $message,
+            'warning'             => $warning,
             'scanned'             => $scanned,
             'item'                => $deliveryNoteItem ? [
                 'id'                    => $deliveryNoteItem->id,

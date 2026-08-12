@@ -34,6 +34,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
+use App\Models\Inventory\OrgStock;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Stubs\Migrations\HasProductInformation;
@@ -244,6 +245,10 @@ class UpdateTradeUnit extends OrgAction
             foreach ($tradeUnit->products as $product) {
                 ProductHydrateBarcodeFromTradeUnit::dispatch($product);
             }
+
+            OrgStock::where('is_single_trade_unit', true)
+                ->whereHas('tradeUnits', fn ($query) => $query->where('trade_units.id', $tradeUnit->id))
+                ->update(['unit_barcode' => $tradeUnit->barcode]);
         }
 
         return $tradeUnit;

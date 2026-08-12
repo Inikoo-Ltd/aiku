@@ -1718,7 +1718,8 @@ test('fill org stock barcode from its single trade unit', function () {
     $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
 
     expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBe('5050000000017')
-        ->and($orgStock->refresh()->barcode)->toBe('5050000000017');
+        ->and($orgStock->refresh()->unit_barcode)->toBe('5050000000017')
+        ->and($orgStock->barcode)->toBeNull();
 });
 
 test('guess a barcode for org stocks holding several copies of one trade unit', function () {
@@ -1750,11 +1751,6 @@ test('do not guess a barcode for org stocks that are not a single trade unit', f
         $otherTradeUnit->id => ['quantity' => 1],
     ]);
     expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull();
-
-    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
-    $orgStock->update(['independent_barcode' => true]);
-    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull()
-        ->and($orgStock->refresh()->barcode)->toBeNull();
 });
 
 test('do not guess a barcode shared by two org stocks of the same organisation', function () {
@@ -1774,6 +1770,23 @@ test('do not guess a barcode shared by two org stocks of the same organisation',
 
     expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->first()))->toBeNull()
         ->and(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->last()))->toBeNull();
+});
+
+test('changing a trade unit barcode refreshes the unit_barcode of its single-trade-unit org stocks', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock->update(['is_single_trade_unit' => true, 'unit_barcode' => 'OLD-EAN']);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['barcode' => '5055796528387']);
+    expect($orgStock->refresh()->unit_barcode)->toBe('5055796528387');
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['barcode' => null]);
+    expect($orgStock->refresh()->unit_barcode)->toBeNull();
 });
 
 test('set org stock barcode by hand marks it independent and enforces uniqueness', function () {
@@ -1797,6 +1810,47 @@ test('set org stock barcode by hand marks it independent and enforces uniqueness
     $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => null]);
     expect($orgStock->barcode)->toBeNull()
         ->and($orgStock->independent_barcode)->toBeFalse();
+});
+
+test('set org stock unit_barcode does not touch independent_barcode', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['unit_barcode' => ' 5050000000062 ']);
+    expect($orgStock->unit_barcode)->toBe('5050000000062')
+        ->and($orgStock->independent_barcode)->toBeFalse()
+        ->and($orgStock->barcode)->toBeNull();
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['unit_barcode' => null]);
+    expect($orgStock->unit_barcode)->toBeNull();
+});
+
+test('scan matches an org stock by its unit_barcode', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['unit_barcode' => '5050000000079']);
+
+    $deliveryNoteItem = new \App\Models\Dispatching\DeliveryNoteItem();
+    $deliveryNoteItem->org_stock_id = $orgStock->id;
+    $deliveryNoteItem->setRelation('orgStock', $orgStock);
+
+    $matcher = new class () {
+        use \App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
+
+        public function match($items, $scanned)
+        {
+            return $this->matchItems($items, $scanned);
+        }
+    };
+
+    $matched = $matcher->match(collect([$deliveryNoteItem]), '5050000000079');
+
+    expect($matched->count())->toBe(1)
+        ->and($matched->first())->toBe($deliveryNoteItem);
 });
 
 /*

@@ -68,7 +68,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
             );
         }
 
-        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'packings'])->get();
+        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'packings', 'shop'])->get();
         $matchedItems      = $this->matchItems($deliveryNoteItems, $scanned);
 
         // The 'pack the rest' button targets the exact item that was just scanned, so a delivery note
@@ -163,16 +163,20 @@ class PackDeliveryNoteItemByScan extends OrgAction
         ?string $tab = null,
         ?Collection $knownItems = null
     ): array {
-        $row = null;
+        $row     = null;
+        $warning = null;
 
         if ($deliveryNoteItem && $status === 'packed') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
+
+            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
         }
 
         return [
             'status'              => $status,
             'message'             => $message,
+            'warning'             => $warning,
             'scanned'             => $scanned,
             'item'                => $deliveryNoteItem ? [
                 'id'               => $deliveryNoteItem->id,
