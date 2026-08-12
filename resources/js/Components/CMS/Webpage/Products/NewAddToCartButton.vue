@@ -195,6 +195,7 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
                 department_id: response.data?.department_id,
                 sub_department_id: response.data?.sub_department_id,
                 family_id: response.data?.family_id,
+                is_golden_product: response.data?.is_golden_product,
             }
         }
 
@@ -305,6 +306,7 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
                         department_id: existingEntry.department_id ?? null,
                         sub_department_id: existingEntry.sub_department_id ?? null,
                         family_id: existingEntry.family_id ?? null,
+                        is_golden_product: existingEntry.is_golden_product ?? false,
                     }
                 }
 

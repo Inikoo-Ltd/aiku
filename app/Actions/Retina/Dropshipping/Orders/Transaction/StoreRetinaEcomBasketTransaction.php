@@ -88,6 +88,7 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
             'department_id'     => $product?->department_id,
             'sub_department_id' => $product?->sub_department_id,
             'family_id'         => $product?->family_id,
+            'is_golden_product' => (bool)$product?->is_golden_product,
         ];
     }
 }

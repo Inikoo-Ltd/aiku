@@ -158,6 +158,7 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
                 department_id: payload.department_id,
                 sub_department_id: payload.sub_department_id,
                 family_id: payload.family_id,
+                is_golden_product: payload.is_golden_product,
             }
         }
         set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
@@ -220,6 +221,7 @@ const onUpdateQuantity = async () => {
                 department_id: payload.department_id,
                 sub_department_id: payload.sub_department_id,
                 family_id: payload.family_id,
+                is_golden_product: payload.is_golden_product,
             }
         }
         set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
