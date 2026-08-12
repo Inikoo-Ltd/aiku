@@ -52,6 +52,53 @@ trait CalculatesOrgStockHistories
         return $orgStock->unit_cost * $orgStock->packed_in;// todo remove this, when removing $orgStock->unit_cost from DB
     }
 
+    public function getWacPerSku(OrgStock $orgStock, Carbon $date): ?float
+    {
+        $wacStartDate = $orgStock->organisation->wac_calculations_start_date;
+        if (!$wacStartDate) {
+            return null;
+        }
+        $wacStartDate = Carbon::parse($wacStartDate);
+        if ($date->copy()->endOfDay()->lt($wacStartDate)) {
+            return null;
+        }
+
+        $onHand = (float)OrgStockMovement::on('aiku_no_sticky')
+            ->where('org_stock_id', $orgStock->id)
+            ->where('date', '<', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
+            ->sum('quantity');
+
+        $wac = $onHand > 0 ? $this->getCostPerSku($orgStock, $wacStartDate) : null;
+
+        $movements = OrgStockMovement::on('aiku_no_sticky')
+            ->select(['type', 'quantity', 'cost_per_sku', 'org_amount'])
+            ->where('org_stock_id', $orgStock->id)
+            ->where('date', '>=', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
+            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
+            ->orderBy('date')
+            ->get();
+
+        foreach ($movements as $movement) {
+            $quantity = (float)$movement->quantity;
+            if ($movement->type == OrgStockMovementTypeEnum::PURCHASE && $quantity > 0) {
+                $cost = $movement->cost_per_sku;
+                if (!$cost && $movement->org_amount > 0) {
+                    $cost = $movement->org_amount / $quantity;
+                }
+                if ($cost > 0) {
+                    if ($wac === null || $onHand <= 0) {
+                        $wac = (float)$cost;
+                    } else {
+                        $wac = ($onHand * $wac + $quantity * $cost) / ($onHand + $quantity);
+                    }
+                }
+            }
+            $onHand += $quantity;
+        }
+
+        return $wac ?? $this->getCostPerSku($orgStock, $date);
+    }
+
     public function getStockQuantity(OrgStock $orgStock, Location $location, ?Carbon $date = null): float
     {
         return GetLocationOrgStockQuantity::run($orgStock, $location, $date);
@@ -137,16 +184,22 @@ trait CalculatesOrgStockHistories
             ->pluck('location_id')->toArray();
     }
 
-    protected function persistOrgStockHistories(OrgStock $orgStock, Carbon $date, array $orgStockLocationData, float $costPerSku, ?Carbon $lastSoldDate, $hydratorDelay = 30): void
+    protected function persistOrgStockHistories(OrgStock $orgStock, Carbon $date, array $orgStockLocationData, float $costPerSku, ?Carbon $lastSoldDate, $hydratorDelay = 30, ?float $wacPerSku = null): void
     {
         $orgStockQuantity = 0;
         $orgStockValue    = 0;
         $grpStockValue    = 0;
+        $orgStockWacValue = $wacPerSku === null ? null : 0;
+        $grpStockWacValue = $wacPerSku === null ? null : 0;
         foreach ($orgStockLocationData as $orgStockLocation) {
             if ($orgStockLocation['quantity'] > 0) {
                 $orgStockQuantity += $orgStockLocation['quantity'];
                 $orgStockValue    += $orgStockLocation['org_stock_value'];
                 $grpStockValue    += $orgStockLocation['grp_stock_value'];
+                if ($wacPerSku !== null) {
+                    $orgStockWacValue += $orgStockLocation['org_stock_wac_value'] ?? 0;
+                    $grpStockWacValue += $orgStockLocation['grp_stock_wac_value'] ?? 0;
+                }
             }
         }
 
@@ -222,9 +275,12 @@ trait CalculatesOrgStockHistories
                 'number_locations'              => count($orgStockLocationData),
                 'org_stock_value'               => $orgStockValue,
                 'grp_stock_value'               => $grpStockValue,
+                'org_stock_wac_value'           => $orgStockWacValue,
+                'grp_stock_wac_value'           => $grpStockWacValue,
                 'org_stock_commercial_value'    => 0,
                 'grp_stock_commercial_value'    => 0,
                 'value_per_sku'                 => $costPerSku,
+                'wac_per_sku'                   => $wacPerSku,
                 'last_sold_date'                => $lastSoldDate,
                 'sold_within_1y'                => $lastSoldDate && $lastSoldDate->gte($date->copy()->subYear()),
                 'non_moving_1y'                 => $nonMovingOneYear,
@@ -243,6 +299,8 @@ trait CalculatesOrgStockHistories
                 'quantity_in_locations'         => $quantity,
                 'org_stock_value'               => $orgStockValue,
                 'grp_stock_value'               => $grpStockValue,
+                'org_stock_wac_value'           => $wacPerSku === null ? null : max(0, $orgStockLocation['org_stock_wac_value'] ?? $quantity * $wacPerSku),
+                'grp_stock_wac_value'           => $wacPerSku === null ? null : max(0, $orgStockLocation['grp_stock_wac_value'] ?? $quantity * $wacPerSku),
             ];
 
             LocationOrgStockHistory::updateOrCreate(

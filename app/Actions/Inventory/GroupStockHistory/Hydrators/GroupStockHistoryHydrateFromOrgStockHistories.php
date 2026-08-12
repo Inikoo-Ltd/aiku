@@ -36,6 +36,7 @@ class GroupStockHistoryHydrateFromOrgStockHistories implements ShouldBeUnique
 
         $stockData = DB::connection('aiku_no_sticky')->table('organisation_stock_histories')
             ->selectRaw('sum(grp_stock_value) as grp_stock_values')
+            ->selectRaw('sum(grp_stock_wac_value) as grp_stock_wac_values')
             ->selectRaw('sum(number_org_stocks) as number_org_stocks')
             ->selectRaw('sum(number_locations) as number_locations')
             ->selectRaw('sum(number_out_of_stock_org_stocks) as number_out_of_stock_org_stocks')
@@ -48,6 +49,7 @@ class GroupStockHistoryHydrateFromOrgStockHistories implements ShouldBeUnique
 
         $groupStockHistory->update([
             'grp_stock_value'                   => $grpStockValue,
+            'grp_stock_wac_value'               => $stockData->grp_stock_wac_values,
             'number_org_stocks'                 => $stockData->number_org_stocks ?? 0,
             'number_locations'                  => $stockData->number_locations ?? 0,
             'number_out_of_stock_org_stocks'    => $stockData->number_out_of_stock_org_stocks ?? 0,

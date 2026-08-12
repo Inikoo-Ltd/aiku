@@ -1461,6 +1461,47 @@ test('store, update, and delete org stock movement', function () {
     expect(OrgStockMovement::find($deleted->id))->toBeNull();
 });
 
+test('wac per sku calculation', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'WAC-WH', 'name' => 'Wac WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'WAC-AR', 'name' => 'Wac Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'WAC-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $calculator = \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::make();
+
+    expect($calculator->getWacPerSku($orgStock, now()))->toBeNull();
+
+    $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+    $orgStock->unsetRelation('organisation');
+
+    $firstPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $firstPurchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(3)]);
+
+    expect((float) $calculator->getWacPerSku($orgStock, now()))->toBe(2.0);
+
+    $picked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -5,
+    ]);
+    $picked->update(['date' => now()->subDays(2)]);
+
+    $secondPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 5,
+    ]);
+    $secondPurchase->update(['cost_per_sku' => 4, 'date' => now()->subDay()]);
+
+    expect((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0)
+        ->and($calculator->getWacPerSku($orgStock, now()->subYears(2)))->toBeNull();
+});
+
 test('sync org stock locations creates, updates and removes links', function () {
     $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
     $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);

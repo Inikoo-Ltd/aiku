@@ -54,6 +54,7 @@ class CalculateOrgStockCurrentStockHistories implements ShouldBeUnique
         $orgStockLocationData  = [];
         $locationsOrgStocksIds = $this->getLocationsOrgStocksIds($orgStock);
         $costPerSku            = $this->getCostPerSku($orgStock, $date);
+        $wacPerSku             = $this->getWacPerSku($orgStock, $date);
         $lastSoldDate          = $this->lastSoldDate($orgStock, $date);
 
 
@@ -62,15 +63,17 @@ class CalculateOrgStockCurrentStockHistories implements ShouldBeUnique
             if ($locationOrgStock) {
                 $quantity               = $locationOrgStock->quantity;
                 $orgStockLocationData[] = [
-                    'location_id'     => $locationOrgStock->location_id,
-                    'quantity'        => $quantity,
-                    'org_stock_value' => $quantity * $costPerSku,
-                    'grp_stock_value' => $quantity * $costPerSku * $exchangeRate,
+                    'location_id'         => $locationOrgStock->location_id,
+                    'quantity'            => $quantity,
+                    'org_stock_value'     => $quantity * $costPerSku,
+                    'grp_stock_value'     => $quantity * $costPerSku * $exchangeRate,
+                    'org_stock_wac_value' => $wacPerSku === null ? null : $quantity * $wacPerSku,
+                    'grp_stock_wac_value' => $wacPerSku === null ? null : $quantity * $wacPerSku * $exchangeRate,
                 ];
             }
         }
 
-        $this->persistOrgStockHistories($orgStock, $date, $orgStockLocationData, $costPerSku, $lastSoldDate, $this->hydrateDelay);
+        $this->persistOrgStockHistories($orgStock, $date, $orgStockLocationData, $costPerSku, $lastSoldDate, $this->hydrateDelay, $wacPerSku);
 
         if ($costPerSku > 0) {
             $orgStock->update(['sku_value' => $costPerSku]);
