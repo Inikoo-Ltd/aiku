@@ -491,23 +491,30 @@ class GetShopMarketingOverview
     }
 
     /**
-     * The sites actually sending people here, richest first. Each referring host is a campaign of the
-     * referral channel, so this is the campaign breakdown narrowed to that one channel: trade
-     * directories, blogs, AI assistants. Before referral existed they were all indistinguishable from
-     * someone typing the address in.
+     * The sites actually sending people here, richest first. Each host is a campaign of the referral
+     * or the organic search channel: trade directories, blogs, AI assistants, search engines. Before
+     * those channels existed they were all indistinguishable from someone typing the address in.
      *
-     * @return array<int, array{host: string, visitors: float, registrations: float, revenue: float}>
+     * @return array<int, array{host: string, kind: string, visitors: float, registrations: float, revenue: float}>
      */
     private function referrers(Shop $shop, ?Carbon $from, ?Carbon $to, int $window, int $limit = 10): array
     {
-        $referral = DB::table('traffic_sources')
+        /* Search engines belong here as much as directories do: knowing DuckDuckGo sends people is
+           what tells you whether it is worth advertising on. They keep their own channel for the
+           totals, but this list is about which individual sites send us anybody. */
+        $kindBySource = DB::table('traffic_sources')
             ->where('shop_id', $shop->id)
-            ->where('type', TrafficSourcesTypeEnum::REFERRAL->value)
-            ->value('id');
+            ->whereIn('type', [
+                TrafficSourcesTypeEnum::REFERRAL->value,
+                TrafficSourcesTypeEnum::ORGANIC_SEARCH->value,
+            ])
+            ->pluck('type', 'id');
 
-        if (!$referral) {
+        if ($kindBySource->isEmpty()) {
             return [];
         }
+
+        $referralSources = $kindBySource->keys();
 
         $registrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $to, $window);
 
@@ -518,7 +525,7 @@ class GetShopMarketingOverview
 
                 $this->constrainToAttributionWindow($join, $window);
             })
-            ->where('p.traffic_source_id', $referral)
+            ->whereIn('p.traffic_source_id', $referralSources)
             ->where('invoices.shop_id', $shop->id)
             ->where('invoices.in_process', false)
             ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
@@ -531,18 +538,21 @@ class GetShopMarketingOverview
            point of this block, and it would be invisible if it had to have earned money first. */
         $touches = DB::table('model_has_traffic_sources')
             ->where('model_type', 'Customer')
-            ->where('traffic_source_id', $referral)
+            ->whereIn('traffic_source_id', $referralSources)
             ->whereNotNull('traffic_source_campaign_id')
             ->groupBy('traffic_source_campaign_id')
             ->select('traffic_source_campaign_id', DB::raw('SUM(share) as touches'))
             ->pluck('touches', 'traffic_source_campaign_id');
 
         return DB::table('traffic_source_campaigns')
-            ->where('traffic_source_id', $referral)
-            ->select('id', 'name')
+            ->whereIn('traffic_source_id', $referralSources)
+            ->select('id', 'name', 'traffic_source_id')
             ->get()
             ->map(fn ($campaign) => [
                 'host'          => $campaign->name,
+                'kind'          => ($kindBySource[$campaign->traffic_source_id] ?? '') === TrafficSourcesTypeEnum::ORGANIC_SEARCH->value
+                    ? 'search'
+                    : 'site',
                 'visitors'      => round((float) ($touches[$campaign->id] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),
