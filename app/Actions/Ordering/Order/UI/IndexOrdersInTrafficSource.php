@@ -72,6 +72,7 @@ class IndexOrdersInTrafficSource extends OrgAction
             'orders.slug',
             'orders.reference',
             'orders.date',
+            'orders.submitted_at',
             'orders.state',
             'orders.net_amount',
             'orders.total_amount',
@@ -102,12 +103,44 @@ class IndexOrdersInTrafficSource extends OrgAction
             ]);
         }
 
+        $this->addLastTouchSelect($query, $parent, $channelType);
+
         return $query->defaultSort('-orders.date')
-            ->allowedSorts(['reference', 'date', 'net_amount', 'customer_name', 'organisation_code', 'shop_code'])
+            ->allowedSorts(['reference', 'date', 'submitted_at', 'last_touch_at', 'net_amount', 'customer_name', 'organisation_code', 'shop_code'])
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    /**
+     * The touch the channel is claiming the order on, so the row says how long the customer took to
+     * buy after being reached rather than only when they bought.
+     *
+     * One branch per attribution window again, coalesced because a shop belongs to exactly one of
+     * them: every branch but its own returns nothing for the row.
+     */
+    protected function addLastTouchSelect($query, TrafficSource|Organisation|Group $parent, ?TrafficSourcesTypeEnum $channelType): void
+    {
+        $selects  = [];
+        $bindings = [];
+
+        foreach ($this->windowGroups($parent) as $group) {
+            $touches = $this->attributions(DB::query(), $parent, $channelType, $group['window'])
+                ->whereIn('orders.shop_id', $group['shop_ids'])
+                ->selectRaw('MAX(p.last_touch_at)');
+
+            $selects[] = '('.$touches->toSql().')';
+            $bindings  = array_merge($bindings, $touches->getBindings());
+        }
+
+        if (!$selects) {
+            $query->selectRaw('NULL as last_touch_at');
+
+            return;
+        }
+
+        $query->selectRaw('COALESCE('.implode(', ', $selects).') as last_touch_at', $bindings);
     }
 
     /**
@@ -198,7 +231,12 @@ class IndexOrdersInTrafficSource extends OrgAction
 
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, type: 'date');
+
+            /* The date is the day the order is booked to; the submission time says how long after the
+               touch the customer actually placed it. */
+            $table->column(key: 'submitted_at', label: __('Submitted'), tooltip: __('When the customer submitted the order'), sortable: true, type: 'date_hm');
             $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'last_touch_at', label: __('Touched'), tooltip: __('The most recent touch from this channel the order is claimed on'), sortable: true, type: 'date_hm');
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, type: 'currency');
 
             /* A customer touched by several channels is only partly this one's, so show the share

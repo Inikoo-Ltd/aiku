@@ -193,7 +193,11 @@ class IndexCustomers extends OrgAction
 
         $query
             ->whereExists($attributions()->select(DB::raw(1)))
-            ->addSelect(['attribution_share' => $attributions()->selectRaw('SUM(model_has_traffic_sources.share)')]);
+            ->addSelect([
+                'attribution_share' => $attributions()->selectRaw('SUM(model_has_traffic_sources.share)'),
+                'first_touch_at'    => $attributions()->selectRaw('MIN(model_has_traffic_sources.first_touch_at)'),
+                'last_touch_at'     => $attributions()->selectRaw('MAX(model_has_traffic_sources.last_touch_at)'),
+            ]);
     }
 
     protected function getStateOptions(Shop $shop): array
@@ -438,7 +442,11 @@ class IndexCustomers extends OrgAction
                         ->where('model_has_traffic_sources.model_type', '=', 'Customer')
                         ->where('model_has_traffic_sources.traffic_source_id', '=', $parent->id);
                 })
-                ->addSelect('model_has_traffic_sources.share as attribution_share');
+                ->addSelect([
+                    'model_has_traffic_sources.share as attribution_share',
+                    'model_has_traffic_sources.first_touch_at',
+                    'model_has_traffic_sources.last_touch_at',
+                ]);
         } elseif (class_basename($parent) == 'Organisation') {
             $queryBuilder
                 ->where('customers.organisation_id', $parent->id)
@@ -450,6 +458,10 @@ class IndexCustomers extends OrgAction
 
         if ($channelType) {
             $this->applyChannelTypeFilter($queryBuilder, $channelType);
+        }
+
+        if ($parent instanceof TrafficSource || $channelType) {
+            $allowedSort = array_merge($allowedSort, ['attribution_share', 'first_touch_at', 'last_touch_at']);
         }
 
         if ($parent instanceof TrafficSource) {
@@ -620,6 +632,11 @@ class IndexCustomers extends OrgAction
                rather than implying the source earned the whole of the sales beside it. */
             if ($parent instanceof TrafficSource || $channelType) {
                 $table->column(key: 'attribution_share', label: __('Attribution'), canBeHidden: true, sortable: true);
+
+                /* The touch dates say when the channel actually brought the customer in, which the
+                   registration date cannot: a customer who signed up years ago can be touched today. */
+                $table->column(key: 'first_touch_at', label: __('First touch'), tooltip: __('When this channel first touched the customer'), canBeHidden: true, sortable: true, type: 'date_hm');
+                $table->column(key: 'last_touch_at', label: __('Last touch'), tooltip: __('The most recent touch from this channel, the one the attribution window is counted from'), canBeHidden: true, sortable: true, type: 'date_hm');
             }
 
             $table->column(
