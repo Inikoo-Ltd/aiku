@@ -928,7 +928,7 @@ test('hydrate suppliers', function () {
 
 test('agents record search', function () {
     ReindexAgentSearch::run();
-    $this->artisan('search:agents')->assertExitCode(0);
+    $this->artisan('reindex_search:agents')->assertExitCode(0);
 });
 
 test('suppliers record search', function () {

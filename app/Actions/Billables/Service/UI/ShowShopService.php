@@ -40,7 +40,7 @@ class ShowShopService extends OrgAction
     public function htmlResponse(Service $service, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Fulfilment/Service',
+            'Org/Billables/Service',
             [
                     'title'       => __('Service') . ' - ' . $service->name,
                     'breadcrumbs' => $this->getBreadcrumbs(
