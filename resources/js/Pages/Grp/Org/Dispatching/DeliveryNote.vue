@@ -489,13 +489,30 @@ const debReloadPage = debounce(() => {
     })
 }, 1200)
 
+/*
+ * The note moving on swaps the header actions as much as it swaps the rows: packing the last item
+ * retires "Set as packed" in favour of "Finalise and Dispatch". Keeping pageHead out of the reload,
+ * as the version above does, would leave the packer looking at a button they have already used with
+ * no way forward until they refresh the page themselves.
+ *
+ * Not debounced, unlike the reloads that fire on every scan: this one only fires on the scan that
+ * empties the list, so there is no burst to absorb and no reason to make the packer wait for the
+ * button that lets them carry on.
+ */
+const reloadPageAndHead = () => {
+    router.reload({
+        except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'ziggy']
+    })
+}
+
 // Only the header actions change when the last item leaves the shelf, so nothing else is asked for
-// and the picker keeps the table rows and scroll position the scans just built up.
-const debReloadPageHead = debounce(() => {
+// and the picker keeps the table rows and scroll position the scans just built up. Fires once, on the
+// scan that empties the list, so it is not debounced either.
+const reloadPageHead = () => {
 	router.reload({
 		only: ['pageHead']
 	})
-}, 1200)
+}
 
 type ScanOutcome = {
 	status: string
@@ -537,8 +554,10 @@ const onItemPackedByScan = (outcome: ScanOutcome) => {
 		tabCounts.value = { ...outcome.counts }
 	}
 
-	if (outcome.delivery_note_state === 'packed') {
-		debReloadPage()
+	// The backend sets the note as packed by itself once the last item is done, but an item written
+	// off as not picked can empty the todo list without triggering that, so both are worth reloading on.
+	if (outcome.delivery_note_state === 'packed' || outcome.counts?.todo === 0) {
+		reloadPageAndHead()
 	}
 }
 
@@ -554,7 +573,7 @@ const onItemPickedByScan = (outcome: ScanOutcome) => {
 	}
 
 	if (outcome.remaining_to_pick === 0) {
-		debReloadPageHead()
+		reloadPageHead()
 	}
 }
 
