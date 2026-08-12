@@ -56,6 +56,8 @@ class IndexOrgStockHistories extends OrgAction
                 'org_stock_histories.grp_stock_value',
                 'org_stock_histories.org_stock_wac_value',
                 'org_stock_histories.grp_stock_wac_value',
+                'org_stock_histories.org_stock_fifo_value',
+                'org_stock_histories.grp_stock_fifo_value',
                 'org_stock_histories.sold_within_1y',
                 'org_stock_histories.last_sold_date',
                 'org_stock_histories.non_moving_1y',
@@ -68,6 +70,7 @@ class IndexOrgStockHistories extends OrgAction
                 AllowedSort::field('org_stock_value', 'org_stock_histories.org_stock_value'),
                 AllowedSort::field('grp_stock_value', 'org_stock_histories.grp_stock_value'),
                 AllowedSort::field('org_stock_wac_value', 'org_stock_histories.org_stock_wac_value'),
+                AllowedSort::field('org_stock_fifo_value', 'org_stock_histories.org_stock_fifo_value'),
                 AllowedSort::field('sold_within_1y', 'org_stock_histories.sold_within_1y'),
                 AllowedSort::field('non_moving_1y', 'org_stock_histories.non_moving_1y'),
             ])
@@ -94,6 +97,7 @@ class IndexOrgStockHistories extends OrgAction
                 ->column(key: 'quantity_in_locations', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
                 ->column(key: 'org_stock_wac_value', label: __('Stock Value (WAC)'), canBeHidden: true, sortable: true, type: 'currency')
+                ->column(key: 'org_stock_fifo_value', label: __('Stock Value (FIFO)'), canBeHidden: true, sortable: true, type: 'currency')
                 ->column(key: 'sold_within_1y', label: '', icon: 'fal fa-cash-register', tooltip: __('Sold Within 1Y'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
                 ->column(key: 'non_moving_1y', label: '', icon: 'fal fa-skull-cow', tooltip: __('Non Moving 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->defaultSort('code');

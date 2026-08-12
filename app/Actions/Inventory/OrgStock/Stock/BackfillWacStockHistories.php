@@ -10,7 +10,6 @@ namespace App\Actions\Inventory\OrgStock\Stock;
 
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
-use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\SysAdmin\Organisation;
@@ -99,12 +98,7 @@ class BackfillWacStockHistories
 
     private function backfillOrgStock(OrgStock $orgStock, Carbon $wacStartDate): void
     {
-        $onHand = (float)OrgStockMovement::on('aiku_no_sticky')
-            ->where('org_stock_id', $orgStock->id)
-            ->where('date', '<', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
-            ->sum('quantity');
-
-        $wac = $onHand > 0 ? $this->getCostPerSku($orgStock, $wacStartDate) : null;
+        $state = $this->initValuationState($orgStock, $wacStartDate);
 
         $movements = OrgStockMovement::on('aiku_no_sticky')
             ->select(['type', 'quantity', 'cost_per_sku', 'org_amount', 'date'])
@@ -125,39 +119,30 @@ class BackfillWacStockHistories
             $endOfDay = Carbon::parse($history->date)->endOfDay();
 
             while ($movementIndex < count($movements) && Carbon::parse($movements[$movementIndex]->date)->lte($endOfDay)) {
-                $movement = $movements[$movementIndex];
-                $quantity = (float)$movement->quantity;
-                if ($movement->type == OrgStockMovementTypeEnum::PURCHASE && $quantity > 0) {
-                    $cost = $movement->cost_per_sku;
-                    if (!$cost && $movement->org_amount > 0) {
-                        $cost = $movement->org_amount / $quantity;
-                    }
-                    if ($cost > 0) {
-                        if ($wac === null || $onHand <= 0) {
-                            $wac = (float)$cost;
-                        } else {
-                            $wac = ($onHand * $wac + $quantity * $cost) / ($onHand + $quantity);
-                        }
-                    }
-                }
-                $onHand += $quantity;
+                $this->applyMovementToValuation($state, $movements[$movementIndex], $orgStock);
                 $movementIndex++;
             }
 
-            $effectiveWac = $wac ?? $this->getCostPerSku($orgStock, Carbon::parse($history->date));
-            $exchangeRate = $this->getExchangeRate($orgStock, $history);
+            $effectiveWac  = $state['wac'] ?? $this->getCostPerSku($orgStock, Carbon::parse($history->date));
+            $effectiveFifo = $this->fifoPerSkuFromLayers($state['layers']) ?? $this->getCostPerSku($orgStock, Carbon::parse($history->date));
+            $exchangeRate  = $this->getExchangeRate($orgStock, $history);
 
             DB::table('org_stock_histories')->where('id', $history->id)->update([
-                'wac_per_sku'         => $effectiveWac,
-                'org_stock_wac_value' => $history->quantity_in_locations * $effectiveWac,
-                'grp_stock_wac_value' => $history->quantity_in_locations * $effectiveWac * $exchangeRate,
+                'wac_per_sku'          => $effectiveWac,
+                'org_stock_wac_value'  => $history->quantity_in_locations * $effectiveWac,
+                'grp_stock_wac_value'  => $history->quantity_in_locations * $effectiveWac * $exchangeRate,
+                'fifo_per_sku'         => $effectiveFifo,
+                'org_stock_fifo_value' => $history->quantity_in_locations * $effectiveFifo,
+                'grp_stock_fifo_value' => $history->quantity_in_locations * $effectiveFifo * $exchangeRate,
             ]);
 
             DB::table('location_org_stock_histories')
                 ->where('org_stock_history_id', $history->id)
                 ->update([
-                    'org_stock_wac_value' => DB::raw("quantity_in_locations * $effectiveWac"),
-                    'grp_stock_wac_value' => DB::raw("quantity_in_locations * $effectiveWac * $exchangeRate"),
+                    'org_stock_wac_value'  => DB::raw("quantity_in_locations * $effectiveWac"),
+                    'grp_stock_wac_value'  => DB::raw("quantity_in_locations * $effectiveWac * $exchangeRate"),
+                    'org_stock_fifo_value' => DB::raw("quantity_in_locations * $effectiveFifo"),
+                    'grp_stock_fifo_value' => DB::raw("quantity_in_locations * $effectiveFifo * $exchangeRate"),
                 ]);
         }
     }

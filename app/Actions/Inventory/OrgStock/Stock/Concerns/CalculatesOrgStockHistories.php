@@ -54,24 +54,32 @@ trait CalculatesOrgStockHistories
 
     public function getWacPerSku(OrgStock $orgStock, Carbon $date): ?float
     {
+        return $this->getValuationPerSku($orgStock, $date)['wac'];
+    }
+
+    public function getFifoPerSku(OrgStock $orgStock, Carbon $date): ?float
+    {
+        return $this->getValuationPerSku($orgStock, $date)['fifo'];
+    }
+
+    /**
+     * @return array{wac: ?float, fifo: ?float}
+     */
+    public function getValuationPerSku(OrgStock $orgStock, Carbon $date): array
+    {
         $wacStartDate = $orgStock->organisation->wac_calculations_start_date;
         if (!$wacStartDate) {
-            return null;
+            return ['wac' => null, 'fifo' => null];
         }
         $wacStartDate = Carbon::parse($wacStartDate);
         if ($date->copy()->endOfDay()->lt($wacStartDate)) {
-            return null;
+            return ['wac' => null, 'fifo' => null];
         }
 
-        $onHand = (float)OrgStockMovement::on('aiku_no_sticky')
-            ->where('org_stock_id', $orgStock->id)
-            ->where('date', '<', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
-            ->sum('quantity');
-
-        $wac = $onHand > 0 ? $this->getCostPerSku($orgStock, $wacStartDate) : null;
+        $state = $this->initValuationState($orgStock, $wacStartDate);
 
         $movements = OrgStockMovement::on('aiku_no_sticky')
-            ->select(['type', 'quantity', 'cost_per_sku', 'org_amount'])
+            ->select(['type', 'quantity', 'cost_per_sku', 'org_amount', 'date'])
             ->where('org_stock_id', $orgStock->id)
             ->where('date', '>=', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
             ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
@@ -79,24 +87,94 @@ trait CalculatesOrgStockHistories
             ->get();
 
         foreach ($movements as $movement) {
-            $quantity = (float)$movement->quantity;
-            if ($movement->type == OrgStockMovementTypeEnum::PURCHASE && $quantity > 0) {
-                $cost = $movement->cost_per_sku;
-                if (!$cost && $movement->org_amount > 0) {
-                    $cost = $movement->org_amount / $quantity;
-                }
-                if ($cost > 0) {
-                    if ($wac === null || $onHand <= 0) {
-                        $wac = (float)$cost;
-                    } else {
-                        $wac = ($onHand * $wac + $quantity * $cost) / ($onHand + $quantity);
-                    }
-                }
-            }
-            $onHand += $quantity;
+            $this->applyMovementToValuation($state, $movement, $orgStock);
         }
 
-        return $wac ?? $this->getCostPerSku($orgStock, $date);
+        $wac  = $state['wac'];
+        $fifo = $this->fifoPerSkuFromLayers($state['layers']);
+        if ($wac === null || $fifo === null) {
+            $lastPurchasePrice = $this->getCostPerSku($orgStock, $date);
+        }
+
+        return [
+            'wac'  => $wac ?? $lastPurchasePrice,
+            'fifo' => $fifo ?? $lastPurchasePrice,
+        ];
+    }
+
+    /**
+     * @return array{onHand: float, wac: ?float, layers: array<int, array{0: float, 1: float}>}
+     */
+    protected function initValuationState(OrgStock $orgStock, Carbon $valuationStartDate): array
+    {
+        $onHand = (float)OrgStockMovement::on('aiku_no_sticky')
+            ->where('org_stock_id', $orgStock->id)
+            ->where('date', '<', $valuationStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
+            ->sum('quantity');
+
+        $openingCost = $onHand > 0 ? $this->getCostPerSku($orgStock, $valuationStartDate) : null;
+
+        return [
+            'onHand' => $onHand,
+            'wac'    => $openingCost,
+            'layers' => $openingCost !== null ? [[$onHand, $openingCost]] : [],
+        ];
+    }
+
+    protected function applyMovementToValuation(array &$state, object $movement, OrgStock $orgStock): void
+    {
+        $quantity = (float)$movement->quantity;
+        if ($movement->type == OrgStockMovementTypeEnum::PURCHASE && $quantity > 0) {
+            $cost = $movement->cost_per_sku;
+            if (!$cost && $movement->org_amount > 0) {
+                $cost = $movement->org_amount / $quantity;
+            }
+            if ($cost > 0) {
+                if ($state['wac'] === null || $state['onHand'] <= 0) {
+                    $state['wac'] = (float)$cost;
+                } else {
+                    $state['wac'] = ($state['onHand'] * $state['wac'] + $quantity * $cost) / ($state['onHand'] + $quantity);
+                }
+                if ($state['onHand'] <= 0) {
+                    $state['layers'] = [];
+                }
+                $state['layers'][] = [$quantity, (float)$cost];
+            }
+        } elseif ($quantity > 0) {
+            $cost = $this->fifoPerSkuFromLayers($state['layers']) ?? $this->getCostPerSku($orgStock, Carbon::parse($movement->date));
+            $state['layers'][] = [$quantity, $cost];
+        } elseif ($quantity < 0) {
+            $this->consumeFifoLayers($state['layers'], -$quantity);
+        }
+        $state['onHand'] += $quantity;
+        if ($state['onHand'] < 0) {
+            $state['layers'] = [];
+        }
+    }
+
+    protected function consumeFifoLayers(array &$layers, float $quantity): void
+    {
+        while ($quantity > 0 && $layers) {
+            if ($layers[0][0] > $quantity) {
+                $layers[0][0] -= $quantity;
+
+                return;
+            }
+            $quantity -= $layers[0][0];
+            array_shift($layers);
+        }
+    }
+
+    protected function fifoPerSkuFromLayers(array $layers): ?float
+    {
+        $totalQuantity = 0;
+        $totalValue    = 0;
+        foreach ($layers as [$layerQuantity, $layerCost]) {
+            $totalQuantity += $layerQuantity;
+            $totalValue    += $layerQuantity * $layerCost;
+        }
+
+        return $totalQuantity > 0 ? $totalValue / $totalQuantity : null;
     }
 
     public function getStockQuantity(OrgStock $orgStock, Location $location, ?Carbon $date = null): float
@@ -184,13 +262,15 @@ trait CalculatesOrgStockHistories
             ->pluck('location_id')->toArray();
     }
 
-    protected function persistOrgStockHistories(OrgStock $orgStock, Carbon $date, array $orgStockLocationData, float $costPerSku, ?Carbon $lastSoldDate, $hydratorDelay = 30, ?float $wacPerSku = null): void
+    protected function persistOrgStockHistories(OrgStock $orgStock, Carbon $date, array $orgStockLocationData, float $costPerSku, ?Carbon $lastSoldDate, $hydratorDelay = 30, ?float $wacPerSku = null, ?float $fifoPerSku = null): void
     {
-        $orgStockQuantity = 0;
-        $orgStockValue    = 0;
-        $grpStockValue    = 0;
-        $orgStockWacValue = $wacPerSku === null ? null : 0;
-        $grpStockWacValue = $wacPerSku === null ? null : 0;
+        $orgStockQuantity  = 0;
+        $orgStockValue     = 0;
+        $grpStockValue     = 0;
+        $orgStockWacValue  = $wacPerSku === null ? null : 0;
+        $grpStockWacValue  = $wacPerSku === null ? null : 0;
+        $orgStockFifoValue = $fifoPerSku === null ? null : 0;
+        $grpStockFifoValue = $fifoPerSku === null ? null : 0;
         foreach ($orgStockLocationData as $orgStockLocation) {
             if ($orgStockLocation['quantity'] > 0) {
                 $orgStockQuantity += $orgStockLocation['quantity'];
@@ -199,6 +279,10 @@ trait CalculatesOrgStockHistories
                 if ($wacPerSku !== null) {
                     $orgStockWacValue += $orgStockLocation['org_stock_wac_value'] ?? 0;
                     $grpStockWacValue += $orgStockLocation['grp_stock_wac_value'] ?? 0;
+                }
+                if ($fifoPerSku !== null) {
+                    $orgStockFifoValue += $orgStockLocation['org_stock_fifo_value'] ?? 0;
+                    $grpStockFifoValue += $orgStockLocation['grp_stock_fifo_value'] ?? 0;
                 }
             }
         }
@@ -277,10 +361,13 @@ trait CalculatesOrgStockHistories
                 'grp_stock_value'               => $grpStockValue,
                 'org_stock_wac_value'           => $orgStockWacValue,
                 'grp_stock_wac_value'           => $grpStockWacValue,
+                'org_stock_fifo_value'          => $orgStockFifoValue,
+                'grp_stock_fifo_value'          => $grpStockFifoValue,
                 'org_stock_commercial_value'    => 0,
                 'grp_stock_commercial_value'    => 0,
                 'value_per_sku'                 => $costPerSku,
                 'wac_per_sku'                   => $wacPerSku,
+                'fifo_per_sku'                  => $fifoPerSku,
                 'last_sold_date'                => $lastSoldDate,
                 'sold_within_1y'                => $lastSoldDate && $lastSoldDate->gte($date->copy()->subYear()),
                 'non_moving_1y'                 => $nonMovingOneYear,
@@ -301,6 +388,8 @@ trait CalculatesOrgStockHistories
                 'grp_stock_value'               => $grpStockValue,
                 'org_stock_wac_value'           => $wacPerSku === null ? null : max(0, $orgStockLocation['org_stock_wac_value'] ?? $quantity * $wacPerSku),
                 'grp_stock_wac_value'           => $wacPerSku === null ? null : max(0, $orgStockLocation['grp_stock_wac_value'] ?? $quantity * $wacPerSku),
+                'org_stock_fifo_value'          => $fifoPerSku === null ? null : max(0, $orgStockLocation['org_stock_fifo_value'] ?? $quantity * $fifoPerSku),
+                'grp_stock_fifo_value'          => $fifoPerSku === null ? null : max(0, $orgStockLocation['grp_stock_fifo_value'] ?? $quantity * $fifoPerSku),
             ];
 
             LocationOrgStockHistory::updateOrCreate(

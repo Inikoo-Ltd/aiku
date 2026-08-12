@@ -24,9 +24,9 @@ class RollUpWacStockHistories
 
         DB::statement('
             UPDATE organisation_stock_histories AS osh
-            SET org_stock_wac_value = agg.org_wac, grp_stock_wac_value = agg.grp_wac
+            SET org_stock_wac_value = agg.org_wac, grp_stock_wac_value = agg.grp_wac, org_stock_fifo_value = agg.org_fifo, grp_stock_fifo_value = agg.grp_fifo
             FROM (
-                SELECT organisation_stock_history_id, sum(org_stock_wac_value) AS org_wac, sum(grp_stock_wac_value) AS grp_wac
+                SELECT organisation_stock_history_id, sum(org_stock_wac_value) AS org_wac, sum(grp_stock_wac_value) AS grp_wac, sum(org_stock_fifo_value) AS org_fifo, sum(grp_stock_fifo_value) AS grp_fifo
                 FROM org_stock_histories
                 WHERE organisation_id = ? AND date >= ?
                 GROUP BY organisation_stock_history_id
@@ -36,9 +36,9 @@ class RollUpWacStockHistories
 
         DB::statement('
             UPDATE group_stock_histories AS gsh
-            SET grp_stock_wac_value = agg.grp_wac
+            SET grp_stock_wac_value = agg.grp_wac, grp_stock_fifo_value = agg.grp_fifo
             FROM (
-                SELECT group_stock_history_id, sum(grp_stock_wac_value) AS grp_wac
+                SELECT group_stock_history_id, sum(grp_stock_wac_value) AS grp_wac, sum(grp_stock_fifo_value) AS grp_fifo
                 FROM organisation_stock_histories
                 WHERE group_id = ? AND date >= ?
                 GROUP BY group_stock_history_id

@@ -1500,6 +1500,20 @@ test('wac per sku calculation', function () {
 
     expect((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0)
         ->and($calculator->getWacPerSku($orgStock, now()->subYears(2)))->toBeNull();
+
+    expect((float) $calculator->getFifoPerSku($orgStock, now()))->toBe(3.0)
+        ->and($calculator->getFifoPerSku($orgStock, now()->subYears(2)))->toBeNull();
+
+    $thirdPicked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -7,
+    ]);
+    $thirdPicked->update(['date' => now()->subHours(2)]);
+
+    expect((float) $calculator->getFifoPerSku($orgStock, now()))->toBe(4.0)
+        ->and((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0);
+
+    expect($calculator->getValuationPerSku($orgStock, now()))->toBe(['wac' => 3.0, 'fifo' => 4.0]);
 });
 
 test('sync org stock locations creates, updates and removes links', function () {

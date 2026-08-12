@@ -31,7 +31,9 @@ class CalculateOrgStockHistoricStockHistories
         $orgStockLocationData = [];
         $locationsIds         = $this->getLocationsIds($orgStock, $date);
         $costPerSku           = $this->getCostPerSku($orgStock, $date);
-        $wacPerSku            = $this->getWacPerSku($orgStock, $date);
+        $valuation            = $this->getValuationPerSku($orgStock, $date);
+        $wacPerSku            = $valuation['wac'];
+        $fifoPerSku           = $valuation['fifo'];
 
         $lastSoldDate = $this->lastSoldDate($orgStock, $date);
 
@@ -55,13 +57,15 @@ class CalculateOrgStockHistoricStockHistories
                         'grp_stock_value'     => $quantity * $costPerSku * $exchangeRate,
                         'org_stock_wac_value' => $wacPerSku === null ? null : $quantity * $wacPerSku,
                         'grp_stock_wac_value' => $wacPerSku === null ? null : $quantity * $wacPerSku * $exchangeRate,
+                        'org_stock_fifo_value' => $fifoPerSku === null ? null : $quantity * $fifoPerSku,
+                        'grp_stock_fifo_value' => $fifoPerSku === null ? null : $quantity * $fifoPerSku * $exchangeRate,
 
                     ];
                 }
             }
         }
 
-        $this->persistOrgStockHistories($orgStock, $date, $orgStockLocationData, $costPerSku, $lastSoldDate, 30, $wacPerSku);
+        $this->persistOrgStockHistories($orgStock, $date, $orgStockLocationData, $costPerSku, $lastSoldDate, 30, $wacPerSku, $fifoPerSku);
 
         return $orgStockLocationData;
     }

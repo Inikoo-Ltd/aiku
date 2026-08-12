@@ -39,6 +39,8 @@ class OrgStockHistoryResource extends JsonResource
             'grp_stock_value'       => $this->grp_stock_value,
             'org_stock_wac_value'   => $this->org_stock_wac_value,
             'grp_stock_wac_value'   => $this->grp_stock_wac_value,
+            'org_stock_fifo_value'  => $this->org_stock_fifo_value,
+            'grp_stock_fifo_value'  => $this->grp_stock_fifo_value,
             'currency_code'         => $this->currency_code,
             'sold_within_1y'        => [
                 'icon'    => $this->sold_within_1y ? 'fal fa-cash-register' : 'fal fa-ban',
