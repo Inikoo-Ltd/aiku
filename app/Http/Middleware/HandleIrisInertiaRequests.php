@@ -60,8 +60,6 @@ class HandleIrisInertiaRequests extends Middleware
                 },
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,
-                'show_contact_options_panel' => $website->settings['view_contact_options_panel'] ?? false,
-                'contact_options_panel'      => $website->settings['data_contact_options_panel'] ?? [],
                 'iris'     => $this->getIrisData($website),
                 'retina'        => [
                     'type'         => $request->input('shop_type'),
@@ -89,6 +87,8 @@ class HandleIrisInertiaRequests extends Middleware
                 'modal'        => fn () => $request->session()->get('modal')
             ],
             'announcements' => $website ? $this->getAnnouncements($website) : [],
+            'show_contact_options_panel' => Arr::get($website?->settings ?? [], 'view_contact_options_panel', false),
+            'contact_options_panel'      => Arr::get($website?->settings ?? [], 'data_contact_options_panel', []),
         ];
 
         if (!array_key_exists('ziggy', $firstLoadOnlyProps)) {

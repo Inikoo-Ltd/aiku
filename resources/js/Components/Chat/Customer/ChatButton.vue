@@ -174,6 +174,7 @@ const hasContactOptionsPanel = computed(
 )
 
 const activeView = ref<"show_contact_options_panel" | "chat">("chat")
+const hasOpenedLiveChat = ref(false)
 
 const showContactOptions = computed(
     () => hasContactOptionsPanel.value && activeView.value === "show_contact_options_panel"
@@ -553,7 +554,13 @@ const selectContactOption = async (option: ContactOption) => {
     }
 
     activeView.value = "chat"
+    hasOpenedLiveChat.value = true
     await startChat()
+}
+
+const backToContactOptions = () => {
+    activeView.value = "show_contact_options_panel"
+    hasOpenedLiveChat.value = false
 }
 
 const toggle = async () => {
@@ -562,11 +569,12 @@ const toggle = async () => {
         unreadMessageIds.clear()
         unreadCount.value = 0
 
-        if (hasContactOptionsPanel.value) {
+        if (hasContactOptionsPanel.value && !hasOpenedLiveChat.value) {
             activeView.value = "show_contact_options_panel"
             return
         }
 
+        activeView.value = "chat"
         await startChat()
     }
 }
@@ -678,6 +686,7 @@ const handleChatFromUrl = async () => {
     if (!open.value) {
         open.value = true
         activeView.value = "chat"
+        hasOpenedLiveChat.value = true
         await startChat()
     }
 }
@@ -839,7 +848,7 @@ if (isClient) {
                 <div class="flex items-center px-4 border-b bg-white" :class="isMobile
                     ? 'pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3'
                     : 'py-3'">
-                    <button v-if="hasContactOptionsPanel" @click="activeView = 'show_contact_options_panel'"
+                    <button v-if="hasContactOptionsPanel" @click="backToContactOptions"
                         :aria-label="trans('Back')"
                         class="-ml-2 mr-1 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
                         <FontAwesomeIcon :icon="faChevronLeft" class="w-3.5 h-3.5" />
