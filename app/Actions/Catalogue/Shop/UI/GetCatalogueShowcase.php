@@ -2,6 +2,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use Illuminate\Support\Facades\DB;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -33,6 +34,7 @@ class GetCatalogueShowcase
                     $this->buildSubDepartmentsStat($shop, $orgSlug, $shopSlug),
                     $this->buildFamiliesStat($shop, $orgSlug, $shopSlug),
                     $this->buildCollectionsStat($shop, $orgSlug, $shopSlug),
+                    $this->buildExclusiveProductsStat($shop, $orgSlug, $shopSlug),
                 ],
                 $stats,
             );
@@ -70,6 +72,44 @@ class GetCatalogueShowcase
                 ],
             ],
             'stats' => $stats,
+        ];
+    }
+
+    /**
+     * Products sold to named customers only. They are kept out of the catalogue product index and
+     * off the public site, so this is the way in to them.
+     */
+    private function buildExclusiveProductsStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        $numberExclusiveProducts = DB::table('products')
+            ->where('products.shop_id', $shop->id)
+            ->whereNull('products.deleted_at')
+            ->where('products.is_main', true)
+            ->whereExists(fn ($query) => $query->from('product_has_exclusive_customers')
+                ->whereColumn('product_has_exclusive_customers.product_id', 'products.id'))
+            ->count();
+
+        $numberCustomers = DB::table('customers')
+            ->where('shop_id', $shop->id)
+            ->where('number_exclusive_products', '>', 0)
+            ->count();
+
+        return [
+            'label' => __('Exclusive Products'),
+            'route' => [
+                'name'       => 'grp.org.shops.show.catalogue.exclusive_products.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'  => 'fal fa-gem',
+            'color' => '#a78bfa',
+            'value' => $numberExclusiveProducts,
+            'metas' => [
+                [
+                    'icon'    => ['icon' => 'fal fa-users', 'class' => ''],
+                    'count'   => $numberCustomers,
+                    'tooltip' => __('customers'),
+                ],
+            ],
         ];
     }
 
