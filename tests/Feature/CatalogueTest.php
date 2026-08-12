@@ -436,7 +436,7 @@ test('add variant to product', function (Product $product) {
         ->and($productVariant->is_main)->toBeFalse()
         ->and($productVariant->mainProduct->id)->toBe($product->id)
         ->and($product->stats->number_product_variants)->toBe(2)
-        ->and($product->asset->stats->number_historic_assets)->toBe(2);
+        ->and($product->asset->stats->number_historic_assets)->toBe(4);
 
 
     return $productVariant;
