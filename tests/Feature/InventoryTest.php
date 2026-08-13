@@ -2286,4 +2286,13 @@ describe('aurora provisional cost fix', function () {
             ->and((float) $movement->cost_per_sku)->toBe(13.488)
             ->and($movement->cost_status)->toBeNull();
     });
+
+    test('aurora amount repair decision', function () {
+        $shouldRepair = fn ($movement, $aurora) => \App\Actions\Maintenance\Inventory\OrgStockMovement\RepairOrgStockMovementAmountFromAurora::shouldRepair((object) $movement, $aurora ? (object) $aurora : null);
+
+        expect($shouldRepair(['quantity' => 1600, 'org_amount' => 11200368], ['quantity' => 1600, 'amount' => 425.60]))->toBeTrue()
+            ->and($shouldRepair(['quantity' => 100, 'org_amount' => 500], ['quantity' => 100, 'amount' => 500]))->toBeFalse()
+            ->and($shouldRepair(['quantity' => 100, 'org_amount' => 790500], ['quantity' => 120, 'amount' => 500]))->toBeFalse()
+            ->and($shouldRepair(['quantity' => 100, 'org_amount' => 790500], null))->toBeFalse();
+    });
 });
