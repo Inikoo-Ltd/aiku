@@ -9,6 +9,7 @@ use App\Enums\Task\TaskStatusEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
@@ -38,10 +39,17 @@ return new class () extends Migration {
             $table->timestampsTz();
             $table->softDeletesTz();
         });
+
+        DB::statement("
+            CREATE UNIQUE INDEX sub_tasks_open_model_unique
+            ON sub_tasks (task_id, model_type, model_id)
+            WHERE status = '".TaskStatusEnum::PENDING->value."' AND deleted_at IS NULL
+        ");
     }
 
     public function down(): void
     {
+        DB::statement('DROP INDEX IF EXISTS sub_tasks_open_model_unique');
         Schema::dropIfExists('sub_tasks');
     }
 };

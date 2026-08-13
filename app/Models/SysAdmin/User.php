@@ -376,9 +376,11 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         return $this->morphedByMany(Production::class, 'model', 'user_has_authorised_models')->withTimestamps();
     }
 
-    public function tasks(): MorphToMany
+    public function tasks(): BelongsToMany
     {
-        return $this->morphToMany(Task::class, 'taskable', 'users_has_tasks');
+        return $this->belongsToMany(Task::class, 'users_has_tasks', 'user_id', 'task_id')
+            ->withPivot(['taskable_type', 'employee_id', 'start_date', 'complete_date'])
+            ->withTimestamps();
     }
 
     public function pseudoJobPositions(): BelongsToMany

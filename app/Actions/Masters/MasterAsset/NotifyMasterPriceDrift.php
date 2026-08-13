@@ -21,6 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class NotifyMasterPriceDrift
 {
     use AsAction;
+    public string $jobQueue = 'long-running';
 
     /**
      * Run after MasterAssetHydrateMasterPricesRRPtoChild, so the products that follow the

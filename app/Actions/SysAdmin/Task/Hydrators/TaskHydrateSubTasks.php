@@ -7,6 +7,7 @@
 
 namespace App\Actions\SysAdmin\Task\Hydrators;
 
+use App\Enums\Task\TaskStatusEnum;
 use App\Models\SysAdmin\Task;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,7 +26,7 @@ class TaskHydrateSubTasks implements ShouldBeUnique
     public function handle(Task $task): void
     {
         $task->updateQuietly([
-            'number_subtasks' => $task->subTasks()->count(),
+            'number_subtasks' => $task->subTasks()->where('status', TaskStatusEnum::PENDING->value)->count(),
         ]);
     }
 }
