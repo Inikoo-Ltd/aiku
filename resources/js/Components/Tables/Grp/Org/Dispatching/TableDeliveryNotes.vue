@@ -33,6 +33,7 @@ const props = defineProps<{
 }>()
 
 
+
 const routeParams = route().routeParams
 const routeCurrent = route().current()
 
@@ -277,7 +278,7 @@ const dateColumnOptions = computed(() => [
 				<div
 					role="group"
 					:aria-label="ctrans('Date shown in the date column')"
-					class="inline-flex items-center gap-0.5 rounded-md border border-gray-300 bg-gray-100 p-0.5">
+					class="dateColumnToggle">
 					<button
 						v-for="option in dateColumnOptions"
 						:key="String(option.value)"
@@ -285,10 +286,7 @@ const dateColumnOptions = computed(() => [
 						v-tooltip="option.tooltip"
 						:aria-pressed="showSubmittedDate === option.value"
 						@click="showSubmittedDate = option.value"
-						:class="showSubmittedDate === option.value
-							? 'bg-white text-gray-900 shadow-sm'
-							: 'text-gray-500 hover:text-gray-700'"
-						class="flex items-center gap-x-1 rounded px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
+						:class="{ active: showSubmittedDate === option.value }">
 						<FontAwesomeIcon
 							:icon="option.icon"
 							class="text-[0.65rem]"
@@ -579,3 +577,30 @@ const dateColumnOptions = computed(() => [
 		</div>
 	</Modal>
 </template>
+
+<style scoped>
+.dateColumnToggle {
+	@apply inline-flex items-center gap-0.5 rounded-md border p-0.5;
+	border-color: color-mix(in srgb, var(--theme-color-4, #4f46e5) 35%, transparent);
+	background-color: color-mix(in srgb, var(--theme-color-4, #4f46e5) 8%, transparent);
+}
+
+.dateColumnToggle button {
+	@apply flex items-center gap-x-1 rounded px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-colors duration-150 focus:outline-none;
+	color: color-mix(in srgb, var(--theme-color-4, #4f46e5) 70%, black);
+}
+
+.dateColumnToggle button:hover:not(.active) {
+	background-color: color-mix(in srgb, var(--theme-color-4, #4f46e5) 16%, transparent);
+}
+
+.dateColumnToggle button:focus-visible {
+	box-shadow: 0 0 0 2px var(--theme-color-4, #4f46e5);
+}
+
+.dateColumnToggle button.active {
+	@apply shadow-sm;
+	background-color: var(--theme-color-4, #4f46e5);
+	color: var(--theme-color-5, #f3f4f6);
+}
+</style>
