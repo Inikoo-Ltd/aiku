@@ -62,6 +62,7 @@ import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
 import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
+import PricingZoneMultiShipper from '@/Components/Forms/Fields/PricingZoneMultiShipper.vue'
 import TerritoryZone from '@/Components/Forms/Fields/TerritoryZone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 import PreferredShippingModal from '@/Components/Forms/Fields/PreferredShippingModal.vue'
@@ -166,6 +167,7 @@ export const componentsList: { [key: string]: Component } = {
     'ingredients': IngredientsField,
     'textEditor_translation': TextEditorTranslation,
     'pricing_zone': Pricing_zone,
+    'pricing_zone_multi_shipper': PricingZoneMultiShipper,
     'territory_zone': TerritoryZone,
     'crop-image-full': cropImageFull,
     'list-selector': ListSelectorFrom,

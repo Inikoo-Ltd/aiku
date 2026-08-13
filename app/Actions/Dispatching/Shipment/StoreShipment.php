@@ -41,6 +41,15 @@ class StoreShipment extends OrgAction
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
     {
+        if ($parent instanceof DeliveryNote) {
+            $order = $parent->orders->first();
+            if ($order?->is_shipper_locked && $order->shipper_id && $order->shipper_id != $shipper->id) {
+                throw ValidationException::withMessages([
+                    'shipper' => __('The customer chose a shipper for this order. Contact customer services to change it.')
+                ]);
+            }
+        }
+
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);

@@ -15,6 +15,7 @@ use App\Enums\UI\Catalogue\ShippingZoneSchemaTabsEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -98,6 +99,19 @@ class EditShippingZone extends OrgAction
                                     'label' => __('Price'),
                                     'value' => $shippingZone->price,
                                     'currency' =>  $shippingZone->shop->currency
+                                ],
+                                'shippers_price' => [
+                                    'full'     => true,
+                                    'type'     => 'pricing_zone_multi_shipper',
+                                    'label'    => __('Per shipper pricing'),
+                                    'value'    => $shippingZone->shippers_price ?? [],
+                                    'currency' => $shippingZone->shop->currency,
+                                    'options'  => [
+                                        'shippers' => Shipper::where('organisation_id', $shippingZone->organisation_id)
+                                            ->where('status', true)
+                                            ->orderBy('name')
+                                            ->get(['id', 'name', 'code']),
+                                    ],
                                 ],
                             ],
                         ]

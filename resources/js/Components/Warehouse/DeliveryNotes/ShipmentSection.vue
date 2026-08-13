@@ -53,7 +53,10 @@ const props = withDefaults(defineProps<{
 		fetch_route: routeType
 		delete_route: routeType
 	}
-	preferred_shipper_id?: number | null
+	shipper_directive?: {
+		locked_shipper_id: number | null
+		preferred_shipper_id: number | null
+	} | null
 	address: {
 		delivery: Address
 		options: AddressOptions
@@ -386,9 +389,15 @@ function handleShipmentClick(shipment: number) {
 
 const selectedShipment = ref("create_label")
 
+const lockedShipper = computed(() => {
+	if (!props.shipper_directive?.locked_shipper_id) return null
+	return optionShippingList.value.find((shipment) => shipment.id === props.shipper_directive.locked_shipper_id) || null
+})
+
 const preferredShipper = computed(() => {
-	if (!props.preferred_shipper_id) return null
-	return optionShippingList.value.find((shipment) => shipment.id === props.preferred_shipper_id) || null
+	if (lockedShipper.value) return lockedShipper.value
+	if (!props.shipper_directive?.preferred_shipper_id) return null
+	return optionShippingList.value.find((shipment) => shipment.id === props.shipper_directive.preferred_shipper_id) || null
 })
 
 // Section: Shipment Error
@@ -658,6 +667,10 @@ const onClickButtonShipmentPlatform = () => {
 					<label for="preferred_shipping" class="ml-1 cursor-pointer">{{ trans("Preferred shipping") }}:</label>
 				</div>
 
+				<div v-if="lockedShipper" class="text-xs px-1 my-2 italic text-gray-500">
+					{{ trans("Shipper chosen by customer — contact customer services to change") }}
+				</div>
+
 				<div v-if="preferredShipper && selectedShipment === 'preferred_shipping'" class="ml-6 mb-2">
 					<div
 						@click="
@@ -734,7 +747,7 @@ const onClickButtonShipmentPlatform = () => {
 				</div>
 
 				<!-- Section: Create label -->
-				<div v-if="optionsCreateLabel.length" class="w-full mt-3">
+				<div v-if="!lockedShipper && optionsCreateLabel.length" class="w-full mt-3">
 					<div class="text-xs px-1 my-2">
 						<RadioButton
 							v-model="selectedShipment"
@@ -817,7 +830,7 @@ const onClickButtonShipmentPlatform = () => {
 				</div>
 
 				<!-- Section: Other options -->
-				<div class="text-xs px-1 my-2">
+				<div v-if="!lockedShipper" class="text-xs px-1 my-2">
 					<RadioButton
 						v-model="selectedShipment"
 						inputId="other_options"
@@ -829,7 +842,7 @@ const onClickButtonShipmentPlatform = () => {
 					>
 				</div>
 
-				<div v-if="selectedShipment === 'other_options'" class="ml-6">
+				<div v-if="!lockedShipper && selectedShipment === 'other_options'" class="ml-6">
 					<!-- Section: Select shipping -->
 					<div class="">
 						<PureMultiselectInfiniteScroll

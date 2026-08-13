@@ -68,6 +68,11 @@ class UpdateOrder extends OrgAction
             CalculateOrderTotalAmounts::run($order, true, true, true);
         }
 
+        if (Arr::has($changes, 'shipper_id')) {
+            CalculateOrderShipping::run($order);
+            CalculateOrderTotalAmounts::run(order: $order, calculateShipping: false, calculateDiscounts: false);
+        }
+
         if (Arr::has($modelData, 'is_re') && Arr::has($changes, 'is_re')) {
             ResetOrderTaxCategory::run($order);
         }
@@ -204,6 +209,8 @@ class UpdateOrder extends OrgAction
             'tax_category_id'         => ['sometimes', Rule::exists('tax_categories', 'id')],
             'shipping_zone_schema_id' => ['sometimes', 'nullable'],
             'shipping_zone_id'        => ['sometimes', 'nullable'],
+            'shipper_id'              => ['sometimes', 'nullable', 'integer', Rule::exists('shippers', 'id')->where('organisation_id', $this->organisation->id)],
+            'is_shipper_locked'       => ['sometimes', 'boolean'],
             'is_shipping_by_external' => ['sometimes', 'boolean'],
             'is_re'                   => [
                 'sometimes',

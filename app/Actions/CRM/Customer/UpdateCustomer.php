@@ -340,7 +340,6 @@ class UpdateCustomer extends OrgAction
             'delivery_address_id'                                   => ['sometimes', 'integer'],
             'timezone_id'                                           => ['sometimes', 'nullable', 'exists:timezones,id'],
             'language_id'                                           => ['sometimes', 'nullable', 'exists:languages,id'],
-            'shipper_id'                                            => ['sometimes', 'nullable', 'integer'],
             'balance'                                               => ['sometimes', 'nullable'],
             'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],

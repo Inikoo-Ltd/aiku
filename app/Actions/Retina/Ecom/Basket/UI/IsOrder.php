@@ -8,6 +8,8 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
+use App\Actions\Ordering\Order\GetOrderShippingOptions;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\GetVoucherData;
@@ -31,6 +33,7 @@ use Illuminate\Support\Facades\DB;
 trait IsOrder
 {
     use WithLineTaxCategories;
+    use WithPreferredShipperResolver;
 
     use GetPlatformLogo;
 
@@ -165,6 +168,7 @@ trait IsOrder
                             'shipper_id'   => null
                         ]
                     ],
+                    'shipper_directive'            => $this->getShipperDirective($deliveryNote),
                     'shipments'                    => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
                     'shipments_routes'             => [
                         'submit_route' => [
@@ -272,7 +276,13 @@ trait IsOrder
                         'slug' => $order->shippingZone->slug,
                         'code' => $order->shippingZone->code,
                         'name' => $order->shippingZone->name,
-                    ] : null
+                    ] : null,
+                    'shipper'             => $order->shipper_id ? [
+                        'id'   => $order->shipper_id,
+                        'name' => $order->shipper->name,
+                    ] : null,
+                    'is_shipper_locked'   => (bool) $order->is_shipper_locked,
+                    'shipping_options'    => GetOrderShippingOptions::run($order),
                 ]
             ]
         ];

@@ -767,7 +767,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                 :shipping_fields_update_route="boxStats.shipping_fields_update_route"
                                 :shipments="boxStats.shipments"
                                 :shipments_routes="boxStats.shipments_routes"
-                                :preferred_shipper_id="boxStats.preferred_shipper_id"
+                                :shipper_directive="boxStats.shipper_directive"
                                 :address="boxStats.address"
                                 :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
                                 :currencyCode="boxStats?.currency_code"

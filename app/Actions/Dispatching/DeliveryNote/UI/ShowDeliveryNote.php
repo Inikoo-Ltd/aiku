@@ -827,12 +827,7 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
-            'preferred_shipper_id'         => $this->findShipperIdForAddress(
-                $deliveryNote->shop_id,
-                $deliveryNote->deliveryAddress?->country_id ?? $deliveryNote->delivery_country_id,
-                $deliveryNote->deliveryAddress?->postal_code,
-                $deliveryNote->customer_id
-            ),
+            'shipper_directive'            => $this->getShipperDirective($deliveryNote),
             'shop_type'                    => $deliveryNote->shop->type,
             'shipping_fields'              => [
                 'company_name' => $deliveryNote->company_name,

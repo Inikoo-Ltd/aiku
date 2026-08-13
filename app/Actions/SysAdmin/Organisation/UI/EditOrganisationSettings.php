@@ -266,7 +266,7 @@ class EditOrganisationSettings extends OrgAction
                             'fields' => $pickingFields,
                         ],
                         [
-                            'label' => __('Preferred Shipping '),
+                            'label' => __('Preferred Shipping'),
                             'icon' => 'fa-light fa-truck',
                             'fields' => [
                                 'preferred_shipping' => [

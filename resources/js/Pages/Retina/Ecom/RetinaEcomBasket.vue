@@ -156,6 +156,15 @@ const props = defineProps<{
         discount: string
     } | null
     is_basket_created: boolean
+    shipping_options: {
+        shipper_id: number
+        name: string
+        code: string
+        amount: string | number
+        is_tbc: boolean
+        is_selected: boolean
+    }[] | null
+    select_shipper_route: routeType
     upload_spreadsheet?: {
         title: { label: string, information: string }
         progressDescription: string
@@ -182,6 +191,33 @@ onBeforeUnmount(() => {
         window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
     }
 })
+
+const isLoadingSelectShipper = ref(false)
+const onSelectShipper = (shipperId: number) => {
+    if (!props.select_shipper_route?.name) {
+        return
+    }
+    router.patch(
+        route(props.select_shipper_route.name, props.select_shipper_route.parameters),
+        { shipper_id: shipperId },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                isLoadingSelectShipper.value = true
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to change shipping method"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSelectShipper.value = false
+            },
+        }
+    )
+}
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
 
@@ -676,6 +712,32 @@ const onChangeInsurance = async (val: boolean) => {
         <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
         <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
         <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+    </div>
+
+    <div v-if="shipping_options" class="mx-4 mt-4 mb-2 border border-gray-200 rounded-md p-3">
+        <div class="font-medium mb-2">{{ trans('Shipping method') }}</div>
+        <div class="space-y-1">
+            <label
+                v-for="option in shipping_options"
+                :key="option.shipper_id"
+                class="flex items-center justify-between gap-2 px-2 py-1.5 rounded border cursor-pointer"
+                :class="option.is_selected ? 'bg-indigo-50 border-indigo-300' : 'border-gray-200 hover:bg-gray-50'"
+                :aria-disabled="isLoadingSelectShipper">
+                <span class="flex items-center gap-2">
+                    <input
+                        type="radio"
+                        name="shipping_option"
+                        :checked="option.is_selected"
+                        :disabled="isLoadingSelectShipper"
+                        @change="() => onSelectShipper(option.shipper_id)"
+                    />
+                    <span>{{ option.name }}</span>
+                </span>
+                <span class="text-gray-500">
+                    {{ option.is_tbc ? trans('To be confirmed') : locale.currencyFormat(order?.currency_code, option.amount) }}
+                </span>
+            </label>
+        </div>
     </div>
 
     <EcomCheckoutSummary

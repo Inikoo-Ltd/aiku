@@ -38,11 +38,7 @@ class ShippersResource extends JsonResource
             'tracking_url' => $this->tracking_url,
             'api_shipper'  => $this->api_shipper,
             'label'        => $this->label,
-            'type'         => $this->api_shipper ? 'Api' : __('Manual'),
-            'preferred_shippings' => $this->whenLoaded('preferredShippings', fn () => $this->preferredShippings->map(fn ($preferredShipping) => [
-                'country_id' => $preferredShipping->country_id,
-                'postcode'   => $preferredShipping->postcode,
-            ])),
+            'type'         => $this->api_shipper ? 'Api' : __('Manual')
         ];
     }
 }

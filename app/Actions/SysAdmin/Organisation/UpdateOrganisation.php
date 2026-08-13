@@ -20,6 +20,7 @@ use App\Rules\ValidAddress;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
@@ -152,22 +153,27 @@ class UpdateOrganisation extends OrgAction
         if (Arr::has($modelData, 'preferred_shipping')) {
             $preferredShippingRows = Arr::pull($modelData, 'preferred_shipping');
 
+            if (collect($preferredShippingRows)->where('important', true)->count() > 1) {
+                throw ValidationException::withMessages(['preferred_shipping' => __('Only one rule can be marked as important')]);
+            }
+
             $keptIds = [];
             foreach ($preferredShippingRows as $row) {
                 $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode', 'important']);
 
-                if (Arr::get($row, 'id')) {
-                    $organisation->preferredShippings()->whereKey($row['id'])->update($rowData);
-                    $keptIds[] = $row['id'];
+                $preferredShipping = Arr::get($row, 'id') ? $organisation->preferredShippings()->find($row['id']) : null;
+                if ($preferredShipping) {
+                    $preferredShipping->update($rowData);
                 } else {
                     data_set($rowData, 'group_id', $organisation->group_id);
-
                     $preferredShipping = $organisation->preferredShippings()->create($rowData);
-                    $keptIds[]         = $preferredShipping->id;
                 }
+                $keptIds[] = $preferredShipping->id;
             }
 
-            $organisation->preferredShippings()->whereNotIn('id', $keptIds)->delete();
+            foreach ($organisation->preferredShippings()->whereNotIn('id', $keptIds)->get() as $obsoleteRule) {
+                $obsoleteRule->delete();
+            }
         }
 
 
