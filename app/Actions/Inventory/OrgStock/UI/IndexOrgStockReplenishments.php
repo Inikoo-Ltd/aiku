@@ -12,6 +12,7 @@ use App\Actions\Inventory\OrgStock\WithOrgStockReplenishments;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Http\Resources\Inventory\OrgStockReplenishmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
@@ -20,11 +21,13 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexOrgStockReplenishments extends OrgAction
 {
@@ -66,15 +69,35 @@ class IndexOrgStockReplenishments extends OrgAction
 
         $this->applyReplenishmentsConstraints($queryBuilder, $organisation, $this->scope);
 
+        $queryBuilder->leftJoin('locations as active_location_location', 'active_location_location.id', '=', 'active_location.location_id');
+
         return $queryBuilder
             ->defaultSort('org_stocks.code')
             ->select('org_stocks.*')
             ->addSelect([
                 'active_location.location_id as active_location_id',
                 'active_location.quantity as stock',
+                'active_location_location.code as active_location_code',
             ])
+            ->selectSub(
+                DB::table('delivery_note_items')
+                    ->selectRaw('coalesce(sum(quantity_required - coalesce(quantity_picked, 0)), 0)')
+                    ->whereColumn('delivery_note_items.org_stock_id', 'org_stocks.id')
+                    ->whereIn('delivery_note_items.state', [
+                        DeliveryNoteItemStateEnum::UNASSIGNED,
+                        DeliveryNoteItemStateEnum::QUEUED,
+                        DeliveryNoteItemStateEnum::HANDLING,
+                        DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
+                    ]),
+                'pending_picking'
+            )
             ->with(['locationOrgStocks' => fn ($query) => $query->with('location')])
-            ->allowedSorts(['code', 'stock'])
+            ->allowedSorts([
+                'code',
+                'stock',
+                AllowedSort::field('location', 'active_location_location.code'),
+                AllowedSort::field('pending_picking', 'pending_picking'),
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -96,8 +119,9 @@ class IndexOrgStockReplenishments extends OrgAction
                 ->defaultSort('code')
                 ->column(key: 'code', label: __('Part'), sortable: true, searchable: true)
                 ->column(key: 'other_locations', label: __('Other locations stock'))
-                ->column(key: 'location', label: __('Picking location'))
+                ->column(key: 'location', label: __('Picking location'), sortable: true)
                 ->column(key: 'stock', label: __('Stock'), sortable: true, align: 'right')
+                ->column(key: 'pending_picking', label: __('Picking'), sortable: true, align: 'right')
                 ->column(key: 'recommended', label: __('Recommended SKOs quantity'));
         };
     }

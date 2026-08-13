@@ -16,6 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $code
  * @property mixed $active_location_id
  * @property mixed $stock
+ * @property mixed $pending_picking
  * @property \Illuminate\Database\Eloquent\Collection $locationOrgStocks
  */
 class OrgStockReplenishmentsResource extends JsonResource
@@ -41,6 +42,7 @@ class OrgStockReplenishmentsResource extends JsonResource
             'slug'            => $this->slug,
             'code'            => $this->code,
             'stock'           => trimDecimalZeros($this->stock),
+            'pending_picking' => trimDecimalZeros($this->pending_picking),
             'location'        => $activeLocationStock?->location ? [
                 'code'   => $activeLocationStock->location->code,
                 'slug'   => $activeLocationStock->location->slug,
