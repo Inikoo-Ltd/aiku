@@ -35,8 +35,6 @@ interface Replenishment {
     slug: string
     code: string
     stock: number
-    ordered: number
-    eventual_stock: number
     location: { code: string; slug: string; status: string } | null
     other_locations: OtherLocation[]
     recommended: { min: number | null; max: number | null }
@@ -110,14 +108,6 @@ function recommendedLabel(recommended: { min: number | null; max: number | null 
 
         <template #cell(stock)="{ item: replenishment }">
             <span class="tabular-nums">{{ locale.number(Number(replenishment.stock)) }}</span>
-        </template>
-
-        <template #cell(ordered)="{ item: replenishment }">
-            <span class="tabular-nums">{{ locale.number(Number(replenishment.ordered)) }}</span>
-        </template>
-
-        <template #cell(eventual_stock)="{ item: replenishment }">
-            <span class="tabular-nums">{{ locale.number(Number(replenishment.eventual_stock)) }}</span>
         </template>
 
         <template #cell(recommended)="{ item: replenishment }">

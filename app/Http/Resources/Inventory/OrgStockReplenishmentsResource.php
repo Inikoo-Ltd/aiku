@@ -14,22 +14,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $id
  * @property mixed $slug
  * @property mixed $code
- * @property mixed $picking_location_id
- * @property mixed $ordered
+ * @property mixed $active_location_id
+ * @property mixed $stock
  * @property \Illuminate\Database\Eloquent\Collection $locationOrgStocks
  */
 class OrgStockReplenishmentsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $pickingLocationStock = $this->locationOrgStocks->firstWhere('location_id', $this->picking_location_id);
+        $activeLocationStock = $this->locationOrgStocks->firstWhere('location_id', $this->active_location_id);
 
-        $stock    = $pickingLocationStock?->quantity ?? 0;
-        $ordered  = $this->ordered ?? 0;
-        $settings = $pickingLocationStock?->settings ?? [];
+        $settings = $activeLocationStock?->settings ?? [];
 
         $otherLocations = $this->locationOrgStocks
-            ->filter(fn ($locationOrgStock) => $locationOrgStock->location_id !== $this->picking_location_id)
+            ->filter(fn ($locationOrgStock) => $locationOrgStock->location_id !== $this->active_location_id)
+            ->filter(fn ($locationOrgStock) => $locationOrgStock->quantity > 0)
             ->map(fn ($locationOrgStock) => [
                 'code'     => $locationOrgStock->location?->code,
                 'slug'     => $locationOrgStock->location?->slug,
@@ -41,13 +40,11 @@ class OrgStockReplenishmentsResource extends JsonResource
             'id'              => $this->id,
             'slug'            => $this->slug,
             'code'            => $this->code,
-            'stock'           => trimDecimalZeros($stock),
-            'ordered'         => trimDecimalZeros($ordered),
-            'eventual_stock'  => trimDecimalZeros($stock + $ordered),
-            'location'        => $pickingLocationStock?->location ? [
-                'code'   => $pickingLocationStock->location->code,
-                'slug'   => $pickingLocationStock->location->slug,
-                'status' => $pickingLocationStock->location->status,
+            'stock'           => trimDecimalZeros($this->stock),
+            'location'        => $activeLocationStock?->location ? [
+                'code'   => $activeLocationStock->location->code,
+                'slug'   => $activeLocationStock->location->slug,
+                'status' => $activeLocationStock->location->status,
             ] : null,
             'other_locations' => $otherLocations,
             'recommended'     => [

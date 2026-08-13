@@ -11,8 +11,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Pie } from "vue-chartjs"
 import { trans } from "laravel-vue-i18n"
-import { faBox, faInventory, faSkullCow, faDollarSign, faBan } from "@fal"
-import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle } from "@fas"
+import { faBox, faInventory, faSkullCow, faDollarSign, faBan, faClipboardListCheck } from "@fal"
+import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faDollyFlatbedEmpty, faShoppingBasket } from "@fas"
 
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
@@ -31,6 +31,9 @@ library.add(
     faSkullCow,
     faDollarSign,
     faBan,
+    faClipboardListCheck,
+    faDollyFlatbedEmpty,
+    faShoppingBasket,
 )
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)

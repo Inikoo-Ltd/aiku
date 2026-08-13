@@ -103,10 +103,19 @@ class ShowInventoryDashboard extends OrgAction
                             'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.index',
                             'parameters' => $routeParameters
                         ],
-                        'icon'  => 'fal fa-dolly',
+                        'icon'  => 'fas fa-dolly-flatbed-empty',
                         'backgroundColor' => '#0ea5e911',
                         'color'           => '#0284c7ff',
-                        'value' => '0', // No stat for this just yet
+                        'value' => $this->warehouse->stats->number_org_stocks_replenishments_wholesale,
+                        'metaRight' => [
+                            'tooltip' => __('Dropshipping replenishments'),
+                            'icon'    => ['icon' => 'fas fa-shopping-basket', 'class' => 'mr-1'],
+                            'count'   => $this->warehouse->stats->number_org_stocks_replenishments_dropshipping,
+                            'route'   => [
+                                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.dropshipping',
+                                'parameters' => $routeParameters
+                            ],
+                        ],
                     ],
                     [
                         'label' => __('Low Stock Audits'),
