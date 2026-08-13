@@ -107,6 +107,7 @@ class IndexDeliveryNoteItems extends OrgAction
 
 
             $table
+                ->withLabelRecord([__("Part"), __("Parts")])
                 ->withEmptyState(
                     [
                         'title' => __("No items found"),
