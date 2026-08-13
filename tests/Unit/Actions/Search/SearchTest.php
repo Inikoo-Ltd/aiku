@@ -11,6 +11,9 @@ namespace Tests\Unit\Actions\Search;
 use App\Actions\Search\GetSearchAnalytics;
 use App\Actions\Search\RecordSearchClick;
 use App\Actions\Search\Search;
+use App\Actions\Search\SearchAccounting;
+use App\Actions\Search\SearchCustomers;
+use App\Actions\Search\SearchOrders;
 use App\Actions\Search\SearchSysAdmin;
 use App\Actions\Search\StoreSearchLog;
 use App\Models\Helpers\SearchLog;
@@ -57,6 +60,23 @@ it('maps known route prefixes to expected scopes', function (string $route, stri
     ['grp.chat.dashboard', 'chat'],
     ['grp.org.chat.dashboard', 'chat'],
 ]);
+
+it('includes orders and invoices in the crm customers scope', function () {
+    SearchCustomers::mock()->shouldReceive('handle')->once()
+        ->andReturn(['scope' => 'customers', 'results' => ['customers' => [['id' => 1]]]]);
+    SearchOrders::mock()->shouldReceive('handle')->once()
+        ->andReturn(['scope' => 'orders', 'results' => ['orders' => [['id' => 2]]]]);
+    SearchAccounting::mock()->shouldReceive('handle')->once()
+        ->andReturn(['scope' => 'accounting', 'results' => ['invoices' => [['id' => 3]], 'payments' => [['id' => 4]]]]);
+
+    $results = app(Search::class)->handle('customers', 'john', ['shop_id' => 1]);
+
+    expect($results['results'])->toBe([
+        'customers' => [['id' => 1]],
+        'orders'    => [['id' => 2]],
+        'invoices'  => [['id' => 3]],
+    ]);
+});
 
 it('returns empty array for unknown search scope', function () {
     $action = app(Search::class);
