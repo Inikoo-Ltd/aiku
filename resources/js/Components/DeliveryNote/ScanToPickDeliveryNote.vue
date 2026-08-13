@@ -164,7 +164,7 @@ const applyOutcome = (outcome: ScanOutcome) => {
     }
 
     if (outcome.warning) {
-        notify({ title: ctrans("Check what you picked"), text: outcome.warning, type: "warn" })
+        notify({ title: ctrans("Check what you picked"), text: outcome.warning, type: "warning" })
     }
 
     emits("scanned", outcome)
