@@ -2163,5 +2163,15 @@ describe('stranded empty timesheets', function () {
         expect($stranded)->toContain($empty->id)
             ->and($stranded)->toContain($withHusk->id)
             ->and($stranded)->not->toContain($withWork->id);
+
+        $husk = $withHusk->timeTrackers()->first();
+        $husk->delete();
+
+        $action->deleteStrandedTimesheets($stranded);
+
+        expect(\App\Models\HumanResources\Timesheet::find($empty->id))->toBeNull()
+            ->and(\App\Models\HumanResources\Timesheet::find($withHusk->id))->toBeNull()
+            ->and(\App\Models\HumanResources\TimeTracker::withTrashed()->find($husk->id))->toBeNull()
+            ->and(\App\Models\HumanResources\Timesheet::find($withWork->id))->not->toBeNull();
     });
 });

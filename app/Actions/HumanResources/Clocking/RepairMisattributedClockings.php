@@ -227,12 +227,15 @@ class RepairMisattributedClockings
     }
 
     /**
+     * Timesheets delete for real while time trackers only soft delete, so a husk keeps its foreign
+     * key on the timesheet long after it stops being counted - hence withTrashed()/forceDelete().
+     *
      * @param  Collection<int, int>  $timesheetIds
      */
-    private function deleteStrandedTimesheets(Collection $timesheetIds): int
+    public function deleteStrandedTimesheets(Collection $timesheetIds): int
     {
         return DB::transaction(function () use ($timesheetIds) {
-            TimeTracker::whereIn('timesheet_id', $timesheetIds)->delete();
+            TimeTracker::withTrashed()->whereIn('timesheet_id', $timesheetIds)->forceDelete();
 
             return Timesheet::whereIn('id', $timesheetIds)->delete();
         });
