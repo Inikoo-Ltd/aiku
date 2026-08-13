@@ -2333,11 +2333,11 @@ describe('aurora provisional cost fix', function () {
     });
 
     test('stock history exports carry the three valuations with legends', function () {
-        $orgStock = OrgStock::first();
-        $headings = (new \App\Exports\Inventory\OrgStockHistoryExport($orgStock))->headings();
-        expect($headings)->toContain(__('Stock Value FIFO (recommended)'))
-            ->toContain(__('Stock Value').' WAC ('.__('alternative').')')
-            ->toContain(__('Stock Value LPP (not recommended)'))
-            ->toContain(__('Unit Value FIFO (recommended)'));
+        [$orgStock] = costFixStockInLocation($this->group, $this->organisation, 'CFH');
+        $headings   = (new \App\Exports\Inventory\OrgStockHistoryExport($orgStock))->headings();
+        expect($headings)->toContain(__('Stock Value').' FIFO ('.__('official').')')
+            ->toContain(__('Stock Value').' WAC')
+            ->toContain(__('Stock Value').' LPP')
+            ->toContain(__('Unit Value').' FIFO ('.__('official').')');
     });
 });

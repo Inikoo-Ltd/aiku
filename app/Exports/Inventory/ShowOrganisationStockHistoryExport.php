@@ -85,7 +85,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 __('SKO Name'),
                 __('Location'),
                 __('Quantity'),
-                ...array_map(fn ($method) => __('Stock Value').' '.$method->label().' ('.$method->shortLegend().')', OrgStockValuationMethodEnum::ordered()),
+                ...array_map(fn ($method) => __('Stock Value').' '.$method->label().$method->headingSuffix(), OrgStockValuationMethodEnum::ordered()),
             ];
         }
 
@@ -93,7 +93,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             __('SKO Code'),
             __('SKO Name'),
             __('Quantity'),
-            ...array_map(fn ($method) => __('Stock Value').' '.$method->label().' ('.$method->shortLegend().')', OrgStockValuationMethodEnum::ordered()),
+            ...array_map(fn ($method) => __('Stock Value').' '.$method->label().$method->headingSuffix(), OrgStockValuationMethodEnum::ordered()),
             __('Sold Within 1 Year'),
             __('Last Sold Date'),
             __('Non Moving 1 Year'),

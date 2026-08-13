@@ -210,7 +210,7 @@ class EditGroupSettings extends OrgAction
                                     ...array_map(fn (OrgStockValuationMethodEnum $method) => [
                                         'value'       => $method->value,
                                         'title'       => $method->label().' ('.$method->fullName().')',
-                                        'description' => $method->legend(),
+                                        'description' => $method->description(),
                                     ], [OrgStockValuationMethodEnum::FIFO, OrgStockValuationMethodEnum::WAC]),
                                 ],
                                 'saveConfirmation' => [

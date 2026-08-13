@@ -176,9 +176,8 @@ class GetOrgStockShowcase
             'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
             'official_method'           => OrgStockValuationMethodEnum::official()->label(),
             'valuations'                => array_map(fn (OrgStockValuationMethodEnum $method) => [
-                'label'  => $method->label(),
-                'legend' => $method->shortLegend(),
-                'value'  => $latestHistory?->{$method->perSkuColumn()},
+                'label' => $method->labelWithStatus(),
+                'value' => $latestHistory?->{$method->perSkuColumn()},
             ], OrgStockValuationMethodEnum::ordered()),
         ];
     }

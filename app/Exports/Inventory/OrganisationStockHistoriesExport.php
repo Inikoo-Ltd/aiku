@@ -67,7 +67,7 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             __('Total SKOs'),
             __('Out of Stock'),
             __('Locations'),
-            ...array_map(fn ($method) => __('Stock Value').' '.$method->label().' ('.$method->shortLegend().')', OrgStockValuationMethodEnum::ordered()),
+            ...array_map(fn ($method) => __('Stock Value').' '.$method->label().$method->headingSuffix(), OrgStockValuationMethodEnum::ordered()),
         ];
 
         if (!$this->isSameCurrency()) {

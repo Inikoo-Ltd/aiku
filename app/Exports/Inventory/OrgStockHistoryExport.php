@@ -81,11 +81,11 @@ class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, Sho
             __('Locations'),
         ];
         foreach (OrgStockValuationMethodEnum::ordered() as $method) {
-            $headings[] = __('Stock Value').' '.$method->label().' ('.$method->shortLegend().')';
+            $headings[] = __('Stock Value').' '.$method->label().$method->headingSuffix();
         }
         $headings[] = __('Stock Value LPP (Grp currency)');
         foreach (OrgStockValuationMethodEnum::ordered() as $method) {
-            $headings[] = __('Unit Value').' '.$method->label().' ('.$method->shortLegend().')';
+            $headings[] = __('Unit Value').' '.$method->label().$method->headingSuffix();
         }
 
         return $headings;

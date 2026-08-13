@@ -36,16 +36,25 @@ enum OrgStockValuationMethodEnum: string
         });
     }
 
+    /**
+     * Exports do not give advice, they state which column is the official valuation.
+     */
+    public function headingSuffix(): string
+    {
+        return $this === self::official() ? ' ('.__('official').')' : '';
+    }
+
     public function shortLegend(): string
     {
-        if ($this === self::official()) {
-            return __('recommended');
-        }
-        if ($this === self::LPP) {
-            return __('not recommended');
-        }
+        return $this === self::official() ? __('official') : '';
+    }
 
-        return __('alternative');
+    /**
+     * "FIFO (official)" / "WAC" — for lists that show every method side by side.
+     */
+    public function labelWithStatus(): string
+    {
+        return $this->label().$this->headingSuffix();
     }
 
     /**
@@ -84,9 +93,9 @@ enum OrgStockValuationMethodEnum: string
     public function legend(): string
     {
         return $this->fullName().' — '.$this->description().' '.match (true) {
-            $this === self::official() => __('Recommended, the official valuation.'),
-            $this === self::LPP        => __('Not recommended, not allowed in the UK.'),
-            default                    => __('Allowed alternative.'),
+            $this === self::official() => __('This is the official valuation, used for stock values, margins and product costs.'),
+            $this === self::LPP        => __('Not used, and not an allowed valuation method in the UK.'),
+            default                    => __('Not the official valuation, shown for comparison.'),
         };
     }
 

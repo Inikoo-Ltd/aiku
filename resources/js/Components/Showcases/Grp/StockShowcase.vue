@@ -140,8 +140,8 @@ const stockCostStats = computed(() => {
         locale.currencyFormat(props.data.currency_code, value || 0)
 
     const valuationHint = (stockCost?.valuations || [])
-        .map((valuation: { label: string; legend: string; value: number | null }) =>
-            `${valuation.label} (${valuation.legend}): ${format(valuation.value)}`)
+        .map((valuation: { label: string; value: number | null }) =>
+            `${valuation.label}: ${format(valuation.value)}`)
         .join("\n")
 
     return [
