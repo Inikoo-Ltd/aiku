@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\Traits\Dashboards\WithLatestStockHistory;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Stubs\Migrations\HasInventoryStats;
 use Inertia\Inertia;
@@ -26,9 +27,9 @@ class ShowInventoryDashboard extends OrgAction
     use WithLatestStockHistory;
 
 
-    public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
+    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): ActionRequest
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromWarehouse($warehouse, $request);
 
         return $request;
     }
@@ -116,7 +117,19 @@ class ShowInventoryDashboard extends OrgAction
                         'icon'  => 'fal fa-clipboard-list-check',
                         'backgroundColor' => '#f59e0b11',
                         'color'           => '#d97706ff',
-                        'value' => '0', // No stat for this just yet
+                        'value' => $this->warehouse->stats->number_org_stocks_low_stock_audits,
+                        'editable' => [
+                            'label'    => __('Threshold'),
+                            'field'    => 'low_stock_threshold',
+                            'value'    => $this->warehouse->getLowStockThreshold(),
+                            'title'    => __('Low stock threshold'),
+                            'tooltip'  => __('SKOs with total stock in all locations below this threshold'),
+                            'readonly' => !$this->canEdit,
+                            'route'    => [
+                                'name'       => 'grp.models.warehouse.low_stock_threshold.update',
+                                'parameters' => ['warehouse' => $this->warehouse->id]
+                            ],
+                        ],
                     ],
                 ],
                 // 'dashboardStats' => $this->getDashboardStats(),

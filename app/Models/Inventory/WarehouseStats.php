@@ -52,6 +52,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stock_audit_delta_type_addition
  * @property int $number_org_stock_audit_delta_type_subtraction
  * @property int $number_org_stock_audit_delta_type_no_change
+ * @property int $number_org_stocks_without_products
+ * @property int $number_org_stocks_replenishments
+ * @property int $number_org_stocks_low_stock_audits
  * @property int $number_fulfilments
  * @property int $number_customers_interest_pallets_storage
  * @property int $number_customers_interest_items_storage
