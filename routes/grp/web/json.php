@@ -132,6 +132,8 @@ use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
 use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
+use App\Actions\Web\WebLayoutTemplate\FetchWebLayoutTemplateDetail;
+use App\Actions\Web\WebLayoutTemplate\IndexWebLayoutTemplates;
 use App\Actions\Web\Webpage\Json\GetBlogWebpages;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
@@ -362,3 +364,6 @@ Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartme
 Route::post('ingredients/parse', ParseIngredientsList::class)->name('ingredients.parse');
 
 Route::get('stock/{stock}/trade-unit-changes-impact', ValidateStockTradeUnitChanges::class)->name('stock.trade-unit-changes-impact');
+
+Route::get('{webpage:id}/web-layout-templates/list', IndexWebLayoutTemplates::class)->name('template_layouts.index');
+Route::get('{webpage:id}/web-layout-templates/{layoutTemplate:id}', FetchWebLayoutTemplateDetail::class)->name('template_layouts.detail')->withoutScopedBindings();

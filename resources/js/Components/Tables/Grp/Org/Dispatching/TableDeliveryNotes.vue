@@ -10,7 +10,7 @@ import Table from "@/Components/Table/Table.vue"
 import { DeliveryNote } from "@/types/delivery-note"
 import { DialogTitle, Tab } from "@headlessui/vue"
 import type { Table as TableTS } from "@/types/Table"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -21,14 +21,15 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMapMarkerAlt, faTruck, faYinYang } from "@fal"
+import { faMapMarkerAlt, faTruck, faYinYang, faCalendarAlt, faHistory } from "@fal"
 import { faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTruck, faYinYang)
 
-defineProps<{
+const props = defineProps<{
 	data: TableTS
 	tab?: string
+	bucket: string
 }>()
 
 
@@ -228,10 +229,77 @@ const generateRouteDeliveryNote = (id: string) => {
 		deliveryNote: id,
 	})
 }
+
+const showSubmittedDate = ref(props.bucket == 'all')
+
+const hasDateColumnToggle = computed(() => !!props.bucket && props.bucket != 'all')
+
+const bucketEvent = computed(() => {
+	const events: Record<string, { label: string; header: string }> = {
+		handling: { label: trans('Handling'), header: trans('Handling date') },
+		handling_blocked: { label: trans('Blocked'), header: trans('Blocked date') },
+		waiting: { label: trans('Blocked'), header: trans('Blocked date') },
+		picked: { label: trans('Picked'), header: trans('Picked date') },
+		packing: { label: trans('Packing'), header: trans('Packing date') },
+		packed: { label: trans('Packed'), header: trans('Packed date') },
+		finalised: { label: trans('Finalised'), header: trans('Finalised date') },
+		dispatched: { label: trans('Dispatched'), header: trans('Dispatched date') },
+	}
+
+	return events[props.bucket] ?? { label: trans('Last event'), header: trans('Last event date') }
+})
+
+const dateColumnOptions = computed(() => [
+	{
+		value: false,
+		icon: faHistory,
+		label: bucketEvent.value.label,
+		tooltip: trans('Show when the delivery note entered this stage (:event)', {
+			event: bucketEvent.value.header.toLowerCase(),
+		}),
+	},
+	{
+		value: true,
+		icon: faCalendarAlt,
+		label: trans('Submitted'),
+		tooltip: trans('Show when the delivery note was submitted by the customer'),
+	},
+])
 </script>
 
 <template>
 	<Table :resource="data" :name="tab" class="mt-5">
+		<template #tableExtraAction v-if="hasDateColumnToggle">
+			<div class="flex items-center gap-x-1.5">
+				<label class="text-xs text-gray-500 whitespace-nowrap">
+					{{ ctrans('Date') }}
+				</label>
+				<div
+					role="group"
+					:aria-label="ctrans('Date shown in the date column')"
+					class="inline-flex items-center gap-0.5 rounded-md border border-gray-300 bg-gray-100 p-0.5">
+					<button
+						v-for="option in dateColumnOptions"
+						:key="String(option.value)"
+						type="button"
+						v-tooltip="option.tooltip"
+						:aria-pressed="showSubmittedDate === option.value"
+						@click="showSubmittedDate = option.value"
+						:class="showSubmittedDate === option.value
+							? 'bg-white text-gray-900 shadow-sm'
+							: 'text-gray-500 hover:text-gray-700'"
+						class="flex items-center gap-x-1 rounded px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
+						<FontAwesomeIcon
+							:icon="option.icon"
+							class="text-[0.65rem]"
+							fixed-width
+							aria-hidden="true" />
+						{{ option.label }}
+					</button>
+				</div>
+			</div>
+		</template>
+
 		<template #cell(status)="{ item: deliveryNote }">
 			<!-- {{deliveryNote.state_icon}} -->
 			<Icon :data="deliveryNote.state_icon" />
@@ -313,12 +381,25 @@ const generateRouteDeliveryNote = (id: string) => {
 			</div>
 		</template>
 
+		<template #table-header-date v-if="hasDateColumnToggle || showSubmittedDate">
+			{{ showSubmittedDate ? ctrans("Submitted date") : bucketEvent.header }}
+		</template>
+
 		<template #cell(date)="{ item }">
-			{{
-				useFormatTime(item.date, {
-					formatTime: "EEE, do MMM yy, HH:mm",
-				})
-			}}
+			<span v-if="showSubmittedDate">
+				{{
+					useFormatTime(item.date, {
+						formatTime: "EEE, do MMM yy, HH:mm",
+					})
+				}}
+			</span>
+			<span v-else>
+				{{
+					useFormatTime(item.last_modified_date, {
+						formatTime: "EEE, do MMM yy, HH:mm",
+					})
+				}}
+			</span>
 		</template>
 
 		<template #cell(effective_weight)="{ item: deliveryNote }">
