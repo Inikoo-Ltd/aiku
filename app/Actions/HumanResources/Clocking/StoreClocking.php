@@ -8,7 +8,6 @@
 
 namespace App\Actions\HumanResources\Clocking;
 
-use App\Actions\HumanResources\Clocking\Traits\SetClockingPhotoFromImage;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateClockings;
 use App\Actions\HumanResources\Timesheet\GetTimesheet;
 use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
@@ -117,19 +116,19 @@ class StoreClocking extends OrgAction
 
             $clocking->refresh();
 
-            if ($uploadedPhoto) {
-                SetClockingPhotoFromImage::run(
-                    clocking: $clocking,
-                    imagePath: $uploadedPhoto->getPathName(),
-                    originalFilename: $uploadedPhoto->getClientOriginalName(),
-                    extension: $uploadedPhoto->getClientOriginalExtension()
-                );
-            }
-
             TimesheetHydrateTimeTrackers::run($timesheet->id);
 
             return $clocking;
         });
+
+        if ($uploadedPhoto && $clocking->wasRecentlyCreated) {
+            AttachClockingPhoto::dispatch(
+                $clocking,
+                base64_encode((string) file_get_contents($uploadedPhoto->getPathName())),
+                $uploadedPhoto->getClientOriginalName(),
+                $uploadedPhoto->getClientOriginalExtension()
+            );
+        }
 
         $isSelfScannedQrCode = $parent instanceof ClockingMachine && $parent->type === ClockingMachineTypeEnum::QR_CODE->value;
 
