@@ -375,11 +375,12 @@ test('retina api fulfilment orders flow', function () {
     $response->assertOk();
 
     $response = patchJson(route('retina.api.fulfilment.order.submit', $palletReturn));
-    $response->assertOk();
-    expect($response->json('data.state'))->not->toBeNull();
+    $response->assertUnprocessable();
+    $response->assertJsonPath('message', 'Please attach at least one transaction to the order.');
 
     $response = postJson(route('retina.api.fulfilment.order.cancel', $palletReturn));
-    $response->assertOk();
+    $response->assertUnprocessable();
+    $response->assertJsonPath('message', 'This Order is already in the "in_process" state and cannot be updated.');
 });
 
 // ---- Fulfilment: portfolios ----
