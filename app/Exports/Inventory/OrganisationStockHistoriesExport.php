@@ -33,8 +33,8 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
         $query = DB::table('organisation_stock_histories')
             ->select([
                 'date as bucket',
-                'org_stock_value',
-                'grp_stock_value',
+                'org_stock_lpp_value',
+                'grp_stock_lpp_value',
                 'number_org_stocks',
                 'number_out_of_stock_org_stocks',
                 'number_locations',
@@ -99,11 +99,11 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             (string)($row->number_org_stocks ?? '0'),
             (string)($row->number_out_of_stock_org_stocks ?? '0'),
             (string)($row->number_locations ?? '0'),
-            $orgSymbol.number_format((float)($row->org_stock_value ?? 0), 2, '.', ''),
+            $orgSymbol.number_format((float)($row->org_stock_lpp_value ?? 0), 2, '.', ''),
         ];
 
         if (!$this->isSameCurrency()) {
-            $data[] = $this->organisation->group->currency->symbol.number_format((float)($row->grp_stock_value ?? 0), 2, '.', '');
+            $data[] = $this->organisation->group->currency->symbol.number_format((float)($row->grp_stock_lpp_value ?? 0), 2, '.', '');
         }
 
         return $data;

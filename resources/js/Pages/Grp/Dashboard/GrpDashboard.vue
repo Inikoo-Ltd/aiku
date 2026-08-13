@@ -36,7 +36,7 @@ const props = defineProps<{
 		number_out_of_stock_org_stocks: number
 		percentage_out_of_stock: number
 		number_locations: number
-		grp_stock_value: number
+		grp_stock_lpp_value: number
 		currency_code: string
 		grp_value_dormant_stock_1y: number
 		percentage_dormant_1y: number
@@ -50,7 +50,7 @@ const props = defineProps<{
 			number_out_of_stock_org_stocks: number
 			percentage_out_of_stock: number
 			number_locations: number
-			org_stock_value: number
+			org_stock_lpp_value: number
 			value_dormant_stock_1y: number
 			percentage_dormant_1y: number
 			number_org_stocks_not_sold_1y: number
@@ -129,7 +129,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						{{ trans('Stock Value') }}
 					</dt>
 					<dd class="mt-1 text-xl sm:text-3xl font-semibold tabular-nums text-gray-800">
-						{{ locale.CurrencyShort(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_stock_value)) }}
+						{{ locale.CurrencyShort(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_stock_lpp_value)) }}
 					</dd>
 				</div>
 				<div class="px-5 py-4">
@@ -232,9 +232,9 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
-									{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_value)) }}
+									{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_lpp_value)) }}
 								</Link>
-								<span v-else class="text-gray-700">{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_value)) }}</span>
+								<span v-else class="text-gray-700">{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_lpp_value)) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">

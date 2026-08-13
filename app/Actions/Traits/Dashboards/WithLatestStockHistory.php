@@ -46,7 +46,7 @@ trait WithLatestStockHistory
         $totalSkus       = $groupHistory->number_org_stocks;
         $totalOutOfStock = $groupHistory->number_out_of_stock_org_stocks;
         $totalLocations  = $groupHistory->number_locations;
-        $stockValue      = (float) $groupHistory->grp_stock_value;
+        $stockValue      = (float) $groupHistory->grp_stock_lpp_value;
         $dormant1y       = (float) $groupHistory->grp_value_dormant_stock_1y;
 
         $pctOutOfStock = $totalSkus > 0 ? round($totalOutOfStock / $totalSkus * 100, 1) : 0;
@@ -59,7 +59,7 @@ trait WithLatestStockHistory
             'number_out_of_stock_org_stocks' => $totalOutOfStock,
             'percentage_out_of_stock'        => $pctOutOfStock,
             'number_locations'               => $totalLocations,
-            'grp_stock_value'                => $stockValue,
+            'grp_stock_lpp_value'                => $stockValue,
             'currency_code'                  => $group->currency->code,
             'grp_value_dormant_stock_1y'     => $dormant1y,
             'percentage_dormant_1y'          => $pctDormant1y,
@@ -80,7 +80,7 @@ trait WithLatestStockHistory
                     'number_out_of_stock_org_stocks' => $history->number_out_of_stock_org_stocks,
                     'percentage_out_of_stock'        => $history->percentage_out_of_stock,
                     'number_locations'               => $history->number_locations,
-                    'org_stock_value'                => (float) $history->org_stock_value,
+                    'org_stock_lpp_value'                => (float) $history->org_stock_lpp_value,
                     'value_dormant_stock_1y'         => (float) $history->value_dormant_stock_1y,
                     'percentage_dormant_1y'          => $history->percentage_value_dormant_stock_1y ?? 0,
                     'number_org_stocks_not_sold_1y'  => $history->number_org_stocks_not_sold_1y,
@@ -131,7 +131,7 @@ trait WithLatestStockHistory
             'number_out_of_stock_org_stocks' => $history->number_out_of_stock_org_stocks,
             'percentage_out_of_stock'        => $history->percentage_out_of_stock,
             'number_locations'               => $history->number_locations,
-            'org_stock_value'                => $history->org_stock_value,
+            'org_stock_lpp_value'                => $history->org_stock_lpp_value,
             'currency_code'                  => $organisation->currency->code,
             'value_dormant_stock_1y'         => $history->value_dormant_stock_1y,
             'percentage_dormant_1y'          => $history->percentage_value_dormant_stock_1y ?? 0,

@@ -46,7 +46,7 @@ class IndexOrganisationStockHistories extends OrgAction
         $select = [
             'id',
             'date as bucket',
-            'org_stock_value',
+            'org_stock_lpp_value',
             'number_locations',
             'number_org_stocks',
             'number_out_of_stock_org_stocks',
@@ -59,7 +59,7 @@ class IndexOrganisationStockHistories extends OrgAction
         ];
 
         if (!$sameCurrency) {
-            $select[] = 'grp_stock_value';
+            $select[] = 'grp_stock_lpp_value';
             $select[] = DB::raw("'".$organisation->group->currency->code."' as grp_currency_code");
         }
 
@@ -74,8 +74,8 @@ class IndexOrganisationStockHistories extends OrgAction
                 AllowedSort::field('bucket', 'date'),
                 AllowedSort::field('number_org_stocks'),
                 AllowedSort::field('number_out_of_stock_org_stocks'),
-                AllowedSort::field('org_stock_value'),
-                AllowedSort::field('grp_stock_value'),
+                AllowedSort::field('org_stock_lpp_value'),
+                AllowedSort::field('grp_stock_lpp_value'),
             ])
             ->withPaginator($bucket, tableName: request()->route()->getName())
             ->withQueryString();
@@ -104,7 +104,7 @@ class IndexOrganisationStockHistories extends OrgAction
                 ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(
-                    key: 'org_stock_value',
+                    key: 'org_stock_lpp_value',
                     label: $sameCurrency ? __('Stock Value') : __('Stock Value').' ('.$organisation->currency->code.')',
                     canBeHidden: false,
                     sortable: true,
@@ -113,7 +113,7 @@ class IndexOrganisationStockHistories extends OrgAction
                 );
 
             //            if (!$sameCurrency) {
-            //                $table->column(key: 'grp_stock_value', label: __('Stock Value').' ('.$organisation->group->currency->code.')', canBeHidden: false, sortable: true, type: 'currency', align: 'right');
+            //                $table->column(key: 'grp_stock_lpp_value', label: __('Stock Value').' ('.$organisation->group->currency->code.')', canBeHidden: false, sortable: true, type: 'currency', align: 'right');
             //            }
 
 

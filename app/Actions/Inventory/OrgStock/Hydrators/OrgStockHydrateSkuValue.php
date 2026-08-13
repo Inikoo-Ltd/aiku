@@ -33,7 +33,7 @@ class OrgStockHydrateSkuValue implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock): void
     {
-        $costPerSku = $this->getCostPerSku($orgStock, Carbon::now());
+        $costPerSku = $this->getLppPerSku($orgStock, Carbon::now());
 
         if ($costPerSku <= 0) {
             return;

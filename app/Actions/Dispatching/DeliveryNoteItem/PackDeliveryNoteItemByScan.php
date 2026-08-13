@@ -28,6 +28,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
 {
     use WithDeliveryNoteItemUI;
     use WithScannedDeliveryNoteItemMatching;
+    use WithDeliveryNoteItemPickingCounts;
 
     protected User $user;
 
@@ -67,7 +68,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
             );
         }
 
-        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'packings'])->get();
+        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'packings', 'shop'])->get();
         $matchedItems      = $this->matchItems($deliveryNoteItems, $scanned);
 
         // The 'pack the rest' button targets the exact item that was just scanned, so a delivery note
@@ -162,16 +163,20 @@ class PackDeliveryNoteItemByScan extends OrgAction
         ?string $tab = null,
         ?Collection $knownItems = null
     ): array {
-        $row = null;
+        $row     = null;
+        $warning = null;
 
         if ($deliveryNoteItem && $status === 'packed') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
+
+            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
         }
 
         return [
             'status'              => $status,
             'message'             => $message,
+            'warning'             => $warning,
             'scanned'             => $scanned,
             'item'                => $deliveryNoteItem ? [
                 'id'               => $deliveryNoteItem->id,
@@ -184,6 +189,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
             'row'                 => $row,
             'delivery_note_state' => $deliveryNote->state->value,
             'remaining_to_pack'   => $this->countRemainingToPack($deliveryNote, $knownItems),
+            'counts'              => static::packingCounts($deliveryNote),
         ];
     }
 

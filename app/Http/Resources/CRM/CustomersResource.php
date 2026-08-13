@@ -68,6 +68,8 @@ class CustomersResource extends JsonResource
             'company_name'                    => $this->company_name,
             'location'                        => is_string($this->location) ? json_decode($this->location, true) : $this->location,
             'created_at'                      => $this->created_at,
+            /* Only selected by the exclusive products customers index. */
+            'number_exclusive_products'       => $this->number_exclusive_products ?? null,
             'number_current_customer_clients' => $this->number_current_customer_clients,
             'number_current_portfolios'       => $this->number_current_portfolios,
             'number_customer_sales_channels'  => $this->number_customer_sales_channels,

@@ -2851,3 +2851,46 @@ test('a redefined pack does not change what an already sold box means', function
 
     expect($required())->toBe($beforeRedefinition);
 });
+
+test('scan matches sko vs unit barcode kind and warns only when it disagrees with the shop type', function () {
+    $matcher = new class () {
+        use \App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
+
+        public function kind($item, $scanned): string
+        {
+            return $this->matchedKind($item, $scanned);
+        }
+
+        public function warning($item, $kind): ?string
+        {
+            return $this->scanKindWarning($item, $kind);
+        }
+    };
+
+    $orgStock = new \App\Models\Inventory\OrgStock();
+    $orgStock->forceFill([
+        'barcode'      => 'SKO123',
+        'unit_barcode' => '5055796528387',
+        'packed_in'    => 6,
+    ]);
+
+    $dropshippingShop = new \App\Models\Catalogue\Shop();
+    $dropshippingShop->forceFill(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+
+    $b2cShop = new \App\Models\Catalogue\Shop();
+    $b2cShop->forceFill(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::B2C]);
+
+    $item = new \App\Models\Dispatching\DeliveryNoteItem();
+    $item->setRelation('orgStock', $orgStock);
+    $item->setRelation('shop', $dropshippingShop);
+
+    expect($matcher->kind($item, 'SKO123'))->toBe('sko')
+        ->and($matcher->kind($item, '5055796528387'))->toBe('unit')
+        ->and($matcher->warning($item, 'sko'))->toContain('outer packing')
+        ->and($matcher->warning($item, 'unit'))->toBeNull();
+
+    $item->setRelation('shop', $b2cShop);
+
+    expect($matcher->warning($item, 'sko'))->toBeNull()
+        ->and($matcher->warning($item, 'unit'))->toContain('1 SKO = 6 units');
+});
