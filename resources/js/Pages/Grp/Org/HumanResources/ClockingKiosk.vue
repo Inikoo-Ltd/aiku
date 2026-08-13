@@ -45,7 +45,11 @@ const isDetecting = ref(false)
 const cameraFacing = ref<"environment" | "user">("environment")
 const cameraConstraints = computed(() => ({ facingMode: cameraFacing.value }))
 
-const recentCodeCooldownMs = resultDisplayMs
+// A badge left lying in front of the camera keeps being detected. This has to outlast the whole
+// result-then-remount cycle, or the same badge fires again the moment the scanner comes back and
+// the second clocking reads as a clock out. Deliberately not tied to resultDisplayMs: shortening
+// what staff see must never shorten this.
+const recentCodeCooldownMs = 10000
 let lastProcessedCode: string | null = null
 let lastProcessedAt = 0
 
@@ -69,7 +73,11 @@ const resetIdleTimer = () => {
 }
 
 const tapCharacter = (character: string) => {
-	if (isSubmitting.value || result.value || enteredPin.value.length >= maxPinLength) return
+	if (isSubmitting.value || enteredPin.value.length >= maxPinLength) return
+
+	if (result.value) {
+		dismissResult()
+	}
 
 	enteredPin.value.push(character)
 	errorMessage.value = null
@@ -77,7 +85,12 @@ const tapCharacter = (character: string) => {
 }
 
 const backspace = () => {
-	if (isSubmitting.value || result.value) return
+	if (isSubmitting.value) return
+
+	if (result.value) {
+		dismissResult()
+		return
+	}
 
 	enteredPin.value.pop()
 	resetIdleTimer()
@@ -88,7 +101,25 @@ const clearPin = () => {
 	errorMessage.value = null
 }
 
+// The confirmation is for the person who just clocked, not a lock on the machine: whoever is next
+// in the queue may start straight away and their result replaces it. Without this the whole line
+// waits resultDisplayMs each, which is most of a morning rush spent looking at other people's names.
+const dismissResult = () => {
+	if (resultTimer) {
+		clearTimeout(resultTimer)
+		resultTimer = null
+	}
+
+	result.value = null
+	enteredPin.value = []
+	barcodeValue.value = ""
+}
+
 const applyResult = (data: any) => {
+	if (resultTimer) {
+		clearTimeout(resultTimer)
+	}
+
 	result.value = {
 		alias: data.employee.alias,
 		actionType: data.clocking.type,
@@ -97,6 +128,7 @@ const applyResult = (data: any) => {
 	}
 
 	resultTimer = setTimeout(() => {
+		resultTimer = null
 		result.value = null
 		enteredPin.value = []
 		barcodeValue.value = ""
@@ -148,10 +180,14 @@ const submitBarcode = async () => {
 }
 
 const handleGlobalKeydown = (event: KeyboardEvent) => {
-	if (props.mode !== "barcode" || isSubmitting.value || result.value) return
+	if (props.mode !== "barcode" || isSubmitting.value) return
 
 	const target = event.target as HTMLElement | null
 	if (target?.isContentEditable) return
+
+	if (result.value) {
+		dismissResult()
+	}
 
 	const now = Date.now()
 	if (now - lastKeystrokeAt > scanIdleResetMs) {
@@ -219,7 +255,7 @@ const captureSnapshot = (): string | null => {
 }
 
 const onCameraDetect = async (detectedCodes: { rawValue: string }[]) => {
-	if (isSubmitting.value || isDetecting.value || result.value) return
+	if (isSubmitting.value || isDetecting.value) return
 
 	const code = detectedCodes[0]?.rawValue?.trim()
 	if (!code) return
@@ -254,11 +290,12 @@ const onCameraDetect = async (detectedCodes: { rawValue: string }[]) => {
 		isSubmitting.value = false
 		isDetecting.value = false
 
+		// Reacquiring the camera takes a moment, so it runs underneath the result the person is
+		// still reading rather than after it - by the time the overlay clears the scanner is live
+		// again and the next person in the queue is not waiting on the hardware.
 		if (scannerRemountTimer) clearTimeout(scannerRemountTimer)
-		scannerRemountTimer = setTimeout(() => {
-			scannerRemountTimer = null
-			remountScanner()
-		}, resultDisplayMs)
+		scannerRemountTimer = null
+		remountScanner()
 	}
 }
 
