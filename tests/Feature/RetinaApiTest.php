@@ -388,9 +388,18 @@ test('retina api fulfilment orders flow', function () {
 test('retina api fulfilment portfolio flow', function () {
     Sanctum::actingAs($this->fulfilmentChannel, ['retina']);
 
-    $response = postJson(route('retina.api.fulfilment.portfolios.store', $this->fulfilmentProduct));
-    $response->assertCreated();
-    $portfolioId = $response->json('data.id');
+    $storedItem = \App\Actions\Fulfilment\StoredItem\StoreStoredItem::make()->action(
+        $this->fulfilmentCustomer->fulfilmentCustomer,
+        ['reference' => 'api-portfolio-item']
+    );
+    $storedItem->update(['state' => \App\Enums\Fulfilment\StoredItem\StoredItemStateEnum::ACTIVE]);
+
+    $response = postJson(route('retina.api.fulfilment.portfolios.store'));
+    $response->assertSuccessful();
+
+    $portfolio = $this->fulfilmentChannel->portfolios()->where('item_id', $storedItem->id)->first();
+    expect($portfolio)->not->toBeNull();
+    $portfolioId = $portfolio->id;
 
     $response = getJson(route('retina.api.fulfilment.portfolios.index'));
     $response->assertOk();
