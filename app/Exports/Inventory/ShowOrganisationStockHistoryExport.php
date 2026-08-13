@@ -41,6 +41,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                     'org_stocks.name as stock_name',
                     'locations.code as location_code',
                     'location_org_stock_histories.quantity_in_locations',
+                    'location_org_stock_histories.org_stock_fifo_value',
+                    'location_org_stock_histories.org_stock_wac_value',
                     'location_org_stock_histories.org_stock_lpp_value',
                 ])
                 ->where('org_stock_histories.organisation_stock_history_id', $this->organisationStockHistory->id)
@@ -54,6 +56,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 'org_stocks.code',
                 'org_stocks.name',
                 'org_stock_histories.quantity_in_locations',
+                'org_stock_histories.org_stock_fifo_value',
+                'org_stock_histories.org_stock_wac_value',
                 'org_stock_histories.org_stock_lpp_value',
                 'org_stock_histories.sold_within_1y',
                 'org_stock_histories.last_sold_date',
@@ -80,7 +84,9 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 __('SKO Name'),
                 __('Location'),
                 __('Quantity'),
-                __('Stock Value'),
+                __('Stock Value FIFO (recommended)'),
+                __('Stock Value WAC (second choice)'),
+                __('Stock Value LPP (not recommended)'),
             ];
         }
 
@@ -88,7 +94,9 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             __('SKO Code'),
             __('SKO Name'),
             __('Quantity'),
-            __('Stock Value'),
+            __('Stock Value FIFO (recommended)'),
+            __('Stock Value WAC (second choice)'),
+            __('Stock Value LPP (not recommended)'),
             __('Sold Within 1 Year'),
             __('Last Sold Date'),
             __('Non Moving 1 Year'),
@@ -105,6 +113,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             'E' => NumberFormat::FORMAT_TEXT,
             'F' => NumberFormat::FORMAT_TEXT,
             'G' => NumberFormat::FORMAT_TEXT,
+            'H' => NumberFormat::FORMAT_TEXT,
+            'I' => NumberFormat::FORMAT_TEXT,
         ];
     }
 
@@ -117,6 +127,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 (string)($row->stock_name ?? ''),
                 (string)($row->location_code ?? ''),
                 number_format((float)($row->quantity_in_locations ?? 0), 2, '.', ''),
+                $row->org_stock_fifo_value !== null ? $orgSymbol.number_format((float)$row->org_stock_fifo_value, 2, '.', '') : '',
+                $row->org_stock_wac_value !== null ? $orgSymbol.number_format((float)$row->org_stock_wac_value, 2, '.', '') : '',
                 $orgSymbol.number_format((float)($row->org_stock_lpp_value ?? 0), 2, '.', ''),
             ];
         }
@@ -125,6 +137,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             (string)($row->code ?? ''),
             (string)($row->name ?? ''),
             number_format((float)($row->quantity_in_locations ?? 0), 2, '.', ''),
+            $row->org_stock_fifo_value !== null ? $orgSymbol.number_format((float)$row->org_stock_fifo_value, 2, '.', '') : '',
+            $row->org_stock_wac_value !== null ? $orgSymbol.number_format((float)$row->org_stock_wac_value, 2, '.', '') : '',
             $orgSymbol.number_format((float)($row->org_stock_lpp_value ?? 0), 2, '.', ''),
             $row->sold_within_1y ? __('Yes') : __('No'),
             $row->last_sold_date ?? '',

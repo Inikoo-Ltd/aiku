@@ -12,6 +12,7 @@ use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Models\Goods\TradeUnit;
+use Illuminate\Support\Facades\DB;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
@@ -119,11 +120,7 @@ class GetOrgStockShowcase
                         'set_location_as_picking_priority_route' => [],  // TODO
                         'add_parts_location_note'                => [],  // TODO
                     ],
-                    'stock_cost'      => [
-                        'sku_value'                 => $orgStock->sku_value,
-                        'total_stock_value'         => $orgStock->sku_value * $orgStock->quantity_available,
-                        'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
-                    ],
+                    'stock_cost'      => $this->getStockCost($orgStock),
                     'summary'         => [
                         'quantity_in_locations' => [
                             'icon_state' => [
@@ -162,6 +159,26 @@ class GetOrgStockShowcase
     /**
      * @return array{0: int|float, 1: array{0: int|float, 1: int|float}}
      */
+    /**
+     * @return array{sku_value: ?float, total_stock_value: float, current_supplier_sku_cost: ?float, fifo_per_sku: ?float, wac_per_sku: ?float, lpp_per_sku: ?float}
+     */
+    private function getStockCost(OrgStock $orgStock): array
+    {
+        $latestHistory = DB::table('org_stock_histories')
+            ->where('org_stock_id', $orgStock->id)
+            ->orderByDesc('date')
+            ->first(['fifo_per_sku', 'wac_per_sku', 'lpp_per_sku']);
+
+        return [
+            'sku_value'                 => $orgStock->sku_value,
+            'total_stock_value'         => $orgStock->sku_value * $orgStock->quantity_available,
+            'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
+            'fifo_per_sku'              => $latestHistory?->fifo_per_sku,
+            'wac_per_sku'               => $latestHistory?->wac_per_sku,
+            'lpp_per_sku'               => $latestHistory?->lpp_per_sku,
+        ];
+    }
+
     private function getFractionalQuantity(int|float|null $quantity, int|float|null $packedIn): array
     {
         return riseDivisor(divideWithRemainder(findSmallestFactors($quantity ?? 0)), $packedIn ?? 1);

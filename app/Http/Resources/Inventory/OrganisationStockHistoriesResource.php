@@ -35,6 +35,8 @@ class OrganisationStockHistoriesResource extends JsonResource
             'bucket'                         => $this->bucket,
             'org_stock_lpp_value'                => $this->org_stock_lpp_value,
             'grp_stock_lpp_value'                => $this->grp_stock_lpp_value,
+            'org_stock_wac_value'                => $this->org_stock_wac_value ?? null,
+            'org_stock_fifo_value'               => $this->org_stock_fifo_value ?? null,
             'number_org_stocks'              => $this->number_org_stocks,
             'number_out_of_stock_org_stocks' => $this->number_out_of_stock_org_stocks,
             'number_location_org_stocks'     => $this->number_location_org_stocks,

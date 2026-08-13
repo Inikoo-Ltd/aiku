@@ -136,10 +136,19 @@ const formatDimensions = (dimensions: { h?: number; l?: number; w?: number; unit
 
 const stockCostStats = computed(() => {
     const stockCost = props.data.stocks_management?.stock_cost
+    const format = (value: number | null | undefined) =>
+        locale.currencyFormat(props.data.currency_code, value || 0)
+
+    const valuationHint = [
+        `${ctrans("Valued with FIFO")} (${ctrans("recommended")}): ${format(stockCost?.fifo_per_sku)}`,
+        `${ctrans("WAC")} (${ctrans("second choice")}): ${format(stockCost?.wac_per_sku)}`,
+        `${ctrans("LPP")} (${ctrans("not recommended")}): ${format(stockCost?.lpp_per_sku)}`,
+    ].join("\n")
+
     return [
         { title: ctrans("Future delivered cost"), value: stockCost?.current_supplier_sku_cost || 0 },
-        { title: ctrans("SKO value"), value: stockCost?.sku_value || 0 },
-        { title: ctrans("Total stock value"), value: stockCost?.total_stock_value || 0 },
+        { title: ctrans("SKO value"), value: stockCost?.sku_value || 0, hint: valuationHint },
+        { title: ctrans("Total stock value"), value: stockCost?.total_stock_value || 0, hint: valuationHint },
     ]
 })
 
@@ -274,6 +283,12 @@ const saveBarcode = (value: string | null) => {
                             class="flex-1 min-w-max rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
                             <div class="text-xs font-medium uppercase tracking-wide text-gray-400 whitespace-nowrap">
                                 {{ stat.title }}
+                                <FontAwesomeIcon v-if="stat.hint"
+                                    icon="fal fa-question-circle"
+                                    class="ml-0.5 cursor-help text-gray-300 hover:text-gray-500"
+                                    fixed-width
+                                    aria-hidden="true"
+                                    v-tooltip="{ content: stat.hint.replace(/\n/g, '<br>'), html: true }" />
                             </div>
                             <div class="mt-1.5 text-2xl font-bold text-gray-800 whitespace-nowrap">
                                 {{ locale.currencyFormat(data.currency_code, stat.value) }}

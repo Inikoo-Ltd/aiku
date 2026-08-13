@@ -47,6 +47,8 @@ class IndexOrganisationStockHistories extends OrgAction
             'id',
             'date as bucket',
             'org_stock_lpp_value',
+            'org_stock_wac_value',
+            'org_stock_fifo_value',
             'number_locations',
             'number_org_stocks',
             'number_out_of_stock_org_stocks',
@@ -76,6 +78,8 @@ class IndexOrganisationStockHistories extends OrgAction
                 AllowedSort::field('number_out_of_stock_org_stocks'),
                 AllowedSort::field('org_stock_lpp_value'),
                 AllowedSort::field('grp_stock_lpp_value'),
+                AllowedSort::field('org_stock_wac_value'),
+                AllowedSort::field('org_stock_fifo_value'),
             ])
             ->withPaginator($bucket, tableName: request()->route()->getName())
             ->withQueryString();
@@ -104,9 +108,28 @@ class IndexOrganisationStockHistories extends OrgAction
                 ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(
-                    key: 'org_stock_lpp_value',
-                    label: $sameCurrency ? __('Stock Value') : __('Stock Value').' ('.$organisation->currency->code.')',
+                    key: 'org_stock_fifo_value',
+                    label: $sameCurrency ? __('Stock Value (FIFO)') : __('Stock Value (FIFO)').' ('.$organisation->currency->code.')',
+                    tooltip: __('First In First Out — recommended, the official valuation'),
                     canBeHidden: false,
+                    sortable: true,
+                    type: 'currency',
+                    align: 'right'
+                )
+                ->column(
+                    key: 'org_stock_wac_value',
+                    label: __('Stock Value (WAC)'),
+                    tooltip: __('Weighted Average Cost — second choice'),
+                    canBeHidden: true,
+                    sortable: true,
+                    type: 'currency',
+                    align: 'right'
+                )
+                ->column(
+                    key: 'org_stock_lpp_value',
+                    label: $sameCurrency ? __('Stock Value (LPP)') : __('Stock Value (LPP)').' ('.$organisation->currency->code.')',
+                    tooltip: __('Last Purchase Price — not recommended'),
+                    canBeHidden: true,
                     sortable: true,
                     type: 'currency',
                     align: 'right'

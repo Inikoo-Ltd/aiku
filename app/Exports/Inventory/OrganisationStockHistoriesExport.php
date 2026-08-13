@@ -33,6 +33,8 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
         $query = DB::table('organisation_stock_histories')
             ->select([
                 'date as bucket',
+                'org_stock_fifo_value',
+                'org_stock_wac_value',
                 'org_stock_lpp_value',
                 'grp_stock_lpp_value',
                 'number_org_stocks',
@@ -64,11 +66,13 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             __('Total SKOs'),
             __('Out of Stock'),
             __('Locations'),
-            $this->isSameCurrency() ? __('Stock Value') : __('Stock Value').' ('.$this->organisation->currency->symbol.')',
+            __('Stock Value FIFO (recommended)'),
+            __('Stock Value WAC (second choice)'),
+            $this->isSameCurrency() ? __('Stock Value LPP (not recommended)') : __('Stock Value LPP (not recommended)').' ('.$this->organisation->currency->symbol.')',
         ];
 
         if (!$this->isSameCurrency()) {
-            $headings[] = __('Stock Value').' ('.$this->organisation->group->currency->symbol.')';
+            $headings[] = __('Stock Value LPP (not recommended)').' ('.$this->organisation->group->currency->symbol.')';
         }
 
         return $headings;
@@ -83,8 +87,11 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             'D' => NumberFormat::FORMAT_TEXT,
         ];
 
+        $formats['E'] = NumberFormat::FORMAT_TEXT;
+        $formats['F'] = NumberFormat::FORMAT_TEXT;
+
         if (!$this->isSameCurrency()) {
-            $formats['E'] = NumberFormat::FORMAT_TEXT;
+            $formats['G'] = NumberFormat::FORMAT_TEXT;
         }
 
         return $formats;
@@ -99,6 +106,8 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             (string)($row->number_org_stocks ?? '0'),
             (string)($row->number_out_of_stock_org_stocks ?? '0'),
             (string)($row->number_locations ?? '0'),
+            $row->org_stock_fifo_value !== null ? $orgSymbol.number_format((float)$row->org_stock_fifo_value, 2, '.', '') : '',
+            $row->org_stock_wac_value !== null ? $orgSymbol.number_format((float)$row->org_stock_wac_value, 2, '.', '') : '',
             $orgSymbol.number_format((float)($row->org_stock_lpp_value ?? 0), 2, '.', ''),
         ];
 

@@ -2295,4 +2295,49 @@ describe('aurora provisional cost fix', function () {
             ->and($shouldRepair(['quantity' => 100, 'org_amount' => 790500], ['quantity' => 120, 'amount' => 500]))->toBeFalse()
             ->and($shouldRepair(['quantity' => 100, 'org_amount' => 790500], null))->toBeFalse();
     });
+
+    test('sku_value follows fifo as the official valuation', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFG');
+
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $firstPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $firstPurchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(4)]);
+
+        $secondPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $secondPurchase->update(['cost_per_sku' => 4, 'date' => now()->subDays(3)]);
+
+        $picked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PICKED->value,
+            'quantity' => -5,
+        ]);
+        $picked->update(['date' => now()->subDays(2)]);
+
+        $calculator = \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::make();
+        expect(round($calculator->getFifoPerSku($orgStock, now()), 4))->toBe(round(10 / 3, 4))
+            ->and((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0)
+            ->and((float) $calculator->getLppPerSku($orgStock, now()))->toBe(4.0);
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::run($orgStock->id);
+        expect(round((float) $orgStock->refresh()->sku_value, 2))->toBe(3.33);
+
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue::run($orgStock);
+        expect(round((float) $orgStock->refresh()->sku_value, 2))->toBe(3.33);
+    });
+
+    test('stock history exports carry the three valuations with legends', function () {
+        $orgStock = OrgStock::first();
+        $headings = (new \App\Exports\Inventory\OrgStockHistoryExport($orgStock))->headings();
+        expect($headings)->toContain(__('Stock Value FIFO (recommended)'))
+            ->toContain(__('Stock Value WAC (second choice)'))
+            ->toContain(__('Stock Value LPP (not recommended)'))
+            ->toContain(__('Unit Value FIFO (recommended)'));
+    });
 });
