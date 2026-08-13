@@ -13,6 +13,7 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\Helpers\Currency;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,9 +27,12 @@ class GetEstimatedEmailCost
      * reason behind it. They are not mailshots, so they are counted from the dispatched emails of the
      * outboxes we treat as marketing.
      *
+     * `$costPerEmail` is accepted so a screen pricing several channels resolves the rate once rather
+     * than looking the currency up again for every one of them.
+     *
      * @param array<int, int>|\Illuminate\Support\Collection<int, int> $shopIds
      */
-    public static function automated($shopIds, ?Carbon $from, ?Carbon $to, Currency $currency): float
+    public static function automated($shopIds, ?Carbon $from, ?Carbon $to, Currency $currency, ?float $costPerEmail = null): float
     {
         $codes = (array) config('marketing.attributed_outbox_codes', []);
 
@@ -52,7 +56,63 @@ class GetEstimatedEmailCost
             return 0.0;
         }
 
-        return round($dispatched * self::make()->costPerEmail($currency), 2);
+        return round($dispatched * ($costPerEmail ?? self::make()->costPerEmail($currency)), 2);
+    }
+
+    /**
+     * Both figures a period's mailshots owe the dashboard - what they cost to send, and the
+     * subscribers they lost - in one pass over the table, bucketed by mailshot type. The filter is an
+     * expression over `sent_at`/`created_at` and cannot use an index, so a screen reporting several
+     * email channels reads the table once here instead of once per channel per figure.
+     *
+     * @param array<int, int>|Collection<int, int> $shopIds
+     *
+     * @return Collection<string, array{dispatched: int, unsubscribed: int}>
+     */
+    public static function totalsByType($shopIds, ?Carbon $from, ?Carbon $to, ?array $types = null): Collection
+    {
+        return Mailshot::whereIn('mailshots.shop_id', $shopIds)
+            ->whereIn('mailshots.type', $types ?? self::allTypes())
+            ->when($from, fn ($query) => $query->whereRaw('COALESCE(mailshots.sent_at, mailshots.created_at) >= ?', [$from]))
+            ->when($to, fn ($query) => $query->whereRaw('COALESCE(mailshots.sent_at, mailshots.created_at) <= ?', [$to]))
+            ->join('mailshot_stats', 'mailshot_stats.mailshot_id', '=', 'mailshots.id')
+            ->groupBy('mailshots.type')
+            ->select(
+                'mailshots.type',
+                DB::raw('SUM(mailshot_stats.number_dispatched_emails) as dispatched'),
+                DB::raw('SUM(mailshot_stats.number_dispatched_emails_state_unsubscribed) as unsubscribed'),
+            )
+            ->get()
+            ->mapWithKeys(fn ($row) => [
+                ($row->type instanceof MailshotTypeEnum ? $row->type->value : (string) $row->type) => [
+                    'dispatched'   => (int) $row->dispatched,
+                    'unsubscribed' => (int) $row->unsubscribed,
+                ],
+            ]);
+    }
+
+    /**
+     * One email channel's share of a `totalsByType()` result: a channel is more than one mailshot
+     * type, and the dashboard reports them apart.
+     *
+     * @param Collection<string, array{dispatched: int, unsubscribed: int}> $totalsByType
+     *
+     * @return array{cost: float, unsubscribed: int}
+     */
+    public static function forChannel(Collection $totalsByType, TrafficSourcesTypeEnum $channel, float $costPerEmail): array
+    {
+        $dispatched   = 0;
+        $unsubscribed = 0;
+
+        foreach (self::typesFor($channel) as $type) {
+            $dispatched   += $totalsByType[$type->value]['dispatched'] ?? 0;
+            $unsubscribed += $totalsByType[$type->value]['unsubscribed'] ?? 0;
+        }
+
+        return [
+            'cost'         => $dispatched ? round($dispatched * $costPerEmail, 2) : 0.0,
+            'unsubscribed' => $unsubscribed,
+        ];
     }
 
     /** Mailshot types split the way the channels do: a newsletter is one instrument, a promotional

@@ -13,6 +13,7 @@ import { faLink, faTimes, faEnvelope, faPhone, faComments, faGlobe, faMapMarkerA
 import {
     faWhatsapp,
     faFacebookF,
+    faFacebookMessenger,
     faInstagram,
     faXTwitter,
     faTelegram,
@@ -31,7 +32,7 @@ import { computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 
 const contactIconList = [
-    faWhatsapp, faFacebookF, faInstagram, faXTwitter, faTelegram, faTiktok, faYoutube,
+    faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok, faYoutube,
     faLinkedinIn, faLine, faWeixin, faPinterest, faSnapchat, faDiscord,
     faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt,
 ]

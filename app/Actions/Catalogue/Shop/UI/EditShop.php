@@ -100,6 +100,8 @@ class EditShop extends OrgAction
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
+        $viewContactOptionsPanel = (bool) Arr::get($shop->settings, 'chat.view_contact_options_panel', false);
+
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
@@ -677,14 +679,16 @@ class EditShop extends OrgAction
                             'type'        => 'toggle',
                             'label'       => __('View Contact Options Panel'),
                             'information' => __('If active, will display the contact options panel on the shop website'),
-                            'value'       => Arr::get($shop->settings, 'chat.view_contact_options_panel', false),
+                            'value'       => $viewContactOptionsPanel,
                         ],
-                        'data_contact_options_panel' => [
-                            'type'        => 'contact_options_panel',
-                            'label'       => __('Contact Options Panel'),
-                            'information' => __('display the contact options panel on the shop website'),
-                            'value'       => Arr::get($shop->settings, 'chat.data_contact_options_panel') ?? [],
-                        ],
+                        ...$viewContactOptionsPanel ? [
+                            'data_contact_options_panel' => [
+                                'type'        => 'contact_options_panel',
+                                'label'       => __('Contact Options Panel'),
+                                'information' => __('display the contact options panel on the shop website'),
+                                'value'       => Arr::get($shop->settings, 'chat.data_contact_options_panel') ?? [],
+                            ],
+                        ] : [],
                     ],
                 ],
                 [

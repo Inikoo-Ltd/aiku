@@ -70,6 +70,7 @@ class UpdateShop extends OrgAction
 
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
         $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
+        $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
 
         if ($reviewRatingLabelsTouched) {
             $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
@@ -578,11 +579,12 @@ class UpdateShop extends OrgAction
         $changes = $shop->getChanges();
         $shop->refresh();
 
-        $contactOptionsPanelChanged =
+        $chatSettingsChanged =
             Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel') != $originalViewContactOptionsPanel
-            || Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel') != $originalDataContactOptionsPanel;
+            || Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel') != $originalDataContactOptionsPanel
+            || Arr::get($shop->settings ?? [], 'chat.enable_chat') != $originalEnableChat;
 
-        if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings || $contactOptionsPanelChanged)) {
+        if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings || $chatSettingsChanged)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
 
