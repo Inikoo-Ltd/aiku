@@ -10,6 +10,8 @@ trait WithDeliveryNoteTariffCodesQuery
 {
     protected function getTariffCodesBaseQuery(DeliveryNote $deliveryNote): Builder
     {
+        // ponytail: an org stock with several trade units would be counted once per tariff code row
+        // (units and amount inflated). No such org stock exists, split the quantity if one ever does.
         $origin     = 'COALESCE(c.code, tu.country_of_origin)';
         $incomplete = "(tu.tariff_code IS NULL OR $origin IS NULL)";
 
@@ -40,6 +42,7 @@ trait WithDeliveryNoteTariffCodesQuery
                 DB::raw('COUNT(DISTINCT os.code) as num_parts'),
                 DB::raw("jsonb_agg(DISTINCT jsonb_build_object(
                     'part', os.code,
+                    'org_stock_slug', os.slug,
                     'trade_unit_slug', tu.slug,
                     'trade_unit_code', tu.code,
                     'trade_unit_name', tu.name,

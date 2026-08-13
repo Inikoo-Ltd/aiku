@@ -20,6 +20,7 @@ const props = defineProps<{
     tab?: string
     tariffCodesExport?: {
         currency_code?: string
+        org_stock_route?: routeType
         fields: { key: string; label: string }[]
         download_route: { xlsx: routeType; csv: routeType }
     }
@@ -56,6 +57,11 @@ const exportColumns = (type: 'csv' | 'xlsx') => {
     window.open(exportUrl(type), '_blank')
 }
 
+const orgStockUrl = (slug: string) => {
+    const r = props.tariffCodesExport?.org_stock_route
+    return r?.name ? route(r.name, { ...r.parameters, orgStock: slug }) : ''
+}
+
 const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) => row.is_incomplete))
 </script>
 
@@ -71,7 +77,9 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
             </div>
             <ul class="mt-2 space-y-1 text-sm">
                 <li v-for="offender in incompleteRow.offenders" :key="offender.part" class="flex flex-wrap items-center gap-x-2">
-                    <span class="font-semibold">{{ offender.part }}</span>
+                    <a v-if="offender.org_stock_slug" :href="orgStockUrl(offender.org_stock_slug)" target="_blank"
+                        class="font-semibold underline underline-offset-2 hover:no-underline">{{ offender.part }}</a>
+                    <span v-else class="font-semibold">{{ offender.part }}</span>
                     <span class="text-red-600/80 truncate max-w-md">{{ offender.trade_unit_name }}</span>
                     <span class="text-xs">
                         {{ [
