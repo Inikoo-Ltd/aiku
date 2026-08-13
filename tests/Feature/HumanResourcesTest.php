@@ -2008,3 +2008,40 @@ test('an employee that already has a user can not get a second one', function (E
         'password' => 'secret123',
     ]))->toThrow(HttpException::class);
 })->depends('can create a user from an employee');
+
+test('get user current employee prefers active record over newer left record', function () {
+    $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->organisation->group_id]);
+
+    $makeEmployee = function (\App\Enums\HumanResources\Employee\EmployeeStateEnum $state) {
+        $modelData = Employee::factory()->make([
+            'organisation_id' => $this->organisation->id,
+        ])->toArray();
+        $modelData['worker_number'] = 'W' . rand(10000, 99999);
+        $modelData['alias'] = 'Alias ' . rand(10000, 99999);
+        $modelData['type'] = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state'] = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        $employee = StoreEmployee::make()->action($this->organisation, $modelData);
+        if ($state !== \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING) {
+            $employee->update(['state' => $state]);
+        }
+
+        return $employee;
+    };
+
+    $activeEmployee = $makeEmployee(\App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING);
+    $leftEmployee = $makeEmployee(\App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT);
+    $user->employees()->attach([
+        $activeEmployee->id => ['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id],
+        $leftEmployee->id   => ['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id],
+    ]);
+
+    expect($leftEmployee->id)->toBeGreaterThan($activeEmployee->id)
+        ->and(\App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user)->id)->toBe($activeEmployee->id)
+        ->and(\App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user, $this->organisation->id)->id)->toBe($activeEmployee->id)
+        ->and(\App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user, $this->organisation->slug)->id)->toBe($activeEmployee->id);
+
+    $activeEmployee->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT]);
+    expect(\App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user))->not->toBeNull();
+});

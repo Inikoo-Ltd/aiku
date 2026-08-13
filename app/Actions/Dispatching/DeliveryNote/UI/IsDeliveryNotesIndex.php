@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
@@ -307,7 +308,7 @@ trait IsDeliveryNotesIndex
     {
         $employee = null;
         if (!request()->user() instanceof WebUser) {
-            $employee = request()->user()->employees()->first() ?? null;
+            $employee = GetUserCurrentEmployee::run(request()->user());
         }
         $pickerEmployee = null;
         if ($employee) {

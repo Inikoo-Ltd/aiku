@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
@@ -30,12 +31,9 @@ class ShowProfileIndexTimesheets extends OrgAction
     {
         $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());
 
-        $employees = $request->user()->employees;
-        if (count($employees) > 0) {
-            $employee = $employees->first();
-            if ($employee->type->value == EmployeeTypeEnum::EMPLOYEE->value) {
-                return IndexTimesheets::run($employee, null, ProfileTabsEnum::TIMESHEETS->value);
-            }
+        $employee = GetUserCurrentEmployee::run($request->user());
+        if ($employee && $employee->type->value == EmployeeTypeEnum::EMPLOYEE->value) {
+            return IndexTimesheets::run($employee, null, ProfileTabsEnum::TIMESHEETS->value);
         }
         return null;
     }
