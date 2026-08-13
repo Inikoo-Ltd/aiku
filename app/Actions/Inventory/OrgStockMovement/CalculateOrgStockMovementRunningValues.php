@@ -16,6 +16,7 @@ use App\Models\Inventory\OrgStockMovement;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,7 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * valuation methods, by replaying the movement stream once per SKU. The stored
  * running_quantity_org_stock stays authoritative for quantity; this only prices it.
  */
-class CalculateOrgStockMovementRunningValues
+class CalculateOrgStockMovementRunningValues implements ShouldBeUniqueUntilProcessing
 {
     use AsAction;
     use CalculatesOrgStockHistories;
