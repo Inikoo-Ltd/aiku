@@ -149,28 +149,26 @@ function createAdminGuest(Group $group): Guest
 }
 
 /**
+ * The calling test file's own shop, created on first use and reused by every test in that file.
+ *
+ * This used to hand out Shop::first(), which returns whatever shop happens to sort first in the
+ * table - fine while a file only ever had one, but roulette as soon as any other fixture in the
+ * file creates a shop of its own. Keying by caller file keeps the old continuity-within-a-file
+ * semantics while guaranteeing the shop is always the one this helper created.
+ *
  * @throws \Throwable
  */
 function createShop(): array
 {
-    $organisation = createOrganisation();
-    $adminGuest   = createAdminGuest($organisation->group);
+    $caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'] ?? 'createShop';
 
-    $shop = Shop::first();
-    if (!$shop) {
-        $shop = StoreShop::run(
-            $organisation,
-            Shop::factory()->definition()
-        );
-        $shop->refresh();
-    }
+    [$organisation, , $shop] = createOwnShop($caller);
 
+    $adminGuest = createAdminGuest($organisation->group);
 
-    return [
-        $organisation,
-        $adminGuest->getUser(),
-        $shop
-    ];
+    /* Fresh instances, not the cached ones: a relation lazy-loaded in an earlier test (crmStats,
+       salesStats, …) stays loaded on the cached model and reads stale counts in the next test. */
+    return [$organisation->fresh(), $adminGuest->getUser(), $shop->fresh()];
 }
 
 /**
@@ -192,6 +190,12 @@ function createShop(): array
 function createOwnShop(string $key): array
 {
     static $shops = [];
+
+    /* A test that resets the database mid-file (loadDB() in a test body) leaves the cached models
+       pointing at rows that no longer exist; detect that and rebuild instead of handing them out. */
+    if (isset($shops[$key]) && !$shops[$key][2]->fresh()) {
+        unset($shops[$key]);
+    }
 
     if (!isset($shops[$key])) {
         $organisation = createOrganisation();
