@@ -2336,7 +2336,7 @@ describe('aurora provisional cost fix', function () {
         $orgStock = OrgStock::first();
         $headings = (new \App\Exports\Inventory\OrgStockHistoryExport($orgStock))->headings();
         expect($headings)->toContain(__('Stock Value FIFO (recommended)'))
-            ->toContain(__('Stock Value WAC (second choice)'))
+            ->toContain(__('Stock Value').' WAC ('.__('alternative').')')
             ->toContain(__('Stock Value LPP (not recommended)'))
             ->toContain(__('Unit Value FIFO (recommended)'));
     });

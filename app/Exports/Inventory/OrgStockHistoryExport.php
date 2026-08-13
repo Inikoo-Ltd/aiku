@@ -8,6 +8,7 @@
 
 namespace App\Exports\Inventory;
 
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
@@ -74,18 +75,20 @@ class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, Sho
 
     public function headings(): array
     {
-        return [
+        $headings = [
             __('Date'),
             __('Quantity'),
             __('Locations'),
-            __('Stock Value FIFO (recommended)'),
-            __('Stock Value WAC (second choice)'),
-            __('Stock Value LPP (not recommended)'),
-            __('Stock Value LPP (Grp currency)'),
-            __('Unit Value FIFO (recommended)'),
-            __('Unit Value WAC (second choice)'),
-            __('Unit Value LPP (not recommended)'),
         ];
+        foreach (OrgStockValuationMethodEnum::ordered() as $method) {
+            $headings[] = __('Stock Value').' '.$method->label().' ('.$method->shortLegend().')';
+        }
+        $headings[] = __('Stock Value LPP (Grp currency)');
+        foreach (OrgStockValuationMethodEnum::ordered() as $method) {
+            $headings[] = __('Unit Value').' '.$method->label().' ('.$method->shortLegend().')';
+        }
+
+        return $headings;
     }
 
     public function columnFormats(): array
@@ -106,17 +109,21 @@ class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, Sho
 
     public function map($row): array
     {
-        return [
+        $data = [
             (string) Carbon::parse($row->date)->format('Y-m-d'),
             number_format((float) ($row->quantity_in_locations ?? 0), 2, '.', ''),
             (string) ($row->number_locations ?? '0'),
-            $row->org_stock_fifo_value !== null ? number_format((float) $row->org_stock_fifo_value, 2, '.', '') : '',
-            $row->org_stock_wac_value !== null ? number_format((float) $row->org_stock_wac_value, 2, '.', '') : '',
-            number_format((float) ($row->org_stock_lpp_value ?? 0), 2, '.', ''),
-            number_format((float) ($row->grp_stock_lpp_value ?? 0), 2, '.', ''),
-            $row->fifo_per_sku !== null ? number_format((float) $row->fifo_per_sku, 2, '.', '') : '',
-            $row->wac_per_sku !== null ? number_format((float) $row->wac_per_sku, 2, '.', '') : '',
-            $row->lpp_per_sku !== null ? number_format((float) $row->lpp_per_sku, 2, '.', '') : '',
         ];
+        foreach (OrgStockValuationMethodEnum::ordered() as $method) {
+            $value  = $row->{$method->stockValueColumn()};
+            $data[] = $value !== null ? number_format((float) $value, 2, '.', '') : '';
+        }
+        $data[] = number_format((float) ($row->grp_stock_lpp_value ?? 0), 2, '.', '');
+        foreach (OrgStockValuationMethodEnum::ordered() as $method) {
+            $value  = $row->{$method->perSkuColumn()};
+            $data[] = $value !== null ? number_format((float) $value, 2, '.', '') : '';
+        }
+
+        return $data;
     }
 }

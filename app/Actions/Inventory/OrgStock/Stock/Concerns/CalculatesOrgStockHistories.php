@@ -17,6 +17,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockHistory;
 use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\Inventory\OrgStockMovement;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use Illuminate\Console\Command;
@@ -50,6 +51,21 @@ trait CalculatesOrgStockHistories
         }
 
         return $orgStock->unit_cost * $orgStock->packed_in;// todo remove this, when removing $orgStock->unit_cost from DB
+    }
+
+    /**
+     * The official per-SKU valuation used for sku_value, margins, product cost and dashboards.
+     * FIFO is the chosen method; change it here (and the UI legends) if the official method ever changes.
+     */
+    public function getOfficialPerSku(OrgStock $orgStock, Carbon $date): float
+    {
+        $officialPerSku = match (OrgStockValuationMethodEnum::official()) {
+            OrgStockValuationMethodEnum::FIFO => $this->getFifoPerSku($orgStock, $date),
+            OrgStockValuationMethodEnum::WAC  => $this->getWacPerSku($orgStock, $date),
+            OrgStockValuationMethodEnum::LPP  => $this->getLppPerSku($orgStock, $date),
+        };
+
+        return $officialPerSku > 0 ? $officialPerSku : $this->getLppPerSku($orgStock, $date);
     }
 
     public function getWacPerSku(OrgStock $orgStock, Carbon $date): ?float

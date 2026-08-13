@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\Group\UI;
 
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
@@ -191,6 +192,25 @@ class EditGroupSettings extends OrgAction
                                 'value' => Arr::get($group->settings, 'printnode.print_by_printnode', false),
                             ],
                         ]
+                    ],
+                    [
+                        'label'  => __('Inventory'),
+                        'icon'   => 'fa-light fa-inventory',
+                        'fields' => [
+                            'official_stock_valuation_method' => [
+                                'type'        => 'select',
+                                'label'       => __('Official stock valuation method'),
+                                'information' => __('Drives stock values, margins, product costs and dashboards. FIFO is the default and recommended method.'),
+                                'required'    => true,
+                                'value'       => Arr::get($group->settings, 'inventory.official_valuation_method', OrgStockValuationMethodEnum::official()->value),
+                                'options'     => collect(OrgStockValuationMethodEnum::cases())->map(fn ($method) => [
+                                    'value' => $method->value,
+                                    'label' => $method->label().' ('.$method->fullName().')',
+                                ])->values()->all(),
+                                'valueProp'   => 'value',
+                                'labelProp'   => 'label',
+                            ],
+                        ],
                     ],
                     [
                         'label'  => __('Jira'),

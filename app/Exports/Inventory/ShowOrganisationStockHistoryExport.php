@@ -8,6 +8,7 @@
 
 namespace App\Exports\Inventory;
 
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Models\Inventory\OrganisationStockHistory;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -84,9 +85,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 __('SKO Name'),
                 __('Location'),
                 __('Quantity'),
-                __('Stock Value FIFO (recommended)'),
-                __('Stock Value WAC (second choice)'),
-                __('Stock Value LPP (not recommended)'),
+                ...array_map(fn ($method) => __('Stock Value').' '.$method->label().' ('.$method->shortLegend().')', OrgStockValuationMethodEnum::ordered()),
             ];
         }
 
@@ -94,9 +93,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             __('SKO Code'),
             __('SKO Name'),
             __('Quantity'),
-            __('Stock Value FIFO (recommended)'),
-            __('Stock Value WAC (second choice)'),
-            __('Stock Value LPP (not recommended)'),
+            ...array_map(fn ($method) => __('Stock Value').' '.$method->label().' ('.$method->shortLegend().')', OrgStockValuationMethodEnum::ordered()),
             __('Sold Within 1 Year'),
             __('Last Sold Date'),
             __('Non Moving 1 Year'),
@@ -127,9 +124,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
                 (string)($row->stock_name ?? ''),
                 (string)($row->location_code ?? ''),
                 number_format((float)($row->quantity_in_locations ?? 0), 2, '.', ''),
-                $row->org_stock_fifo_value !== null ? $orgSymbol.number_format((float)$row->org_stock_fifo_value, 2, '.', '') : '',
-                $row->org_stock_wac_value !== null ? $orgSymbol.number_format((float)$row->org_stock_wac_value, 2, '.', '') : '',
-                $orgSymbol.number_format((float)($row->org_stock_lpp_value ?? 0), 2, '.', ''),
+                ...array_map(fn ($method) => $row->{$method->stockValueColumn()} !== null ? $orgSymbol.number_format((float)$row->{$method->stockValueColumn()}, 2, '.', '') : '', OrgStockValuationMethodEnum::ordered()),
             ];
         }
 
@@ -137,9 +132,7 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
             (string)($row->code ?? ''),
             (string)($row->name ?? ''),
             number_format((float)($row->quantity_in_locations ?? 0), 2, '.', ''),
-            $row->org_stock_fifo_value !== null ? $orgSymbol.number_format((float)$row->org_stock_fifo_value, 2, '.', '') : '',
-            $row->org_stock_wac_value !== null ? $orgSymbol.number_format((float)$row->org_stock_wac_value, 2, '.', '') : '',
-            $orgSymbol.number_format((float)($row->org_stock_lpp_value ?? 0), 2, '.', ''),
+            ...array_map(fn ($method) => $row->{$method->stockValueColumn()} !== null ? $orgSymbol.number_format((float)$row->{$method->stockValueColumn()}, 2, '.', '') : '', OrgStockValuationMethodEnum::ordered()),
             $row->sold_within_1y ? __('Yes') : __('No'),
             $row->last_sold_date ?? '',
             (string)($row->non_moving_1y ?? '0'),

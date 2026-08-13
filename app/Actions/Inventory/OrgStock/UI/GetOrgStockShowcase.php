@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\UI;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Support\Facades\DB;
 use App\Models\Inventory\OrgStock;
@@ -173,9 +174,12 @@ class GetOrgStockShowcase
             'sku_value'                 => $orgStock->sku_value,
             'total_stock_value'         => $orgStock->sku_value * $orgStock->quantity_available,
             'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
-            'fifo_per_sku'              => $latestHistory?->fifo_per_sku,
-            'wac_per_sku'               => $latestHistory?->wac_per_sku,
-            'lpp_per_sku'               => $latestHistory?->lpp_per_sku,
+            'official_method'           => OrgStockValuationMethodEnum::official()->label(),
+            'valuations'                => array_map(fn (OrgStockValuationMethodEnum $method) => [
+                'label'  => $method->label(),
+                'legend' => $method->shortLegend(),
+                'value'  => $latestHistory?->{$method->perSkuColumn()},
+            ], OrgStockValuationMethodEnum::ordered()),
         ];
     }
 

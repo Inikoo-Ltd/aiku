@@ -93,5 +93,15 @@ function toYmd(date: Date): string {
                 {{ locale.currencyFormat(item.org_currency_code, item.value_dormant_stock_1y) }}
             </Link>
         </template>
+        <template #cell(value_dormant_stock_1y_wac)="{ item }">
+            <Link :href="showRoute(item, 'dormant_stock_1y')" class="primaryLink tabular-nums text-red-500 hover:text-red-700">
+                {{ item.value_dormant_stock_1y_wac != null ? locale.currencyFormat(item.org_currency_code, item.value_dormant_stock_1y_wac) : '-' }}
+            </Link>
+        </template>
+        <template #cell(value_dormant_stock_1y_fifo)="{ item }">
+            <Link :href="showRoute(item, 'dormant_stock_1y')" class="primaryLink tabular-nums text-red-500 hover:text-red-700">
+                {{ item.value_dormant_stock_1y_fifo != null ? locale.currencyFormat(item.org_currency_code, item.value_dormant_stock_1y_fifo) : '-' }}
+            </Link>
+        </template>
     </Table>
 </template>

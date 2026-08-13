@@ -139,11 +139,10 @@ const stockCostStats = computed(() => {
     const format = (value: number | null | undefined) =>
         locale.currencyFormat(props.data.currency_code, value || 0)
 
-    const valuationHint = [
-        `${ctrans("Valued with FIFO")} (${ctrans("recommended")}): ${format(stockCost?.fifo_per_sku)}`,
-        `${ctrans("WAC")} (${ctrans("second choice")}): ${format(stockCost?.wac_per_sku)}`,
-        `${ctrans("LPP")} (${ctrans("not recommended")}): ${format(stockCost?.lpp_per_sku)}`,
-    ].join("\n")
+    const valuationHint = (stockCost?.valuations || [])
+        .map((valuation: { label: string; legend: string; value: number | null }) =>
+            `${valuation.label} (${valuation.legend}): ${format(valuation.value)}`)
+        .join("\n")
 
     return [
         { title: ctrans("Future delivered cost"), value: stockCost?.current_supplier_sku_cost || 0 },

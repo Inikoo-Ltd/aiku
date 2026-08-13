@@ -88,6 +88,11 @@ class UpdateGroupSettings extends OrgAction
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'timezones');
         }
+        if (Arr::has($modelData, 'official_stock_valuation_method')) {
+            data_set($groupSettings, 'inventory.official_valuation_method', Arr::get($modelData, 'official_stock_valuation_method'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'official_stock_valuation_method');
+        }
         if (Arr::has($modelData, 'jira_base_url')) {
             data_set($groupSettings, 'jira.base_url', Arr::get($modelData, 'jira_base_url'));
             $group->update(['settings' => $groupSettings]);
@@ -192,6 +197,7 @@ class UpdateGroupSettings extends OrgAction
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
             'timezones'          => ['sometimes', 'array'],
             'timezones.*'        => ['string', 'timezone'],
+            'official_stock_valuation_method' => ['sometimes', Rule::enum(\App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum::class)],
             'jira_base_url'      => ['sometimes', 'nullable', 'url'],
             'jira_email'         => ['sometimes', 'nullable', 'email'],
             'jira_api_token'     => ['sometimes', 'nullable', 'string'],

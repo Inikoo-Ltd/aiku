@@ -44,7 +44,9 @@ class OrganisationStockHistoriesResource extends JsonResource
             'grp_currency_code'              => $this->grp_currency_code,
             'number_locations'               => $this->number_locations,
             'number_org_stocks_not_sold_1y'  => $this->number_org_stocks_not_sold_1y,
-            'value_dormant_stock_1y'         => $this->value_dormant_stock_1y
+            'value_dormant_stock_1y'         => $this->value_dormant_stock_1y,
+            'value_dormant_stock_1y_wac'     => $this->value_dormant_stock_1y_wac ?? null,
+            'value_dormant_stock_1y_fifo'    => $this->value_dormant_stock_1y_fifo ?? null
         ];
     }
 }
