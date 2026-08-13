@@ -37,25 +37,17 @@ class ProductHydrateMarketingIngredientsFromTradeUnits implements ShouldBeUnique
 
     private function updateFromSingleTradeUnit(TradeUnit $tradeUnit, MasterAsset|Product $product): void
     {
-
-        if ($tradeUnit->marketing_ingredients) {
-            $product->updateQuietly([
-                'marketing_ingredients' => $tradeUnit->marketing_ingredients,
-            ]);
-        }
+        $product->updateQuietly([
+            'marketing_ingredients' => $tradeUnit->marketing_ingredients ?? '',
+        ]);
     }
 
     private function updateFromMultipleTradeUnits(Collection $tradeUnits, MasterAsset|Product $product): void
     {
-        // For multiple trade units, we'll use the dimensions from the first trade unit that has them
-        foreach ($tradeUnits as $tradeUnit) {
-            if ($tradeUnit->marketing_ingredients) {
-                if ($product instanceof MasterAsset);
-                $product->updateQuietly([
-                    'marketing_ingredients' => $tradeUnit->marketing_ingredients,
-                ]);
-                return;
-            }
-        }
+        $sourceTradeUnit = $tradeUnits->first(fn (TradeUnit $tradeUnit) => filled($tradeUnit->marketing_ingredients));
+
+        $product->updateQuietly([
+            'marketing_ingredients' => $sourceTradeUnit?->marketing_ingredients ?? '',
+        ]);
     }
 }
