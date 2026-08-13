@@ -2931,3 +2931,31 @@ test('tariff codes table surfaces items with no tariff code or origin', function
         ->and($rows->first()->tariff_code)->toBeNull()
         ->and(json_decode($rows->first()->offenders, true))->not->toBeEmpty();
 });
+
+test('raising a pick cannot take more than the location holds', function () {
+    /** @var Picking $picking */
+    $picking = Picking::where('type', PickingTypeEnum::PICK)
+        ->whereNotNull('location_id')
+        ->whereNotNull('org_stock_id')
+        ->firstOrFail();
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)
+        ->where('org_stock_id', $picking->org_stock_id)
+        ->firstOrFail();
+
+    $deliveryNoteItem = $picking->deliveryNoteItem;
+    $deliveryNoteItem->updateQuietly(['quantity_required' => 10000]);
+
+    /* Audited, not updateQuietly: the movement ledger is what the location quantity is recomputed from */
+    \App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock::make()->action($locationOrgStock, [
+        'quantity' => 7,
+        'reason'   => 'data_fix',
+    ]);
+
+    $cap = 7 + (float)$picking->quantity;
+
+    UpdatePicking::make()->action($picking->refresh(), ['quantity' => 9999]);
+
+    expect((float)$picking->refresh()->quantity)->toBe($cap)
+        ->and((float)$locationOrgStock->refresh()->quantity)->toBeGreaterThanOrEqual(0.0);
+});
