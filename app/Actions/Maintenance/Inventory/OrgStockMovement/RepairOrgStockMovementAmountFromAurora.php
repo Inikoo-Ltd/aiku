@@ -130,7 +130,7 @@ class RepairOrgStockMovementAmountFromAurora
         }
 
         foreach ($toRepair->pluck('org_stock_id')->unique() as $orgStockId) {
-            RecalculateOrgStockHistoriesPostCostFix::dispatch($orgStockId, fullWalk: true);
+            RecalculateOrgStockHistoriesPostCostFix::dispatch($orgStockId);
         }
 
         $command->info('Repaired '.count($toRepair).' movements, dispatched '.$toRepair->pluck('org_stock_id')->unique()->count().' history recalculation jobs');

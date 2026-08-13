@@ -81,7 +81,7 @@ class RecalculateOrgStockHistoriesPostCostFix
         }
 
         $firstRepaired = OrgStockMovement::where('org_stock_id', $orgStock->id)
-            ->where('cost_status', OrgStockMovementCostStatusEnum::DELIVERY->value)
+            ->whereIn('cost_status', [OrgStockMovementCostStatusEnum::DELIVERY->value, OrgStockMovementCostStatusEnum::PROVISIONAL->value])
             ->min('date');
 
         if (!$firstRepaired) {
@@ -194,7 +194,7 @@ class RecalculateOrgStockHistoriesPostCostFix
         $orgStockIds = DB::table('org_stock_movements')
             ->where('organisation_id', $organisation->id)
             ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
-            ->where('cost_status', OrgStockMovementCostStatusEnum::DELIVERY->value)
+            ->whereIn('cost_status', [OrgStockMovementCostStatusEnum::DELIVERY->value, OrgStockMovementCostStatusEnum::PROVISIONAL->value])
             ->distinct()
             ->pluck('org_stock_id');
 
