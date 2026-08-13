@@ -36,6 +36,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Popover from "primevue/popover"
 import Checkbox from "primevue/checkbox"
+import TableRowSelectCheckbox from "@/Components/Table/TableRowSelectCheckbox.vue"
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack)
@@ -51,7 +52,7 @@ const props = defineProps<{
         detach: routeType
     },
     isCheckboxProducts?: boolean
-    selectedProductsId?: {}
+    selectedProductsId?: Set<number | string>
     variantSlugs?: Record<string, string>;
     mismatch_trade_unit_with_master?: boolean
     hide_sku_in_name_column?: boolean
@@ -98,10 +99,6 @@ const onExport = (type: 'csv' | 'xlsx') => {
     if (!selectedExportColumns.value.length) return
     window.open(exportUrl(type), '_blank')
 }
-
-const emits = defineEmits<{
-    (e: "selectedRow", value: {}): void
-}>()
 
 const editingValues = shallowRef<Record<number, { price: number; rrp: number, rrp_per_unit: number, unit : string }>>({})
 const editingBackup = ref<Record<number, any>>({})
@@ -1143,18 +1140,11 @@ const familyRoute = (item) => {
         </template>
 
         <template #checkbox="data">
-            <FontAwesomeIcon
-                v-if="selectedProductsId?.[data.data.id]"
-                @click="() => emits('selectedRow', { [data.data.id]: false })"
-                icon='fas fa-check-square'
-                class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
-                fixed-width aria-hidden='true' />
-            <FontAwesomeIcon
-                v-if="!selectedProductsId?.[data.data.id]"
-                @click="() => emits('selectedRow', { [data.data.id]: true })"
-                icon='fal fa-square'
-                class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
-                fixed-width aria-hidden='true' />
+            <TableRowSelectCheckbox
+                v-if="selectedProductsId"
+                :rowKey="data.data.id"
+                :selection="selectedProductsId"
+            />
         </template>
 
 
