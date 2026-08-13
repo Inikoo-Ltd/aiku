@@ -151,16 +151,31 @@ class IndexTimesheets extends OrgAction
             });
         });
 
+        $stateFilter = AllowedFilter::callback('state', function ($query, $value) {
+            if ($value === 'all') {
+                return;
+            }
+
+            $query->where('employees.state', $value);
+        });
+
+        $stateFilterKey = $prefix ? "{$prefix}_filter" : 'filter';
+        $selectedState  = Arr::get(request()->input($stateFilterKey, []), 'state', EmployeeStateEnum::WORKING->value);
+
         $query = QueryBuilder::for(Employee::class);
 
         if ($parent instanceof Organisation) {
-            $query->where('employees.organisation_id', $parent->id)
-                ->where('employees.state', EmployeeStateEnum::WORKING);
+            $query->where('employees.organisation_id', $parent->id);
+            if ($selectedState !== 'all') {
+                $query->where('employees.state', $selectedState);
+            }
         } elseif ($parent instanceof Employee) {
             $query->where('employees.id', $parent->id);
         } else {
-            $query->where('employees.group_id', $parent->id)
-                ->where('employees.state', EmployeeStateEnum::WORKING);
+            $query->where('employees.group_id', $parent->id);
+            if ($selectedState !== 'all') {
+                $query->where('employees.state', $selectedState);
+            }
         }
 
         if ($prefix) {
@@ -204,7 +219,7 @@ class IndexTimesheets extends OrgAction
         return $query
             ->defaultSort('subject_name')
             ->allowedSorts(['subject_name', 'working_duration', 'breaks_duration'])
-            ->allowedFilters([$globalSearch, 'subject_name'])
+            ->allowedFilters([$globalSearch, 'subject_name', $stateFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -443,6 +458,14 @@ class IndexTimesheets extends OrgAction
 
                 if ($parent instanceof Organisation || $parent instanceof Group) {
                     $table->column(key: 'job_position', label: __('Job Position'));
+
+                    $table->selectFilter(
+                        'state',
+                        ['all' => __('All')] + EmployeeStateEnum::labels(),
+                        __('State'),
+                        EmployeeStateEnum::WORKING->value,
+                        false
+                    );
                 }
 
                 $table->betweenDates(['date']);

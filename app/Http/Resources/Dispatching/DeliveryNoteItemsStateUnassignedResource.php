@@ -61,6 +61,8 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             $packedInMessage = '('.__('Pack of').": $packedIn".")";
         }
 
+        $totalUnitsCount = $this->quantity_required * $packedIn;
+
         return [
             'id'                                       => $this->id,
             'state'                                    => $this->state,
@@ -80,6 +82,8 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             'packed_in_message'                        => $packedInMessage,
             'un_numbers'                               => @json_decode($this->un_numbers) ?? null,
             'is_dirty'                                 => $this->is_dirty,
+            'total_units_count'                        => $totalUnitsCount,
+            'total_units_count_fractional'             => riseDivisor(divideWithRemainder(findSmallestFactors($totalUnitsCount)), $packedIn),
         ];
     }
 }

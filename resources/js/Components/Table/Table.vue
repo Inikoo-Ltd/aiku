@@ -1083,6 +1083,7 @@ const getSeverity = (type?: string) => {
                                         trans('records')
                                         : queryBuilderProps.labelRecord?.[0] || trans('record')
                                         }}
+                                        <slot name="afterRecordCount" />
                                     </span>
                                 </div>
                             </div>
@@ -1245,6 +1246,7 @@ const getSeverity = (type?: string) => {
                                                     trans('records')
                                                     : queryBuilderProps.labelRecord?.[0] || trans('record')
                                                     }}
+                                                    <slot name="afterRecordCount" />
                                                 </span>
                                             </div>
                                         </div>

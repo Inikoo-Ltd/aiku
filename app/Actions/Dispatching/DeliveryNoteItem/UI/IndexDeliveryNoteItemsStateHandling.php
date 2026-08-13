@@ -187,6 +187,14 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             }
 
 
+            $table
+                ->withLabelRecord([__("Part"), __("Parts")])
+                ->withEmptyState(
+                    [
+                        'title' => __("delivery note empty"),
+                    ]
+                )->defaultSort('picking_position');
+
             $allowAction = $this->canHandleDeliveryNote($deliveryNote);
 
             $table
