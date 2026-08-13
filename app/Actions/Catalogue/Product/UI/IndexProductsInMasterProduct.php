@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithListingsColumns;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -32,6 +33,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexProductsInMasterProduct extends OrgAction
 {
     use WithMasterProductSubNavigation;
+    use WithListingsColumns;
 
     /**
      * @var \App\Models\Masters\MasterAsset
@@ -90,19 +92,22 @@ class IndexProductsInMasterProduct extends OrgAction
 
         $allowedSorts = ['code', 'name', 'shop_code', 'units'];
 
+        $hasListingsColumns = $this->hasListingsColumns($masterAsset);
+
         if ($prefix === IndexProductsInMasterProductSales::PREFIX) {
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
                 timeSeriesTable: 'asset_time_series',
                 timeSeriesRecordsTable: 'asset_time_series_records',
                 foreignKey: 'asset_id',
-                aggregateColumns: [
+                aggregateColumns: array_merge([
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
                     'invoices'                    => 'invoices',
                     'refunds'                     => 'refunds',
+                    'sold'                        => 'sold'
+                ], $hasListingsColumns ? [
                     'dropshippers'                => 'dropshippers',
                     'listings'                    => 'listings',
-                    'sold'                        => 'sold'
-                ],
+                ] : []),
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true,
@@ -113,17 +118,19 @@ class IndexProductsInMasterProduct extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['refunds'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
+
+            if ($hasListingsColumns) {
+                $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+                $selects[] = $timeSeriesData['selectRaw']['listings'];
+            }
 
             $allowedSorts = array_merge($allowedSorts, [
                 'sales_grp_currency_external',
                 'invoices',
                 'refunds',
-                'dropshippers',
-                'listings',
                 'sold',
+                ...($hasListingsColumns ? ['dropshippers', 'listings'] : []),
             ]);
         } else {
             $selects[] = 'currencies.code as currency_code';
@@ -190,9 +197,12 @@ class IndexProductsInMasterProduct extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($isSales) {
-                $table->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listing'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
+                if ($masterAsset && $this->hasListingsColumns($masterAsset)) {
+                    $table->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                        ->column(key: 'listings', label: __('Total Listing'), canBeHidden: true, sortable: true, align: 'right');
+                }
+
+                $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'refunds', label: __('Refunds'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')

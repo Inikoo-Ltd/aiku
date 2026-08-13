@@ -269,8 +269,6 @@ class IndexMasterFamilies extends OrgAction
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
                     'invoices'                    => 'invoices',
-                    'dropshippers'                => 'dropshippers',
-                    'listings'                    => 'listings',
                     'sold'                        => 'sold',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
@@ -282,8 +280,6 @@ class IndexMasterFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
             $selects[] = DB::raw(
                 "(
@@ -360,8 +356,6 @@ class IndexMasterFamilies extends OrgAction
                 'master_sub_department_code',
                 'sales_grp_currency_external',
                 'invoices',
-                'dropshippers',
-                'listings',
                 'sold',
                 'health_rank',
                 AllowedSort::custom(
@@ -441,8 +435,6 @@ class IndexMasterFamilies extends OrgAction
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'last_offers', label: __('Last Offer'), tooltip: __('Most recent offer per shop for this master family (volume discounts excluded), showing its code, start date and expiration date. The dot indicates freshness: green running, blue scheduled, grey under 3 months, amber 3 to 6 months, red older than 6 months or never offered.'), canBeHidden: true, sortable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
