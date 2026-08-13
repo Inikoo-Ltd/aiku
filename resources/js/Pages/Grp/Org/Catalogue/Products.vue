@@ -6,7 +6,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, inject, ref, watch } from "vue"
+import { computed, inject, reactive, ref, watch } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -88,10 +88,8 @@ const component = computed(() => {
     return mapping[currentTab.value]
 })
 
-const selectedProductsId = ref<Record<string, boolean>>({})
-const compSelectedProductsId = computed(() =>
-    Object.keys(selectedProductsId.value).filter(id => selectedProductsId.value[id])
-)
+const selectedProductsId = reactive(new Set<number>())
+const compSelectedProductsId = computed(() => [...selectedProductsId])
 
 const loadingField = ref<string | null>(null)
 const rowErrors = ref<Record<string, any>>({})
@@ -117,7 +115,7 @@ const onSaveEditBulkProduct = async (field: string, value: any) => {
                 onSuccess: () => {
                     isOpenModalEditProducts.value = false
                     key.value = ulid()
-                    selectedProductsId.value = {}
+                    selectedProductsId.clear()
                 }
             }
         )
@@ -278,7 +276,6 @@ const replaceProps = (updatedData) => {
         :data="localData[currentTab]"
         :isCheckboxProducts="false"
         :selectedProductsId="selectedProductsId"
-        @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
         :variantSlugs="variantSlugs"
         :productsExport="currentTab === 'index' ? products_export : undefined"
         :mismatch_trade_unit_with_master="mismatch_trade_unit_with_master"

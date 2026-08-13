@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Outbox\Hydrators;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
+use App\Actions\Traits\WithArchivedDispatchedEmails;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
@@ -23,6 +24,7 @@ class OutboxHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
+    use WithArchivedDispatchedEmails;
 
     public string $jobQueue = 'ses-analytics';
 
@@ -66,6 +68,7 @@ class OutboxHydrateDispatchedEmails implements ShouldBeUnique
         );
 
         $outboxStats               = $outbox->stats;
+        $stats                     = $this->addArchivedDispatchedEmails($outboxStats, $stats);
         $oldNumberDispatchedEmails = $outboxStats->number_dispatched_emails;
         $outboxStats->update($stats);
 

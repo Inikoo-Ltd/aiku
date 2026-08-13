@@ -108,8 +108,10 @@ const isDebug = false   //  True will show the column key in the header
                         </span>
                         
                         <template v-else>
-                            <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
-                            <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
+                            <slot name="cellLabel">
+                                <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
+                                <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
+                            </slot>
                         </template>
                         
                     </div>

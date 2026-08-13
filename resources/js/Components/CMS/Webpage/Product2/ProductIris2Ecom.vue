@@ -333,7 +333,7 @@ onMounted(async () => {
                         group
                         flex items-center gap-3
                         py-2 px-4 mt-4 w-fit
-                        border rounded-lg bg-gray-50
+                        border rounded-lg bg-[#f9f8f5]
                         transition
                         hover:bg-gray-100 hover:border-gray-300
                     ">
@@ -354,7 +354,7 @@ onMounted(async () => {
             <div class="col-span-5 self-start">
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
-                        <div class="text-xl font-bold w-[80%]">
+                        <div class="text-xl text-black font-bold w-[80%]">
                             <span v-if="product.units > 1">{{ product.units }}x</span> {{ product.name }}
                         </div>
 
@@ -417,18 +417,17 @@ onMounted(async () => {
                 <div class="flex justify-between items-start gap-4">
                     <!-- Section: Price -->
                     <div>
-                        <div class="text-2xl font-bold leading-tight"
-                            :class="bestOffer ? 'line-through text-gray-500 !text-xl font-semibold' : ''">
+                        <div class="text-2xl font-bold leading-tight text-black"
+                            :class="bestOffer ? 'line-through !text-xl font-semibold' : ''">
                             {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                         </div>
 
                         <!-- Section: Discounted price -->
-                        <div v-if="bestOffer" class="text-2xl font-bold leading-tight"
-                            :class="bestOffer?.type === 'Category Ordered' ? 'text-by-offer' : 'text-primary'">
+                        <div v-if="bestOffer" class="text-2xl font-bold leading-tight text-black">
                             {{ locale.currencyFormat(currency?.code, product.discounted_price || 0) }}
                         </div>
 
-                        <div class="text-sm text-gray-600">
+                        <div class="text-sm text-black">
                             ({{ locale.currencyFormat(currency?.code, (bestOffer ? product.discounted_price_per_unit :
                                 product.price_per_unit) || 0) }}/{{ product.unit }})
                         </div>
@@ -436,13 +435,13 @@ onMounted(async () => {
 
                     <!-- Section: RRP -->
                     <div class="text-right">
-                        <p class="text-xs text-gray-600 leading-tight">{{ trans("Retail Price") }}:</p>
-                        <p class="text-xs text-gray-600 leading-tight line-through">
+                        <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                        <p class="text-xs text-black leading-tight line-through">
                             {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                         </p>
 
-                        <p class="mt-2 text-xs text-gray-600 leading-tight">{{ trans("Profit") }}:</p>
-                        <div class="flex items-baseline justify-end gap-1">
+                        <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
+                        <div class="flex items-baseline justify-end gap-1 text-black">
                             <span class="text-base font-bold">
                                 {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                             </span>
@@ -563,7 +562,7 @@ onMounted(async () => {
                     :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type"
                     class="">
                     <div
-                        class="group flex items-center gap-3 py-2 px-4 mt-4 w-full border rounded-lg bg-gray-50 transition hover:bg-gray-100 hover:border-gray-300  my-2">
+                        class="group flex items-center gap-3 py-2 px-4 mt-4 w-full border rounded-lg bg-[#f9f8f5] transition hover:bg-gray-100 hover:border-gray-300  my-2">
                         <FontAwesomeIcon :icon="faMapMarkerAlt"
                             class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
 
@@ -579,7 +578,7 @@ onMounted(async () => {
                 
 
 
-                <div v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment" class="text-sm font-medium">
+                <div v-if="layout?.iris?.is_logged_in && fieldValue?.delivery_info?.text" class="text-sm font-medium">
                     <div v-html="fieldValue?.delivery_info?.text"></div>
                 </div>
 
@@ -592,8 +591,8 @@ onMounted(async () => {
                 </div>
 
                 <div v-if="fieldValue?.setting?.product_specs" class="my-2">
-                    <div class="border rounded-lg bg-gray-50 p-4">
-                        <div class="font-semibold text-base mb-2">{{ ctrans("Product Specification") }}</div>
+                    <div class="border rounded-lg bg-[#f9f8f5] p-4">
+                        <div class="font-semibold text-base mb-2 text-black">{{ ctrans("Product Specification") }}</div>
 
                         <div class="w-full">
 
@@ -733,31 +732,30 @@ onMounted(async () => {
             <!-- PRICE + UNIT -->
             <div class="flex justify-between items-start gap-4">
                 <div>
-                    <div class="text-2xl font-bold leading-tight"
-                        :class="bestOffer ? 'line-through text-gray-500 !text-xl font-semibold' : ''">
+                    <div class="text-2xl font-bold leading-tight text-black"
+                        :class="bestOffer ? 'line-through !text-xl font-semibold' : ''">
                         {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                     </div>
 
                     <!-- Section: Discounted price -->
-                    <div v-if="bestOffer" class="text-2xl font-bold leading-tight"
-                        :class="bestOffer?.type === 'Category Ordered' ? 'text-by-offer' : 'text-primary'">
+                    <div v-if="bestOffer" class="text-2xl font-bold leading-tight text-black">
                         {{ locale.currencyFormat(currency?.code, product.discounted_price || 0) }}
                     </div>
 
-                    <div class="text-sm text-gray-600">
+                    <div class="text-sm text-black">
                         ({{ locale.currencyFormat(currency?.code, (bestOffer ? product.discounted_price_per_unit :
                             product.price_per_unit) || 0) }}/{{ product.unit }})
                     </div>
                 </div>
 
                 <div class="text-right">
-                    <p class="text-xs text-gray-600 leading-tight">{{ trans("Retail Price") }}:</p>
-                    <p class="text-xs text-gray-600 leading-tight line-through">
+                    <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                    <p class="text-xs text-black leading-tight line-through">
                         {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                     </p>
 
-                    <p class="mt-2 text-xs text-gray-600 leading-tight">{{ trans("Profit") }}:</p>
-                    <div class="flex items-baseline justify-end gap-1">
+                    <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
+                    <div class="flex items-baseline justify-end gap-1 text-black">
                         <span class="text-base font-bold">
                             {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                         </span>
@@ -829,7 +827,7 @@ onMounted(async () => {
 
             <!-- DOWNLOAD -->
             <a :href="`${baseUrl}app/catalogue/feeds/feeds/product/${product.slug}/download?type=products_images`"
-                class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-gray-50">
+                class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-[#f9f8f5] ">
                 <FontAwesomeIcon :icon="faArrowToBottom" />
                 <span class="text-sm font-medium truncate">
                     {{ trans('Download Marketing Materials for') }} {{ product.name }}
@@ -858,9 +856,9 @@ onMounted(async () => {
             </Swiper>
 
             <!-- APPOINTMENT -->
-            <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment"
+            <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment && fieldValue?.appointment_data?.link?.href"
                 :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type">
-                <div class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-gray-50">
+                <div class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-[#f9f8f5]">
                     <FontAwesomeIcon :icon="faMapMarkerAlt" />
                     <div v-html="fieldValue?.appointment_data?.text" class="text-sm underline" />
                 </div>
@@ -879,7 +877,7 @@ onMounted(async () => {
 
             <!-- PRODUCT SPECS -->
                 <div v-if="fieldValue?.setting?.product_specs">
-                    <div class="border rounded-lg bg-gray-50 p-4">
+                    <div class="border rounded-lg bg-[#f9f8f5] p-4">
                         <div class="font-semibold text-base mb-2">{{ ctrans("Product Specification") }}</div>
 
                         <div class="w-full">
@@ -976,7 +974,7 @@ onMounted(async () => {
 
 <style scoped>
 .button-basket :deep(.qty-price-new) {
-  @apply font-semibold text-red-700 text-base sm:text-lg md:text-xl;
+  @apply font-semibold text-black text-base sm:text-lg md:text-xl;
 }
 
 .spec-row {
@@ -984,11 +982,11 @@ onMounted(async () => {
 }
 
 .spec-cell {
-  @apply px-2 py-1 text-xs font-light leading-snug text-gray-800;
+  @apply px-2 py-1 text-xs font-light leading-snug text-black;
 }
 
 .spec-row > .spec-cell:first-child {
-  @apply text-gray-500;
+  @apply text-black ;
 }
 
 :deep(.swiper-button-disabled) {

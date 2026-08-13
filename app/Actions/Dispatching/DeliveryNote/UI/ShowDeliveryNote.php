@@ -59,6 +59,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -1241,14 +1242,13 @@ class ShowDeliveryNote extends OrgAction
             'consumables'                        => GetDeliveryNoteConsumables::run($deliveryNote),
             'scan_to_pack'                       => $scanToPack,
             'scan_to_pick'                       => $scanToPick,
-            'tab_counts'                         => $tabCounts
-
-
+            'tab_counts'                         => $tabCounts,
+            'total_unit_counts'                  => DB::table('delivery_note_items')
+                                                        ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
+                                                        ->sum('delivery_note_items.quantity_required'),
         ];
 
-
         $props = array_merge($props, $this->getItems($deliveryNote));
-
 
         $inertiaResponse = Inertia::render(
             'Org/Dispatching/DeliveryNote',

@@ -36,6 +36,24 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
     {
         [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
+        /**
+         * Daily records are rebuilt from the raw dispatched emails and syncTimeSeriesRecords replaces
+         * everything in the window, so a run reaching before the retention cutoff would zero out the
+         * periods whose source rows have been archived away. The other frequencies aggregate the daily
+         * records, which survive the archiving, so they are left to cover the whole window.
+         */
+        if ($frequency === TimeSeriesFrequencyEnum::DAILY) {
+            $cutoff = now()->subDays(config('comms.email_retention_days'))->startOfDay();
+
+            if ($cutoff->gt($to)) {
+                return;
+            }
+
+            if ($cutoff->gt($from)) {
+                $from = $cutoff->toDateTimeString();
+            }
+        }
+
         $outbox = Outbox::on('aiku_no_sticky')->find($outboxId);
 
         if (!$outbox) {

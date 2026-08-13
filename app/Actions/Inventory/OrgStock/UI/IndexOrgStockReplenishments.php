@@ -8,15 +8,12 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Inventory\OrgStock\WithOrgStockReplenishments;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Http\Resources\Inventory\OrgStockReplenishmentsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -32,9 +29,21 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexOrgStockReplenishments extends OrgAction
 {
     use WithInventoryAuthorisation;
+    use WithOrgStockReplenishments;
+
+    private string $scope = self::SCOPE_WHOLESALE;
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
+        $this->scope = self::SCOPE_WHOLESALE;
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function dropshipping(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->scope = self::SCOPE_DROPSHIPPING;
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($organisation);
@@ -53,44 +62,19 @@ class IndexOrgStockReplenishments extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $orderedDemand = DeliveryNoteItem::query()
-            ->join('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id')
-            ->where('delivery_note_items.organisation_id', $organisation->id)
-            ->whereNotIn('delivery_note_items.state', [
-                DeliveryNoteItemStateEnum::DISPATCHED->value,
-                DeliveryNoteItemStateEnum::CANCELLED->value,
-                DeliveryNoteItemStateEnum::OUT_OF_STOCK->value,
-                DeliveryNoteItemStateEnum::NO_DISPATCHED->value,
-            ])
-            ->whereNotIn('delivery_notes.state', [
-                DeliveryNoteStateEnum::DISPATCHED->value,
-                DeliveryNoteStateEnum::CANCELLED->value,
-            ])
-            ->groupBy('delivery_note_items.org_stock_id')
-            ->select('delivery_note_items.org_stock_id')
-            ->selectRaw('SUM(delivery_note_items.quantity_required - COALESCE(delivery_note_items.quantity_dispatched, 0)) as ordered')
-            ->havingRaw('SUM(delivery_note_items.quantity_required - COALESCE(delivery_note_items.quantity_dispatched, 0)) > 0');
-
         $queryBuilder = QueryBuilder::for(OrgStock::class);
-        $queryBuilder->where('org_stocks.organisation_id', $organisation->id);
-        $queryBuilder->where('org_stocks.state', OrgStockStateEnum::ACTIVE);
-        $queryBuilder->whereNotNull('org_stocks.picking_location_id');
-        $queryBuilder->whereExists(function ($query) {
-            $query->from('location_org_stocks as picking_los')
-                ->whereColumn('picking_los.org_stock_id', 'org_stocks.id')
-                ->whereColumn('picking_los.location_id', 'org_stocks.picking_location_id')
-                ->whereRaw("(picking_los.settings->>'min_stock') IS NOT NULL")
-                ->whereRaw("(picking_los.settings->>'max_stock') IS NOT NULL")
-                ->whereRaw("picking_los.quantity <= (picking_los.settings->>'min_stock')::numeric");
-        });
-        $queryBuilder->joinSub($orderedDemand, 'ordered_demand', 'ordered_demand.org_stock_id', '=', 'org_stocks.id');
+
+        $this->applyReplenishmentsConstraints($queryBuilder, $organisation, $this->scope);
 
         return $queryBuilder
             ->defaultSort('org_stocks.code')
             ->select('org_stocks.*')
-            ->addSelect('ordered_demand.ordered')
+            ->addSelect([
+                'active_location.location_id as active_location_id',
+                'active_location.quantity as stock',
+            ])
             ->with(['locationOrgStocks' => fn ($query) => $query->with('location')])
-            ->allowedSorts(['code', 'quantity_available'])
+            ->allowedSorts(['code', 'stock'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -112,10 +96,8 @@ class IndexOrgStockReplenishments extends OrgAction
                 ->defaultSort('code')
                 ->column(key: 'code', label: __('Part'), sortable: true, searchable: true)
                 ->column(key: 'other_locations', label: __('Other locations stock'))
-                ->column(key: 'location', label: __('Location'))
+                ->column(key: 'location', label: __('Picking location'))
                 ->column(key: 'stock', label: __('Stock'), sortable: true, align: 'right')
-                ->column(key: 'ordered', label: __('Ordered'), align: 'right')
-                ->column(key: 'eventual_stock', label: __('Eventual Stock'), align: 'right')
                 ->column(key: 'recommended', label: __('Recommended SKOs quantity'));
         };
     }
@@ -125,29 +107,62 @@ class IndexOrgStockReplenishments extends OrgAction
         return OrgStockReplenishmentsResource::collection($replenishments);
     }
 
+    public function getSubNavigation(array $routeParameters): array
+    {
+        return [
+            [
+                'label'    => __('Wholesale'),
+                'leftIcon' => ['icon' => 'fas fa-dolly-flatbed-empty'],
+                'root'     => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.index',
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.index',
+                    'parameters' => $routeParameters,
+                ],
+            ],
+            [
+                'label'    => __('Dropshipping'),
+                'leftIcon' => ['icon' => 'fas fa-shopping-basket'],
+                'root'     => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.dropshipping',
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.dropshipping',
+                    'parameters' => $routeParameters,
+                ],
+            ],
+        ];
+    }
+
     public function htmlResponse(LengthAwarePaginator $replenishments, ActionRequest $request): Response
     {
+        $routeParameters = $request->route()->originalParameters();
+
+        $title = $this->scope == self::SCOPE_DROPSHIPPING
+            ? __('Dropshipping replenishments')
+            : __('Wholesale replenishments');
+
         return Inertia::render(
             'Org/Inventory/OrgStockReplenishments',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->originalParameters()
-                ),
-                'title'    => __('Replenishments'),
-                'pageHead' => [
-                    'title' => __('Replenishments'),
-                    'icon'  => [
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $routeParameters),
+                'title'       => $title,
+                'pageHead'    => [
+                    'title'         => $title,
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-dolly'],
-                        'title' => __('Replenishments'),
+                        'title' => $title,
                     ],
+                    'subNavigation' => $this->getSubNavigation($routeParameters),
                 ],
                 'replenishments' => OrgStockReplenishmentsResource::collection($replenishments),
             ]
         )->table($this->tableStructure(prefix: 'replenishments'));
     }
 
-    public function getBreadcrumbs(array $routeParameters): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
+        $label = $routeName == 'grp.org.warehouses.show.inventory.org_stocks.replenishments.dropshipping'
+            ? __('Dropshipping replenishments')
+            : __('Wholesale replenishments');
+
         return array_merge(
             ShowInventoryDashboard::make()->getBreadcrumbs($routeParameters),
             [
@@ -155,10 +170,10 @@ class IndexOrgStockReplenishments extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.index',
+                            'name'       => $routeName,
                             'parameters' => $routeParameters,
                         ],
-                        'label' => __('Replenishments'),
+                        'label' => $label,
                         'icon'  => 'fal fa-dolly',
                     ],
                 ],

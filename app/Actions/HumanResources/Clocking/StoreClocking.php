@@ -26,6 +26,7 @@ use App\Http\Resources\HumanResources\ClockingResource;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\Workplace;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
@@ -43,7 +44,7 @@ class StoreClocking extends OrgAction
     use WithBase64FileConverter;
     use WithUpdateModelImage;
 
-    private const DUPLICATE_CLOCKING_WINDOW_SECONDS = 30;
+    private const DUPLICATE_CLOCKING_WINDOW_SECONDS = 5;
 
     private Employee $employee;
 
@@ -103,15 +104,18 @@ class StoreClocking extends OrgAction
         data_set($modelData, 'timesheet_id', $timesheet->id);
 
 
-        if ($parent instanceof ClockingMachine) {
-            $recentClocking = $this->findRecentClocking($subject, $clockedAt);
+        $clocking = DB::transaction(function () use ($modelData, $subject, $timesheet, $uploadedPhoto, $parent, $clockedAt) {
 
-            if ($recentClocking) {
-                return $recentClocking;
+            Timesheet::whereKey($timesheet->id)->lockForUpdate()->first();
+
+            if ($parent instanceof ClockingMachine) {
+                $recentClocking = $this->findRecentClocking($subject, $clockedAt);
+
+                if ($recentClocking) {
+                    return $recentClocking;
+                }
             }
-        }
 
-        $clocking = DB::transaction(function () use ($modelData, $subject, $timesheet, $uploadedPhoto) {
             /** @var Clocking $clocking */
             $clocking = $subject->clockings()->create($modelData);
             AddClockingToTimeTracker::run($timesheet, $clocking);

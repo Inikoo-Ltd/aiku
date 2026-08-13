@@ -168,6 +168,7 @@ const props = defineProps<{
 		toggle_route: routeType
 		is_on: boolean
 	}
+	total_unit_counts: number
 	tab_counts?: { all: number, todo: number, done: number } | null
 }>();
 
@@ -481,6 +482,92 @@ watch(pickingView, (val) => {
 });
 
 const showWarningMessage = ref(true);
+
+// Section: Warehouse note from customer service, raised once so the picker/packer cannot miss it
+const PICKING_PACKING_STATES = ["handling", "handling_blocked", "picked", "packing"]
+
+const warehouseNote = computed(() => {
+	const note = props.notes?.note_list?.find(item => item.field === "private_warehouse_note")
+
+	return note?.note?.trim() ? note : null
+})
+
+const isModalWarehouseNote = ref(false)
+
+// Only pressing "Understood" retires the note, so a picker who closes the modal without reading it
+// gets it back on the next refresh. The note is fingerprinted rather than stored whole, so a note
+// the customer service rewrites afterwards is raised again without keeping 4000 characters around.
+const ACKNOWLEDGED_WAREHOUSE_NOTES_KEY = "delivery-note:warehouse-note-acknowledged"
+const ACKNOWLEDGED_WAREHOUSE_NOTES_LIMIT = 100
+
+const fingerprintNote = (note: string) => {
+	let hash = 5381
+
+	for (let index = 0; index < note.length; index++) {
+		hash = ((hash * 33) ^ note.charCodeAt(index)) >>> 0
+	}
+
+	return `${note.length}.${hash.toString(36)}`
+}
+
+const readAcknowledgedWarehouseNotes = (): Record<string, string> => {
+	try {
+		return JSON.parse(localStorage.getItem(ACKNOWLEDGED_WAREHOUSE_NOTES_KEY) ?? "{}")
+	} catch {
+		return {}
+	}
+}
+
+const rememberWarehouseNote = (note: string) => {
+	const acknowledged = readAcknowledgedWarehouseNotes()
+	acknowledged[props.delivery_note.id] = fingerprintNote(note)
+
+	// Delivery note ids are numeric, so the browser keeps them in ascending order and trimming from
+	// the front drops the oldest delivery notes the picker worked on.
+	const kept = Object.entries(acknowledged).slice(-ACKNOWLEDGED_WAREHOUSE_NOTES_LIMIT)
+
+	localStorage.setItem(ACKNOWLEDGED_WAREHOUSE_NOTES_KEY, JSON.stringify(Object.fromEntries(kept)))
+}
+
+const acknowledgeWarehouseNote = () => {
+	isModalWarehouseNote.value = false
+
+	if (warehouseNote.value) {
+		rememberWarehouseNote(warehouseNote.value.note)
+	}
+}
+
+// Nobody needs the note read back to them right after they wrote it, so a warehouse note saved from
+// this page counts as read the moment it is sent, before the reload brings the new text in.
+const onNoteSubmitted = ({ field, note }: { field: string, note: string }) => {
+	if (field !== "private_warehouse_note") {
+		return
+	}
+
+	rememberWarehouseNote(note)
+}
+
+watch(
+	() => [props.delivery_note.state, warehouseNote.value?.note],
+	(e) => {
+		if (!props.is_editable || !warehouseNote.value) {
+			return
+		}
+
+		if (!PICKING_PACKING_STATES.includes(props.delivery_note.state)) {
+			return
+		}
+
+		const acknowledged = readAcknowledgedWarehouseNotes()
+
+		if (acknowledged[props.delivery_note.id] === fingerprintNote(warehouseNote.value.note)) {
+			return
+		}
+
+		isModalWarehouseNote.value = true
+	},
+	{ immediate: true }
+);
 
 
 const debReloadPage = debounce(() => {
@@ -913,6 +1000,7 @@ const stopSocketListener = () => {
 					:key="index + note.label"
 					:noteData="note"
 					:updateRoute="routes.update"
+					@submitted="onNoteSubmitted"
 				/>
 			</div>
 		</Transition>
@@ -991,10 +1079,44 @@ const stopSocketListener = () => {
 			:order_slug="order_slug"
 			:warehouse
 			:deliveryNote="delivery_note"
+			:total_unit_counts="total_unit_counts"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError"
 			@open-tab="handleTabUpdate" />
 	</div>
+
+	<!-- Modal: Warehouse note from customer service -->
+	<Modal
+		:isOpen="isModalWarehouseNote"
+		@onClose="isModalWarehouseNote = false"
+		width="w-full max-w-lg">
+		<div class="flex flex-col gap-y-4">
+			<div class="flex items-center gap-x-3">
+				<FontAwesomeIcon
+					:icon="faExclamationTriangle"
+					class="text-xl text-amber-500"
+					fixed-width
+					aria-hidden="true" />
+				<div class="text-lg font-semibold">
+					{{ ctrans("Note from customer service") }}
+				</div>
+			</div>
+
+			<div
+				class="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-base text-gray-800 whitespace-pre-line break-words max-h-72 overflow-y-auto">
+				{{ warehouseNote?.note }}
+			</div>
+
+			<div class="flex justify-end mt-4">
+				<Button
+					:label="ctrans('Understood')"
+					icon="fas fa-check"
+					full
+					size="lg"
+					@click="acknowledgeWarehouseNote" />
+			</div>
+		</div>
+	</Modal>
 
 	<!-- Modal: Select picker -->
 	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>

@@ -68,6 +68,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
 
     Route::prefix('replenishments')->as('replenishments.')->group(function () {
         Route::get('/', IndexOrgStockReplenishments::class)->name('index');
+        Route::get('/dropshipping', [IndexOrgStockReplenishments::class, 'dropshipping'])->name('dropshipping');
     });
 
     Route::prefix('low-stock-audits')->as('low_stock_audits.')->group(function () {

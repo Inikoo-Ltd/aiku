@@ -9,10 +9,11 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import IconPicker from "@/Components/Pure/IconPicker.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faLink, faTimes, faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt } from '@fal'
+import { faLink, faTimes, faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck } from '@fal'
 import {
     faWhatsapp,
     faFacebookF,
+    faFacebookMessenger,
     faInstagram,
     faXTwitter,
     faTelegram,
@@ -31,9 +32,9 @@ import { computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 
 const contactIconList = [
-    faWhatsapp, faFacebookF, faInstagram, faXTwitter, faTelegram, faTiktok, faYoutube,
-    faLinkedinIn, faLine, faWeixin, faPinterest, faSnapchat, faDiscord,
-    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt,
+    faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok, faYoutube,
+    faLinkedinIn, faLine, faWeixin, faPinterest, faSnapchat, faDiscord, faQuestionCircle, faTruck,
+    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb, 
 ]
 
 library.add(faTimes, faLink, ...contactIconList)
