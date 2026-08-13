@@ -100,6 +100,7 @@ trait CalculatesOrgStockHistories
             ->where('date', '>=', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
             ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
             ->orderBy('date')
+            ->orderBy('id')
             ->get();
 
         foreach ($movements as $movement) {

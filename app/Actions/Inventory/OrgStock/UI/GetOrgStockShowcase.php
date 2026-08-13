@@ -13,7 +13,6 @@ use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Models\Goods\TradeUnit;
-use Illuminate\Support\Facades\DB;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
@@ -165,19 +164,23 @@ class GetOrgStockShowcase
      */
     private function getStockCost(OrgStock $orgStock): array
     {
-        $latestHistory = DB::table('org_stock_histories')
-            ->where('org_stock_id', $orgStock->id)
-            ->orderByDesc('date')
-            ->first(['fifo_per_sku', 'wac_per_sku', 'lpp_per_sku']);
+        $now       = now();
+        $valuation = $this->getValuationPerSku($orgStock, $now);
+        $perSku    = [
+            OrgStockValuationMethodEnum::FIFO->value => $valuation['fifo'],
+            OrgStockValuationMethodEnum::WAC->value  => $valuation['wac'],
+            OrgStockValuationMethodEnum::LPP->value  => $this->getLppPerSku($orgStock, $now),
+        ];
+        $officialPerSku = $perSku[OrgStockValuationMethodEnum::official()->value] ?? $perSku[OrgStockValuationMethodEnum::LPP->value];
 
         return [
-            'sku_value'                 => $orgStock->sku_value,
-            'total_stock_value'         => $orgStock->sku_value * $orgStock->quantity_available,
+            'sku_value'                 => $officialPerSku,
+            'total_stock_value'         => $officialPerSku * $orgStock->quantity_available,
             'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
             'official_method'           => OrgStockValuationMethodEnum::official()->label(),
             'valuations'                => array_map(fn (OrgStockValuationMethodEnum $method) => [
                 'label' => $method->labelWithStatus(),
-                'value' => $latestHistory?->{$method->perSkuColumn()},
+                'value' => $perSku[$method->value],
             ], OrgStockValuationMethodEnum::ordered()),
         ];
     }

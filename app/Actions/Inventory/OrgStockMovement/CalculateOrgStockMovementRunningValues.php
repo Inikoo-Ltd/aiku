@@ -9,7 +9,6 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
-use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
@@ -52,19 +51,30 @@ class CalculateOrgStockMovementRunningValues implements ShouldBeUniqueUntilProce
         $movements = OrgStockMovement::on('aiku_no_sticky')
             ->select(['id', 'type', 'quantity', 'cost_per_sku', 'org_amount', 'date', 'running_quantity_org_stock'])
             ->where('org_stock_id', $orgStock->id)
-            ->where('class', '!=', OrgStockMovementClassEnum::HELPER)
             ->orderBy('date')
+            ->orderBy('id')
             ->get();
 
         if ($movements->isEmpty()) {
             return;
         }
 
-        $state      = ['onHand' => 0.0, 'wac' => null, 'layers' => []];
-        $lppPerSku  = null;
+        $wacStartDate = $orgStock->organisation->wac_calculations_start_date
+            ? Carbon::parse($orgStock->organisation->wac_calculations_start_date)->startOfDay()
+            : null;
+
+        $state = $wacStartDate
+            ? $this->initValuationState($orgStock, $wacStartDate)
+            : ['onHand' => 0.0, 'wac' => null, 'layers' => []];
+
+        $lppPerSku = null;
 
         foreach ($movements as $movement) {
-            $this->applyMovementToValuation($state, $movement, $orgStock);
+            $inValuationWindow = $wacStartDate === null || !Carbon::parse($movement->date)->lt($wacStartDate);
+
+            if ($wacStartDate !== null && $inValuationWindow) {
+                $this->applyMovementToValuation($state, $movement, $orgStock);
+            }
 
             if ($movement->type == OrgStockMovementTypeEnum::PURCHASE && $movement->cost_per_sku > 0) {
                 $lppPerSku = (float) $movement->cost_per_sku;
@@ -74,8 +84,8 @@ class CalculateOrgStockMovementRunningValues implements ShouldBeUniqueUntilProce
             }
 
             $quantity   = (float) ($movement->running_quantity_org_stock ?? $state['onHand']);
-            $wacPerSku  = $state['wac'];
-            $fifoPerSku = $this->fifoPerSkuFromLayers($state['layers']);
+            $wacPerSku  = $inValuationWindow && $wacStartDate !== null ? $state['wac'] : null;
+            $fifoPerSku = $inValuationWindow && $wacStartDate !== null ? $this->fifoPerSkuFromLayers($state['layers']) : null;
 
             DB::table('org_stock_movements')->where('id', $movement->id)->update([
                 'running_lpp_value'  => round($quantity * $lppPerSku, 2),
