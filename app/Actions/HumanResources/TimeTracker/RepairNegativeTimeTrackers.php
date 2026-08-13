@@ -8,6 +8,7 @@
 namespace App\Actions\HumanResources\TimeTracker;
 
 use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
+use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\TimeTracker;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -60,12 +61,72 @@ class RepairNegativeTimeTrackers
         return $timeTrackers->count();
     }
 
+    /**
+     * Days whose own start and end were written from the wrong-way-round clockings. Ordering the
+     * trackers underneath does not touch them, and total_duration is measured straight from them,
+     * so the day keeps reporting a negative span until they are realigned to the trackers.
+     *
+     * @return Collection<int, Timesheet>
+     */
+    public function invertedTimesheets(): Collection
+    {
+        return Timesheet::whereNotNull('start_at')
+            ->whereNotNull('end_at')
+            ->whereColumn('end_at', '<', 'start_at')
+            ->get();
+    }
+
+    /**
+     * @param  Collection<int, Timesheet>  $timesheets
+     */
+    public function realignTimesheets(Collection $timesheets): int
+    {
+        $realigned = 0;
+
+        foreach ($timesheets as $timesheet) {
+            $bounds = $timesheet->timeTrackers()
+                ->selectRaw('min(starts_at) as first_start, max(ends_at) as last_end')
+                ->first();
+
+            if (!$bounds?->first_start) {
+                continue;
+            }
+
+            $timesheet->update([
+                'start_at' => $bounds->first_start,
+                'end_at'   => $bounds->last_end,
+            ]);
+
+            TimesheetHydrateTimeTrackers::run($timesheet->id);
+            $realigned++;
+        }
+
+        return $realigned;
+    }
+
     public function asCommand(Command $command): int
     {
         $timeTrackers = $this->handle();
+        $inverted     = $this->invertedTimesheets();
+
+        if ($timeTrackers->isEmpty() && $inverted->isEmpty()) {
+            $command->info('No time trackers with a negative duration, and no days whose start is after their end.');
+
+            return 0;
+        }
 
         if ($timeTrackers->isEmpty()) {
-            $command->info('No time trackers with a negative duration found.');
+            $command->info($inverted->count().' day(s) still start after they end, so their total duration reads negative.');
+
+            if (!$command->option('execute')) {
+                $command->newLine();
+                $command->comment('Dry run only - nothing was changed. Re-run with --execute to realign them to their time trackers.');
+
+                return 0;
+            }
+
+            $realigned = $this->realignTimesheets($inverted);
+            $command->info("Done. Days realigned: {$realigned}.");
 
             return 0;
         }
@@ -74,6 +135,10 @@ class RepairNegativeTimeTrackers
 
         $command->info($timeTrackers->count().' time tracker(s) end before they start, '.$hours.' hour(s) subtracted from worked time across '.$timeTrackers->pluck('subject_id')->unique()->count().' employee(s).');
         $command->line('  Oldest: '.$timeTrackers->first()?->starts_at?->toDateString().', newest: '.$timeTrackers->last()?->starts_at?->toDateString());
+
+        if ($inverted->isNotEmpty()) {
+            $command->line('  '.$inverted->count().' day(s) also start after they end and will be realigned to their trackers.');
+        }
 
         if (!$command->option('execute')) {
             $command->newLine();
@@ -89,10 +154,11 @@ class RepairNegativeTimeTrackers
             return 0;
         }
 
-        $repaired = $this->repair($timeTrackers);
+        $repaired  = $this->repair($timeTrackers);
+        $realigned = $this->realignTimesheets($this->invertedTimesheets());
 
         $command->newLine();
-        $command->info("Done. Repaired: {$repaired}.");
+        $command->info("Done. Repaired: {$repaired}. Days realigned: {$realigned}.");
 
         return 0;
     }

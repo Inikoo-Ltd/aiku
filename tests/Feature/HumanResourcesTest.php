@@ -2206,6 +2206,23 @@ describe('time tracker interval guard', function () {
         $negatives = RepairNegativeTimeTrackers::make()->handle();
 
         expect($negatives->pluck('id'))->not->toContain($tracker->id);
+
+        $timesheet->update([
+            'start_at' => now()->setTime(16, 0),
+            'end_at'   => now()->setTime(8, 0),
+        ]);
+
+        $action = RepairNegativeTimeTrackers::make();
+        $inverted = $action->invertedTimesheets();
+
+        expect($inverted->pluck('id'))->toContain($timesheet->id);
+
+        $action->realignTimesheets($inverted);
+        $timesheet->refresh();
+
+        expect($timesheet->start_at->format('H:i'))->toBe('08:00')
+            ->and($timesheet->end_at->format('H:i'))->toBe('16:00')
+            ->and($timesheet->total_duration)->toBeGreaterThan(0);
     });
 });
 
