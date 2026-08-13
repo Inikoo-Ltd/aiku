@@ -36,17 +36,17 @@ class RecalculateOrgStockHistoriesPostCostFix
 
     private array $exchangeRates = [];
 
-    public function getJobUniqueId(int $orgStockId): int
+    public function getJobUniqueId(int $orgStockId, bool $fullWalk = false): int
     {
         return $orgStockId;
     }
 
-    public function asJob(int $orgStockId): void
+    public function asJob(int $orgStockId, bool $fullWalk = false): void
     {
-        $this->handle($orgStockId);
+        $this->handle($orgStockId, $fullWalk);
     }
 
-    public function handle(int $orgStockId): void
+    public function handle(int $orgStockId, bool $fullWalk = false): void
     {
         $orgStock = OrgStock::find($orgStockId);
         if (!$orgStock || !$orgStock->organisation->wac_calculations_start_date) {
@@ -54,7 +54,7 @@ class RecalculateOrgStockHistoriesPostCostFix
         }
 
         $wacStartDate = Carbon::parse($orgStock->organisation->wac_calculations_start_date);
-        $fromDate     = $this->getRecalculationFloor($orgStock, $wacStartDate);
+        $fromDate     = $fullWalk ? $wacStartDate : $this->getRecalculationFloor($orgStock, $wacStartDate);
 
         $this->recalculateOrgStock($orgStock, $wacStartDate, $fromDate);
 

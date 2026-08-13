@@ -37,8 +37,9 @@ class UpdateOrgStockMovement extends OrgAction
             ->first();
 
         if (Arr::has($modelData, 'quantity')) {
-            $orgAmount = $modelData['quantity'] * $orgStockMovement->orgStock->value_in_locations;
-            data_set($modelData, 'org_amount', $orgAmount);
+            if (!Arr::has($modelData, 'org_amount')) {
+                data_set($modelData, 'org_amount', $modelData['quantity'] * $orgStockMovement->orgStock->value_in_locations);
+            }
             data_set($modelData, 'grp_amount', Arr::get($modelData, 'org_amount') * GetCurrencyExchange::run($orgStockMovement->organisation->currency, $orgStockMovement->group->currency), overwrite: false);
 
             if (in_array($orgStockMovement->type, [
@@ -95,6 +96,7 @@ class UpdateOrgStockMovement extends OrgAction
         if (!$this->strict) {
             $rules['last_fetched_at'] = ['sometimes', 'date'];
             $rules['note']            = ['sometimes', 'nullable', 'string', 'max:1024'];
+            $rules['org_amount']      = ['sometimes', 'numeric'];
         }
 
         return $rules;

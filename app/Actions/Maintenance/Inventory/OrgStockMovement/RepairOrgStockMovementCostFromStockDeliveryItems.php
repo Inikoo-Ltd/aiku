@@ -22,6 +22,13 @@ class RepairOrgStockMovementCostFromStockDeliveryItems
     public const float QUANTITY_RATIO_MIN = 0.5;
     public const float QUANTITY_RATIO_MAX = 2;
 
+    /**
+     * The org_amount corruption came from refetches recomputing quantity * value_in_locations,
+     * and only recently fetched movements hit that path; older movements match Aurora exactly
+     * and old stock_delivery_items are not a trustworthy source to overwrite them from.
+     */
+    public const string CORRUPTION_WINDOW_START = '2026-06-01';
+
     public function getCommandSignature(): string
     {
         return 'org_stock_movement:repair_cost_from_stock_delivery_items {organisation?} {--dry-run : Report what would change without writing}';
@@ -52,6 +59,7 @@ class RepairOrgStockMovementCostFromStockDeliveryItems
                 join stock_delivery_items sdi
                     on sdi.stock_delivery_id = sd.id and sdi.org_stock_id = m.org_stock_id
                 where m.type = ?
+                    and m.date >= ?
                     and m.note ~ 'delivery/[0-9]+'
                     and m.quantity > 0
                     and sdi.net_amount > 0
@@ -60,7 +68,7 @@ class RepairOrgStockMovementCostFromStockDeliveryItems
             ) flagged
             where flagged.movement_amount / flagged.delivery_amount > ?
         ";
-        $bindings = [OrgStockMovementTypeEnum::PURCHASE->value, self::AMOUNT_RATIO_THRESHOLD];
+        $bindings = [OrgStockMovementTypeEnum::PURCHASE->value, self::CORRUPTION_WINDOW_START, self::AMOUNT_RATIO_THRESHOLD];
 
         if ($command->argument('organisation')) {
             $query .= ' and flagged.organisation_slug = ?';
