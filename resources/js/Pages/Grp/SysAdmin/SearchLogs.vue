@@ -96,7 +96,7 @@ const tabs = [
     <Table v-show="activeTab === 'users'" :resource="users" name="users" class="mt-2">
         <template #cell(username)="{ item }">
             <Link
-                :href="`${route('grp.sysadmin.search_logs.index')}?filter[global]=${encodeURIComponent(item.username)}`"
+                :href="`${route('grp.sysadmin.analytics.search_logs.index')}?filter[global]=${encodeURIComponent(item.username)}`"
                 class="font-medium text-indigo-600 hover:underline"
                 v-tooltip="ctrans('See searches by this user')"
             >

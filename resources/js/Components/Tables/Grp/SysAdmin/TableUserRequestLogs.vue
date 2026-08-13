@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import Table from '@/Components/Table/Table.vue'
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
-import UserAgent from "@/Components/Elements/Info/UserAgent.vue"
 
 const props = defineProps<{
     data: {}
@@ -20,7 +19,7 @@ const formatDate = (dateIso: Date) => {
 </script>
 
 <template>
-    <Table :resource="data" class="mt-5" name="vst">
+    <Table :resource="data" class="mt-5">
         <!-- Column: Username (if exist) -->
         <template #cell(username)="{ item: user }">
             <template v-if="user.username">{{ user.username }}</template>
@@ -28,7 +27,7 @@ const formatDate = (dateIso: Date) => {
 
         <!-- Column: User Agent (if exist) -->
         <template #cell(user_agent)="{ item: user }">
-            <UserAgent :data="user.user_agent" />
+            {{ user.user_agent }}
         </template>
 
         <!-- Column: Location (if exist) -->
