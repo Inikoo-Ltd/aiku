@@ -24,6 +24,8 @@ return new class () extends Migration {
             $table->unsignedInteger('web_user_id')->index()->nullable();
             $table->foreign('web_user_id')->references('id')->on('web_users')->onUpdate('cascade')->onDelete('cascade');
 
+            $table->string('phone_number', 50)->nullable()->index();
+
             $table->ulid()->unique();
             $table->string('status')->default(ChatSessionStatusEnum::ACTIVE->value);
             $table->string('guest_identifier', 255)->nullable()->comment('Random alias we use to identify the guest');

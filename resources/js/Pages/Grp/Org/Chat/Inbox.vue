@@ -197,7 +197,7 @@ const clearAgentFilter = () => {
 
 const filteredContacts = computed(() =>
     contacts.value.filter(
-        // ponytail: every chat session is a website one today, so WhatsApp is always empty.
+        // ponytail: the list reads chat_sessions; WhatsApp stays empty until a meta_chat_sessions list endpoint exists.
         (c) => selectedChannel.value !== "whatsapp" &&
             c.status === activeTab.value &&
             (!selectedShopId.value || c.shop?.id === selectedShopId.value) &&
@@ -328,6 +328,21 @@ const openChat = (c: Contact) => {
     } as SessionAPI
     messages.value = c.messages ?? []
     updateUrl(String(c.ulid))
+}
+
+// ponytail: opens the new session directly; it joins the left list once a Meta list endpoint exists.
+const onWhatsappChatCreated = (session: any) => {
+    selectedSession.value = {
+        ulid: String(session.ulid),
+        contact_name: session.contact_name,
+        guest_identifier: session.guest_identifier ?? session.contact_name,
+        status: session.status,
+        priority: session.priority,
+        shop: session.shop,
+        organisation: props.organisation,
+    } as SessionAPI
+    messages.value = []
+    updateUrl(String(session.ulid))
 }
 
 const handleClickContact = (c: Contact) => {
@@ -570,7 +585,8 @@ onUnmounted(() => {
         <SettingChat :initial-tab="settingInitialTab" :session-ulid="selectedSession?.ulid" @close="chatSettingVisible = false" />
     </Dialog>
 
-    <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId" />
+    <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
+        @created="onWhatsappChatCreated" />
 
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->

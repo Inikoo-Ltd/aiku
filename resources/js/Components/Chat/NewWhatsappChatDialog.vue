@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue"
+import { ref, computed, inject, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
+import axios from "axios"
 import Dialog from "primevue/dialog"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 
@@ -10,9 +11,17 @@ const props = defineProps<{
     shopId: number | null
 }>()
 
+const emits = defineEmits<{
+    (e: "created", session: any): void
+}>()
+
+const layout: any = inject("layout", {})
+const baseUrl = layout?.appUrl ?? ""
+
 const customerId = ref<number | null>(null)
 const selectedCustomer = ref<any | null>(null)
-const message = ref("")
+const submitting = ref(false)
+const error = ref("")
 
 const fetchRoute = computed(() => ({
     name: "grp.json.shop.customers",
@@ -24,13 +33,32 @@ const fetchRoute = computed(() => ({
 
 const onSelectCustomer = (customer: any) => {
     selectedCustomer.value = customer ?? null
+    error.value = ""
+}
+
+const startChat = async () => {
+    if (!props.shopId || !customerId.value || submitting.value) return
+    submitting.value = true
+    error.value = ""
+    try {
+        const res = await axios.post(`${baseUrl}/app/api/chats/meta/sessions`, {
+            shop_id: props.shopId,
+            customer_id: customerId.value,
+        })
+        emits("created", res.data.data ?? res.data)
+        visible.value = false
+    } catch (e: any) {
+        error.value = e?.response?.data?.message ?? trans("Failed to start the chat.")
+    } finally {
+        submitting.value = false
+    }
 }
 
 watch(visible, (isVisible) => {
     if (!isVisible) {
         customerId.value = null
         selectedCustomer.value = null
-        message.value = ""
+        error.value = ""
     }
 })
 </script>
@@ -74,25 +102,23 @@ watch(visible, (isVisible) => {
                 </div>
             </div>
 
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-medium text-gray-600">{{ trans("Message") }}</label>
-                <textarea v-model="message" rows="4"
-                    class="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1" />
-            </div>
-
             <p class="text-xs text-gray-400 leading-snug">
                 {{ trans("WhatsApp requires an approved template for the first message to a new contact.") }}
             </p>
+
+            <p v-if="error" class="text-xs text-red-500 leading-snug">{{ error }}</p>
 
             <div class="flex items-center justify-end gap-2 pt-1">
                 <button type="button" class="px-3 py-1.5 text-sm text-gray-600 rounded-lg hover:bg-gray-100"
                     @click="visible = false">
                     {{ trans("Cancel") }}
                 </button>
-                <!-- ponytail: inert until a Meta send action + a seeded 'whatsapp' meta_channel exist. -->
-                <button type="button" disabled v-tooltip="trans('Coming soon')"
-                    class="px-3 py-1.5 text-sm text-white rounded-lg bg-gray-300 cursor-not-allowed">
-                    {{ trans("Start chat") }}
+                <button type="button" :disabled="!selectedCustomer?.phone || submitting" @click="startChat"
+                    class="px-3 py-1.5 text-sm text-white rounded-lg"
+                    :class="!selectedCustomer?.phone || submitting
+                        ? 'bg-gray-300 cursor-not-allowed'
+                        : 'bg-green-600 hover:bg-green-700'">
+                    {{ submitting ? trans("Starting...") : trans("Start chat") }}
                 </button>
             </div>
         </div>
