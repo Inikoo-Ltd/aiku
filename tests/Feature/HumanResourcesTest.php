@@ -31,6 +31,7 @@ use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
 use App\Actions\HumanResources\Clocking\RepairMisattributedClockings;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin;
@@ -2205,5 +2206,34 @@ describe('time tracker interval guard', function () {
         $negatives = RepairNegativeTimeTrackers::make()->handle();
 
         expect($negatives->pluck('id'))->not->toContain($tracker->id);
+    });
+});
+
+describe('current employee across organisations', function () {
+    test('a closed employment in the asked-for organisation never beats an active one elsewhere', function () {
+        $closed = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+        ]);
+
+        $user = StoreUserFromEmployee::make()->handle($closed, [
+            'username' => 'visitor-' . $closed->id,
+            'password' => 'secret123',
+        ]);
+
+        $active = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        ]);
+        \App\Actions\SysAdmin\User\AttachEmployeeToUser::make()->action($user, $active, ['status' => true]);
+        $user->refresh();
+
+        $unreachableOrganisationId = $this->organisation->id + 9999;
+
+        expect(GetUserCurrentEmployee::run($user, $this->organisation->id)?->id)->toBe($active->id)
+            ->and(GetUserCurrentEmployee::run($user, $unreachableOrganisationId)?->id)->toBe($active->id)
+            ->and(GetUserCurrentEmployee::run($user)?->id)->toBe($active->id);
     });
 });

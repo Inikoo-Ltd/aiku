@@ -21,6 +21,21 @@ class GetUserCurrentEmployee
             return $active;
         }
 
+        /*
+         * Someone working at another site of the group has no employment in the organisation that
+         * owns the machine or the screen they are on. Their active employment elsewhere is still
+         * the one the hours belong to, and it always beats an employment they have already left
+         * here - without this, a person rehired by a sister organisation resolves back to their
+         * closed record and the clocking lands on it again.
+         */
+        $activeAnywhere = $this->scopedQuery($user, null)
+            ->whereIn('employees.state', ['working', 'leaving'])
+            ->first();
+
+        if ($activeAnywhere) {
+            return $activeAnywhere;
+        }
+
         return $this->scopedQuery($user, $organisationScope)->first();
     }
 

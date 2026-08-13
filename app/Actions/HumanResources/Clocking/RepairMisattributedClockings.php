@@ -163,9 +163,11 @@ class RepairMisattributedClockings
                     ->update(['start_clocking_id' => null, 'starts_at' => null]);
                 TimeTracker::where('end_clocking_id', $clocking->id)
                     ->update(['end_clocking_id' => null, 'ends_at' => null, 'duration' => null, 'status' => TimeTrackerStatusEnum::OPEN]);
-                TimeTracker::whereNull('start_clocking_id')->whereNull('end_clocking_id')
-                    ->where('timesheet_id', $clocking->timesheet_id)
-                    ->delete();
+                if ($clocking->timesheet_id) {
+                    TimeTracker::whereNull('start_clocking_id')->whereNull('end_clocking_id')
+                        ->where('timesheet_id', $clocking->timesheet_id)
+                        ->delete();
+                }
 
                 $localDate = $clocking->clocked_at->copy()->setTimezone($timezone);
                 $newTimesheet = GetTimesheet::run($correct, $localDate);
