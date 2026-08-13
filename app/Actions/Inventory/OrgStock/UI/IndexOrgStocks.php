@@ -416,9 +416,9 @@ class IndexOrgStocks extends OrgAction
                 $table
                     ->column(key: 'product_count', label: __('Products'), canBeHidden: false, sortable: true)
                     ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'stock_value', label: __('Stock Value'), tooltip: __('Valued with FIFO — recommended, the official valuation'), tooltipIcon: true, canBeHidden: false, sortable: true, type: 'currency')
-                    ->column(key: 'potential_sales', label: __('Potential Sales'), canBeHidden: false, sortable: true, type: 'currency')
-                    ->column(key: 'on_the_way_po_value', label: __("On The Way (PO's)"), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'stock_value', label: __('Value'), tooltip: __('Stock value — valued with FIFO (recommended, the official valuation)'), tooltipIcon: true, canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'potential_sales', label: __('Pot. sales'), tooltip: __('Potential sales'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'on_the_way_po_value', label: __('OTW'), tooltip: __("On the way (submitted purchase orders)"), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: false, align: 'right');
 
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
