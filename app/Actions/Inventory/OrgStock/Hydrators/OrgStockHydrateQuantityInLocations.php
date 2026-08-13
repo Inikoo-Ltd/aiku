@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
 use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\RawMaterial;
@@ -92,6 +93,10 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         if ($orgStock->wasChanged('quantity_in_locations')) {
             OrgStockHydrateValueInLocations::dispatch($orgStock);
             OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock);
+
+            foreach ($orgStock->organisation->warehouses as $warehouse) {
+                WarehouseHydrateLowStockAudits::dispatch($warehouse)->delay(2);
+            }
 
             foreach (RawMaterial::where('org_stock_id', $orgStock->id)->get() as $rawMaterial) {
                 RawMaterialHydrateFromOrgStock::dispatch($rawMaterial);
