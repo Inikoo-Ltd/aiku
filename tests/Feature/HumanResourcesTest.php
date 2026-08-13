@@ -30,8 +30,10 @@ use App\Actions\HumanResources\HolidayYear\UpdateHolidayYear;
 use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
+use App\Actions\HumanResources\Clocking\RepairMisattributedClockings;
 use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachineQRCode;
 use App\Actions\HumanResources\Clocking\UpdateClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
@@ -2044,4 +2046,86 @@ test('get user current employee prefers active record over newer left record', f
 
     $activeEmployee->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT]);
     expect(\App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user))->not->toBeNull();
+});
+
+describe('repair misattributed clockings', function () {
+    test('detects machine clockings left on a past employment and ignores legitimate ones', function () {
+        $pastEmployee = Employee::factory()->create([
+            'organisation_id'   => $this->organisation->id,
+            'group_id'          => $this->group->id,
+            'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+            'employment_end_at' => now()->subYear(),
+        ]);
+
+        $user = StoreUserFromEmployee::make()->handle($pastEmployee, [
+            'username' => 'repair-' . $pastEmployee->id,
+            'password' => 'secret123',
+        ]);
+
+        $currentEmployee = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        ]);
+        \App\Actions\SysAdmin\User\AttachEmployeeToUser::make()->action($user, $currentEmployee, ['status' => true]);
+
+        $workplace = StoreWorkplace::make()->action($this->organisation, [
+            'name' => 'Repair Workplace ' . rand(100000, 999999),
+            'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+        ]);
+
+        $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+            'name' => 'Repair Machine ' . rand(100000, 999999),
+            'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+        ]);
+
+        $stray = StoreClocking::make()->action($pastEmployee, $clockingMachine, $pastEmployee, [
+            'clocked_at' => now()->toDateTimeString(),
+        ], 0, true);
+
+        StoreClocking::make()->action($currentEmployee, $clockingMachine, $currentEmployee, [
+            'clocked_at' => now()->toDateTimeString(),
+        ], 0, true);
+
+        $pairs = collect(RepairMisattributedClockings::make()->handle());
+
+        $pair = $pairs->firstWhere('wrong_employee_id', $pastEmployee->id);
+
+        expect($pair)->not->toBeNull()
+            ->and($pair['correct_employee_id'])->toBe($currentEmployee->id)
+            ->and($pair['clocking_ids'])->toContain($stray->id)
+            ->and($pairs->firstWhere('wrong_employee_id', $currentEmployee->id))->toBeNull();
+    });
+});
+
+describe('shared group clocking machines', function () {
+    test('a kiosk resolves a pin typed bare or organisation-prefixed, and refuses a closed employment', function () {
+        $employee = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        ]);
+        $employee->update(['pin' => $this->organisation->id . ':ZZQ421']);
+
+        $workplace = StoreWorkplace::make()->action($this->organisation, [
+            'name' => 'Shared Workplace ' . rand(100000, 999999),
+            'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+        ]);
+
+        $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+            'name' => 'Shared Machine ' . rand(100000, 999999),
+            'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+        ]);
+
+        $bare = ValidateClockingKioskPin::make()->handle($clockingMachine, 'ZZQ421');
+        $prefixed = ValidateClockingKioskPin::make()->handle($clockingMachine, $this->organisation->id . ':ZZQ421');
+
+        expect($bare['employee']->id)->toBe($employee->id)
+            ->and($prefixed['employee']->id)->toBe($employee->id);
+
+        $employee->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT]);
+
+        expect(fn () => ValidateClockingKioskPin::make()->handle($clockingMachine, 'ZZQ421'))
+            ->toThrow(Exception::class);
+    });
 });

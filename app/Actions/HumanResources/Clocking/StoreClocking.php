@@ -55,13 +55,8 @@ class StoreClocking extends OrgAction
         }
 
         if ($request->user() instanceof ClockingMachine) {
-            $employeeWorkplace = $this->employee->workplaces()
-                    ->wherePivot('workplace_id', $request->user()->workplace_id)
-                    ->count() > 0;
-
-            return ($this->organisation->id === $request->user()->organisation_id)
-                && $employeeWorkplace
-                && $this->employee->state === EmployeeStateEnum::WORKING;
+            return $this->employee->group_id === $request->user()->group_id
+                && in_array($this->employee->state, [EmployeeStateEnum::WORKING, EmployeeStateEnum::LEAVING], true);
         }
 
         return $request->user()->authTo("human-resources.{$this->organisation->id}.edit");
@@ -210,7 +205,7 @@ class StoreClocking extends OrgAction
         $this->han = true;
 
 
-        if ($request->user()->organisation_id !== $employee->organisation_id) {
+        if ($request->user()->group_id !== $employee->group_id) {
             abort(404);
         }
         if (in_array($employee->state, [EmployeeStateEnum::HIRED, EmployeeStateEnum::LEFT])) {

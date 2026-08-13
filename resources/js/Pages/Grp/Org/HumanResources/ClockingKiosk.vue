@@ -36,7 +36,7 @@ const enteredPin = ref<string[]>([])
 const barcodeValue = ref("")
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
-const result = ref<{ alias: string; actionType: string | null; clockedAt: string } | null>(null)
+const result = ref<{ alias: string; actionType: string | null; clockedAt: string; isVisiting: boolean } | null>(null)
 
 const scannerContainer = ref<HTMLElement | null>(null)
 const cameraActive = ref(false)
@@ -93,6 +93,7 @@ const applyResult = (data: any) => {
 		alias: data.employee.alias,
 		actionType: data.clocking.type,
 		clockedAt: data.clocking.clocked_at,
+		isVisiting: data.employee.is_visiting ?? false,
 	}
 
 	resultTimer = setTimeout(() => {
@@ -395,6 +396,9 @@ onUnmounted(() => {
 							}}
 						</div>
 						<div class="text-sm sm:text-base text-gray-500">{{ formattedClockedAt }}</div>
+						<div v-if="result.isVisiting" class="text-sm sm:text-base text-amber-600">
+							{{ trans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
+						</div>
 					</div>
 
 					<template v-else>
@@ -559,6 +563,9 @@ onUnmounted(() => {
 											}}
 										</div>
 										<div class="text-sm sm:text-base text-gray-500">{{ formattedClockedAt }}</div>
+										<div v-if="result.isVisiting" class="text-sm sm:text-base text-amber-600">
+											{{ trans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
+										</div>
 									</div>
 
 									<div

@@ -12,16 +12,22 @@ use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\Timesheet;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * A user accumulates one Employee record per organisation they've ever worked for. Before the
- * fix in App\Actions\SysAdmin\User\GetUserCurrentEmployee, QR-code-machine clocking resolved
- * the employee via an unordered `$user->employees->first()`, which could just as easily land on
- * a past, `left` employment as the current one - so some clockings/timesheets ended up recorded
+ * A user accumulates one Employee record per employment they've ever had. Before the fix in
+ * App\Actions\SysAdmin\User\GetUserCurrentEmployee, QR-code-machine clocking resolved the
+ * employee via an unordered `$user->employees->first()`, which could just as easily land on a
+ * past, `left` employment as the current one - so some clockings/timesheets ended up recorded
  * against the wrong (old) Employee record instead of the currently working one.
+ *
+ * The signature of a misattribution is the subject employment being one the person had already
+ * left, not the organisation the clocking carries: staff routinely clock on a machine belonging
+ * to another organisation, and the machine's organisation is what StoreClocking records, so an
+ * organisation mismatch on its own is normal and must never be "repaired".
  *
  * This finds every such case and, on request, moves the misattributed clockings to the correct
  * employee/timesheet, re-pairing their time trackers and re-hydrating both sides.
@@ -33,24 +39,25 @@ class RepairMisattributedClockings
 {
     use AsAction;
 
-    public string $commandSignature = 'clocking:repair-misattributed {--execute : Actually move the data. Without this flag, only a report is printed.}';
+    public string $commandSignature = 'clocking:repair-misattributed {--execute : Actually move the data. Without this flag, only a report is printed.} {--weeks=6 : How far back to look.}';
 
     public string $commandDescription = 'Find (and optionally fix) clockings recorded against the wrong Employee record for a user who has more than one (e.g. after moving organisations).';
 
-    /**
-     * @return array<int, array{wrong_employee_id: int, correct_employee_id: int, mode: string, clocking_ids: array<int, int>}>
-     */
-    public function handle(): array
-    {
-        $pairs = $this->detectCrossOrgPairs()->concat($this->detectSameOrgPairs());
+    private Carbon $since;
 
-        return $pairs->map(function (array $pair) {
-            $clockingIds = $this->clockingsFor($pair['wrong'], $pair['correct'], $pair['mode'])->pluck('id')->all();
+    /**
+     * @return array<int, array{wrong_employee_id: int, correct_employee_id: int, clocking_ids: array<int, int>}>
+     */
+    public function handle(int $weeks = 6): array
+    {
+        $this->since = now()->subWeeks($weeks);
+
+        return $this->detectMisattributedPairs()->map(function (array $pair) {
+            $clockingIds = $this->clockingsFor($pair['wrong'])->pluck('id')->all();
 
             return [
                 'wrong_employee_id'   => $pair['wrong']->id,
                 'correct_employee_id' => $pair['correct']->id,
-                'mode'                => $pair['mode'],
                 'clocking_ids'        => $clockingIds,
             ];
         })
@@ -60,31 +67,32 @@ class RepairMisattributedClockings
     }
 
     /**
-     * Employees with a Clocking recorded under an organisation other than their own, where a
-     * currently active (working/leaving) sibling Employee - same user, that other organisation -
-     * exists to receive it.
+     * Employments the person had already left that still carry machine clockings, paired with the
+     * employment those clockings belong to. Both the cross-organisation move (old AW record, new
+     * Aroma one) and the rehire within one organisation have this same shape.
      */
-    private function detectCrossOrgPairs(): Collection
+    private function detectMisattributedPairs(): Collection
     {
-        $mismatched = Clocking::query()
+        $leftEmployeeIds = Clocking::query()
             ->join('employees', function ($join) {
                 $join->on('employees.id', '=', 'clockings.subject_id')
                     ->where('clockings.subject_type', '=', 'Employee');
             })
             ->where('clockings.type', 'clocking-machine')
-            ->whereColumn('clockings.organisation_id', '!=', 'employees.organisation_id')
-            ->select(['clockings.subject_id as employee_id', 'clockings.organisation_id as clocking_org_id'])
+            ->whereNull('clockings.source_id')
+            ->where('clockings.clocked_at', '>=', $this->since)
+            ->where('employees.state', EmployeeStateEnum::LEFT->value)
             ->distinct()
-            ->get();
+            ->pluck('clockings.subject_id');
 
         $pairs = collect();
 
-        foreach ($mismatched as $row) {
-            $wrong = Employee::find($row->employee_id);
-            $correct = $this->findSiblingEmployee($wrong, (int) $row->clocking_org_id);
+        foreach ($leftEmployeeIds as $employeeId) {
+            $wrong = Employee::find($employeeId);
+            $correct = $wrong ? $this->findActiveEmployment($wrong) : null;
 
             if ($correct) {
-                $pairs->push(['wrong' => $wrong, 'correct' => $correct, 'mode' => 'cross_org']);
+                $pairs->push(['wrong' => $wrong, 'correct' => $correct]);
             }
         }
 
@@ -92,83 +100,39 @@ class RepairMisattributedClockings
     }
 
     /**
-     * Users with two Employee records in the SAME organisation - one `left`, one active - where
-     * the `left` one still has clockings dated after its own employment actually ended.
+     * The employment the clockings should have gone to: another employment of the same user that
+     * is still active, preferring one in the same organisation, then the most recent. This mirrors
+     * how App\Actions\SysAdmin\User\GetUserCurrentEmployee resolves it for new clockings.
      */
-    private function detectSameOrgPairs(): Collection
-    {
-        $userIds = DB::table('user_has_models')
-            ->where('model_type', 'Employee')
-            ->groupBy('user_id')
-            ->havingRaw('count(*) > 1')
-            ->pluck('user_id');
-
-        $pairs = collect();
-
-        foreach ($userIds as $userId) {
-            $employeeIds = DB::table('user_has_models')
-                ->where('model_type', 'Employee')->where('user_id', $userId)
-                ->pluck('model_id');
-
-            $employees = Employee::whereIn('id', $employeeIds)->get();
-
-            foreach ($employees->groupBy('organisation_id') as $group) {
-                if ($group->count() < 2) {
-                    continue;
-                }
-
-                $left = $group->firstWhere('state', EmployeeStateEnum::LEFT);
-                $active = $group->first(fn (Employee $e) => in_array($e->state->value, ['working', 'leaving']));
-
-                if (!$left || !$active || !$left->employment_end_at) {
-                    continue;
-                }
-
-                $hasStrayClockings = Clocking::where('subject_type', 'Employee')->where('subject_id', $left->id)
-                    ->where('type', 'clocking-machine')
-                    ->where('clocked_at', '>', $left->employment_end_at)
-                    ->exists();
-
-                if ($hasStrayClockings) {
-                    $pairs->push(['wrong' => $left, 'correct' => $active, 'mode' => 'same_org']);
-                }
-            }
-        }
-
-        return $pairs;
-    }
-
-    private function findSiblingEmployee(Employee $wrong, int $targetOrganisationId): ?Employee
+    private function findActiveEmployment(Employee $wrong): ?Employee
     {
         $userIds = DB::table('user_has_models')
             ->where('model_type', 'Employee')->where('model_id', $wrong->id)
             ->pluck('user_id');
 
-        foreach ($userIds as $userId) {
-            $candidate = Employee::whereIn('id', function ($query) use ($userId) {
-                $query->select('model_id')->from('user_has_models')
-                    ->where('user_id', $userId)->where('model_type', 'Employee');
-            })
-                ->where('organisation_id', $targetOrganisationId)
-                ->whereIn('state', ['working', 'leaving'])
-                ->first();
-
-            if ($candidate) {
-                return $candidate;
-            }
+        if ($userIds->isEmpty()) {
+            return null;
         }
 
-        return null;
+        $candidates = Employee::whereIn('id', function ($query) use ($userIds) {
+            $query->select('model_id')->from('user_has_models')
+                ->whereIn('user_id', $userIds)->where('model_type', 'Employee');
+        })
+            ->whereIn('state', [EmployeeStateEnum::WORKING->value, EmployeeStateEnum::LEAVING->value])
+            ->orderByDesc('id')
+            ->get();
+
+        return $candidates->firstWhere('organisation_id', $wrong->organisation_id) ?? $candidates->first();
     }
 
-    private function clockingsFor(Employee $wrong, Employee $correct, string $mode)
+    private function clockingsFor(Employee $wrong)
     {
         $query = Clocking::where('subject_type', 'Employee')->where('subject_id', $wrong->id)
-            ->where('type', 'clocking-machine');
+            ->where('type', 'clocking-machine')
+            ->whereNull('source_id')
+            ->where('clocked_at', '>=', $this->since);
 
-        if ($mode === 'cross_org') {
-            $query->where('organisation_id', $correct->organisation_id);
-        } else {
+        if ($wrong->employment_end_at) {
             $query->where('clocked_at', '>', $wrong->employment_end_at);
         }
 
@@ -176,7 +140,7 @@ class RepairMisattributedClockings
     }
 
     /**
-     * @param  array{wrong_employee_id: int, correct_employee_id: int, mode: string, clocking_ids: array<int, int>}  $pair
+     * @param  array{wrong_employee_id: int, correct_employee_id: int, clocking_ids: array<int, int>}  $pair
      */
     public function repairPair(array $pair): int
     {
@@ -266,10 +230,11 @@ class RepairMisattributedClockings
 
     public function asCommand(Command $command): int
     {
-        $pairs = $this->handle();
+        $weeks = (int) $command->option('weeks');
+        $pairs = $this->handle($weeks);
 
         if (empty($pairs)) {
-            $command->info('No misattributed clockings found.');
+            $command->info("No misattributed clockings found in the last {$weeks} week(s).");
 
             return 0;
         }
@@ -284,7 +249,7 @@ class RepairMisattributedClockings
             $correct = Employee::find($pair['correct_employee_id']);
             $count = count($pair['clocking_ids']);
 
-            $command->line("  {$wrong->slug} (#{$wrong->id}, org={$wrong->organisation_id}, {$wrong->state->value}) -> {$correct->slug} (#{$correct->id}, org={$correct->organisation_id}, {$correct->state->value}) [{$pair['mode']}] : {$count} clocking(s)");
+            $command->line("  {$wrong->slug} (#{$wrong->id}, org={$wrong->organisation_id}, {$wrong->state->value}) -> {$correct->slug} (#{$correct->id}, org={$correct->organisation_id}, {$correct->state->value}) : {$count} clocking(s)");
         }
 
         if (!$command->option('execute')) {
