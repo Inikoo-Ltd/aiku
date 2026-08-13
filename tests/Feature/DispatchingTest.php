@@ -2894,3 +2894,16 @@ test('scan matches sko vs unit barcode kind and warns only when it disagrees wit
     expect($matcher->warning($item, 'sko'))->toBeNull()
         ->and($matcher->warning($item, 'unit'))->toContain('1 SKO = 6 units');
 });
+
+test('tariff codes table surfaces items with no tariff code or origin', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
+
+    expect($rows->total())->toBeGreaterThan(0)
+        ->and((bool) $rows->first()->is_incomplete)->toBeTrue()
+        ->and($rows->first()->tariff_code)->toBeNull()
+        ->and(json_decode($rows->first()->offenders, true))->not->toBeEmpty();
+});
