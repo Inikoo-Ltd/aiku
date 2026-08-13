@@ -350,6 +350,17 @@ class Kernel extends ConsoleKernel
                 );
             }
 
+            foreach (['aw' => '5:05', 'sk' => '5:15', 'es' => '5:25', 'aroma' => '5:35'] as $organisationSlug => $scheduledAt) {
+                $this->logSchedule(
+                    $schedule->command('org_stock_movement:calculate_running_values '.$organisationSlug.' --days=2')->dailyAt($scheduledAt)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'CalculateOrgStockMovementRunningValues'.ucfirst($organisationSlug),
+                    ),
+                    name: 'CalculateOrgStockMovementRunningValues'.ucfirst($organisationSlug),
+                    type: 'command',
+                    scheduledAt: now()->format('H:i')
+                );
+            }
+
 
             $this->logSchedule(
                 $schedule->job(FetchEbayOrders::makeJob())->hourly()->between('6:00', '17:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(

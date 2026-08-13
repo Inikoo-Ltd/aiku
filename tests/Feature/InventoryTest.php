@@ -2340,4 +2340,25 @@ describe('aurora provisional cost fix', function () {
             ->toContain(__('Stock Value').' LPP')
             ->toContain(__('Unit Value').' FIFO ('.__('official').')');
     });
+
+    test('movements carry running stock values in all three methods', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFI');
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $first = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 10]);
+        $first->update(['cost_per_sku' => 2, 'date' => now()->subDays(4)]);
+        $second = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 10]);
+        $second->update(['cost_per_sku' => 4, 'date' => now()->subDays(3)]);
+        $picked = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PICKED->value, 'quantity' => -5]);
+        $picked->update(['date' => now()->subDays(2)]);
+
+        \App\Actions\Inventory\OrgStockMovement\CalculateOrgStockMovementRunningValues::run($orgStock->id);
+
+        $picked->refresh();
+        expect((float) $picked->running_quantity_org_stock)->toBe(15.0)
+            ->and((float) $picked->running_lpp_value)->toBe(60.0)
+            ->and((float) $picked->running_wac_value)->toBe(45.0)
+            ->and((float) $picked->running_fifo_value)->toBe(50.0);
+    });
 });

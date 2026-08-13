@@ -121,9 +121,15 @@ class StoreOrgStockMovement extends OrgAction
                     ->where('org_stock_id', $orgStock->id)->sum('quantity');
 
 
+                $lppPerSku  = $this->getLppPerSku($orgStock, now());
+                $valuation  = $this->getValuationPerSku($orgStock, now());
+
                 $orgStockMovement->update([
                     'running_quantity'           => $runningQuantity,
                     'running_quantity_org_stock' => $runningQuantityOrg,
+                    'running_lpp_value'          => round($runningQuantityOrg * $lppPerSku, 2),
+                    'running_wac_value'          => $valuation['wac'] === null ? null : round($runningQuantityOrg * $valuation['wac'], 2),
+                    'running_fifo_value'         => $valuation['fifo'] === null ? null : round($runningQuantityOrg * $valuation['fifo'], 2),
                 ]);
 
 

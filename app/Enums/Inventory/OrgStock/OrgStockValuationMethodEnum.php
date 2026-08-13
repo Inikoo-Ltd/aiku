@@ -114,6 +114,11 @@ enum OrgStockValuationMethodEnum: string
         return 'grp_stock_'.$this->value.'_value';
     }
 
+    public function runningValueColumn(): string
+    {
+        return 'running_'.$this->value.'_value';
+    }
+
     public function dormantValueColumn(): string
     {
         return $this === self::LPP ? 'value_dormant_stock_1y' : 'value_dormant_stock_1y_'.$this->value;
