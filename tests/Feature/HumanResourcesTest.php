@@ -2129,3 +2129,39 @@ describe('shared group clocking machines', function () {
             ->toThrow(Exception::class);
     });
 });
+
+describe('stranded empty timesheets', function () {
+    test('only days with no clockings, no worked time and no real time trackers are listed', function () {
+        $pastEmployee = Employee::factory()->create([
+            'organisation_id'   => $this->organisation->id,
+            'group_id'          => $this->group->id,
+            'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+            'employment_end_at' => now()->subYear(),
+        ]);
+
+        $empty = StoreTimesheet::make()->action($pastEmployee, ['date' => now()->subDays(2)]);
+        $withHusk = StoreTimesheet::make()->action($pastEmployee, ['date' => now()->subDays(3)]);
+        $withWork = StoreTimesheet::make()->action($pastEmployee, ['date' => now()->subDays(4)]);
+
+        $withHusk->timeTrackers()->create([
+            'subject_type' => 'Employee',
+            'subject_id'   => $pastEmployee->id,
+            'status'       => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::OPEN,
+        ]);
+
+        $withWork->timeTrackers()->create([
+            'subject_type' => 'Employee',
+            'subject_id'   => $pastEmployee->id,
+            'status'       => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::OPEN,
+            'starts_at'    => now()->subDays(4),
+        ]);
+
+        $action = RepairMisattributedClockings::make();
+        $action->handle(6);
+        $stranded = $action->strandedEmptyTimesheetIds();
+
+        expect($stranded)->toContain($empty->id)
+            ->and($stranded)->toContain($withHusk->id)
+            ->and($stranded)->not->toContain($withWork->id);
+    });
+});

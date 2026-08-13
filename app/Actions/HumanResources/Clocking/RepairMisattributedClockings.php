@@ -195,6 +195,49 @@ class RepairMisattributedClockings
         return $movedCount;
     }
 
+    /**
+     * Days stranded on a closed employment with nothing left on them: no clockings, no attendance
+     * adjustment, no worked time, and only empty time trackers - husks left behind when a clocking
+     * is unlinked and moved. They are what keeps closed employments showing on the HR clocking
+     * lists, so they are reported alongside the misattributions and cleared with them.
+     *
+     * @return Collection<int, int>
+     */
+    public function strandedEmptyTimesheetIds(): Collection
+    {
+        return Timesheet::query()
+            ->join('employees', 'employees.id', '=', 'timesheets.subject_id')
+            ->where('timesheets.subject_type', 'Employee')
+            ->where('employees.state', EmployeeStateEnum::LEFT->value)
+            ->where('timesheets.date', '>=', $this->since)
+            ->whereNull('timesheets.source_id')
+            ->where('timesheets.working_duration', 0)
+            ->whereNotExists(fn ($query) => $query->select(DB::raw(1))->from('clockings')
+                ->whereColumn('clockings.timesheet_id', 'timesheets.id'))
+            ->whereNotExists(fn ($query) => $query->select(DB::raw(1))->from('attendance_adjustments')
+                ->whereColumn('attendance_adjustments.timesheet_id', 'timesheets.id'))
+            ->whereNotExists(fn ($query) => $query->select(DB::raw(1))->from('time_trackers')
+                ->whereColumn('time_trackers.timesheet_id', 'timesheets.id')
+                ->where(fn ($carries) => $carries->whereNotNull('starts_at')
+                    ->orWhereNotNull('ends_at')
+                    ->orWhereNotNull('start_clocking_id')
+                    ->orWhereNotNull('end_clocking_id')
+                    ->orWhere('duration', '>', 0)))
+            ->pluck('timesheets.id');
+    }
+
+    /**
+     * @param  Collection<int, int>  $timesheetIds
+     */
+    private function deleteStrandedTimesheets(Collection $timesheetIds): int
+    {
+        return DB::transaction(function () use ($timesheetIds) {
+            TimeTracker::whereIn('timesheet_id', $timesheetIds)->delete();
+
+            return Timesheet::whereIn('id', $timesheetIds)->delete();
+        });
+    }
+
     private function rehydrateOrCleanTimesheet(int $timesheetId): void
     {
         $timesheet = Timesheet::find($timesheetId);
@@ -232,9 +275,10 @@ class RepairMisattributedClockings
     {
         $weeks = (int) $command->option('weeks');
         $pairs = $this->handle($weeks);
+        $stranded = $this->strandedEmptyTimesheetIds();
 
-        if (empty($pairs)) {
-            $command->info("No misattributed clockings found in the last {$weeks} week(s).");
+        if (empty($pairs) && $stranded->isEmpty()) {
+            $command->info("Nothing to repair in the last {$weeks} week(s).");
 
             return 0;
         }
@@ -252,6 +296,11 @@ class RepairMisattributedClockings
             $command->line("  {$wrong->slug} (#{$wrong->id}, org={$wrong->organisation_id}, {$wrong->state->value}) -> {$correct->slug} (#{$correct->id}, org={$correct->organisation_id}, {$correct->state->value}) : {$count} clocking(s)");
         }
 
+        if ($stranded->isNotEmpty()) {
+            $command->newLine();
+            $command->line('  '.$stranded->count().' empty day(s) stranded on closed employments will be removed (no clockings, no worked time).');
+        }
+
         if (!$command->option('execute')) {
             $command->newLine();
             $command->comment('Dry run only - nothing was changed. Re-run with --execute to apply the fix.');
@@ -260,7 +309,7 @@ class RepairMisattributedClockings
         }
 
         $command->newLine();
-        if (!$command->confirm('This will move the clockings listed above to the correct employee and re-hydrate their timesheets. Continue?')) {
+        if (!$command->confirm('This will move the clockings listed above to the correct employee, re-hydrate their timesheets and remove the empty stranded days. Continue?')) {
             $command->comment('Aborted.');
 
             return 0;
@@ -279,8 +328,11 @@ class RepairMisattributedClockings
             $command->line("  {$wrong->slug} -> {$correct->slug}: moved {$moved} clocking(s)");
         }
 
+        $strandedAfterRepair = $this->strandedEmptyTimesheetIds();
+        $deleted = $strandedAfterRepair->isEmpty() ? 0 : $this->deleteStrandedTimesheets($strandedAfterRepair);
+
         $command->newLine();
-        $command->info("Done. Total moved: {$totalMoved}.");
+        $command->info("Done. Total moved: {$totalMoved}. Empty stranded days removed: {$deleted}.");
 
         return 0;
     }
