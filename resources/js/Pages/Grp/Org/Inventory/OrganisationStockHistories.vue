@@ -29,7 +29,6 @@ const props = defineProps<{
         navigation: {}
     }
     download_route: routeType
-    currency_code?: string
     daily?: {}
     weekly?: {}
     monthly?: {}
@@ -59,9 +58,6 @@ function exportUrl(): string {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
-    <div v-if="currency_code" class="px-4 md:px-6 pt-2 -mb-4 text-right text-xs text-gray-400">
-        {{ trans('All values in') }} {{ currency_code }}
-    </div>
     <TableOrganisationStockHistories
         :key="currentTab"
         :tab="currentTab"

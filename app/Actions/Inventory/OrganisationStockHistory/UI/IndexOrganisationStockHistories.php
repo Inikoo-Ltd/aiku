@@ -106,6 +106,7 @@ class IndexOrganisationStockHistories extends OrgAction
             $sameCurrency = $organisation->currency_id === $organisation->group->currency_id;
 
             $table
+                ->withHeaderNote(__('All values in').' '.$organisation->currency->code)
                 ->withLabelRecord([__('record'), __('records')])
                 ->column(key: 'bucket', label: $bucketLabel, canBeHidden: false, sortable: true, type: 'date')
                 ->column(key: 'number_org_stocks', label: __('Total SKOs'), canBeHidden: false, sortable: true, align: 'right')
@@ -150,7 +151,6 @@ class IndexOrganisationStockHistories extends OrgAction
                         'title' => __('Stock History'),
                     ],
                 ],
-                'currency_code'  => $this->organisation->currency->code,
                 'download_route' => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.export',
                     'parameters' => $request->route()->originalParameters(),

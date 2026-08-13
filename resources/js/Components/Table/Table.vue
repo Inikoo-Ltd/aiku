@@ -1217,6 +1217,13 @@ const getSeverity = (type?: string) => {
 
             <!-- <pre>{{ compResourceData }}</pre> -->
 
+            <!-- Header note: small grey caveat above the table (currency, cut-offs, ...) -->
+            <slot name="headerNote">
+                <div v-if="queryBuilderProps.headerNote" class="pb-1 text-right text-xs text-gray-400">
+                    {{ queryBuilderProps.headerNote }}
+                </div>
+            </slot>
+
             <!-- The Main Table -->
             <slot name="tableWrapper" :meta="compResourceMeta">
                 <TableWrapper :result="compResourceMeta.total === 0" :class="{ 'mt-0': !hasOnlyData }">
@@ -1636,6 +1643,13 @@ const getSeverity = (type?: string) => {
                                 </slot>
                             </tbody>
                         </table>
+                        </div>
+                    </slot>
+
+                    <!-- Footer note: small grey caveat under the table (currency, cut-offs, ...) -->
+                    <slot name="footerNote">
+                        <div v-if="queryBuilderProps.footerNote" class="px-4 pt-2 text-right text-xs text-gray-400">
+                            {{ queryBuilderProps.footerNote }}
                         </div>
                     </slot>
 
