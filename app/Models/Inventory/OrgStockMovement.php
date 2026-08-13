@@ -9,6 +9,7 @@
 namespace App\Models\Inventory;
 
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
@@ -96,6 +97,7 @@ class OrgStockMovement extends Model
             'fixed_internal_helper' => 'boolean',
             'is_migration_point'    => 'boolean',
             'reason'                => OrgStockMovementReasonEnum::class,
+            'cost_status'           => OrgStockMovementCostStatusEnum::class,
         ];
     }
 

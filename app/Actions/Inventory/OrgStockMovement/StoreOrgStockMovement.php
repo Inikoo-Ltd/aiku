@@ -16,6 +16,7 @@ use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
@@ -172,6 +173,8 @@ class StoreOrgStockMovement extends OrgAction
             $rules['fetched_at']         = ['sometimes', 'date'];
             $rules['source_id']          = ['sometimes', 'string'];
             $rules['is_migration_point'] = ['sometimes', 'boolean'];
+            $rules['cost_per_sku']       = ['sometimes', 'nullable', 'numeric'];
+            $rules['cost_status']        = ['sometimes', 'nullable', Rule::enum(OrgStockMovementCostStatusEnum::class)];
         }
 
         return $rules;
