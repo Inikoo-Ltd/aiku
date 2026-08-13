@@ -2301,6 +2301,7 @@ test('org stock notes and consumables reach the picking screen', function () {
     /** @var DeliveryNoteItem $deliveryNoteItem */
     $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')
         ->where('quantity_required', '>', 0)
+        ->whereHas('transaction', fn ($query) => $query->where('quantity_ordered', '>', 0))
         ->whereHas('deliveryNote', fn ($query) => $query->has('deliveryNoteItems', '=', 1))
         ->firstOrFail();
 
