@@ -95,7 +95,7 @@ class IndexOrgStockHistories extends OrgAction
                 ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity_in_locations', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'org_stock_fifo_value', label: __('Stock Value (FIFO)'), tooltip: __('First In First Out — recommended, the official valuation'), canBeHidden: false, sortable: true, type: 'currency')
+                ->column(key: 'org_stock_fifo_value', label: __('Stock Value (FIFO)'), tooltip: __('First In First Out — recommended, the official valuation'), tooltipIcon: true, canBeHidden: false, sortable: true, type: 'currency')
                 ->column(key: 'org_stock_wac_value', label: __('Stock Value (WAC)'), tooltip: __('Weighted Average Cost — second choice'), canBeHidden: true, sortable: true, type: 'currency')
                 ->column(key: 'org_stock_lpp_value', label: __('Stock Value (LPP)'), tooltip: __('Last Purchase Price — not recommended'), canBeHidden: true, sortable: true, type: 'currency')
                 ->column(key: 'sold_within_1y', label: '', icon: 'fal fa-cash-register', tooltip: __('Sold Within 1Y'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')

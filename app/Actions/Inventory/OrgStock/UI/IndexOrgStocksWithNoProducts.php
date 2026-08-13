@@ -392,7 +392,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             } else {
                 if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
                     $table
-                        ->column(key: 'sku_value', label: __('Sku value'), canBeHidden: false, sortable: true, type: 'currency')
+                        ->column(key: 'sku_value', label: __('Sku value'), tooltip: __('Valued with FIFO — recommended, the official valuation'), tooltipIcon: true, canBeHidden: false, sortable: true, type: 'currency')
                         ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                         ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency');
                 }

@@ -462,7 +462,8 @@ class InertiaTable
         ?string $type = null,
         ?string $align = null,
         ?string $className = null,
-        bool $isInterval = false
+        bool $isInterval = false,
+        bool $tooltipIcon = false
     ): self {
         $this->columns = $this->columns->reject(function (Column $column) use ($key) {
             return $column->key === $key;
@@ -480,7 +481,8 @@ class InertiaTable
                 type: $type,
                 align: $align,
                 className: $className,
-                isInterval: $isInterval
+                isInterval: $isInterval,
+                tooltipIcon: $tooltipIcon
             )
         )->values();
 

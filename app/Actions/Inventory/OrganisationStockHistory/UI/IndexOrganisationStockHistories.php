@@ -111,6 +111,7 @@ class IndexOrganisationStockHistories extends OrgAction
                     key: 'org_stock_fifo_value',
                     label: $sameCurrency ? __('Stock Value (FIFO)') : __('Stock Value (FIFO)').' ('.$organisation->currency->code.')',
                     tooltip: __('First In First Out — recommended, the official valuation'),
+                    tooltipIcon: true,
                     canBeHidden: false,
                     sortable: true,
                     type: 'currency',

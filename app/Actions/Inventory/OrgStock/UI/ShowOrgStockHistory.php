@@ -108,10 +108,10 @@ class ShowOrgStockHistory extends OrgAction
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: false, type: 'date')
                 ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, align: 'right')
                 ->column(key: 'number_locations', label: __('Number of Locations'), canBeHidden: false, align: 'right')
-                ->column(key: 'org_stock_fifo_value', label: __('Stock Value (FIFO)'), tooltip: __('First In First Out — recommended, the official valuation'), canBeHidden: false, align: 'right')
+                ->column(key: 'org_stock_fifo_value', label: __('Stock Value (FIFO)'), tooltip: __('First In First Out — recommended, the official valuation'), tooltipIcon: true, canBeHidden: false, align: 'right')
                 ->column(key: 'org_stock_wac_value', label: __('Stock Value (WAC)'), tooltip: __('Weighted Average Cost — second choice'), canBeHidden: true, align: 'right')
                 ->column(key: 'org_stock_lpp_value', label: __('Stock Value (LPP)'), tooltip: __('Last Purchase Price — not recommended'), canBeHidden: true, align: 'right')
-                ->column(key: 'fifo_per_sku', label: __('Value per SKO (FIFO)'), tooltip: __('First In First Out — recommended, the official valuation'), canBeHidden: false, align: 'right')
+                ->column(key: 'fifo_per_sku', label: __('Value per SKO (FIFO)'), tooltip: __('First In First Out — recommended, the official valuation'), tooltipIcon: true, canBeHidden: false, align: 'right')
                 ->column(key: 'wac_per_sku', label: __('Value per SKO (WAC)'), tooltip: __('Weighted Average Cost — second choice'), canBeHidden: true, align: 'right')
                 ->column(key: 'lpp_per_sku', label: __('Value per SKO (LPP)'), tooltip: __('Last Purchase Price — not recommended'), canBeHidden: true, align: 'right');
         };
