@@ -203,6 +203,7 @@ class RecalculateOrgStockHistoriesPostCostFix
                 self::dispatch($orgStockId);
             }
             $command->info(count($orgStockIds).' recalculation jobs dispatched to Horizon queue '.$this->jobQueue);
+            $command->info('Run org_stock_movement:recalculate_histories_post_costfix_rollup '.$organisation->slug.' once the queue drains');
 
             return 0;
         }
@@ -215,6 +216,8 @@ class RecalculateOrgStockHistoriesPostCostFix
         }
         $progressBar->finish();
         $command->newLine();
+
+        RollUpOrgStockHistoriesPostCostFix::run($organisation);
 
         return 0;
     }
