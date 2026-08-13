@@ -2197,7 +2197,7 @@ describe('aurora provisional cost fix', function () {
             'cost_status'  => 'delivery',
         ]);
 
-        $this->artisan('org_stock_movement:recalculate_histories_post_costfix', ['organisation' => $this->organisation->slug])->assertExitCode(0);
+        $this->artisan('org_stock_movement:recalculate_histories_post_costfix', ['organisation' => $this->organisation->slug, '--sync' => true])->assertExitCode(0);
 
         $preRow  = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-05-15')->first();
         $postRow = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-07-15')->first();
@@ -2209,5 +2209,39 @@ describe('aurora provisional cost fix', function () {
             ->and((float) $postRow->wac_per_sku)->toBe(5.5);
 
         expect((float) $orgStock->refresh()->sku_value)->toBe(5.5);
+    });
+
+    test('recompute leaves rows before the first repaired movement alone', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFD');
+
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $oldPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $oldPurchase->update(['cost_per_sku' => 3, 'org_amount' => 30, 'date' => '2025-07-01 10:00:00']);
+
+        $repaired = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $repaired->update(['cost_per_sku' => 7905, 'org_amount' => 79050, 'date' => '2026-07-01 10:00:00']);
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, \Illuminate\Support\Carbon::parse('2026-05-15'));
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, \Illuminate\Support\Carbon::parse('2026-07-15'));
+
+        $repaired->update(['cost_per_sku' => 5.5, 'org_amount' => 55, 'cost_status' => 'delivery']);
+
+        $this->artisan('org_stock_movement:recalculate_histories_post_costfix', ['organisation' => $this->organisation->slug, '--sync' => true])->assertExitCode(0);
+
+        $preRow  = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-05-15')->first();
+        $postRow = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-07-15')->first();
+
+        expect((float) $preRow->lpp_per_sku)->toBe(3.0)
+            ->and((float) $preRow->wac_per_sku)->toBe(3.0)
+            ->and((float) $postRow->wac_per_sku)->toBe(4.25)
+            ->and((float) $postRow->lpp_per_sku)->toBe(5.5);
     });
 });
