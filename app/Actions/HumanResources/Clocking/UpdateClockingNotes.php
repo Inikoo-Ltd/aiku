@@ -94,11 +94,7 @@ class UpdateClockingNotes
                 $timeTracker->ends_at = $clocking->clocked_at;
             }
 
-            if ($timeTracker->starts_at && $timeTracker->ends_at) {
-                $timeTracker->duration = (int) $timeTracker->starts_at->diffInSeconds($timeTracker->ends_at);
-            }
-
-            $timeTracker->save();
+            $timeTracker->normaliseInterval();
         }
 
         $startAt = $timesheet->timeTrackers()->min('starts_at');
