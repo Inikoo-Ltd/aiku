@@ -29,6 +29,10 @@ const props = defineProps<{
     alternativeStyle?: boolean
 }>()
 
+const emits = defineEmits<{
+    (e: 'submitted', payload: { field: string, note: string }): void
+}>()
+
 // Section: Modal Note
 const noteModalValue = ref(props.noteData.note)
 const isModalOpen = ref(false)
@@ -45,6 +49,7 @@ const cleanseCapitalize = (value?: string) =>
 
 const onSubmitNote = () => {
     isSubmitNoteLoading.value = true
+    emits('submitted', { field: props.noteData.field, note: noteModalValue.value })
     router.patch(route(props.updateRoute.name, props.updateRoute.parameters), {
             [props.noteData.field]: noteModalValue.value
         },
