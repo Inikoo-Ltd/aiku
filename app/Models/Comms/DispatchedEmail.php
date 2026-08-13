@@ -37,11 +37,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $source_id
  * @property int $number_email_tracking_events
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
  * @property-read \App\Models\Comms\EmailAddress|null $emailAddress
  * @property-read \App\Models\Comms\EmailCopy|null $emailCopy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailTrackingEvent> $emailTrackingEvents
  * @property-read \App\Models\Comms\Mailshot|null $mailshot
  * @property-read \App\Models\Comms\Outbox|null $outbox
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Prospect> $prospects
+ * @property-read \App\Models\Comms\Mailshot|null $sentMailshot
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail query()

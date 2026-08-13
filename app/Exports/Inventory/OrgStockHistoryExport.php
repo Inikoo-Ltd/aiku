@@ -35,9 +35,9 @@ class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, Sho
                 'date',
                 'quantity_in_locations',
                 'number_locations',
-                'org_stock_value',
-                'grp_stock_value',
-                'value_per_sku',
+                'org_stock_lpp_value',
+                'grp_stock_lpp_value',
+                'lpp_per_sku',
             ])
             ->orderBy('date', 'desc');
 
@@ -98,9 +98,9 @@ class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, Sho
             (string) Carbon::parse($row->date)->format('Y-m-d'),
             number_format((float) ($row->quantity_in_locations ?? 0), 2, '.', ''),
             (string) ($row->number_locations ?? '0'),
-            number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
-            number_format((float) ($row->grp_stock_value ?? 0), 2, '.', ''),
-            $row->value_per_sku !== null ? number_format((float) $row->value_per_sku, 2, '.', '') : '',
+            number_format((float) ($row->org_stock_lpp_value ?? 0), 2, '.', ''),
+            number_format((float) ($row->grp_stock_lpp_value ?? 0), 2, '.', ''),
+            $row->lpp_per_sku !== null ? number_format((float) $row->lpp_per_sku, 2, '.', '') : '',
         ];
     }
 }

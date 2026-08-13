@@ -19,7 +19,6 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\TestEmailRecipient;
 use App\Models\Fulfilment\Fulfilment;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class SendTestEmail extends OrgAction
@@ -123,7 +122,7 @@ class SendTestEmail extends OrgAction
      * @throws \Throwable
      * @noinspection PhpUnusedParameterInspection
      */
-    public function asControllerFulfillment(Organisation $organisation, Fulfilment $fulfilment, Outbox $outbox, ActionRequest $request): DispatchedEmail
+    public function asControllerFulfillment(Fulfilment $fulfilment, Outbox $outbox, ActionRequest $request): DispatchedEmail
     {
         $this->initialisationFromFulfilment($fulfilment, $request);
 
@@ -134,7 +133,7 @@ class SendTestEmail extends OrgAction
      * @throws \Throwable
      * @noinspection PhpUnusedParameterInspection
      */
-    public function asControllerTemplate(Organisation $organisation, Shop $shop, EmailTemplate $emailTemplate, ActionRequest $request): DispatchedEmail
+    public function asControllerTemplate(Shop $shop, EmailTemplate $emailTemplate, ActionRequest $request): DispatchedEmail
     {
         $this->initialisationFromShop($shop, $request);
 

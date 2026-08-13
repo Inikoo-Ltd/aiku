@@ -9,6 +9,8 @@
 namespace App\Actions\Retina\Ordering;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
+use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -16,11 +18,20 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
+// This file seems not used anywhere
+
 class AddRetinaProductToBasket extends RetinaAction
 {
+    use WithCustomerPurchasableProduct;
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Order $order, array $modelData): Transaction
     {
         $historicAssetId = $modelData['historic_asset_id'];
+
+        $this->ensureHistoricAssetIsPurchasableByCustomer(HistoricAsset::find($historicAssetId));
 
         $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAssetId)->first();
 
@@ -45,7 +56,7 @@ class AddRetinaProductToBasket extends RetinaAction
     public function rules(): array
     {
         return [
-            'historic_asset_id' => ['required', Rule::exists('historic_assets', 'id')],
+            'historic_asset_id' => ['required', Rule::exists('historic_assets', 'id')->where('model_type', 'Product')],
         ];
     }
 

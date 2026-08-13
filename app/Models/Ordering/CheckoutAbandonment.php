@@ -28,9 +28,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $total_amount
  * @property CheckoutAbandonmentStateEnum $state
  * @property \Illuminate\Support\Carbon|null $recovered_at
- * @property \Illuminate\Support\Carbon|null $email_sent_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $email_sent_at
  * @property-read Customer|null $customer
  * @property-read Group|null $group
  * @property-read \App\Models\Ordering\Order|null $order

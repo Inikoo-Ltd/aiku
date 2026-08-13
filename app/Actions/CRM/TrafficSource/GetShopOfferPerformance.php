@@ -9,7 +9,6 @@
 namespace App\Actions\CRM\TrafficSource;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -35,23 +34,20 @@ class GetShopOfferPerformance
      * Correlation, not proof: a recipient who was going to reorder that week and used a live offer
      * still lands in the emailed column. Lift is what separates that from a mailshot doing the work.
      *
-     * @return array{period: string, period_label: string, from: string|null, currency_code: string, reach: array{emailed: int, customers: int}, offers: array<int, array{name: string, code: string|null, orders: int, customers: int, discount: float, revenue: float, emailed_customers: int, uptake_emailed: float|null, uptake_rest: float|null, lift: float|null}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, reach: array{emailed: int, customers: int}, offers: array<int, array{name: string, code: string|null, orders: int, customers: int, discount: float, revenue: float, emailed_customers: int, uptake_emailed: float|null, uptake_rest: float|null, lift: float|null}>}
      */
-    public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30): array
+    public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null): array
     {
-        $from = $period->startsAt();
-
         $customers = DB::table('customers')->where('shop_id', $shop->id)->count();
-        $emailed   = $this->emailedCustomerIds($shop, $from);
+        $emailed   = $this->emailedCustomerIds($shop, $from, $to);
         $rest      = max($customers - $emailed->count(), 0);
 
-        $offers = $this->offerTotals($shop, $from);
-        $users  = $this->offerUsersEmailed($shop, $from, $emailed);
+        $offers = $this->offerTotals($shop, $from, $to);
+        $users  = $this->offerUsersEmailed($shop, $from, $to, $emailed);
 
         return [
-            'period'        => $period->value,
-            'period_label'  => MarketingPeriodEnum::labels()[$period->value],
             'from'          => $from?->toDateString(),
+            'to'            => $to?->toDateString(),
             'currency_code' => $shop->currency->code,
             'reach'         => [
                 'emailed'   => $emailed->count(),
@@ -93,7 +89,7 @@ class GetShopOfferPerformance
      *
      * @return Collection<int, int>
      */
-    private function emailedCustomerIds(Shop $shop, ?Carbon $from): Collection
+    private function emailedCustomerIds(Shop $shop, ?Carbon $from, ?Carbon $to): Collection
     {
         return DB::table('dispatched_emails as de')
             ->join('model_has_dispatched_emails as mde', function ($join) {
@@ -107,6 +103,7 @@ class GetShopOfferPerformance
                 (array) config('marketing.attributed_outbox_codes', [])
             ))
             ->when($from, fn ($query) => $query->where('de.created_at', '>=', $from))
+            ->when($to, fn ($query) => $query->where('de.created_at', '<=', $to))
             ->distinct()
             ->pluck('mde.model_id');
     }
@@ -127,7 +124,7 @@ class GetShopOfferPerformance
     /**
      * @return Collection<int, object>
      */
-    private function offerTotals(Shop $shop, ?Carbon $from): Collection
+    private function offerTotals(Shop $shop, ?Carbon $from, ?Carbon $to): Collection
     {
         /* Aggregated per order first, then per offer: an offer allowance is written per transaction,
            so counting raw rows would report a basket of twelve discounted lines as twelve redemptions,
@@ -144,6 +141,7 @@ class GetShopOfferPerformance
             ->whereNotIn('ord.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('ord.deleted_at')
             ->when($from, fn ($query) => $query->where('ord.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('ord.date', '<=', $to))
             ->tap(fn ($query) => $this->excludeNonMarketingOffers($query))
             ->groupBy('of.id', 'of.name', 'of.code', 'ord.id', 'ord.customer_id', 'ord.net_amount')
             ->select(
@@ -177,7 +175,7 @@ class GetShopOfferPerformance
      *
      * @return Collection<int, int>
      */
-    private function offerUsersEmailed(Shop $shop, ?Carbon $from, Collection $emailed): Collection
+    private function offerUsersEmailed(Shop $shop, ?Carbon $from, ?Carbon $to, Collection $emailed): Collection
     {
         if ($emailed->isEmpty()) {
             return collect();
@@ -191,6 +189,7 @@ class GetShopOfferPerformance
             ->whereNotIn('ord.state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
             ->whereNull('ord.deleted_at')
             ->when($from, fn ($query) => $query->where('ord.date', '>=', $from))
+            ->when($to, fn ($query) => $query->where('ord.date', '<=', $to))
             ->tap(fn ($query) => $this->excludeNonMarketingOffers($query))
             ->groupBy('of.id')
             ->select('of.id', DB::raw('COUNT(DISTINCT ord.customer_id) as customers'))

@@ -25,10 +25,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $packer_user_id
  * @property PackingEngineEnum $engine
  * @property array<array-key, mixed> $data
- * @property string|null $queued_at
- * @property string|null $packing_at
- * @property string|null $packing_blocked_at
- * @property string|null $done_at
+ * @property \Illuminate\Support\Carbon|null $queued_at
+ * @property \Illuminate\Support\Carbon|null $packing_at
+ * @property \Illuminate\Support\Carbon|null $packing_blocked_at
+ * @property \Illuminate\Support\Carbon|null $done_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote

@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -23,7 +24,12 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
     use WithDeliveryNoteItemUI;
 
-    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
+    /**
+     * $isHandled splits the delivery note in two: the items the picker still has to walk to, and the
+     * ones already finished. Null keeps them together, which is what every screen outside the picking
+     * scan tabs asks for. A dirty item counts as unfinished, since it is waiting to be picked again.
+     */
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null, ?bool $isHandled = null): LengthAwarePaginator
     {
         $globalSearch = $this->getGlobalSearchFilter();
 
@@ -55,7 +61,20 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query->leftjoin('shops', 'shops.id', '=', 'delivery_note_items.shop_id');
         $query->leftJoin('transactions', 'transactions.id', '=', 'delivery_note_items.transaction_id');
 
-        $query->where('delivery_note_items.quantity_required', '>', 0);
+        $query->where(function ($q) {
+            $q->where('delivery_note_items.quantity_required', '>', 0)
+                ->orWhere('delivery_note_items.is_dirty', true);
+        });
+
+        if ($isHandled === true) {
+            $query->where('delivery_note_items.is_handled', true)
+                ->where('delivery_note_items.is_dirty', false);
+        } elseif ($isHandled === false) {
+            $query->where(function ($q) {
+                $q->where('delivery_note_items.is_handled', false)
+                    ->orWhere('delivery_note_items.is_dirty', true);
+            });
+        }
 
         return $query
             ->defaultSort(['locations.sort_code', 'org_stocks.code'])
@@ -118,6 +137,46 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             ->withQueryString();
     }
 
+    /**
+     * The two picking tabs are empty for opposite reasons, and each one says which: nothing left to
+     * pick means the picking is over, nothing picked yet means it has not started. Either way the tab
+     * carries the next step, so the picker does not have to go looking for it.
+     *
+     * An action only names its button. Finishing the picking asks for a picked bay first, and opening
+     * the other tab is a tab change, so both belong to the frontend rather than a route sent from here.
+     */
+    protected function emptyState(?string $prefix, bool $canFinishPicking): array
+    {
+        if ($prefix == DeliveryNoteTabsEnum::PICKING_TODO_ITEMS->value) {
+            $emptyState = [
+                'icons'       => ['fal', 'fa-clipboard-check'],
+                'title'       => __('All items are handled'),
+                'description' => __('Nothing on this delivery note is waiting to be picked any more.'),
+                'count'       => 0,
+            ];
+
+            if ($canFinishPicking) {
+                $emptyState['action'] = ['key' => 'finish-picking'];
+            }
+
+            return $emptyState;
+        }
+
+        if ($prefix == DeliveryNoteTabsEnum::PICKING_DONE_ITEMS->value) {
+            return [
+                'icons'       => ['fal', 'fa-clipboard-list-check'],
+                'title'       => __('Nothing picked yet'),
+                'description' => __('Every item on this delivery note is still waiting to be picked.'),
+                'count'       => 0,
+                'action'      => ['key' => 'open-todo-items'],
+            ];
+        }
+
+        return [
+            'title' => __('item empty'),
+        ];
+    }
+
     public function tableStructure($prefix = null, ?DeliveryNote $deliveryNote = null, bool $isEditable = false): Closure
     {
         return function (InertiaTable $table) use ($prefix, $deliveryNote, $isEditable) {
@@ -128,15 +187,12 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             }
 
 
-            $table
-                ->withLabelRecord([__('delivery note'), __('delivery notes')])
-                ->withEmptyState(
-                    [
-                        'title' => __("delivery note empty"),
-                    ]
-                )->defaultSort('picking_position');
-
             $allowAction = $this->canHandleDeliveryNote($deliveryNote);
+
+            $table
+                ->withLabelRecord([__('item'), __('items')])
+                ->withEmptyState($this->emptyState($prefix, $allowAction && $isEditable))
+                ->defaultSort('picking_position');
 
             if ($allowAction && $isEditable) {
                 $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);

@@ -24,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateLocationOrgStock extends OrgAction
 {
     use WithActionUpdate;
+    use WithLocationOrgStockActionAuthorisation;
 
     private LocationOrgStock $locationOrgStock;
 
@@ -76,15 +77,6 @@ class UpdateLocationOrgStock extends OrgAction
         SetOrgStockPickingLocation::dispatch($locationOrgStock->org_stock_id)->delay(2);
 
         return $locationOrgStock;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("locations.{$this->warehouse->id}.view");
     }
 
     public function prepareForValidation(): void

@@ -19,16 +19,20 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $website_id
  * @property int|null $web_user_id
  * @property string $scope
- * @property string|null $source
  * @property string $query
  * @property string|null $session_id
  * @property int $results_count
- * @property int $keyword_results_count
- * @property int $vector_results_count
  * @property string|null $clicked_url
  * @property \Illuminate\Support\Carbon|null $clicked_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $customer_id
+ * @property string|null $device
+ * @property string|null $browser
+ * @property string|null $os
+ * @property string|null $source
+ * @property int $keyword_results_count
+ * @property int $vector_results_count
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteSearchLog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteSearchLog newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteSearchLog query()

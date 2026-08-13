@@ -16,7 +16,7 @@ class ShowIrisDavidsTravelBlogDashboard
 {
     use AsAction;
 
-    private const SUB_TYPES = [WebpageSubTypeEnum::DAVIDS_TRAVEL_BLOG];
+    private const SUB_TYPES = [WebpageSubTypeEnum::DAVID_AW_NEWS];
 
     public function handle(Website $website): LengthAwarePaginator
     {

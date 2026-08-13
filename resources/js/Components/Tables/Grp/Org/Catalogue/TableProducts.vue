@@ -314,6 +314,7 @@ function productRoute(product: Product) {
                     product.organisation_slug,
                     product.shop_slug,
                     product.slug])
+        case "grp.org.shops.show.catalogue.products.sales":
         case "grp.org.shops.show.catalogue.products.all_products.index":
         case "grp.org.shops.show.catalogue.collections.show":
         case "grp.org.shops.show.catalogue.dashboard":
@@ -333,6 +334,7 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).fulfilment,
                     product.slug])
         case "grp.org.shops.show.catalogue.departments.show":
+        case "grp.org.shops.show.catalogue.departments.show.products.sales":
         case "grp.org.shops.show.catalogue.departments.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.departments.show.products.show",
@@ -343,6 +345,7 @@ function productRoute(product: Product) {
 
 
                     product.slug])
+        case "grp.org.shops.show.catalogue.families.show.products.sales":
         case "grp.org.shops.show.catalogue.families.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.families.show.products.show",
@@ -352,6 +355,7 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).family,
 
                     product.slug])
+        case "grp.org.shops.show.catalogue.departments.show.families.show.products.sales":
         case "grp.org.shops.show.catalogue.departments.show.families.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.departments.show.families.show.products.show",
@@ -362,6 +366,7 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).family,
                     product.slug
                 ])
+        case "grp.org.shops.show.catalogue.sub_departments.show.products.sales":
         case "grp.org.shops.show.catalogue.sub_departments.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.sub_departments.show.products.show",
@@ -371,6 +376,7 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).subDepartment,
                     product.slug
                 ])
+        case "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.sales":
         case "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index":
             return route(
                 "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show",

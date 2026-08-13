@@ -64,6 +64,12 @@ class GetOutboxMergeTagByOutbox extends OrgAction
                         OutboxMergeTagsEnum::CUSTOMER_NAME,
                         OutboxMergeTagsEnum::ABANDONED_CART_ITEMS,
                     ]);
+            case OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER:
+                return OutboxMergeTagsEnum::filterTags([
+                        OutboxMergeTagsEnum::CUSTOMER_NAME,
+                        OutboxMergeTagsEnum::CHAT_LINK,
+                        OutboxMergeTagsEnum::CHAT_MESSAGE,
+                    ]);
             default:
                 return GetMailshotMergeTags::run();
         }

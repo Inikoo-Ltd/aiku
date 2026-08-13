@@ -34,7 +34,11 @@ class DeleteWarehouseArea extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("inventory.edit");
+        return $request->user()->authTo([
+            "inventory.{$this->organisation->id}.edit",
+            "supervisor-locations.{$this->warehouse->id}",
+            "locations.{$this->warehouse->id}.edit",
+        ]);
     }
 
     public function asController(WarehouseArea $warehouseArea, ActionRequest $request): WarehouseArea

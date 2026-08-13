@@ -38,11 +38,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Employee|null $employee
  * @property-read Group|null $group
- * @property-read \App\Models\Production\JobOrderItemTask|null $jobOrderItemTask
+ * @property-read \App\Models\Production\JobOrderItemTask $jobOrderItemTask
  * @property-read \App\Models\Production\ManufactureTask|null $manufactureTask
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
- * @property-read User $user
+ * @property-read User|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession query()
  * @mixin \Eloquent
  */
 class ManufactureTaskSession extends Model

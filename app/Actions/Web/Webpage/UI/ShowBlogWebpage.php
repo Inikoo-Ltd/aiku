@@ -86,20 +86,20 @@ class ShowBlogWebpage extends OrgAction
                 'webpage_canonical_url' => $webpage->canonical_url,
 
                 BlogWebpageTabsEnum::SHOWCASE->value => $this->tab == BlogWebpageTabsEnum::SHOWCASE->value ?
-                    fn() => WebpageResource::make($webpage)->getArray()
-                    : Inertia::optional(fn() => WebpageResource::make($webpage)->getArray()),
+                    fn () => WebpageResource::make($webpage)->getArray()
+                    : Inertia::optional(fn () => WebpageResource::make($webpage)->getArray()),
 
                 WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
-                    fn() => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
-                    : Inertia::optional(fn() => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
-                
+                    fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
+                    : Inertia::optional(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
+
                 WebpageTabsEnum::SNAPSHOTS->value => $this->tab == WebpageTabsEnum::SNAPSHOTS->value ?
                     fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))
                     : Inertia::optional(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))),
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($webpage))
-                    : Inertia::optional(fn() => HistoryResource::collection(IndexHistory::run($webpage))),
+                    fn () => HistoryResource::collection(IndexHistory::run($webpage))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($webpage))),
             ]
         )->table(
             IndexWebpages::make()->tableStructure(parent: $webpage, prefix: 'webpages')

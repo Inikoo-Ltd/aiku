@@ -232,7 +232,7 @@ onMounted(() => {
         :key="key"
     >
         <template #card="{ item }">
-            <div class="offers h-full">
+            <div class="offers h-full relative">
                 <ProductRenderEcom
                     :product="item"
                     :hasInBasket="item"

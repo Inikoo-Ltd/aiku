@@ -142,6 +142,7 @@ Route::middleware(
         ->name("marketing.")
         ->group(function () {
             Route::get('/', [App\Actions\UI\Marketing\ShowAggregatedMarketingDashboard::class, 'inGroup'])->name('dashboard');
+            Route::get('/channels/{channelType}', [App\Actions\UI\Marketing\ShowAggregatedMarketingChannel::class, 'inGroup'])->name('channels.show');
         });
     Route::prefix("org/{organisation}")
         ->name("org.")

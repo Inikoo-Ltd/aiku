@@ -36,7 +36,15 @@ const props = defineProps<{
     isStillPicking: boolean
     isReadOnly?: boolean
     waitingType?: string
+    highlightDeliveryNoteSlug?: string
 }>()
+
+const rowHighlightClass = (item: any) => {
+    if (props.highlightDeliveryNoteSlug && item.delivery_note_slug === props.highlightDeliveryNoteSlug) {
+        return 'bg-amber-100 hover:bg-amber-200/70'
+    }
+    return ''
+}
 
 const routeToDeliveryNote = (slug: string) => {
     return route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
@@ -65,15 +73,20 @@ const generateLocationRoute = (location: any) => {
     ])
 }
 
+/*
+ * A part of an outer can be left waiting by any shop now that ecom replaces a product in part, not
+ * only by dropshipping, so what decides the fraction is the pack the item comes in. An item packed
+ * individually has nothing to cut and reads as a plain count.
+ */
 const getWaitingWarehouseFractional = (item: any) => {
-    if (item?.delivery_note_shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_warehouse_fractional_ds
     }
     return null
 }
 
 const getWaitingCrmFractional = (item: any) => {
-    if (item?.delivery_note_shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_crm_fractional_ds
     }
     return null
@@ -81,7 +94,7 @@ const getWaitingCrmFractional = (item: any) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop :rowColorFunction="rowHighlightClass">
 
         <!-- Column: Reference Delivery Note -->
         <template #cell(delivery_note_reference)="{ item }">

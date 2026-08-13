@@ -10,13 +10,13 @@ namespace App\Actions\HumanResources\Timesheet\UI;
 
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\HumanResources\Timesheet\CalculateTimesheetOvertime;
+use App\Actions\HumanResources\Timesheet\ResolveTimesheetDateRange;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\Traits\WithTabsBox; // Trait Tabs
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
-use App\Enums\Helpers\Period\PeriodEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\UI\HumanResources\TimesheetEmployeeViewEnum;
 use App\Enums\UI\HumanResources\TimesheetsTabsEnum;
@@ -65,28 +65,7 @@ class IndexTimesheets extends OrgAction
 
     protected function resolvePeriodRange(): ?array
     {
-        $period = request()->input('period');
-
-        if ($period && is_array($period)) {
-            return PeriodEnum::toDateRange($period);
-        }
-
-        $employeesPeriod = request()->input('employees_period');
-
-        if ($employeesPeriod && is_array($employeesPeriod)) {
-            return PeriodEnum::toDateRange($employeesPeriod);
-        }
-
-        $employeePeriod = request()->input('employee_period');
-
-        if ($employeePeriod && is_array($employeePeriod)) {
-            return PeriodEnum::toDateRange($employeePeriod);
-        }
-
-        return [
-            now()->startOfMonth(),
-            now()->endOfMonth(),
-        ];
+        return ResolveTimesheetDateRange::run();
     }
 
     public function handle(Group|Organisation|Employee|Guest $parent, ?string $prefix = null, bool $isTodayTimesheet = false): LengthAwarePaginator
@@ -124,7 +103,7 @@ class IndexTimesheets extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query->with(['subject.jobPositions']);
+        $query->with(['subject.jobPositions', 'timeTrackers']);
 
         if ($isTodayTimesheet) {
             $query->whereDate('timesheets.date', now()->setTimezone($timezone)->format('Y-m-d'));
@@ -204,13 +183,14 @@ class IndexTimesheets extends OrgAction
                 'employees.id as subject_id',
                 'employees.contact_name as subject_name',
                 'employees.job_title as job_position',
+                'employees.slug as subject_slug',
             ])
             ->selectRaw("'Employee' as subject_type")
             ->selectRaw('count(timesheets.id) as timesheet_count')
             ->selectRaw('coalesce(sum(timesheets.number_time_trackers), 0) as clockings')
             ->selectRaw('coalesce(sum(timesheets.working_duration), 0) as working_duration')
             ->selectRaw('coalesce(sum(timesheets.breaks_duration), 0) as breaks_duration')
-            ->groupBy('employees.id', 'employees.contact_name', 'employees.job_title');
+            ->groupBy('employees.id', 'employees.contact_name', 'employees.job_title', 'employees.slug');
 
         $employeeView = TimesheetEmployeeViewEnum::tryFrom((string) request()->input('view')) ?? TimesheetEmployeeViewEnum::OVERVIEW;
         $sourceColumn = $employeeView->sourceColumn();
@@ -436,21 +416,6 @@ class IndexTimesheets extends OrgAction
         ];
     }
 
-    protected function getPeriodFilters(): array
-    {
-        $elements = array_merge_recursive(
-            PeriodEnum::labels(),
-            PeriodEnum::date()
-        );
-
-        return [
-            'period' => [
-                'label'    => __('Period'),
-                'elements' => $elements
-            ],
-        ];
-    }
-
     public function tableStructure(Group|Organisation|Employee|Guest $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
@@ -472,15 +437,15 @@ class IndexTimesheets extends OrgAction
                 ->withModelOperations($modelOperations);
 
             if ($prefix === TimesheetsTabsEnum::PER_EMPLOYEE->value) {
+                request()->query->remove("{$prefix}_columns");
+
                 $table->column(key: 'subject_name', label: __('Name'), sortable: true, searchable: true);
 
                 if ($parent instanceof Organisation || $parent instanceof Group) {
                     $table->column(key: 'job_position', label: __('Job Position'));
                 }
 
-                foreach ($this->getPeriodFilters() as $periodFilter) {
-                    $table->periodFilters($periodFilter['elements']);
-                }
+                $table->betweenDates(['date']);
 
                 $employeeView = TimesheetEmployeeViewEnum::tryFrom((string) request()->input('view')) ?? TimesheetEmployeeViewEnum::OVERVIEW;
 
@@ -516,15 +481,17 @@ class IndexTimesheets extends OrgAction
                 $table->column(key: 'job_position', label: __('Job Position'));
             }
 
-            foreach ($this->getPeriodFilters() as $periodFilter) {
-                $table->periodFilters($periodFilter['elements']);
-            }
+            $table->betweenDates(['date']);
 
             $table->column(key: 'start_at', label: __('Start At'))
                 ->column(key: 'end_at', label: __('End At'))
                 ->column(key: 'notes', label: __('Notes'))
                 ->column(key: 'working_duration', label: __('Working'), sortable: true)
+                ->column(key: 'unpaid_overtime_duration', label: __('Unpaid overtime'), sortable: true)
                 ->column(key: 'breaks_duration', label: __('Breaks'), sortable: true)
+                ->column(key: 'paid_duration', label: __('Paid time'), sortable: true)
+                ->column(key: 'paid_overtime_duration', label: __('Paid overtime'), sortable: true)
+                ->column(key: 'worked', label: __('Worked'))
                 ->column(key: 'clock_in_count', label: __('Clock In'))
                 ->column(key: 'clock_out_count', label: __('Clock Out'));
 
@@ -538,18 +505,33 @@ class IndexTimesheets extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $timesheets): AnonymousResourceCollection
     {
+        $overtimeByTimesheetId = CalculateTimesheetOvertime::make()->handleMany($timesheets->getCollection());
 
-        $timesheets->through(function ($timesheet) {
+        $timesheets->through(function ($timesheet) use ($overtimeByTimesheetId) {
 
             $jobPositions = '-';
+            $employeeSlug = null;
 
             if ($timesheet->subject_type === 'Employee' && $timesheet->subject) {
                 $jobPositions = $timesheet->subject->job_title;
+                $employeeSlug = $timesheet->subject->slug;
             }
             $timesheet->setAttribute('job_position', $jobPositions ?: '-');
+            $timesheet->setAttribute('subject_slug', $employeeSlug);
             $timesheet->setAttribute('clock_in_count', $timesheet->number_time_trackers);
             $timesheet->setAttribute('clock_out_count', $timesheet->number_time_trackers - $timesheet->number_open_time_trackers);
             $timesheet->setAttribute('notes', $timesheet->first_clocking_notes);
+
+            $overtime = $overtimeByTimesheetId->get($timesheet->id) ?? [
+                'paid_duration'            => 0,
+                'unpaid_overtime_duration' => 0,
+                'paid_overtime_duration'   => 0,
+            ];
+
+            $timesheet->setAttribute('paid_duration', $overtime['paid_duration']);
+            $timesheet->setAttribute('unpaid_overtime_duration', $overtime['unpaid_overtime_duration']);
+            $timesheet->setAttribute('paid_overtime_duration', $overtime['paid_overtime_duration']);
+            $timesheet->setAttribute('worked', $timesheet->working_duration);
 
             return $timesheet;
         });
@@ -707,7 +689,14 @@ class IndexTimesheets extends OrgAction
                 'pageHead'    => [
                     'title'         => __('Timesheets'),
                     'icon'          => ['title' => __('Timesheets'), 'icon'  => 'fal fa-stopwatch'],
-                    'actions'       => $this->parent instanceof Organisation ? [
+                    'actions'       => ($this->parent instanceof Organisation || $this->parent instanceof Employee) ? [
+                        [
+                            'type'  => 'button',
+                            'style' => 'secondary',
+                            'key'   => 'export-timesheets',
+                            'label' => __('Export'),
+                            'icon'  => ['fal', 'fa-download'],
+                        ],
                         [
                             'type'  => 'button',
                             'style' => 'create',
@@ -725,6 +714,11 @@ class IndexTimesheets extends OrgAction
                     'current'    => (TimesheetEmployeeViewEnum::tryFrom((string) request()->input('view')) ?? TimesheetEmployeeViewEnum::OVERVIEW)->value,
                     'navigation' => TimesheetEmployeeViewEnum::navigation(),
                 ],
+                'employeeContext' => $this->parent instanceof Employee ? [
+                    'id'   => $this->parent->id,
+                    'slug' => $this->parent->slug,
+                    'name' => $this->parent->contact_name,
+                ] : null,
                 'employeeOptions' => $this->parent instanceof Organisation
                     ? $this->parent->employees()
                         ->where('state', EmployeeStateEnum::WORKING)

@@ -71,7 +71,7 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
                 ->where('item_type', $product->getMorphClass())
                 ->first();
             if (! $portfolio) {
-                StorePortfolio::make()->action($this->customerSalesChannel, $product, []);
+                StorePortfolio::make()->action($this->customerSalesChannel, $product, Arr::except($rowData, ['sku', 'title']));
             } else {
                 UpdatePortfolio::make()->action($portfolio, [
                     'customer_product_name' => $product->name,
@@ -96,7 +96,12 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
                 Rule::notIn(['export', 'create', 'upload']),
                 Rule::exists('products', 'code')
             ],
-            'title'                    => ['nullable']
+            'title'                    => ['nullable'],
+            'platform_status'          => ['nullable'],
+            'platform_product_id'      => ['nullable'],
+            'platform_product_variant_id' => ['nullable'],
+            'has_valid_platform_product_id' => ['nullable'],
+            'exist_in_platform' => ['nullable']
         ];
     }
 }

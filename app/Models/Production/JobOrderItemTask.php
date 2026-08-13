@@ -37,6 +37,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTaskSession> $sessions
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItemTask newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItemTask newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItemTask query()
  * @mixin \Eloquent
  */
 class JobOrderItemTask extends Model

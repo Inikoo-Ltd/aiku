@@ -34,6 +34,7 @@ library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode, faGift, f
 
 type ProductRow = {
     id: number
+    model_type?: string
     asset_code: string
     asset_name: string
     is_discretionary_offer?: boolean
@@ -120,6 +121,9 @@ const onUpdateQuantity = (
     value: number,
     is_cut_view: boolean
 ) => {
+    if (isLoading.value === "quantity" + idTransaction) {
+        return
+    }
     let sendData = is_cut_view ? {
         units_ordered: Number(value)
     } : {
@@ -138,7 +142,7 @@ const onUpdateQuantity = (
             },
             onStart: () => (isLoading.value = "quantity" + idTransaction),
             onFinish: () => (isLoading.value = null),
-            only: ["transactions", "box_stats", "total_to_pay", "balance"],
+            only: ["transactions", "box_stats", "total_to_pay", "balance", "pageHead"],
             preserveScroll: true
         }
     )
@@ -502,17 +506,17 @@ const isOffersData = (offersData: any): boolean => {
                         <span v-if="Number(item.units) !== 1">[{{ item.units }}x]</span>
                         {{ item.asset_name }}
                     </div>
-                    <div v-if="item.units_changed_to"
+                    <div v-if="item.model_type === 'Product' && item.units_changed_to"
                         v-tooltip="ctrans('This line was ordered and priced at :ordered per pack, the product is now sold as :now per pack. Check what the warehouse should ship.', { ordered: item.product_units, now: item.units_changed_to })"
                         class="text-xs text-amber-600"
                     >
                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500 mr-1" fixed-width aria-hidden="true" />
                         {{ ctrans('Repacked since ordered') }}: {{ item.product_units }} → {{ item.units_changed_to }}
                     </div>
-                    <div v-if="item.available_quantity !== undefined && item.available_quantity < 1">
+                    <div v-if="item.model_type === 'Product' && item.available_quantity !== undefined && item.available_quantity < 1">
                         <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                     </div>
-                    <div v-else class="text-gray-500 italic text-xs">
+                    <div v-else-if="item.model_type === 'Product'" class="text-gray-500 italic text-xs">
                         Stock: {{ locale.number(item.available_quantity || 0) }} available
                         <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
                             <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-1" aria-hidden="true" />
@@ -535,10 +539,6 @@ const isOffersData = (offersData: any): boolean => {
 
             <!-- Column: Quantity Ordered -->
             <template #cell(quantity_ordered)="{ item, proxyItem }">
-                <!-- <pre>{{ item.quantity_ordered_fractional }}</pre> -->
-                <div v-if="layout.app.environment == 'local'" class="bg-yellow-400 w-fit">
-                    {{ item.quantity_ordered_fractional }}
-                </div> 
                 <div class="flex items-center justify-end gap-2">
                     <div v-if="item.is_gift">
                         {{ locale.number(item.quantity_bonus) }}
@@ -574,7 +574,7 @@ const isOffersData = (offersData: any): boolean => {
                             buttonLayout="horizontal"
                             :step="1" 
                             min='0',
-                            :max="proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity"
+                            :max="item.model_type !== 'Product' ? undefined : (proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity)"
                             v-bind="bindToTarget" 
                             :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
                                 ? `/${Number(item.quantity_ordered_fractional[1][1])}`
@@ -583,7 +583,7 @@ const isOffersData = (offersData: any): boolean => {
                             :inputStyle="{
                                     width: bindToTarget?.fluid
                                         ? undefined
-                                        : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '75px' : '50px'),
+                                        : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '90px' : '50px'),
                                     textAlign: 'center',
                                 }" 
                             fluid

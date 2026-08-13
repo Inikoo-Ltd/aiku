@@ -152,6 +152,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $fiscal_name
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
+ * @property-read Collection<int, Product> $allExclusiveProducts
  * @property-read Collection<int, AllegroUser> $allegroUsers
  * @property-read Collection<int, AmazonUser> $amazonUsers
  * @property-read MediaCollection<int, Media> $attachments

@@ -90,6 +90,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $has_waiting_crm
  * @property int|null $batch_code_id
  * @property numeric $quantity_returned
+ * @property \Illuminate\Support\Carbon|null $composition_dirty_at The SKU composition changed after picking work was done, a human must roll back or confirm
+ * @property numeric|null $composition_dirty_quantity_required What quantity_required would be under the new composition
+ * @property bool $is_dirty
  * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\SysAdmin\Group|null $group

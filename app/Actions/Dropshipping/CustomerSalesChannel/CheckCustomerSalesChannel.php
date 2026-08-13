@@ -68,7 +68,7 @@ class CheckCustomerSalesChannel extends OrgAction
             ->chunkById(50, function ($inactiveCustomerSalesChannels) use (&$success, &$failed, &$lostAccount) {
                 foreach ($inactiveCustomerSalesChannels as $customerSalesChannel) {
 
-                    if(!$customerSalesChannel->user) {
+                    if (!$customerSalesChannel->user) {
                         $lostAccount++;
                         continue;
                     }

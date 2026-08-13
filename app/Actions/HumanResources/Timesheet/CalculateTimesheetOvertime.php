@@ -5,8 +5,10 @@ namespace App\Actions\HumanResources\Timesheet;
 use App\Enums\HumanResources\Overtime\OvertimeCompensationTypeEnum;
 use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
+use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\OvertimeRequest;
 use App\Models\HumanResources\Timesheet;
+use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\WorkScheduleDay;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Carbon;
@@ -19,9 +21,12 @@ class CalculateTimesheetOvertime
 
     public function handle(Timesheet $timesheet): array
     {
-        $timesheet->loadMissing(['timeTrackers', 'organisation']);
+        $timesheet->loadMissing(['timeTrackers', 'organisation', 'subject']);
 
-        $scheduleDaysByIso = $this->scheduleDaysByIso($timesheet->organisation);
+        $employee = $timesheet->subject_type === 'Employee' ? $timesheet->subject : null;
+        $schedule = $employee?->getDefaultWorkSchedule() ?? $timesheet->organisation?->getDefaultWorkSchedule();
+
+        $scheduleDaysByIso = $this->scheduleDaysFor($schedule);
         $approvedAllowances = $this->approvedAllowancesFor($timesheet);
 
         return $this->calculateForTimesheet($timesheet, $scheduleDaysByIso, $approvedAllowances);
@@ -42,10 +47,15 @@ class CalculateTimesheetOvertime
         $scheduleDaysByOrganisation = $timesheets->pluck('organisation')
             ->filter()
             ->unique('id')
-            ->mapWithKeys(fn (Organisation $organisation) => [$organisation->id => $this->scheduleDaysByIso($organisation)]);
+            ->mapWithKeys(fn (Organisation $organisation) => [$organisation->id => $this->scheduleDaysFor($organisation->getDefaultWorkSchedule())]);
 
         $employeeIds = $timesheets->where('subject_type', 'Employee')->pluck('subject_id')->unique()->all();
-        $dates       = $timesheets->pluck('date')->map(fn ($date) => $date->toDateString())->unique()->all();
+
+        $scheduleDaysByEmployee = Employee::whereIn('id', $employeeIds)
+            ->get()
+            ->mapWithKeys(fn (Employee $employee) => [$employee->id => $this->scheduleDaysFor($employee->getDefaultWorkSchedule())]);
+
+        $dates = $timesheets->pluck('date')->map(fn ($date) => $date->toDateString())->unique()->all();
 
         $approvedOvertimeByEmployeeAndDate = OvertimeRequest::with('overtimeType')
             ->whereIn('employee_id', $employeeIds)
@@ -55,8 +65,16 @@ class CalculateTimesheetOvertime
             ->groupBy(fn (OvertimeRequest $overtimeRequest) => $overtimeRequest->employee_id.'|'.$overtimeRequest->requested_date->toDateString())
             ->map(fn (Collection $group) => $this->allowances($group));
 
-        return $timesheets->mapWithKeys(function (Timesheet $timesheet) use ($scheduleDaysByOrganisation, $approvedOvertimeByEmployeeAndDate) {
-            $scheduleDaysByIso = $scheduleDaysByOrganisation->get($timesheet->organisation_id) ?? collect();
+        return $timesheets->mapWithKeys(function (Timesheet $timesheet) use ($scheduleDaysByOrganisation, $scheduleDaysByEmployee, $approvedOvertimeByEmployeeAndDate) {
+            $scheduleDaysByIso = null;
+            if ($timesheet->subject_type === 'Employee') {
+                $scheduleDaysByIso = $scheduleDaysByEmployee->get($timesheet->subject_id);
+            }
+
+            if (!$scheduleDaysByIso || $scheduleDaysByIso->isEmpty()) {
+                $scheduleDaysByIso = $scheduleDaysByOrganisation->get($timesheet->organisation_id) ?? collect();
+            }
+
             $key = $timesheet->subject_id.'|'.$timesheet->date->toDateString();
             $approvedAllowances = $approvedOvertimeByEmployeeAndDate->get($key, []);
 
@@ -134,10 +152,8 @@ class CalculateTimesheetOvertime
     /**
      * @return Collection<int, WorkScheduleDay> keyed by ISO day of week
      */
-    private function scheduleDaysByIso(?Organisation $organisation): Collection
+    private function scheduleDaysFor(?WorkSchedule $schedule): Collection
     {
-        $schedule = $organisation?->getDefaultWorkSchedule();
-
         if (!$schedule) {
             return collect();
         }

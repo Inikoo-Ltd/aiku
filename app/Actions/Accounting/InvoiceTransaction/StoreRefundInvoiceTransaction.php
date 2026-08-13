@@ -37,7 +37,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
     {
         $isRefundAll = Arr::pull($modelData, 'refund_all', false);
 
-        $netAmount = Arr::get($modelData, 'net_amount', 0) * -1;
+        $netAmount = round((float) Arr::get($modelData, 'net_amount', 0), 2) * -1;
         if ($netAmount === 0 && !Arr::has($modelData, 'is_tax_only')) {
             $invoiceTransaction->transactionRefunds()->where('invoice_id', $refund->id)->forceDelete();
             if (!$isRefundAll) {
@@ -133,10 +133,10 @@ class StoreRefundInvoiceTransaction extends OrgAction
     {
         $totalTrRefunded = $this->invoiceTransaction->transactionRefunds->where('in_process', false)->sum('net_amount');
 
-        $netAmount = $this->get('net_amount', 0) * -1;
-        $totalTr   = $this->invoiceTransaction->net_amount - (abs($totalTrRefunded) + abs($netAmount));
+        $netAmount = round((float) $this->get('net_amount', 0), 2) * -1;
+        $totalTr   = round((float) $this->invoiceTransaction->net_amount - (abs($totalTrRefunded) + abs($netAmount)), 2);
 
-        if (abs($netAmount) == $this->invoiceTransaction->net_amount) {
+        if (abs($netAmount) == round((float) $this->invoiceTransaction->net_amount, 2)) {
             $totalTr = 0;
         }
 

@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $supplier_product_id
  * @property int $supplier_id
  * @property int|null $agent_id
- * @property string $quantity_units
+ * @property numeric $quantity_units
  * @property int|null $units_per_pack_snapshot
  * @property int|null $units_per_carton_snapshot
  * @property ShoppingListItemPriorityEnum $priority
@@ -44,12 +44,24 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $resolved_at
  * @property int|null $purchase_order_transaction_id
  * @property int|null $parent_id
- * @property-read OrgSupplierProduct $orgSupplierProduct
- * @property-read SupplierProduct $supplierProduct
- * @property-read Supplier $supplier
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read Agent|null $agent
- * @property-read ShoppingListItem|null $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ShoppingListItem> $children
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\Procurement\OrgSupplierProduct $orgSupplierProduct
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read ShoppingListItem|null $parent
+ * @property-read Supplier|null $supplier
+ * @property-read SupplierProduct|null $supplierProduct
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShoppingListItem newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShoppingListItem newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShoppingListItem onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShoppingListItem query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShoppingListItem withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShoppingListItem withoutTrashed()
+ * @mixin \Eloquent
  */
 class ShoppingListItem extends Model
 {

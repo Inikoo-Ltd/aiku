@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $org_stock_name
  * @property mixed $barcode
  * @property mixed $is_handled
+ * @property mixed $is_dirty
  * @property mixed $quantity_packed
  * @property mixed $quantity_not_picked
  * @property mixed $quantity_waiting_warehouse
@@ -175,6 +176,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'packings'                          => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'                           => $fullWarning,
             'is_handled'                        => $this->is_handled,
+            'is_dirty'                          => $this->is_dirty,
             'delivery_note_reference'           => $this->delivery_note_reference,
             'delivery_note_slug'                => $this->delivery_note_slug,
             'delivery_note_id'                  => $this->delivery_note_id,

@@ -83,6 +83,7 @@ import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
 import InputWorkingHours from '@/Components/Forms/Fields/InputWorkingHours.vue'
+import EmployeeWorkingHours from '@/Components/Forms/Fields/EmployeeWorkingHours.vue'
 import InputWithWarning from '@/Components/Forms/Fields/InputWithWarning.vue'
 import Ratio from '@/Components/Forms/Fields/Ratio.vue'
 import EmergencyContact from '@/Components/Forms/Fields/EmergencyContact.vue'
@@ -100,6 +101,7 @@ import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
 import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
 import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
 import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
+import ContactOptionsPanel from '@/Components/Forms/Fields/ContactOptionPanel.vue'
 import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
 
@@ -185,6 +187,7 @@ export const componentsList: { [key: string]: Component } = {
     'vol_discount' : InputVolDiscount,
     'map-picker' : MapPickerField,
     'working-hours' : InputWorkingHours,
+    'employee-working-hours' : EmployeeWorkingHours,
     'ratio' : Ratio,
     'free_gift': FreeGift,
     'emergency_contact' : EmergencyContact,
@@ -204,7 +207,8 @@ export const componentsList: { [key: string]: Component } = {
     'banned-countries': BannedCountries,
 	field_group: FieldGroup,
     'multiple_price_currency' : MultiplePriceCurrency,
-    'master_shop_price_exchanges' : MasterShopPriceExchanges
+    'master_shop_price_exchanges' : MasterShopPriceExchanges,
+    'contact_options_panel' : ContactOptionsPanel
 }
 
 export const getComponent = (componentName: string) => {

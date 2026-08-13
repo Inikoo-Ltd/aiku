@@ -15,10 +15,12 @@ use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedEbayAddress;
+use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Fulfilment\StoredItem;
 use App\Models\Helpers\Address;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -53,7 +55,7 @@ class StoreFulfilmentFromEbay extends OrgAction
             ->whereIn('platform_product_id', $ebayProducts->pluck('legacyItemId'))->exists();
 
         if ($ebayUserHasProductExists) {
-            $fulfilment = StorePalletReturn::make()->action($ebayUser->customer->fulfilmentCustomer, [
+            $palletReturn = StorePalletReturn::make()->action($ebayUser->customer->fulfilmentCustomer, [
                 'type'   => PalletReturnTypeEnum::DROPSHIPPING,
                 'platform_id' => $ebayUser->platform_id,
                 'delivery_address' => new Address($deliveryAddress),
@@ -65,9 +67,6 @@ class StoreFulfilmentFromEbay extends OrgAction
                 'customer_sales_channel_id' => $ebayUser->customer_sales_channel_id,
             ], false);
 
-            $storedItems = [];
-
-
             foreach ($ebayProducts as $ebayProduct) {
                 /** @var Portfolio $ebayUserHasProduct */
                 $ebayUserHasProduct = $ebayUser->customerSalesChannel->portfolios()
@@ -77,31 +76,21 @@ class StoreFulfilmentFromEbay extends OrgAction
                     continue;
                 }
 
-                $storedItems[$ebayUserHasProduct->item_id] = [
-                    'quantity' => $ebayProduct['quantity']
-                ];
+                /** @var StoredItem $storedItem */
+                $storedItem = $ebayUserHasProduct->item;
 
-                $itemQuantity = (int) $ebayUserHasProduct->item->total_quantity;
-                $requiredQuantity = $ebayProduct['quantity'];
+                $palletStoredItem = $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
 
+                if(!$palletStoredItem) {
+                    continue;
+                }
 
-
-                $this->update($ebayUserHasProduct->item, [
-                    'total_quantity' => $itemQuantity - $requiredQuantity
+                AttachRetinaStoredItemToReturn::run($palletReturn, $palletStoredItem, [
+                    'quantity_ordered' => $ebayProduct['quantity']
                 ]);
             }
 
-            if (blank($storedItems)) {
-                return ;
-            }
-
-            StoreStoredItemsToReturn::make()->action(
-                palletReturn: $fulfilment,
-                modelData: [
-                    'stored_items' => $storedItems,
-                ]
-            );
-            SubmitAndConfirmPalletReturn::make()->action($fulfilment);
+            SubmitAndConfirmPalletReturn::make()->action($palletReturn);
         } else {
             Sentry::captureMessage('Some products dont exist');
         }

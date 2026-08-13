@@ -34,7 +34,7 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
         $deliveryNote = DB::transaction(function () use ($deliveryNote) {
 
 
-            $hasWaiting = $deliveryNote->deliveryNoteItems->where('has_waiting_warehouse', true)->count() || $deliveryNote->deliveryNoteItems->where('has_waiting_crm', true)->count();
+            $hasWaiting = $deliveryNote->deliveryNoteItems->where('has_waiting_warehouse', true)->count() || $deliveryNote->deliveryNoteItems->where('has_waiting_crm', true)->count() || $deliveryNote->deliveryNoteItems->where('is_dirty', true)->count();
 
             if ($hasWaiting) {
                 data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);

@@ -40,6 +40,9 @@ const props = defineProps<{
     time_trackers?: {}
     clockings?: {}
     timesheet: {
+        id?: number
+        date?: string
+        store_clocking_route?: string
         work_start_at?: string
         work_end_at?: string
         work_duration?: string
@@ -50,9 +53,17 @@ const props = defineProps<{
         paid_overtime_duration?: number
         overtime?: number
         about?: string
+        scheduled_hours?: {
+            source: "employee" | "organisation" | null
+            start_time: string | null
+            end_time: string | null
+            breaks: { name: string | null; start_time: string | null; end_time: string | null }[]
+        }
     }
 
 }>()
+
+const formatHM = (value: string | null | undefined): string => value ? value.slice(0, 5) : "-"
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -65,6 +76,17 @@ const component = computed(() => {
     }
 
     return components[currentTab.value]
+})
+
+const extraProps = computed(() => {
+    if (currentTab.value === 'clockings' || currentTab.value === 'time_trackers') {
+        return {
+            storeClockingRoute: props.timesheet.store_clocking_route,
+            timesheetDate: props.timesheet.date,
+        }
+    }
+
+    return {}
 })
 
 </script>
@@ -101,6 +123,29 @@ const component = computed(() => {
             
             <div class="mt-4 border-t border-gray-100">
                 <dl class="divide-y divide-gray-100">
+                    <div v-if="timesheet.scheduled_hours?.source" class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
+                        <dt class="text-sm text-gray-500">
+                            {{ trans('Scheduled hours') }}
+                            <span class="block text-xs text-gray-400 italic">
+                                {{ timesheet.scheduled_hours.source === 'organisation' ? trans('From organisation default') : trans('Employee schedule') }}
+                            </span>
+                        </dt>
+                        <dd class="mt-1 text-sm font-medium sm:col-span-2 sm:mt-0">
+                            <template v-if="timesheet.scheduled_hours.start_time || timesheet.scheduled_hours.end_time">
+                                {{ formatHM(timesheet.scheduled_hours.start_time) }} – {{ formatHM(timesheet.scheduled_hours.end_time) }}
+                                <div v-if="timesheet.scheduled_hours.breaks?.length" class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                                    <span
+                                        v-for="(brk, index) in timesheet.scheduled_hours.breaks"
+                                        :key="index"
+                                        class="text-xs text-gray-400"
+                                    >
+                                        {{ brk.name || trans('Break') }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}
+                                    </span>
+                                </div>
+                            </template>
+                            <span v-else class="text-gray-400 italic font-light">{{ trans('Not a working day') }}</span>
+                        </dd>
+                    </div>
                     <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
                         <dt class="text-sm text-gray-500">Start</dt>
                         <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ useHMAP(timesheet.work_start_at) }}</dd>
@@ -111,7 +156,7 @@ const component = computed(() => {
                     </div>
                     <div class="bg-gray-50 px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
                         <dt class="text-sm text-gray-500">Breaks</dt>
-                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.breaks_duration || '-'}}</dd>
+                        <dd class="mt-1 text-sm  font-medium sm:col-span-2 sm:mt-0">{{ timesheet.breaks_duration ? useSecondsToMS(timesheet.breaks_duration) : '-'}}</dd>
                     </div>
                     <div class="bg-white px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-3">
                         <dt class="text-sm text-gray-500">Total worktime</dt>
@@ -146,5 +191,5 @@ const component = computed(() => {
     <hr class="border-t border-gray-200">
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" v-bind="extraProps"></component>
 </template>

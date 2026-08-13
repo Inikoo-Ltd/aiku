@@ -31,6 +31,8 @@ enum ProductsTabsEnum: string
             ProductsTabsEnum::INDEX_ORDERING => [
                 'title' => __('Index Ordering'),
                 'icon'  => 'fal fa-sort-shapes-up-alt',
+                'type'  => 'icon',
+                'align' => 'right'
             ],
             ProductsTabsEnum::SALES => [
                 'title' => __('Sales'),

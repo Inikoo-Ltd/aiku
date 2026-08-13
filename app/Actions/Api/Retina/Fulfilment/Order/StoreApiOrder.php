@@ -29,12 +29,12 @@ class StoreApiOrder extends RetinaApiAction
      */
     public function handle(CustomerClient $customerClient): PalletReturn
     {
-        data_set($modelData, 'customer_sales_channel_id', $customerClient->customer_sales_channel_id);
-        data_set($modelData, 'platform_id', $customerClient->platform_id);
+        data_set($modelData, 'customer_sales_channel_id', $this->customerSalesChannel->id);
+        data_set($modelData, 'platform_id', $this->customerSalesChannel->platform_id);
         data_set($modelData, 'type', PalletReturnTypeEnum::STORED_ITEM);
-        data_set($modelData, 'warehouse_id', $customerClient->organisation->warehouses->first()->id);
+        data_set($modelData, 'warehouse_id', $this->customerSalesChannel->organisation->warehouses->first()->id);
 
-        return StorePalletReturn::run($customerClient->customer->fulfilmentCustomer, $modelData);
+        return StorePalletReturn::run($this->customer->fulfilmentCustomer, $modelData);
     }
 
     /**
@@ -42,6 +42,7 @@ class StoreApiOrder extends RetinaApiAction
      */
     public function asController(CustomerClient $customerClient, ActionRequest $request): PalletReturn
     {
+        $this->customerSalesChannel = $request->user();
         $this->initialisationFromFulfilment($request);
         return $this->handle($customerClient);
     }

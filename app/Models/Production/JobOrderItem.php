@@ -30,10 +30,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
+ * @property string|null $source_id
  * @property-read \App\Models\Production\Artefact|null $artefact
  * @property-read Group|null $group
  * @property-read \App\Models\Production\JobOrder|null $jobOrder
  * @property-read Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\JobOrderItemTask> $tasks
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem onlyTrashed()

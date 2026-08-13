@@ -25,6 +25,7 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -38,6 +39,7 @@ use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\PaymentsResource;
+use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -69,6 +71,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowOrder extends OrgAction
 {
     use IsOrder;
+    use HasBasketDetails;
     use WithOrderingAuthorisation;
     use WithOrderForbiddenCountryCheck;
     use WithBucketNavigation;
@@ -336,6 +339,8 @@ class ShowOrder extends OrgAction
             ];
         }
 
+        $orderCharges = $this->getBasketCharges($order);
+
         return Inertia::render(
             'Org/Ordering/Order',
             [
@@ -405,6 +410,12 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
+                    'services_list'              => [
+                        'name'       => 'grp.json.order.services',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
                     'update_discount'            => [
                         'name'       => 'grp.models.order.discount.update',
                         'parameters' => [
@@ -434,6 +445,11 @@ class ShowOrder extends OrgAction
                 'contact_address'             => $order->customer ? AddressResource::make($order->customer->address)->getArray() : null,
                 'box_stats'                   => $this->getOrderBoxStats($order),
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
+                'charges'                     => [
+                    'premium_dispatch' => $orderCharges['premium_dispatch'] ? ChargeResource::make($orderCharges['premium_dispatch'])->toArray(request()) : null,
+                    'extra_packing'    => $orderCharges['extra_packing'] ? ChargeResource::make($orderCharges['extra_packing'])->toArray(request()) : null,
+                    'insurance'        => $orderCharges['insurance'] ? ChargeResource::make($orderCharges['insurance'])->toArray(request()) : null,
+                ],
                 'data'                        => OrderResource::make($order),
                 'delivery_note'               => $deliveryNoteResource,
 

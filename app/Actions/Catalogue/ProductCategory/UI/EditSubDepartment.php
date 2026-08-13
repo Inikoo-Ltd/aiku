@@ -118,17 +118,17 @@ class EditSubDepartment extends OrgAction
                 'formData' => [
                     'blueprint' => array_filter(
                         [
-                            [
-                                'label'  => __('Id'),
-                                'icon'   => 'fa-light fa-fingerprint',
-                                'fields' => [
-                                    'code' => [
-                                        'type'  => 'input',
-                                        'label' => __('Code'),
-                                        'value' => $subDepartment->code
-                                    ],
-                                ]
-                            ],
+                            // [
+                            //     'label'  => __('Id'),
+                            //     'icon'   => 'fa-light fa-fingerprint',
+                            //     'fields' => [
+                            //         'code' => [
+                            //             'type'  => 'input',
+                            //             'label' => __('Code'),
+                            //             'value' => $subDepartment->code
+                            //         ],
+                            //     ]
+                            // ],
                             [
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',

@@ -1359,6 +1359,93 @@ test('delivery note finalise and dispatch', function () {
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
 });
 
+test('mixed order with service picks and invoices', function () {
+    $service = \App\Actions\Billables\Service\StoreService::make()->action($this->shop, [
+        'code'  => 'SVC'.Str::random(6),
+        'name'  => 'Handling service',
+        'price' => 10,
+        'unit'  => 'each',
+        'state' => \App\Enums\Billables\Service\ServiceStateEnum::ACTIVE,
+    ]);
+
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($this->customer, [
+        'reference'        => 'O'.Str::random(8),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $this->customer->id,
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'billing_address'  => new Address(Address::factory()->definition()),
+    ]);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $serviceTransaction = StoreTransaction::make()->action($order, $service->historicAsset, ['quantity_ordered' => 2]);
+    $order = SubmitOrder::make()->action($order);
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $this->warehouse->id]);
+    expect($deliveryNote->deliveryNoteItems()->where('transaction_id', $serviceTransaction->id)->exists())->toBeFalse();
+
+    $stock            = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock            = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock         = StoreOrgStock::make()->action($this->organisation, $stock);
+    $productTransaction = $order->transactions()->where('model_type', 'Product')->first();
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $productTransaction->id,
+        'quantity_required' => 10,
+    ]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $this->user);
+    $deliveryNote = StartHandlingDeliveryNote::make()->action($deliveryNote, $this->user);
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $deliveryNoteItem->orgStock,
+        location: $location,
+        modelData: ['quantity' => 100, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+
+    StorePicking::make()->action($deliveryNoteItem, $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $locationOrgStock->id,
+        'quantity'              => 10,
+    ]);
+
+    $deliveryNote = $deliveryNote->refresh();
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SM'.Str::random(4), 'name' => 'Sm', 'trade_as' => 'sm']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::FINALISED);
+
+    $order->refresh();
+    expect($order->invoices()->where('type', \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE)->count())->toBe(1);
+
+    $invoice = $order->invoices()->where('type', \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE)->first();
+    $serviceInvoiceTransaction = $invoice->invoiceTransactions()->where('model_type', 'Service')->first();
+    expect($serviceInvoiceTransaction)->not->toBeNull();
+    expect((float)$serviceInvoiceTransaction->net_amount)->toBe(20.0);
+    expect((float)$serviceInvoiceTransaction->quantity)->toBe(2.0);
+
+    $productNetAmount = (float)$invoice->invoiceTransactions()->where('model_type', 'Product')->sum('net_amount');
+    expect((float)$invoice->net_amount)->toBe(round($productNetAmount + 20.0, 2));
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
+
+    $serviceTransaction->refresh();
+    expect($serviceTransaction->state)->toBe(\App\Enums\Ordering\Transaction\TransactionStateEnum::DISPATCHED->value);
+    expect((float)$serviceTransaction->quantity_dispatched)->toBe(2.0);
+
+    $order->refresh();
+    expect($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED);
+});
+
 test('delivery note finalise and dispatch combined and pick as employee', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
 
@@ -2720,9 +2807,16 @@ test('a redefined pack does not change what an already sold box means', function
     $transaction = $item->transaction;
     $product     = $transaction->model;
 
-    // Sold as a 3 piece box; the delivery note item was built from that.
-    $product->update(['units' => 3]);
-    $historicAsset = \App\Models\Catalogue\HistoricAsset::create([
+    $required = fn () => (float)\App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
+        ->getQuantityRequired($item->orgStock()->first(), \App\Models\Dispatching\DeliveryNoteItem::find($item->id));
+
+    $unitsSold = (float)$product->units;
+    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $item->org_stock_id],
+        ['quantity' => 3]
+    );
+
+    $soldAs = \App\Models\Catalogue\HistoricAsset::create([
         'group_id'        => $product->group_id,
         'organisation_id' => $product->organisation_id,
         'asset_id'        => $product->asset_id,
@@ -2733,26 +2827,70 @@ test('a redefined pack does not change what an already sold box means', function
         'name'            => $product->name,
         'price'           => $product->price,
         'unit'            => $product->unit,
-        'units'           => 3,
+        'units'           => $unitsSold,
     ]);
-    $transaction->update(['historic_asset_id' => $historicAsset->id, 'quantity_ordered' => 3]);
+    \Illuminate\Support\Facades\DB::table('transactions')->where('id', $transaction->id)
+        ->update(['historic_asset_id' => $soldAs->id]);
 
-    \Illuminate\Support\Facades\DB::table('product_has_org_stocks')->updateOrInsert(
-        ['product_id' => $product->id, 'org_stock_id' => $item->org_stock_id],
-        ['quantity' => 3]
-    );
+    $beforeRedefinition = $required();
+    expect($beforeRedefinition)->toBeGreaterThan(0.0);
 
-    $required = \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
-        ->getQuantityRequired($item->orgStock, $item->refresh());
-    expect(floatval($required))->toBe(9.0);
-
-    // The product is redefined as a 6 piece box picking 6: the sold box must still mean 3.
-    $product->update(['units' => 6]);
+    /*
+     * The pack is doubled — twice the units, twice the pick — written straight to the
+     * tables because hydrators derive units and a product update mints a fresh historic
+     * asset, either of which would replace the pack this order was sold at. What the
+     * customer bought has not changed, so neither may the quantity to pick.
+     */
+    \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)
+        ->update(['units' => $unitsSold * 2]);
     \Illuminate\Support\Facades\DB::table('product_has_org_stocks')
         ->where('product_id', $product->id)->where('org_stock_id', $item->org_stock_id)
         ->update(['quantity' => 6]);
+    \Illuminate\Support\Facades\DB::table('transactions')->where('id', $transaction->id)
+        ->update(['historic_asset_id' => $soldAs->id]);
 
-    $required = \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::make()
-        ->getQuantityRequired($item->orgStock, $item->refresh());
-    expect(floatval($required))->toBe(9.0);
+    expect($required())->toBe($beforeRedefinition);
+});
+
+test('scan matches sko vs unit barcode kind and warns only when it disagrees with the shop type', function () {
+    $matcher = new class () {
+        use \App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
+
+        public function kind($item, $scanned): string
+        {
+            return $this->matchedKind($item, $scanned);
+        }
+
+        public function warning($item, $kind): ?string
+        {
+            return $this->scanKindWarning($item, $kind);
+        }
+    };
+
+    $orgStock = new \App\Models\Inventory\OrgStock();
+    $orgStock->forceFill([
+        'barcode'      => 'SKO123',
+        'unit_barcode' => '5055796528387',
+        'packed_in'    => 6,
+    ]);
+
+    $dropshippingShop = new \App\Models\Catalogue\Shop();
+    $dropshippingShop->forceFill(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+
+    $b2cShop = new \App\Models\Catalogue\Shop();
+    $b2cShop->forceFill(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::B2C]);
+
+    $item = new \App\Models\Dispatching\DeliveryNoteItem();
+    $item->setRelation('orgStock', $orgStock);
+    $item->setRelation('shop', $dropshippingShop);
+
+    expect($matcher->kind($item, 'SKO123'))->toBe('sko')
+        ->and($matcher->kind($item, '5055796528387'))->toBe('unit')
+        ->and($matcher->warning($item, 'sko'))->toContain('outer packing')
+        ->and($matcher->warning($item, 'unit'))->toBeNull();
+
+    $item->setRelation('shop', $b2cShop);
+
+    expect($matcher->warning($item, 'sko'))->toBeNull()
+        ->and($matcher->warning($item, 'unit'))->toContain('1 SKO = 6 units');
 });

@@ -234,14 +234,14 @@ const replaceProps = (updatedData) => {
             <Button
                 v-if="currentTab === 'index_ordering'"
                 :icon="action.icon"
-                :label="action.label" 
+                :label="action.label"
                 :style="action.style"
                 :onClick="SaveOrder"
                 :loading="loadingOrder"
             />
             <span v-else />
         </template>
-        
+
         <template #button-create="{ action }">
             <div  v-if="currentTab === 'index_ordering'"></div>
         </template>
@@ -252,10 +252,10 @@ const replaceProps = (updatedData) => {
 
 
         <template #afterTitle2>
-            <FontAwesomeIcon 
-                v-if="mismatch_trade_unit_with_master" 
-                :icon="faWarning" 
-                class="text-red-500" 
+            <FontAwesomeIcon
+                v-if="mismatch_trade_unit_with_master"
+                :icon="faWarning"
+                class="text-red-500"
                 v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
             />
         </template>

@@ -223,6 +223,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_delivery_notes_state_cancelled
  * @property int $number_locations_stock_slots_all_empty
  * @property int $number_locations_stock_slots_partial_empty
+ * @property int $number_org_stock_movements_type_production
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

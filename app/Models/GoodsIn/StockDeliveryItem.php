@@ -64,11 +64,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property numeric $cost_tax
  * @property numeric $cost_total
  * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\Sowing> $sowings
  * @property-read \App\Models\GoodsIn\StockDelivery|null $stockDelivery
  * @property-read SupplierProduct|null $supplierProduct
- * @property-read OrgStock|null $orgStock
  * @method static \Database\Factories\GoodsIn\StockDeliveryItemFactory factory($count = null, $state = [])
  * @method static Builder<static>|StockDeliveryItem newModelQuery()
  * @method static Builder<static>|StockDeliveryItem newQuery()

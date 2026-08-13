@@ -91,6 +91,10 @@ use App\Models\Traits\HasSearch;
  * @property int|null $trade_unit_family_id
  * @property array<array-key, mixed> $faq
  * @property int|null $showcase_image_id
+ * @property string|null $name_updated_at
+ * @property string|null $description_updated_at
+ * @property string|null $description_title_updated_at
+ * @property string|null $extra_description_updated_at
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Media|null $descArt1Image

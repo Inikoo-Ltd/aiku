@@ -2039,6 +2039,44 @@ test('process outbox time series records', function () {
     expect($outbox->timeSeries()->count())->toBeGreaterThanOrEqual(1);
 });
 
+test('outbox time series drops a day whose dispatched emails are gone', function () {
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+    $day    = now()->subDay()->startOfDay();
+
+    $emailId = DB::table('dispatched_emails')->insertGetId([
+        'outbox_id'  => $outbox->id,
+        'state'      => 'sent',
+        'data'       => '{}',
+        'created_at' => $day->copy()->addHours(9),
+        'updated_at' => now(),
+    ]);
+
+    $process = fn () => ProcessOutboxTimeSeriesRecords::run(
+        $outbox->id,
+        TimeSeriesFrequencyEnum::DAILY,
+        $day->toDateString(),
+        $day->toDateString()
+    );
+
+    $records = fn () => DB::table('outbox_time_series as ts')
+        ->join('outbox_time_series_records as r', 'r.outbox_time_series_id', '=', 'ts.id')
+        ->where('ts.outbox_id', $outbox->id)
+        ->where('ts.frequency', TimeSeriesFrequencyEnum::DAILY->value)
+        ->where('r.period', $day->format('Y-m-d'))
+        ->pluck('r.dispatched_emails')
+        ->all();
+
+    $process();
+
+    expect($records())->toBe([1]);
+
+    DB::table('dispatched_emails')->where('id', $emailId)->delete();
+
+    $process();
+
+    expect($records())->toBe([]);
+});
+
 test('process outbox time series records with bogus outbox id returns early', function () {
     ProcessOutboxTimeSeriesRecords::run(
         30000,

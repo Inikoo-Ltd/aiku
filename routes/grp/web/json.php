@@ -21,6 +21,7 @@ use App\Actions\Catalogue\Product\Json\GetLastOrderedProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderCharges;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
+use App\Actions\Ordering\Order\Json\GetOrderServices;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
@@ -64,10 +65,13 @@ use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSession;
 use App\Actions\Fulfilment\PickingSession\Json\GetPalletReturnsForPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemRow;
 use App\Actions\Dispatching\DeliveryNoteItem\PackDeliveryNoteItemByScan;
+use App\Actions\Dispatching\DeliveryNoteItem\PickDeliveryNoteItemByScan;
 use App\Actions\Dispatching\PickingSession\Json\FetchPickingSessionItemRow;
 use App\Actions\Dispatching\PickingSession\PackPickingSessionItemByScan;
+use App\Actions\Dispatching\PickingSession\PickPickingSessionItemByScan;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
@@ -128,6 +132,7 @@ use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
 use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
+use App\Actions\Web\Webpage\Json\GetBlogWebpages;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
@@ -175,6 +180,7 @@ Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::c
 Route::get('shop/{shop}/department-and-sub-departments', GetDepartmentAndSubDepartments::class)->name('shop.department_and_sub_departments');
 
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
+Route::get('shop/{shop}/website/{website}/blog-webpages', GetBlogWebpages::class)->name('shop.website.blog_webpages');
 Route::get('shop/{shop:id}/families', GetFamiliesInShop::class)->name('shop.families');
 Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.departments');
 Route::get('shop/{shop:id}/sub-departments', GetSubDepartmentsInShop::class)->name('shop.sub_departments');
@@ -210,6 +216,7 @@ Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransa
 
 Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');
 Route::get('order/{order:id}/charges', GetOrderCharges::class)->name('order.charges');
+Route::get('order/{order:id}/services', GetOrderServices::class)->name('order.services');
 Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModification::class)->name('order.products_for_modify');
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
@@ -259,12 +266,15 @@ Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNote
 Route::get('picking-session/{pickingSession:id}/delivery-notes', GetDeliveryNotesForPickingSession::class)->name('picking_session.delivery_notes.index');
 Route::get('picking-session/{pickingSession:id}/item-row', FetchPickingSessionItemRow::class)->name('picking_session_item_row');
 Route::post('picking-session/{pickingSession:id}/pack-by-scan', PackPickingSessionItemByScan::class)->name('picking_session.pack_by_scan');
+Route::post('picking-session/{pickingSession:id}/pick-by-scan', PickPickingSessionItemByScan::class)->name('picking_session.pick_by_scan');
 Route::get('picking-session/{pickingSession:id}/pallet-returns', GetPalletReturnsForPickingSession::class)->name('picking_session.pallet_returns.index');
 
 Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
 Route::get('delivery-note-item/{deliveryNoteItem:id}/row', FetchDeliveryNoteItemRow::class)->name('delivery_note_item_row');
 Route::get('delivery-note-item/{deliveryNoteItem:id}/image', FetchDeliveryNoteItemImage::class)->name('fetch_single_delivery_note_item.image');
 Route::post('delivery-note/{deliveryNote:id}/pack-by-scan', PackDeliveryNoteItemByScan::class)->name('delivery_note.pack_by_scan');
+Route::post('delivery-note/{deliveryNote:id}/pick-by-scan', PickDeliveryNoteItemByScan::class)->name('delivery_note.pick_by_scan');
+Route::patch('delivery-note/{deliveryNote:id}/scan-to-pick', SetScanToPickDeliveryNote::class)->name('delivery_note.set_scan_to_pick');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');

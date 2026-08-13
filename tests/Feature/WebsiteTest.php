@@ -11,6 +11,10 @@
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
+use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
@@ -19,6 +23,8 @@ use App\Actions\Web\Announcement\UpdateAnnouncement;
 use App\Actions\Web\Banner\DeleteBanner;
 use App\Actions\Web\Banner\StoreBanner;
 use App\Actions\Web\Banner\UpdateBanner;
+use App\Actions\Web\Crawl\CrawlWebsite;
+use App\Actions\Web\Crawl\CrawlWebsites;
 use App\Actions\Web\ExternalLink\AttachExternalLinkToWebBlock;
 use App\Actions\Web\ExternalLink\CheckExternalLinkStatus;
 use App\Actions\Web\ExternalLink\StoreExternalLink;
@@ -56,6 +62,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
+use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
@@ -66,7 +73,10 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Events\Web\WebsiteVisitorCountUpdated;
 use App\Events\Web\WebsiteVisitorHit;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\CRM\Customer;
+use App\Models\Helpers\Address;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Dropshipping\ModelHasWebBlocks;
@@ -87,10 +97,13 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
@@ -1736,5 +1749,172 @@ describe('live visitor tracking', function () {
 
         expect($this->tracker->getActiveVisitors($this->website))->toBe([]);
         Event::assertNotDispatched(WebsiteVisitorHit::class);
+    });
+});
+
+/*
+ * Folded in from its own file for the same reason as the block above: eight database restores for two
+ * tests. The order is hung off a customer of its own, not the shared one createCustomer() hands back,
+ * so its CREATING basket never lands in the 906.30 figure the tracking block asserts.
+ */
+describe('checkout abandonment', function () {
+    beforeEach(function () {
+        $this->website        = createWebsite($this->shop);
+        $this->basketCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+        $this->order = StoreOrder::make()->action($this->basketCustomer, [
+            'reference'        => 'CA-'.Str::random(6),
+            'date'             => now()->toDateString(),
+            'customer_id'      => $this->basketCustomer->id,
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'billing_address'  => new Address(Address::factory()->definition()),
+        ]);
+
+        DB::table('orders')->where('id', $this->order->id)->update([
+            'state'        => OrderStateEnum::CREATING->value,
+            'submitted_at' => null,
+            'total_amount' => 99,
+            'created_at'   => now()->subHours(48),
+        ]);
+
+        $this->basketCustomer->update(['current_order_in_basket_id' => $this->order->id]);
+
+        $webUser = StoreWebUser::make()->action($this->basketCustomer, [
+            'username' => 'ca-'.Str::random(8),
+            'email'    => 'ca-'.Str::random(8).'@testmail.com',
+            'password' => 'test',
+        ]);
+
+        $visitorId = DB::table('website_visitors')->insertGetId([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'website_id'      => $this->website->id,
+            'web_user_id'     => $webUser->id,
+            'session_id'      => 'sess-'.Str::random(8),
+            'visitor_hash'    => Str::random(16),
+            'device_type'     => 'desktop',
+            'os'              => 'linux',
+            'browser'         => 'firefox',
+            'user_agent'      => 'test-agent',
+            'ip_hash'         => Str::random(16),
+            'first_seen_at'   => now()->subHours(48),
+            'last_seen_at'    => now()->subHours(25),
+            'created_at'      => now()->subHours(48),
+            'updated_at'      => now()->subHours(25),
+        ]);
+
+        DB::table('website_page_views')->insert([
+            'group_id'           => $this->shop->group_id,
+            'organisation_id'    => $this->shop->organisation_id,
+            'shop_id'            => $this->shop->id,
+            'website_id'         => $this->website->id,
+            'website_visitor_id' => $visitorId,
+            'page_url'           => 'https://test/app/checkout',
+            'page_path'          => '/app/checkout',
+            'view_date'          => now()->subHours(25)->toDateString(),
+            'created_at'         => now()->subHours(25),
+            'updated_at'         => now()->subHours(25),
+        ]);
+
+        $this->order->refresh();
+    });
+
+    it('detects an abandoned checkout', function () {
+        RunCheckoutAbandonmentScan::run();
+
+        $this->assertDatabaseHas('checkout_abandonments', [
+            'order_id'    => $this->order->id,
+            'customer_id' => $this->order->customer_id,
+            'state'       => 'abandoned',
+        ]);
+
+        expect((float) CheckoutAbandonment::where('order_id', $this->order->id)->value('total_amount'))->toBe(99.0);
+    });
+
+    it('marks an abandonment recovered when the order leaves creating', function () {
+        RunCheckoutAbandonmentScan::run();
+        $this->assertDatabaseHas('checkout_abandonments', [
+            'order_id' => $this->order->id,
+            'state'    => 'abandoned',
+        ]);
+
+        DB::table('orders')->where('id', $this->order->id)->update([
+            'state'        => OrderStateEnum::SUBMITTED->value,
+            'submitted_at' => now(),
+        ]);
+
+        RunCheckoutAbandonmentScan::run();
+
+        $this->assertDatabaseHas('checkout_abandonments', [
+            'order_id' => $this->order->id,
+            'state'    => 'recovered',
+        ]);
+
+        expect(CheckoutAbandonment::where('order_id', $this->order->id)->value('recovered_at'))->not->toBeNull();
+    });
+});
+
+describe('deployment crawling', function () {
+    test('deployment crawls are delayed and staggered without delaying other crawls', function () {
+        Website::query()->update(['migrated' => false]);
+
+        foreach (range(1, 3) as $index) {
+            Website::factory()->create([
+                'shop_id'         => $this->shop->id,
+                'organisation_id' => $this->organisation->id,
+                'group_id'        => $this->organisation->group_id,
+                'code'            => "crawl-$index",
+                'type'            => WebsiteTypeEnum::INFO,
+                'state'           => WebsiteStateEnum::LIVE,
+                'migrated'        => true,
+                'status'          => true,
+            ]);
+        }
+
+        Queue::fake();
+
+        CrawlWebsites::run(CrawlTriggerEnum::DEPLOYMENT);
+
+        $deploymentDelays = Queue::pushed(JobDecorator::class)
+            ->filter(fn (JobDecorator $job) => $job->decorates(CrawlWebsite::class))
+            ->pluck('delay')
+            ->sort()
+            ->values()
+            ->all();
+
+        expect($deploymentDelays)->toBe([60, 65, 70]);
+
+        Queue::fake();
+
+        CrawlWebsites::run(CrawlTriggerEnum::COMMAND);
+
+        $commandDelays = Queue::pushed(JobDecorator::class)
+            ->filter(fn (JobDecorator $job) => $job->decorates(CrawlWebsite::class))
+            ->pluck('delay')
+            ->values()
+            ->all();
+
+        expect($commandDelays)->toBe([null, null, null]);
+    });
+
+    test('deployment stops active crawls before restarting SSR', function () {
+        $deployFile = file_get_contents(base_path('deploy/deploy.php'));
+
+        preg_match("/task\('deploy', \[(.*?)\]\);/s", $deployFile, $matches);
+
+        $deploymentSteps  = $matches[1] ?? '';
+        $stopCrawls       = strpos($deploymentSteps, "'deploy:stop-crawls'");
+        $terminateHorizon = strpos($deploymentSteps, "'artisan:horizon:terminate'");
+        $restartSsr       = strpos($deploymentSteps, "'deploy:restart-ssr-by-supervisorctl'");
+        $flushVarnish     = strpos($deploymentSteps, "'deploy:flush-varnish'");
+
+        expect($stopCrawls)->not->toBeFalse()
+            ->and($terminateHorizon)->not->toBeFalse()
+            ->and($restartSsr)->not->toBeFalse()
+            ->and($flushVarnish)->not->toBeFalse()
+            ->and($stopCrawls)->toBeLessThan($terminateHorizon)
+            ->and($terminateHorizon)->toBeLessThan($restartSsr)
+            ->and($restartSsr)->toBeLessThan($flushVarnish);
     });
 });

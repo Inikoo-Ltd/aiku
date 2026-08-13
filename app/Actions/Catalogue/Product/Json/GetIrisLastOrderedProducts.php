@@ -170,7 +170,8 @@ class GetIrisLastOrderedProducts extends IrisAction
         }
 
         $query->where('webpages.state', WebpageStateEnum::LIVE->value)
-            ->where('products.is_for_sale', true);
+            ->where('products.is_for_sale', true)
+            ->where('products.price', '>', 0);
 
         $rankedPurchases = DB::query()
             ->fromSub($query, 'daily_purchases')

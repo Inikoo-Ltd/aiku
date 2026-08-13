@@ -44,7 +44,7 @@ class UpdateClockingNotes
 
         $this->handle(
             $clocking,
-            $validated['notes'] ?? null,
+            $request->has('notes') ? ($validated['notes'] ?? null) : $clocking->notes,
             $validated['clocked_at'] ?? null
         );
 
@@ -58,7 +58,7 @@ class UpdateClockingNotes
     public function rules(): array
     {
         return [
-            'notes'      => ['nullable', 'string', 'max:500'],
+            'notes'      => ['sometimes', 'nullable', 'string', 'max:500'],
             'clocked_at' => ['nullable', 'date'],
         ];
     }

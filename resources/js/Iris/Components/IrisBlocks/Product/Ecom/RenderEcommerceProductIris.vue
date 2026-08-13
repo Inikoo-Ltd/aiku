@@ -73,6 +73,7 @@ const selected_product = ref<ProductResource>(props.fieldValue.product)
 const appliedVariantFromUrl = ref(false)
 
 const variantProductsData = ref<ProductResource[]>([])
+const uncachedProductData = ref<Record<string, any>>({})
 
 const customerData = ref<Record<number, any>>({})
 const pendingOrderingRequests = new Set<number>()
@@ -192,6 +193,7 @@ const fetchUncachedProduct = async (product: ProductResource = selected_product.
 
     if (selected_product.value?.slug !== product.slug) return
 
+    uncachedProductData.value = response.data
     selected_product.value = { ...selected_product.value, ...response.data }
   } catch (error) {
     console.error("Failed to load uncached product data", error)
@@ -261,6 +263,7 @@ const toggleBackInStockReminder = (product: ProductResource, isReminderWanted: b
 }
 
 const changeSelectedProduct = (product: ProductResource) => {
+  uncachedProductData.value = {}
   selected_product.value = { ...product }
   fetchOrderingData(product.id)
 
@@ -278,6 +281,7 @@ const applyVariantFromUrl = () => {
   const matchedProduct = listProducts.value.find(p => p.code === variantCode)
   if (!matchedProduct) return
 
+  uncachedProductData.value = {}
   selected_product.value = { ...matchedProduct }
   fetchOrderingData(matchedProduct.id)
   appliedVariantFromUrl.value = true
@@ -297,7 +301,11 @@ watch(
 watch(
   () => props.fieldValue.product,
   product => {
-    selected_product.value = { ...product }
+    if (selected_product.value?.id !== product.id) {
+      uncachedProductData.value = {}
+    }
+
+    selected_product.value = { ...product, ...uncachedProductData.value }
     fetchOrderingData(product.id)
   },
   { deep: true }

@@ -79,6 +79,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_collections_with_online_webpage
  * @property int $number_collections_with_offline_webpage
  * @property int $number_web_user_requests
+ * @property int $number_child_webpages_sub_type_landing_page
+ * @property int $number_child_webpages_sub_type_mailshot
+ * @property int $number_child_webpages_sub_type_davids_travel_blog
+ * @property int $number_child_webpages_sub_type_tips
  * @property-read \App\Models\Web\Webpage|null $webpage
  * @method static Builder<static>|WebpageStats newModelQuery()
  * @method static Builder<static>|WebpageStats newQuery()
