@@ -71,6 +71,14 @@ function toYmd(date: Date): string {
             <span class="tabular-nums">{{ locale.currencyFormat(item.org_currency_code, item.org_stock_lpp_value) }}</span>
         </template>
 
+        <template #cell(org_stock_wac_value)="{ item }">
+            <span class="tabular-nums">{{ item.org_stock_wac_value != null ? locale.currencyFormat(item.org_currency_code, item.org_stock_wac_value) : '-' }}</span>
+        </template>
+
+        <template #cell(org_stock_fifo_value)="{ item }">
+            <span class="tabular-nums">{{ item.org_stock_fifo_value != null ? locale.currencyFormat(item.org_currency_code, item.org_stock_fifo_value) : '-' }}</span>
+        </template>
+
         <template #cell(grp_stock_lpp_value)="{ item }">
             <span class="tabular-nums">{{ locale.currencyFormat(item.grp_currency_code, item.grp_stock_lpp_value) }}</span>
         </template>
