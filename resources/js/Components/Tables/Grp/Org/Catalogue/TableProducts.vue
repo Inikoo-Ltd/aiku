@@ -181,19 +181,20 @@ function productHref(product: Product) {
     return productRoute(product) + bucketQuery()
 }
 
+const routeParams = route().params as unknown as RouteParams
 function productRoute(product: Product) {
     if (!product.slug) {
         return "ss"
     }
 
-    // console.log(route().current())
-    switch (route().current()) {
+    // console.log(routeCurrent)
+    switch (routeCurrent) {
         case 'grp.org.shops.show.catalogue.products.not_online_products.index': 
             return route(
                 'grp.org.shops.show.catalogue.products.not_online_products.show',
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -201,8 +202,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.current.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -210,8 +211,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.in_process.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -219,8 +220,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.discontinued.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -228,8 +229,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.independent_products.all.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -237,72 +238,72 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.mismatched_families.index":
             return route(
                 "grp.org.shops.show.catalogue.products.mismatched_families.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.no_image_product.index":
             return route(
                 "grp.org.shops.show.catalogue.products.no_image_product.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.orphan_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.orphan_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.out_of_stock_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.out_of_stock_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.rrp_violation_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.rrp_violation_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.missing_description_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.missing_description_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.products.in_process_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.in_process_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
 
                     product.slug])
         case "grp.org.shops.show.catalogue.products.discontinued_products.index":
             return route(
                 "grp.org.shops.show.catalogue.products.discontinued_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug])
         case "grp.trade_units.units.show":
             return route(
@@ -318,8 +319,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.all_products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug])
 
 
@@ -327,8 +328,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.fulfilments.show.catalogue.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).fulfilment,
+                    routeParams.organisation,
+                    routeParams.fulfilment,
                     product.slug])
         case "grp.org.shops.show.catalogue.departments.show":
         case "grp.org.shops.show.catalogue.departments.show.products.sales":
@@ -336,9 +337,9 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.departments.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).department,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.department,
 
 
                     product.slug])
@@ -347,9 +348,9 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.families.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).family,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.family,
 
                     product.slug])
         case "grp.org.shops.show.catalogue.departments.show.families.show.products.sales":
@@ -357,10 +358,10 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.departments.show.families.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).department,
-                    (route().params as RouteParams).family,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.department,
+                    routeParams.family,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.sub_departments.show.products.sales":
@@ -368,9 +369,9 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.sub_departments.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).subDepartment,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.subDepartment,
                     product.slug
                 ])
         case "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.sales":
@@ -378,16 +379,16 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).subDepartment,
-                    (route().params as RouteParams).family,
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.subDepartment,
+                    routeParams.family,
                     product.slug
                 ])
         case "grp.masters.master_shops.show.master_collections.show":
             return route(
                 "grp.masters.master_shops.show.master_products.show",
-                [(route().params as RouteParams).masterShop, product.slug])
+                [routeParams.masterShop, product.slug])
 
         case "retina.dropshipping.products.index":
             return route(
@@ -405,8 +406,8 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show",
                 [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
+                    routeParams.organisation,
+                    routeParams.shop,
                     product.slug
                 ]
             )
@@ -424,8 +425,8 @@ const productHasPendingReminderRoute = (product: Product) => {
         return route(
             "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show",
             {
-                organisation: (route().params as RouteParams).organisation,
-                shop: (route().params as RouteParams).shop,
+                organisation: routeParams.organisation,
+                shop: routeParams.shop,
                 product: product.slug,
                 tab: 'reminders'
             }
@@ -463,6 +464,7 @@ function organisationRoute(invoice: Invoice) {
         [invoice.organisation_slug])
 }
 
+const routeCurrent = route().current()
 function shopRoute(invoice: Invoice) {
     if (!invoice.organisation_slug || !invoice.shop_slug) {
         //todo fix this
@@ -470,7 +472,7 @@ function shopRoute(invoice: Invoice) {
         //     "grp.majordomo.redirect_asset",
         //     [invoice.asset_id])
     }
-    if (route().current() == "grp.trade_units.units.show") {
+    if (routeCurrent == "grp.trade_units.units.show") {
 
         return route(
             "grp.org.shops.show.catalogue.products.all_products.index",
@@ -547,15 +549,13 @@ function getClassColorIcon(varSlug: string) {
 function variantRoute(product: MasterProduct): string {
     if (!product.variant_slug) return "#"
 
-    const params = route().params as RouteParams
-
     return route(
         "grp.org.shops.show.catalogue.families.show.variants.show",
         {
-            organisation: params.organisation,
-            shop: params.shop,
-            subDepartment: params.subDepartment,
-            family: params.family ?? product.family_slug,
+            organisation: routeParams.organisation,
+            shop: routeParams.shop,
+            subDepartment: routeParams.subDepartment,
+            family: routeParams.family ?? product.family_slug,
             variant: product.variant_slug,
         }
     )
