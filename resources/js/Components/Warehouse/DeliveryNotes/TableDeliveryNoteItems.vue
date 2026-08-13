@@ -783,7 +783,7 @@ const totalUnitsAll = computed(() => {
         }"
     >
         <template #afterRecordCount>
-            | <span class="font-semibold tabular-nums">{{ Math.round(total_unit_counts) }}</span> {{ ctrans('Units') }}
+            | <span class="font-semibold tabular-nums">{{ Math.round(total_unit_counts * 100) / 100 }}</span> {{ ctrans("SKO's") }}
         </template>
         <!-- Whichever picking tab runs out of rows offers the step that follows it, rigt where the picker is already looking. -->
         <template #button-empty-state="{ action }">

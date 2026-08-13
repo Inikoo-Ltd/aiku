@@ -1245,10 +1245,7 @@ class ShowDeliveryNote extends OrgAction
             'tab_counts'                         => $tabCounts,
             'total_unit_counts'                  => DB::table('delivery_note_items')
                                                         ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
-                                                        ->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
-                                                        ->sum(DB::raw(
-                                                            'delivery_note_items.quantity_required * org_stocks.packed_in'
-                                                        )),
+                                                        ->sum('delivery_note_items.quantity_required'),
         ];
 
         $props = array_merge($props, $this->getItems($deliveryNote));

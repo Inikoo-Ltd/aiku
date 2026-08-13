@@ -13,6 +13,7 @@ use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -55,6 +56,10 @@ class UpdateOrgStock extends OrgAction
         if (Arr::has($changes, 'state')) {
             StockHydrateStateFromOrgStocks::dispatch($orgStock->id);
             OrganisationHydrateOrgStocks::dispatch($orgStock->organisation);
+
+            foreach ($orgStock->organisation->warehouses as $warehouse) {
+                WarehouseHydrateLowStockAudits::dispatch($warehouse);
+            }
 
             foreach ($orgStock->tradeUnits as $tradeUnit) {
                 SetTradeUnitStatus::dispatch($tradeUnit);

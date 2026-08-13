@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import TableOrgStockReplenishments from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockReplenishments.vue"
+import TableOrgStockLowStockAudits from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockLowStockAudits.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
@@ -21,5 +21,5 @@ defineProps<{
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <TableOrgStockReplenishments :data="lowStockAudits" tab="low_stock_audits" class="mt-5" />
+    <TableOrgStockLowStockAudits :data="lowStockAudits" tab="low_stock_audits" class="mt-5" />
 </template>

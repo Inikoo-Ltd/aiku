@@ -38,6 +38,13 @@ export default {
 					key: ["text"],
 					type: "editorhtml",
 					label: "text",
+					props_data : {
+						 toggle: [
+								 'fontSize', 'bold', 'italic', 'underline', "fontFamily",
+								'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight',
+								'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear',
+							]
+					}
 				},
 				{
 					key: ["link"],

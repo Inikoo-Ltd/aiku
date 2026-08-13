@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\Warehouse;
 
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateFulfilments;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletReturns;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
@@ -46,6 +47,7 @@ class HydrateWarehouse
         WarehouseHydrateStoredItems::run($warehouse);
         WarehouseHydrateTrolleys::run($warehouse);
         WarehouseHydratePickedBays::run($warehouse);
+        WarehouseHydrateLowStockAudits::run($warehouse);
 
     }
 
