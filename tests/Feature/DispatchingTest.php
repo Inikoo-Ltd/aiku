@@ -457,6 +457,30 @@ test('store picking', function (DeliveryNote $deliveryNote) {
     return $picking;
 })->depends('update second delivery note state to in queue');
 
+test('cannot pick from location without stock', function (Picking $picking) {
+    $deliveryNoteItem  = $picking->deliveryNoteItem;
+    $emptyLocation     = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $emptyLocationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $deliveryNoteItem->orgStock,
+        location: $emptyLocation,
+        modelData: [
+            'quantity'   => 0,
+            'type'       => LocationStockTypeEnum::PICKING,
+            'fetched_at' => now(),
+        ],
+        strict: false
+    );
+
+    expect(fn () => StorePicking::make()->action($deliveryNoteItem, $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $emptyLocationOrgStock->id,
+        'quantity'              => 5,
+    ]))->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    expect(intval($deliveryNoteItem->refresh()->quantity_picked))->toBe(5)
+        ->and((float)$emptyLocationOrgStock->refresh()->quantity)->toBe(0.0);
+})->depends('store picking');
+
 test('update picking', function (Picking $picking) {
     $picking = UpdatePicking::make()->action($picking, [
         'quantity' => 10

@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\Traits\Dashboards\WithLatestStockHistory;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Stubs\Migrations\HasInventoryStats;
@@ -131,6 +132,15 @@ class ShowInventoryDashboard extends OrgAction
                     ],
                 ],
                 'additionalStatBox' => [
+                    [
+                        'label' => __('Negative Stocks'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.negative_stocks.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-exclamation-triangle',
+                        'value' => LocationOrgStock::where('warehouse_id', $this->warehouse->id)->where('quantity', '<', 0)->count(),
+                    ],
                     [
                         'label' => __('SKOs Without Product'),
                         'route' => [
