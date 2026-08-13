@@ -207,16 +207,11 @@ class EditGroupSettings extends OrgAction
                                 'required'         => true,
                                 'value'            => Arr::get($group->settings, 'inventory.official_valuation_method', OrgStockValuationMethodEnum::official()->value),
                                 'options'          => [
-                                    [
-                                        'value'       => OrgStockValuationMethodEnum::FIFO->value,
-                                        'title'       => __('FIFO (First In First Out)'),
-                                        'description' => __('Stock is valued at the cost of its oldest remaining purchases. Recommended and the default.'),
-                                    ],
-                                    [
-                                        'value'       => OrgStockValuationMethodEnum::WAC->value,
-                                        'title'       => __('WAC (Weighted Average Cost)'),
-                                        'description' => __('Stock is valued at the average cost of everything on hand. Allowed alternative.'),
-                                    ],
+                                    ...array_map(fn (OrgStockValuationMethodEnum $method) => [
+                                        'value'       => $method->value,
+                                        'title'       => $method->label().' ('.$method->fullName().')',
+                                        'description' => $method->legend(),
+                                    ], [OrgStockValuationMethodEnum::FIFO, OrgStockValuationMethodEnum::WAC]),
                                 ],
                                 'saveConfirmation' => [
                                     'title'       => __('Change the official stock valuation method?'),

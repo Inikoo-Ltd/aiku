@@ -72,16 +72,22 @@ enum OrgStockValuationMethodEnum: string
         };
     }
 
+    public function description(): string
+    {
+        return match ($this) {
+            self::FIFO => __('Stock is valued at the cost of its oldest remaining purchases.'),
+            self::WAC  => __('Stock is valued at the average cost of everything on hand.'),
+            self::LPP  => __('Stock is valued at the price of the most recent purchase.'),
+        };
+    }
+
     public function legend(): string
     {
-        if ($this === self::official()) {
-            return $this->fullName().' — '.__('recommended, the official valuation');
-        }
-        if ($this === self::LPP) {
-            return $this->fullName().' — '.__('not recommended');
-        }
-
-        return $this->fullName().' — '.__('alternative valuation');
+        return $this->fullName().' — '.$this->description().' '.match (true) {
+            $this === self::official() => __('Recommended, the official valuation.'),
+            $this === self::LPP        => __('Not recommended, not allowed in the UK.'),
+            default                    => __('Allowed alternative.'),
+        };
     }
 
     public function perSkuColumn(): string
