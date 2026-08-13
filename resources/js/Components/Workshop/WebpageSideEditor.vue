@@ -66,12 +66,14 @@ const props = withDefaults(
 		webBlockTypes: Daum
 		selectedTab: Number
 		editable: boolean
+		canUseTemplate?: boolean
 		templates?: WebLayoutTemplateList
 		isLoadingTemplates?: boolean
 		templatesErrorMessage?: string | null
 		applyingTemplateId?: number | null
 	}>(),
 	{
+		canUseTemplate: true,
 		templates: () => ({ data: [] }),
 		isLoadingTemplates: false,
 		templatesErrorMessage: null,
@@ -135,7 +137,12 @@ const tabs = computed(() => [
 		tooltip: 'Style',
 		hidden: !isOpenedBlockEditable.value,
 	},
-	{ label: 'Template', icon: faShapes, tooltip: 'Page templates', hidden: false },
+	{
+		label: 'Template',
+		icon: faShapes,
+		tooltip: 'Page templates',
+		hidden: !props.canUseTemplate,
+	},
 ])
 
 const requestTemplates = () => {
@@ -288,7 +295,7 @@ watch(openedBlockSideEditor, (newVal) => {
 watch(
 	() => props.selectedTab,
 	(tabIndex) => {
-		if (tabIndex === TEMPLATE_TAB_INDEX && !hasRequestedTemplates.value) {
+		if (tabIndex === TEMPLATE_TAB_INDEX && props.canUseTemplate && !hasRequestedTemplates.value) {
 			requestTemplates()
 		}
 	},

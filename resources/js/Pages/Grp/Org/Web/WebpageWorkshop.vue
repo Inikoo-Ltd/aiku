@@ -127,6 +127,9 @@ const templateMerge = ref<{ current: any[], incoming: any[] }>({ current: [], in
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
 
+const WEBPAGE_TYPES_WITHOUT_TEMPLATE = ['storefront', 'blog'];
+const canUseTemplate = computed(() => !WEBPAGE_TYPES_WITHOUT_TEMPLATE.includes(props.webpage.type));
+
 console.log('layout',layout)
 
 provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
@@ -886,6 +889,7 @@ console.log('props_workshop',props)
           :webBlockTypes="webBlockTypes"
           v-model:selectedTab="selectedTab"
           :editable="editable"
+          :canUseTemplate="canUseTemplate"
           :templates="templates"
           :isLoadingTemplates="isLoadingTemplates"
           :templatesErrorMessage="templatesErrorMessage"
@@ -976,14 +980,16 @@ console.log('props_workshop',props)
           </span>
 
           <!-- Create as template -->
-          <button type="button" v-tooltip.bottom="trans('Pick the blocks to keep and save this page as a template')"
-            @click="isCreateTemplateDialogVisible = true"
-            class="h-7 flex items-center gap-1.5 px-2 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-            <FontAwesomeIcon :icon="faLayerPlus" fixed-width />
-            <span class="text-xs font-medium">{{ trans('Create as template') }}</span>
-          </button>
+          <template v-if="canUseTemplate">
+            <button type="button" v-tooltip.bottom="trans('Pick the blocks to keep and save this page as a template')"
+              @click="isCreateTemplateDialogVisible = true"
+              class="h-7 flex items-center gap-1.5 px-2 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+              <FontAwesomeIcon :icon="faLayerPlus" fixed-width />
+              <span class="text-xs font-medium">{{ trans('Create as template') }}</span>
+            </button>
 
-          <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
+            <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
+          </template>
 
           <!-- Reload preview -->
           <button type="button" v-tooltip.bottom="trans('Reload preview')"
