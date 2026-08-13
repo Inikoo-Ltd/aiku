@@ -19,16 +19,19 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
+import { Switch } from '@headlessui/vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMapMarkerAlt, faTruck, faYinYang } from "@fal"
+import { faMapMarkerAlt, faTruck, faYinYang, faTimes } from "@fal"
+import { faCheck } from "@far"
 import { faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTruck, faYinYang)
 
-defineProps<{
+const props = defineProps<{
 	data: TableTS
 	tab?: string
+	bucket: string
 }>()
 
 
@@ -228,10 +231,45 @@ const generateRouteDeliveryNote = (id: string) => {
 		deliveryNote: id,
 	})
 }
+
+const showSubmittedDate = ref(props.bucket == 'all');
+
+const size = {
+	track: 'h-5 w-10',
+	knob: 'translate-x-5',
+	icon: 'text-xs'
+}
 </script>
 
 <template>
 	<Table :resource="data" :name="tab" class="mt-5">
+		<template #tableExtraAction v-if="bucket != 'all'">
+			<div class="text-sm">
+				<span class="my-auto mr-1">
+					{{ ctrans('Show Submitted Date') }}
+				</span>
+				<Switch
+					:modelValue="showSubmittedDate"
+					@update:modelValue="(val) => showSubmittedDate = val"
+					:class="[
+						showSubmittedDate
+							? 'bg-green-500'
+							: 'bg-slate-300',
+						size.track,
+					]"
+					:disabled
+					class="pr-1 relative inline-flex shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+				>
+					<span aria-hidden="true" :class="showSubmittedDate ? [size.knob, 'bg-white'] : ['translate-x-0', 'bg-gray-50']"
+						class="flex items-center justify-center pointer-events-none h-full w-1/2 transform rounded-full shadow-lg ring-0 transition">
+						<LoadingIcon v-if="loading" :class="size.icon" />
+						<FontAwesomeIcon v-else-if="showSubmittedDate" :icon="faCheck" :class="['text-green-600', size.icon]" fixed-width aria-hidden='true' />
+						<FontAwesomeIcon v-else :icon="faTimes" :class="['text-red-500', size.icon]" fixed-width aria-hidden='true' />
+					</span>
+				</Switch>
+			</div>
+		</template>
+
 		<template #cell(status)="{ item: deliveryNote }">
 			<!-- {{deliveryNote.state_icon}} -->
 			<Icon :data="deliveryNote.state_icon" />
@@ -313,12 +351,25 @@ const generateRouteDeliveryNote = (id: string) => {
 			</div>
 		</template>
 
+		<template #table-header-date v-if="showSubmittedDate">
+			{{ ctrans("Submitted Date") }}
+		</template>
+
 		<template #cell(date)="{ item }">
-			{{
-				useFormatTime(item.date, {
-					formatTime: "EEE, do MMM yy, HH:mm",
-				})
-			}}
+			<span v-if="showSubmittedDate">
+				{{
+					useFormatTime(item.date, {
+						formatTime: "EEE, do MMM yy, HH:mm",
+					})
+				}}
+			</span>
+			<span v-else>
+				{{
+					useFormatTime(item.last_modified_date, {
+						formatTime: "EEE, do MMM yy, HH:mm",
+					})
+				}}
+			</span>
 		</template>
 
 		<template #cell(effective_weight)="{ item: deliveryNote }">

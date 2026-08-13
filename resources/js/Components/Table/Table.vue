@@ -1161,6 +1161,8 @@ const getSeverity = (type?: string) => {
                             </div>
                         </template>
 
+                        <slot name="tableExtraAction" />
+                        
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
@@ -1333,7 +1335,12 @@ const getSeverity = (type?: string) => {
                                         <HeaderCell :key="`table-${name}-header-${column.key}`"
                                             :cell="header(column.key)" :type="columnsType[column.key]" :column="column"
                                             :resource="compResourceData"
-                                            :highlight="queryBuilderProps?.betweenDatesValue?.column === column.key">
+                                            :highlight="queryBuilderProps?.betweenDatesValue?.column === column.key"
+                                        >
+                                            <template #cellLabel>
+                                                <slot :name="`table-header-${column.key}`">
+                                                </slot>
+                                            </template>
                                         </HeaderCell>
                                     </slot>
                                 </tr>
