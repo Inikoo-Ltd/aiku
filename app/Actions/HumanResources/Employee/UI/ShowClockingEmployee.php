@@ -27,9 +27,10 @@ class ShowClockingEmployee extends OrgAction
 
     public function handle(Timesheet $timesheet, ActionRequest $request): Timesheet
     {
-        $employee = Auth::user()->employees->first();
 
-        if ($timesheet->subject_id !== $employee->id) {
+        $employee = Auth::user()->employees()->where('employees.id', $timesheet->subject_id)->first();
+
+        if ($timesheet->subject_type !== 'Employee' || !$employee) {
             abort(403);
         }
 

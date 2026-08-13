@@ -4,6 +4,7 @@ namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\HumanResources\Clocking\Traits\DeterminesClockingResult;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
@@ -47,7 +48,7 @@ class ValidateClockingMachineQrCode
 
             $config = $clockingMachine->config['qr'] ?? [];
 
-            $employeeId = Auth::user()?->employees->first()?->id;
+            $employeeId = Auth::user() ? GetUserCurrentEmployee::run(Auth::user(), $clockingMachine->organisation_id)?->id : null;
             $effectiveMode = $this->resolveEffectivePolicyMode($clockingMachine, $employeeId, now());
 
             if (($config['allow_coordinates'] ?? false) === true && $effectiveMode !== ClockingPolicyModeEnum::REMOTE->value) {
@@ -98,7 +99,7 @@ class ValidateClockingMachineQrCode
     private function processClocking(ClockingMachine $machine, ClockingMachineQRCode $clockingMachineQRCode, ?float $lat, ?float $lng, ?int $workScheduleId = null): array
     {
         $user = Auth::user();
-        $employee = $user?->employees->first();
+        $employee = $user ? GetUserCurrentEmployee::run($user, $machine->organisation_id) : null;
 
         if (!$employee) {
             throw new Exception(__('User is not associated with an employee record.'));
