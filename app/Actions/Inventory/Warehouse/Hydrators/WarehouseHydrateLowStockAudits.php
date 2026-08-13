@@ -29,6 +29,7 @@ class WarehouseHydrateLowStockAudits implements ShouldBeUnique
     {
         $numberLowStockAudits = OrgStock::where('organisation_id', $warehouse->organisation_id)
             ->where('state', OrgStockStateEnum::ACTIVE)
+            ->where('quantity_in_locations', '>', 0)
             ->where('quantity_in_locations', '<', $warehouse->getLowStockThreshold())
             ->count();
 
