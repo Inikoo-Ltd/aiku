@@ -32,9 +32,12 @@ const props = defineProps<{
 const openWebsite = (href: string) => {
     window.open(href, '_blank')
 }
+
+const routeCurrent = route().current()
+const routeParams = route().params as Record<string, string>
 function resolveWebpageRoute(webpage: Webpage) {
 
-    switch (route().current()) {
+    switch (routeCurrent) {
 
         case 'grp.org.fulfilments.show.web.webpages.index.type.info':
         case 'grp.org.fulfilments.show.web.webpages.index.type.content':
@@ -42,9 +45,9 @@ function resolveWebpageRoute(webpage: Webpage) {
             return route(
                 'grp.org.fulfilments.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.fulfilment,
+                    routeParams.website,
                     webpage.slug
                 ]);
                 
@@ -54,9 +57,9 @@ function resolveWebpageRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.website,
                     webpage.slug
                 ]);
 
@@ -74,45 +77,45 @@ function resolveWebpageRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.website,
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.type.checkout':
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.website,
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.type.catalogue':
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams.organisation,
+                    routeParams.shop,
+                    routeParams.website,
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.type.small-print':
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.blogs.index':
             return route(
                 'grp.org.shops.show.web.blogs.show',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
 
@@ -120,9 +123,9 @@ function resolveWebpageRoute(webpage: Webpage) {
             return route(
                 'grp.org.fulfilments.show.web.webpages.show',
                 [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['fulfilment'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
 
@@ -132,16 +135,16 @@ function resolveWebpageRoute(webpage: Webpage) {
 }
 
 function resolveSubDepartmentsRoute(webpage: Webpage) {
-    switch (route().current()) {
+    switch (routeCurrent) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.department.sub_departments',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
 
@@ -151,16 +154,16 @@ function resolveSubDepartmentsRoute(webpage: Webpage) {
 }
 
 function resolveFamiliesRoute(webpage: Webpage) {
-    switch (route().current()) {
+    switch (routeCurrent) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.department.families',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
@@ -168,9 +171,9 @@ function resolveFamiliesRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.sub_department.families',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
 
@@ -180,16 +183,16 @@ function resolveFamiliesRoute(webpage: Webpage) {
 }
 
 function resolveProductsRoute(webpage: Webpage) {
-    switch (route().current()) {
+    switch (routeCurrent) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.department.products',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.sub_type.sub_department':
@@ -197,9 +200,9 @@ function resolveProductsRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.sub_department.products',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         case 'grp.org.shops.show.web.webpages.index.sub_type.family':
@@ -208,9 +211,9 @@ function resolveProductsRoute(webpage: Webpage) {
             return route(
                 'grp.org.shops.show.web.webpages.index.sub_type.family.products',
                 [
-                    route().params['organisation'],
-                    route().params['shop'],
-                    route().params['website'],
+                    routeParams['organisation'],
+                    routeParams['shop'],
+                    routeParams['website'],
                     webpage.slug
                 ]);
         default: 
