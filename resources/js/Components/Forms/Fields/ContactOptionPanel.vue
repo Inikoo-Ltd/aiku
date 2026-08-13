@@ -9,7 +9,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import IconPicker from "@/Components/Pure/IconPicker.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faLink, faTimes, faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt } from '@fal'
+import { faLink, faTimes, faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb } from '@fal'
 import {
     faWhatsapp,
     faFacebookF,
@@ -34,7 +34,7 @@ import { trans } from "laravel-vue-i18n"
 const contactIconList = [
     faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok, faYoutube,
     faLinkedinIn, faLine, faWeixin, faPinterest, faSnapchat, faDiscord,
-    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt,
+    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb,
 ]
 
 library.add(faTimes, faLink, ...contactIconList)
