@@ -2244,4 +2244,46 @@ describe('aurora provisional cost fix', function () {
             ->and((float) $postRow->wac_per_sku)->toBe(4.25)
             ->and((float) $postRow->lpp_per_sku)->toBe(5.5);
     });
+
+    test('update does not clobber a supplied org_amount', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFE');
+
+        $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 100,
+        ]);
+
+        $movement = UpdateOrgStockMovement::make()->action($movement, ['quantity' => 100, 'org_amount' => 500], strict: false);
+        expect((float) $movement->org_amount)->toBe(500.0);
+
+        $orgStock->update(['value_in_locations' => 7905]);
+        $movement = UpdateOrgStockMovement::make()->action($movement->fresh(), ['quantity' => 100], strict: false);
+        expect((float) $movement->org_amount)->toBe(790500.0);
+    });
+
+    test('restore command reverts pre corruption-window movements to snapshot values', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFF');
+
+        $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 20,
+        ]);
+        $movement->update(['org_amount' => 269.76, 'cost_per_sku' => 13.488, 'date' => '2017-02-27 14:24:49']);
+
+        DB::statement('create table if not exists org_stock_movements_pre_costfix (like org_stock_movements)');
+        DB::statement('create table if not exists org_stock_histories_pre_costfix (like org_stock_histories)');
+        DB::statement('insert into org_stock_movements_pre_costfix select * from org_stock_movements where id = '.$movement->id);
+
+        $movement->update(['org_amount' => 0.60, 'cost_per_sku' => 0.03, 'cost_status' => 'delivery']);
+
+        $this->artisan('org_stock_movement:restore_pre_corruption_movements', ['--dry-run' => true])->assertExitCode(0);
+        expect((float) $movement->fresh()->org_amount)->toBe(0.6);
+
+        $this->artisan('org_stock_movement:restore_pre_corruption_movements')->assertExitCode(0);
+
+        $movement->refresh();
+        expect((float) $movement->org_amount)->toBe(269.76)
+            ->and((float) $movement->cost_per_sku)->toBe(13.488)
+            ->and($movement->cost_status)->toBeNull();
+    });
 });
