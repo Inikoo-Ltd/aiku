@@ -168,6 +168,7 @@ const props = defineProps<{
 		toggle_route: routeType
 		is_on: boolean
 	}
+	total_unit_counts: number
 	tab_counts?: { all: number, todo: number, done: number } | null
 }>();
 
@@ -991,6 +992,7 @@ const stopSocketListener = () => {
 			:order_slug="order_slug"
 			:warehouse
 			:deliveryNote="delivery_note"
+			:total_unit_counts="total_unit_counts"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError"
 			@open-tab="handleTabUpdate" />
