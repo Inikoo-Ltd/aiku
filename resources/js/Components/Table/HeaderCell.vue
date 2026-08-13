@@ -86,7 +86,7 @@ const isDebug = false   //  True will show the column key in the header
                     </div>
                     
                     <!-- Label: simple and icon -->
-                    <div v-else class="text-xs md:text-sm w-full" v-tooltip="cell?.tooltip"
+                    <div v-else class="text-xs md:text-[13px] w-full" v-tooltip="cell?.tooltip"
                         :class="[cell?.type == 'number' || cell?.type == 'currency' ? 'text-right pr-3' : '']"
                     >
                         <FontAwesomeIcon

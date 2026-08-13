@@ -111,10 +111,10 @@ class ShowOrgStockHistory extends OrgAction
                 ->column(key: 'number_locations', label: __('Number of Locations'), canBeHidden: false, align: 'right');
 
             foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
-                $table->column(key: $method->stockValueColumn(), label: __('Stock Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, align: 'right');
+                $table->column(key: $method->stockValueColumn(), label: __('Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, align: 'right');
             }
             foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
-                $table->column(key: $method->perSkuColumn(), label: __('Value per SKO').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, align: 'right');
+                $table->column(key: $method->perSkuColumn(), label: __('Per SKO').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, align: 'right');
             }
         };
     }

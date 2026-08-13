@@ -113,7 +113,7 @@ class IndexOrganisationStockHistories extends OrgAction
                 ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right');
 
             foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
-                $table->column(key: $method->stockValueColumn(), label: __('Stock Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, sortable: true, type: 'currency', align: 'right');
+                $table->column(key: $method->stockValueColumn(), label: __('Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, sortable: true, type: 'currency', align: 'right');
             }
 
 
