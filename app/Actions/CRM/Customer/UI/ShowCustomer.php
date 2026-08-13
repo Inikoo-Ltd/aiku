@@ -13,6 +13,7 @@ use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -138,7 +139,7 @@ class ShowCustomer extends OrgAction
                         $shopMeta,
                         $webUsersMeta
                     ]),
-                    'actions'       => [
+                    'actions'       => array_values(array_filter([
                         [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
@@ -149,7 +150,18 @@ class ShowCustomer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ],
-                    ],
+                        $this->isSupervisor && DeleteCustomer::canBeDeleted($customer) ? [
+                            'key'     => 'delete_customer',
+                            'type'    => 'button',
+                            'style'   => 'delete',
+                            'tooltip' => __('Delete Customer'),
+                            'route'   => [
+                                'name'       => 'grp.models.customer.delete',
+                                'parameters' => ['customer' => $customer->id],
+                                'method'     => 'delete',
+                            ]
+                        ] : false,
+                    ])),
                     'subNavigation' => $subNavigation,
                     'iconRight' => $customer->is_vip ? [
                         'tooltip' => __('VIP Customer'),

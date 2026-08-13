@@ -6,7 +6,8 @@ import {
     faPersonDolly, faUserPlus, faStar, faChargingStation, faConciergeBell, faShippingFast,
     faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
     faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
-    faSpinnerThird, faUserHardHat, faComments,
+    faSpinnerThird, faUserHardHat, faComments, faClipboardList, faTruckLoading,
+    faPeopleArrows, faBoxes, faFileInvoice,
 } from '@fal'
 import { Link } from '@inertiajs/vue3'
 import Skeleton from 'primevue/skeleton'
@@ -17,12 +18,14 @@ library.add(
     faPersonDolly, faUserPlus, faStar, faChargingStation, faConciergeBell, faShippingFast,
     faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
     faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
-    faSpinnerThird, faUserHardHat, faComments,
+    faSpinnerThird, faUserHardHat, faComments, faClipboardList, faTruckLoading,
+    faPeopleArrows, faBoxes, faFileInvoice,
 )
 
 type ResultItem = {
     id: number
     slug?: string
+    reference?: string
     code?: string
     name?: string
     state?: string
@@ -67,6 +70,11 @@ const SECTIONS: Record<string, SectionConfig> = {
     barcodes: { label: 'Barcodes', icon: 'fal fa-barcode', redirectRoute: 'grp.majordomo.redirect_barcode' },
     employees: { label: 'Employees', icon: 'fal fa-user-hard-hat', redirectRoute: 'grp.majordomo.redirect_employee' },
     chat_messages: { label: 'Chat Messages', icon: 'fal fa-comments', redirectRoute: 'grp.majordomo.redirect_chat_message' },
+    purchase_orders: { label: 'Purchase Orders', icon: 'fal fa-clipboard-list', redirectRoute: 'grp.majordomo.redirect_purchase_order' },
+    stock_deliveries: { label: 'Stock Deliveries', icon: 'fal fa-truck-loading', redirectRoute: 'grp.majordomo.redirect_stock_delivery' },
+    agents: { label: 'Agents', icon: 'fal fa-people-arrows', redirectRoute: 'grp.majordomo.redirect_agent' },
+    supplier_products: { label: 'Supplier Products', icon: 'fal fa-boxes', redirectRoute: 'grp.majordomo.redirect_supplier_product' },
+    agent_supplier_purchase_orders: { label: 'Agent Supplier Purchase Orders', icon: 'fal fa-file-invoice', redirectRoute: 'grp.majordomo.redirect_agent_supplier_purchase_order' },
 }
 
 const model = defineModel('open')
@@ -78,7 +86,7 @@ const props = defineProps<{
 }>()
 
 const tabs = computed(() =>
-    Object.keys(props.results ?? {}).filter((key) => SECTIONS[key])
+    Object.keys(props.results ?? {}).filter((key) => SECTIONS[key] && props.results?.[key]?.length)
 )
 
 const activeTab = ref<string>(tabs.value[0] ?? '')
@@ -155,7 +163,7 @@ const activeItems = computed(() =>
                 >
                     <div class="flex items-center justify-between gap-2">
                         <p class="text-sm font-semibold truncate min-w-0">
-                            {{ item.code || item.name || item.contact_name || item.company_name }}
+                            {{ item.reference || item.code || item.name || item.contact_name || item.company_name }}
                         </p>
                         <span v-if="item.rating != null" class="shrink-0 text-xs text-amber-500">
                             <FontAwesomeIcon icon='fal fa-star' fixed-width aria-hidden='true' />{{ item.rating }}

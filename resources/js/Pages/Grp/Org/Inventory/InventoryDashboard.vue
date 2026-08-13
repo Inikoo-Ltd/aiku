@@ -60,7 +60,7 @@ defineProps<{
         number_out_of_stock_org_stocks: number
         percentage_out_of_stock: number
         number_locations: number
-        org_stock_value: number
+        org_stock_lpp_value: number
         currency_code: string
         value_dormant_stock_1y: number
         percentage_dormant_1y: number
@@ -130,7 +130,7 @@ const options = {
                     {{ trans('Stock Value') }}
                 </dt>
                 <dd class="mt-1 text-3xl font-semibold tabular-nums text-gray-800">
-                    {{ locale.CurrencyShort(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_value)) }}
+                    {{ locale.CurrencyShort(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_lpp_value)) }}
                 </dd>
             </div>
             <div

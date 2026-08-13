@@ -60,10 +60,10 @@ class ShowOrgStockHistory extends OrgAction
                 'id',
                 'date',
                 'quantity_in_locations',
-                'org_stock_value',
-                'grp_stock_value',
+                'org_stock_lpp_value',
+                'grp_stock_lpp_value',
                 'number_locations',
-                'value_per_sku',
+                'lpp_per_sku',
             ])
             ->orderBy('date', 'desc');
 
@@ -104,8 +104,8 @@ class ShowOrgStockHistory extends OrgAction
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: false, type: 'date')
                 ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, align: 'right')
                 ->column(key: 'number_locations', label: __('Number of Locations'), canBeHidden: false, align: 'right')
-                ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, align: 'right')
-                ->column(key: 'value_per_sku', label: __('Value per SKO'), canBeHidden: false, align: 'right');
+                ->column(key: 'org_stock_lpp_value', label: __('Stock Value'), canBeHidden: false, align: 'right')
+                ->column(key: 'lpp_per_sku', label: __('Value per SKO'), canBeHidden: false, align: 'right');
         };
     }
 

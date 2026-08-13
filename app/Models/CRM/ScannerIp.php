@@ -15,12 +15,19 @@ use Illuminate\Database\Eloquent\Model;
  * a corporate office can host both an appliance and real readers - but the same IP detonating
  * several different campaigns is an appliance, and once listed its clicks count as scanner
  * immediately, which is the only way to catch a single-link email where no burst can ever form.
+ *
  * Listings decay: vendors rotate ranges, so an IP silent for the TTL falls off the list.
  *
  * @property int $id
  * @property string $ip
- * @property array<array-key, string> $campaign_refs
+ * @property array<array-key, mixed> $campaign_refs
  * @property \Illuminate\Support\Carbon $last_burst_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScannerIp newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScannerIp newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ScannerIp query()
+ * @mixin \Eloquent
  */
 class ScannerIp extends Model
 {

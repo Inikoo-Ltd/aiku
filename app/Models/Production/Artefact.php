@@ -34,7 +34,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $name
  * @property string|null $description
  * @property int|null $stock_family_id
- * @property int|null $recommended_batch_size
  * @property ArtefactStateEnum $state
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
@@ -44,16 +43,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property int|null $trade_unit_id
  * @property int|null $org_stock_id
- * @property-read \App\Models\Goods\TradeUnit|null $tradeUnit
- * @property-read \App\Models\Inventory\OrgStock|null $orgStock
+ * @property int|null $recommended_batch_size
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactComplianceItem> $complianceItems
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTask> $manufactureTasks
+ * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\ArtefactStats|null $stats
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactComplianceItem> $complianceItems
  * @property-read Stock|null $stock
+ * @property-read TradeUnit|null $tradeUnit
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact onlyTrashed()

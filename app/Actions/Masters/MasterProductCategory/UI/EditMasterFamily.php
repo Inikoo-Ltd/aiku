@@ -111,17 +111,17 @@ class EditMasterFamily extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' => [
-                        [
-                            'label'  => __('Id'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('Code'),
-                                    'value' => $masterProductCategory->code
-                                ],
-                            ]
-                        ],
+                        // [
+                        //     'label'  => __('Id'),
+                        //     'icon'   => 'fa-light fa-fingerprint',
+                        //     'fields' => [
+                        //         'code' => [
+                        //             'type'  => 'input',
+                        //             'label' => __('Code'),
+                        //             'value' => $masterProductCategory->code
+                        //         ],
+                        //     ]
+                        // ],
                         [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',

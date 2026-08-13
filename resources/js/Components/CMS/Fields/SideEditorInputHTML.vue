@@ -8,6 +8,7 @@ const props = withDefaults(
     class?: string
     keyData?: string | number
     uploadRoutes?: any
+    toggle?: string[]
   }>(),
   {
     rows: 3
@@ -19,7 +20,7 @@ const model = defineModel<string | null>()
 
 <template>
   <div :class="props.class" >
-    <Editor v-model="model" :uploadImageRoute="props.uploadRoutes">
+    <Editor v-model="model" :uploadImageRoute="props.uploadRoutes" :toggle="props.toggle" >
       <template #editor-content="{ editor }">
         <div
           class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm transition-all duration-200 focus-within:border-blue-400"

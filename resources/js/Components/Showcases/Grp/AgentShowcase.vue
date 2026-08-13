@@ -31,6 +31,7 @@ import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import CopyButton from '@/Components/Utils/CopyButton.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import DepositRequestsPanel from '@/Components/Procurement/DepositRequestsPanel.vue'
 
 library.add(
     faBoxUsd,
@@ -78,6 +79,7 @@ const props = defineProps<{
                 parameters?: Record<string, any>
             }
         }[]
+        depositWorkspace?: object
     }
 }>()
 
@@ -279,5 +281,7 @@ const details = computed(() =>
                 </p>
             </div>
         </div>
+
+        <DepositRequestsPanel v-if="data.depositWorkspace" :data="(data.depositWorkspace as any)" />
     </div>
 </template>

@@ -35,6 +35,8 @@ class UpdateTransaction extends OrgAction
         if (Arr::has($modelData, 'units_ordered')) {
             $unitsOrders = Arr::pull($modelData, 'units_ordered');
             $product     = $transaction->model;
+
+            // TODO: below should be $units = $transaction->historicAsset?->units ?? $transaction->model->units;
             $units       = $product->units;
             if ($units == 0) {
                 abort(423);
@@ -169,6 +171,10 @@ class UpdateTransaction extends OrgAction
     public function asController(Transaction $transaction, ActionRequest $request): Transaction
     {
         $this->initialisationFromShop($transaction->shop, $request);
+
+        if ($transaction->trashed()) {
+            return $transaction;
+        }
 
         return $this->handle($transaction, $this->validatedData);
     }

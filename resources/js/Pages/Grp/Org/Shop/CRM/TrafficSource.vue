@@ -31,6 +31,7 @@ import { routeType } from "@/types/route";
 import { AddressManagement } from "@/types/PureComponent/Address";
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue";
 import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue';
+import TrafficSourceShowcase from "@/Components/Showcases/Grp/TrafficSourceShowcase.vue";
 
 library.add(faUsers);
 
@@ -42,7 +43,9 @@ const props = defineProps<{
     current: string
     navigation: {}
   }
+  overview?: {}
   customers?: {}
+  orders?: {}
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -51,7 +54,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
   const components: Component = {
-    customers: TableCustomers
+    overview: TrafficSourceShowcase,
+    customers: TableCustomers,
+    orders: TableOrders
   };
 
   return components[currentTab.value];

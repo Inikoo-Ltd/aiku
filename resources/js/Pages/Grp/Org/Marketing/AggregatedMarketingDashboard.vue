@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { trans } from 'laravel-vue-i18n'
@@ -14,17 +14,21 @@ import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { route } from 'ziggy-js'
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { routeType } from '@/types/route'
+import { Intervals, Settings } from '@/types/Components/Dashboard'
+import DashboardSettings from '@/Components/DataDisplay/Dashboard/DashboardSettings.vue'
 
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    intervals: Intervals
+    settings: Settings
     overview: {
         scope: 'group' | 'organisation'
         children_label: string
         currency_code: string
         period: string
         period_label: string
-        period_options: { value: string, label: string }[]
         totals: {
             spend: number
             spend_ads: number
@@ -32,6 +36,7 @@ const props = defineProps<{
             revenue: number
             pending: number
             registrations: number
+            unsubscribed: number
             orders: number
             roas: number | null
             cac: number | null
@@ -39,6 +44,9 @@ const props = defineProps<{
         channels: {
             name: string
             type: string
+            route: routeType
+            registrations_route: routeType
+            orders_route: routeType
             group: string
             group_label: string
             group_position: number
@@ -53,6 +61,8 @@ const props = defineProps<{
             roas: number | null
         }[]
         attribution_started_at: string | null
+        from: string | null
+        to: string | null
         referrers: {
             host: string
             kind: 'site' | 'search'
@@ -83,7 +93,12 @@ const props = defineProps<{
 const locale = useLocaleStore()
 
 const money = (value: number) => locale.currencyFormat(props.overview.currency_code, value)
-const count = (value: number) => Number.isInteger(value) ? value.toString() : value.toFixed(2)
+/* A column with one fractional figure in it carries the decimals on every figure: 2 beside 34.83
+   reads as a different kind of number, when it is the same count arrived at without a split order. */
+const count = (value: number, decimals = false) =>
+    decimals || !Number.isInteger(value) ? value.toFixed(2) : value.toString()
+
+const hasDecimals = (values: number[]) => values.some(value => !Number.isInteger(value))
 
 /* The share of all trade that marketing can claim. Without it, "0 registrations" reads as a quiet
    period rather than as every ad and mailshot having earned nobody. */
@@ -138,7 +153,7 @@ const groupedChannels = computed(() => {
             label: channel.group_label ?? key,
             position: channel.group_position ?? 9,
             channels: [],
-            visits: 0, orders: 0, spend: 0, pending: 0, revenue: 0, registrations: 0,
+            visits: 0, orders: 0, spend: 0, pending: 0, revenue: 0, registrations: 0, unsubscribed: 0,
         }
 
         const g = groups[key]
@@ -149,6 +164,7 @@ const groupedChannels = computed(() => {
         g.pending += channel.pending ?? 0
         g.revenue += channel.revenue ?? 0
         g.registrations += channel.registrations ?? 0
+        g.unsubscribed += channel.unsubscribed ?? 0
     }
 
     return Object.values(groups).sort((a: any, b: any) => a.position - b.position)
@@ -156,6 +172,37 @@ const groupedChannels = computed(() => {
 
 const share = (part: number, whole: number) =>
     whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
+
+const unsubscribedHelp = trans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
+
+const netRegistrations = (registrations: number, unsubscribed: number, decimals = false) =>
+    count(registrations - unsubscribed, decimals).replace('-', '−')
+
+const netRegistrationsHelp = computed(() =>
+    count(props.overview.totals.registrations) + ' ' + trans('sign-ups') + ' − '
+    + count(props.overview.totals.unsubscribed) + ' ' + trans('unsubscribed') + ' = '
+    + netRegistrations(props.overview.totals.registrations, props.overview.totals.unsubscribed)
+    + '. ' + unsubscribedHelp)
+
+/* Summed from the groups above rather than read off the totals card, so the last row always adds up
+   to the rows a reader can see. */
+const channelTotals = computed(() => groupedChannels.value.reduce((totals: any, group: any) => ({
+    visits: totals.visits + group.visits,
+    spend: totals.spend + group.spend,
+    pending: totals.pending + group.pending,
+    revenue: totals.revenue + group.revenue,
+    registrations: totals.registrations + group.registrations,
+    unsubscribed: totals.unsubscribed + group.unsubscribed,
+    orders: totals.orders + group.orders,
+}), { visits: 0, spend: 0, pending: 0, revenue: 0, registrations: 0, unsubscribed: 0, orders: 0 }))
+
+const decimalColumns = computed(() => ({
+    registrations     : hasDecimals([...props.overview.channels.map(channel => channel.registrations), channelTotals.value.registrations]),
+    orders            : hasDecimals([...props.overview.channels.map(channel => channel.orders), channelTotals.value.orders]),
+    childRegistrations: hasDecimals(props.overview.children.flatMap(child => [child.registrations, child.registrations_total])),
+    childOrders       : hasDecimals(props.overview.children.flatMap(child => [child.orders, child.orders_total])),
+    referrerVisitors  : hasDecimals((props.overview.referrers ?? []).map(referrer => referrer.visitors)),
+}))
 
 /* Every column says how it was arrived at. These figures each carry a rule that is not guessable
    from the label - what counts as a visit, why revenue lags, which spend is estimated - and a
@@ -169,19 +216,19 @@ const columnHelp: Record<string, string> = {
     orders: trans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships. Touched, not necessarily caused: a customer who would have reordered anyway and clicked a mailshot first still counts here.'),
     roas: trans('Revenue divided by spend. Blank while money is still awaiting invoice, since a channel that has sold but not yet invoiced has not returned nothing - it has not finished being measured.'),
 }
-
-const changePeriod = (event: Event) => {
-    router.get(
-        window.location.pathname,
-        { period: (event.target as HTMLSelectElement).value },
-        { preserveState: true, preserveScroll: true }
-    )
-}
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <div class="pt-3">
+        <DashboardSettings
+            :intervals="intervals"
+            :settings="settings"
+            currentTab="marketing"
+            :reloadOnly="['overview', 'intervals']"
+        />
+    </div>
 
     <!-- Capped: wider than this and the columns drift so far apart the rows stop reading as rows.
          The space left over carries the referrers list instead. -->
@@ -195,12 +242,6 @@ const changePeriod = (event: Event) => {
                 {{ trans('Everything here counts what marketing touched: sales and sign-ups from people who arrived through an ad, a search, a mailshot or a link from another site, credited to that channel. Touched, not caused — a regular who was going to order anyway still counts if they came through one. It is not the shop\'s total trade.') }}
                 <span class="text-gray-400">{{ trans('All figures in') }} {{ overview.currency_code }}.</span>
             </p>
-            <select :value="overview.period" @change="changePeriod"
-                    class="text-xs border-gray-200 rounded-md py-1 pl-2 pr-7">
-                <option v-for="option in overview.period_options" :key="option.value" :value="option.value">
-                    {{ option.label }}
-                </option>
-            </select>
         </div>
 
         <!-- Headline: the four numbers management asks for -->
@@ -211,13 +252,25 @@ const changePeriod = (event: Event) => {
                 <div class="mt-0.5 text-xs text-gray-400">
                     {{ trans('of') }} {{ money(overview.baseline.revenue) }} {{ trans('total') }} · {{ share(overview.totals.revenue, overview.baseline.revenue) }}
                 </div>
-                <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-amber-600">
+                <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-[#006300]">
                     + {{ money(overview.totals.pending) }} {{ trans('sold, awaiting invoice') }}
                 </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
                 <div class="text-xs text-gray-400">{{ trans('New customers marketing touched') }}</div>
-                <div class="mt-1 text-lg tabular-nums">{{ count(overview.totals.registrations) }}</div>
+                <div class="mt-1 text-lg tabular-nums flex items-baseline gap-1.5">
+                    <span>{{ count(overview.totals.registrations) }}</span>
+                    <template v-if="overview.totals.unsubscribed > 0">
+                        <span v-tooltip="unsubscribedHelp" class="text-[#d03b3b] cursor-help">
+                            − {{ count(overview.totals.unsubscribed) }}
+                        </span>
+                        <span class="text-gray-300">=</span>
+                        <span v-tooltip="netRegistrationsHelp" class="cursor-help"
+                              :class="overview.totals.registrations - overview.totals.unsubscribed < 0 ? 'text-[#d03b3b]' : 'text-gray-600'">
+                            {{ netRegistrations(overview.totals.registrations, overview.totals.unsubscribed) }}
+                        </span>
+                    </template>
+                </div>
                 <div class="mt-0.5 text-xs" :class="overview.baseline.registrations > 0 && overview.totals.registrations === 0 ? 'text-[#d03b3b]' : 'text-gray-400'">
                     {{ trans('of') }} {{ count(overview.baseline.registrations) }} {{ trans('who signed up') }} · {{ share(overview.totals.registrations, overview.baseline.registrations) }}
                 </div>
@@ -291,55 +344,158 @@ const changePeriod = (event: Event) => {
                 <tbody v-for="group in groupedChannels" :key="group.key">
                     <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
                         <td class="py-1 pr-2 text-xs leading-tight">{{ group.label }}</td>
-                        <td class="text-right px-2 tabular-nums">
-                            {{ group.visits > 0 ? locale.number(group.visits) : '' }}
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
+                                <span>{{ group.visits > 0 ? locale.number(group.visits) : '' }}</span>
+                                <span class="text-xs font-normal" :class="group.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                    <template v-if="group.visits > 0">{{ count(group.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
+                                </span>
+                                <span class="text-xs font-normal" :class="group.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                    <template v-if="group.visits > 0">{{ share(group.orders, group.visits) }}</template>
+                                </span>
+                            </span>
                         </td>
-                        <td class="text-right px-2 tabular-nums">{{ money(group.spend) }}</td>
-                        <td class="text-right px-2 tabular-nums" :class="group.pending > 0 ? 'text-amber-700' : ''">
-                            {{ group.pending > 0 ? money(group.pending) : '' }}
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[5rem_2.75rem]'">
+                                <span>{{ money(group.spend) }}</span>
+                                <span v-if="!showChannelDetail" class="font-normal text-gray-400">{{ share(group.spend, channelTotals.spend) }}</span>
+                            </span>
                         </td>
-                        <td class="text-right px-2 tabular-nums">{{ money(group.revenue) }}</td>
-                        <td class="text-right px-2 tabular-nums">{{ count(group.registrations) }}</td>
-                        <td class="text-right px-2 tabular-nums">{{ count(group.orders) }}</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap text-gray-500">
+                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[5.5rem_2.75rem]'">
+                                <span>{{ group.pending > 0 ? money(group.pending) : '' }}</span>
+                                <span v-if="!showChannelDetail && group.pending > 0" class="font-normal text-gray-400">{{ share(group.pending, channelTotals.pending) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[5.5rem_2.75rem]'">
+                                <span>{{ money(group.revenue) }}</span>
+                                <span v-if="!showChannelDetail" class="font-normal text-gray-400">{{ share(group.revenue, channelTotals.revenue) }}</span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap"
+                            :class="group.registrations - group.unsubscribed < 0 ? 'text-[#d03b3b]' : ''">
+                            <span class="inline-grid grid-cols-[3.5rem_2.75rem]">
+                                <span>{{ netRegistrations(group.registrations, group.unsubscribed, decimalColumns.registrations) }}</span>
+                                <span></span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[3.5rem_2.75rem]'">
+                                <span>{{ count(group.orders, decimalColumns.orders) }}</span>
+                                <span v-if="!showChannelDetail" class="font-normal text-gray-400">{{ share(group.orders, channelTotals.orders) }}</span>
+                            </span>
+                        </td>
                         <td class="text-right pl-2 tabular-nums">
                             {{ group.spend > 0 && group.revenue > 0 ? (group.revenue / group.spend).toFixed(2) + '×' : '' }}
                         </td>
                     </tr>
                     <tr v-for="channel in (showChannelDetail ? group.channels : [])" :key="channel.type"
                         class="border-b border-gray-50 text-gray-600">
-                        <td class="py-2 pr-2 pl-5 text-gray-500">{{ channel.name }}</td>
+                        <td class="py-2 pr-2 pl-5">
+                            <Link :href="route(channel.route.name, channel.route.parameters)"
+                                  class="text-gray-500 hover:text-gray-900 hover:underline">{{ channel.name }}</Link>
+                        </td>
                         <!-- Visits it sent, and how many of them bought. The pair is the point: people
                              arrived and nobody ordered is the case worth seeing. -->
-                        <td class="text-right px-2 tabular-nums whitespace-nowrap"
-                            :class="channel.visits > 0 && channel.orders === 0 ? 'text-[#d03b3b]' : ''">
-                            <template v-if="channel.visits > 0">
-                                {{ locale.number(channel.visits) }}
-                                <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'">
-                                    · {{ count(channel.orders) }} {{ trans('bought') }} · {{ share(channel.orders, channel.visits) }}
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
+                                <span :class="channel.visits > 0 ? '' : 'text-gray-300'">
+                                    {{ channel.visits > 0 ? locale.number(channel.visits) : '—' }}
                                 </span>
-                            </template>
-                            <span v-else class="text-gray-300">—</span>
+                                <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : ''">
+                                    <template v-if="channel.visits > 0">{{ count(channel.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
+                                </span>
+                                <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : ''">
+                                    <template v-if="channel.visits > 0">{{ share(channel.orders, channel.visits) }}</template>
+                                </span>
+                            </span>
                         </td>
                         <!-- The qualifier sits left of the figure so the amounts stay aligned on their
                              right edge, whether or not one of them is estimated. -->
-                        <td class="text-right px-2 tabular-nums">
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span v-if="channel.spend_is_estimated" class="text-xs text-gray-400 mr-1"
                                   :title="trans('Estimated from emails sent, at the SES per-message price')">{{ trans('est.') }}</span>{{ money(channel.spend) }}
                         </td>
-                        <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-amber-600' : 'text-gray-300'">{{ money(channel.pending) }}</td>
+                        <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-gray-400' : 'text-gray-300'">{{ money(channel.pending) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
                         <!-- Unsubscribes sit beside registrations, never netted off them: losing
                              permission to email somebody is not losing the customer. -->
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            {{ count(channel.registrations) }}<span v-if="channel.unsubscribed > 0" class="text-[#d03b3b]"> −{{ locale.number(channel.unsubscribed) }}</span>
+                            <span class="inline-grid grid-cols-[3.5rem_2.75rem]">
+                                <span>
+                                    <Link v-if="channel.registrations > 0"
+                                          :href="route(channel.registrations_route.name, channel.registrations_route.parameters)"
+                                          class="hover:text-gray-900 hover:underline">{{ count(channel.registrations, decimalColumns.registrations) }}</Link>
+                                    <template v-else>{{ count(channel.registrations, decimalColumns.registrations) }}</template>
+                                </span>
+                                <span class="text-[#d03b3b]">
+                                    <template v-if="channel.unsubscribed > 0">−{{ locale.number(channel.unsubscribed) }}</template>
+                                </span>
+                            </span>
                         </td>
-                        <td class="text-right px-2 tabular-nums">{{ count(channel.orders) }}</td>
+                        <td class="text-right px-2 tabular-nums">
+                            <Link v-if="channel.orders > 0"
+                                  :href="route(channel.orders_route.name, channel.orders_route.parameters)"
+                                  class="hover:text-gray-900 hover:underline">{{ count(channel.orders, decimalColumns.orders) }}</Link>
+                            <template v-else>{{ count(channel.orders, decimalColumns.orders) }}</template>
+                        </td>
                         <td class="text-right pl-2 tabular-nums"
                             :class="channel.roas === null ? 'text-gray-300' : channel.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
                             {{ channel.roas !== null ? channel.roas.toFixed(2) + '×' : '—' }}
                         </td>
                     </tr>
                 </tbody>
+                <tfoot>
+                    <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
+                        <td class="py-1.5 pr-2">{{ trans('All channels') }}</td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
+                                <span>{{ locale.number(channelTotals.visits) }}</span>
+                                <span class="text-xs font-normal" :class="channelTotals.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                    {{ count(channelTotals.orders, decimalColumns.orders) }} {{ trans('bought') }}
+                                </span>
+                                <span class="text-xs font-normal" :class="channelTotals.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
+                                    {{ share(channelTotals.orders, channelTotals.visits) }}
+                                </span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[5rem_2.75rem]'">
+                                <span>{{ money(channelTotals.spend) }}</span>
+                                <span v-if="!showChannelDetail"></span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap text-gray-500">
+                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[5.5rem_2.75rem]'">
+                                <span>{{ money(channelTotals.pending) }}</span>
+                                <span v-if="!showChannelDetail"></span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[5.5rem_2.75rem]'">
+                                <span>{{ money(channelTotals.revenue) }}</span>
+                                <span v-if="!showChannelDetail"></span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap"
+                            :class="channelTotals.registrations - channelTotals.unsubscribed < 0 ? 'text-[#d03b3b]' : ''">
+                            <span class="inline-grid grid-cols-[3.5rem_2.75rem]">
+                                <span>{{ netRegistrations(channelTotals.registrations, channelTotals.unsubscribed, decimalColumns.registrations) }}</span>
+                                <span></span>
+                            </span>
+                        </td>
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid" :class="showChannelDetail ? '' : 'grid-cols-[3.5rem_2.75rem]'">
+                                <span>{{ count(channelTotals.orders, decimalColumns.orders) }}</span>
+                                <span v-if="!showChannelDetail"></span>
+                            </span>
+                        </td>
+                        <td class="text-right pl-2 tabular-nums">
+                            {{ channelTotals.spend > 0 && channelTotals.revenue > 0 ? (channelTotals.revenue / channelTotals.spend).toFixed(2) + '×' : '' }}
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
 
             <p class="mt-3 text-xs text-gray-400">
@@ -365,7 +521,7 @@ const changePeriod = (event: Event) => {
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
                         <th class="text-left font-normal py-1.5 pr-2">{{ trans('Name') }}</th>
-                        <th class="text-left font-normal py-1.5 px-2">{{ trans('Best channel') }}</th>
+                        <th class="text-left font-normal py-1.5 px-2 whitespace-nowrap">{{ trans('Best channel') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue touched') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
                         <th class="text-right font-normal py-1.5 pl-2">{{ trans('Orders') }}</th>
@@ -384,20 +540,31 @@ const changePeriod = (event: Event) => {
                         <!-- Invoiced, plus what is still awaiting invoice, against everything the
                              business took: the share is the point, not the figure on its own. -->
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
-                            {{ money(child.revenue) }}<span v-if="child.pending > 0" class="text-amber-600"> + {{ money(child.pending) }}</span>
-                            <span class="text-gray-400">/ {{ money(child.revenue_total) }}</span>
-                            <span class="text-gray-400">· {{ share(child.revenue + child.pending, child.revenue_total) }}</span>
+                            <span class="inline-grid grid-cols-[4.75rem_5.25rem_5.5rem_2.75rem]">
+                                <span>{{ money(child.revenue) }}</span>
+                                <span class="text-[#006300]">
+                                    <template v-if="child.pending > 0">+ {{ money(child.pending) }}</template>
+                                </span>
+                                <span class="text-gray-400">{{ money(child.revenue_total) }}</span>
+                                <span class="text-gray-400">{{ share(child.revenue + child.pending, child.revenue_total) }}</span>
+                            </span>
                         </td>
                         <!-- Against the total, so a zero says marketing reached nobody rather than
                              that nothing happened. -->
-                        <td class="text-right px-2 tabular-nums"
+                        <td class="text-right px-2 tabular-nums whitespace-nowrap"
                             :class="child.registrations_total > 0 && child.registrations === 0 ? 'text-[#d03b3b]' : ''">
-                            {{ count(child.registrations) }}
-                            <span class="text-gray-400">/ {{ count(child.registrations_total) }} · {{ share(child.registrations, child.registrations_total) }}</span>
+                            <span class="inline-grid grid-cols-[3.25rem_3.5rem_3rem]">
+                                <span>{{ count(child.registrations, decimalColumns.childRegistrations) }}</span>
+                                <span class="text-gray-400">{{ count(child.registrations_total, decimalColumns.childRegistrations) }}</span>
+                                <span class="text-gray-400">{{ share(child.registrations, child.registrations_total) }}</span>
+                            </span>
                         </td>
-                        <td class="text-right pl-2 tabular-nums">
-                            {{ count(child.orders) }}
-                            <span class="text-gray-400">/ {{ count(child.orders_total) }} · {{ share(child.orders, child.orders_total) }}</span>
+                        <td class="text-right pl-2 tabular-nums whitespace-nowrap">
+                            <span class="inline-grid grid-cols-[3.25rem_3.5rem_3rem]">
+                                <span>{{ count(child.orders, decimalColumns.childOrders) }}</span>
+                                <span class="text-gray-400">{{ count(child.orders_total, decimalColumns.childOrders) }}</span>
+                                <span class="text-gray-400">{{ share(child.orders, child.orders_total) }}</span>
+                            </span>
                         </td>
                     </tr>
                 </tbody>
@@ -426,7 +593,7 @@ const changePeriod = (event: Event) => {
                             {{ referrer.host }}
                             <span v-if="referrer.kind === 'search'" class="text-gray-400">{{ trans('search') }}</span>
                         </td>
-                        <td class="text-right px-2 tabular-nums">{{ count(referrer.visitors) }}</td>
+                        <td class="text-right px-2 tabular-nums">{{ count(referrer.visitors, decimalColumns.referrerVisitors) }}</td>
                         <td class="text-right pl-2 tabular-nums">{{ money(referrer.revenue) }}</td>
                     </tr>
                 </tbody>

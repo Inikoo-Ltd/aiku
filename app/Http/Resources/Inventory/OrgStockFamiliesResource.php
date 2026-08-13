@@ -60,6 +60,7 @@ class OrgStockFamiliesResource extends JsonResource
             'sales_org_currency_external_ly'    => $this->sales_org_currency_external_ly ?? 0,
             'sales_org_currency_external_delta' => $this->calculateDelta($this->sales_org_currency_external ?? 0, $this->sales_org_currency_external_ly ?? 0),
             'gross_profit'                      => $this->gross_profit ?? 0,
+            'gross_profit_percentage'           => $this->gross_profit_percentage !== null ? (float) $this->gross_profit_percentage : null,
             'stock_turn'                        => $this->stock_turn !== null ? round((float) $this->stock_turn, 2) : null,
             'stock_cover'                       => $this->stock_cover !== null ? round((float) $this->stock_cover, 1) : null,
             'invoices'                          => $this->invoices ?? 0,

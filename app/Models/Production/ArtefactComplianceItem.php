@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Production\Artefact|null $artefact
  * @property-read Group|null $group
- * @property-read Organisation|null $organisation
+ * @property-read Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactComplianceItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactComplianceItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactComplianceItem query()

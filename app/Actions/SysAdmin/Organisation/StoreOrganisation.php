@@ -14,7 +14,9 @@ use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrganisations;
+use App\Actions\SysAdmin\Group\Seeders\SeedAikuSections;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
+use App\Actions\SysAdmin\Group\Seeders\SeedPostRooms;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationOutboxes;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationPermissions;
@@ -78,6 +80,7 @@ class StoreOrganisation extends OrgAction
             SeedOrganisationPermissions::run($organisation);
             SeedJobPositions::run($organisation);
             if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
+                SeedPostRooms::run($group);
                 SeedOrgPostRooms::run($organisation);
                 SeedOrganisationOutboxes::run($organisation);
             }
@@ -186,6 +189,7 @@ class StoreOrganisation extends OrgAction
                 ]
             );
 
+            SeedAikuSections::run($group);
             SeedAikuScopedSections::make()->seedOrganisationAikuScopedSection($organisation);
             GroupHydrateOrganisations::dispatch($group);
             BreakUserUiProps::make()->redoAllUsers();

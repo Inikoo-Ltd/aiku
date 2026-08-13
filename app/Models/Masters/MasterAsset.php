@@ -142,7 +142,6 @@ use App\Models\Traits\HasSearch;
  * @property int|null $master_variant_id
  * @property bool $is_variant_leader
  * @property bool $is_minion_variant
- * @property bool $is_golden_product
  * @property bool $follow_trade_unit_media
  * @property bool $mismatch_detected Have a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
  * @property HealthRankEnum|null $health_rank
@@ -153,6 +152,9 @@ use App\Models\Traits\HasSearch;
  * @property array<array-key, mixed> $master_rrps
  * @property string|null $units_review
  * @property numeric|null $effective_cost stock-weighted avg cost across organisations, group currency, per outer
+ * @property string|null $tax_preset Named tax preset this master follows (standard, food, ...); null is a custom map; tax_category holds the expansion the money path reads
+ * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
+ * @property bool $is_golden_product
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

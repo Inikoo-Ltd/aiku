@@ -20,16 +20,15 @@ import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 // Import the new NotesDisplay component
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+import TableRowSelectCheckbox from "@/Components/Table/TableRowSelectCheckbox.vue"
 import { faCertificate } from "@fas"
 import { faMapMarkerAlt } from "@fal"
 
 const props = defineProps<{
     data: TableTS,
     tab?: string
-    HasPickTableDeliveryNote?: Array<Number>
+    selectedDeliveryNotes: Set<number>
 }>()
-
-console.log(props.data);
 
 const locale = useLocaleStore();
 const layout = inject('layout', layoutStructure)
@@ -70,37 +69,29 @@ const onClickPick = () => {
     )
 }
 
-const selectedDeliveryNotes = defineModel<number[]>('selectedDeliveryNotes')
-
-
-const emits = defineEmits<{
-    (e: "update:selectedDeliveryNotes", value: {}): void
-}>()
-
-
 const onCheckedAll = ({ data, allChecked }) => {
-    if (!selectedDeliveryNotes.value) return
-
-    if (allChecked) {
-        const newIds = data.map(row => row.id)
-        selectedDeliveryNotes.value = Array.from(new Set([...selectedDeliveryNotes.value, ...newIds]))
-    } else {
-        const uncheckIds = data.map(row => row.id)
-        selectedDeliveryNotes.value = selectedDeliveryNotes.value.filter(id => !uncheckIds.includes(id))
+    for (const row of data) {
+        if (allChecked) {
+            props.selectedDeliveryNotes.add(row.id)
+        } else {
+            props.selectedDeliveryNotes.delete(row.id)
+        }
     }
 }
 
 // Route functions (unchanged)
+const routeCurrent = route().current()
+const routeParams = route().params
 function deliveryNoteRoute(deliveryNote: DeliveryNote) {
-    switch (route().current()) {
+    switch (routeCurrent) {
         case "shops.show.orders.show":
             return route(
                 "shops.show.orders.show.delivery-notes.show",
-                [route().params["shop"], route().params["order"], deliveryNote.slug])
+                [routeParams["shop"], routeParams["order"], deliveryNote.slug])
         case "orders.show":
             return route(
                 "orders.show,delivery-notes.show",
-                [route().params["order"], deliveryNote.slug])
+                [routeParams["order"], deliveryNote.slug])
         case "shops.show.delivery-notes.index":
             return route(
                 "shops.show.delivery-notes.show",
@@ -108,27 +99,27 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
         case "grp.org.warehouses.show.dispatching.delivery-notes":
             return route(
                 "grp.org.warehouses.show.dispatching.delivery_notes.show",
-                [route().params["organisation"], route().params["warehouse"], deliveryNote.slug])
+                [routeParams["organisation"], routeParams["warehouse"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.delivery-notes.index":
             return route(
                 "grp.org.shops.show.ordering.delivery-notes.show",
-                [route().params["organisation"], route().params["shop"], deliveryNote.slug])
+                [routeParams["organisation"], routeParams["shop"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.orders.index":
             return route(
                 "grp.org.shops.show.ordering.show.delivery-note.show",
-                [route().params["organisation"], route().params["shop"], deliveryNote.slug])
+                [routeParams["organisation"], routeParams["shop"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.orders.show":
             return route(
                 "grp.org.shops.show.ordering.orders.show.delivery-note",
-                [route().params["organisation"], route().params["shop"], route().params["order"], deliveryNote.slug])
+                [routeParams["organisation"], routeParams["shop"], routeParams["order"], deliveryNote.slug])
         case "grp.org.shops.show.crm.customers.show.delivery_notes.index":
             return route(
                 "grp.org.shops.show.crm.customers.show.delivery_notes.show",
-                [route().params["organisation"], route().params["shop"], route().params["customer"], deliveryNote.slug])
+                [routeParams["organisation"], routeParams["shop"], routeParams["customer"], deliveryNote.slug])
         case "grp.org.shops.show.crm.customers.show.orders.show":
             return route(
                 "grp.org.shops.show.crm.customers.show.delivery_notes.show",
-                [route().params["organisation"], route().params["shop"], route().params["customer"], deliveryNote.slug])
+                [routeParams["organisation"], routeParams["shop"], routeParams["customer"], deliveryNote.slug])
         case "grp.overview.ordering.delivery_notes.index":
             return route(
                 "grp.org.shops.show.crm.customers.show.delivery_notes.show",
@@ -136,7 +127,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
         default:
             return route(
                 "grp.org.warehouses.show.dispatching.delivery_notes.show",
-                [route().params["organisation"], route().params["warehouse"], deliveryNote.slug]);
+                [routeParams["organisation"], routeParams["warehouse"], deliveryNote.slug]);
     }
 }
 
@@ -151,7 +142,7 @@ function customerRoute(deliveryNote: DeliveryNote) {
         return '#'
     }
 
-    switch (route().current()) {
+    switch (routeCurrent) {
         case "grp.overview.ordering.delivery_notes.index":
             return route(
                 "grp.org.shops.show.crm.customers.show",
@@ -159,11 +150,11 @@ function customerRoute(deliveryNote: DeliveryNote) {
         case "grp.org.warehouses.show.dispatching.delivery-notes":
             return route(
                 "grp.org.shops.show.crm.customers.show",
-                [route().params["organisation"], deliveryNote.shop_slug, deliveryNote.customer_slug])
+                [routeParams["organisation"], deliveryNote.shop_slug, deliveryNote.customer_slug])
         default:
             return route(
                 "grp.org.shops.show.crm.customers.show",
-                [route().params["organisation"], deliveryNote.shop_slug, deliveryNote.customer_slug])
+                [routeParams["organisation"], deliveryNote.shop_slug, deliveryNote.customer_slug])
     }
 }
 
@@ -184,16 +175,7 @@ const warehouseDaysClass = (days?: number | null) => {
                 <span class="text-gray-400 text-center block">—</span>
             </div>
 
-            <template v-else>
-                <FontAwesomeIcon v-if="selectedDeliveryNotes.includes(data.data.id)" icon="fas fa-check-square"
-                    class="text-green-500 p-2 cursor-pointer text-lg mx-auto block" fixed-width aria-hidden="true"
-                    @click="() => emits('update:selectedDeliveryNotes', selectedDeliveryNotes.filter(id => id !== data.data.id))" />
-
-                <FontAwesomeIcon v-else icon="fal fa-square"
-                    class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block" fixed-width
-                    aria-hidden="true"
-                    @click="() => emits('update:selectedDeliveryNotes', [...selectedDeliveryNotes, data.data.id])" />
-            </template>
+            <TableRowSelectCheckbox v-else :rowKey="data.data.id" :selection="selectedDeliveryNotes" />
         </template>
 
 

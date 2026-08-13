@@ -79,7 +79,6 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $follow_master
  * @property bool $show_in_website
  * @property int|null $webpage_id
- * @property bool $is_in_website has a live webpage, mirrored into the search index
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
  * @property int|null $top_seller
@@ -116,6 +115,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $has_gr_vol_discount
  * @property bool $follow_master_gr
  * @property bool $not_follow_master_prices
+ * @property bool $is_in_website
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections

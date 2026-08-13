@@ -26,7 +26,7 @@ const props = defineProps<{
         units?: number
     }
     currencyCode?: string | null
-    originalPrice?: number
+    originalPrice?: number | string
     unit?: string
     units?: number
     quantity?: number
@@ -74,12 +74,14 @@ watch(
 
 const formatPrice = (value: number) => locale.currencyFormat(props.currencyCode ?? null, value)
 
+const basePrice = computed<number>(() => Number(props.originalPrice ?? 0) || 0)
+
 const savedAmount = (step: StepDiscountStep): number => {
-    if (!props.originalPrice || props.originalPrice <= step.price) {
+    if (!basePrice.value || basePrice.value <= step.price) {
         return 0
     }
 
-    return props.originalPrice - step.price
+    return basePrice.value - step.price
 }
 
 const quantityLabel = (step: StepDiscountStep): string => {
@@ -169,10 +171,10 @@ const onSelectStep = (step: StepDiscountStep) => {
                         {{ formatPrice(step.price) }}
                     </div>
                     <div
-                        v-if="originalPrice && originalPrice > step.price"
+                        v-if="basePrice && basePrice > step.price"
                         class="text-sm text-gray-400 line-through"
                     >
-                        {{ formatPrice(originalPrice) }}
+                        {{ formatPrice(basePrice) }}
                     </div>
                     <div v-if="isPackedProduct" class="text-xs text-gray-400">
                         {{ formatPrice(step.price_per_unit) }}/{{ innerUnitLabel }}

@@ -22,10 +22,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $quantity_per_unit
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Production\ArtefactManufactureTask|null $recipeStep
- * @property-read \App\Models\Production\RawMaterial|null $rawMaterial
  * @property-read Group|null $group
- * @property-read Organisation|null $organisation
+ * @property-read Organisation $organisation
+ * @property-read \App\Models\Production\RawMaterial|null $rawMaterial
+ * @property-read \App\Models\Production\ArtefactManufactureTask $recipeStep
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecipeStepRawMaterial newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecipeStepRawMaterial newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecipeStepRawMaterial query()

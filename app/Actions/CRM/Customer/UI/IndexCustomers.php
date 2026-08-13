@@ -19,6 +19,7 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\UI\CRM\CustomersTabsEnum;
@@ -174,6 +175,27 @@ class IndexCustomers extends OrgAction
         });
     }
 
+    /**
+     * Above shop level a channel is a type rather than a record: every shop keeps its own traffic
+     * source row for the same type, so the customers of a channel are gathered across all of them.
+     *
+     * Matched by existence rather than by joining, because a customer can be credited to the same
+     * channel more than once - once per campaign that touched them - and a join would list them once
+     * per credit. The shares are summed instead, which is how the dashboard counts them.
+     */
+    protected function applyChannelTypeFilter($query, TrafficSourcesTypeEnum $channelType): void
+    {
+        $attributions = fn () => DB::table('model_has_traffic_sources')
+            ->join('traffic_sources', 'traffic_sources.id', '=', 'model_has_traffic_sources.traffic_source_id')
+            ->whereColumn('model_has_traffic_sources.model_id', 'customers.id')
+            ->where('model_has_traffic_sources.model_type', 'Customer')
+            ->where('traffic_sources.type', $channelType->value);
+
+        $query
+            ->whereExists($attributions()->select(DB::raw(1)))
+            ->addSelect(['attribution_share' => $attributions()->selectRaw('SUM(model_has_traffic_sources.share)')]);
+    }
+
     protected function getStateOptions(Shop $shop): array
     {
         $labels = CustomerStateEnum::labels();
@@ -232,7 +254,7 @@ class IndexCustomers extends OrgAction
         return $this->handle($shop);
     }
 
-    public function handle(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, $prefix = null, ?TrafficSourcesTypeEnum $channelType = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -426,6 +448,14 @@ class IndexCustomers extends OrgAction
                 ]);
         }
 
+        if ($channelType) {
+            $this->applyChannelTypeFilter($queryBuilder, $channelType);
+        }
+
+        if ($parent instanceof TrafficSource || $channelType) {
+            $allowedSort[] = 'attribution_share';
+        }
+
         if ($parent instanceof TrafficSource) {
             $queryBuilder->withBetweenDates(['last_invoiced_at', 'registered_at']);
         } else {
@@ -471,9 +501,9 @@ class IndexCustomers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, ?array $modelOperations = null, $prefix = null, ?TrafficSourcesTypeEnum $channelType = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $channelType) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -490,8 +520,12 @@ class IndexCustomers extends OrgAction
                 }
             }
 
+            /* created_at leads on the channel listings because that is the date the dashboard counts a
+               registration on, so a period arriving from there filters the same rows it counted. */
             if ($parent instanceof TrafficSource) {
-                $table->betweenDates(['last_invoiced_at', 'registered_at']);
+                $table->betweenDates(['created_at', 'last_invoiced_at', 'registered_at']);
+            } elseif ($channelType) {
+                $table->betweenDates(['created_at', 'registered_at']);
             } else {
                 $table->betweenDates(['registered_at']);
             }
@@ -588,7 +622,7 @@ class IndexCustomers extends OrgAction
 
             /* A customer touched by several channels is only partly this source's, so show the share
                rather than implying the source earned the whole of the sales beside it. */
-            if ($parent instanceof TrafficSource) {
+            if ($parent instanceof TrafficSource || $channelType) {
                 $table->column(key: 'attribution_share', label: __('Attribution'), canBeHidden: true, sortable: true);
             }
 

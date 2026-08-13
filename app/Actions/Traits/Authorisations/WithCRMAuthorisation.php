@@ -33,7 +33,8 @@ trait WithCRMAuthorisation
                 ]
             );
         } elseif (str_starts_with($routeName, 'grp.org.shops.show.crm.') || str_starts_with($routeName, 'grp.org.shops.show.chat.')) {
-            $this->canEdit = $request->user()->authTo("crm.{$this->shop->id}.edit");
+            $this->isSupervisor = $request->user()->authTo("supervisor-crm.{$this->shop->id}");
+            $this->canEdit      = $request->user()->authTo("crm.{$this->shop->id}.edit");
             if (str_ends_with($routeName, '.edit') || str_ends_with($routeName, '.create')) {
                 return $this->canEdit;
             }
@@ -45,7 +46,8 @@ trait WithCRMAuthorisation
                 ]
             );
         } elseif (str_starts_with($routeName, 'grp.org.fulfilments.show.crm.') || str_starts_with($routeName, 'grp.org.fulfilments.show.chat.')) {
-            $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->shop->fulfilment->id}.edit");
+            $this->isSupervisor = $request->user()->authTo("supervisor-fulfilment-shop.{$this->shop->fulfilment->id}");
+            $this->canEdit      = $request->user()->authTo("fulfilment-shop.{$this->shop->fulfilment->id}.edit");
             if (str_ends_with($routeName, '.edit') || str_ends_with($routeName, '.create')) {
                 return $this->canEdit;
             }

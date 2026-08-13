@@ -179,6 +179,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, FulfilmentCustomer> $fulfilmentCustomers
  * @property-read \App\Models\SysAdmin\GroupFulfilmentStats|null $fulfilmentStats
  * @property-read LaravelCollection<int, Fulfilment> $fulfilments
+ * @property-read array<int, string> $world_clock_timezones
  * @property-read \App\Models\SysAdmin\GroupGoodsStats|null $goodsStats
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Guest> $guests
  * @property-read LaravelCollection<int, Holiday> $holidays

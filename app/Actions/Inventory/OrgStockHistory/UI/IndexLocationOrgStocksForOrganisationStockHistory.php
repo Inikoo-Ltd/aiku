@@ -51,7 +51,7 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 'org_stocks.slug as stock_slug',
                 'locations.code as location_code',
                 'location_org_stock_histories.quantity_in_locations',
-                'location_org_stock_histories.org_stock_value',
+                'location_org_stock_histories.org_stock_lpp_value',
                 DB::raw("'" . $organisationStockHistory->organisation->currency->code . "' as currency_code"),
             ])
             ->defaultSort('org_stocks.code')
@@ -60,7 +60,7 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 AllowedSort::field('stock_name', 'org_stocks.name'),
                 AllowedSort::field('location_code', 'locations.code'),
                 AllowedSort::field('quantity_in_locations', 'location_org_stock_histories.quantity_in_locations'),
-                AllowedSort::field('org_stock_value', 'location_org_stock_histories.org_stock_value'),
+                AllowedSort::field('org_stock_lpp_value', 'location_org_stock_histories.org_stock_lpp_value'),
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -84,7 +84,7 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 ->column(key: 'stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location_code', label: __('Location'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency', align: 'right')
+                ->column(key: 'org_stock_lpp_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency', align: 'right')
                 ->defaultSort('stock_code');
         };
     }

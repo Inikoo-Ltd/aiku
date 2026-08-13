@@ -70,6 +70,59 @@ class GetAgentShowcase
                     ],
                 ],
             ],
+            'depositWorkspace' => $this->getDepositWorkspace($agent),
+        ];
+    }
+
+    private function getDepositWorkspace(Agent $agent): array
+    {
+        $pendingDeposits = $agent->deposits()
+            ->where('state', 'pending')
+            ->with('agentSupplierPurchaseOrder.purchaseOrder.organisation')
+            ->get()
+            ->map(function ($deposit) {
+                $organisation = $deposit->agentSupplierPurchaseOrder?->purchaseOrder?->organisation;
+
+                return [
+                    'id'                => $deposit->id,
+                    'reference'         => $deposit->reference,
+                    'amount'            => $deposit->amount,
+                    'currency_code'     => $deposit->currency->code,
+                    'organisation_id'   => $organisation?->id,
+                    'organisation_name' => $organisation?->name,
+                ];
+            })
+            ->filter(fn ($row) => $row['organisation_id'])
+            ->values();
+
+        $requests = $agent->depositRequests()->with('items.organisation', 'currency')->orderByDesc('id')->limit(20)->get()
+            ->map(fn ($request) => [
+                'id'            => $request->id,
+                'reference'     => $request->reference,
+                'state'         => $request->state->value,
+                'currency_code' => $request->currency->code,
+                'items'         => $request->items->map(fn ($item) => [
+                    'id'                => $item->id,
+                    'organisation_name' => $item->organisation->name,
+                    'amount'            => $item->amount,
+                    'exchange'          => $item->exchange,
+                    'paid_at'           => $item->paid_at,
+                    'markPaidRoute'     => $item->paid_at ? null : [
+                        'name'       => 'grp.models.deposit_request_item.mark_paid',
+                        'parameters' => ['depositRequestItem' => $item->id],
+                        'method'     => 'patch',
+                    ],
+                ])->all(),
+            ]);
+
+        return [
+            'pendingDeposits' => $pendingDeposits->all(),
+            'requests'        => $requests->all(),
+            'storeRoute'      => [
+                'name'       => 'grp.models.agent.deposit_request.store',
+                'parameters' => ['agent' => $agent->id],
+                'method'     => 'post',
+            ],
         ];
     }
 }

@@ -28,6 +28,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $url
  * @property bool $is_repeat
  * @property \Illuminate\Support\Carbon $created_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceClick newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceClick newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceClick query()
+ * @mixin \Eloquent
  */
 class TrafficSourceClick extends Model
 {

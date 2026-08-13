@@ -26,6 +26,8 @@ import TableCustomerBackInStockReminders from "@/Components/Tables/Grp/Org/CRM/T
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import { trans } from "laravel-vue-i18n"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute } from "@fal"
@@ -144,7 +146,18 @@ const layout = inject('layout')
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other>            
+        <template #button-delete-customer="{ action }">
+            <ModalConfirmationDelete
+                :routeDelete="action.route"
+                :title="trans('Delete this customer?')"
+                :description="trans('The customer and their login will be permanently deleted. This can not be undone.')">
+                <template #default="{ changeModel }">
+                    <Button :style="'delete'" :icon="['far', 'fa-trash-alt']" v-tooltip="action.tooltip"
+                        @click="changeModel" />
+                </template>
+            </ModalConfirmationDelete>
+        </template>
+        <template #other>
             <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />

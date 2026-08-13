@@ -120,6 +120,7 @@ class DeliveryNoteItemsResource extends JsonResource
             ->values()
             ->all();
 
+        $totalUnitsCount = $this->quantity_required * $packedIn;
 
         return [
             'id'                                       => $this->id,
@@ -160,6 +161,7 @@ class DeliveryNoteItemsResource extends JsonResource
                     'orgStock'     => $this->org_stock_id,
                 ],
             ],
+            'packed_in'                                => $packedIn,
             'packed_in_message'                        => $packedInMessage,
             'is_done_packing'                          => $hasAnyPacking && $isFullyPacked,
             'is_partially_packed'                      => $hasAnyPacking && !$isFullyPacked,
@@ -211,6 +213,8 @@ class DeliveryNoteItemsResource extends JsonResource
             ],
             'un_numbers'                               => $unNumbers,
             'is_dirty'                                 => $this->is_dirty,
+            'total_units_count'                        => $totalUnitsCount,
+            'total_units_count_fractional'             => riseDivisor(divideWithRemainder(findSmallestFactors($totalUnitsCount)), $packedIn),
         ];
     }
 }

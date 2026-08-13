@@ -18,6 +18,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
+import StockDeliveryCostingChecklist from "@/Components/Procurement/StockDeliveryCostingChecklist.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -129,7 +130,11 @@ const props = defineProps<{
 	}
 	costing: {
 		is_costed: boolean
+		can_edit: boolean
 		currency: string | null
+		checklist: any[]
+		agent_invoice_missing: boolean
+		storeCostRoute: routeType
 		distributeExtraCostRoute: routeType | null
 	}
 	items?: {}
@@ -280,7 +285,9 @@ const cancelLoading = ref(false)
 const confirmDispatchStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
-		message: trans("Are you sure you want to mark this stock delivery as dispatched?"),
+		message: props.costing.agent_invoice_missing
+			? trans("The agent invoice has not been received yet. Are you sure you want to mark this stock delivery as dispatched?")
+			: trans("Are you sure you want to mark this stock delivery as dispatched?"),
 		header: trans("Dispatch Stock Delivery"),
 		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
 		acceptProps: { label: trans("Mark as Dispatched"), severity: "primary" },
@@ -393,15 +400,14 @@ const confirmCancelStockDelivery = (action: any) => {
 }
 
 const startCostingLoading = ref(false)
-const finishCostingLoading = ref(false)
 
 const confirmStartStockDeliveryCosting = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
-		message: trans("Are you sure you want to start checking the costs? This stock delivery will be placed."),
-		header: trans("Start checking costs"),
+		message: trans("Are you sure you want to place this stock delivery? This is its final state."),
+		header: trans("Place stock delivery"),
 		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Start checking costs"), severity: "primary" },
+		acceptProps: { label: trans("Place"), severity: "primary" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { startCostingLoading.value = true },
@@ -410,29 +416,6 @@ const confirmStartStockDeliveryCosting = (action: any) => {
 					notify({
 						title: trans("Something went wrong"),
 						text: trans("Failed to start checking the costs"),
-						type: "error",
-					})
-				},
-			})
-		},
-	})
-}
-
-const confirmFinishStockDeliveryCosting = (action: any) => {
-	confirm.require({
-		group: "stock-delivery",
-		message: trans("Are you sure you want to finish the costing? This stock delivery will be final and can not be changed anymore."),
-		header: trans("Finish costing"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Finish costing"), severity: "primary" },
-		accept: () => {
-			router.patch(route(action.route.name, action.route.parameters), {}, {
-				onStart: () => { finishCostingLoading.value = true },
-				onFinish: () => { finishCostingLoading.value = false },
-				onError: () => {
-					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to finish the costing"),
 						type: "error",
 					})
 				},
@@ -540,17 +523,6 @@ const confirmDeleteStockDelivery = (action: any) => {
 				:tooltip="action.tooltip"
 				:loading="startCostingLoading"
 				@click="() => confirmStartStockDeliveryCosting(action)"
-			/>
-		</template>
-
-		<template #button-finish-stock-delivery-costing="{ action }">
-			<Button
-				:style="action.style"
-				:label="action.label"
-				:icon="action.icon"
-				:tooltip="action.tooltip"
-				:loading="finishCostingLoading"
-				@click="() => confirmFinishStockDeliveryCosting(action)"
 			/>
 		</template>
 
@@ -793,6 +765,12 @@ const confirmDeleteStockDelivery = (action: any) => {
 
 		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
 	</div>
+
+	<StockDeliveryCostingChecklist
+		v-if="!['in_process', 'confirmed', 'ready_to_ship', 'cancelled', 'not_received'].includes(stock_delivery.state)"
+		:costing="costing"
+		:canEdit="costing.can_edit"
+	/>
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component

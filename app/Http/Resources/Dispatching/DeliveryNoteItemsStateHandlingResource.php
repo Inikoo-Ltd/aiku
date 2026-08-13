@@ -159,6 +159,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
         }
 
+        $totalUnitsCount = $this->quantity_required * $packedIn;
+
         return [
             'id'                                       => $this->id,
             'is_picked'                                => $isPicked,
@@ -260,6 +262,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 ]
             ],
             'is_dirty'                                 => $this->is_dirty,
+            'total_units_count'                        => $totalUnitsCount,
+            'total_units_count_fractional'             => riseDivisor(divideWithRemainder(findSmallestFactors($totalUnitsCount)), $packedIn),
         ];
     }
 }

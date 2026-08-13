@@ -17,15 +17,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $traffic_source_campaign_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property numeric $number_customers
  * @property numeric $number_customer_purchases
  * @property numeric $total_customer_revenue
  * @property numeric $org_total_customer_revenue
  * @property numeric $total_cost
  * @property numeric $org_total_cost
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read TrafficSourceCampaign $trafficSourceCampaign
+ * @property-read \App\Models\CRM\TrafficSourceCampaign $trafficSourceCampaign
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaignStat newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaignStat newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaignStat query()
  * @mixin \Eloquent
  */
 class TrafficSourceCampaignStat extends Model

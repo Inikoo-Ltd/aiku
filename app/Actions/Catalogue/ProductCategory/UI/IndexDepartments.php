@@ -9,9 +9,11 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\Catalogue\WithCatalogueIndexSubNavigation;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithListingsColumns;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -36,7 +38,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexDepartments extends OrgAction
 {
     use WithCollectionSubNavigation;
+    use WithCatalogueIndexSubNavigation;
     use WithCatalogueAuthorisation;
+    use WithListingsColumns;
 
     private Group|Shop|ProductCategory|Organisation|Collection $parent;
 
@@ -117,19 +121,26 @@ class IndexDepartments extends OrgAction
             'product_categories.health_rank',
         ];
 
+        $hasListingsColumns = $this->hasListingsColumns($parent);
+
         if ($prefix === ProductCategoryTabsEnum::SALES->value) {
+            $aggregateColumns = [
+                'sales_grp_currency_external' => 'sales_grp_currency_external',
+                'invoices'                    => 'invoices',
+                'sold'                        => 'sold',
+            ];
+
+            if ($hasListingsColumns) {
+                $aggregateColumns['dropshippers'] = 'dropshippers';
+                $aggregateColumns['listings']     = 'listings';
+            }
+
             // Use reusable time series aggregation method
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
                 timeSeriesTable: 'product_category_time_series',
                 timeSeriesRecordsTable: 'product_category_time_series_records',
                 foreignKey: 'product_category_id',
-                aggregateColumns: [
-                    'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'invoices'                    => 'invoices',
-                    'dropshippers'                => 'dropshippers',
-                    'listings'                    => 'listings',
-                    'sold'                        => 'sold',
-                ],
+                aggregateColumns: $aggregateColumns,
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true
@@ -139,9 +150,12 @@ class IndexDepartments extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
+
+            if ($hasListingsColumns) {
+                $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+                $selects[] = $timeSeriesData['selectRaw']['listings'];
+            }
         }
 
         $queryBuilder->select($selects);
@@ -160,10 +174,9 @@ class IndexDepartments extends OrgAction
                 'number_current_sub_departments',
                 'sales_grp_currency_external',
                 'invoices',
-                'dropshippers',
-                'listings',
                 'sold',
                 'health_rank',
+                ...($hasListingsColumns ? ['dropshippers', 'listings'] : []),
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -221,10 +234,14 @@ class IndexDepartments extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
             if ($sales) {
-                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+
+                if ($this->hasListingsColumns($parent)) {
+                    $table->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                        ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right');
+                }
+
+                $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
@@ -267,6 +284,10 @@ class IndexDepartments extends OrgAction
         $subNavigation = null;
         if ($this->parent instanceof Collection) {
             $subNavigation = $this->getCollectionSubNavigation($this->parent);
+        }
+        if ($this->parent instanceof Shop) {
+            unset($navigation[ProductCategoryTabsEnum::SALES->value]);
+            $subNavigation = $this->getDepartmentsIndexSubNavigation($this->parent);
         }
         $title      = __('Departments');
         $model      = '';
@@ -409,7 +430,8 @@ class IndexDepartments extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.departments.index' =>
+            'grp.org.shops.show.catalogue.departments.index',
+            'grp.org.shops.show.catalogue.departments.sales' =>
             array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(

@@ -13,6 +13,7 @@ use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
+use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
@@ -22,6 +23,7 @@ use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use function Sentry\captureMessage;
 
 class StoreTiktokFulfilmentOrder extends RetinaAction
 {
@@ -78,22 +80,21 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                     /** @var StoredItem $storedItem */
                     $storedItem = $portfolio->item;
                     if (!$storedItem) {
-                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
+                        captureMessage('Portfolio '.$portfolio->id.' does not have a product');
                         continue;
                     }
 
-                    $storedItemModels[$storedItem->id] = [
-                        'quantity' => Arr::get($tiktokProduct, 'quantity', 0)
-                    ];
+                    $palletStoredItem = $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
+
+                    if(!$palletStoredItem) {
+                        continue;
+                    }
+
+                    AttachRetinaStoredItemToReturn::run($palletReturn, $palletStoredItem, [
+                        'quantity_ordered' => Arr::get($tiktokProduct, 'quantity', 0)
+                    ]);
                 }
             }
-
-            StoreStoredItemsToReturn::make()->action(
-                palletReturn: $palletReturn,
-                modelData: [
-                    'stored_items' => $storedItemModels
-                ]
-            );
 
             SubmitAndConfirmPalletReturn::run($palletReturn);
 

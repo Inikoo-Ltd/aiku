@@ -11,7 +11,7 @@
 var CONFIG = {
   ENDPOINT: 'https://aiku.io/webhooks/traffic-source-costs',
   TOKEN: 'PASTE-YOUR-TOKEN-HERE',
-  SHOP: 'PASTE-YOUR-SHOP-CODE-HERE'
+  SHOP: 'PASTE-YOUR-SHOP-SLUG-HERE'
 };
 
 function main() {

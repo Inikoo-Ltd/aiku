@@ -66,6 +66,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_note_items.batch_code',
                 'delivery_note_items.expiry_date',
                 'delivery_note_items.is_handled',
+                'delivery_note_items.is_dirty',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',

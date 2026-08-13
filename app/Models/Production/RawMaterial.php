@@ -47,13 +47,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property int|null $trade_unit_id
  * @property int|null $org_stock_id
- * @property-read \App\Models\Goods\TradeUnit|null $tradeUnit
- * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read OrgStock|null $orgStock
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\RawMaterialStats|null $stats
+ * @property-read TradeUnit|null $tradeUnit
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RawMaterial onlyTrashed()

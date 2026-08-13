@@ -60,6 +60,7 @@ function familyInShopRoute(family: Family) {
 function familyRoute(family: Family) {
     switch (route().current()) {
         case "grp.shops.show":
+        case "grp.org.shops.show.catalogue.families.sales":
         case "grp.org.shops.show.catalogue.families.index":
         case "grp.org.shops.show.catalogue.families.no_department.index":
         case "grp.org.shops.show.catalogue.collections.show":
@@ -138,6 +139,7 @@ function productRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.departments.show.families.show.products.index",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).department, family.slug])
+        case 'grp.org.shops.show.catalogue.families.sales':
         case 'grp.org.shops.show.catalogue.families.index':
             return route(
                 "grp.org.shops.show.catalogue.families.show.products.index",
@@ -152,6 +154,7 @@ function departmentRoute(family: Family) {
                 "grp.org.shops.show.catalogue.departments.index",
                 [(route().params as RouteParams).organisation, family.shop_slug, family.department_slug])
         case 'grp.org.shops.show.catalogue.dashboard':
+        case 'grp.org.shops.show.catalogue.families.sales':
         case 'grp.org.shops.show.catalogue.families.index':
             return route(
                 "grp.org.shops.show.catalogue.departments.show",
@@ -189,6 +192,7 @@ function subDepartmentRoute(family: Family) {
     const params = route().params as RouteParams
 
     switch (current) {
+        case 'grp.org.shops.show.catalogue.families.sales':
         case 'grp.org.shops.show.catalogue.families.index':
         case 'grp.org.shops.show.catalogue.departments.show.families.index':
             return route(
@@ -287,7 +291,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
                 </Link>
 
-                <Link :href="familyRoute(family)" class="primaryLink">
+                <Link :href="familyRoute(family)" class="primaryLink" v-tooltip="family.name">
                 {{ family["code"] }}
                 </Link>
             </div>
@@ -488,7 +492,9 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(last_offer)="{ item: family }">
-            <div v-if="family.last_offer" class="whitespace-nowrap text-xs">
+            <div v-if="family.last_offer" class="flex items-center whitespace-nowrap text-xs">
+                <span v-if="family.offer_freshness" v-tooltip="family.offer_freshness.tooltip"
+                    class="mr-1.5 h-2 w-2 shrink-0 rounded-full" :class="family.offer_freshness.class" />
                 <Link v-if="offerRoute(family)" :href="(offerRoute(family) as string)" class="secondaryLink"
                     v-tooltip="family.last_offer.name">
                 {{ family.last_offer.slug }}
@@ -501,7 +507,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     {{ family.last_offer.end_at ? offerDate(family.last_offer.end_at) : trans('No expiration') }}
                 </span>
             </div>
-            <span v-else class="text-gray-400 italic">-</span>
+            <div v-else class="flex items-center whitespace-nowrap text-xs">
+                <span v-if="family.offer_freshness" v-tooltip="family.offer_freshness.tooltip"
+                    class="mr-1.5 h-2 w-2 shrink-0 rounded-full" :class="family.offer_freshness.class" />
+                <span class="text-gray-400 italic">{{ trans('Never') }}</span>
+            </div>
         </template>
 
         <template #cell(sold)="{ item }">

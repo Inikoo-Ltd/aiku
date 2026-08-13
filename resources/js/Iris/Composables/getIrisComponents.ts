@@ -44,8 +44,8 @@ const AnnouncementPromo1 = async(() => import("@/Iris/Components/IrisBlocks/Anno
 const AnnouncementPromo2Countdown = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo2Countdown.vue"))
 const AnnouncementInformation2TransitionText = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation2TransitionText.vue"))
 const AnnouncementPromo3 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo3.vue"))
-const RenderDropshippingProduct = async(() => import("@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"))
-const RenderEcommerceProduct = async(() => import("@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"))
+const RenderDropshippingProduct = async(() => import("@/Iris/Components/IrisBlocks/Product/Ds/RenderDropshippingProductIris.vue"))
+const RenderEcommerceProduct = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/RenderEcommerceProductIris.vue"))
 
 const RecommendationCRB1Iris = async(() => import("@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue"))
 const ProductIris2Ecom = async(() => import("@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"))
@@ -121,6 +121,7 @@ const RelatedProductcategoryFormMaster = async(() => import("@/Iris/Components/I
 const TabsIris = async(() => import("@/Iris/Components/IrisBlocks/TabsIris.vue"))
 const FaqDepartment = async(() => import("@/Iris/Components/IrisBlocks/FaqDepartment.vue"))
 const TopFamiliesIris = async(() => import("@/Iris/Components/IrisBlocks/TopFamiliesIris.vue"))
+const BlogListIris = async(() => import("@/Iris/Components/IrisBlocks/BlogListIris.vue"))
 
 interface IrisComponentOptions {
 	search_model?: string // 'luigi' | 'internal'
@@ -236,7 +237,8 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		'recommendation-product-category-from-master' : RelatedProductcategoryFormMaster,
 		'tabs' : TabsIris,
 		'faq-department' : FaqDepartment,
-		'top-families' : TopFamiliesIris
+		'top-families' : TopFamiliesIris,
+		'blog-list' : BlogListIris
 	}
 }
 

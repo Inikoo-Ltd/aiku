@@ -161,11 +161,7 @@ class EditWebpage extends OrgAction
                 'label'       => __('Blog Category'),
                 'placeholder' => __('Select a blog category'),
                 'mode'        => 'single',
-                'options'     => [
-                    ['value' => 'blog', 'label' => __('Blog')],
-                    ['value' => 'davids_travel_blog', 'label' => __("David's Travel Blog")],
-                    ['value' => 'tips', 'label' => __('Tips')],
-                ],
+                'options'     => WebpageSubTypeEnum::blogCategoriesWithLabel(),
                 'value'       => $webpage->sub_type?->value ?? '',
                 'required'    => true,
             ];

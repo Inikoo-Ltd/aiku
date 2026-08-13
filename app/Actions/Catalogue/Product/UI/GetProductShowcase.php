@@ -48,7 +48,7 @@ class GetProductShowcase
         $properties = [
             // 'country_of_origin'  => $countryOrigin,
             'countries_of_origin' => $countryOrigins,
-            'ingredients'        => explode(', ', $product->marketing_ingredients),
+            'ingredients'        => $product->marketing_ingredients ? explode(', ', $product->marketing_ingredients) : [],
             'tariff_code'        => $product->tariff_code,
             'duty_rate'          => $product->duty_rate,
             'hts_us'             => $product->hts_us,

@@ -265,6 +265,9 @@ const offerDate = (date?: string | null) => date
     ? useFormatTime(date, { localeCode: locale.language.code, formatTime: 'dd MMM yy' })
     : trans('No date')
 
+const chevronClass = (masterFamily: MasterFamily) =>
+    masterFamily.offers_freshness?.text_class ?? 'text-gray-400'
+
 </script>
 
 <template>
@@ -350,7 +353,7 @@ const offerDate = (date?: string | null) => date
         </template>
 
         <template #cell(code)="{ item: family }">
-            <Link :href="familyRoute(family)" class="primaryLink">
+            <Link :href="familyRoute(family)" class="primaryLink" v-tooltip="family.name">
                 {{ family["code"] }}
             </Link>
             <FontAwesomeIcon v-if="family.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch detected in products linked to this master family. Please modify the master family trade units to fix the issue.')"/>
@@ -360,13 +363,17 @@ const offerDate = (date?: string | null) => date
             <div v-if="family.last_offers?.length" class="flex items-start gap-x-1 text-xs">
                 <FontAwesomeIcon v-if="family.last_offers.length > 1"
                     :icon="expandedOffers[family.id] ? faChevronDown : faChevronRight"
-                    class="mt-0.5 cursor-pointer text-gray-400 hover:text-gray-600"
+                    class="mt-0.5 cursor-pointer hover:opacity-100"
+                    :class="expandedOffers[family.id] ? 'text-gray-400' : chevronClass(family)"
                     v-tooltip="expandedOffers[family.id]
                         ? trans('Hide the other shops')
-                        : trans(':number more shops', { number: family.last_offers.length - 1 })"
+                        : `${trans(':number more shops', { number: family.last_offers.length - 1 })} · ${family.offers_freshness?.tooltip}`"
                     fixed-width @click="toggleOffers(family.id)" />
                 <div class="flex flex-col gap-y-0.5">
-                    <div v-for="offer in visibleOffers(family)" :key="offer.shop_slug" class="whitespace-nowrap">
+                    <div v-for="offer in visibleOffers(family)" :key="offer.shop_slug"
+                        class="flex items-center whitespace-nowrap">
+                        <span v-tooltip="offer.freshness.tooltip"
+                            class="mr-1.5 h-2 w-2 shrink-0 rounded-full" :class="offer.freshness.class" />
                         <span class="font-medium" v-tooltip="offer.shop_name">{{ offer.shop_code }}</span>
                         <span class="text-gray-400 mx-1">=</span>
                         <Link :href="offerRoute(offer)" class="secondaryLink" v-tooltip="offer.offer_name">
@@ -381,7 +388,11 @@ const offerDate = (date?: string | null) => date
                     </div>
                 </div>
             </div>
-            <span v-else class="text-gray-400 italic">-</span>
+            <div v-else class="flex items-center whitespace-nowrap text-xs">
+                <span v-if="family.offers_freshness" v-tooltip="family.offers_freshness.tooltip"
+                    class="mr-1.5 h-2 w-2 shrink-0 rounded-full" :class="family.offers_freshness.class" />
+                <span class="text-gray-400 italic">{{ trans('Never') }}</span>
+            </div>
         </template>
 
         <template #cell(products)="{ item: family }">

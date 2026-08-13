@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $duration
  * @property TimeTrackerStatusEnum $status
  * @property int|null $start_clocking_id
+ * @property int|null $end_clocking_id
  */
 class TimeTrackersResource extends JsonResource
 {
@@ -58,6 +59,12 @@ class TimeTrackersResource extends JsonResource
                 : null,
             'clock_in_route' => $this->start_clocking_id === null
                 ? route('grp.models.time-tracker.clock-in', ['timeTracker' => $this->id])
+                : null,
+            'edit_clock_in_route' => $this->start_clocking_id
+                ? route('grp.models.clocking-machine.clocking.notes.update', ['clocking' => $this->start_clocking_id])
+                : null,
+            'edit_clock_out_route' => $this->end_clocking_id
+                ? route('grp.models.clocking-machine.clocking.notes.update', ['clocking' => $this->end_clocking_id])
                 : null,
             'delete_route' => [
                 'name'       => 'grp.models.time-tracker.delete',

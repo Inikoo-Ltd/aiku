@@ -153,22 +153,26 @@ watch(() => props.tabs.current, (newTab) => {
     currentTab.value = newTab
 }, { immediate: true })
 
+// A scan that moves the session to another state changes the header actions and the tabs as much as
+// it changes the rows, so pageHead has to come back with it.
 const debReloadPage = debounce(() => {
     router.reload({
-        except: ["auth", "breadcrumbs", "flash", "layout", "localeData", "pageHead", "ziggy"]
+        except: ["auth", "breadcrumbs", "flash", "layout", "localeData", "ziggy"]
     })
 }, 1200)
 
-// A scan packs one item of one delivery note, so only the row it landed on changes. Patching that
-// row in place keeps the packer on the same scroll position instead of re-rendering the whole table.
-const onItemPackedByScan = (outcome: {
+type ScanOutcome = {
     status: string
     item?: { id: number } | null
     delivery_note?: { id: number } | null
     row?: Record<string, any> | null
     picking_session_state?: string
-}) => {
-    if (outcome.status !== "packed") {
+}
+
+// A scan touches one item of one delivery note, so only the row it landed on changes. Patching that
+// row in place keeps the operator on the same scroll position instead of re-rendering the whole table.
+const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
+    if (outcome.status !== successStatus) {
         return
     }
 
@@ -179,6 +183,10 @@ const onItemPackedByScan = (outcome: {
     if (scannedRow && outcome.row) {
         Object.assign(scannedRow, outcome.row)
     }
+}
+
+const onItemPackedByScan = (outcome: ScanOutcome) => {
+    patchRowScannedBy(outcome, "packed")
 
     if (outcome.picking_session_state === "packing_finished") {
         debReloadPage()

@@ -10,39 +10,35 @@
 namespace App\Actions\Api\Retina\Fulfilment\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Retina\Fulfilment\Dropshipping\Portfolio\SyncAllRetinaStoredItemsToPortfolios;
 use App\Actions\RetinaApiAction;
 use App\Http\Resources\Api\PortfolioResource;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreApiPortfolio extends RetinaApiAction
 {
-    /**
-     * @throws \Throwable
-     */
-    public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item): Portfolio
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-        $portfolio = StorePortfolio::make()->action($customerSalesChannel, $item, []);
-
-        return $portfolio;
+        SyncAllRetinaStoredItemsToPortfolios::make()->action($customerSalesChannel);
     }
-    /**
-     * @throws \Throwable
-     */
-    public function asController(Product $product, ActionRequest $request): Portfolio
-    {
 
+    public function asController(ActionRequest $request): void
+    {
         $this->initialisationFromFulfilment($request);
 
-        return $this->handle($this->customerSalesChannel, $product, $this->validatedData);
+        $this->handle($this->customerSalesChannel);
     }
 
-    public function jsonResponse(Portfolio $portfolio): PortfolioResource
+    public function jsonResponse(): PortfolioResource
     {
-        return PortfolioResource::make($portfolio);
+        return JsonResource::make([
+            'message' => __('Portfolio synced successfully'),
+        ]);
     }
-
 }

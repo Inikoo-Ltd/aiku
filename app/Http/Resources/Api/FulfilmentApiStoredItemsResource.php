@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $item_type
  * @property mixed $created_at
  * @property mixed $updated_at
+ * @property mixed $pallet_stored_item_id
  *
  */
 class FulfilmentApiStoredItemsResource extends JsonResource
@@ -36,6 +37,7 @@ class FulfilmentApiStoredItemsResource extends JsonResource
             'type'          => $this->item_type,
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
+            'pallet_stored_item_id' => $this->pallet_stored_item_id
         ];
     }
 }

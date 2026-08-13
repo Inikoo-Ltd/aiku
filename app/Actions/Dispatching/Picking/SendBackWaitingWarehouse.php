@@ -3,6 +3,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -30,8 +31,13 @@ class SendBackWaitingWarehouse extends OrgAction
             ]);
         }
 
-        $quantityToMove              = $deliveryNoteItem->quantity_waiting_crm;
-        $newQuantityWaitingWarehouse = (($deliveryNoteItem->quantity_waiting_warehouse ?? 0) + $quantityToMove);
+        /*
+         * has_waiting_crm can stand while the quantity behind it does not, so what is carried over
+         * is read from the quantity itself: moving a negative bucket across would only pass the
+         * damage to the warehouse side.
+         */
+        $quantityToMove              = max((float)$deliveryNoteItem->quantity_waiting_crm, 0);
+        $newQuantityWaitingWarehouse = (float)($deliveryNoteItem->quantity_waiting_warehouse ?? 0) + $quantityToMove;
 
         $dataToUpdate = [
             'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
@@ -51,6 +57,7 @@ class SendBackWaitingWarehouse extends OrgAction
 
         DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
+        CalculateDeliveryNoteItemTotalPicked::run($deliveryNoteItem);
 
         return $deliveryNoteItem;
     }

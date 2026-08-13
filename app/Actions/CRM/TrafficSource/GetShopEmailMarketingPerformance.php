@@ -10,10 +10,10 @@ namespace App\Actions\CRM\TrafficSource;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
-use App\Enums\UI\Marketing\MarketingPeriodEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\TrafficSourceCampaign;
+use Illuminate\Support\Carbon;
 use App\Models\Helpers\Currency;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -37,10 +37,8 @@ class GetShopEmailMarketingPerformance
      *
      * @return array{totals: array{sent: int, opened: int, clicked: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float}, mailshots: array<int, array{id: int, subject: string, type: string, sent_at: string|null, sent: int, opened: int, clicked: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float, prospects_registered: int}>}
      */
-    public function handle(Shop $shop, MarketingPeriodEnum $period = MarketingPeriodEnum::LAST_30, int $limit = 8): array
+    public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null, int $limit = 8): array
     {
-        $from = $period->startsAt();
-
         $usdToShop = $this->usdToShopRate($shop);
         $costPerEmail = ((float) config('services.ses.cost_per_thousand_usd')) / 1000 * $usdToShop;
 
@@ -50,6 +48,7 @@ class GetShopEmailMarketingPerformance
             ->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING, MailshotTypeEnum::INVITE])
             ->whereHas('stats', fn ($query) => $query->where('number_dispatched_emails', '>', 0))
             ->when($from, fn ($query) => $query->whereRaw('COALESCE(sent_at, created_at) >= ?', [$from]))
+            ->when($to, fn ($query) => $query->whereRaw('COALESCE(sent_at, created_at) <= ?', [$to]))
             ->with('stats')
             ->orderByRaw('COALESCE(sent_at, created_at) DESC, id DESC')
             ->limit($limit)
