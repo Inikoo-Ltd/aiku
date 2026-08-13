@@ -45,7 +45,7 @@ function toYmd(date: Date): string {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(bucket)="{ item }">
-            <Link :href="showRoute(item)" class="primaryLink">
+            <Link :href="showRoute(item)" class="primaryLink whitespace-nowrap tabular-nums">
                 {{ item.bucket }}
             </Link>
         </template>

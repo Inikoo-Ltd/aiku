@@ -113,11 +113,7 @@ class IndexOrganisationStockHistories extends OrgAction
                 ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right');
 
             foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
-                $label = __('Stock Value').' ('.$method->label().')';
-                if (!$sameCurrency) {
-                    $label .= ' ('.$organisation->currency->code.')';
-                }
-                $table->column(key: $method->stockValueColumn(), label: $label, tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, sortable: true, type: 'currency', align: 'right');
+                $table->column(key: $method->stockValueColumn(), label: __('Stock Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, sortable: true, type: 'currency', align: 'right');
             }
 
 
@@ -154,6 +150,7 @@ class IndexOrganisationStockHistories extends OrgAction
                         'title' => __('Stock History'),
                     ],
                 ],
+                'currency_code'  => $this->organisation->currency->code,
                 'download_route' => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_histories.export',
                     'parameters' => $request->route()->originalParameters(),

@@ -1410,7 +1410,7 @@ const getSeverity = (type?: string) => {
                                                 <td v-for="(column, index) in queryBuilderProps.columns"
                                                     v-show="show(column.key)"
                                                     :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                    class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                    class="text-[13px] py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                         column.type === 'avatar' || column.type === 'icon'
                                                             ? 'text-center min-w-fit px-3'
                                                             : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
@@ -1486,7 +1486,7 @@ const getSeverity = (type?: string) => {
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-[13px] py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-3'
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
@@ -1557,7 +1557,7 @@ const getSeverity = (type?: string) => {
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-[13px] py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
@@ -1605,7 +1605,7 @@ const getSeverity = (type?: string) => {
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`footerRows-rows-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-500 whitespace-normal h-full" :class="[
+                                                class="text-[13px] py-2 text-gray-500 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.align === 'right'

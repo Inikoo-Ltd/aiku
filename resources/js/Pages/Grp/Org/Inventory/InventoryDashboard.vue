@@ -66,6 +66,8 @@ defineProps<{
         percentage_out_of_stock: number
         number_locations: number
         org_stock_lpp_value: number
+        valuation_method?: string
+        valuation_legend?: string
         currency_code: string
         value_dormant_stock_1y: number
         percentage_dormant_1y: number
@@ -133,6 +135,7 @@ const options = {
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" />
                     {{ trans('Stock Value') }}
+                    <FontAwesomeIcon icon="fal fa-question-circle" class="cursor-help text-gray-300 hover:text-gray-500" fixed-width aria-hidden="true" v-tooltip="stockHistoryToday.valuation_legend" />
                 </dt>
                 <dd class="mt-1 text-3xl font-semibold tabular-nums text-gray-800">
                     {{ locale.CurrencyShort(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_lpp_value)) }}
@@ -189,6 +192,7 @@ const options = {
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-skull-cow" class="text-red-500" fixed-width aria-hidden="true" />
                     {{ trans('Dormant 1Y') }}
+                    <FontAwesomeIcon icon="fal fa-question-circle" class="cursor-help text-gray-300 hover:text-gray-500" fixed-width aria-hidden="true" v-tooltip="stockHistoryToday.valuation_legend" />
                 </dt>
                 <dd class="mt-1 flex items-baseline gap-x-2">
                     <span class="text-2xl font-semibold tabular-nums text-red-500">

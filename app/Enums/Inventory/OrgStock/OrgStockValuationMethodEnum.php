@@ -28,9 +28,11 @@ enum OrgStockValuationMethodEnum: string
         return once(function () {
             $setting = \Illuminate\Support\Arr::get(group()?->settings ?? [], 'inventory.official_valuation_method');
 
-            return self::tryFrom($setting ?? '')
+            $method = self::tryFrom($setting ?? '')
                 ?? self::tryFrom(config('inventory.official_valuation_method') ?? '')
                 ?? self::FIFO;
+
+            return $method === self::LPP ? self::FIFO : $method;
         });
     }
 

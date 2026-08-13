@@ -198,17 +198,31 @@ class EditGroupSettings extends OrgAction
                         'icon'   => 'fa-light fa-inventory',
                         'fields' => [
                             'official_stock_valuation_method' => [
-                                'type'        => 'select',
-                                'label'       => __('Official stock valuation method'),
-                                'information' => __('Drives stock values, margins, product costs and dashboards. FIFO is the default and recommended method.'),
-                                'required'    => true,
-                                'value'       => Arr::get($group->settings, 'inventory.official_valuation_method', OrgStockValuationMethodEnum::official()->value),
-                                'options'     => collect(OrgStockValuationMethodEnum::cases())->map(fn ($method) => [
-                                    'value' => $method->value,
-                                    'label' => $method->label().' ('.$method->fullName().')',
-                                ])->values()->all(),
-                                'valueProp'   => 'value',
-                                'labelProp'   => 'label',
+                                'type'             => 'radio',
+                                'mode'             => 'card',
+                                'columns'          => 1,
+                                'valueProp'        => 'value',
+                                'label'            => __('Official stock valuation method'),
+                                'information'      => __('Drives stock values, margins, product costs and dashboards. LPP is not an allowed valuation method in the UK.'),
+                                'required'         => true,
+                                'value'            => Arr::get($group->settings, 'inventory.official_valuation_method', OrgStockValuationMethodEnum::official()->value),
+                                'options'          => [
+                                    [
+                                        'value'       => OrgStockValuationMethodEnum::FIFO->value,
+                                        'title'       => __('FIFO (First In First Out)'),
+                                        'description' => __('Stock is valued at the cost of its oldest remaining purchases. Recommended and the default.'),
+                                    ],
+                                    [
+                                        'value'       => OrgStockValuationMethodEnum::WAC->value,
+                                        'title'       => __('WAC (Weighted Average Cost)'),
+                                        'description' => __('Stock is valued at the average cost of everything on hand. Allowed alternative.'),
+                                    ],
+                                ],
+                                'saveConfirmation' => [
+                                    'title'       => __('Change the official stock valuation method?'),
+                                    'description' => __('This is a serious accounting decision. It must not be taken without prior discussion with all the accountants across the group (all organisations). Stock values, margins, product costs and dashboards will all change.'),
+                                    'yesLabel'    => __('I understand, change it'),
+                                ],
                             ],
                         ],
                     ],
