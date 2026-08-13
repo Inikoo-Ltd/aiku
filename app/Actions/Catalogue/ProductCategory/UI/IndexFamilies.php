@@ -209,6 +209,7 @@ class IndexFamilies extends OrgAction
         if ($prefix === ProductCategoryTabsEnum::SALES->value) {
             $aggregateColumns = [
                 'sales_grp_currency_external' => 'sales_grp_currency_external',
+                'customers_invoiced'          => 'customers_invoiced',
                 'invoices'                    => 'invoices',
                 'sold'                        => 'sold',
             ];
@@ -231,6 +232,7 @@ class IndexFamilies extends OrgAction
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['customers_invoiced'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
@@ -300,6 +302,7 @@ class IndexFamilies extends OrgAction
                 'sub_department_name',
                 'department_name',
                 'sales_grp_currency_external',
+                'customers_invoiced',
                 'invoices',
                 'sold',
                 'health_rank',
@@ -424,7 +427,8 @@ class IndexFamilies extends OrgAction
                         ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right');
                 }
 
-                $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                $table->column(key: 'customers_invoiced', label: __('Customers'), tooltip: __('Customers that ordered or were invoiced this family'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
