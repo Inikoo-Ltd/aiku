@@ -110,11 +110,12 @@ class EditOrganisationSettings extends OrgAction
         }
 
         $pickingFields['allow_scan_to_pick'] = [
-            'type'  => 'toggle',
-            'label' => __('Allow pickers to scan items to pick them'),
-            'information'   => __('Scan the items using scanner'),
-            'icon'  => 'fal fa-scanner',
-            'value' => Arr::get($organisation->settings, 'orders.allow_scan_to_pick', false),
+            'type'        => 'toggle',
+            'label'       => __('Allow pickers to scan items to pick them'),
+            'information' => __('Scan the items using scanner'),
+            'warning'     => __('Delivery Notes only, the picker need to activate it on each Delivery Note to able to scan. Picking Sessions is not available yet.'),
+            'icon'        => 'fal fa-scanner',
+            'value'       => Arr::get($organisation->settings, 'orders.allow_scan_to_pick', false),
         ];
 
         $pickingFields['allow_scan_to_pack'] = [

@@ -1461,6 +1461,61 @@ test('store, update, and delete org stock movement', function () {
     expect(OrgStockMovement::find($deleted->id))->toBeNull();
 });
 
+test('wac per sku calculation', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'WAC-WH', 'name' => 'Wac WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'WAC-AR', 'name' => 'Wac Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'WAC-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $calculator = \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::make();
+
+    expect($calculator->getWacPerSku($orgStock, now()))->toBeNull();
+
+    $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+    $orgStock->unsetRelation('organisation');
+
+    $firstPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $firstPurchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(3)]);
+
+    expect((float) $calculator->getWacPerSku($orgStock, now()))->toBe(2.0);
+
+    $picked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -5,
+    ]);
+    $picked->update(['date' => now()->subDays(2)]);
+
+    $secondPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 5,
+    ]);
+    $secondPurchase->update(['cost_per_sku' => 4, 'date' => now()->subDay()]);
+
+    expect((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0)
+        ->and($calculator->getWacPerSku($orgStock, now()->subYears(2)))->toBeNull();
+
+    expect((float) $calculator->getFifoPerSku($orgStock, now()))->toBe(3.0)
+        ->and($calculator->getFifoPerSku($orgStock, now()->subYears(2)))->toBeNull();
+
+    $thirdPicked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -7,
+    ]);
+    $thirdPicked->update(['date' => now()->subHours(2)]);
+
+    expect((float) $calculator->getFifoPerSku($orgStock, now()))->toBe(4.0)
+        ->and((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0);
+
+    expect($calculator->getValuationPerSku($orgStock, now()))->toBe(['wac' => 3.0, 'fifo' => 4.0]);
+});
+
 test('sync org stock locations creates, updates and removes links', function () {
     $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
     $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
@@ -1496,7 +1551,7 @@ test('calculate value location org stock sets value = quantity * cost', function
     CalculateValueLocationOrgStock::run($locationOrgStock->id);
 
     $locationOrgStock->refresh();
-    $expected = (float) $locationOrgStock->quantity * CalculateValueLocationOrgStock::make()->getCostPerSku($locationOrgStock->orgStock, now());
+    $expected = (float) $locationOrgStock->quantity * CalculateValueLocationOrgStock::make()->getLppPerSku($locationOrgStock->orgStock, now());
     expect($expected)->toBe(0.0)
         ->and((float) $locationOrgStock->value)->toBe($expected);
 
@@ -1718,7 +1773,8 @@ test('fill org stock barcode from its single trade unit', function () {
     $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
 
     expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBe('5050000000017')
-        ->and($orgStock->refresh()->barcode)->toBe('5050000000017');
+        ->and($orgStock->refresh()->unit_barcode)->toBe('5050000000017')
+        ->and($orgStock->barcode)->toBeNull();
 });
 
 test('guess a barcode for org stocks holding several copies of one trade unit', function () {
@@ -1750,11 +1806,6 @@ test('do not guess a barcode for org stocks that are not a single trade unit', f
         $otherTradeUnit->id => ['quantity' => 1],
     ]);
     expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull();
-
-    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
-    $orgStock->update(['independent_barcode' => true]);
-    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull()
-        ->and($orgStock->refresh()->barcode)->toBeNull();
 });
 
 test('do not guess a barcode shared by two org stocks of the same organisation', function () {
@@ -1774,6 +1825,23 @@ test('do not guess a barcode shared by two org stocks of the same organisation',
 
     expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->first()))->toBeNull()
         ->and(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->last()))->toBeNull();
+});
+
+test('changing a trade unit barcode refreshes the unit_barcode of its single-trade-unit org stocks', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock->update(['is_single_trade_unit' => true, 'unit_barcode' => 'OLD-EAN']);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['barcode' => '5055796528387']);
+    expect($orgStock->refresh()->unit_barcode)->toBe('5055796528387');
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['barcode' => null]);
+    expect($orgStock->refresh()->unit_barcode)->toBeNull();
 });
 
 test('set org stock barcode by hand marks it independent and enforces uniqueness', function () {
@@ -1797,6 +1865,47 @@ test('set org stock barcode by hand marks it independent and enforces uniqueness
     $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => null]);
     expect($orgStock->barcode)->toBeNull()
         ->and($orgStock->independent_barcode)->toBeFalse();
+});
+
+test('set org stock unit_barcode does not touch independent_barcode', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['unit_barcode' => ' 5050000000062 ']);
+    expect($orgStock->unit_barcode)->toBe('5050000000062')
+        ->and($orgStock->independent_barcode)->toBeFalse()
+        ->and($orgStock->barcode)->toBeNull();
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['unit_barcode' => null]);
+    expect($orgStock->unit_barcode)->toBeNull();
+});
+
+test('scan matches an org stock by its unit_barcode', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['unit_barcode' => '5050000000079']);
+
+    $deliveryNoteItem = new \App\Models\Dispatching\DeliveryNoteItem();
+    $deliveryNoteItem->org_stock_id = $orgStock->id;
+    $deliveryNoteItem->setRelation('orgStock', $orgStock);
+
+    $matcher = new class () {
+        use \App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
+
+        public function match($items, $scanned)
+        {
+            return $this->matchItems($items, $scanned);
+        }
+    };
+
+    $matched = $matcher->match(collect([$deliveryNoteItem]), '5050000000079');
+
+    expect($matched->count())->toBe(1)
+        ->and($matched->first())->toBe($deliveryNoteItem);
 });
 
 /*

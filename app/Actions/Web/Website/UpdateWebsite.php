@@ -95,6 +95,17 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.enable_chat", Arr::pull($modelData, "enable_chat"));
         }
 
+        if (Arr::has($modelData, "view_contact_options_panel")) {
+            data_set($modelData, "settings.view_contact_options_panel", Arr::pull($modelData, "view_contact_options_panel"));
+        }
+
+        if (Arr::has($modelData, "data_contact_options_panel")) {
+            $settings = $website->settings ?? [];
+            data_set($settings, "data_contact_options_panel", Arr::pull($modelData, "data_contact_options_panel"));
+            $website->settings = $settings;
+            $website->saveQuietly();
+        }
+
         if (Arr::has($modelData, "google_tag_id")) {
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
         }
@@ -273,6 +284,11 @@ class UpdateWebsite extends OrgAction
             'script_website'                             => ['sometimes', 'nullable', 'string'],
             'llms_txt'                                   => ['sometimes', 'nullable', File::types(['txt'])->max(50)], // 50KB max
             'enable_chat'                                => ['sometimes', 'boolean'],
+            'view_contact_options_panel'                 => ['sometimes', 'boolean'],
+            'data_contact_options_panel'                 => ['sometimes', 'nullable', 'array'],
+            'data_contact_options_panel.*.icon'          => ['sometimes', 'nullable'],
+            'data_contact_options_panel.*.label'         => ['sometimes', 'nullable', 'string', 'max:255'],
+            'data_contact_options_panel.*.url'           => ['sometimes', 'nullable', 'string', 'max:2000'],
             'description_has_overview'                   => ['sometimes', 'boolean'],
             'welcome_message'                            => ['sometimes', 'nullable', 'string'],
             'company_name_label'                         => ['sometimes', 'nullable', 'string'],

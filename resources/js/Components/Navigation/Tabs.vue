@@ -110,6 +110,45 @@ watch(
 	}
 )
 
+// Section: Tabs color
+const TAB_COLOR_SCHEMES: Record<string, { tab: string; active: string; number: string; soft: string }> = {
+	amber: {
+		tab: "rounded-t-md px-2 border-b-2 border-transparent text-amber-700 xbg-amber-100 hover:bg-amber-200",
+		active: "rounded-t-md px-2 border-b-2 border-amber-700 text-amber-900 bg-amber-300",
+		number: "bg-amber-200 text-amber-900",
+		soft: "bg-amber-50 text-amber-800",
+	},
+	green: {
+		tab: "rounded-t-md px-2 border-b-2 border-transparent text-green-700 xbg-green-100 hover:bg-green-200",
+		active: "rounded-t-md px-2 border-b-2 border-green-700 text-green-900 bg-green-300",
+		number: "bg-green-200 text-green-900",
+		soft: "bg-green-50 text-green-800",
+	},
+}
+
+const tabColorScheme = (tab: { colorScheme?: string }) =>
+	tab.colorScheme ? TAB_COLOR_SCHEMES[tab.colorScheme] : undefined
+
+const tabButtonClass = (tab: { colorScheme?: string }, isCurrent: boolean) => {
+	const scheme = tabColorScheme(tab)
+
+	if (scheme) {
+		return isCurrent ? scheme.active : scheme.tab
+	}
+
+	return isCurrent ? "tabNavigationActive" : "tabNavigation"
+}
+
+const tabNumberClass = (tab: { colorScheme?: string }, isCurrent: boolean) => {
+	const scheme = tabColorScheme(tab)
+
+	if (scheme) {
+		return scheme.number
+	}
+
+	return isCurrent ? "bg-[var(--theme-color-0)] text-[var(--theme-color-1)]" : "bg-gray-200"
+}
+
 const tabIconClass = function (
 	isCurrent: boolean,
 	type: string | undefined,
@@ -132,7 +171,8 @@ const tabIconClass = function (
 				<div class="relative">
 					<!-- Button -->
 					<ListboxButton
-						class="relative w-full cursor-pointer rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 sm:text-sm">
+						:class="tabColorScheme(navigation[currentTab] ?? {})?.soft || 'bg-white'"
+						class="relative w-full cursor-pointer rounded-md border border-gray-300 py-2 pl-3 pr-10 text-left shadow-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 sm:text-sm">
 						<span class="flex items-center">
 							<!-- Loading spinner -->
 							<FontAwesomeIcon
@@ -163,7 +203,8 @@ const tabIconClass = function (
 							v-slot="{ active, selected }">
 							<li
 								:class="[
-									active ? 'bg-gray-100' : '',
+									tabColorScheme(tab)?.soft || '',
+									active ? (tabColorScheme(tab) ? 'brightness-95' : 'bg-gray-100') : '',
 									'relative cursor-pointer select-none py-2 pl-3 pr-9',
 								]">
 								<div class="flex items-center">
@@ -203,9 +244,7 @@ const tabIconClass = function (
 						<button
 							v-if="tab.align !== 'right'"
 							@click="onChangeTab(tabSlug)"
-							:class="[
-								tabSlug === currentTab ? 'tabNavigationActive' : 'tabNavigation',
-							]"
+							:class="tabButtonClass(tab, tabSlug === currentTab)"
 							class="relative group flex items-center py-2 px-1 font-medium text-left text-sm md:text-base w-fit"
 							:aria-current="tabSlug === currentTab ? 'page' : undefined">
 							<FontAwesomeIcon
@@ -249,11 +288,7 @@ const tabIconClass = function (
 							<div
 								v-if="typeof tab.number == 'number'"
 								class="ml-2 inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-								:class="
-									tabSlug === currentTab
-										? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]'
-										: 'bg-gray-200 '
-								">
+								:class="tabNumberClass(tab, tabSlug === currentTab)">
 								{{ locale.number(tab.number || 0) }}
 							</div>
 
@@ -311,11 +346,7 @@ const tabIconClass = function (
 							<div
 								v-if="typeof tab.number == 'number'"
 								class="ml-0.5 inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-								:class="
-									tabSlug === currentTab
-										? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]'
-										: 'bg-gray-200 '
-								">
+								:class="tabNumberClass(tab, tabSlug === currentTab)">
 								{{ locale.number(tab.number || 0) }}
 							</div>
 

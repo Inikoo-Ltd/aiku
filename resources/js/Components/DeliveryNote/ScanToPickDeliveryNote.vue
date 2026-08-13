@@ -17,6 +17,7 @@ import { useBarcodeScanner, useScanQueue } from "@/Composables/useBarcodeScanner
 import { routeType } from "@/types/route"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Toggle from "../Pure/Toggle.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle, faMapMarkerAlt)
 
@@ -36,6 +37,7 @@ type ScanStatus = "picked" | "already_picked" | "no_stock" | "not_found" | "wron
 type ScanOutcome = {
     status: ScanStatus
     message: string
+    warning?: string | null
     scanned: string
     item: {
         id: number
@@ -159,6 +161,10 @@ const applyOutcome = (outcome: ScanOutcome) => {
         playNotificationSound({ frequency: 660, duration: 110 })
     } else {
         playNotificationSound({ frequency: 200, duration: 280, type: "square" })
+    }
+
+    if (outcome.warning) {
+        notify({ title: ctrans("Check what you picked"), text: outcome.warning, type: "warn" })
     }
 
     emits("scanned", outcome)

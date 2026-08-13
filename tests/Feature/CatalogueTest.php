@@ -399,6 +399,36 @@ test('update product', function (Product $product) {
     return $product;
 })->depends('create product');
 
+test('update product trade units recalculates units', function (Product $product) {
+    expect((float) $product->units)->toBe(1.0);
+
+    $product = UpdateProduct::make()->action($product, [
+        'trade_units' => [
+            [
+                'id'       => $this->tradeUnit1->id,
+                'quantity' => 9,
+            ]
+        ],
+    ]);
+    $product->refresh();
+
+    expect($product->tradeUnits->first()->pivot->quantity)->toBe('9.00000000')
+        ->and((float) $product->units)->toBe(9.0);
+
+    $product = UpdateProduct::make()->action($product, [
+        'trade_units' => [
+            [
+                'id'       => $this->tradeUnit1->id,
+                'quantity' => 1,
+            ]
+        ],
+    ]);
+    $product->refresh();
+    expect((float) $product->units)->toBe(1.0);
+
+    return $product;
+})->depends('update product');
+
 test('add variant to product', function (Product $product) {
     expect($product->stats->number_product_variants)->toBe(1);
 
@@ -420,7 +450,7 @@ test('add variant to product', function (Product $product) {
         ->and($productVariant->is_main)->toBeFalse()
         ->and($productVariant->mainProduct->id)->toBe($product->id)
         ->and($product->stats->number_product_variants)->toBe(2)
-        ->and($product->asset->stats->number_historic_assets)->toBe(2);
+        ->and($product->asset->stats->number_historic_assets)->toBe(4);
 
 
     return $productVariant;

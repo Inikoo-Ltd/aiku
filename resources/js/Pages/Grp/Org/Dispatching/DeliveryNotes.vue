@@ -15,7 +15,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCheck, faHandPaper, faBoxCheck, faBoxOpen, faCheckDouble, faTasks } from "@fal"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import HasPickTableDeliveryNote from '@/Components/Tables/Grp/Org/Dispatching/HasPickTableDeliveryNote.vue'
-import { ref, inject, computed } from "vue"
+import { ref, inject, computed, reactive } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
@@ -31,7 +31,7 @@ const props = defineProps<{
   picking_session_route : routeType
 }>()
 
-const selectedDeliveryNotes = ref<number[]>([])
+const selectedDeliveryNotes = reactive(new Set<number>())
 const loading=ref(false)
 
 // const pickingSessionRoute = {
@@ -40,7 +40,7 @@ const loading=ref(false)
 // }
 
 function createPickingSession() {
-  if (selectedDeliveryNotes.value.length === 0) return
+  if (selectedDeliveryNotes.size === 0) return
 
   if (!props.picking_session_route) {
     notify({
@@ -55,7 +55,7 @@ function createPickingSession() {
 
   router.post(
     route(props.picking_session_route.name, props.picking_session_route.parameters),
-    { delivery_notes: selectedDeliveryNotes.value },
+    { delivery_notes: [...selectedDeliveryNotes] },
     {
       onFinish: () => {
         loading.value = false
@@ -89,13 +89,13 @@ const isHidden = computed(() => {
         <Button
         v-if="!isHidden && todo"
         type="create"
-        :label="trans('Picking session') + ' ('+ selectedDeliveryNotes.length + ')'"
+        :label="trans('Picking session') + ' ('+ selectedDeliveryNotes.size + ')'"
         :loading="loading"
-        :disabled="selectedDeliveryNotes.length <= 0"
+        :disabled="selectedDeliveryNotes.size <= 0"
         @click="createPickingSession"
       />
     </template>
   </PageHeading>
-  <HasPickTableDeliveryNote v-if="todo" :data="data" v-model:selectedDeliveryNotes="selectedDeliveryNotes"/>
+  <HasPickTableDeliveryNote v-if="todo" :data="data" :selectedDeliveryNotes="selectedDeliveryNotes"/>
   <TableDeliveryNotes v-else :data="data" />
 </template>

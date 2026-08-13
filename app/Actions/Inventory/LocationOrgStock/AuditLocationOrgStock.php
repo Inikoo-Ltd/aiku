@@ -46,7 +46,7 @@ class AuditLocationOrgStock extends OrgAction
             $note         = Arr::pull($modelData, 'note');
             $stockDiff    = $newQuantity - $currentStock;
 
-            $costPerSku = $this->getCostPerSku($locationOrgStock->orgStock, Carbon::now());
+            $costPerSku = $this->getLppPerSku($locationOrgStock->orgStock, Carbon::now());
 
             $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
 
