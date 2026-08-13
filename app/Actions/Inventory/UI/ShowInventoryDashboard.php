@@ -86,18 +86,6 @@ class ShowInventoryDashboard extends OrgAction
                 ],
                 'statsBox' => [
                     [
-                        'is_negative' => true,
-                        'label' => __('SKO Without Product'),
-                        'route' => [
-                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
-                            'parameters' => $routeParameters
-                        ],
-                        'icon'  => 'fal fa-box',
-                        'backgroundColor' => '#ff000011',
-                        'color'           => '#df1c1cff',
-                        'value' => '0', // No stat for this just yet
-                    ],
-                    [
                         'label' => __('Replenishments'),
                         'route' => [
                             'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.index',
@@ -129,6 +117,7 @@ class ShowInventoryDashboard extends OrgAction
                         'value' => $this->warehouse->stats->number_org_stocks_low_stock_audits,
                         'editable' => [
                             'label'    => __('Threshold'),
+                            'icon'     => 'fal fa-less-than-equal',
                             'field'    => 'low_stock_threshold',
                             'value'    => $this->warehouse->getLowStockThreshold(),
                             'title'    => __('Low stock threshold'),
@@ -139,6 +128,17 @@ class ShowInventoryDashboard extends OrgAction
                                 'parameters' => ['warehouse' => $this->warehouse->id]
                             ],
                         ],
+                    ],
+                ],
+                'additionalStatBox' => [
+                    [
+                        'label' => __('SKOs Without Product'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-box',
+                        'value' => $this->warehouse->stats->number_org_stocks_without_products,
                     ],
                 ],
                 // 'dashboardStats' => $this->getDashboardStats(),

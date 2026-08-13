@@ -27,6 +27,7 @@ export interface StatsBoxTS {
     }
     editable?: {
         label: string
+        icon?: string
         field: string
         value: number
         title?: string

@@ -14,6 +14,7 @@ use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksWithoutProducts;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateReplenishments;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
@@ -61,6 +62,7 @@ class UpdateOrgStock extends OrgAction
             foreach ($orgStock->organisation->warehouses as $warehouse) {
                 WarehouseHydrateLowStockAudits::dispatch($warehouse);
                 WarehouseHydrateReplenishments::dispatch($warehouse);
+                WarehouseHydrateOrgStocksWithoutProducts::dispatch($warehouse);
             }
 
             foreach ($orgStock->tradeUnits as $tradeUnit) {
