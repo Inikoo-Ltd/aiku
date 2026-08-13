@@ -9,6 +9,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
 import SettingChat from "@/Components/Chat/SettingChat.vue"
+import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
@@ -87,8 +88,6 @@ const chatSettingVisible = ref(false)
 const settingInitialTab = ref<"general" | "jira" | "slack">("general")
 
 const newChatVisible = ref(false)
-const newChatPhone = ref("")
-const newChatMessage = ref("")
 const openChatSettings = () => {
     settingInitialTab.value = "general"
     chatSettingVisible.value = true
@@ -571,38 +570,7 @@ onUnmounted(() => {
         <SettingChat :initial-tab="settingInitialTab" :session-ulid="selectedSession?.ulid" @close="chatSettingVisible = false" />
     </Dialog>
 
-    <Dialog v-model:visible="newChatVisible" modal :header="trans('New WhatsApp chat')"
-        :style="{ width: '90vw', maxWidth: '440px' }" :breakpoints="{ '640px': '95vw' }">
-        <div class="flex flex-col gap-3">
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-medium text-gray-600">{{ trans("Phone number") }}</label>
-                <input v-model="newChatPhone" type="tel" placeholder="+44 7700 900000"
-                    class="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1" />
-            </div>
-
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-medium text-gray-600">{{ trans("Message") }}</label>
-                <textarea v-model="newChatMessage" rows="4"
-                    class="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1" />
-            </div>
-
-            <p class="text-xs text-gray-400 leading-snug">
-                {{ trans("WhatsApp requires an approved template for the first message to a new contact.") }}
-            </p>
-
-            <div class="flex items-center justify-end gap-2 pt-1">
-                <button type="button" class="px-3 py-1.5 text-sm text-gray-600 rounded-lg hover:bg-gray-100"
-                    @click="newChatVisible = false">
-                    {{ trans("Cancel") }}
-                </button>
-                <!-- ponytail: inert until a Meta send action + a seeded 'whatsapp' meta_channel exist. -->
-                <button type="button" disabled v-tooltip="trans('Coming soon')"
-                    class="px-3 py-1.5 text-sm text-white rounded-lg bg-gray-300 cursor-not-allowed">
-                    {{ trans("Start chat") }}
-                </button>
-            </div>
-        </div>
-    </Dialog>
+    <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId" />
 
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->

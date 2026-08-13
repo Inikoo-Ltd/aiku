@@ -25,15 +25,23 @@ class GetCustomersInShop extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('customers.name', $value)
                     ->orWhereStartWith('customers.reference', $value)
-                    ->orWhereStartWith('customers.email', $value);
+                    ->orWhereStartWith('customers.email', $value)
+                    ->orWhereStartWith('customers.phone', $value);
             });
+        });
+
+        $hasPhoneFilter = AllowedFilter::callback('has_phone', function ($query, $value) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                $query->whereNotNull('customers.phone')
+                    ->where('customers.phone', '!=', '');
+            }
         });
 
         $queryBuilder = QueryBuilder::for(Customer::class);
         $queryBuilder->where('customers.shop_id', $parent->id);
 
         return $queryBuilder->defaultSort('-id')
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $hasPhoneFilter])
             ->withPaginator($prefix)
             ->withQueryString();
     }
