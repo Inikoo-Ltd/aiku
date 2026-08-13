@@ -15,32 +15,24 @@ import Tabs from '@/Components/Navigation/Tabs.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-import LayoutWorkshop from '@/Components/CMS/Website/Layout/LayoutWorkshop.vue'
-import ProductBlockWorkshop from '@/Components/CMS/Website/ProductBlock/ProductBlockWorkshop.vue'
-import ProductsBlockWorkshop from '@/Components/CMS/Website/ProductsBlock/ProductsBlockWorkshop.vue'
-import SubDepartmentWorkshop from '@/Components/CMS/Website/SubDepartmentBlockWorkshop/SubDepartmentWorkshop.vue'
-import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
-import FamiliesOverviewBlockWorkshop from '@/Components/CMS/Website/FamiliesOverviewBlockWorkshop/FamiliesOverviewWorkshop.vue'
-import FamiliesDescriptionBlockWorkshop from '@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/FamilyDescriptionBlockWorkshop.vue'
-import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import WorkshopTab from '@/Components/CMS/Website/Workshop/WorkshopTab.vue'
 
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
-import DepartmentDescriptionBlockWorkshop from '@/Components/CMS/Website/DepartmentBlockWorkshop/DepartmentDescriptionBlockWorkshop.vue'
 
 library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPageBreak, faSpinnerThird)
 
 const TAB_COMPONENT_MAP = {
-  website_layout: LayoutWorkshop,
-  department_description: DepartmentDescriptionBlockWorkshop,
-  sub_department: SubDepartmentWorkshop,
-  families: FamiliesBlockWorkshop,
-  families_overview: FamiliesOverviewBlockWorkshop,
-  families_description: FamiliesDescriptionBlockWorkshop,
-  products: ProductsBlockWorkshop,
-  product: ProductBlockWorkshop,
-  history: TableHistories,
+  website_layout: WorkshopTab,
+  department_description: WorkshopTab,
+  sub_department: WorkshopTab,
+  families: WorkshopTab,
+  families_overview: WorkshopTab,
+  families_description: WorkshopTab,
+  products: WorkshopTab,
+  product: WorkshopTab,
+  history: WorkshopTab,
 }
 
 const props = defineProps<{
@@ -168,10 +160,11 @@ onUnmounted(() => stopSocketListener())
   </PageHeading>
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
   <KeepAlive>
-    <component 
-      :is="component" 
-      :tab="currentTab" 
-      :data="props[currentTab]" 
+    <component
+      :is="component"
+      :key="currentTab"
+      :tab="currentTab"
+      :data="props[currentTab]"
       :currency="props.currency" 
       :layout_theme
       @update:layout="(data) => {props[currentTab].layout = data} " 

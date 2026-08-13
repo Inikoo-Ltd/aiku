@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
@@ -136,6 +137,7 @@ trait WithMasterAssetTradeUnits
         MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
         MasterAssetHydrateMarketingWeightFromTradeUnits::run($masterAsset->id);
         MasterAssetHydrateGrossWeightFromTradeUnits::run($masterAsset->id);
+        ProductHydrateMarketingIngredientsFromTradeUnits::run($masterAsset);
 
         $masterAsset->refresh();
     }

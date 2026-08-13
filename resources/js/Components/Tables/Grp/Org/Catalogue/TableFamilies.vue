@@ -291,7 +291,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
                 </Link>
 
-                <Link :href="familyRoute(family)" class="primaryLink">
+                <Link :href="familyRoute(family)" class="primaryLink" v-tooltip="family.name">
                 {{ family["code"] }}
                 </Link>
             </div>
