@@ -44,6 +44,10 @@ class UpdateOrgStock extends OrgAction
             $modelData['independent_barcode'] = $modelData['barcode'] !== null;
         }
 
+        if (Arr::exists($modelData, 'unit_barcode')) {
+            $modelData['unit_barcode'] = blank($modelData['unit_barcode']) ? null : trim($modelData['unit_barcode']);
+        }
+
         $orgStock = $this->update($orgStock, $modelData, ['data', 'settings']);
 
         $changes = $orgStock->getChanges();
@@ -91,6 +95,7 @@ class UpdateOrgStock extends OrgAction
                     ->whereNull('deleted_at')
                     ->ignore($this->orgStock->id),
             ],
+            'unit_barcode' => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[\x20-\x7E]+$/'],
             'note_to_pickers' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'note_to_packers' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'consumables'     => [

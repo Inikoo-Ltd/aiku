@@ -43,6 +43,8 @@ const props = defineProps<{
         updateRoute?: routeType
         isWithRefreshFieldForm?: boolean
         revisit_after_save?: boolean
+        information?: string  // Tooltip on an info icon beside the label
+        warning?: string      // Amber box under the label, for caveats the label cannot carry
         information_warning?: { description: string }[]
         saveConfirmation?: {   // On click save will show modal confirmation
             title?: string

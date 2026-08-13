@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $group_id
  * @property int $organisation_id
  * @property \Illuminate\Support\Carbon $date
- * @property numeric $org_stock_value FIFO method
- * @property numeric $grp_stock_value FIFO method
+ * @property numeric $org_stock_lpp_value FIFO method
+ * @property numeric $grp_stock_lpp_value FIFO method
  * @property numeric $org_stock_commercial_value
  * @property numeric $grp_stock_commercial_value
  * @property int $number_org_stocks
@@ -55,7 +55,7 @@ class OrganisationStockHistory extends Model
         return [
             'date'                           => 'date',
             'stock_value'                    => 'decimal:2',
-            'grp_stock_value'                => 'decimal:2',
+            'grp_stock_lpp_value'                => 'decimal:2',
             'stock_commercial_value'         => 'decimal:2',
             'grp_stock_commercial_value'     => 'decimal:2',
             'number_org_stocks'              => 'integer',

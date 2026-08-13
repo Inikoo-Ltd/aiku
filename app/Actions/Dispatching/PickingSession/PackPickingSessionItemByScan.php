@@ -273,7 +273,7 @@ class PackPickingSessionItemByScan extends OrgAction
     protected function loadDeliveryNoteItems(PickingSession $pickingSession): Collection
     {
         return $pickingSession->deliveryNotesItems()
-            ->with(['orgStock', 'packings', 'deliveryNote'])
+            ->with(['orgStock', 'packings', 'deliveryNote', 'shop'])
             ->get();
     }
 
@@ -295,6 +295,7 @@ class PackPickingSessionItemByScan extends OrgAction
     ): array {
         $deliveryNote = $deliveryNoteItem?->deliveryNote;
         $row          = null;
+        $warning      = null;
 
         if ($deliveryNoteItem && $status === 'packed') {
             $rowId = $tab == PickingSessionTabsEnum::GROUPED->value
@@ -302,11 +303,14 @@ class PackPickingSessionItemByScan extends OrgAction
                 : $deliveryNoteItem->id;
 
             $row = FetchPickingSessionItemRow::run($pickingSession, $tab, $rowId)?->toArray(request());
+
+            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
         }
 
         return [
             'status'                => $status,
             'message'               => $message,
+            'warning'               => $warning,
             'scanned'               => $scanned,
             'item'                  => $deliveryNoteItem ? [
                 'id'               => $deliveryNoteItem->id,

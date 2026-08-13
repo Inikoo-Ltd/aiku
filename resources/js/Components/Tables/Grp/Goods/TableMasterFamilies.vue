@@ -353,7 +353,7 @@ const chevronClass = (masterFamily: MasterFamily) =>
         </template>
 
         <template #cell(code)="{ item: family }">
-            <Link :href="familyRoute(family)" class="primaryLink">
+            <Link :href="familyRoute(family)" class="primaryLink" v-tooltip="family.name">
                 {{ family["code"] }}
             </Link>
             <FontAwesomeIcon v-if="family.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch detected in products linked to this master family. Please modify the master family trade units to fix the issue.')"/>

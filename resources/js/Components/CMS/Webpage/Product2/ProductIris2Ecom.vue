@@ -579,7 +579,7 @@ onMounted(async () => {
                 
 
 
-                <div v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment" class="text-sm font-medium">
+                <div v-if="layout?.iris?.is_logged_in && fieldValue?.delivery_info?.text" class="text-sm font-medium">
                     <div v-html="fieldValue?.delivery_info?.text"></div>
                 </div>
 
@@ -858,7 +858,7 @@ onMounted(async () => {
             </Swiper>
 
             <!-- APPOINTMENT -->
-            <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment"
+            <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment && fieldValue?.appointment_data?.link?.href"
                 :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type">
                 <div class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-gray-50">
                     <FontAwesomeIcon :icon="faMapMarkerAlt" />

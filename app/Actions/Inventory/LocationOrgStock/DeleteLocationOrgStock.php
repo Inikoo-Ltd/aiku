@@ -46,7 +46,7 @@ class DeleteLocationOrgStock extends OrgAction
         DB::transaction(function () use ($locationOrgStock, $location, $orgStock) {
             $currentStock = $locationOrgStock->quantity;
 
-            $costPerSku = $this->getCostPerSku($orgStock, Carbon::now());
+            $costPerSku = $this->getLppPerSku($orgStock, Carbon::now());
 
             if ($currentStock != 0) {
                 $stockDiff   = -$currentStock;

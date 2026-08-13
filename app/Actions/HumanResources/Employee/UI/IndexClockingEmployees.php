@@ -3,6 +3,7 @@
 namespace App\Actions\HumanResources\Employee\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\HumanResources\Clocking\ClockingEmployeesTabsEnum;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,6 +22,7 @@ use App\Models\HumanResources\QrScanLog;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\Organisation;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\AttendanceAdjustment;
@@ -62,19 +64,18 @@ class IndexClockingEmployees extends OrgAction
             $organisationScope = (string)$organisationScope;
             $isNumericOrganisationId = ctype_digit($organisationScope);
 
-            $this->employee = $user->employees()
-                ->whereHas('organisation', function ($query) use ($organisationScope, $isNumericOrganisationId) {
-                    $query->where('slug', $organisationScope);
+            $resolvedOrganisationId = Organisation::query()
+                ->where('slug', $organisationScope)
+                ->when($isNumericOrganisationId, fn ($query) => $query->orWhere('id', (int)$organisationScope))
+                ->value('id');
 
-                    if ($isNumericOrganisationId) {
-                        $query->orWhere('id', (int)$organisationScope);
-                    }
-                })
-                ->first();
+            if ($resolvedOrganisationId) {
+                $this->employee = GetUserCurrentEmployee::run($user, $resolvedOrganisationId);
+            }
         }
 
         if (!$this->employee) {
-            $this->employee = $user?->employees->first();
+            $this->employee = $user ? GetUserCurrentEmployee::run($user) : null;
         }
 
         $timesheetsData = collect();
