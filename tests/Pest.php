@@ -48,10 +48,23 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
 use Illuminate\Foundation\Testing\TestCase;
 
-uses(TestCase::class)->in('Feature');
-uses(TestCase::class)->in('Unit');
-uses(TestCase::class)->group('integration')->in('Integration');
-uses(TestCase::class)->group('browser')->in('Browser');
+/*
+ * Faker is seeded per test from the test's own name, so every factory draws the same values on
+ * every run, in any order, on any machine. Data still looks real, but a value combination that
+ * breaks something breaks every run instead of one run in eleven - flaky-by-fixture is a class
+ * of bug this line deletes. Edge cases (zero quantities, empty strings, …) must be explicit in
+ * the test that wants them, never left to the dice.
+ */
+$seedFaker = function (): void {
+    $seed = crc32(static::class.'::'.$this->name());
+    fake()->seed($seed);
+    fake('en_GB')->seed($seed);
+};
+
+uses(TestCase::class)->beforeEach($seedFaker)->in('Feature');
+uses(TestCase::class)->beforeEach($seedFaker)->in('Unit');
+uses(TestCase::class)->group('integration')->beforeEach($seedFaker)->in('Integration');
+uses(TestCase::class)->group('browser')->beforeEach($seedFaker)->in('Browser');
 
 function loadDB(): void
 {
