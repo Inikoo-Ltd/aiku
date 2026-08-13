@@ -21,25 +21,43 @@ trait ResolvesEmployeeByCode
      *
      * Machines are shared across the whole group: staff visiting another site clock in on
      * whatever machine is in front of them, so the search spans every organisation of the
-     * machine's group rather than just its own. Pins are stored prefixed with the owning
-     * organisation ("5:ABC123") while employees are shown only the code, and a scanned QR
-     * carries the prefixed form - so the code is reduced to its bare part and matched against
-     * the prefixed pin of each organisation in the group.
+     * machine's group rather than just its own.
+     *
+     * Pins are stored prefixed with the owning organisation ("5:ABC123"). A scanned QR carries
+     * that whole string, an employee reading it off their phone types the bare code, and a kiosk
+     * keypad has no ':' key so the prefix arrives glued on ("5ABC123") - every form is reduced to
+     * its bare code and matched against the prefixed pin of each organisation in the group. A
+     * generated code always starts with a letter, so stripping a leading run of digits is
+     * unambiguous.
      *
      * Bare codes are unique group-wide; the machine's own organisation still wins any tie.
      */
     private function resolveEmployeeByCode(ClockingMachine $clockingMachine, string $enteredCode, string $invalidMessage): Employee
     {
-        $bareCode = trim($enteredCode);
+        $entered         = trim($enteredCode);
+        $organisationIds = Organisation::where('group_id', $clockingMachine->group_id)->pluck('id');
 
-        if (str_contains($bareCode, ':')) {
-            $bareCode = substr(strrchr($bareCode, ':'), 1);
+        $bareCodes = [$entered];
+
+        if (str_contains($entered, ':')) {
+            $bareCodes[] = substr(strrchr($entered, ':'), 1);
         }
 
-        $candidatePins = Organisation::where('group_id', $clockingMachine->group_id)
-            ->pluck('id')
-            ->map(fn ($organisationId) => $organisationId.':'.$bareCode)
-            ->all();
+        foreach ($organisationIds as $organisationId) {
+            foreach ([$organisationId.':', (string) $organisationId] as $prefix) {
+                if (str_starts_with($entered, $prefix)) {
+                    $bareCodes[] = substr($entered, strlen($prefix));
+                }
+            }
+        }
+
+        $candidatePins = [];
+
+        foreach (array_filter(array_unique($bareCodes)) as $bareCode) {
+            foreach ($organisationIds as $organisationId) {
+                $candidatePins[] = $organisationId.':'.$bareCode;
+            }
+        }
 
         $candidates = Employee::whereIn('pin', $candidatePins)
             ->whereIn('state', [EmployeeStateEnum::WORKING->value, EmployeeStateEnum::LEAVING->value])

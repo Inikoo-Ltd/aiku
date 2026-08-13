@@ -72,6 +72,7 @@ use App\Actions\HumanResources\TimeTracker\DeleteTimeTracker;
 use App\Actions\HumanResources\TimeTracker\ClockInTimeTracker;
 use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
 use App\Actions\HumanResources\TimeTracker\CloseTimeTracker;
+use App\Actions\HumanResources\TimeTracker\RepairNegativeTimeTrackers;
 use App\Actions\HumanResources\Timesheet\StoreTimesheet;
 use App\Actions\HumanResources\Timesheet\DeleteTimesheet;
 use App\Actions\HumanResources\Leave\StoreLeave;
@@ -2173,5 +2174,36 @@ describe('stranded empty timesheets', function () {
             ->and(\App\Models\HumanResources\Timesheet::find($withHusk->id))->toBeNull()
             ->and(\App\Models\HumanResources\TimeTracker::withTrashed()->find($husk->id))->toBeNull()
             ->and(\App\Models\HumanResources\Timesheet::find($withWork->id))->not->toBeNull();
+    });
+});
+
+describe('time tracker interval guard', function () {
+    test('a tracker closed with an earlier clocking orders its endpoints instead of going negative', function () {
+        $employee = Employee::factory()->create([
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->group->id,
+            'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        ]);
+
+        $timesheet = StoreTimesheet::make()->action($employee, ['date' => now()]);
+
+        $tracker = $timesheet->timeTrackers()->create([
+            'subject_type' => 'Employee',
+            'subject_id'   => $employee->id,
+            'status'       => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::CLOSED,
+            'starts_at'    => now()->setTime(16, 0),
+            'ends_at'      => now()->setTime(8, 0),
+            'duration'     => -28800,
+        ]);
+
+        $tracker->normaliseInterval();
+
+        expect($tracker->duration)->toBe(28800)
+            ->and($tracker->starts_at->format('H:i'))->toBe('08:00')
+            ->and($tracker->ends_at->format('H:i'))->toBe('16:00');
+
+        $negatives = RepairNegativeTimeTrackers::make()->handle();
+
+        expect($negatives->pluck('id'))->not->toContain($tracker->id);
     });
 });
