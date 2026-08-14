@@ -23,13 +23,13 @@ import ConfirmDialog from "primevue/confirmdialog"
 import { faExclamationCircle } from "@fal"
 import { useConfirm } from "primevue/useconfirm"
 import { twBreakPoint } from "@/Composables/useWindowSize"
-import { InputNumber, RadioButton } from "primevue"
+import { InputNumber } from "primevue"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faBarcodeRead, faPrint } from '@fal'
+import { faBarcodeRead, faPrint, faChevronDown } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faBarcodeRead, faPrint)
 
@@ -389,6 +389,8 @@ function handleShipmentClick(shipment: number) {
 
 const selectedShipment = ref("create_label")
 
+const otherShippers = computed(() => optionShippingList.value.filter((shipper) => !shipper.api_shipper))
+
 const lockedShipper = computed(() => {
 	if (!props.shipper_directive?.locked_shipper_id) return null
 	return optionShippingList.value.find((shipment) => shipment.id === props.shipper_directive.locked_shipper_id) || null
@@ -632,10 +634,6 @@ const onClickButtonShipmentPlatform = () => {
 			@onClose="!isModalErrorShipment ? (isModalShipment = false) : null"
 			width="w-full max-w-2xl">
 			<div>
-				<div class="text-center font-bold mb-6 text-2xl">
-                    {{ trans("Add shipment") }}
-                </div>
-
 				<!-- Shipment Cost -->
 				<div v-if="external_shop?.engine_value === 'faire'" class="mt-3">
 					<span class="text-xs px-1 my-2">{{ trans("Shipment cost") }}: </span>
@@ -657,21 +655,12 @@ const onClickButtonShipmentPlatform = () => {
 				</div>
 
 				<!-- Section: Preferred shipping -->
-				<div v-if="preferredShipper" class="text-xs px-1 my-2">
-					<RadioButton
-						v-model="selectedShipment"
-						inputId="preferred_shipping"
-						name="select_shipment"
-						value="preferred_shipping"
-						size="small" />
-					<label for="preferred_shipping" class="ml-1 cursor-pointer">{{ trans("Preferred shipping") }}:</label>
-				</div>
-
-				<div v-if="lockedShipper" class="text-xs px-1 my-2 italic text-gray-500">
+				<div v-if="preferredShipper" class="mt-3">
+				<div v-if="lockedShipper" class="text-xs pb-2 italic text-gray-500">
 					{{ trans("Shipper chosen by customer — contact customer services to change") }}
 				</div>
 
-				<div v-if="preferredShipper && selectedShipment === 'preferred_shipping'" class="ml-6 mb-2">
+				<div>
 					<div
 						@click="
 							() => (
@@ -745,20 +734,37 @@ const onClickButtonShipmentPlatform = () => {
 						</div>
 					</template>
 				</div>
+				</div>
 
 				<!-- Section: Create label -->
-				<div v-if="!lockedShipper && optionsCreateLabel.length" class="w-full mt-3">
-					<div class="text-xs px-1 my-2">
-						<RadioButton
-							v-model="selectedShipment"
-							inputId="create_label"
-							name="select_shipment"
-							value="create_label"
-							size="small" />
-						<label for="create_label" class="ml-1 cursor-pointer">{{ trans("Create label") }} (API):</label>
-					</div>
+				<div v-if="!lockedShipper && optionsCreateLabel.length" class="w-full border border-gray-200 rounded-md mt-3">
+					<button
+						type="button"
+						class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-left cursor-pointer hover:bg-gray-50 transition-colors"
+						@click="selectedShipment = 'create_label'">
+						<span class="flex items-center gap-2">
+							{{ trans("API powered Shippers") }}
+							<span v-if="selectedShipment !== 'create_label'" class="flex items-center gap-1">
+								<img
+									v-for="shipper in optionsCreateLabel"
+									:key="shipper.id"
+									:src="`/assets/shipper_logo/${shipper.slug}.png`"
+									:alt="shipper.name"
+									v-tooltip="shipper.name"
+									class="h-4 w-4 object-contain"
+									@error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+								/>
+							</span>
+						</span>
+						<FontAwesomeIcon
+							:icon="faChevronDown"
+							class="text-gray-400 transition-transform"
+							:class="selectedShipment === 'create_label' ? 'rotate-180' : ''"
+							fixed-width
+							aria-hidden="true" />
+					</button>
 
-					<div v-if="selectedShipment === 'create_label'" class="ml-6 relative">
+					<div v-if="selectedShipment === 'create_label'" class="px-3 pb-3 relative">
 						<div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
 							<div
 								v-if="isLoadingData === 'addTrackingNumber'"
@@ -830,19 +836,26 @@ const onClickButtonShipmentPlatform = () => {
 				</div>
 
 				<!-- Section: Other options -->
-				<div v-if="!lockedShipper" class="text-xs px-1 my-2">
-					<RadioButton
-						v-model="selectedShipment"
-						inputId="other_options"
-						name="select_shipment"
-						value="other_options"
-						size="small" />
-					<label for="other_options" class="ml-1 cursor-pointer"
-						>{{ trans("Other options") }}:</label
-					>
-				</div>
+				<div v-if="!lockedShipper" class="border border-gray-200 rounded-md mt-3">
+				<button
+					type="button"
+					class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-left cursor-pointer hover:bg-gray-50 transition-colors"
+					@click="selectedShipment = 'other_options'">
+					<span class="flex items-baseline gap-2 min-w-0">
+						{{ trans("Other shippers") }} ({{ otherShippers.length }})
+						<span v-if="otherShippers.length && selectedShipment !== 'other_options'" class="text-xs text-gray-400 font-normal truncate">
+							{{ otherShippers.slice(0, 4).map((shipper) => shipper.code || shipper.name).join(", ") }}<template v-if="otherShippers.length > 4">…</template>
+						</span>
+					</span>
+					<FontAwesomeIcon
+						:icon="faChevronDown"
+						class="text-gray-400 transition-transform"
+						:class="selectedShipment === 'other_options' ? 'rotate-180' : ''"
+						fixed-width
+						aria-hidden="true" />
+				</button>
 
-				<div v-if="!lockedShipper && selectedShipment === 'other_options'" class="ml-6">
+				<div v-if="selectedShipment === 'other_options'" class="px-3 pb-3">
 					<!-- Section: Select shipping -->
 					<div class="">
 						<PureMultiselectInfiniteScroll
@@ -928,6 +941,7 @@ const onClickButtonShipmentPlatform = () => {
 							full
 							@click="() => onSubmitShipment()" />
 					</div>
+				</div>
 				</div>
 
 				<!-- Loading: fetching service list -->

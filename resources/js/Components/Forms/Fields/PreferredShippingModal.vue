@@ -4,9 +4,9 @@ import { trans } from "laravel-vue-i18n"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import InputText from "primevue/inputtext"
-import { Select, Checkbox } from "primevue"
+import { Select } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPlus, faTrashAlt } from "@fal"
+import { faPlus, faTrashAlt, faLock, faLockOpen, faInfoCircle } from "@fal"
 
 interface PreferredShippingRow {
     id: number | null
@@ -116,13 +116,33 @@ const setImportant = (index: number, value: boolean) => {
                 </template>
             </Column>
 
-            <Column field="important" :header="trans('Important')" style="width: 6rem">
+            <Column field="important" style="width: 6rem">
+                <template #header>
+                    <span class="inline-flex items-center gap-1">
+                        {{ trans('Lock') }}
+                        <FontAwesomeIcon
+                            :icon="faInfoCircle"
+                            class="text-gray-400"
+                            fixed-width
+                            aria-hidden="true"
+                            v-tooltip="trans('Locked: this shipper is forced and the packer cannot change it. Unlocked: it is only preselected and the packer can pick another shipper.')"
+                        />
+                    </span>
+                </template>
                 <template #body="{ data, index }">
-                    <Checkbox
-                        :modelValue="data.important"
-                        :binary="true"
-                        @update:modelValue="(value) => setImportant(index, value)"
-                    />
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded-full cursor-pointer transition-colors"
+                        :class="data.important
+                            ? 'text-indigo-700 bg-indigo-50 border-indigo-300 hover:bg-indigo-100'
+                            : 'text-gray-500 bg-white border-gray-300 hover:border-gray-400 hover:bg-gray-50'"
+                        :aria-pressed="data.important"
+                        v-tooltip="data.important ? trans('Forced, packer cannot change it') : trans('Preselected only, packer can change it')"
+                        @click="setImportant(index, !data.important)"
+                    >
+                        <FontAwesomeIcon :icon="data.important ? faLock : faLockOpen" fixed-width aria-hidden="true" />
+                        {{ data.important ? trans("Locked") : trans("Open") }}
+                    </button>
                 </template>
             </Column>
 
