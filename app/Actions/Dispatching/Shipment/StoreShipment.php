@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Shipment;
 
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
@@ -27,6 +28,8 @@ use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Validation\ValidationException;
@@ -35,6 +38,7 @@ class StoreShipment extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+    use WithPreferredShipperResolver;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -48,6 +52,8 @@ class StoreShipment extends OrgAction
                     'shipper' => __('The customer chose a shipper for this order. Contact customer services to change it.')
                 ]);
             }
+
+            $this->auditShipperLockOverride($parent, $shipper);
         }
 
         data_set($modelData, 'group_id', $parent->group_id);
@@ -125,6 +131,36 @@ class StoreShipment extends OrgAction
         ]);
 
         return $shipment;
+    }
+
+    /**
+     * The lock only ever lived in the UI, so the trail has to be written here:
+     * this is the one place an override cannot be faked by the client.
+     */
+    private function auditShipperLockOverride(DeliveryNote $deliveryNote, Shipper $shipper): void
+    {
+        $directive = $this->getShipperDirective($deliveryNote);
+
+        if (!$directive['locked_shipper_id'] || $directive['locked_shipper_id'] == $shipper->id) {
+            return;
+        }
+
+        $lockedShipper = Shipper::find($directive['locked_shipper_id']);
+
+        $deliveryNote->auditEvent     = 'shipper_lock_override';
+        $deliveryNote->isCustomEvent  = true;
+        $deliveryNote->auditCustomOld = [
+            'shipper'      => $lockedShipper?->name,
+            'shipper_id'   => $directive['locked_shipper_id'],
+            'locked_by'    => $directive['locked_by'],
+            'locked_scope' => $directive['locked_scope'],
+        ];
+        $deliveryNote->auditCustomNew = [
+            'shipper'    => $shipper->name,
+            'shipper_id' => $shipper->id,
+        ];
+
+        Event::dispatch(new AuditCustom($deliveryNote));
     }
 
     public function rules(): array
