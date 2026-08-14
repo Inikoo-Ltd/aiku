@@ -100,6 +100,8 @@ class EditShop extends OrgAction
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
+        $viewContactOptionsPanel = (bool) Arr::get($shop->settings, 'chat.view_contact_options_panel', false);
+
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
@@ -185,7 +187,6 @@ class EditShop extends OrgAction
                             'label' => __('VAT number'),
                             'value' => $shop->data['vat_number'] ?? '',
                         ],
-
                     ]
                 ],
                 [
@@ -662,6 +663,20 @@ class EditShop extends OrgAction
                             'information' => __('Slack channels where chat conversations will be shared. Press Enter to add each channel.'),
                             'value'       => Arr::get($shop->settings, 'chat.slack_channels') ?? [],
                         ],
+                        'view_contact_options_panel' => [
+                            'type'        => 'toggle',
+                            'label'       => __('View Contact Options Panel'),
+                            'information' => __('If active, will display the contact options panel on the shop website'),
+                            'value'       => $viewContactOptionsPanel,
+                        ],
+                        ...$viewContactOptionsPanel ? [
+                            'data_contact_options_panel' => [
+                                'type'        => 'contact_options_panel',
+                                'label'       => __('Contact Options Panel'),
+                                'information' => __('display the contact options panel on the shop website'),
+                                'value'       => Arr::get($shop->settings, 'chat.data_contact_options_panel') ?? [],
+                            ],
+                        ] : [],
                     ],
                 ],
                 [

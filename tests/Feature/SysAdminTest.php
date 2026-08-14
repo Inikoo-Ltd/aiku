@@ -1593,7 +1593,7 @@ test('UI sysadmin search analytics index', function (User $user) {
         'results_count' => 3,
     ]);
 
-    $response = get(route('grp.sysadmin.search_logs.index'));
+    $response = get(route('grp.sysadmin.analytics.search_logs.index'));
     $response->assertInertia(function (AssertableInertia $page) use ($user) {
         $page
             ->component('SysAdmin/SearchLogs')
@@ -1602,6 +1602,32 @@ test('UI sysadmin search analytics index', function (User $user) {
             ->has('users.data', 1)
             ->where('users.data.0.username', $user->username)
             ->where('users.data.0.searches', 1);
+    });
+})->depends('SetUserAuthorisedModels command');
+
+test('UI sysadmin user requests index', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    \App\Models\Analytics\UserRequest::create([
+        'group_id'   => group()->id,
+        'user_id'    => $user->id,
+        'date'       => now(),
+        'route_name' => 'grp.sysadmin.dashboard',
+        'route_params' => json_encode([]),
+        'os'         => 'macOS',
+        'device'     => 'desktop',
+        'browser'    => 'Chrome',
+        'ip_address' => '127.0.0.1',
+        'location'   => json_encode(['XX']),
+    ]);
+
+    $response = get(route('grp.sysadmin.analytics.request.index'));
+    $response->assertInertia(function (AssertableInertia $page) use ($user) {
+        $page
+            ->component('SysAdmin/UserRequests')
+            ->has('data.data', 1)
+            ->where('data.data.0.username', $user->username);
     });
 })->depends('SetUserAuthorisedModels command');
 
@@ -1655,8 +1681,43 @@ test('UI sysadmin scheduled tasks and settings', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);
 
-    get(route('grp.sysadmin.scheduled-tasks.index'))->assertOk();
+    get(route('grp.sysadmin.analytics.scheduled_tasks.index'))->assertOk();
     get(route('grp.sysadmin.settings.edit'))->assertOk();
+})->depends('SetUserAuthorisedModels command');
+
+test('UI sysadmin analytics dashboard', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    \App\Models\Analytics\UserRequest::create([
+        'group_id'     => group()->id,
+        'user_id'      => $user->id,
+        'date'         => now(),
+        'route_name'   => 'grp.sysadmin.dashboard',
+        'route_params' => json_encode([]),
+        'os'           => 'macOS',
+        'device'       => 'desktop',
+        'browser'      => 'Chrome',
+        'ip_address'   => '127.0.0.1',
+        'location'     => json_encode(['XX']),
+    ]);
+
+    $response = get(route('grp.sysadmin.analytics.dashboard'));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SysAdmin/SysAdminAnalyticsDashboard')
+            ->has('analytics.requests_today')
+            ->has('analytics.online_now')
+            ->has('analytics.online_count')
+            ->has('analytics.active_users_30d')
+            ->has('analytics.logins_30d')
+            ->has('analytics.requests_per_day')
+            ->has('analytics.logins_per_day')
+            ->has('analytics.top_users_30d')
+            ->has('analytics.top_modules_30d')
+            ->has('analytics.devices_30d')
+            ->has('analytics.browsers_30d');
+    });
 })->depends('SetUserAuthorisedModels command');
 
 test('UI organisations create', function (User $user) {

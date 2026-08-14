@@ -48,3 +48,25 @@ jobs:
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test without coverage
         run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=10 --stop-on-defect
+      - name: Flake check, changed test files run twice 🎲
+        run: |
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            BEFORE=$(git rev-parse HEAD~1)
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE" HEAD -- 'tests/Feature' | grep 'Test\.php$' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "No changed test files, skipping"
+            exit 0
+          fi
+          for FILE in $CHANGED; do
+            if [ ! -f "$FILE" ]; then
+              echo "$FILE was deleted, skipping"
+              continue
+            fi
+            for RUN in 1 2; do
+              echo "::group::$FILE run $RUN"
+              /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest "$FILE"
+              echo "::endgroup::"
+            done
+          done

@@ -51,6 +51,28 @@ class ShowTradeUnit extends OrgAction
 
     public function htmlResponse(TradeUnit $tradeUnit, ActionRequest $request): Response
     {
+        $miniBreadcrumbs = [];
+        if ($tradeUnit->tradeUnitFamily) {
+            $miniBreadcrumbs[] = [
+                'label'   => $tradeUnit->tradeUnitFamily->code,
+                'to'      => [
+                    'name'       => 'grp.trade_units.families.show',
+                    'parameters' => [
+                        'tradeUnitFamily' => $tradeUnit->tradeUnitFamily->slug
+                    ]
+                ],
+                'tooltip' => __('Trade Unit Family'),
+                'icon'    => ['fal', 'fa-atom-alt']
+            ];
+        }
+        
+        $miniBreadcrumbs[] = [
+            'label'   => $tradeUnit->code,
+            'to'      => null,
+            'tooltip' => __('Trade Unit'),
+            'icon'    => ['fal', 'fa-atom']
+        ];
+
         return Inertia::render(
             'Goods/TradeUnit',
             [
@@ -62,8 +84,10 @@ class ShowTradeUnit extends OrgAction
                 ),
                 'navigation'  => [
                     'previous' => $this->getPrevious($tradeUnit, $request),
+                    'up'       => $this->getParent($tradeUnit),
                     'next'     => $this->getNext($tradeUnit, $request),
                 ],
+                'mini_breadcrumbs'  => $miniBreadcrumbs,
                 'pageHead'    => [
                     'icon'       => [
                         'title' => __('Trade unit'),
@@ -191,6 +215,23 @@ class ShowTradeUnit extends OrgAction
     public function getNext(TradeUnit $tradeUnit, ActionRequest $request): ?array
     {
         return $this->getNavigation($this->getTradeUnitNeighbour($tradeUnit, $request, forward: true), $request->route()->getName());
+    }
+
+    public function getParent(TradeUnit $tradeUnit): ?array
+    {
+        if (!$tradeUnit->tradeUnitFamily) {
+            return null;
+        }
+        
+        return [
+            'label' => $tradeUnit->tradeUnitFamily->name,
+            'route' => [
+                'name'       => 'grp.trade_units.families.show',
+                'parameters' => [
+                    'tradeUnitFamily' => $tradeUnit->tradeUnitFamily->slug
+                ]
+            ]
+        ];
     }
 
     private function getTradeUnitNeighbour(TradeUnit $tradeUnit, ActionRequest $request, bool $forward): ?TradeUnit

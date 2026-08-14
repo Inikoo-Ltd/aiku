@@ -10,6 +10,7 @@ namespace App\Actions\HumanResources\Employee;
 
 use App\Actions\OrgAction;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -56,23 +57,26 @@ class SetEmployeePin extends OrgAction
     }
 
     /**
-     * The pin is the credential the clocking kiosks authenticate on, and they resolve it with a
-     * single organisation scoped lookup, so a duplicate would clock in the wrong employee.
+     * The pin is the credential the clocking kiosks authenticate on. Machines are shared across
+     * the group and ResolvesEmployeeByCode matches a typed code against the prefixed pin of every
+     * organisation in it, so uniqueness has to hold group-wide: two people in different
+     * organisations sharing a bare code would let one of them clock the other in.
      *
      * @throws Exception
      */
     private function generateUnusedPin(Employee $employee): string
     {
-        for ($attempt = 0; $attempt < 50; $attempt++) {
-            $pin = $employee->organisation_id.':'.$this->generatePinCode();
+        $organisationIds = Organisation::where('group_id', $employee->group_id)->pluck('id');
 
-            $taken = Employee::where('organisation_id', $employee->organisation_id)
-                ->where('pin', $pin)
+        for ($attempt = 0; $attempt < 50; $attempt++) {
+            $code = $this->generatePinCode();
+
+            $taken = Employee::whereIn('pin', $organisationIds->map(fn ($organisationId) => $organisationId.':'.$code))
                 ->where('id', '!=', $employee->id)
                 ->exists();
 
             if (!$taken) {
-                return $pin;
+                return $employee->organisation_id.':'.$code;
             }
         }
 

@@ -457,6 +457,30 @@ test('store picking', function (DeliveryNote $deliveryNote) {
     return $picking;
 })->depends('update second delivery note state to in queue');
 
+test('cannot pick from location without stock', function (Picking $picking) {
+    $deliveryNoteItem  = $picking->deliveryNoteItem;
+    $emptyLocation     = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $emptyLocationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $deliveryNoteItem->orgStock,
+        location: $emptyLocation,
+        modelData: [
+            'quantity'   => 0,
+            'type'       => LocationStockTypeEnum::PICKING,
+            'fetched_at' => now(),
+        ],
+        strict: false
+    );
+
+    expect(fn () => StorePicking::make()->action($deliveryNoteItem, $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $emptyLocationOrgStock->id,
+        'quantity'              => 5,
+    ]))->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    expect(intval($deliveryNoteItem->refresh()->quantity_picked))->toBe(5)
+        ->and((float)$emptyLocationOrgStock->refresh()->quantity)->toBe(0.0);
+})->depends('store picking');
+
 test('update picking', function (Picking $picking) {
     $picking = UpdatePicking::make()->action($picking, [
         'quantity' => 10
@@ -2277,6 +2301,7 @@ test('org stock notes and consumables reach the picking screen', function () {
     /** @var DeliveryNoteItem $deliveryNoteItem */
     $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')
         ->where('quantity_required', '>', 0)
+        ->whereHas('transaction', fn ($query) => $query->where('quantity_ordered', '>', 0))
         ->whereHas('deliveryNote', fn ($query) => $query->has('deliveryNoteItems', '=', 1))
         ->firstOrFail();
 
@@ -2850,4 +2875,88 @@ test('a redefined pack does not change what an already sold box means', function
         ->update(['historic_asset_id' => $soldAs->id]);
 
     expect($required())->toBe($beforeRedefinition);
+});
+
+test('scan matches sko vs unit barcode kind and warns only when it disagrees with the shop type', function () {
+    $matcher = new class () {
+        use \App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
+
+        public function kind($item, $scanned): string
+        {
+            return $this->matchedKind($item, $scanned);
+        }
+
+        public function warning($item, $kind): ?string
+        {
+            return $this->scanKindWarning($item, $kind);
+        }
+    };
+
+    $orgStock = new \App\Models\Inventory\OrgStock();
+    $orgStock->forceFill([
+        'barcode'      => 'SKO123',
+        'unit_barcode' => '5055796528387',
+        'packed_in'    => 6,
+    ]);
+
+    $dropshippingShop = new \App\Models\Catalogue\Shop();
+    $dropshippingShop->forceFill(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+
+    $b2cShop = new \App\Models\Catalogue\Shop();
+    $b2cShop->forceFill(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::B2C]);
+
+    $item = new \App\Models\Dispatching\DeliveryNoteItem();
+    $item->setRelation('orgStock', $orgStock);
+    $item->setRelation('shop', $dropshippingShop);
+
+    expect($matcher->kind($item, 'SKO123'))->toBe('sko')
+        ->and($matcher->kind($item, '5055796528387'))->toBe('unit')
+        ->and($matcher->warning($item, 'sko'))->toContain('outer packing')
+        ->and($matcher->warning($item, 'unit'))->toBeNull();
+
+    $item->setRelation('shop', $b2cShop);
+
+    expect($matcher->warning($item, 'sko'))->toBeNull()
+        ->and($matcher->warning($item, 'unit'))->toContain('1 SKO = 6 units');
+});
+
+test('tariff codes table surfaces items with no tariff code or origin', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
+
+    expect($rows->total())->toBeGreaterThan(0)
+        ->and((bool) $rows->first()->is_incomplete)->toBeTrue()
+        ->and($rows->first()->tariff_code)->toBeNull()
+        ->and(json_decode($rows->first()->offenders, true))->not->toBeEmpty();
+});
+
+test('raising a pick cannot take more than the location holds', function () {
+    /** @var Picking $picking */
+    $picking = Picking::where('type', PickingTypeEnum::PICK)
+        ->whereNotNull('location_id')
+        ->whereNotNull('org_stock_id')
+        ->firstOrFail();
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)
+        ->where('org_stock_id', $picking->org_stock_id)
+        ->firstOrFail();
+
+    $deliveryNoteItem = $picking->deliveryNoteItem;
+    $deliveryNoteItem->updateQuietly(['quantity_required' => 10000]);
+
+    /* Audited, not updateQuietly: the movement ledger is what the location quantity is recomputed from */
+    \App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock::make()->action($locationOrgStock, [
+        'quantity' => 7,
+        'reason'   => 'data_fix',
+    ]);
+
+    $cap = 7 + (float)$picking->quantity;
+
+    UpdatePicking::make()->action($picking->refresh(), ['quantity' => 9999]);
+
+    expect((float)$picking->refresh()->quantity)->toBe($cap)
+        ->and((float)$locationOrgStock->refresh()->quantity)->toBeGreaterThanOrEqual(0.0);
 });

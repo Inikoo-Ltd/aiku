@@ -18,6 +18,9 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Catalogue\Collection\UpdateCollection;
+use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
+use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\PublishWebpage;
@@ -32,6 +35,7 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
@@ -346,6 +350,82 @@ class AromaBuildStructure
                     AttachModelsToCollection::make()->action($collection, ['families' => $ids]);
                 }
             }
+        }
+
+        $this->mirrorCollectionsToMaster();
+    }
+
+    /**
+     * Every shop collection needs its master, the same way families do. Without it the collection
+     * is invisible on the master side, and maintenance:repair_orphan_collections treats a
+     * collection with no master as rubbish and deletes it.
+     */
+    private function mirrorCollectionsToMaster(): void
+    {
+        $masterShop = $this->shop->masterShop;
+
+        if (!$masterShop) {
+            return;
+        }
+
+        $collections = Collection::where('shop_id', $this->shop->id)->whereNull('deleted_at')->get();
+
+        foreach ($collections as $collection) {
+            $masterCollection = MasterCollection::where('master_shop_id', $masterShop->id)
+                ->whereNull('deleted_at')
+                ->whereRaw('lower(code) = lower(?)', [$collection->code])->first();
+
+            if (!$masterCollection) {
+                $this->tally('master collections created');
+                $this->command->line("  master collection {$collection->code}");
+
+                if ($this->live) {
+                    // createChildren would build a second shop collection beside the one we have.
+                    $masterCollection = StoreMasterCollection::make()->action(
+                        $masterShop,
+                        ['code' => $collection->code, 'name' => $collection->name],
+                        createChildren: false
+                    );
+                }
+            }
+
+            if (!$masterCollection || $collection->master_collection_id != $masterCollection->id) {
+                $this->tally('collections linked to master');
+                if ($this->live && $masterCollection) {
+                    UpdateCollection::make()->action($collection, ['master_collection_id' => $masterCollection->id]);
+                }
+            }
+
+            $this->mirrorCollectionMembers($collection, $masterCollection);
+        }
+    }
+
+    private function mirrorCollectionMembers(Collection $collection, ?MasterCollection $masterCollection): void
+    {
+        $familyIds = DB::table('collection_has_models')
+            ->where('collection_id', $collection->id)
+            ->where('model_type', 'ProductCategory')
+            ->pluck('model_id');
+
+        $masterFamilyIds = ProductCategory::whereIn('id', $familyIds)
+            ->whereNotNull('master_product_category_id')
+            ->pluck('master_product_category_id')
+            ->unique()
+            ->reject(fn ($id) => $masterCollection && DB::table('master_collection_has_models')
+                ->where('master_collection_id', $masterCollection->id)
+                ->where('model_type', 'MasterProductCategory')
+                ->where('model_id', $id)->exists())
+            ->values()
+            ->all();
+
+        if (!$masterFamilyIds) {
+            return;
+        }
+
+        $this->tally('families added to master collections', count($masterFamilyIds));
+
+        if ($this->live && $masterCollection) {
+            AttachModelsToMasterCollection::make()->action($masterCollection, ['families' => $masterFamilyIds]);
         }
     }
 

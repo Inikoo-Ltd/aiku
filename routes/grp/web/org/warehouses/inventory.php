@@ -32,6 +32,7 @@ use App\Actions\Inventory\OrganisationStockHistory\UI\ExportOrganisationStockHis
 use App\Actions\Inventory\OrganisationStockHistory\UI\IndexOrganisationStockHistories;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockReplenishments;
+use App\Actions\Inventory\OrgStock\UI\IndexNegativeLocationOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockLowStockAudits;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProcurement;
@@ -39,6 +40,7 @@ use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProducts;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockStockHistory;
 use App\Actions\Inventory\OrgStock\UI\PdfOrgStockLabel;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use App\Actions\Inventory\OrgStock\UpdateOrgStockUnitBarcode;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexInvoicesInOrgStockFamily;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
@@ -62,14 +64,20 @@ Route::prefix('stock-histories')->as('org_stock_histories.')->group(function () 
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
     Route::patch('{orgStock}/update', UpdateOrgStock::class)->name('update');
+    Route::patch('{orgStock}/update-unit-barcode', UpdateOrgStockUnitBarcode::class)->name('update_unit_barcode');
     Route::get('{orgStock}/label', PdfOrgStockLabel::class)->name('label');
 
     Route::prefix('replenishments')->as('replenishments.')->group(function () {
         Route::get('/', IndexOrgStockReplenishments::class)->name('index');
+        Route::get('/dropshipping', [IndexOrgStockReplenishments::class, 'dropshipping'])->name('dropshipping');
     });
 
     Route::prefix('low-stock-audits')->as('low_stock_audits.')->group(function () {
         Route::get('/', IndexOrgStockLowStockAudits::class)->name('index');
+    });
+
+    Route::prefix('negative-stocks')->as('negative_stocks.')->group(function () {
+        Route::get('/', IndexNegativeLocationOrgStocks::class)->name('index');
     });
 
     Route::prefix('orphans-from-product')->as('orphan-product.')->group(function () {

@@ -18,6 +18,8 @@ import { useBarcodeScanner, useScanQueue } from "@/Composables/useBarcodeScanner
 import { routeType } from "@/types/route"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Toggle from "../Pure/Toggle.vue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle)
 
@@ -37,14 +39,18 @@ type ScanStatus = "packed" | "already_packed" | "nothing_to_pack" | "not_found" 
 type ScanOutcome = {
     status: ScanStatus
     message: string
+    warning?: string | null
     scanned: string
     item: {
         id: number
         code: string
         name: string
+        packed_in?: number
         quantity_picked: number
         quantity_packed: number
         quantity_to_pack: number
+        quantity_to_pack_label?: string
+        quantity_to_pack_fractional?: [number, [number, number]] | null
     } | null
     delivery_note?: {
         id: number
@@ -83,6 +89,33 @@ const statusStyles: Record<ScanStatus, { wrapper: string; icon: string; iconClas
 }
 
 const lastOutcomeStyle = computed(() => (lastOutcome.value ? statusStyles[lastOutcome.value.status] : statusStyles.error))
+
+// An item that comes in a pack is counted in units over that pack, the same 1 15/16 the packing
+// table shows, because the raw 1.9375 behind it tells a packer nothing about what to put in the
+// box. The tuple is what gets set in fraction type; the string stays for tooltips, which take
+// no markup.
+const remainingOnLastItem = computed(() => {
+    const item = lastOutcome.value?.item
+
+    if (!item) {
+        return ""
+    }
+
+    return item.quantity_to_pack_label ?? String(item.quantity_to_pack)
+})
+
+const remainingFractionOnLastItem = computed(() => lastOutcome.value?.item?.quantity_to_pack_fractional ?? null)
+
+/*
+ * The count sits inside the sentence, so the translated sentence is split around its placeholder and
+ * the fraction rendered into the gap. Translating the words on either side as their own keys would
+ * fix the English word order onto every other language.
+ */
+const splitAroundRemaining = (sentence: string) => ctrans(sentence).split(":remaining").map(part => part.trim())
+
+const remainingLabelParts = computed(() => splitAroundRemaining(":remaining left on this item"))
+
+const packAllLabelParts = computed(() => splitAroundRemaining("Pack all :remaining"))
 
 const { queuedCount, enqueueScan } = useScanQueue<PendingScan>((scan) => submitScan(scan))
 
@@ -151,6 +184,10 @@ const applyOutcome = (outcome: ScanOutcome) => {
         playNotificationSound({ frequency: 660, duration: 110 })
     } else {
         playNotificationSound({ frequency: 200, duration: 280, type: "square" })
+    }
+
+    if (outcome.warning) {
+        notify({ title: ctrans("Check what you packed"), text: outcome.warning, type: "warning" })
     }
 
     emits("scanned", outcome)
@@ -229,8 +266,15 @@ const applyOutcome = (outcome: ScanOutcome) => {
                 <div
                     v-if="lastOutcome.item && lastOutcome.item.quantity_to_pack > 0"
                     class="ml-auto flex items-center gap-x-2">
-                    <span class="whitespace-nowrap rounded bg-amber-950 px-2 py-1 text-sm font-bold text-amber-50">
-                        {{ ctrans(":remaining left on this item", { remaining: lastOutcome.item.quantity_to_pack }) }}
+                    <span class="inline-flex items-center gap-x-1 whitespace-nowrap rounded bg-amber-950 px-2 py-1 text-sm font-bold text-amber-50">
+                        <template v-if="remainingFractionOnLastItem">
+                            <span v-if="remainingLabelParts[0]">{{ remainingLabelParts[0] }}</span>
+                            <FractionDisplay :fractionData="remainingFractionOnLastItem" />
+                            <span v-if="remainingLabelParts[1]">{{ remainingLabelParts[1] }}</span>
+                        </template>
+                        <template v-else>
+                            {{ ctrans(":remaining left on this item", { remaining: remainingOnLastItem }) }}
+                        </template>
                     </span>
 
                     <!-- mousedown.prevent stops the button from taking focus at all, so the scanner
@@ -239,11 +283,20 @@ const applyOutcome = (outcome: ScanOutcome) => {
                     <button
                         type="button"
                         :disabled="isProcessing || queuedCount > 0"
-                        v-tooltip="ctrans('Pack the remaining :remaining without scanning them one by one', { remaining: lastOutcome.item.quantity_to_pack })"
+                        v-tooltip="ctrans('Pack the remaining :remaining without scanning them one by one', { remaining: remainingOnLastItem })"
                         class="whitespace-nowrap rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
                         @mousedown.prevent
                         @click="packRestOfLastScannedItem">
-                        {{ ctrans("Pack all :remaining", { remaining: lastOutcome.item.quantity_to_pack }) }}
+                        <span class="inline-flex items-center gap-x-1">
+                            <template v-if="remainingFractionOnLastItem">
+                                <span v-if="packAllLabelParts[0]">{{ packAllLabelParts[0] }}</span>
+                                <FractionDisplay :fractionData="remainingFractionOnLastItem" />
+                                <span v-if="packAllLabelParts[1]">{{ packAllLabelParts[1] }}</span>
+                            </template>
+                            <template v-else>
+                                {{ ctrans("Pack all :remaining", { remaining: remainingOnLastItem }) }}
+                            </template>
+                        </span>
                     </button>
                 </div>
                 <div class="font-mono text-xs opacity-70" :class="{ 'ml-auto': !(lastOutcome.item?.quantity_to_pack > 0) }">

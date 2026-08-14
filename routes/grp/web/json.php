@@ -65,6 +65,7 @@ use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSession;
 use App\Actions\Fulfilment\PickingSession\Json\GetPalletReturnsForPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemRow;
 use App\Actions\Dispatching\DeliveryNoteItem\PackDeliveryNoteItemByScan;
 use App\Actions\Dispatching\DeliveryNoteItem\PickDeliveryNoteItemByScan;
@@ -131,6 +132,8 @@ use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
 use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
+use App\Actions\Web\WebLayoutTemplate\FetchWebLayoutTemplateDetail;
+use App\Actions\Web\WebLayoutTemplate\IndexWebLayoutTemplates;
 use App\Actions\Web\Webpage\Json\GetBlogWebpages;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
@@ -273,6 +276,7 @@ Route::get('delivery-note-item/{deliveryNoteItem:id}/row', FetchDeliveryNoteItem
 Route::get('delivery-note-item/{deliveryNoteItem:id}/image', FetchDeliveryNoteItemImage::class)->name('fetch_single_delivery_note_item.image');
 Route::post('delivery-note/{deliveryNote:id}/pack-by-scan', PackDeliveryNoteItemByScan::class)->name('delivery_note.pack_by_scan');
 Route::post('delivery-note/{deliveryNote:id}/pick-by-scan', PickDeliveryNoteItemByScan::class)->name('delivery_note.pick_by_scan');
+Route::patch('delivery-note/{deliveryNote:id}/scan-to-pick', SetScanToPickDeliveryNote::class)->name('delivery_note.set_scan_to_pick');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');
@@ -360,3 +364,6 @@ Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartme
 Route::post('ingredients/parse', ParseIngredientsList::class)->name('ingredients.parse');
 
 Route::get('stock/{stock}/trade-unit-changes-impact', ValidateStockTradeUnitChanges::class)->name('stock.trade-unit-changes-impact');
+
+Route::get('{webpage:id}/web-layout-templates/list', IndexWebLayoutTemplates::class)->name('template_layouts.index');
+Route::get('{webpage:id}/web-layout-templates/{layoutTemplate:id}', FetchWebLayoutTemplateDetail::class)->name('template_layouts.detail')->withoutScopedBindings();

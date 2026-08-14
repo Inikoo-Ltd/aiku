@@ -25,6 +25,32 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
         return $organisationStockHistory ?? 0;
     }
 
+    public function getCommandSignature(): string
+    {
+        return 'hydrate:organisation_stock_histories {organisation?}';
+    }
+
+    public function asCommand(\Illuminate\Console\Command $command): int
+    {
+        $query = DB::table('organisation_stock_histories');
+        if ($command->argument('organisation')) {
+            $organisation = \App\Models\SysAdmin\Organisation::where('slug', $command->argument('organisation'))->firstOrFail();
+            $query->where('organisation_id', $organisation->id);
+        }
+        $ids = $query->orderBy('date')->pluck('id');
+
+        $progressBar = $command->getOutput()->createProgressBar(count($ids));
+        $progressBar->start();
+        foreach ($ids as $id) {
+            $this->handle($id);
+            $progressBar->advance();
+        }
+        $progressBar->finish();
+        $command->newLine();
+
+        return 0;
+    }
+
     public function handle(?int $organisationStockHistoryId): void
     {
         if (!$organisationStockHistoryId) {
@@ -36,9 +62,15 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
         }
 
         $stockData = DB::connection('aiku_no_sticky')->table('org_stock_histories')
-            ->selectRaw('sum(non_moving_1y*value_per_sku) as value_dormant_stock_1y')
-            ->selectRaw('sum(org_stock_value) as org_stock_values')
-            ->selectRaw('sum(grp_stock_value) as grp_stock_values')
+            ->selectRaw('sum(non_moving_1y*lpp_per_sku) as value_dormant_stock_1y')
+            ->selectRaw('sum(non_moving_1y*wac_per_sku) as value_dormant_stock_1y_wac')
+            ->selectRaw('sum(non_moving_1y*fifo_per_sku) as value_dormant_stock_1y_fifo')
+            ->selectRaw('sum(org_stock_lpp_value) as org_stock_lpp_values')
+            ->selectRaw('sum(grp_stock_lpp_value) as grp_stock_lpp_values')
+            ->selectRaw('sum(org_stock_wac_value) as org_stock_wac_values')
+            ->selectRaw('sum(grp_stock_wac_value) as grp_stock_wac_values')
+            ->selectRaw('sum(org_stock_fifo_value) as org_stock_fifo_values')
+            ->selectRaw('sum(grp_stock_fifo_value) as grp_stock_fifo_values')
             ->selectRaw('COUNT(DISTINCT org_stock_id) as number_org_stocks')
             ->selectRaw('COUNT(DISTINCT CASE WHEN quantity_in_locations < 1 THEN org_stock_id END) as number_out_of_stock_org_stocks')
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
@@ -60,13 +92,17 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
         }
 
         $percentageValueDormantStock1y = 0;
-        if ($stockData->org_stock_values > 0) {
-            $percentageValueDormantStock1y = round(($stockData->value_dormant_stock_1y ?? 0) / $stockData->org_stock_values * 100, 2);
+        if ($stockData->org_stock_lpp_values > 0) {
+            $percentageValueDormantStock1y = round(($stockData->value_dormant_stock_1y ?? 0) / $stockData->org_stock_lpp_values * 100, 2);
         }
 
         $organisationStockHistory->update([
-            'org_stock_value'                   => $stockData->org_stock_values ?? 0,
-            'grp_stock_value'                   => $stockData->grp_stock_values ?? 0,
+            'org_stock_lpp_value'                   => $stockData->org_stock_lpp_values ?? 0,
+            'grp_stock_lpp_value'                   => $stockData->grp_stock_lpp_values ?? 0,
+            'org_stock_wac_value'               => $stockData->org_stock_wac_values,
+            'grp_stock_wac_value'               => $stockData->grp_stock_wac_values,
+            'org_stock_fifo_value'              => $stockData->org_stock_fifo_values,
+            'grp_stock_fifo_value'              => $stockData->grp_stock_fifo_values,
             'number_org_stocks'                 => $stockData->number_org_stocks,
             'number_locations'                  => $stockLocationData->number_locations ?? 0,
             'number_out_of_stock_org_stocks'    => $stockData->number_out_of_stock_org_stocks,
@@ -74,6 +110,8 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             'number_org_stocks_not_sold_1y'     => $stockNotSold,
             'percentage_value_dormant_stock_1y' => $percentageValueDormantStock1y,
             'value_dormant_stock_1y'            => $stockData->value_dormant_stock_1y ?? 0,
+            'value_dormant_stock_1y_wac'        => $stockData->value_dormant_stock_1y_wac,
+            'value_dormant_stock_1y_fifo'       => $stockData->value_dormant_stock_1y_fifo,
         ]);
 
         GroupStockHistoryHydrateFromOrgStockHistories::run($organisationStockHistory->group_stock_history_id);

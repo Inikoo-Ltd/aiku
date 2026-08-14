@@ -46,7 +46,14 @@ class Search extends OrgAction
             'procurement'     => static fn () => SearchProcurement::run($query, $options),
             'catalogue'    => static fn () => SearchCatalogue::run($query, $options),
             'prospects'    => static fn () => SearchProspects::run($query, $options),
-            'customers'    => static fn () => SearchCustomers::run($query, $options),
+            'customers'    => static fn () => [
+                'scope'   => 'customers',
+                'results' => [
+                    ...Arr::get(SearchCustomers::run($query, $options), 'results', []),
+                    'orders'   => Arr::get(SearchOrders::run($query, $options), 'results.orders', []),
+                    'invoices' => Arr::get(SearchAccounting::run($query, $options), 'results.invoices', []),
+                ],
+            ],
             'orders'       => static fn () => SearchOrders::run($query, $options),
             'reviews'      => static fn () => SearchReviews::run($query, $options),
             'inventory'    => static fn () => SearchInventory::run($query, $options),

@@ -28,6 +28,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
 {
     use WithDeliveryNoteItemUI;
     use WithScannedDeliveryNoteItemMatching;
+    use WithDeliveryNoteItemPickingCounts;
 
     protected User $user;
 
@@ -67,7 +68,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
             );
         }
 
-        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'packings'])->get();
+        $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'packings', 'shop'])->get();
         $matchedItems      = $this->matchItems($deliveryNoteItems, $scanned);
 
         // The 'pack the rest' button targets the exact item that was just scanned, so a delivery note
@@ -120,9 +121,11 @@ class PackDeliveryNoteItemByScan extends OrgAction
         // 'Pack all' passes null so the remainder is resolved inside the action's lock. Reading it
         // out here would let a second packer's scan land in between and turn this into an error
         // instead of simply packing whatever is genuinely left.
-        $quantityToPack = $requestedQuantity === null
+        $quantityWanted = $this->scannedQuantityInStockUnits($itemToPack, $scanned, $requestedQuantity);
+
+        $quantityToPack = $quantityWanted === null
             ? null
-            : min($requestedQuantity, UpdateDeliveryNoteItemPacking::quantityLeftToPack($itemToPack));
+            : min($quantityWanted, UpdateDeliveryNoteItemPacking::quantityLeftToPack($itemToPack));
 
         UpdateDeliveryNoteItemPacking::make()->action($itemToPack, $user, $quantityToPack);
 
@@ -134,12 +137,12 @@ class PackDeliveryNoteItemByScan extends OrgAction
 
         $message = $remainingAfter > 0
             ? __('Packed :quantity x :code, :remaining still to pack', [
-                'quantity'  => $quantityToPack,
+                'quantity'  => $this->formatScanQuantity($itemToPack, $quantityToPack),
                 'code'      => $itemToPack->orgStock?->code ?? $scanned,
-                'remaining' => $remainingAfter,
+                'remaining' => $this->formatScanQuantity($itemToPack, $remainingAfter),
             ])
             : __('Packed :quantity x :code', [
-                'quantity' => $quantityToPack,
+                'quantity' => $this->formatScanQuantity($itemToPack, $quantityToPack),
                 'code'     => $itemToPack->orgStock?->code ?? $scanned,
             ]);
 
@@ -162,28 +165,36 @@ class PackDeliveryNoteItemByScan extends OrgAction
         ?string $tab = null,
         ?Collection $knownItems = null
     ): array {
-        $row = null;
+        $row     = null;
+        $warning = null;
 
         if ($deliveryNoteItem && $status === 'packed') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
+
+            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
         }
 
         return [
             'status'              => $status,
             'message'             => $message,
+            'warning'             => $warning,
             'scanned'             => $scanned,
             'item'                => $deliveryNoteItem ? [
-                'id'               => $deliveryNoteItem->id,
-                'code'             => $deliveryNoteItem->orgStock?->code,
-                'name'             => $deliveryNoteItem->orgStock?->name,
-                'quantity_picked'  => (float)$deliveryNoteItem->quantity_picked,
-                'quantity_packed'  => (float)$deliveryNoteItem->quantity_packed,
-                'quantity_to_pack' => UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem),
+                'id'                     => $deliveryNoteItem->id,
+                'code'                   => $deliveryNoteItem->orgStock?->code,
+                'name'                   => $deliveryNoteItem->orgStock?->name,
+                'packed_in'              => (int)($deliveryNoteItem->orgStock?->packed_in ?? 1),
+                'quantity_picked'        => (float)$deliveryNoteItem->quantity_picked,
+                'quantity_packed'        => (float)$deliveryNoteItem->quantity_packed,
+                'quantity_to_pack'       => UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem),
+                'quantity_to_pack_label' => $this->formatScanQuantity($deliveryNoteItem, UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem)),
+                'quantity_to_pack_fractional' => $this->scanQuantityFraction($deliveryNoteItem, UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem)),
             ] : null,
             'row'                 => $row,
             'delivery_note_state' => $deliveryNote->state->value,
             'remaining_to_pack'   => $this->countRemainingToPack($deliveryNote, $knownItems),
+            'counts'              => static::packingCounts($deliveryNote),
         ];
     }
 

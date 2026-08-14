@@ -87,6 +87,8 @@ class HandleIrisInertiaRequests extends Middleware
                 'modal'        => fn () => $request->session()->get('modal')
             ],
             'announcements' => $website ? $this->getAnnouncements($website) : [],
+            'show_contact_options_panel' => Arr::get($website?->settings ?? [], 'view_contact_options_panel', false),
+            'contact_options_panel'      => Arr::get($website?->settings ?? [], 'data_contact_options_panel', []),
         ];
 
         if (!array_key_exists('ziggy', $firstLoadOnlyProps)) {

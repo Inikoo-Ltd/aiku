@@ -22,13 +22,14 @@ use Lorisleiva\Actions\ActionRequest;
  * location the picking table would have preselected, and answers with the refreshed table row so
  * the picking screen can be updated in place without an Inertia round trip.
  *
- * @phpstan-type ScanOutcome array{status: string, message: string, scanned: string, item: array|null, row: array|null, delivery_note_state: string, remaining_to_pick: int}
+ * @phpstan-type ScanOutcome array{status: string, message: string, scanned: string, item: array|null, row: array|null, delivery_note_state: string, remaining_to_pick: int, counts: array{all: int, todo: int, done: int}}
  */
 class PickDeliveryNoteItemByScan extends OrgAction
 {
     use WithDeliveryNoteItemUI;
     use WithScannedDeliveryNoteItemMatching;
     use WithScannedDeliveryNoteItemPicking;
+    use WithDeliveryNoteItemPickingCounts;
 
     protected User $user;
 
@@ -104,7 +105,8 @@ class PickDeliveryNoteItemByScan extends OrgAction
         }
 
         $location       = $this->pickingLocation($itemToPick, $requestedLocation);
-        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $requestedQuantity) : 0;
+        $quantityWanted = $this->scannedQuantityInStockUnits($itemToPick, $scanned, $requestedQuantity);
+        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $quantityWanted) : 0;
 
         if ($quantityToPick <= 0) {
             return $this->outcome(
@@ -125,13 +127,13 @@ class PickDeliveryNoteItemByScan extends OrgAction
 
         $message = $remainingAfter > 0
             ? __('Picked :quantity x :code from :location, :remaining still to pick', [
-                'quantity'  => $quantityToPick + 0,
+                'quantity'  => $this->formatScanQuantity($itemToPick, $quantityToPick),
                 'code'      => $itemToPick->orgStock?->code ?? $scanned,
                 'location'  => $location->location_code,
-                'remaining' => $remainingAfter + 0,
+                'remaining' => $this->formatScanQuantity($itemToPick, $remainingAfter),
             ])
             : __('Picked :quantity x :code from :location', [
-                'quantity' => $quantityToPick + 0,
+                'quantity' => $this->formatScanQuantity($itemToPick, $quantityToPick),
                 'code'     => $itemToPick->orgStock?->code ?? $scanned,
                 'location' => $location->location_code,
             ]);
@@ -156,30 +158,38 @@ class PickDeliveryNoteItemByScan extends OrgAction
         ?Collection $knownItems = null,
         ?object $location = null
     ): array {
-        $row = null;
+        $row     = null;
+        $warning = null;
 
         if ($deliveryNoteItem && $status === 'picked') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
+
+            $warning = $this->scanKindWarning($deliveryNoteItem, $this->matchedKind($deliveryNoteItem, $scanned));
         }
 
         return [
             'status'              => $status,
             'message'             => $message,
+            'warning'             => $warning,
             'scanned'             => $scanned,
             'item'                => $deliveryNoteItem ? [
                 'id'                    => $deliveryNoteItem->id,
                 'code'                  => $deliveryNoteItem->orgStock?->code,
                 'name'                  => $deliveryNoteItem->orgStock?->name,
+                'packed_in'             => (int)($deliveryNoteItem->orgStock?->packed_in ?? 1),
                 'quantity_required'     => (float)$deliveryNoteItem->quantity_required,
                 'quantity_picked'       => (float)$deliveryNoteItem->quantity_picked,
                 'quantity_to_pick'      => static::quantityLeftToPick($deliveryNoteItem),
+                'quantity_to_pick_label' => $this->formatScanQuantity($deliveryNoteItem, static::quantityLeftToPick($deliveryNoteItem)),
+                'quantity_to_pick_fractional' => $this->scanQuantityFraction($deliveryNoteItem, static::quantityLeftToPick($deliveryNoteItem)),
                 'location_code'         => $location?->location_code,
                 'location_org_stock_id' => $location?->id,
             ] : null,
             'row'                 => $row,
             'delivery_note_state' => $deliveryNote->state->value,
             'remaining_to_pick'   => $this->countRemainingToPick($deliveryNote, $knownItems),
+            'counts'              => static::pickingCounts($deliveryNote),
         ];
     }
 

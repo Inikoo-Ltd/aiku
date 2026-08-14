@@ -8,7 +8,8 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
-import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faHorizontalRule, faInboxIn, faInboxOut, faInfoCircle, faMapSigns, faPersonCarry, faQuestionCircle, faRampLoading, faShippingFast, faTilde, faTruckLoading } from "@fal";
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { faArrowDown, faArrowUp, faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faHorizontalRule, faInboxIn, faInboxOut, faInfoCircle, faMapSigns, faPersonCarry, faQuestionCircle, faRampLoading, faShippingFast, faTilde, faTruckLoading } from "@fal";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
@@ -22,9 +23,11 @@ import { useBasicColor } from "@/Composables/useColors";
 import { faTimes } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
 
+
+const locale = inject("locale", aikuLocaleStructure)
 const screenType = inject('screenType', ref('desktop'))
 
-library.add(
+library.add(faArrowDown, faArrowUp, 
   faTilde,
   faDumpster,
   faInfoCircle,
@@ -231,12 +234,17 @@ function noteColor(movement) {
       <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'audit'" v-tooltip="trans('Stock Audited')" :icon="faClipboardCheck" class="text-gray-500"/>
     </template>
 
+    <template #cell(running_value)="{ item: orgStockMovement }">
+      <span class="tabular-nums">{{ orgStockMovement.running_value != null ? locale.currencyFormat(orgStockMovement.currency_code, orgStockMovement.running_value) : '-' }}</span>
+    </template>
+
     <template #cell(quantity)="{ item: orgStockMovement }">
-      <span v-if="Number(orgStockMovement.quantity) != 0" :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3 py-[0.125rem] border rounded-md w-fit min-w-14 text-center justify-self-end">
+      <span v-if="Number(orgStockMovement.quantity) != 0" :class="orgStockMovement.is_negative ? 'text-red-500' : 'text-green-600'" class="tabular-nums justify-self-end inline-flex items-center gap-0.5">
         <FractionDisplay v-if="orgStockMovement.quantity_fractional" :fractionData="orgStockMovement.quantity_fractional" :showPlus="Number(orgStockMovement.quantity) > 0"/>
         <span v-else>
           {{ orgStockMovement.quantity ?? 0 }}
         </span>
+        <FontAwesomeIcon :icon="orgStockMovement.is_negative ? faArrowDown : faArrowUp" class="text-[10px] opacity-70" aria-hidden="true" />
       </span>
       <span v-else>
       </span>

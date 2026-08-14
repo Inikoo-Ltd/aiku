@@ -38,6 +38,20 @@ trait WithScannedDeliveryNoteItemPicking
     }
 
     /**
+     * The same subtraction without the tolerance rounding, so a pick can never put more in the
+     * trolley than the line is missing: 5/12 of an outer is 0.416667, and rounding that to 0.417
+     * would write a hair more than was asked for on every 'pick the rest'.
+     */
+    protected static function exactQuantityLeftToPick(DeliveryNoteItem $deliveryNoteItem): float
+    {
+        return max(0, (float)$deliveryNoteItem->quantity_required
+            - (float)$deliveryNoteItem->quantity_picked
+            - (float)$deliveryNoteItem->quantity_not_picked
+            - (float)$deliveryNoteItem->quantity_waiting_warehouse
+            - (float)$deliveryNoteItem->quantity_waiting_crm);
+    }
+
+    /**
      * The location the picker is sent to is the one the picking table would preselect: the shop's
      * default picking location first, then picking priority. Locations that hold nothing are skipped,
      * because a scan is only useful if it names a shelf the item can actually be taken from.
@@ -80,8 +94,8 @@ trait WithScannedDeliveryNoteItemPicking
     protected function storeScannedPicking(DeliveryNoteItem $deliveryNoteItem, User $user, object $location, ?float $requestedQuantity): float
     {
         $quantityToPick = min(
-            $requestedQuantity ?? static::quantityLeftToPick($deliveryNoteItem),
-            static::quantityLeftToPick($deliveryNoteItem),
+            $requestedQuantity ?? static::exactQuantityLeftToPick($deliveryNoteItem),
+            static::exactQuantityLeftToPick($deliveryNoteItem),
             (float)$location->quantity
         );
 

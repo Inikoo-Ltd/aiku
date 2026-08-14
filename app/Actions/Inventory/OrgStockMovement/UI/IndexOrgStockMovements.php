@@ -15,6 +15,7 @@ use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
@@ -155,6 +156,7 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.operation_id',
                 'org_stock_movements.running_quantity',
                 'org_stock_movements.running_quantity_org_stock',
+                DB::raw('org_stock_movements.'.OrgStockValuationMethodEnum::official()->runningValueColumn().' as running_value'),
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'warehouses.slug as warehouse_slug',
@@ -229,6 +231,7 @@ class IndexOrgStockMovements extends OrgAction
 
             if (!($parent instanceof Location)) {
                 $table->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), align: 'right');
+                $table->column(key: 'running_value', label: __('Running Value').' ('.OrgStockValuationMethodEnum::official()->label().')', tooltip: __('Total stock value right after this movement.').' '.OrgStockValuationMethodEnum::official()->legend(), tooltipIcon: true, align: 'right', type: 'currency');
             } else {
                 $table->column(key: 'running_quantity_location', label: __('Running Quantity'), align: 'right');
             }

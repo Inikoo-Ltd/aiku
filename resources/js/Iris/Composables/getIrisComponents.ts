@@ -7,18 +7,20 @@ import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
 /* import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue" */
 
-// ponytail: a dynamic import that loses its request permanently kills the block, and for header-1 that is
-// the site header. One delayed retry covers the transient case. Deliberately no reload: deploys copy the
-// old chunks forward, so a missing file is not the cause, and a forced reload would throw away whatever
-// the customer had typed.
-const retryOnce = (loader: () => Promise<any>): Promise<any> =>
-	loader().catch(() => new Promise((resolve) => setTimeout(resolve, 250)).then(() => loader()))
-
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
-		loader: () => retryOnce(loader),
+		loader,
 		delay: 200,
-		timeout: 15000,
+		timeout: 30000,
+		onError(_error, retry, fail, attempts) {
+			if (attempts >= 3) {
+				fail()
+
+				return
+			}
+
+			setTimeout(retry, attempts * 1000)
+		},
 	})
 
 //Department
@@ -44,8 +46,8 @@ const AnnouncementPromo1 = async(() => import("@/Iris/Components/IrisBlocks/Anno
 const AnnouncementPromo2Countdown = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo2Countdown.vue"))
 const AnnouncementInformation2TransitionText = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation2TransitionText.vue"))
 const AnnouncementPromo3 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo3.vue"))
-const RenderDropshippingProduct = async(() => import("@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"))
-const RenderEcommerceProduct = async(() => import("@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"))
+const RenderDropshippingProduct = async(() => import("@/Iris/Components/IrisBlocks/Product/Ds/RenderDropshippingProductIris.vue"))
+const RenderEcommerceProduct = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/RenderEcommerceProductIris.vue"))
 
 const RecommendationCRB1Iris = async(() => import("@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue"))
 const ProductIris2Ecom = async(() => import("@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"))

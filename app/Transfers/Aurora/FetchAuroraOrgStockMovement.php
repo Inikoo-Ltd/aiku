@@ -9,8 +9,10 @@
 namespace App\Transfers\Aurora;
 
 use App\Actions\Inventory\Location\StoreLocation;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraOrgStockMovement extends FetchAurora
@@ -206,16 +208,29 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         $this->parsedData['location'] = $location;
 
 
+        $orgAmount = $this->auroraModelData->{'Inventory Transaction Amount'};
+
         $this->parsedData['orgStockMovement'] = [
             'is_delivered'    => $isDelivered,
             'type'            => $type,
             'note'            => $note,
-            'org_amount'      => $this->auroraModelData->{'Inventory Transaction Amount'},
+            'org_amount'      => $orgAmount,
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
             'date'            => $date,
             'fetched_at'      => now(),
             'last_fetched_at' => now()
         ];
+
+        if ($type == OrgStockMovementTypeEnum::PURCHASE && $quantity > 0) {
+            $deliveryCostPerSku = $this->getDeliveryItemCostPerSku($orgStock, $note);
+            if ($deliveryCostPerSku !== null) {
+                $this->parsedData['orgStockMovement']['org_amount']   = round($deliveryCostPerSku * $quantity, 3);
+                $this->parsedData['orgStockMovement']['cost_per_sku'] = $deliveryCostPerSku;
+                $this->parsedData['orgStockMovement']['cost_status']  = OrgStockMovementCostStatusEnum::DELIVERY;
+            } else {
+                $this->parsedData['orgStockMovement']['cost_status'] = OrgStockMovementCostStatusEnum::PROVISIONAL;
+            }
+        }
 
         if ($type == OrgStockMovementTypeEnum::AUDIT || $type == OrgStockMovementTypeEnum::ASSOCIATE || $type == OrgStockMovementTypeEnum::DISASSOCIATE) {
             $this->parsedData['orgStockMovement']['audited_quantity'] = $auditedQuantity;
@@ -228,6 +243,33 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $this->parsedData['orgStockMovement']['quantity']         = $quantity;
             $this->parsedData['orgStockMovement']['audited_quantity'] = null;
         }
+    }
+
+    protected function getDeliveryItemCostPerSku(OrgStock $orgStock, ?string $note): ?float
+    {
+        if (!$note || !preg_match('/delivery\/(\d+)/', $note, $matches)) {
+            return null;
+        }
+
+        $stockDeliveryId = DB::table('stock_deliveries')
+            ->where('source_id', $this->organisation->id.':'.$matches[1])
+            ->value('id');
+        if (!$stockDeliveryId) {
+            return null;
+        }
+
+        $deliveryItem = DB::table('stock_delivery_items')
+            ->where('stock_delivery_id', $stockDeliveryId)
+            ->where('org_stock_id', $orgStock->id)
+            ->where('net_amount', '>', 0)
+            ->where('unit_quantity', '>', 0)
+            ->orderBy('id')
+            ->first(['net_amount', 'unit_quantity']);
+        if (!$deliveryItem) {
+            return null;
+        }
+
+        return round($deliveryItem->net_amount / $deliveryItem->unit_quantity, 6);
     }
 
     //    public function parseNote($note):?array

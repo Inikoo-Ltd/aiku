@@ -145,7 +145,7 @@ beforeEach(function () {
     $this->orgAgent = $orgAgent;
 
 
-    $supplier = Supplier::first();
+    $supplier = Supplier::where('agent_id', $this->agent->id)->first();
     if (!$supplier) {
         $storeData = Supplier::factory()->definition();
         $supplier  = StoreSupplier::make()->action(
@@ -928,7 +928,7 @@ test('hydrate suppliers', function () {
 
 test('agents record search', function () {
     ReindexAgentSearch::run();
-    $this->artisan('search:agents')->assertExitCode(0);
+    $this->artisan('reindex_search:agents')->assertExitCode(0);
 });
 
 test('suppliers record search', function () {

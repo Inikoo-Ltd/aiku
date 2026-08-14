@@ -25,6 +25,7 @@ use App\Models\Masters\MasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Web\Webpage\CloseWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ReopenWebpage;
@@ -58,6 +59,7 @@ class UpdateProduct extends OrgAction
     use WithProductOrgStocks;
     use HasDangerousGoodsFields;
     use HasProductInformation;
+    use WithMasterAssetTradeUnits;
 
     private Product $product;
 
@@ -132,7 +134,19 @@ class UpdateProduct extends OrgAction
                 $this->syncOrgStocksToBeDeleted($product, $orgStocks);
             }
         } elseif (Arr::has($modelData, 'trade_units')) {
-            $product = SyncProductTradeUnits::run($product, Arr::pull($modelData, 'trade_units'));
+            $tradeUnits = Arr::pull($modelData, 'trade_units');
+            $product    = SyncProductTradeUnits::run($product, $tradeUnits);
+
+            $hasIndependentUnits = Arr::get($modelData, 'has_independent_units', $product->has_independent_units);
+            if (!empty($tradeUnits) && !$hasIndependentUnits && !Arr::has($modelData, 'units')) {
+                $unitsFromTradeUnits = $this->getUnitsFromTradeUnits($tradeUnits);
+                if ($unitsFromTradeUnits['units'] !== null) {
+                    data_set($modelData, 'units', $unitsFromTradeUnits['units']);
+                }
+                if (!Arr::has($modelData, 'unit') && $unitsFromTradeUnits['unit']) {
+                    data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
+                }
+            }
         }
 
 

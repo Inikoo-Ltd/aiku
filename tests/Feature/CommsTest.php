@@ -3339,3 +3339,153 @@ test('unsubscribe mailshot updates customer comms', function () {
     expect($result['id'])->toBe($dispatchedEmail->id);
     expect($dispatchedEmail->refresh()->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::UNSUBSCRIBED);
 });
+
+describe('email retention', function () {
+    test('mailshot dispatched emails hydrator adds the archived baseline to the live count', function () {
+        $outbox   = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+        $mailshot = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+
+        $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+            $mailshot,
+            $this->customer,
+            ['email_address' => 'retention-mailshot@example.com']
+        );
+
+        \App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails::run($mailshot->id);
+
+        expect($mailshot->stats->refresh()->number_dispatched_emails)->toBe(1);
+
+        $mailshot->stats->update([
+            'archived_dispatched_emails' => [
+                'number_dispatched_emails'             => 40,
+                'number_dispatched_emails_state_ready' => 40,
+                'number_delivered_open_success'        => 30,
+            ]
+        ]);
+
+        DB::table('mailshot_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->delete();
+        DB::table('dispatched_emails')->where('id', $dispatchedEmail->id)->delete();
+
+        \App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails::run($mailshot->id);
+
+        expect($mailshot->stats->refresh()->number_dispatched_emails)->toBe(40)
+            ->and($mailshot->stats->number_dispatched_emails_state_ready)->toBe(40)
+            ->and($mailshot->stats->number_delivered_open_success)->toBe(30);
+    });
+
+    test('outbox dispatched emails hydrator adds the archived baseline to the live count', function () {
+        $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+
+        \App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails::run($outbox->id);
+        $liveEmails     = $outbox->stats->refresh()->number_dispatched_emails;
+        $liveSentEmails = $outbox->stats->number_dispatched_emails_state_sent;
+
+        $emailId = DB::table('dispatched_emails')->insertGetId([
+            'outbox_id'  => $outbox->id,
+            'state'      => 'sent',
+            'data'       => '{}',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        \App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails::run($outbox->id);
+
+        expect($outbox->stats->refresh()->number_dispatched_emails)->toBe($liveEmails + 1);
+
+        $outbox->stats->update([
+            'archived_dispatched_emails' => [
+                'number_dispatched_emails'            => 40,
+                'number_dispatched_emails_state_sent' => 40,
+            ]
+        ]);
+
+        DB::table('dispatched_emails')->where('id', $emailId)->delete();
+
+        \App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails::run($outbox->id);
+
+        expect($outbox->stats->refresh()->number_dispatched_emails)->toBe(40 + $liveEmails)
+            ->and($outbox->stats->number_dispatched_emails_state_sent)->toBe(40 + $liveSentEmails);
+    });
+
+    test('email bulk run cumulative hydrator adds the archived baseline to the live count', function () {
+        $outbox       = createOutboxDirectly($this->shop, OutboxCode::PRICE_CHANGE_NOTIFICATION);
+        $emailBulkRun = StoreEmailBulkRun::make()->action($outbox->emailOngoingRun, [
+            'subject' => 'Retention baseline',
+            'state'   => \App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum::SENDING,
+        ], strict: false);
+
+        $emailBulkRun->stats->update([
+            'archived_dispatched_emails' => [
+                'number_dispatched_emails'  => 40,
+                'number_sent_emails'        => 40,
+                'number_opened_emails'      => 25,
+            ]
+        ]);
+
+        \App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateCumulativeDispatchedEmails::run(
+            $emailBulkRun,
+            \App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::SENT
+        );
+
+        expect($emailBulkRun->stats->refresh()->number_sent_emails)->toBe(40);
+
+        \App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails::run($emailBulkRun->id);
+
+        expect($emailBulkRun->stats->refresh()->number_dispatched_emails)->toBe(40);
+    });
+
+    test('process outbox time series records does not rebuild periods before the retention cutoff', function () {
+        $outbox    = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+        $archived  = now()->subDays(config('comms.email_retention_days') + 10)->startOfDay();
+        $retained  = now()->subDay()->startOfDay();
+
+        $timeSeries = $outbox->timeSeries()->firstOrCreate(['frequency' => TimeSeriesFrequencyEnum::DAILY], []);
+        $timeSeries->records()->create([
+            'period'            => $archived->format('Y-m-d'),
+            'frequency'         => TimeSeriesFrequencyEnum::DAILY->singleLetter(),
+            'from'              => $archived,
+            'to'                => $archived->copy()->endOfDay(),
+            'dispatched_emails' => 500,
+        ]);
+
+        DB::table('dispatched_emails')->insert([
+            'outbox_id'  => $outbox->id,
+            'state'      => 'sent',
+            'data'       => '{}',
+            'created_at' => $retained->copy()->addHours(9),
+            'updated_at' => now(),
+        ]);
+
+        ProcessOutboxTimeSeriesRecords::run(
+            $outbox->id,
+            TimeSeriesFrequencyEnum::DAILY,
+            $archived->toDateString(),
+            now()->toDateString()
+        );
+
+        $dispatchedOn = fn ($day) => $timeSeries->records()->where('period', $day->format('Y-m-d'))->value('dispatched_emails');
+
+        expect($dispatchedOn($archived))->toBe(500)
+            ->and($dispatchedOn($retained))->toBe(1);
+    });
+
+    test('process outbox time series records returns early when the whole window is before the cutoff', function () {
+        $outbox   = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+        $archived = now()->subDays(config('comms.email_retention_days') + 10)->startOfDay();
+
+        $timeSeries = $outbox->timeSeries()->firstOrCreate(['frequency' => TimeSeriesFrequencyEnum::DAILY], []);
+        $timeSeries->records()->updateOrCreate(
+            ['period' => $archived->format('Y-m-d'), 'frequency' => TimeSeriesFrequencyEnum::DAILY->singleLetter()],
+            ['from' => $archived, 'to' => $archived->copy()->endOfDay(), 'dispatched_emails' => 500]
+        );
+
+        ProcessOutboxTimeSeriesRecords::run(
+            $outbox->id,
+            TimeSeriesFrequencyEnum::DAILY,
+            $archived->toDateString(),
+            $archived->toDateString()
+        );
+
+        expect($timeSeries->records()->where('period', $archived->format('Y-m-d'))->value('dispatched_emails'))->toBe(500);
+    });
+});

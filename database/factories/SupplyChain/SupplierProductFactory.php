@@ -23,7 +23,7 @@ class SupplierProductFactory extends Factory
     public function definition()
     {
         return [
-            'code' => fake()->lexify(),
+            'code' => fake()->lexify('??????'),
             'name' => fake()->name,
             'cost' => fake()->numberBetween(10, 100),
             'units_per_pack' => 10,

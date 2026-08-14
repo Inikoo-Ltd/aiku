@@ -421,6 +421,14 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'tooltip' => __('System Administration'),
+                        'icon'    => ['fal', 'fa-users-cog'],
+                        'root'    => 'grp.sysadmin.dashboard',
+                        'route'   => [
+                            'name' => 'grp.sysadmin.dashboard',
+                        ]
+                    ],
+                    [
                         'label' => __('Users'),
                         'icon'  => ['fal', 'fa-user-circle'],
                         'root'  => 'grp.sysadmin.users.',
@@ -437,45 +445,13 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('Analytics'),
+                        'label' => __('System Analytics'),
                         'icon'  => ['fal', 'fa-analytics'],
                         'root'  => 'grp.sysadmin.analytics.',
                         'route' => [
                             'name' => 'grp.sysadmin.analytics.dashboard',
                         ]
                     ],
-                    [
-                        'label' => __('Scheduled Tasks'),
-                        'icon'  => ['fal', 'fa-clock'],
-                        'root'  => 'grp.sysadmin.scheduled-tasks.',
-                        'route' => [
-                            'name' => 'grp.sysadmin.scheduled-tasks.index',
-                        ]
-                    ],
-                    [
-                        'label' => __('Search analytics'),
-                        'icon'  => ['fal', 'fa-search'],
-                        'root'  => 'grp.sysadmin.search_logs.',
-                        'route' => [
-                            'name' => 'grp.sysadmin.search_logs.index',
-                        ]
-                    ],
-                    [
-                        'label' => __('System Settings'),
-                        'icon'  => ['fal', 'fa-cog'],
-                        'root'  => 'grp.sysadmin.settings.',
-                        'route' => [
-                            'name' => 'grp.sysadmin.settings.edit',
-                        ]
-                    ],
-                    [
-                        'label' => __('Changelogs'),
-                        'icon'  => ['fal', 'fa-history'],
-                        'root'  => 'grp.sysadmin.changelogs.index',
-                        'route' => [
-                            'name' => 'grp.sysadmin.changelogs.index',
-                        ]
-                    ]
                 ]
             ]
         ];

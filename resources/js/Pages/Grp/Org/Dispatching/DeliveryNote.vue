@@ -26,6 +26,7 @@ import {
 	faClipboardCheck,
 	faClipboardListCheck,
 	faExchange,
+	faBarcodeRead,
 } from "@fal";
 import { faArrowRight, faCheck, faEye, faStar, faTimes } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -53,6 +54,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
 import { get, debounce } from 'lodash-es';
+import axios from "axios";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
@@ -65,15 +67,19 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
 import ScanToPickDeliveryNote from "@/Components/DeliveryNote/ScanToPickDeliveryNote.vue"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
+import { ctrans } from "@/Composables/useTrans"
 
 
-library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
+library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck, faBarcodeRead);
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
     items?: {}
+    picking_todo_items?: {}
+    picking_done_items?: {}
     pending_items?: {}
     done_items?: {}
     tariff_codes?: {}
@@ -161,7 +167,11 @@ const props = defineProps<{
 	}
 	scan_to_pick?: {
 		scan_route: routeType
+		toggle_route: routeType
+		is_on: boolean
 	}
+	total_unit_counts: number
+	tab_counts?: { all: number, todo: number, done: number } | null
 }>();
 
 
@@ -172,6 +182,8 @@ const showDropdown = ref(false);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
+        picking_todo_items: TableDeliveryNoteItems,
+        picking_done_items: TableDeliveryNoteItems,
         pending_items: TableDeliveryNoteItems,
         done_items: TableDeliveryNoteItems,
         tariff_codes: TableDeliveryNoteTariffCodes,
@@ -181,6 +193,141 @@ const component = computed(() => {
 
     return components[currentTab.value];
 });
+
+// Section: Scan to pick
+// The picker decides per delivery note whether they work it with the scanner, and that same switch
+// decides whether splitting the items into what is left and what is done earns its screen space.
+const PICKING_SCAN_TABS = ["picking_todo_items", "picking_done_items"] as const
+
+// The choice is kept on the delivery note, so a refresh, or somebody taking the note over, lands on
+// the screen the picker left behind. A url naming one of the scan-only tabs turns it on regardless,
+// since that tab has nowhere else to live.
+const isScanToPickOn = ref(
+	props.scan_to_pick?.is_on
+	|| PICKING_SCAN_TABS.includes(props.tabs?.current as typeof PICKING_SCAN_TABS[number])
+)
+const isSavingScanToPick = ref(false)
+
+// Section: Todo/Done counts, shared by the picking tabs and the packing ones since only one pair is
+// ever on screen. Kept apart from tabs.navigation because an action that picks or packs an item
+// reloads this prop but not the tabs, and a scan updates it without reloading anything at all.
+const tabCounts = ref<{ all: number, todo: number, done: number } | null>(props.tab_counts ?? null)
+
+watch(
+	() => props.tab_counts,
+	(counts) => {
+		tabCounts.value = counts ?? null
+	}
+)
+
+// The switch answers immediately and is put back only if the write fails, because a picker holding a
+// scanner should not wait on a round trip to start scanning.
+const toggleScanToPick = async () => {
+	const toggleRoute = props.scan_to_pick?.toggle_route
+
+	if (!toggleRoute || isSavingScanToPick.value) {
+		return
+	}
+
+	const wanted = !isScanToPickOn.value
+	isScanToPickOn.value = wanted
+	isSavingScanToPick.value = true
+
+	try {
+		await axios.patch(route(toggleRoute.name, toggleRoute.parameters), { scan_to_pick: wanted })
+	} catch (error: any) {
+		isScanToPickOn.value = !wanted
+		notify({
+			title: trans("Something went wrong"),
+			text: error?.response?.data?.message || trans("Could not save the scan setting, try again"),
+			type: "error",
+		})
+	} finally {
+		isSavingScanToPick.value = false
+	}
+}
+
+// Turning the scanner on means the picker is about to work off what is left, so that is the list they
+// are put in front of. Turning it off takes those tabs away again, and leaving them on one would show
+// a table that is no longer reachable.
+watch(isScanToPickOn, (isOn) => {
+	if (isOn) {
+		handleTabUpdate("picking_todo_items")
+		return
+	}
+
+	if (PICKING_SCAN_TABS.includes(currentTab.value as typeof PICKING_SCAN_TABS[number])) {
+		handleTabUpdate("items")
+	}
+})
+
+// Whichever todo/done pair the note is showing gets the counts, and the plain items tab next to them
+// has to say it holds both, so "Items" on its own would not tell the picker what it is looking at.
+const TODO_DONE_TAB_PAIRS = [
+	["picking_todo_items", "picking_done_items"],
+	["pending_items", "done_items"],
+] as const
+
+const tabsNavigation = computed(() => {
+	const navigation = { ...(props.tabs?.navigation ?? {}) }
+
+	if (!props.scan_to_pick || !isScanToPickOn.value) {
+		for (const tabSlug of PICKING_SCAN_TABS) {
+			delete navigation[tabSlug]
+		}
+	}
+
+	const counts = tabCounts.value
+	const pair = counts ? TODO_DONE_TAB_PAIRS.find(([todo]) => navigation[todo]) : undefined
+
+	if (!counts || !pair) {
+		return navigation
+	}
+
+	const [todoTab, doneTab] = pair
+
+	navigation.items = { ...navigation.items, title: trans("All items"), number: counts.all }
+	navigation[todoTab] = { ...navigation[todoTab], number: counts.todo }
+	navigation[doneTab] = { ...navigation[doneTab], number: counts.done }
+
+	return navigation
+});
+
+/*
+ * Emptying the todo list is the whole point of a picking or packing round, so the tab that runs out
+ * says so rather than leaving a bare table header behind, and offers the step that comes next right
+ * where the operator is already looking instead of making them find it back up in the header.
+ */
+const TODO_TABS = ["picking_todo_items", "pending_items"] as const
+
+const isTodoTabCleared = computed(() => {
+	if (!TODO_TABS.includes(currentTab.value as typeof TODO_TABS[number])) {
+		return false
+	}
+
+	const rows = (props[currentTab.value as keyof typeof props] as { data?: any[] } | undefined)?.data
+
+	return Array.isArray(rows) && rows.length === 0
+})
+
+const clearedTodoTabTitle = computed(() =>
+	currentTab.value === "pending_items" ? ctrans("Everything is packed") : ctrans("Everything is picked")
+)
+
+/*
+ * Read off the page head rather than rebuilt here, so the empty state offers whatever the note's own
+ * state allows and nothing else: "Set as packed" while packing, "Finalise and Dispatch" once packed.
+ */
+const clearedTodoTabAction = computed(() =>
+	props.pageHead?.actions?.find((action: any) => action?.style === "save" && action?.route)
+)
+
+// Finishing a pick is a bay selection rather than a plain link, so the header's own component is the
+// one repeated here instead of a button built out of a route the action does not carry.
+const hasClearedTodoTabBaySelector = computed(() =>
+	props.shop?.type !== "dropshipping"
+	&& !!props.pageHead?.actions?.some((action: any) => action?.key === "trigger-set-as-picked-or-packed")
+)
 
 // Section: To Queue
 const isModalToQueue = ref(false);
@@ -374,6 +521,92 @@ watch(pickingView, (val) => {
 
 const showWarningMessage = ref(true);
 
+// Section: Warehouse note from customer service, raised once so the picker/packer cannot miss it
+const PICKING_PACKING_STATES = ["handling", "handling_blocked", "picked", "packing"]
+
+const warehouseNote = computed(() => {
+	const note = props.notes?.note_list?.find(item => item.field === "private_warehouse_note")
+
+	return note?.note?.trim() ? note : null
+})
+
+const isModalWarehouseNote = ref(false)
+
+// Only pressing "Understood" retires the note, so a picker who closes the modal without reading it
+// gets it back on the next refresh. The note is fingerprinted rather than stored whole, so a note
+// the customer service rewrites afterwards is raised again without keeping 4000 characters around.
+const ACKNOWLEDGED_WAREHOUSE_NOTES_KEY = "delivery-note:warehouse-note-acknowledged"
+const ACKNOWLEDGED_WAREHOUSE_NOTES_LIMIT = 100
+
+const fingerprintNote = (note: string) => {
+	let hash = 5381
+
+	for (let index = 0; index < note.length; index++) {
+		hash = ((hash * 33) ^ note.charCodeAt(index)) >>> 0
+	}
+
+	return `${note.length}.${hash.toString(36)}`
+}
+
+const readAcknowledgedWarehouseNotes = (): Record<string, string> => {
+	try {
+		return JSON.parse(localStorage.getItem(ACKNOWLEDGED_WAREHOUSE_NOTES_KEY) ?? "{}")
+	} catch {
+		return {}
+	}
+}
+
+const rememberWarehouseNote = (note: string) => {
+	const acknowledged = readAcknowledgedWarehouseNotes()
+	acknowledged[props.delivery_note.id] = fingerprintNote(note)
+
+	// Delivery note ids are numeric, so the browser keeps them in ascending order and trimming from
+	// the front drops the oldest delivery notes the picker worked on.
+	const kept = Object.entries(acknowledged).slice(-ACKNOWLEDGED_WAREHOUSE_NOTES_LIMIT)
+
+	localStorage.setItem(ACKNOWLEDGED_WAREHOUSE_NOTES_KEY, JSON.stringify(Object.fromEntries(kept)))
+}
+
+const acknowledgeWarehouseNote = () => {
+	isModalWarehouseNote.value = false
+
+	if (warehouseNote.value) {
+		rememberWarehouseNote(warehouseNote.value.note)
+	}
+}
+
+// Nobody needs the note read back to them right after they wrote it, so a warehouse note saved from
+// this page counts as read the moment it is sent, before the reload brings the new text in.
+const onNoteSubmitted = ({ field, note }: { field: string, note: string }) => {
+	if (field !== "private_warehouse_note") {
+		return
+	}
+
+	rememberWarehouseNote(note)
+}
+
+watch(
+	() => [props.delivery_note.state, warehouseNote.value?.note],
+	(e) => {
+		if (!props.is_editable || !warehouseNote.value) {
+			return
+		}
+
+		if (!PICKING_PACKING_STATES.includes(props.delivery_note.state)) {
+			return
+		}
+
+		const acknowledged = readAcknowledgedWarehouseNotes()
+
+		if (acknowledged[props.delivery_note.id] === fingerprintNote(warehouseNote.value.note)) {
+			return
+		}
+
+		isModalWarehouseNote.value = true
+	},
+	{ immediate: true }
+);
+
 
 const debReloadPage = debounce(() => {
     router.reload({
@@ -381,13 +614,30 @@ const debReloadPage = debounce(() => {
     })
 }, 1200)
 
+/*
+ * The note moving on swaps the header actions as much as it swaps the rows: packing the last item
+ * retires "Set as packed" in favour of "Finalise and Dispatch". Keeping pageHead out of the reload,
+ * as the version above does, would leave the packer looking at a button they have already used with
+ * no way forward until they refresh the page themselves.
+ *
+ * Not debounced, unlike the reloads that fire on every scan: this one only fires on the scan that
+ * empties the list, so there is no burst to absorb and no reason to make the packer wait for the
+ * button that lets them carry on.
+ */
+const reloadPageAndHead = () => {
+    router.reload({
+        except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'ziggy']
+    })
+}
+
 // Only the header actions change when the last item leaves the shelf, so nothing else is asked for
-// and the picker keeps the table rows and scroll position the scans just built up.
-const debReloadPageHead = debounce(() => {
+// and the picker keeps the table rows and scroll position the scans just built up. Fires once, on the
+// scan that empties the list, so it is not debounced either.
+const reloadPageHead = () => {
 	router.reload({
 		only: ['pageHead']
 	})
-}, 1200)
+}
 
 type ScanOutcome = {
 	status: string
@@ -395,6 +645,7 @@ type ScanOutcome = {
 	row?: Record<string, any> | null
 	delivery_note_state?: string
 	remaining_to_pick?: number
+	counts?: { all: number, todo: number, done: number }
 }
 
 // A scan touches one item, so only the scanned row and the counters change. Patching that row in
@@ -424,8 +675,14 @@ const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
 const onItemPackedByScan = (outcome: ScanOutcome) => {
 	patchRowScannedBy(outcome, 'packed')
 
-	if (outcome.delivery_note_state === 'packed') {
-		debReloadPage()
+	if (outcome.counts) {
+		tabCounts.value = { ...outcome.counts }
+	}
+
+	// The backend sets the note as packed by itself once the last item is done, but an item written
+	// off as not picked can empty the todo list without triggering that, so both are worth reloading on.
+	if (outcome.delivery_note_state === 'packed' || outcome.counts?.todo === 0) {
+		reloadPageAndHead()
 	}
 }
 
@@ -436,8 +693,12 @@ const onItemPackedByScan = (outcome: ScanOutcome) => {
 const onItemPickedByScan = (outcome: ScanOutcome) => {
 	patchRowScannedBy(outcome, 'picked')
 
+	if (outcome.counts) {
+		tabCounts.value = { ...outcome.counts }
+	}
+
 	if (outcome.remaining_to_pick === 0) {
-		debReloadPageHead()
+		reloadPageHead()
 	}
 }
 
@@ -777,6 +1038,7 @@ const stopSocketListener = () => {
 					:key="index + note.label"
 					:noteData="note"
 					:updateRoute="routes.update"
+					@submitted="onNoteSubmitted"
 				/>
 			</div>
 		</Transition>
@@ -807,9 +1069,24 @@ const stopSocketListener = () => {
 		:isEditable="is_editable"
 	/>
 
-	<!-- Section: Scan a barcode to pick the matching item straight away -->
+	<!-- Section: Pick this delivery note with a scanner instead of the table buttons -->
+	<div v-if="scan_to_pick" class="px-2 pt-2 flex justify-end">
+		<button
+			type="button"
+			class="inline-flex items-center gap-x-2 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60"
+			:class="isScanToPickOn
+				? 'border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-700'
+				: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'"
+			:disabled="isSavingScanToPick"
+			v-tooltip="isScanToPickOn ? ctrans('Stop picking by scanner') : ctrans('Pick this delivery note by scanning the items')"
+			@click="toggleScanToPick">
+			<FontAwesomeIcon icon="fal fa-barcode-read" fixed-width aria-hidden="true" />
+			{{ isScanToPickOn ? ctrans("Scan to pick: on") : ctrans("Scan to pick: off") }}
+		</button>
+	</div>
+
 	<ScanToPickDeliveryNote
-		v-if="scan_to_pick"
+		v-if="scan_to_pick && isScanToPickOn"
 		:scanRoute="scan_to_pick.scan_route"
 		:tab="currentTab"
 		@scanned="onItemPickedByScan"
@@ -823,10 +1100,31 @@ const stopSocketListener = () => {
 		@scanned="onItemPackedByScan"
 	/>
 
-	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+	<Tabs :current="currentTab" :navigation="tabsNavigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
+		<EmptyState
+			v-if="isTodoTabCleared"
+			:data="{ title: clearedTodoTabTitle }">
+			<template #button-empty-state>
+				<div v-if="clearedTodoTabAction || hasClearedTodoTabBaySelector" class="mt-4 flex justify-center">
+					<ButtonWithLink
+						v-if="clearedTodoTabAction"
+						:label="clearedTodoTabAction.label"
+						:style="clearedTodoTabAction.style"
+						v-tooltip="clearedTodoTabAction.tooltip"
+						:routeTarget="clearedTodoTabAction.route"
+						@error="handleFinaliseError" />
+					<ButtonSelectBays
+						v-else
+						:warehouse="warehouse"
+						:deliveryNote="delivery_note" />
+				</div>
+			</template>
+		</EmptyState>
+
 		<component
+			v-else
 			:is="component"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
@@ -838,9 +1136,46 @@ const stopSocketListener = () => {
 			:allowWaiting="allow_waiting"
 			:allowPickerSetNotPicked="allow_picker_set_not_picked"
 			:order_slug="order_slug"
+			:warehouse
+			:deliveryNote="delivery_note"
+			:total_unit_counts="total_unit_counts"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
-			@validation-error="handleValidationError" />
+			@validation-error="handleValidationError"
+			@open-tab="handleTabUpdate" />
 	</div>
+
+	<!-- Modal: Warehouse note from customer service -->
+	<Modal
+		:isOpen="isModalWarehouseNote"
+		@onClose="isModalWarehouseNote = false"
+		width="w-full max-w-lg">
+		<div class="flex flex-col gap-y-4">
+			<div class="flex items-center gap-x-3">
+				<FontAwesomeIcon
+					:icon="faExclamationTriangle"
+					class="text-xl text-amber-500"
+					fixed-width
+					aria-hidden="true" />
+				<div class="text-lg font-semibold">
+					{{ ctrans("Note from customer service") }}
+				</div>
+			</div>
+
+			<div
+				class="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-base text-gray-800 whitespace-pre-line break-words max-h-72 overflow-y-auto">
+				{{ warehouseNote?.note }}
+			</div>
+
+			<div class="flex justify-end mt-4">
+				<Button
+					:label="ctrans('Understood')"
+					icon="fas fa-check"
+					full
+					size="lg"
+					@click="acknowledgeWarehouseNote" />
+			</div>
+		</div>
+	</Modal>
 
 	<!-- Modal: Select picker -->
 	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>

@@ -100,8 +100,6 @@ class IndexMasterDepartments extends OrgAction
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
                     'invoices'                    => 'invoices',
-                    'dropshippers'                => 'dropshippers',
-                    'listings'                    => 'listings',
                     'sold'                        => 'sold',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
@@ -113,8 +111,6 @@ class IndexMasterDepartments extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
 
@@ -156,8 +152,6 @@ class IndexMasterDepartments extends OrgAction
                 'products',
                 'sales_grp_currency_external',
                 'invoices',
-                'dropshippers',
-                'listings',
                 'sold',
                 'health_rank',
             ])
@@ -197,8 +191,6 @@ class IndexMasterDepartments extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

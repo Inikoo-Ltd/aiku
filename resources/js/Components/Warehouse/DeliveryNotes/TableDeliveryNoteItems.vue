@@ -17,7 +17,7 @@ import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed, watch, onUnmounted } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faStopCircle } from "@fal";
 import { faSkull, faWandMagic, faExclamationTriangle } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -45,6 +45,7 @@ import SelectPickingLocation from "./SelectPickingLocation.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
 import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
+import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faExclamationTriangle);
 
@@ -57,11 +58,15 @@ const props = defineProps<{
     allowWaiting: boolean
     allowPickerSetNotPicked: boolean
     isEditable: boolean
+    total_unit_counts: number
+    warehouse?: { slug: string }
+    deliveryNote?: { id: number, slug: string }
 }>();
 
 const emit = defineEmits<{
     'update:quantity-to-resend': [itemId: string | number, value: number]
     'validation-error': [itemId: string | number, hasError: boolean]
+    'open-tab': [tabSlug: string]
 }>();
 
 const screenType = inject('screenType', ref('desktop'))
@@ -436,6 +441,31 @@ const packLabelAroundCount = computed(() => {
         .map(part => part.trim())
 })
 
+/*
+ * The chip has room for the two quantities and the word joining them, not for the whole sentence its
+ * tooltip spells out, so that same translation is split and only its middle joint kept. It also has
+ * to be a word rather than the slash it used to be, which no longer reads as a separator once each
+ * side is set as a fraction.
+ */
+const packedOfPickedJoint = computed(() => {
+    return ctrans('Packed :packed of :picked picked').split(/:packed|:picked/)[1]?.trim() || 'of'
+})
+
+/* The same cut written as text, for a tooltip, which takes no markup. */
+const fractionAsText = (fractionData: any, fallback: any): string => {
+    if (!Array.isArray(fractionData)) {
+        return String(Number(fallback) || 0)
+    }
+
+    const [wholePack, [loose, packedIn]] = fractionData
+
+    if (!loose) {
+        return String(wholePack)
+    }
+
+    return wholePack ? `${wholePack} ${loose}/${packedIn}` : `${loose}/${packedIn}`
+}
+
 // Dropshipping items are picked in fractions (e.g. 1/3), so the picking input must
 // step by 1/packed_in instead of whole units. Non-dropshipping keeps whole-unit steps.
 const GetPickingDenominator = (item) => {
@@ -747,6 +777,12 @@ const hasDirtyDeliveryNoteItem = computed(() => {
     return Object.values(props.data?.data ?? {}).some((item: any) => item.is_dirty);
 });
 
+const totalUnitsAll = computed(() => {
+  return props.data.data.reduce((accumulator, item) => {
+    return accumulator + item.total_units_count
+  }, 0)
+})
+
 </script>
 
 <template>
@@ -771,6 +807,24 @@ const hasDirtyDeliveryNoteItem = computed(() => {
             type: 'warning'
         }"
     >
+        <template #afterRecordCount>
+            | <span class="font-semibold tabular-nums">{{ Math.round(total_unit_counts * 100) / 100 }}</span> {{ ctrans("SKO's") }}
+        </template>
+        <!-- Whichever picking tab runs out of rows offers the step that follows it, rigt where the picker is already looking. -->
+        <template #button-empty-state="{ action }">
+            <div v-if="action?.key === 'finish-picking' && warehouse && deliveryNote" class="mt-4 flex justify-center">
+                <ButtonSelectBays :warehouse="warehouse" :deliveryNote="deliveryNote" />
+            </div>
+
+            <div v-else-if="action?.key === 'open-todo-items'" class="mt-4 flex justify-center">
+                <Button
+                    :label="trans('Open todo items')"
+                    icon="fal fa-clipboard-list-check"
+                    iconRight="fal fa-arrow-right"
+                    @click="emit('open-tab', 'picking_todo_items')"
+                />
+            </div>
+        </template>
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
@@ -839,21 +893,58 @@ const hasDirtyDeliveryNoteItem = computed(() => {
 
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
-            <div>
-                {{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
-                <span
-                    v-if="deliveryNoteItem.barcode"
-                    v-tooltip="ctrans('Org stock barcode') + ' ' + deliveryNoteItem.barcode"
-                >
-                    <FontAwesomeIcon
-                        icon="fal fa-barcode"
-                        class="ml-2 xopacity-70 cursor-pointer"
-                        fixed-width
-                        aria-hidden="true"
-                    />
-                </span>
+            <div class="flex flex-1 flex-wrap gap-2">
+                <div class="min-w-[20rem] mr-auto">
+                    {{ deliveryNoteItem.org_stock_name }} 
+                    <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
+                    <span
+                        v-if="deliveryNoteItem.barcode"
+                        v-tooltip="ctrans('Org stock barcode') + ' ' + deliveryNoteItem.barcode"
+                    >
+                        <FontAwesomeIcon
+                            icon="fal fa-barcode"
+                            class="ml-2 xopacity-70 cursor-pointer"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                    </span>
+                </div>
+                <OrgStockHandlingNotes v-if="deliveryNoteItem.note_to_pickers" :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
+                <div class="min-w-[10rem] text-right">
+                    <span 
+                        v-tooltip="ctrans('Units / SKU')"
+                        class="mr-3"
+                    >
+                        <FontAwesomeIcon
+                            :icon="faStopCircle"
+                        />
+                        x
+                        <FractionDisplay 
+                            v-if="deliveryNoteItem.total_units_count_fractional"
+                            :fractionData="deliveryNoteItem.total_units_count_fractional" 
+                        />
+                        <span v-else>
+                            {{ deliveryNoteItem.total_units_count }}
+                        </span>
+                    </span>
+                    <span 
+                        v-tooltip="ctrans('SKO')"
+                        class="mr-3"
+                    >
+                        <FontAwesomeIcon
+                            :icon="faBox"
+                        />
+                        x
+                        <FractionDisplay 
+                            v-if="deliveryNoteItem.quantity_required_fractional"
+                            :fractionData="deliveryNoteItem.quantity_required_fractional" 
+                        />
+                        <span v-else>
+                            {{ deliveryNoteItem.quantity_required }}
+                        </span>
+                    </span>
+                </div>
             </div>
-            <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
 
             <!-- Section: DNI Expired date -->
             <!-- <div v-if="false" class="flex items-center flex-wrap">
@@ -1415,9 +1506,16 @@ const hasDirtyDeliveryNoteItem = computed(() => {
                     <!-- Label: partially packed, the rest is still waiting -->
                     <span
                         v-if="item.is_partially_packed"
-                        v-tooltip="ctrans('Packed :packed of :picked picked', { packed: Number(item.quantity_packed), picked: Number(item.quantity_picked) })"
-                        class="whitespace-nowrap rounded border border-amber-400 bg-amber-100 px-1.5 text-sm text-amber-700">
-                        {{ Number(item.quantity_packed) }} / {{ Number(item.quantity_picked) }}
+                        v-tooltip="ctrans('Packed :packed of :picked picked', {
+                            packed: fractionAsText(item.quantity_packed_fractional, item.quantity_packed),
+                            picked: fractionAsText(item.quantity_picked_fractional, item.quantity_picked),
+                        })"
+                        class="inline-flex items-center gap-x-1 whitespace-nowrap rounded border border-amber-400 bg-amber-100 px-1.5 text-sm text-amber-700">
+                        <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
+                        <template v-else>{{ Number(item.quantity_packed) }}</template>
+                        {{ packedOfPickedJoint }}
+                        <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+                        <template v-else>{{ Number(item.quantity_picked) }}</template>
                     </span>
 
                     <ButtonWithLink

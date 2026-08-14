@@ -51,7 +51,7 @@ class StoreLocationOrgStock extends OrgAction
         data_set($modelData, 'warehouse_id', $location->warehouse_id);
         data_set($modelData, 'warehouse_area_id', $location->warehouse_area_id);
         data_set($modelData, 'org_stock_id', $orgStock->id);
-        $costPerSku = $this->getCostPerSku($orgStock, Carbon::now());
+        $costPerSku = $this->getLppPerSku($orgStock, Carbon::now());
 
         if (!Arr::has($modelData, 'quantity')) {
             data_set($modelData, 'quantity', 0);

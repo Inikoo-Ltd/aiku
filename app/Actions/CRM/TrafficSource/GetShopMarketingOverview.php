@@ -13,6 +13,7 @@ use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -33,7 +34,7 @@ class GetShopMarketingOverview
      *
      * All figures are in the shop's currency.
      *
-     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, route: array{name: string, parameters: array<string, mixed>}, registrations_route: array{name: string, parameters: array<string, mixed>}, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
+     * @return array{from: string|null, to: string|null, currency_code: string, referrers: array<int, array{host: string, visitors: float, registrations: float, revenue: float}>, totals: array{spend: float, revenue: float, registrations: float, unsubscribed: int, invoices: float, roas: float|null, cac: float|null}, channels: array<int, array{name: string, type: string, route: array{name: string, parameters: array<string, mixed>}, registrations_route: array{name: string, parameters: array<string, mixed>}, spend: float, revenue: float, registrations: float, roas: float|null}>, campaigns: array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>, spend_by_day: array<int, array{date: string, amount: float}>}
      */
     public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -58,26 +59,38 @@ class GetShopMarketingOverview
            questions divided by each other. */
         $costFrom      = $from;
         $costTo        = $to;
-        $spend         = $this->spendBySource($shop, $costFrom, $costTo);
+        /* The cost rows are read once and split two ways: the channel table wants them by source, the
+           campaign table by campaign, and both are the same rows over the same dates. */
+        $costs         = $this->costsBySourceAndCampaign($shop, $costFrom, $costTo);
+        $spend         = $costs->groupBy('traffic_source_id')->map(fn ($rows) => (float) $rows->sum('spend'));
         /* Sending is not free and nobody invoices us for it, so the newsletter channel would show a
            spend of zero and an infinite return. Estimated from the emails actually dispatched. */
         /* Per email channel: a newsletter and a promotional mailshot cost separately and lose
            subscribers separately, so averaging them would hide which one is doing the damage. */
-        $emailCostBy = [];
-        $unsubsBy    = [];
+        $costPerEmail   = GetEstimatedEmailCost::make()->costPerEmail($shop->currency);
+        $mailshotTotals = GetEstimatedEmailCost::totalsByType([$shop->id], $costFrom, $costTo);
+        $emailCostBy    = [];
+        $unsubsBy       = [];
 
         foreach ([TrafficSourcesTypeEnum::NEWSLETTER, TrafficSourcesTypeEnum::MARKETING_MAILSHOT] as $emailChannel) {
-            $types                             = GetEstimatedEmailCost::typesFor($emailChannel);
-            $emailCostBy[$emailChannel->value] = GetEstimatedEmailCost::run([$shop->id], $costFrom, $costTo, $shop->currency, $types);
-            $unsubsBy[$emailChannel->value]    = GetEstimatedEmailCost::unsubscribes([$shop->id], $costFrom, $costTo, $types);
+            $channelTotals = GetEstimatedEmailCost::forChannel($mailshotTotals, $emailChannel, $costPerEmail);
+
+            $emailCostBy[$emailChannel->value] = $channelTotals['cost'];
+            $unsubsBy[$emailChannel->value]    = $channelTotals['unsubscribed'];
         }
 
         /* Automated marketing is billed per message like everything else we send. */
-        $emailCostBy[TrafficSourcesTypeEnum::EMAIL_AUTOMATED->value] = GetEstimatedEmailCost::automated([$shop->id], $costFrom, $costTo, $shop->currency);
+        $emailCostBy[TrafficSourcesTypeEnum::EMAIL_AUTOMATED->value] = GetEstimatedEmailCost::automated([$shop->id], $costFrom, $costTo, $shop->currency, $costPerEmail);
 
         $emailCost = array_sum($emailCostBy);
         $visits        = $this->visitsBySource($shop, $from, $to);
         $orders        = $this->ordersBySource($shop, $from, $to, $window);
+
+        /* The campaign table and the referrer list are two readings of one set of campaign figures:
+           every referrer is a campaign of the referral or organic search channel. Counting them apart
+           meant scanning the invoices and the customers twice over. */
+        $campaignRevenue       = $this->revenueByCampaign($shop, $from, $to, $window);
+        $campaignRegistrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $to, $window);
 
         $channels = $sources
             ->map(fn ($source) => [
@@ -113,7 +126,17 @@ class GetShopMarketingOverview
             ->filter(fn (array $channel) => $channel['spend'] > 0 || $channel['revenue'] > 0
                 || $channel['registrations'] > 0 || $channel['pending'] > 0 || $channel['visits'] > 0
                 || $channel['orders'] > 0 || $channel['unsubscribed'] > 0)
-            ->sortByDesc(fn (array $channel) => max($channel['spend'], $channel['revenue']))
+            /* Money first, then the traffic behind it, and the name last so that channels which have
+               yet to earn or cost anything still land in the same order every load. Ties used to fall
+               back on whatever order the database happened to return the rows in. */
+            ->sortBy(fn (array $channel) => [
+                -max($channel['spend'], $channel['revenue']),
+                -$channel['revenue'],
+                -$channel['registrations'],
+                -$channel['orders'],
+                -$channel['visits'],
+                $channel['name'],
+            ])
             ->values()
             ->all();
 
@@ -135,6 +158,10 @@ class GetShopMarketingOverview
                 'spend_email'   => round($emailCost, 2),
                 'revenue'       => $totalRevenue,
                 'registrations' => $totalRegistrations,
+                /* Beside the sign-ups, never taken off them: an unsubscribe costs permission to email
+                   somebody, not the customer, and netting the two would report a number that means
+                   neither. */
+                'unsubscribed'  => (int) array_sum(array_column($channels, 'unsubscribed')),
                 'pending'       => $totalPending,
                 'invoices'      => round(collect($revenue)->sum('invoices'), 2),
                 'roas'          => ($totalSpend > 0 && ($totalRevenue > 0 || $totalPending <= 0))
@@ -150,8 +177,8 @@ class GetShopMarketingOverview
             'attribution_started_at' => GetAttributionStartedAt::run()?->toIso8601String(),
             'baseline'      => $this->baseline($shop, $from, $to),
             'channels'      => $channels,
-            'campaigns'     => $this->campaigns($shop, $from, $to),
-            'referrers'     => $this->referrers($shop, $from, $to, $window),
+            'campaigns'     => $this->campaigns($campaignRevenue, $campaignRegistrations, $costs),
+            'referrers'     => $this->referrers($shop, $campaignRevenue, $campaignRegistrations),
             'spend_by_day'  => $this->spendByDay($shop, $from, $to),
         ];
     }
@@ -403,32 +430,32 @@ class GetShopMarketingOverview
             ->pluck('visits', 'traffic_source_id');
     }
 
-    private function spendBySource(Shop $shop, ?Carbon $from, ?Carbon $to)
+    /**
+     * What was spent in the period, split as finely as it is recorded, so a caller can add it up by
+     * channel or by campaign without asking the table twice.
+     *
+     * @return Collection<int, object>
+     */
+    private function costsBySourceAndCampaign(Shop $shop, ?Carbon $from, ?Carbon $to): Collection
     {
         return DB::table('traffic_source_costs')
             ->where('shop_id', $shop->id)
             ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
             ->when($to, fn ($query) => $query->where('date', '<=', $to->toDateString()))
-            ->groupBy('traffic_source_id')
-            ->select('traffic_source_id', DB::raw('SUM(amount) as spend'))
-            ->pluck('spend', 'traffic_source_id');
+            ->groupBy('traffic_source_id', 'traffic_source_campaign_id')
+            ->select('traffic_source_id', 'traffic_source_campaign_id', DB::raw('SUM(amount) as spend'))
+            ->get();
     }
 
     /**
-     * @return array<int, array{date: string, amount: float}>
-     */
-    /**
-     * The campaigns that actually moved money or brought someone in during the period, richest first. Campaign refs come from
-     * ad platforms, so a shop can accumulate hundreds; the dashboard shows the handful worth looking
-     * at and the campaign listing carries the rest.
+     * Attributed revenue per campaign, carrying the channel each campaign belongs to so the campaign
+     * table and the referrer list can both be read off it.
      *
-     * @return array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>
+     * @return Collection<int, object>
      */
-    private function campaigns(Shop $shop, ?Carbon $from, ?Carbon $to, int $limit = 8): array
+    private function revenueByCampaign(Shop $shop, ?Carbon $from, ?Carbon $to, int $window): Collection
     {
-        $window = GetAttributionWindow::run($shop);
-
-        $revenue = DB::table('invoices')
+        return DB::table('invoices')
             ->join('model_has_traffic_sources as p', function ($join) use ($window) {
                 $join->on('p.model_id', '=', 'invoices.customer_id')
                     ->where('p.model_type', '=', 'Customer');
@@ -440,24 +467,39 @@ class GetShopMarketingOverview
             ->where('invoices.in_process', false)
             ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
             ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
-            ->groupBy('p.traffic_source_campaign_id')
+            ->groupBy('p.traffic_source_id', 'p.traffic_source_campaign_id')
             ->select(
+                'p.traffic_source_id',
                 'p.traffic_source_campaign_id as campaign_id',
                 DB::raw('SUM(invoices.net_amount * p.share) as revenue'),
             )
-            ->get()
-            ->keyBy('campaign_id');
+            ->get();
+    }
 
-        $registrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $to, $window);
+    /**
+     * @return array<int, array{date: string, amount: float}>
+     */
+    /**
+     * The campaigns that actually moved money or brought someone in during the period, richest first. Campaign refs come from
+     * ad platforms, so a shop can accumulate hundreds; the dashboard shows the handful worth looking
+     * at and the campaign listing carries the rest.
+     *
+     * @param Collection<int, object>  $campaignRevenue
+     * @param Collection<int, float>   $registrations
+     * @param Collection<int, object>  $costs
+     *
+     * @return array<int, array{name: string, channel: string, spend: float, revenue: float, registrations: float, roas: float|null}>
+     */
+    private function campaigns(Collection $campaignRevenue, Collection $registrations, Collection $costs, int $limit = 8): array
+    {
+        $revenue = $campaignRevenue
+            ->groupBy('campaign_id')
+            ->map(fn ($rows) => (float) $rows->sum('revenue'));
 
-        $spend = DB::table('traffic_source_costs')
+        $spend = $costs
             ->whereNotNull('traffic_source_campaign_id')
-            ->where('shop_id', $shop->id)
-            ->when($from, fn ($query) => $query->where('date', '>=', $from->toDateString()))
-            ->when($to, fn ($query) => $query->where('date', '<=', $to->toDateString()))
             ->groupBy('traffic_source_campaign_id')
-            ->select('traffic_source_campaign_id', DB::raw('SUM(amount) as spend'))
-            ->pluck('spend', 'traffic_source_campaign_id');
+            ->map(fn ($rows) => (float) $rows->sum('spend'));
 
         $campaignIds = $revenue->keys()->merge($spend->keys())->merge($registrations->keys())->unique();
 
@@ -474,7 +516,7 @@ class GetShopMarketingOverview
                 'name'          => $campaign->name,
                 'channel'       => $campaign->channel,
                 'spend'         => round((float) ($spend[$campaign->id] ?? 0), 2),
-                'revenue'       => round((float) ($revenue[$campaign->id]->revenue ?? 0), 2),
+                'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
             ])
             ->map(fn (array $campaign) => $campaign + [
@@ -487,58 +529,58 @@ class GetShopMarketingOverview
     }
 
     /**
-     * The sites actually sending people here, richest first. Each referring host is a campaign of the
-     * referral channel, so this is the campaign breakdown narrowed to that one channel: trade
-     * directories, blogs, AI assistants. Before referral existed they were all indistinguishable from
-     * someone typing the address in.
+     * The sites actually sending people here, richest first. Each host is a campaign of the referral
+     * or the organic search channel: trade directories, blogs, AI assistants, search engines. Before
+     * those channels existed they were all indistinguishable from someone typing the address in.
      *
-     * @return array<int, array{host: string, visitors: float, registrations: float, revenue: float}>
+     * @param Collection<int, object> $campaignRevenue
+     * @param Collection<int, float>  $registrations
+     *
+     * @return array<int, array{host: string, kind: string, visitors: float, registrations: float, revenue: float}>
      */
-    private function referrers(Shop $shop, ?Carbon $from, ?Carbon $to, int $window, int $limit = 10): array
+    private function referrers(Shop $shop, Collection $campaignRevenue, Collection $registrations, int $limit = 10): array
     {
-        $referral = DB::table('traffic_sources')
+        /* Search engines belong here as much as directories do: knowing DuckDuckGo sends people is
+           what tells you whether it is worth advertising on. They keep their own channel for the
+           totals, but this list is about which individual sites send us anybody. */
+        $kindBySource = DB::table('traffic_sources')
             ->where('shop_id', $shop->id)
-            ->where('type', TrafficSourcesTypeEnum::REFERRAL->value)
-            ->value('id');
+            ->whereIn('type', [
+                TrafficSourcesTypeEnum::REFERRAL->value,
+                TrafficSourcesTypeEnum::ORGANIC_SEARCH->value,
+            ])
+            ->pluck('type', 'id');
 
-        if (!$referral) {
+        if ($kindBySource->isEmpty()) {
             return [];
         }
 
-        $registrations = $this->registrationsBy('traffic_source_campaign_id', $shop, $from, $to, $window);
+        $referralSources = $kindBySource->keys();
 
-        $revenue = DB::table('invoices')
-            ->join('model_has_traffic_sources as p', function ($join) use ($window) {
-                $join->on('p.model_id', '=', 'invoices.customer_id')
-                    ->where('p.model_type', '=', 'Customer');
-
-                $this->constrainToAttributionWindow($join, $window);
-            })
-            ->where('p.traffic_source_id', $referral)
-            ->where('invoices.shop_id', $shop->id)
-            ->where('invoices.in_process', false)
-            ->when($from, fn ($query) => $query->where('invoices.date', '>=', $from))
-            ->when($to, fn ($query) => $query->where('invoices.date', '<=', $to))
-            ->groupBy('p.traffic_source_campaign_id')
-            ->select('p.traffic_source_campaign_id as campaign_id', DB::raw('SUM(invoices.net_amount * p.share) as revenue'))
-            ->pluck('revenue', 'campaign_id');
+        $revenue = $campaignRevenue
+            ->whereIn('traffic_source_id', $referralSources)
+            ->groupBy('campaign_id')
+            ->map(fn ($rows) => (float) $rows->sum('revenue'));
 
         /* Counted as well as valued: a site that has only just started sending people is the whole
            point of this block, and it would be invisible if it had to have earned money first. */
         $touches = DB::table('model_has_traffic_sources')
             ->where('model_type', 'Customer')
-            ->where('traffic_source_id', $referral)
+            ->whereIn('traffic_source_id', $referralSources)
             ->whereNotNull('traffic_source_campaign_id')
             ->groupBy('traffic_source_campaign_id')
             ->select('traffic_source_campaign_id', DB::raw('SUM(share) as touches'))
             ->pluck('touches', 'traffic_source_campaign_id');
 
         return DB::table('traffic_source_campaigns')
-            ->where('traffic_source_id', $referral)
-            ->select('id', 'name')
+            ->whereIn('traffic_source_id', $referralSources)
+            ->select('id', 'name', 'traffic_source_id')
             ->get()
             ->map(fn ($campaign) => [
                 'host'          => $campaign->name,
+                'kind'          => ($kindBySource[$campaign->traffic_source_id] ?? '') === TrafficSourcesTypeEnum::ORGANIC_SEARCH->value
+                    ? 'search'
+                    : 'site',
                 'visitors'      => round((float) ($touches[$campaign->id] ?? 0), 2),
                 'registrations' => round((float) ($registrations[$campaign->id] ?? 0), 2),
                 'revenue'       => round((float) ($revenue[$campaign->id] ?? 0), 2),
