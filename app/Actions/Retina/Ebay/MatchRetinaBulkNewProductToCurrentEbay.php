@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\Ebay;
 
-use App\Actions\Dropshipping\Ebay\Product\MatchBulkNewProductToCurrentEbay;
+use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,12 +23,9 @@ class MatchRetinaBulkNewProductToCurrentEbay extends RetinaAction
     /**
      * @throws \Exception
      */
-    /**
-     * @return array{matched: int, ignored: int}
-     */
-    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): array
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        return MatchBulkNewProductToCurrentEbay::run($customerSalesChannel, $attributes);
+        MatchBulkPortfoliosToPlatform::dispatch($customerSalesChannel, $attributes);
     }
 
     public function rules(): array

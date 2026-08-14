@@ -105,6 +105,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ebay\CreateRetinaNewAllPortfoliosToEbay;
 use App\Actions\Retina\Ebay\CreateRetinaNewBulkPortfoliosToEbay;
+use App\Actions\Retina\Dropshipping\Portfolio\MatchRetinaBulkPortfoliosToPlatform;
 use App\Actions\Retina\Ebay\MatchRetinaBulkNewProductToCurrentEbay;
 use App\Actions\Retina\Ebay\MatchRetinaPortfolioToCurrentEbayProduct;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
@@ -399,6 +400,8 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/tiktok-batch-all', CreateRetinaNewAllPortfoliosToTiktok::class)->name('tiktok.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+
+    Route::post('{customerSalesChannel:id}/batch-match', MatchRetinaBulkPortfoliosToPlatform::class)->name('platform.batch_match')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
     Route::post('{customerSalesChannel:id}/allegro-batch-upload', CreateRetinaNewBulkPortfoliosToAllegro::class)->name('allegro.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/allegro-batch-all', CreateRetinaNewAllPortfoliosToAllegro::class)->name('allegro.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
