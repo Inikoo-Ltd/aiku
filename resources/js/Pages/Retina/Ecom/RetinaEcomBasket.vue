@@ -193,30 +193,26 @@ onBeforeUnmount(() => {
 })
 
 const isLoadingSelectShipper = ref(false)
-const onSelectShipper = (shipperId: number) => {
+const onSelectShipper = async (shipperId: number) => {
     if (!props.select_shipper_route?.name) {
         return
     }
-    router.patch(
+    isLoadingSelectShipper.value = true
+    await axios.patch(
         route(props.select_shipper_route.name, props.select_shipper_route.parameters),
-        { shipper_id: shipperId },
-        {
-            preserveScroll: true,
-            onStart: () => {
-                isLoadingSelectShipper.value = true
-            },
-            onError: () => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to change shipping method"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSelectShipper.value = false
-            },
-        }
+        { shipper_id: shipperId }
     )
+        .catch((exception: any) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: exception.response?.data?.message ?? trans("Failed to change shipping method"),
+                type: "error"
+            })
+        })
+        .finally(() => {
+            isLoadingSelectShipper.value = false
+            router.reload({ preserveScroll: true })
+        })
 }
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
