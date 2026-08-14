@@ -11,7 +11,8 @@
 namespace App\Actions\SysAdmin\Group\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
+use App\Actions\SysAdmin\UI\ShowSysAdminAnalyticsDashboard;
+use App\Actions\SysAdmin\UI\WithAnalyticsSubNavigations;
 use App\Http\Resources\History\HistoryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
@@ -26,6 +27,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexHistoryInGroupSetting extends OrgAction
 {
+    use WithAnalyticsSubNavigations;
+
     public function handle(Group $group, $prefix = null): LengthAwarePaginator|array|bool
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -97,7 +100,8 @@ class IndexHistoryInGroupSetting extends OrgAction
                         'icon'  => ['fal', 'fa-history'],
                         'title' => __('Changelog')
                     ],
-                    'title' => __('Changelog'),
+                    'title'         => __('Changelog'),
+                    'subNavigation' => $this->getAnalyticsNavigation($this->group, $request),
                 ],
                 'data'        => HistoryResource::collection($histories),
             ]
@@ -121,9 +125,9 @@ class IndexHistoryInGroupSetting extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.sysadmin.changelogs.index' =>
+            'grp.sysadmin.analytics.changelogs.index' =>
             array_merge(
-                ShowSysAdminDashboard::make()->getBreadcrumbs(),
+                ShowSysAdminAnalyticsDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,

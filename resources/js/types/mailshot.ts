@@ -15,6 +15,8 @@ export interface Mailshot {
     slug: string,
     type?: string,
     shop_id?: number,
+    shop_slug?: string,
+    organisation_slug?: string,
     webpage_slug?: string,
     webpage_website_slug?: string,
     has_source_reference?: boolean,

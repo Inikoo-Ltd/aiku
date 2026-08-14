@@ -15,7 +15,7 @@ class WebsiteFactory extends Factory
     public function definition(): array
     {
         return [
-            'code'                     => fake()->lexify(),
+            'code'                     => fake()->lexify('??????'),
             'name'                     => fake()->company(),
             'domain'                   => fake()->domainName,
             'cloudflare_token'         => fake()->password(40, 40),

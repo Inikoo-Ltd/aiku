@@ -15,7 +15,7 @@ class StockFamilyFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => fake()->lexify(),
+            'code' => fake()->lexify('??????'),
             'name' => fake()->name,
         ];
     }

@@ -35,8 +35,7 @@ interface Replenishment {
     slug: string
     code: string
     stock: number
-    ordered: number
-    eventual_stock: number
+    pending_picking: number
     location: { code: string; slug: string; status: string } | null
     other_locations: OtherLocation[]
     recommended: { min: number | null; max: number | null }
@@ -58,6 +57,10 @@ function locationRoute(slug: string) {
     ])
 }
 
+function stockNumber(value: number) {
+    return new Intl.NumberFormat("en", { maximumFractionDigits: 1 }).format(Number(value))
+}
+
 function recommendedLabel(recommended: { min: number | null; max: number | null }) {
     const values = [recommended.min, recommended.max].filter((value) => value !== null && value !== undefined)
 
@@ -70,7 +73,7 @@ function recommendedLabel(recommended: { min: number | null; max: number | null 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab ?? 'replenishments'">
+    <Table :resource="data" :name="tab ?? 'replenishments'" rowAlignTop>
         <template #cell(code)="{ item: replenishment }">
             <Link :href="orgStockRoute(replenishment) as string" class="primaryLink">
                 {{ replenishment.code }}
@@ -78,7 +81,7 @@ function recommendedLabel(recommended: { min: number | null; max: number | null 
         </template>
 
         <template #cell(other_locations)="{ item: replenishment }">
-            <div v-if="replenishment.other_locations?.length" class="flex flex-col gap-y-0.5">
+            <div v-if="replenishment.other_locations?.length" class="flex flex-col gap-y-0.5 text-[0.65rem] leading-tight">
                 <div
                     v-for="(otherLocation, index) in replenishment.other_locations"
                     :key="index"
@@ -109,15 +112,13 @@ function recommendedLabel(recommended: { min: number | null; max: number | null 
         </template>
 
         <template #cell(stock)="{ item: replenishment }">
-            <span class="tabular-nums">{{ locale.number(Number(replenishment.stock)) }}</span>
+            <span class="tabular-nums" :class="Number(replenishment.stock) < 0 ? 'text-red-500' : ''">
+                {{ stockNumber(replenishment.stock) }}
+            </span>
         </template>
 
-        <template #cell(ordered)="{ item: replenishment }">
-            <span class="tabular-nums">{{ locale.number(Number(replenishment.ordered)) }}</span>
-        </template>
-
-        <template #cell(eventual_stock)="{ item: replenishment }">
-            <span class="tabular-nums">{{ locale.number(Number(replenishment.eventual_stock)) }}</span>
+        <template #cell(pending_picking)="{ item: replenishment }">
+            <span class="tabular-nums">{{ stockNumber(replenishment.pending_picking) }}</span>
         </template>
 
         <template #cell(recommended)="{ item: replenishment }">

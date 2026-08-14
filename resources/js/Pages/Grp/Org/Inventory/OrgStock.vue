@@ -20,6 +20,7 @@ import {
     faExclamationCircle,
     faMoneyCheckEditAlt,
     faChartLine,
+    faBoxAlt,
     faChevronDown
 } from "@fal"
 import {
@@ -28,6 +29,7 @@ faShoppingCart,
 faShoppingBasket,
 faInventory as faInventorySolid,
 } from "@fas"
+import Breadcrumb from 'primevue/breadcrumb'
 import { computed, defineAsyncComponent, inject, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
@@ -73,6 +75,7 @@ library.add(
     faShoppingCart,
     faShoppingBasket,
     faInventorySolid,
+    faBoxAlt
 )
 
 
@@ -82,6 +85,7 @@ const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes,
     tabs: TSTabs
+    mini_breadcrumbs? : any[]
     showcase?: object
     supplier_products?: object
     locations?: object
@@ -197,5 +201,37 @@ const component = computed(() => {
         </Message>
     </div> -->
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <pre>
+        {{ mini_breadcrumbs }}
+    </pre>
+    <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+        <Breadcrumb :model="mini_breadcrumbs">
+            <template #item="{ item, index }">
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                    <component :is="item.to ? Link : 'span'" v-bind="item.to ? { href: route(item.to.name, item.to.parameters) } : {}" v-tooltip="item.tooltip"
+                        :title="item.label" class="flex items-center gap-2 text-sm transition-colors duration-150"
+                        :class="item.to
+                            ? 'text-gray-500'
+                            : 'text-gray-500 cursor-default'">
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <span>{{ item.label || '-' }}</span> <span v-if="item.post_label" class="text-gray-400">{{ item.post_label }}</span>
+                    </component>
+                </div>
+            </template>
+        </Breadcrumb>
+    </div>
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :reasons :org_stock_id></component>
 </template>
+<style scoped>
+/* Remove default breadcrumb styles */
+:deep(.p-breadcrumb) {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+}
+
+:deep(.p-breadcrumb-list > li.p-breadcrumb-separator:first-child) {
+    display: none !important;
+}
+</style>

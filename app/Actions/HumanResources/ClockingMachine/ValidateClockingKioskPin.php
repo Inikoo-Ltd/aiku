@@ -73,7 +73,8 @@ class ValidateClockingKioskPin
             return response()->json([
                 'success'  => true,
                 'employee' => [
-                    'alias' => $result['employee']->alias,
+                    'alias'       => $result['employee']->alias,
+                    'is_visiting' => $result['employee']->organisation_id !== $clockingMachine->organisation_id,
                 ],
                 'clocking' => [
                     'clocked_at' => $result['clocking']->clocked_at,

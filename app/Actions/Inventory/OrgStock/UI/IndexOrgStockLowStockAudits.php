@@ -53,6 +53,7 @@ class IndexOrgStockLowStockAudits extends OrgAction
         $queryBuilder = QueryBuilder::for(OrgStock::class);
         $queryBuilder->where('org_stocks.organisation_id', $organisation->id);
         $queryBuilder->where('org_stocks.state', OrgStockStateEnum::ACTIVE);
+        $queryBuilder->where('org_stocks.quantity_in_locations', '>', 0);
         $queryBuilder->where('org_stocks.quantity_in_locations', '<', $warehouse->getLowStockThreshold());
 
         return $queryBuilder

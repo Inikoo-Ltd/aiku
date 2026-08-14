@@ -35,6 +35,8 @@ class OrganisationStockHistoriesResource extends JsonResource
             'bucket'                         => $this->bucket,
             'org_stock_lpp_value'                => $this->org_stock_lpp_value,
             'grp_stock_lpp_value'                => $this->grp_stock_lpp_value,
+            'org_stock_wac_value'                => $this->org_stock_wac_value ?? null,
+            'org_stock_fifo_value'               => $this->org_stock_fifo_value ?? null,
             'number_org_stocks'              => $this->number_org_stocks,
             'number_out_of_stock_org_stocks' => $this->number_out_of_stock_org_stocks,
             'number_location_org_stocks'     => $this->number_location_org_stocks,
@@ -42,7 +44,9 @@ class OrganisationStockHistoriesResource extends JsonResource
             'grp_currency_code'              => $this->grp_currency_code,
             'number_locations'               => $this->number_locations,
             'number_org_stocks_not_sold_1y'  => $this->number_org_stocks_not_sold_1y,
-            'value_dormant_stock_1y'         => $this->value_dormant_stock_1y
+            'value_dormant_stock_1y'         => $this->value_dormant_stock_1y,
+            'value_dormant_stock_1y_wac'     => $this->value_dormant_stock_1y_wac ?? null,
+            'value_dormant_stock_1y_fifo'    => $this->value_dormant_stock_1y_fifo ?? null
         ];
     }
 }

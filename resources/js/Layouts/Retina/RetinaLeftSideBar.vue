@@ -8,6 +8,7 @@
 
 import RetinaLeftSidebarNavigation from "@/Layouts/Retina/RetinaLeftSidebarNavigation.vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
+import { clearIrisSession } from "@/Composables/clearIrisSession"
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -44,6 +45,7 @@ const onLogoutAuth = () => {
     router.post(route('retina.logout'), {},
     {
         onStart: () => isLoadingLogout.value = true,
+        onSuccess: () => clearIrisSession(layout),
         onError: () => isLoadingLogout.value = false,
     })
 
@@ -89,8 +91,8 @@ const onLogoutAuth = () => {
             <!-- Section: LogoutRetina -->
             <div class="absolute left-0 bottom-[88px] w-full mx-auto">
                 <Popover class="relative w-10/12 mx-auto" v-slot="{ open }">
-                    <PopoverButton class="w-fit flex xw-full focus:outline-none focus:ring-0 focus:border-none">
-                        <div class="xw-full rounded-md flex justify-center "
+                    <PopoverButton class="w-full flex xw-full focus:outline-none focus:ring-0 focus:border-none">
+                        <div class="w-full rounded-md flex justify-center "
                             :class="[
                                 open ? 'bg-white/25' : '',
                                 layout.leftSidebar.show ? '' : 'mx-1.5',
@@ -102,6 +104,7 @@ const onLogoutAuth = () => {
                                 type="negative"
                                 key="1"
                                 class="!px-3"
+                                :full="true"
                                 xclass="border-none text-white"
                             />
                         </div>
@@ -112,7 +115,7 @@ const onLogoutAuth = () => {
                             <div class="min-w-32 flex flex-col justify-center gap-y-2">
                                 <div class="whitespace-nowrap text-gray-500 text-xs">Are you sure want to logout?</div>
                                 <div class="mx-auto">
-                                    <Button @click="onLogoutAuth()" :loading="isLoadingLogout" :label="trans('Yes, logout')" type="red" />
+                                    <Button @click="onLogoutAuth()" :loading="isLoadingLogout" :label="trans('Yes, logout')" type="red" :full="true" />
                                 </div>
                             </div>
                         </PopoverPanel>

@@ -376,11 +376,11 @@ const contentClass = computed(() =>
 							v-if="!isTitleTruncated"
 							ref="titleRef"
 							class="w-full pb-1 2xl:pb-1 lg:min-w-0 lg:flex-1">
-							<h1
+							<div
 								:style="{ fontSize: titleFontSize }"
 								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
 								{{ fieldValue.family?.name }}
-							</h1>
+							</div>
 						</div>
 						<div
 							v-if="
@@ -415,11 +415,11 @@ const contentClass = computed(() =>
 							v-if="isTitleTruncated"
 							ref="truncatedTitleRef"
 							class="pb-1 2xl:pb-1 px-3 lg:px-0">
-							<h1
+							<div
 								:style="{ fontSize: titleFontSize }"
 								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
 								{{ fieldValue.family?.name }}
-							</h1>
+							</div>
 						</div>
 						<div
 							ref="descriptionBoxRef"

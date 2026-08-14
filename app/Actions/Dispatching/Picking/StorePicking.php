@@ -62,7 +62,17 @@ class StorePicking extends OrgAction
                 abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
             }
 
-            $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding);
+            /*
+             * A pick can never take more than the location holds, otherwise the
+             * location stock would go negative. If the system quantity is wrong
+             * the location must be stock-audited first.
+             */
+            $availableInLocation = (float)$locationOrgStock->quantity;
+            if ($availableInLocation <= 0) {
+                abort(422, 'Nothing to pick: the location has no stock, audit the location first');
+            }
+
+            $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding, $availableInLocation);
             data_set($modelData, 'last_picked_at', now());
         }
 

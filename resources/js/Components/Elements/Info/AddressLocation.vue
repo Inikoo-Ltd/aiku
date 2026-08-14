@@ -30,6 +30,7 @@ const flag = computed(() => countryCode.value ? '/flags/' + countryCode.value.to
             class="mr-1 h-[1em] w-auto shrink-0"
             :src="flag"
             :alt="countryCode"
+            @error="($event.target as HTMLImageElement).style.display = 'none'"
             :title="capitalize(countryName)"
         />
         <span>{{ addressLocation }}</span>

@@ -28,6 +28,12 @@ class OutboxHydrateDispatchedEmails implements ShouldBeUnique
 
     public string $jobQueue = 'ses-analytics';
 
+    public int $jobTries = 3;
+
+    public int $jobTimeout = 120;
+
+    public array $jobBackoff = [10, 30];
+
     public function getJobUniqueId(?int $outboxID): string
     {
         return $outboxID ?? 'empty';

@@ -30,7 +30,7 @@ import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 import OfflineChatForm from "../OfflineChatForm.vue"
 import { router, usePage } from "@inertiajs/vue3"
-import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb } from "@fal"
+import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck } from "@fal"
 import { useWindowSize } from "@vueuse/core"
 import { useBundle } from "../../../Composables/useBundle"
 import Image from "@common/Components/Image.vue"
@@ -38,7 +38,7 @@ import Image from "@common/Components/Image.vue"
 library.add(
     faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok,
     faYoutube, faLinkedinIn, faLine, faWeixin, faPinterest, faSnapchat, faDiscord,
-    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb
+    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck
 )
 
 interface ChatMessage {

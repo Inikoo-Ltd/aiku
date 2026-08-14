@@ -30,7 +30,7 @@ class OrgStockLowStockAuditsResource extends JsonResource
             'name'        => $this->name,
             'family_code' => $this->family_code,
             'family_slug' => $this->family_slug,
-            'stock'       => trimDecimalZeros($this->stock),
+            'stock'       => number_format((float)$this->stock, 3),
         ];
     }
 }

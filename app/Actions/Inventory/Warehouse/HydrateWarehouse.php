@@ -11,6 +11,8 @@ namespace App\Actions\Inventory\Warehouse;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateFulfilments;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksWithoutProducts;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateReplenishments;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletDeliveries;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePalletReturns;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePallets;
@@ -48,6 +50,8 @@ class HydrateWarehouse
         WarehouseHydrateTrolleys::run($warehouse);
         WarehouseHydratePickedBays::run($warehouse);
         WarehouseHydrateLowStockAudits::run($warehouse);
+        WarehouseHydrateReplenishments::run($warehouse);
+        WarehouseHydrateOrgStocksWithoutProducts::run($warehouse);
 
     }
 

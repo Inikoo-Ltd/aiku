@@ -32,6 +32,7 @@ use App\Actions\Inventory\OrganisationStockHistory\UI\ExportOrganisationStockHis
 use App\Actions\Inventory\OrganisationStockHistory\UI\IndexOrganisationStockHistories;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockReplenishments;
+use App\Actions\Inventory\OrgStock\UI\IndexNegativeLocationOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockLowStockAudits;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProcurement;
@@ -68,10 +69,15 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
 
     Route::prefix('replenishments')->as('replenishments.')->group(function () {
         Route::get('/', IndexOrgStockReplenishments::class)->name('index');
+        Route::get('/dropshipping', [IndexOrgStockReplenishments::class, 'dropshipping'])->name('dropshipping');
     });
 
     Route::prefix('low-stock-audits')->as('low_stock_audits.')->group(function () {
         Route::get('/', IndexOrgStockLowStockAudits::class)->name('index');
+    });
+
+    Route::prefix('negative-stocks')->as('negative_stocks.')->group(function () {
+        Route::get('/', IndexNegativeLocationOrgStocks::class)->name('index');
     });
 
     Route::prefix('orphans-from-product')->as('orphan-product.')->group(function () {

@@ -42,7 +42,9 @@ class IndexWebLayoutTemplates extends OrgAction
                 'web_layout_templates.id',
                 'web_layout_templates.name',
                 'web_layout_templates.type',
+                'web_layout_templates.sub_type',
                 'web_layout_templates.scope',
+                'web_layout_templates.blocks',
                 'web_layout_templates.created_at',
                 'users.username'
             ])

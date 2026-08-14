@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\Leave\UI;
 
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\LeaveBalanceResource;
@@ -125,7 +126,7 @@ class IndexLeaves extends OrgAction
     public function asController(ActionRequest $request): array
     {
         $user = Auth::user();
-        $employee = $user?->employees->first();
+        $employee = $user ? GetUserCurrentEmployee::run($user) : null;
 
         if (!$employee) {
             abort(404, 'Employee not found');

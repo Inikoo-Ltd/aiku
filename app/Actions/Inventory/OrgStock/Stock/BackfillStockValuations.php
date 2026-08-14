@@ -105,6 +105,7 @@ class BackfillStockValuations
             ->where('org_stock_id', $orgStock->id)
             ->where('date', '>=', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
             ->orderBy('date')
+            ->orderBy('id')
             ->get()->all();
 
         $histories = DB::connection('aiku_no_sticky')->table('org_stock_histories')
@@ -112,6 +113,7 @@ class BackfillStockValuations
             ->where('org_stock_id', $orgStock->id)
             ->where('date', '>=', $wacStartDate->format('Y-m-d'))
             ->orderBy('date')
+            ->orderBy('id')
             ->get();
 
         $movementIndex = 0;

@@ -22,6 +22,8 @@ class GetAggregatedChannelShowcase
     use AsAction;
     use WithAggregatedChannelQueries;
 
+    private const TOP_CAMPAIGNS = 20;
+
     /**
      * One channel seen from above: what it has done across every shop of an organisation, or every
      * organisation of the group, in the parent's own currency. The same shape the shop-level channel
@@ -31,7 +33,7 @@ class GetAggregatedChannelShowcase
      * this page answers "what is this channel", and two screens disagreeing about one figure because
      * they cover different stretches of time is worse than either of them alone.
      *
-     * @return array{currency_code: string, channel: array<string, mixed>, stats: array<string, float|int|null>, activity: array{first_visit: string|null, last_visit: string|null}, children: array<int, array<string, mixed>>}
+     * @return array{currency_code: string, channel: array<string, mixed>, stats: array<string, float|int|null>, activity: array{first_visit: string|null, last_visit: string|null}, children: array<int, array<string, mixed>>, campaigns: array<int, array<string, mixed>>, campaigns_total: int}
      */
     public function handle(Organisation|Group $parent, TrafficSourcesTypeEnum $type): array
     {
@@ -63,9 +65,11 @@ class GetAggregatedChannelShowcase
         $totalRegistrations = round((float) $registrations->sum(), 2);
         $totalSpend         = round((float) $spend->sum() + $emailCost, 2);
 
+        $campaigns = $this->campaigns($parent, $shops, $type, $from, $revenueColumn, $costColumn);
+
         return [
-            'currency_code' => $parent->currency->code,
-            'channel'       => [
+            'currency_code'   => $parent->currency->code,
+            'channel'         => [
                 'name'        => TrafficSourcesTypeEnum::labels()[$type->value] ?? $type->value,
                 'type'        => $type->value,
                 'type_label'  => TrafficSourcesTypeEnum::labels()[$type->value] ?? $type->value,
@@ -73,7 +77,7 @@ class GetAggregatedChannelShowcase
                 'is_paid'     => $type->isPaid(),
                 'status'      => (bool) (TrafficSourcesTypeEnum::status()[$type->value] ?? true),
             ],
-            'stats'         => [
+            'stats'           => [
                 'visits'       => (int) $visits->sum(),
                 'customers'    => $totalRegistrations,
                 'purchases'    => round((float) $orders->sum(), 2),
@@ -91,10 +95,69 @@ class GetAggregatedChannelShowcase
                     : null,
                 'per_customer' => $totalRegistrations > 0 ? round($totalRevenue / $totalRegistrations, 2) : null,
             ],
-            'activity'       => $this->activity($shops, $type),
-            'children_label' => $isOrganisation ? __('Shops') : __('Organisations'),
-            'children'       => $this->children($parent, $shops, $type, $revenue, $registrations, $orders, $pending, $visits),
+            'activity'        => $this->activity($shops, $type),
+            'children_label'  => $isOrganisation ? __('Shops') : __('Organisations'),
+            'children'        => $this->children($parent, $shops, $type, $revenue, $registrations, $orders, $pending, $visits),
+            'campaigns'       => array_slice($campaigns, 0, self::TOP_CAMPAIGNS),
+            'campaigns_total' => count($campaigns),
         ];
+    }
+
+    /**
+     * The campaigns running under this channel anywhere below the parent, worst-earning last. Every
+     * campaign belongs to a single shop's traffic source, so nothing is merged here: what the page
+     * adds is the ranking, which nobody can get from the shop pages one at a time.
+     *
+     * Figures come from the same attribution scan as the headline rather than from the campaign stat
+     * rows, which are kept in the shop's own currency and would not add up in the parent's.
+     *
+     * @param Collection<int, Shop> $shops
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function campaigns(
+        Organisation|Group $parent,
+        Collection $shops,
+        TrafficSourcesTypeEnum $type,
+        ?Carbon $from,
+        string $revenueColumn,
+        string $costColumn
+    ): array {
+        $revenue       = $this->revenueByType($shops, $from, null, $revenueColumn, 'p.traffic_source_campaign_id', $type->value);
+        $registrations = $this->registrationsByType($shops, $from, null, 'p.traffic_source_campaign_id', $type->value);
+        $orders        = $this->ordersByType($shops, $from, null, 'p.traffic_source_campaign_id', $type->value);
+        $spend         = $this->spendByType($shops, $from, null, $costColumn, 'c.traffic_source_campaign_id', $type->value);
+
+        $isGroup = $parent instanceof Group;
+
+        return DB::table('traffic_source_campaigns as tc')
+            ->join('traffic_sources as ts', 'ts.id', '=', 'tc.traffic_source_id')
+            ->join('shops as s', 's.id', '=', 'ts.shop_id')
+            ->join('organisations as o', 'o.id', '=', 's.organisation_id')
+            ->whereIn('ts.shop_id', $shops->pluck('id'))
+            ->where('ts.type', $type->value)
+            ->select('tc.id', 'tc.name', 'tc.reference', 's.name as shop_name', 'o.name as organisation_name')
+            ->get()
+            ->map(function ($campaign) use ($revenue, $registrations, $orders, $spend, $isGroup) {
+                $earned = round((float) ($revenue[$campaign->id] ?? 0), 2);
+                $spent  = round((float) ($spend[$campaign->id] ?? 0), 2);
+
+                return [
+                    'name'      => $campaign->name,
+                    'reference' => $campaign->reference,
+                    'owner'     => $isGroup ? $campaign->organisation_name.' · '.$campaign->shop_name : $campaign->shop_name,
+                    'customers' => round((float) ($registrations[$campaign->id] ?? 0), 2),
+                    'purchases' => round((float) ($orders[$campaign->id] ?? 0), 2),
+                    'revenue'   => $earned,
+                    'cost'      => $spent,
+                    'roas'      => $spent > 0 ? round($earned / $spent, 2) : null,
+                ];
+            })
+            ->filter(fn (array $campaign) => $campaign['revenue'] > 0 || $campaign['cost'] > 0
+                || $campaign['customers'] > 0 || $campaign['purchases'] > 0)
+            ->sortByDesc('revenue')
+            ->values()
+            ->all();
     }
 
     /**

@@ -360,8 +360,9 @@
 
                     <td style="text-align:left" colspan="2">
                         @if($transaction->historicAsset)
-                            @if(!$pro_mode && $transaction->model && $transaction->model->units > 1)
-                                {{ trimDecimalZeros($transaction->model->units) }}x
+                            @php($packUnits = $transaction->historicAsset->units > 1 ? $transaction->historicAsset->units : $transaction->model?->units)
+                            @if(!$pro_mode && $packUnits > 1)
+                                {{ trimDecimalZeros($packUnits) }}x
                             @endif
                             {{ $transaction->historicAsset->name }}
                             @if(isset($transaction->pallet))

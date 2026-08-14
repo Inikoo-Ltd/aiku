@@ -3376,6 +3376,10 @@ describe('email retention', function () {
     test('outbox dispatched emails hydrator adds the archived baseline to the live count', function () {
         $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
 
+        \App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails::run($outbox->id);
+        $liveEmails     = $outbox->stats->refresh()->number_dispatched_emails;
+        $liveSentEmails = $outbox->stats->number_dispatched_emails_state_sent;
+
         $emailId = DB::table('dispatched_emails')->insertGetId([
             'outbox_id'  => $outbox->id,
             'state'      => 'sent',
@@ -3386,7 +3390,7 @@ describe('email retention', function () {
 
         \App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails::run($outbox->id);
 
-        expect($outbox->stats->refresh()->number_dispatched_emails)->toBe(1);
+        expect($outbox->stats->refresh()->number_dispatched_emails)->toBe($liveEmails + 1);
 
         $outbox->stats->update([
             'archived_dispatched_emails' => [
@@ -3399,8 +3403,8 @@ describe('email retention', function () {
 
         \App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails::run($outbox->id);
 
-        expect($outbox->stats->refresh()->number_dispatched_emails)->toBe(40)
-            ->and($outbox->stats->number_dispatched_emails_state_sent)->toBe(40);
+        expect($outbox->stats->refresh()->number_dispatched_emails)->toBe(40 + $liveEmails)
+            ->and($outbox->stats->number_dispatched_emails_state_sent)->toBe(40 + $liveSentEmails);
     });
 
     test('email bulk run cumulative hydrator adds the archived baseline to the live count', function () {
