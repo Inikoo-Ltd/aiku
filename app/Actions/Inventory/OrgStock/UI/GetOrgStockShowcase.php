@@ -19,6 +19,8 @@ use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use Illuminate\Support\Facades\DB;
 
 class GetOrgStockShowcase
 {
@@ -73,6 +75,7 @@ class GetOrgStockShowcase
                     ],
                 ],
                 'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
+                'has_no_products'    => $this->hasNoProducts($orgStock),
                 'latest_movements'   => $this->getLatestMovements($orgStock),
                 'stock_history_route' => [
                     'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes)$/', '', request()->route()->getName()).'.stock_history',
@@ -155,6 +158,15 @@ class GetOrgStockShowcase
         );
     }
 
+
+    private function hasNoProducts(OrgStock $orgStock): bool
+    {
+        if (!in_array($orgStock->state, [OrgStockStateEnum::ACTIVE, OrgStockStateEnum::DISCONTINUING])) {
+            return false;
+        }
+
+        return !DB::table('product_has_org_stocks')->where('org_stock_id', $orgStock->id)->exists();
+    }
 
     /**
      * @return array{0: int|float, 1: array{0: int|float, 1: int|float}}

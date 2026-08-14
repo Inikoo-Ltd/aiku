@@ -12,7 +12,7 @@ import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
-import { faExclamationTriangle } from "@fad"
+import { faExclamationTriangle, faFireAlt } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
@@ -31,7 +31,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useConfirm } from "primevue/useconfirm"
 import ConfirmDialog from "primevue/confirmdialog"
-library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
+library.add(faExclamationTriangle, faFireAlt, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
 
 const props = defineProps < {
     data: {
@@ -59,6 +59,7 @@ const props = defineProps < {
         stocks_management: StocksManagementTS
         currency_code: string
         is_quantity_excess: boolean
+        has_no_products?: boolean
         barcodes?: {
             level: string
             label: string
@@ -294,8 +295,27 @@ const saveBarcode = (value: string | null) => {
                         class="w-full h-52 flex items-center justify-center" />
                 </div>
 
+                <!-- Card: No product warning -->
+                <div v-if="data.has_no_products"
+                    class="sm:col-span-2 self-start relative overflow-hidden rounded-lg border border-red-200 bg-red-50 px-4 py-4 shadow-sm">
+                    <FontAwesomeIcon icon="fad fa-fire-alt"
+                        class="text-red-400 opacity-20 absolute -bottom-2 -right-4 text-8xl -z-0 pointer-events-none"
+                        fixed-width aria-hidden="true" />
+                    <div class="relative z-10 flex items-start gap-3">
+                        <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-red-400 text-lg mt-0.5" fixed-width aria-hidden="true" />
+                        <div>
+                            <div class="text-sm font-semibold text-red-600">
+                                {{ trans("This SKO has no product") }}
+                            </div>
+                            <div class="mt-1 text-xs text-red-500">
+                                {{ trans("It cannot be sold until it is attached to a product") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Card: Stock Summary + Sales Analytics -->
-                <div class="sm:col-span-2 flex flex-col gap-4 self-start">
+                <div v-else class="sm:col-span-2 flex flex-col gap-4 self-start">
                     <div class="flex flex-wrap gap-3">
                         <div v-for="stat in stockCostStats" :key="stat.title"
                             class="flex-1 min-w-max rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
