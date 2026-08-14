@@ -2361,6 +2361,24 @@ describe('aurora provisional cost fix', function () {
             ->and((float) $picked->running_wac_value)->toBe(45.0)
             ->and((float) $picked->running_fifo_value)->toBe(50.0);
     });
+
+    test('running values replay the quantity when it was never stored', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFJ');
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 100]);
+        $purchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(3)]);
+        $picked = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PICKED->value, 'quantity' => -40]);
+        $picked->update(['date' => now()->subDays(2)]);
+
+        // Aurora fetched movements arrive without a running quantity
+        DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->update(['running_quantity_org_stock' => null]);
+
+        \App\Actions\Inventory\OrgStockMovement\CalculateOrgStockMovementRunningValues::run($orgStock->id);
+
+        expect((float) $picked->fresh()->running_fifo_value)->toBe(120.0);
+    });
 });
 
 test('merging a duplicate stock moves its links to the stocked twin and retires the orphans', function () {
