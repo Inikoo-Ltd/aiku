@@ -14,6 +14,7 @@ use App\Models\Catalogue\Product;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -21,6 +22,8 @@ use Illuminate\Support\Str;
 trait WithEbayApiRequest
 {
     public int $timeOut = 30;
+
+    public const int NEW_CONDITION_ID = 1000;
 
     public function setTimeout(int $timeOut): void
     {
@@ -335,6 +338,61 @@ trait WithEbayApiRequest
                 'cardinality' => $aspect['aspectConstraint']['itemToAspectCardinality']
             ];
         })->values();
+    }
+
+    /**
+     * Item conditions eBay accepts for a category, as returned by the Sell Metadata API
+     *
+     * @return array<int, array{conditionId: string, conditionDescription: string}>
+     */
+    public function getItemConditionsForCategory(string $categoryId): array
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+        $cacheKey      = 'ebay_item_conditions_'.$marketplaceId.'_'.$categoryId;
+
+        $cachedConditions = Cache::get($cacheKey);
+        if (is_array($cachedConditions)) {
+            return $cachedConditions;
+        }
+
+        try {
+            $endpoint = "/sell/metadata/v1/marketplace/$marketplaceId/get_item_condition_policies";
+
+            $response = $this->makeEbayRequest('get', $endpoint, [], [
+                'filter' => 'categoryIds:{'.$categoryId.'}'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Item Condition Policies Error: '.$e->getMessage());
+
+            return [];
+        }
+
+        $conditions = Arr::get($response, 'itemConditionPolicies.0.itemConditions');
+
+        if (!is_array($conditions)) {
+            return [];
+        }
+
+        Cache::put($cacheKey, $conditions, now()->addWeek());
+
+        return $conditions;
+    }
+
+    /**
+     * Categories restrict which item conditions they take, and everything uploaded from Aiku is new.
+     * An unreadable policy is treated as accepting it, so a metadata outage does not stop uploads.
+     */
+    public function categoryAcceptsNewCondition(string $categoryId): bool
+    {
+        $conditions = $this->getItemConditionsForCategory($categoryId);
+
+        if (blank($conditions)) {
+            return true;
+        }
+
+        return collect($conditions)->contains(
+            fn ($condition) => (int) Arr::get($condition, 'conditionId') === self::NEW_CONDITION_ID
+        );
     }
 
     public function getServicesWithCarrierInfo(): array
@@ -1783,12 +1841,11 @@ trait WithEbayApiRequest
     public function getCategorySuggestions($keyword)
     {
         try {
-            $encodedKeyword = urlencode($keyword);
-            $categoryTree   = $this->getCategoryTreeId();
-            $endpoint       = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_category_suggestions";
+            $categoryTree = $this->getCategoryTreeId();
+            $endpoint     = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_category_suggestions";
 
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'q' => $encodedKeyword
+                'q' => $keyword
             ]);
         } catch (Exception $e) {
             Log::error('Get Category Suggestions Error: '.$e->getMessage());
