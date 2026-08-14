@@ -7,16 +7,22 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faXmark,
     faChevronDown,
-    faChevronUp,
     faPaperPlane,
     faArrowUpRightFromSquare,
+    faPlus,
+    faImage,
+    faPaperclip,
+    faEnvelope,
+    faFileLines,
 } from "@fortawesome/free-solid-svg-icons"
+import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
 import { faCheck, faCheckDouble } from "@far"
 import { notify } from "@kyvg/vue3-notification"
 import { useLayoutStore } from "@/Stores/layout"
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
 import type { MiniChat } from "@/Composables/useMiniChats"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
@@ -41,9 +47,35 @@ const unreadCount = ref(0)
 const remoteTypingUser = ref<string | null>(null)
 const messagesContainer = ref<HTMLElement | null>(null)
 
+const imageInput = ref<HTMLInputElement | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
+const previewUrl = ref<string | null>(null)
+const previewType = ref<"image" | "file" | null>(null)
+const isEmailNotif = ref(false)
+const isOptionMenuOpen = ref(false)
+const optionMenuRef = ref<HTMLElement | null>(null)
+const isJiraModalOpen = ref(false)
+
+const IMAGE_TYPES = ["image/webp", "image/jpeg", "image/jpg", "image/png", "image/avif"]
+
+const FILE_TYPES = [
+    "application/pdf",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]
+
+const MAX_SIZE = 10 * 1024 * 1024
+
 const isClosed = computed(() => props.chat.status === "closed")
 const isWaiting = computed(() => props.chat.status === "waiting")
 const canSend = computed(() => !isClosed.value && !isWaiting.value)
+const hasAttachment = computed(() => !!selectedFile.value)
+
+const jiraSession = computed(() => ({
+    ulid: props.chat.ulid,
+    contact_name: props.chat.contactName,
+}))
 
 const scrollBottom = () =>
     nextTick(() => {
@@ -101,31 +133,124 @@ const markAsRead = async () => {
     }
 }
 
+const notifyRejectedFile = (text: string) =>
+    notify({ title: trans("Failed"), text, type: "error" })
+
+const handleImageSelect = (event: Event) => {
+    const file = (event.target as HTMLInputElement)?.files?.[0]
+    if (!file) return
+
+    if (!IMAGE_TYPES.includes(file.type)) {
+        notifyRejectedFile(trans("Image format not supported"))
+        return
+    }
+
+    if (file.size > MAX_SIZE) {
+        notifyRejectedFile(trans("Maximum image size 10MB"))
+        return
+    }
+
+    clearAttachment()
+    selectedFile.value = file
+    previewType.value = "image"
+    previewUrl.value = URL.createObjectURL(file)
+}
+
+const handleDocSelect = (event: Event) => {
+    const file = (event.target as HTMLInputElement)?.files?.[0]
+    if (!file) return
+
+    if (!FILE_TYPES.includes(file.type)) {
+        notifyRejectedFile(trans("File format not supported"))
+        return
+    }
+
+    if (file.size > MAX_SIZE) {
+        notifyRejectedFile(trans("Maximum file size 10MB"))
+        return
+    }
+
+    clearAttachment()
+    selectedFile.value = file
+    previewType.value = "file"
+    previewUrl.value = null
+}
+
+const clearAttachment = (revokePreview = true) => {
+    if (revokePreview && previewUrl.value) {
+        URL.revokeObjectURL(previewUrl.value)
+    }
+
+    selectedFile.value = null
+    previewUrl.value = null
+    previewType.value = null
+
+    if (imageInput.value) imageInput.value.value = ""
+    if (fileInput.value) fileInput.value.value = ""
+}
+
+const pickAttachment = (input: HTMLInputElement | null) => {
+    isOptionMenuOpen.value = false
+    input?.click()
+}
+
+const toggleEmailNotif = () => {
+    isEmailNotif.value = !isEmailNotif.value
+    isOptionMenuOpen.value = false
+}
+
+const openJiraModal = () => {
+    isOptionMenuOpen.value = false
+    isJiraModalOpen.value = true
+}
+
+const closeOptionMenu = (event: MouseEvent) => {
+    if (isOptionMenuOpen.value && optionMenuRef.value && !optionMenuRef.value.contains(event.target as Node)) {
+        isOptionMenuOpen.value = false
+    }
+}
+
 const sendMessage = async () => {
     const text = newMessage.value.trim()
-    if (!text || isSending.value || !canSend.value) return
+    const file = selectedFile.value
 
+    if ((!text && !file) || isSending.value || !canSend.value) return
+
+    const messageType = file ? previewType.value ?? "file" : "text"
     const tempId = `tmp-${Date.now()}`
     messages.value.push({
         id: tempId,
         _tempId: tempId,
         message_text: text,
+        message_type: messageType,
+        media_url: messageType === "image" ? { original: previewUrl.value } : null,
+        file_name: file?.name,
         sender_type: "agent",
-        message_type: "text",
         created_at: new Date().toISOString(),
         _status: "sending",
     })
 
     newMessage.value = ""
     isSending.value = true
+    clearAttachment(false)
     scrollBottom()
 
     try {
-        await axios.post(`${baseUrl}/app/api/chats/messages/${props.chat.ulid}/send`, {
-            message_text: text,
-            message_type: "text",
-            sender_type: "agent",
+        const formData = new FormData()
+        formData.append("message_text", text)
+        formData.append("message_type", messageType)
+        formData.append("sender_type", "agent")
+        formData.append("is_email_notif", String(isEmailNotif.value))
+
+        if (file) {
+            formData.append(messageType === "image" ? "image" : "file", file)
+        }
+
+        await axios.post(`${baseUrl}/app/api/chats/messages/${props.chat.ulid}/send`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
         })
+
+        isEmailNotif.value = false
     } catch (error: any) {
         const failed = messages.value.find((message) => message._tempId === tempId)
         if (failed) {
@@ -241,21 +366,23 @@ watch(
 )
 
 onMounted(async () => {
+    document.addEventListener("click", closeOptionMenu)
     await getMessages()
     initSocket()
     await markAsRead()
 })
 
 onUnmounted(() => {
+    document.removeEventListener("click", closeOptionMenu)
     stopSocket()
+    clearAttachment()
     if (typingTimeout) clearTimeout(typingTimeout)
     if (remoteTypingTimeout) clearTimeout(remoteTypingTimeout)
 })
 </script>
 
 <template>
-    <div class="w-60 max-w-[92vw] bg-white text-gray-800 rounded-t-lg shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
-        :class="chat.isMinimised ? '' : 'h-[320px] max-h-[60vh]'">
+    <div class="w-60 max-w-[92vw] bg-white text-gray-800 rounded-t-lg shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
         <div class="flex items-center gap-1.5 px-2 py-1.5 border-b border-gray-200 bg-white cursor-pointer shrink-0"
             @click="emit('toggle')">
             <div class="relative w-5 h-5 shrink-0">
@@ -263,8 +390,6 @@ onUnmounted(() => {
                     <Image v-if="chat.avatar" :src="chat.avatar" class="w-full h-full object-cover" />
                     <FontAwesomeIcon v-else :icon="faUser" class="text-[9px]" />
                 </div>
-                <span v-if="chat.status === 'active'"
-                    class="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-green-500 ring-1 ring-white" />
             </div>
 
             <div class="flex-1 min-w-0 text-[11px] font-semibold text-gray-900 truncate">
@@ -283,7 +408,8 @@ onUnmounted(() => {
 
             <button class="w-5 h-5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                 v-tooltip="chat.isMinimised ? trans('Expand') : trans('Minimise')" @click.stop="emit('toggle')">
-                <FontAwesomeIcon :icon="chat.isMinimised ? faChevronUp : faChevronDown" class="text-[9px]" />
+                <FontAwesomeIcon :icon="faChevronDown" class="text-[9px] transition-transform duration-300 ease-in-out"
+                    :class="chat.isMinimised ? 'rotate-180' : 'rotate-0'" />
             </button>
 
             <button class="w-5 h-5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
@@ -292,7 +418,9 @@ onUnmounted(() => {
             </button>
         </div>
 
-        <template v-if="!chat.isMinimised">
+        <div :inert="chat.isMinimised"
+            class="flex flex-col min-h-0 overflow-hidden transition-[height,opacity] duration-300 ease-in-out"
+            :class="chat.isMinimised ? 'h-0 opacity-0' : 'h-[320px] max-h-[60vh] opacity-100'">
             <div ref="messagesContainer"
                 class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-1.5 space-y-1 bg-[#F0F4F8]">
                 <div v-if="isLoading" class="h-full flex items-center justify-center">
@@ -356,16 +484,99 @@ onUnmounted(() => {
                 </button>
             </div>
 
-            <div v-else class="flex items-end gap-1.5 px-2 py-1.5 border-t border-gray-200 shrink-0">
-                <textarea v-model="newMessage" rows="1" :placeholder="trans('Type message...')"
-                    class="flex-1 min-w-0 resize-none text-[11px] leading-tight px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:border-gray-400 focus:ring-0"
-                    @input="handleTyping" @keydown.enter.exact.prevent="sendMessage" />
-                <button class="w-6 h-6 shrink-0 rounded-md flex items-center justify-center text-white disabled:opacity-50"
-                    :style="{ backgroundColor: 'var(--theme-color-4)' }" :disabled="isSending || !newMessage.trim()"
-                    @click="sendMessage">
-                    <FontAwesomeIcon :icon="faPaperPlane" class="text-[9px]" />
-                </button>
-            </div>
-        </template>
+            <template v-else>
+                <div v-if="previewType === 'image' && previewUrl" class="px-2 pt-1.5 shrink-0">
+                    <div class="relative inline-block">
+                        <img :src="previewUrl" class="h-12 rounded border border-gray-200 object-cover" />
+                        <button type="button"
+                            class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white shadow border border-gray-200 text-gray-500 hover:text-red-500"
+                            @click="clearAttachment()">
+                            <FontAwesomeIcon :icon="faXmark" class="text-[8px]" />
+                        </button>
+                    </div>
+                </div>
+
+                <div v-else-if="previewType === 'file' && selectedFile" class="px-2 pt-1.5 shrink-0">
+                    <div class="flex items-center gap-1.5 px-1.5 py-1 rounded border border-gray-200 bg-gray-50 min-w-0">
+                        <FontAwesomeIcon :icon="faFileLines" class="text-[10px] text-gray-400 shrink-0" />
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[10px] text-gray-700 truncate">{{ selectedFile.name }}</div>
+                            <div class="text-[9px] text-gray-400">{{ (selectedFile.size / 1024).toFixed(1) }} KB</div>
+                        </div>
+                        <button type="button" class="text-gray-400 hover:text-red-500 shrink-0"
+                            @click="clearAttachment()">
+                            <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-end gap-1.5 px-2 py-1.5 border-t border-gray-200 shrink-0">
+                    <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
+                        @change="handleImageSelect" />
+                    <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden"
+                        @change="handleDocSelect" />
+
+                    <textarea v-model="newMessage" rows="1" :placeholder="trans('Type message...')"
+                        class="flex-1 min-w-0 resize-none text-[11px] leading-tight px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:border-gray-400 focus:ring-0"
+                        @input="handleTyping" @keydown.enter.exact.prevent="sendMessage" />
+
+                    <div ref="optionMenuRef" class="relative shrink-0">
+                        <button type="button"
+                            class="w-6 h-6 rounded-md flex items-center justify-center border border-gray-300 text-gray-500 hover:bg-gray-100"
+                            :class="{ 'bg-gray-100 text-gray-700': isOptionMenuOpen }" v-tooltip="trans('More options')"
+                            @click.stop="isOptionMenuOpen = !isOptionMenuOpen">
+                            <FontAwesomeIcon :icon="faPlus" class="text-[9px]" />
+                        </button>
+
+                        <div v-if="isOptionMenuOpen"
+                            class="absolute bottom-full right-0 mb-1 w-36 py-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                            <button type="button"
+                                class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
+                                @click="pickAttachment(imageInput)">
+                                <FontAwesomeIcon :icon="faImage" class="text-[9px] text-gray-400" />
+                                {{ trans('Upload image') }}
+                            </button>
+
+                            <button type="button"
+                                class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
+                                @click="pickAttachment(fileInput)">
+                                <FontAwesomeIcon :icon="faPaperclip" class="text-[9px] text-gray-400" />
+                                {{ trans('Upload file') }}
+                            </button>
+
+                            <button type="button"
+                                class="w-full flex items-center justify-between gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
+                                @click="toggleEmailNotif">
+                                <span class="flex items-center gap-2">
+                                    <FontAwesomeIcon :icon="faEnvelope" class="text-[9px] text-gray-400" />
+                                    {{ trans('Email notification') }}
+                                </span>
+                                <span class="text-[8px] font-semibold"
+                                    :class="isEmailNotif ? 'text-green-600' : 'text-gray-400'">
+                                    {{ isEmailNotif ? trans('ON') : trans('OFF') }}
+                                </span>
+                            </button>
+
+                            <button v-if="chat.organisationSlug" type="button"
+                                class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
+                                @click="openJiraModal">
+                                <FontAwesomeIcon :icon="faJira" class="text-[9px] text-gray-400" />
+                                {{ trans('Create Jira ticket') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <button
+                        class="w-6 h-6 shrink-0 rounded-md flex items-center justify-center text-white disabled:opacity-50"
+                        :style="{ backgroundColor: 'var(--theme-color-4)' }"
+                        :disabled="isSending || (!newMessage.trim() && !hasAttachment)" @click="sendMessage">
+                        <FontAwesomeIcon :icon="faPaperPlane" class="text-[9px]" />
+                    </button>
+                </div>
+            </template>
+        </div>
+
+        <JiraTicketModal v-if="chat.organisationSlug" :is-open="isJiraModalOpen" :session="(jiraSession as any)"
+            :organisation="chat.organisationSlug" @close="isJiraModalOpen = false" />
     </div>
 </template>

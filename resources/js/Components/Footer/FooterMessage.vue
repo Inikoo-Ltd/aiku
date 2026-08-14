@@ -306,7 +306,6 @@ onUnmounted(() => {
                                 class="w-full h-full object-cover" />
                             <FontAwesomeIcon v-else :icon="faUser" class="text-xs" />
                         </div>
-                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white" />
                     </div>
                     <span class="text-base font-semibold text-gray-900 truncate">{{ trans('Messages') }}</span>
                 </div>
@@ -370,8 +369,7 @@ onUnmounted(() => {
                                     class="w-full h-full object-cover" />
                                 <FontAwesomeIcon v-else :icon="faUser" class="text-base" />
                             </div>
-                            <span v-if="isOnline(item)"
-                                class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 ring-2 ring-white" />
+                           
                         </div>
 
                         <div class="flex-1 min-w-0">
