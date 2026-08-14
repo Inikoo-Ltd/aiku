@@ -34,7 +34,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans";
 import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification"
-import { set } from "lodash-es"
+import { clearIrisSession } from "@/Composables/clearIrisSession"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { faUserPlus } from "@far";
 import GoldReward from "@/Components/Utils/GoldReward.vue"
@@ -98,14 +98,7 @@ const onClickLogout = () => {
 				isLoadingLogout.value = true
 			},
 			onSuccess: () => {
-				set(layout, ['iris', 'is_logged_in'], false)
-				if (typeof window !== "undefined") {
-					const storageIris = JSON.parse(localStorage.getItem('iris') || '{}')
-					localStorage.setItem('iris', JSON.stringify({
-						...storageIris,
-						is_logged_in: false
-					}))
-				}
+				clearIrisSession(layout)
 			},
 			onError: () => {
 				notify({
