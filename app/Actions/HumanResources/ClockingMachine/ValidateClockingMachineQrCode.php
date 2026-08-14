@@ -30,6 +30,7 @@ class ValidateClockingMachineQrCode
     public function handle(string $qrCodeToken, ?float $userLat = null, ?float $userLng = null, ?int $workScheduleId = null): array
     {
         $clockingMachine = null;
+        $employee        = null;
 
         try {
             $clockingMachineQRCode = ClockingMachineQRCode::where('hash', static::extractHash($qrCodeToken))->first();
@@ -72,7 +73,8 @@ class ValidateClockingMachineQrCode
                 null,
                 $qrCodeToken,
                 $userLat,
-                $userLng
+                $userLng,
+                $employee
             );
 
             $workingHours = $this->getWorkingHours($clockingMachine);
@@ -96,7 +98,8 @@ class ValidateClockingMachineQrCode
                 $e->getMessage(),
                 $qrCodeToken,
                 $userLat,
-                $userLng
+                $userLng,
+                $employee
             );
 
             throw $e;

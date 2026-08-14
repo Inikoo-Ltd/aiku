@@ -2019,6 +2019,8 @@ test('a user can scan a QR code of a clocking machine in another organisation', 
         'organisation_id' => $this->organisation->id,
         'group_id'        => $this->group->id,
         'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
     ]);
 
     $user = StoreUserFromEmployee::make()->handle($employee, [
@@ -2027,7 +2029,14 @@ test('a user can scan a QR code of a clocking machine in another organisation', 
     ]);
 
     $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
-        ->action($this->group, \App\Models\SysAdmin\Organisation::factory()->definition());
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o' . substr(uniqid(), -5),
+                'name'  => 'Other Org ' . uniqid(),
+                'email' => 'org-' . uniqid() . '@example.com',
+            ]
+        ));
 
     $workplace = StoreWorkplace::make()->action($otherOrganisation, [
         'name' => 'Cross Org Workplace ' . $employee->id,
@@ -2076,6 +2085,8 @@ test('a remote employee skips coordinate validation on a machine of another orga
         'organisation_id' => $this->organisation->id,
         'group_id'        => $this->group->id,
         'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
     ]);
 
     $user = StoreUserFromEmployee::make()->handle($employee, [
@@ -2092,7 +2103,14 @@ test('a remote employee skips coordinate validation on a machine of another orga
     ]);
 
     $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
-        ->action($this->group, \App\Models\SysAdmin\Organisation::factory()->definition());
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o' . substr(uniqid(), -5),
+                'name'  => 'Other Org ' . uniqid(),
+                'email' => 'org-' . uniqid() . '@example.com',
+            ]
+        ));
 
     $workplace = StoreWorkplace::make()->action($otherOrganisation, [
         'name' => 'Remote Policy Workplace ' . $employee->id,
@@ -2132,6 +2150,8 @@ test('an employee without a remote policy still gets coordinate validation on an
         'organisation_id' => $this->organisation->id,
         'group_id'        => $this->group->id,
         'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
     ]);
 
     $user = StoreUserFromEmployee::make()->handle($employee, [
@@ -2140,7 +2160,14 @@ test('an employee without a remote policy still gets coordinate validation on an
     ]);
 
     $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
-        ->action($this->group, \App\Models\SysAdmin\Organisation::factory()->definition());
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o' . substr(uniqid(), -5),
+                'name'  => 'Other Org ' . uniqid(),
+                'email' => 'org-' . uniqid() . '@example.com',
+            ]
+        ));
 
     $workplace = StoreWorkplace::make()->action($otherOrganisation, [
         'name' => 'Onsite Policy Workplace ' . $employee->id,
@@ -2413,4 +2440,62 @@ describe('current employee across organisations', function () {
             ->and(GetUserCurrentEmployee::run($user, $unreachableOrganisationId)?->id)->toBe($active->id)
             ->and(GetUserCurrentEmployee::run($user)?->id)->toBe($active->id);
     });
+});
+
+test('a QR scan log records the resolved employee, not the scanning user', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'scan-log-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Scan Log Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Scan Log QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $clockingMachine->update([
+        'config' => [
+            'qr' => [
+                'enable'            => true,
+                'allow_coordinates' => true,
+                'coordinates'       => '53.401268237762125, -1.40775203704834',
+                'radius'            => 100,
+            ],
+        ],
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Scan log entrance',
+    ]);
+
+    actingAs($user);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash, 51.5, -0.12))
+        ->toThrow(Exception::class);
+
+    $log = \App\Models\HumanResources\QrScanLog::where('clocking_machine_id', $clockingMachine->id)
+        ->latest('id')
+        ->first();
+
+    expect($log->employee_id)->toBe($employee->id);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle('no-such-hash'))
+        ->toThrow(Exception::class, 'Invalid QR Code.');
+
+    $unresolvedLog = \App\Models\HumanResources\QrScanLog::latest('id')->first();
+
+    expect($unresolvedLog->employee_id)->toBeNull();
 });
