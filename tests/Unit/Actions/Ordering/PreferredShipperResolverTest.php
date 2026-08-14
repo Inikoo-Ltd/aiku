@@ -56,6 +56,19 @@ it('important beats a more specific non-important rule in the same territory', f
     expect(makePreferredShipperResolver()->pickPreferredShipperId($rules, 10, 'SW1A1AA'))->toBe(2);
 });
 
+it('returns the winning rule so a lock can be told apart from a preference', function () {
+    $rules = collect([
+        makeRule(shipperId: 1, countryId: 10),
+        makeRule(shipperId: 2, countryId: 20, important: true),
+    ]);
+
+    $resolver = makePreferredShipperResolver();
+
+    expect($resolver->pickPreferredShippingRule($rules, 20, '')->important)->toBeTrue()
+        ->and($resolver->pickPreferredShippingRule($rules, 10, '')->important)->toBeFalse()
+        ->and($resolver->pickPreferredShippingRule($rules, 99, ''))->toBeNull();
+});
+
 it('matches postcode prefixes ignoring spaces and case', function () {
     $rules = collect([
         makeRule(shipperId: 1, countryId: 10, postcode: 'sw1 a'),

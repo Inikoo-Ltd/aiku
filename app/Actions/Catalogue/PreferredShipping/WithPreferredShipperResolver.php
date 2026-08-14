@@ -10,30 +10,52 @@ namespace App\Actions\Catalogue\PreferredShipping;
 
 use App\Models\Catalogue\PreferredShipping;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Shipper;
 use Illuminate\Support\Collection;
 
 trait WithPreferredShipperResolver
 {
     /**
-     * @return array{locked_shipper_id: int|null, preferred_shipper_id: int|null}
+     * @return array{locked_shipper_id: int|null, preferred_shipper_id: int|null, locked_by: string|null, locked_scope: string|null, preferred_shipper: array|null}
      */
     public function getShipperDirective(DeliveryNote $deliveryNote): array
     {
         $order = $deliveryNote->orders->first();
 
         if ($order?->is_shipper_locked && $order->shipper_id) {
-            return ['locked_shipper_id' => $order->shipper_id, 'preferred_shipper_id' => $order->shipper_id];
+            return [
+                'locked_shipper_id'    => $order->shipper_id,
+                'preferred_shipper_id' => $order->shipper_id,
+                'locked_by'            => 'customer',
+                'locked_scope'         => null,
+                'preferred_shipper'    => $this->describeShipper($order->shipper_id),
+            ];
         }
 
         $zoneShippers = collect($order?->shippingZone?->shippers_price ?? []);
+        $rule = $this->findPreferredShippingRule($deliveryNote);
+
         $preferredShipperId = $order?->shipper_id
             ?? ($zoneShippers->count() == 1 ? $zoneShippers->first()['shipper_id'] ?? null : null)
-            ?? $this->findPreferredShipperId($deliveryNote);
+            ?? $rule?->shipper_id;
 
-        return ['locked_shipper_id' => null, 'preferred_shipper_id' => $preferredShipperId];
+        $isLockedByRule = $rule?->important && $preferredShipperId == $rule->shipper_id;
+
+        return [
+            'locked_shipper_id'    => $isLockedByRule ? $preferredShipperId : null,
+            'preferred_shipper_id' => $preferredShipperId,
+            'locked_by'            => $isLockedByRule ? 'preferred_shipping' : null,
+            'locked_scope'         => $isLockedByRule ? $this->describeRuleScope($rule) : null,
+            'preferred_shipper'    => $this->describeShipper($preferredShipperId),
+        ];
     }
 
     public function findPreferredShipperId(DeliveryNote $deliveryNote): ?int
+    {
+        return $this->findPreferredShippingRule($deliveryNote)?->shipper_id;
+    }
+
+    public function findPreferredShippingRule(DeliveryNote $deliveryNote): ?PreferredShipping
     {
         $countryId = $deliveryNote->deliveryAddress?->country_id;
         if (!$countryId) {
@@ -50,10 +72,15 @@ trait WithPreferredShipperResolver
             ->whereHas('shipper', fn ($query) => $query->where('status', true))
             ->get();
 
-        return $this->pickPreferredShipperId($rules, $countryId, $postalCode);
+        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode);
     }
 
     public function pickPreferredShipperId(Collection $rules, int $countryId, string $postalCode): ?int
+    {
+        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode)?->shipper_id;
+    }
+
+    public function pickPreferredShippingRule(Collection $rules, int $countryId, string $postalCode): ?PreferredShipping
     {
         $postalCode = $this->normalisePostcode($postalCode);
 
@@ -67,7 +94,34 @@ trait WithPreferredShipperResolver
                     + ($rule->postcode ? 2 : 0)
                     + ($rule->country_id ? 1 : 0)
             )
-            ->first()?->shipper_id;
+            ->first();
+    }
+
+    /**
+     * @return array{id: int, name: string, trade_as: string|null, slug: string, api_shipper: string|null}|null
+     */
+    private function describeShipper(?int $shipperId): ?array
+    {
+        $shipper = $shipperId ? Shipper::find($shipperId) : null;
+
+        if (!$shipper) {
+            return null;
+        }
+
+        return [
+            'id'          => $shipper->id,
+            'name'        => $shipper->name,
+            'trade_as'    => $shipper->trade_as,
+            'slug'        => $shipper->slug,
+            'api_shipper' => $shipper->api_shipper,
+        ];
+    }
+
+    private function describeRuleScope(PreferredShipping $rule): string
+    {
+        return collect([$rule->country?->iso3, $rule->postcode])
+            ->filter()
+            ->implode(' ') ?: __('all destinations');
     }
 
     private function normalisePostcode(?string $postcode): string

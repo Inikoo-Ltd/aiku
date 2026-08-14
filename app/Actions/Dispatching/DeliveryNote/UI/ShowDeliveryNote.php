@@ -326,6 +326,14 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    public function canOverrideShipperLock(DeliveryNote $deliveryNote): bool
+    {
+        return (bool)request()->user()?->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ]);
+    }
+
     public function wrappedActions(DeliveryNote $deliveryNote): array
     {
         $isEditable = false;
@@ -827,7 +835,10 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
-            'shipper_directive'            => $this->getShipperDirective($deliveryNote),
+            'shipper_directive'            => [
+                ...$this->getShipperDirective($deliveryNote),
+                'can_override_lock' => $this->canOverrideShipperLock($deliveryNote),
+            ],
             'shop_type'                    => $deliveryNote->shop->type,
             'shipping_fields'              => [
                 'company_name' => $deliveryNote->company_name,
