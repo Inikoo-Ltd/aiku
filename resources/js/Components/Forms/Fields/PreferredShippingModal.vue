@@ -125,7 +125,7 @@ const setImportant = (index: number, value: boolean) => {
                             class="text-gray-400"
                             fixed-width
                             aria-hidden="true"
-                            v-tooltip="trans('Locked: this shipper is forced and the packer cannot change it. Unlocked: it is only preselected and the packer can pick another shipper.')"
+                            v-tooltip="trans('Locked: this shipper is forced and the packer cannot change it. Flexible: it is only preselected and the packer can pick another shipper.')"
                         />
                     </span>
                 </template>
@@ -141,7 +141,7 @@ const setImportant = (index: number, value: boolean) => {
                         @click="setImportant(index, !data.important)"
                     >
                         <FontAwesomeIcon :icon="data.important ? faLock : faLockOpen" fixed-width aria-hidden="true" />
-                        {{ data.important ? trans("Locked") : trans("Open") }}
+                        {{ data.important ? trans("Locked") : trans("Flexible") }}
                     </button>
                 </template>
             </Column>

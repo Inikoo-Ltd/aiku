@@ -391,6 +391,18 @@ const selectedShipment = ref("create_label")
 
 const otherShippers = computed(() => optionShippingList.value.filter((shipper) => !shipper.api_shipper))
 
+const toggleSection = (section: string) => {
+	selectedShipment.value = selectedShipment.value === section ? "" : section
+}
+
+const onSavePreferredShipment = () => {
+	if (!formTrackingNumber.tracking_number) return
+
+	set(formTrackingNumber, ["errors", "address"], null)
+	formTrackingNumber.shipping_id = preferredShipper.value
+	onSubmitShipment()
+}
+
 const lockedShipper = computed(() => {
 	if (!props.shipper_directive?.locked_shipper_id) return null
 	return optionShippingList.value.find((shipment) => shipment.id === props.shipper_directive.locked_shipper_id) || null
@@ -660,7 +672,7 @@ const onClickButtonShipmentPlatform = () => {
 					{{ trans("Shipper chosen by customer — contact customer services to change") }}
 				</div>
 
-				<div>
+				<div class="grid grid-cols-2 gap-3">
 					<div
 						@click="
 							() => (
@@ -670,69 +682,72 @@ const onClickButtonShipmentPlatform = () => {
 									: (formTrackingNumber.shipping_id = preferredShipper)
 							)
 						"
-						class="relative isolate w-full max-w-52 h-20 border rounded-md px-4 py-3 cursor-pointer"
+						class="relative isolate w-full min-h-28 border-2 rounded-lg px-5 py-4 transition-colors flex items-start gap-5"
 						:class="[
+							preferredShipper.api_shipper ? 'cursor-pointer' : 'col-span-2',
 							formTrackingNumber.shipping_id?.id == preferredShipper.id
-								? 'bg-indigo-200 border-indigo-300'
+								? 'bg-indigo-200 border-indigo-400'
 								: 'hover:bg-gray-100 border-gray-300',
 						]">
-						<div v-tooltip="preferredShipper.name" class="font-bold text-sm">
-							{{ preferredShipper.trade_as || preferredShipper.name }}
+						<div class="min-w-0">
+							<div v-tooltip="preferredShipper.name" class="font-bold text-lg">
+								{{ preferredShipper.trade_as || preferredShipper.name }}
+							</div>
+							<div class="text-sm text-gray-500 italic">
+								{{ preferredShipper.code }}
+							</div>
 						</div>
-						<div class="text-sm text-gray-500 italic">
-							{{ preferredShipper.code }}
-						</div>
-						<LoadingIcon
-							v-if="
-								formTrackingNumber.shipping_id?.id == preferredShipper.id &&
-								isLoadingButton == 'addTrackingNumber'
-							"
-							class="text-gray-500 absolute top-3 right-3" />
-						<div
-							v-if="isLoadingButton == 'addTrackingNumber'"
-							class="bg-black/40 rounded-md absolute inset-0 z-10"></div>
-					</div>
 
-					<!-- Manual shipper form: tracking number + save -->
-					<template v-if="!preferredShipper.api_shipper && formTrackingNumber.shipping_id?.id == preferredShipper.id">
-						<div class="mt-3">
-							<span class="text-xs xpx-1 my-2">
+						<!-- Manual shipper: tracking number is required before saving -->
+						<div v-if="!preferredShipper.api_shipper" class="ml-auto w-1/2 shrink-0" @click.stop>
+							<span class="text-xs">
 								<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500" fixed-width aria-hidden="true" />
 								{{ trans("Tracking number") }}:
 							</span>
 							<PureInput
 								v-model="formTrackingNumber.tracking_number"
-								placeholder="ABC-DE-1234567" />
+								placeholder="ABC-DE-1234567"
+								@keydown.enter="() => onSavePreferredShipment()" />
 							<p
 								v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
 								class="mt-2 text-sm text-red-600">
 								{{ formTrackingNumber.errors.tracking_number }}
 							</p>
+
+							<div
+								v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
+								class="mt-2 text-sm text-red-600">
+								<p
+									v-if="typeof formTrackingNumber?.errors?.address === 'string'"
+									class="italic">
+									*{{ formTrackingNumber?.errors?.address }}
+								</p>
+								<p v-else v-for="(errorx, errorIdx) in formTrackingNumber?.errors?.address" :key="errorIdx">
+									{{ errorx }}
+								</p>
+							</div>
+
+							<div class="mt-3">
+								<Button
+									:style="'save'"
+									:loading="isLoadingButton == 'addTrackingNumber'"
+									:label="trans('Save Shipping')"
+									:disabled="!formTrackingNumber.tracking_number"
+									full
+									@click="() => onSavePreferredShipment()" />
+							</div>
 						</div>
 
+						<LoadingIcon
+							v-if="
+								formTrackingNumber.shipping_id?.id == preferredShipper.id &&
+								isLoadingButton == 'addTrackingNumber'
+							"
+							class="text-gray-500 absolute top-4 right-4 text-lg" />
 						<div
-							v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
-							class="mt-2 text-sm text-red-600">
-							<p
-								v-if="typeof formTrackingNumber?.errors?.address === 'string'"
-								class="italic">
-								*{{ formTrackingNumber?.errors?.address }}
-							</p>
-							<p v-else v-for="(errorx, errorIdx) in formTrackingNumber?.errors?.address" :key="errorIdx">
-								{{ errorx }}
-							</p>
-						</div>
-
-						<div class="flex justify-end mt-3">
-							<Button
-								:style="'save'"
-								:loading="isLoadingButton == 'addTrackingNumber'"
-								:label="trans('Save')"
-								:disabled="!formTrackingNumber.tracking_number"
-								full
-								@click="() => onSubmitShipment()" />
-						</div>
-					</template>
+							v-if="isLoadingButton == 'addTrackingNumber'"
+							class="bg-black/40 rounded-md absolute inset-0 z-10"></div>
+					</div>
 				</div>
 				</div>
 
@@ -741,7 +756,7 @@ const onClickButtonShipmentPlatform = () => {
 					<button
 						type="button"
 						class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-left cursor-pointer hover:bg-gray-50 transition-colors"
-						@click="selectedShipment = 'create_label'">
+						@click="toggleSection('create_label')">
 						<span class="flex items-center gap-2">
 							{{ trans("API powered Shippers") }}
 							<span v-if="selectedShipment !== 'create_label'" class="flex items-center gap-1">
@@ -765,11 +780,11 @@ const onClickButtonShipmentPlatform = () => {
 					</button>
 
 					<div v-if="selectedShipment === 'create_label'" class="px-3 pb-3 relative">
-						<div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
+						<div class="grid grid-cols-2 gap-3 mb-2">
 							<div
 								v-if="isLoadingData === 'addTrackingNumber'"
-								v-for="sip in 3"
-								class="skeleton w-full max-w-52 h-20 rounded"></div>
+								v-for="sip in 2"
+								class="skeleton w-full min-h-28 rounded-lg"></div>
 							<div
 								v-else
 								v-for="(shipment, index) in optionsCreateLabel"
@@ -779,13 +794,13 @@ const onClickButtonShipmentPlatform = () => {
 										handleShipmentClick(shipment)
 									)
 								"
-								class="relative isolate w-full max-w-52 h-20 border rounded-md px-4 py-3 cursor-pointer"
+								class="relative isolate w-full min-h-28 border-2 rounded-lg px-5 py-4 cursor-pointer transition-colors"
 								:class="[
 									formTrackingNumber.shipping_id?.id == shipment.id
-										? 'bg-indigo-200 border-indigo-300'
+										? 'bg-indigo-200 border-indigo-400'
 										: 'hover:bg-gray-100 border-gray-300',
 								]">
-								<div v-tooltip="shipment.name" class="font-bold tesm">
+								<div v-tooltip="shipment.name" class="font-bold text-lg">
 									{{ shipment.trade_as }}
 								</div>
 								<div class="text-sm text-gray-500 italic">
@@ -800,12 +815,12 @@ const onClickButtonShipmentPlatform = () => {
 										formTrackingNumber.shipping_id?.id == shipment.id &&
 										isLoadingButton == 'addTrackingNumber'
 									"
-									class="text-gray-500 absolute top-3 right-3" />
+									class="text-gray-500 absolute top-4 right-4 text-lg" />
 								<FontAwesomeIcon
 									v-else
 									v-tooltip="trans('Barcode print')"
 									icon="fal fa-print"
-									class="text-gray-500 absolute top-3 right-3"
+									class="text-gray-500 absolute top-4 right-4 text-lg"
 									fixed-width
 									aria-hidden="true" />
 								<div
@@ -840,7 +855,7 @@ const onClickButtonShipmentPlatform = () => {
 				<button
 					type="button"
 					class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-left cursor-pointer hover:bg-gray-50 transition-colors"
-					@click="selectedShipment = 'other_options'">
+					@click="toggleSection('other_options')">
 					<span class="flex items-baseline gap-2 min-w-0">
 						{{ trans("Other shippers") }} ({{ otherShippers.length }})
 						<span v-if="otherShippers.length && selectedShipment !== 'other_options'" class="text-xs text-gray-400 font-normal truncate">
