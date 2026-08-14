@@ -26,15 +26,22 @@ class UpdateShippingPolicyEbayUser extends OrgAction
     {
         $customerSalesChannel = $ebayUser->customerSalesChannel;
 
-        data_set($modelData, 'settings.shipping.price', Arr::get($customerSalesChannel->settings, 'shipping.price'));
-        data_set($modelData, 'settings.shipping.max_dispatch_time', Arr::get($customerSalesChannel->settings, 'shipping.max_dispatch_time'));
+        foreach (['price', 'max_dispatch_time', 'carrier_code', 'carrier_name', 'service_code', 'service_name'] as $shippingSetting) {
+            $value = Arr::get($customerSalesChannel->settings, 'shipping.'.$shippingSetting);
+
+            if (filled($value)) {
+                data_set($modelData, 'settings.shipping.'.$shippingSetting, $value);
+            }
+        }
 
         $fulfillmentPolicyId = Arr::get($modelData, 'fulfillment_policy_id', $ebayUser->fulfillment_policy_id);
         $fulfillmentPolicy = $ebayUser->updateFulfilmentPolicy($fulfillmentPolicyId, $modelData);
 
-        if (! Arr::has($fulfillmentPolicy, 'errors')) {
+        $updatedFulfillmentPolicyId = Arr::get($fulfillmentPolicy, 'fulfillmentPolicyId');
+
+        if ($updatedFulfillmentPolicyId) {
             data_set($modelData, 'data.fulfillment_policy', $fulfillmentPolicy);
-            data_set($modelData, 'fulfillment_policy_id', Arr::get($fulfillmentPolicy, 'fulfillmentPolicyId'));
+            data_set($modelData, 'fulfillment_policy_id', $updatedFulfillmentPolicyId);
         }
 
         UpdateEbayUser::run($ebayUser, $modelData);
