@@ -53,7 +53,7 @@ class StoreShipment extends OrgAction
                 ]);
             }
 
-            $this->auditShipperLockOverride($parent, $shipper);
+            $this->guardShipperLock($parent, $shipper);
         }
 
         data_set($modelData, 'group_id', $parent->group_id);
@@ -134,15 +134,29 @@ class StoreShipment extends OrgAction
     }
 
     /**
-     * The lock only ever lived in the UI, so the trail has to be written here:
-     * this is the one place an override cannot be faked by the client.
+     * The lock only ever lived in the UI, so both the block and the trail belong
+     * here: this is the one place an override cannot be faked by the client.
+     *
+     * @throws \Illuminate\Validation\ValidationException
      */
-    private function auditShipperLockOverride(DeliveryNote $deliveryNote, Shipper $shipper): void
+    private function guardShipperLock(DeliveryNote $deliveryNote, Shipper $shipper): void
     {
         $directive = $this->getShipperDirective($deliveryNote);
 
         if (!$directive['locked_shipper_id'] || $directive['locked_shipper_id'] == $shipper->id) {
             return;
+        }
+
+        $user = request()->user();
+
+        // No user means a system flow (console, queue, external sync), which the lock does not police
+        if ($user && !$user->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ])) {
+            throw ValidationException::withMessages([
+                'shipper' => __('This shipper is locked by the shipping rules. Ask a dispatch supervisor to change it.')
+            ]);
         }
 
         $lockedShipper = Shipper::find($directive['locked_shipper_id']);
