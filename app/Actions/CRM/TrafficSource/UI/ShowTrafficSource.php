@@ -41,19 +41,24 @@ class ShowTrafficSource extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, TrafficSource $trafficSource, ActionRequest $request): TrafficSource
     {
         $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request)->withTab(TrafficSourceTabsEnum::valuesFor($trafficSource));
+        $this->initialisationFromShop($shop, $request)->withTab(TrafficSourceTabsEnum::valuesFor($this->channelType($trafficSource)));
 
         return $this->handle($trafficSource);
     }
 
+    private function channelType(TrafficSource $trafficSource): ?TrafficSourcesTypeEnum
+    {
+        return TrafficSourcesTypeEnum::tryFrom($trafficSource->type);
+    }
+
     private function isNewsletter(TrafficSource $trafficSource): bool
     {
-        return $trafficSource->type === TrafficSourcesTypeEnum::NEWSLETTER->value;
+        return $this->channelType($trafficSource) === TrafficSourcesTypeEnum::NEWSLETTER;
     }
 
     public function htmlResponse(TrafficSource $trafficSource, ActionRequest $request): Response
     {
-        $navigations = TrafficSourceTabsEnum::navigation($trafficSource);
+        $navigations = TrafficSourceTabsEnum::navigation($this->channelType($trafficSource));
 
 
         $props = [

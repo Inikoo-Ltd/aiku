@@ -12,6 +12,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import TrafficSourceShowcase from '@/Components/Showcases/Grp/TrafficSourceShowcase.vue'
 import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue'
+import TableMailshots from '@/Components/Tables/TableMailshots.vue'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { capitalize } from '@/Composables/capitalize'
@@ -25,6 +26,7 @@ const props = defineProps<{
         navigation: {}
     }
     overview?: any
+    newsletters?: {}
     customers?: {}
     orders?: {}
 }>()
@@ -35,6 +37,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         overview: TrafficSourceShowcase,
+        newsletters: TableMailshots,
         customers: TableCustomers,
         orders: TableOrders,
     }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Marketing;
 
+use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\TrafficSource\GetAggregatedChannelShowcase;
 use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
@@ -16,6 +17,7 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\Mail\NewsletterMailshotsResource;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -57,7 +59,7 @@ class ShowAggregatedMarketingChannel extends OrgAction
     {
         $this->parent      = $organisation;
         $this->channelType = $this->resolveChannelType($channelType);
-        $this->initialisation($organisation, $request)->withTab(TrafficSourceTabsEnum::valuesFor(null));
+        $this->initialisation($organisation, $request)->withTab(TrafficSourceTabsEnum::valuesFor($this->channelType));
 
         return $request;
     }
@@ -66,7 +68,7 @@ class ShowAggregatedMarketingChannel extends OrgAction
     {
         $this->parent      = group();
         $this->channelType = $this->resolveChannelType($channelType);
-        $this->initialisationFromGroup(group(), $request)->withTab(TrafficSourceTabsEnum::valuesFor(null));
+        $this->initialisationFromGroup(group(), $request)->withTab(TrafficSourceTabsEnum::valuesFor($this->channelType));
 
         return $request;
     }
@@ -81,34 +83,39 @@ class ShowAggregatedMarketingChannel extends OrgAction
         $isGroup = $this->parent instanceof Group;
         $title   = TrafficSourcesTypeEnum::labels()[$this->channelType->value] ?? $this->channelType->value;
 
-        return Inertia::render(
-            'Org/Marketing/MarketingChannel',
-            [
-                'breadcrumbs' => $this->getBreadcrumbs($isGroup, $title),
-                'title'       => $title,
-                'pageHead'    => [
-                    'title' => $title,
-                    'model' => $isGroup ? __('Channel').' ('.__('all organisations').')' : __('Channel').' ('.$this->parent->name.')',
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-traffic-light'],
-                        'title' => __('Channel'),
-                    ],
+        $props = [
+            'breadcrumbs' => $this->getBreadcrumbs($isGroup, $title),
+            'title'       => $title,
+            'pageHead'    => [
+                'title' => $title,
+                'model' => $isGroup ? __('Channel').' ('.__('all organisations').')' : __('Channel').' ('.$this->parent->name.')',
+                'icon'  => [
+                    'icon'  => ['fal', 'fa-traffic-light'],
+                    'title' => __('Channel'),
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => TrafficSourceTabsEnum::navigation(),
-                ],
-                TrafficSourceTabsEnum::OVERVIEW->value => $this->tab == TrafficSourceTabsEnum::OVERVIEW->value
-                    ? fn () => GetAggregatedChannelShowcase::run($this->parent, $this->channelType)
-                    : Inertia::optional(fn () => GetAggregatedChannelShowcase::run($this->parent, $this->channelType)),
-                TrafficSourceTabsEnum::CUSTOMERS->value => $this->tab == TrafficSourceTabsEnum::CUSTOMERS->value
-                    ? fn () => CustomersResource::collection($this->customers())
-                    : Inertia::optional(fn () => CustomersResource::collection($this->customers())),
-                TrafficSourceTabsEnum::ORDERS->value => $this->tab == TrafficSourceTabsEnum::ORDERS->value
-                    ? fn () => OrdersResource::collection($this->orders())
-                    : Inertia::optional(fn () => OrdersResource::collection($this->orders())),
-            ]
-        )
+            ],
+            'tabs'        => [
+                'current'    => $this->tab,
+                'navigation' => TrafficSourceTabsEnum::navigation($this->channelType),
+            ],
+            TrafficSourceTabsEnum::OVERVIEW->value => $this->tab == TrafficSourceTabsEnum::OVERVIEW->value
+                ? fn () => GetAggregatedChannelShowcase::run($this->parent, $this->channelType)
+                : Inertia::optional(fn () => GetAggregatedChannelShowcase::run($this->parent, $this->channelType)),
+            TrafficSourceTabsEnum::CUSTOMERS->value => $this->tab == TrafficSourceTabsEnum::CUSTOMERS->value
+                ? fn () => CustomersResource::collection($this->customers())
+                : Inertia::optional(fn () => CustomersResource::collection($this->customers())),
+            TrafficSourceTabsEnum::ORDERS->value => $this->tab == TrafficSourceTabsEnum::ORDERS->value
+                ? fn () => OrdersResource::collection($this->orders())
+                : Inertia::optional(fn () => OrdersResource::collection($this->orders())),
+        ];
+
+        if ($this->isNewsletter()) {
+            $props[TrafficSourceTabsEnum::NEWSLETTERS->value] = $this->tab == TrafficSourceTabsEnum::NEWSLETTERS->value
+                ? fn () => NewsletterMailshotsResource::collection($this->newsletters())
+                : Inertia::optional(fn () => NewsletterMailshotsResource::collection($this->newsletters()));
+        }
+
+        $response = Inertia::render('Org/Marketing/MarketingChannel', $props)
             ->table(
                 IndexCustomers::make()->tableStructure(
                     $this->parent,
@@ -123,6 +130,35 @@ class ShowAggregatedMarketingChannel extends OrgAction
                     TrafficSourceTabsEnum::ORDERS->value
                 )
             );
+
+        if ($this->isNewsletter()) {
+            $response = $response->table(
+                IndexNewsletterMailshots::make()->tableStructure(
+                    $this->parent,
+                    null,
+                    TrafficSourceTabsEnum::NEWSLETTERS->value
+                )
+            );
+        }
+
+        return $response;
+    }
+
+    private function isNewsletter(): bool
+    {
+        return $this->channelType === TrafficSourcesTypeEnum::NEWSLETTER;
+    }
+
+    /**
+     * Every newsletter sent by any shop underneath, which is what the channel adds up here: the shop
+     * column says whose each one is.
+     */
+    private function newsletters(): LengthAwarePaginator
+    {
+        return IndexNewsletterMailshots::make()->handle(
+            $this->parent,
+            TrafficSourceTabsEnum::NEWSLETTERS->value
+        );
     }
 
     private function customers(): LengthAwarePaginator

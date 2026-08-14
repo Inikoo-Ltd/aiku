@@ -13,7 +13,6 @@ namespace App\Actions\CRM\TrafficSource\UI;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
-use App\Models\CRM\TrafficSource;
 
 enum TrafficSourceTabsEnum: string
 {
@@ -26,14 +25,18 @@ enum TrafficSourceTabsEnum: string
     case ORDERS      = 'orders';
 
     /**
+     * Keyed on the channel's type rather than on a traffic source row, because the same page exists
+     * above the shop: an organisation or the group reports a channel as a type, with no single row
+     * behind it.
+     *
      * @return array<int, self>
      */
-    public static function casesFor(?TrafficSource $trafficSource): array
+    public static function casesFor(?TrafficSourcesTypeEnum $channelType): array
     {
         return array_values(
             array_filter(
                 self::cases(),
-                fn (self $case) => $case !== self::NEWSLETTERS || $trafficSource?->type === TrafficSourcesTypeEnum::NEWSLETTER->value
+                fn (self $case) => $case !== self::NEWSLETTERS || $channelType === TrafficSourcesTypeEnum::NEWSLETTER
             )
         );
     }
@@ -41,14 +44,14 @@ enum TrafficSourceTabsEnum: string
     /**
      * @return array<int, string>
      */
-    public static function valuesFor(?TrafficSource $trafficSource): array
+    public static function valuesFor(?TrafficSourcesTypeEnum $channelType): array
     {
-        return array_column(self::casesFor($trafficSource), 'value');
+        return array_column(self::casesFor($channelType), 'value');
     }
 
-    public static function navigation(?TrafficSource $trafficSource = null): array
+    public static function navigation(?TrafficSourcesTypeEnum $channelType = null): array
     {
-        return collect(self::casesFor($trafficSource))
+        return collect(self::casesFor($channelType))
             ->mapWithKeys(fn (self $case) => [$case->value => $case->blueprint()])
             ->all();
     }

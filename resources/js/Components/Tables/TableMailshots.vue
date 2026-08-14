@@ -55,8 +55,8 @@ async function convertToPage(mailshot: Mailshot) {
 
 function webpageRoute(mailshot: Mailshot) {
     return route("grp.org.shops.show.web.blogs.show", {
-        organisation: (route().params as RouteParams).organisation,
-        shop: (route().params as RouteParams).shop,
+        organisation: mailshot.organisation_slug ?? (route().params as RouteParams).organisation,
+        shop: mailshot.shop_slug ?? (route().params as RouteParams).shop,
         website: mailshot.webpage_website_slug,
         webpage: mailshot.webpage_slug
     });
@@ -79,6 +79,16 @@ function mailshotRoute(mailshot: Mailshot) {
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
                     mailshot.slug]);
+        case "grp.org.marketing.channels.show":
+        case "grp.marketing.channels.show":
+            return mailshot.organisation_slug && mailshot.shop_slug
+                ? route(
+                    "grp.org.shops.show.marketing.newsletters.show",
+                    [
+                        mailshot.organisation_slug,
+                        mailshot.shop_slug,
+                        mailshot.slug])
+                : '';
         case "grp.org.shops.show.web.websites.outboxes.show":
             return route(
                 "grp.org.shops.show.web.websites.outboxes.mailshots.show",
