@@ -50,7 +50,11 @@ beforeEach(function () {
         'type' => MasterProductCategoryTypeEnum::FAMILY,
     ]);
 
-    $this->shop->updateQuietly(['master_shop_id' => $this->masterShop->id]);
+    /* Reset the pricing opt-out too: the tests that switch it off share this file's shop, and a
+       leftover opt-out turns every later product into a reported rebellion. */
+    $shopSettings = $this->shop->settings;
+    data_set($shopSettings, 'catalog.follow_master_pricing', true);
+    $this->shop->updateQuietly(['master_shop_id' => $this->masterShop->id, 'settings' => $shopSettings]);
     $this->tradeUnitId = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition())->id;
 
     $this->masterAsset = StoreMasterAsset::make()->action($this->masterFamily, [
@@ -407,6 +411,11 @@ test('a big master queues the fan out and chains the mismatch hydration after it
 });
 
 test('killing a rebel writes an audit record naming the flags that changed', function () {
+    /* Product::$auditingDisabled is a process-wide static and app actions that disable it rarely
+       re-enable it, so whether it is on here depends on which files this worker ran before this
+       one. This test is about the audit, so it turns auditing on itself. */
+    Product::enableAuditing();
+
     $rebel = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 12);
     $rebel->updateQuietly([
         'not_follow_master_trade_units' => true,

@@ -15,7 +15,7 @@ class PostRoomFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => fake()->lexify(),
+            'code' => fake()->lexify('??????'),
         ];
     }
 }

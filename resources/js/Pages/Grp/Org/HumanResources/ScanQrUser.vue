@@ -86,6 +86,7 @@ const locationSubtitle = computed(() => {
 
 const showWorkHourModal = ref(false)
 const showSuccessModal = ref(false)
+const isVisitingOffice = ref(false)
 const notes = ref<string>("")
 const scanTime = ref<string | null>(null)
 const scanTimeRaw = ref<string | null>(null)
@@ -290,6 +291,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		const { data } = await axios.post(route("grp.models.clocking-machine.qr.validate"), payload)
 
 		clockType.value = data.clocking?.type
+		isVisitingOffice.value = data.is_visiting ?? false
 		scanTimeRaw.value = data.clocking?.clocked_at ?? null
 		scanTime.value = useFormatTime(data.clocking?.clocked_at, { formatTime: "hms" })
 		clockingId.value = data.clocking?.id
@@ -531,6 +533,10 @@ const trackFunction = () => ({
 				<h3 class="text-lg sm:text-xl font-semibold text-gray-800">
 					{{ modalTitle }}
 				</h3>
+
+				<div v-if="isVisitingOffice" class="text-sm text-amber-600">
+					{{ trans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
+				</div>
 
 				<!-- INFO -->
 				<div class="text-xs sm:text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">

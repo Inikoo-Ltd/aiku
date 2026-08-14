@@ -12,7 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight } from '@far'
 import { faBars,faBallot, faBookmark, faTrashAlt } from '@fal'
-import { faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faBookmark as fasBookmark } from '@fas'
+import { faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faBookmark as fasBookmark, faArrowUp } from '@fas'
 import { routeType } from '@/types/route'
 import { Bookmark } from '@/types/Bookmark'
 import { trans } from 'laravel-vue-i18n'
@@ -21,7 +21,7 @@ import axios from 'axios'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Popover from '@/Components/Popover.vue'
 
-library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot, faBookmark, faTrashAlt, fasBookmark)
+library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot, faBookmark, faTrashAlt, fasBookmark, faArrowUp)
 
 const props = defineProps<{
     breadcrumbs: {
@@ -298,7 +298,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
             </transition>
         </Menu>
 
-        <div class="h-full flex justify-end items-center pr-2 space-x-2 text-xs md:text-sm text-gray-700 font-semibold">
+        <div class="h-full flex justify-end items-center pr-2 space-x-2 text-sm md:text-lg text-gray-700 font-semibold">
             <!-- Button: Bookmark -->
             <div v-if="isBookmarkAvailable" class="relative flex justify-center items-center w-12 xl:w-8 h-full">
                 <Popover class="w-full h-full" position="right-0" width="w-64">
@@ -360,6 +360,21 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="" aria-hidden="true" />
                 </Link>
                 <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="opacity-20" aria-hidden="true" />
+            </div>
+            
+            <!-- Button: Parent -->
+            <div v-if="props.navigation.up" class="flex justify-center items-center w-11 xl:w-9 h-full">
+                <Link
+                    @start="() => isLoading = 'bcUp'"
+                    @finish="() => isLoading = false"
+                    :href="isLoading === 'bcUp' ? '' : props.navigation?.up?.url ? props.navigation?.up?.url : props.navigation?.up?.route?.name ? route(props.navigation.up?.route.name, props.navigation.up?.route.parameters) + urlParameter : '#'"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
+                    :title="props.navigation.up?.label"
+                    :aria-label="ctrans('Up')"
+                >
+                    <LoadingIcon v-if="isLoading === 'bcUp'" />
+                    <FontAwesomeIcon v-else icon="fas fa-arrow-up" class="" aria-hidden="true" />
+                </Link>
             </div>
 
             <!-- Button: Next -->

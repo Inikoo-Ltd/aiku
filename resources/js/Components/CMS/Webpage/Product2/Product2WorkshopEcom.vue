@@ -240,7 +240,7 @@ defineOptions({
                         group
                         flex items-center gap-3
                         py-2 px-4 mt-4 w-fit
-                        border rounded-lg bg-gray-50
+                        border rounded-lg bg-[#f9f8f5]
                         transition
                         hover:bg-gray-100 hover:border-gray-300
                     ">
@@ -260,7 +260,7 @@ defineOptions({
             <div class="col-span-5 self-start">
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
-                        <div class="text-xl font-bold w-[80%]">
+                        <div class="text-xl text-black font-bold w-[80%]">
                             <span v-if="product.units > 1">{{ product.units }}x</span> {{ product.name }}
                         </div>
 
@@ -312,23 +312,23 @@ defineOptions({
 
                 <div class="flex justify-between items-start gap-4">
                     <div>
-                        <div class="text-2xl font-bold leading-tight">
+                        <div class="text-2xl font-bold leading-tight text-black">
                             {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                         </div>
 
-                        <div class="text-sm text-gray-600">
+                        <div class="text-sm text-black">
                             ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit }})
                         </div>
                     </div>
 
                     <div class="text-right">
-                        <p class="text-xs text-gray-600 leading-tight">{{ trans("Retail Price") }}:</p>
-                        <p class="text-xs text-gray-600 leading-tight line-through">
+                        <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                        <p class="text-xs text-black leading-tight line-through">
                             {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                         </p>
 
-                        <p class="mt-2 text-xs text-gray-600 leading-tight">{{ trans("Profit") }}:</p>
-                        <div class="flex items-baseline justify-end gap-1">
+                        <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
+                        <div class="flex items-baseline justify-end gap-1 text-black">
                             <span class="text-base font-bold">
                                 {{ locale.currencyFormat(currency?.code, product.profit || 0) }}
                             </span>
@@ -413,11 +413,11 @@ defineOptions({
                 </div>
 
                 <div v-if="layout?.iris?.is_logged_in && modelValue?.setting?.appointment && modelValue?.appointment_data?.text && modelValue?.appointment_data?.link?.href"
-                    class="group flex items-center gap-3 py-2 px-4 mt-4 w-full border rounded-lg bg-gray-50 transition hover:bg-gray-100 hover:border-gray-300 my-2">
+                    class="group flex items-center gap-3 py-2 px-4 mt-4 w-full border rounded-lg bg-[#f9f8f5] transition hover:bg-gray-100 hover:border-gray-300 my-2">
                     <FontAwesomeIcon :icon="faMapMarkerAlt"
-                        class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
+                        class="text-black transition shrink-0" />
 
-                    <span class="font-medium text-sm underline text-gray-800 truncate max-w-[420px]">
+                    <span class="font-medium text-sm underline text-black truncate max-w-[420px]">
                         <div v-html="modelValue?.appointment_data?.text"></div>
                     </span>
                 </div>
@@ -434,8 +434,8 @@ defineOptions({
                 </div>
 
                 <div v-if="modelValue?.setting?.product_specs" class="my-2">
-                    <div class="border rounded-lg bg-gray-50 p-4">
-                        <div class="font-semibold text-base mb-2">{{ ctrans("Product Specification") }}</div>
+                    <div class="border rounded-lg bg-[#f9f8f5] p-4">
+                        <div class="font-semibold text-base mb-2 text-black">{{ ctrans("Product Specification") }}</div>
 
                         <div class="w-full">
                             <div v-if="product?.specifications?.origin" class="spec-row">
@@ -493,7 +493,7 @@ defineOptions({
 
                                 <div class="spec-cell space-y-1">
                                     <div v-for="item in items" :key="item.caption"
-                                        class="text-xs font-thin text-blue-600 underline cursor-pointer flex items-center">
+                                        class="text-xs font-thin text-black underline cursor-pointer flex items-center">
                                         <a :href="item.url" target="_blank" class="flex items-center">
                                             <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))"
                                                 class="mr-1" />
@@ -529,7 +529,7 @@ defineOptions({
 
         <div class="px-4 py-4 space-y-5 text-gray-800">
 
-            <h1 class="!text-xl font-bold leading-tight">
+            <h1 class="!text-xl text-black font-bold leading-tight">
                 <span v-if="product.units > 1">{{ product.units }}x</span>
                 {{ product.name }}
             </h1>
@@ -558,23 +558,23 @@ defineOptions({
 
             <div class="flex justify-between items-start gap-4">
                 <div>
-                    <div class="text-2xl font-bold leading-tight">
+                    <div class="text-2xl font-bold leading-tight text-black">
                         {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                     </div>
 
-                    <div class="text-sm text-gray-600">
+                    <div class="text-sm text-black">
                         ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/{{ product.unit }})
                     </div>
                 </div>
 
                 <div class="text-right">
-                    <p class="text-xs text-gray-600 leading-tight">{{ trans("Retail Price") }}:</p>
-                    <p class="text-xs text-gray-600 leading-tight line-through">
+                    <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                    <p class="text-xs text-black leading-tight line-through">
                         {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                     </p>
 
-                    <p class="mt-2 text-xs text-gray-600 leading-tight">{{ trans("Profit") }}:</p>
-                    <div class="flex items-baseline justify-end gap-1">
+                    <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
+                    <div class="flex items-baseline justify-end gap-1 text-black">
                         <span class="text-base font-bold">
                             {{ locale.currencyFormat(currency?.code, product.profit || 0) }}
                         </span>
@@ -612,7 +612,7 @@ defineOptions({
                 :key="keyCustomer" class="w-full button-basket" />
             <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
 
-            <div class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-gray-50">
+            <div class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-[#f9f8f5]">
                 <FontAwesomeIcon :icon="faArrowToBottom" />
                 <span class="text-sm font-medium truncate">
                     {{ trans('Download Marketing Materials for') }} {{ product.name }}
@@ -640,9 +640,9 @@ defineOptions({
             </Swiper>
 
             <div v-if="layout?.iris?.is_logged_in && modelValue?.setting?.appointment && modelValue?.appointment_data?.text && modelValue?.appointment_data?.link?.href"
-                class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-gray-50">
+                class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-[#f9f8f5] text-black">
                 <FontAwesomeIcon :icon="faMapMarkerAlt" />
-                <div v-html="modelValue?.appointment_data?.text" class="text-sm underline" />
+                <div v-html="modelValue?.appointment_data?.text" class="text-sm underline text-black" />
             </div>
 
             <div v-if="layout?.iris?.is_logged_in && modelValue?.delivery_info?.text"
@@ -655,8 +655,8 @@ defineOptions({
             </div>
 
             <div v-if="modelValue?.setting?.product_specs">
-                <div class="border rounded-lg bg-gray-50 p-4">
-                    <div class="font-semibold text-base mb-2">{{ ctrans("Product Specification") }}</div>
+                <div class="border rounded-lg bg-[#f9f8f5] p-4">
+                    <div class="font-semibold text-base mb-2 text-black">{{ ctrans("Product Specification") }}</div>
 
                     <div class="w-full">
                         <div v-if="product?.specifications?.origin" class="spec-row">
@@ -714,7 +714,7 @@ defineOptions({
 
                             <div class="spec-cell space-y-1">
                                 <div v-for="item in items" :key="item.caption"
-                                    class="text-xs font-thin text-blue-600 underline cursor-pointer flex items-center">
+                                    class="text-xs font-thin text-black underline cursor-pointer flex items-center">
                                     <a :href="item.url" target="_blank" class="flex items-center">
                                         <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))"
                                             class="mr-1" />
@@ -740,7 +740,7 @@ defineOptions({
 
 <style scoped>
 .button-basket :deep(.qty-price-new) {
-    @apply font-semibold text-red-700 text-base sm:text-lg md:text-xl;
+    @apply font-semibold text-black text-base sm:text-lg md:text-xl;
 }
 
 .spec-row {
@@ -748,11 +748,11 @@ defineOptions({
 }
 
 .spec-cell {
-    @apply px-2 py-1 text-xs font-light leading-snug text-gray-800;
+    @apply px-2 py-1 text-xs font-light leading-snug text-black;
 }
 
 .spec-row > .spec-cell:first-child {
-    @apply text-gray-500;
+    @apply text-black;
 }
 
 :deep(.swiper-button-disabled) {

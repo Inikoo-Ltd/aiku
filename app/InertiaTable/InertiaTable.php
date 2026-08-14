@@ -27,6 +27,8 @@ class InertiaTable
     private string $defaultSort = '';
 
     private array $title = [];
+    private ?string $footerNote = null;
+    private ?string $headerNote = null;
     private array $betweenDates = [];
     private ?array $offerFilter = null;
     private ?DateIntervalEnum $dateInterval;
@@ -232,6 +234,8 @@ class InertiaTable
             'labelRecord'                     => $this->labelRecord,
             'title'                           => $this->title,
             'footerRows'                      => $this->footerRows,
+            'footerNote'                      => $this->footerNote,
+            'headerNote'                      => $this->headerNote,
             'betweenDates'                    => $this->betweenDates,
             'betweenDatesValue'               => StickyBetweenDates::resolve($this->betweenDates),
             'offerFilter'                     => $this->offerFilter,
@@ -462,7 +466,8 @@ class InertiaTable
         ?string $type = null,
         ?string $align = null,
         ?string $className = null,
-        bool $isInterval = false
+        bool $isInterval = false,
+        bool $tooltipIcon = false
     ): self {
         $this->columns = $this->columns->reject(function (Column $column) use ($key) {
             return $column->key === $key;
@@ -480,7 +485,8 @@ class InertiaTable
                 type: $type,
                 align: $align,
                 className: $className,
-                isInterval: $isInterval
+                isInterval: $isInterval,
+                tooltipIcon: $tooltipIcon
             )
         )->values();
 
@@ -537,6 +543,27 @@ class InertiaTable
     public function withLabelRecord(?array $labelRecord = null): self
     {
         $this->labelRecord = $labelRecord;
+
+        return $this;
+    }
+
+    /**
+     * Small grey note under the table, for caveats that would otherwise clutter every
+     * column header (currency of the figures, cut-off dates, valuation method, ...).
+     */
+    public function withFooterNote(?string $footerNote): self
+    {
+        $this->footerNote = $footerNote;
+
+        return $this;
+    }
+
+    /**
+     * Same idea as withFooterNote, rendered above the table where it is read before the figures.
+     */
+    public function withHeaderNote(?string $headerNote): self
+    {
+        $this->headerNote = $headerNote;
 
         return $this;
     }

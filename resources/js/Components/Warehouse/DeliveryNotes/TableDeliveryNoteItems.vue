@@ -441,6 +441,31 @@ const packLabelAroundCount = computed(() => {
         .map(part => part.trim())
 })
 
+/*
+ * The chip has room for the two quantities and the word joining them, not for the whole sentence its
+ * tooltip spells out, so that same translation is split and only its middle joint kept. It also has
+ * to be a word rather than the slash it used to be, which no longer reads as a separator once each
+ * side is set as a fraction.
+ */
+const packedOfPickedJoint = computed(() => {
+    return ctrans('Packed :packed of :picked picked').split(/:packed|:picked/)[1]?.trim() || 'of'
+})
+
+/* The same cut written as text, for a tooltip, which takes no markup. */
+const fractionAsText = (fractionData: any, fallback: any): string => {
+    if (!Array.isArray(fractionData)) {
+        return String(Number(fallback) || 0)
+    }
+
+    const [wholePack, [loose, packedIn]] = fractionData
+
+    if (!loose) {
+        return String(wholePack)
+    }
+
+    return wholePack ? `${wholePack} ${loose}/${packedIn}` : `${loose}/${packedIn}`
+}
+
 // Dropshipping items are picked in fractions (e.g. 1/3), so the picking input must
 // step by 1/packed_in instead of whole units. Non-dropshipping keeps whole-unit steps.
 const GetPickingDenominator = (item) => {
@@ -783,7 +808,7 @@ const totalUnitsAll = computed(() => {
         }"
     >
         <template #afterRecordCount>
-            | <span class="font-semibold tabular-nums">{{ Math.round(total_unit_counts) }}</span> {{ ctrans('Units') }}
+            | <span class="font-semibold tabular-nums">{{ Math.round(total_unit_counts * 100) / 100 }}</span> {{ ctrans("SKO's") }}
         </template>
         <!-- Whichever picking tab runs out of rows offers the step that follows it, rigt where the picker is already looking. -->
         <template #button-empty-state="{ action }">
@@ -1481,9 +1506,16 @@ const totalUnitsAll = computed(() => {
                     <!-- Label: partially packed, the rest is still waiting -->
                     <span
                         v-if="item.is_partially_packed"
-                        v-tooltip="ctrans('Packed :packed of :picked picked', { packed: Number(item.quantity_packed), picked: Number(item.quantity_picked) })"
-                        class="whitespace-nowrap rounded border border-amber-400 bg-amber-100 px-1.5 text-sm text-amber-700">
-                        {{ Number(item.quantity_packed) }} / {{ Number(item.quantity_picked) }}
+                        v-tooltip="ctrans('Packed :packed of :picked picked', {
+                            packed: fractionAsText(item.quantity_packed_fractional, item.quantity_packed),
+                            picked: fractionAsText(item.quantity_picked_fractional, item.quantity_picked),
+                        })"
+                        class="inline-flex items-center gap-x-1 whitespace-nowrap rounded border border-amber-400 bg-amber-100 px-1.5 text-sm text-amber-700">
+                        <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
+                        <template v-else>{{ Number(item.quantity_packed) }}</template>
+                        {{ packedOfPickedJoint }}
+                        <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+                        <template v-else>{{ Number(item.quantity_picked) }}</template>
                     </span>
 
                     <ButtonWithLink

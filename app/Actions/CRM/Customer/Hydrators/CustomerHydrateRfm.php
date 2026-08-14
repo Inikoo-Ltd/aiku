@@ -7,9 +7,10 @@
 
 namespace App\Actions\CRM\Customer\Hydrators;
 
+use App\Actions\CRM\Customer\GetCustomerRfmTagIds;
 use App\Actions\Helpers\Tag\Hydrators\TagHydrateModels;
+use App\Enums\CRM\Customer\CustomerRfmSegmentEnum;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Tag;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -23,7 +24,7 @@ class CustomerHydrateRfm implements ShouldBeUnique
 
     public string $commandSignature = 'hydrate:customer-rfm {customer}';
 
-    public function getJobUniqueId(int|null $customerId): string
+    public function getJobUniqueId(int|null $customerId, bool $hydrateTagModels = true): string
     {
         return $customerId ?? 'empty';
     }
@@ -34,13 +35,14 @@ class CustomerHydrateRfm implements ShouldBeUnique
 
         if (!$customer) {
             $command->error("Customer not found.");
+
             return;
         }
 
         $this->handle($customer->id);
     }
 
-    public function handle(int|null $customerId): void
+    public function handle(int|null $customerId, bool $hydrateTagModels = true): void
     {
         if ($customerId === null) {
             return;
@@ -52,155 +54,178 @@ class CustomerHydrateRfm implements ShouldBeUnique
             return;
         }
 
-        $now = Carbon::now();
-        $periodStart = $now->copy()->subYear();
+        $periodEnd   = Carbon::now();
+        $periodStart = $periodEnd->copy()->subYear();
 
         $stats = $customer->invoices()
             ->where('in_process', false)
             ->whereNotNull('date')
-            ->selectRaw('
-                MAX(date) as last_invoice_date,
-                SUM(CASE WHEN date BETWEEN ? AND ? THEN 1 ELSE 0 END) as frequency_count,
-                SUM(CASE WHEN date BETWEEN ? AND ? THEN net_amount ELSE 0 END) as monetary_value
-            ', [$periodStart, $now, $periodStart, $now])
+            ->where('date', '<=', $periodEnd)
+            ->selectRaw(
+                '
+                MIN(date) as first_invoice_date,
+                MAX(date) FILTER (WHERE date >= ?) as last_invoice_date,
+                COUNT(*) FILTER (WHERE date >= ?) as frequency_count,
+                COALESCE(SUM(net_amount) FILTER (WHERE date >= ?), 0) as monetary_value
+            ',
+                [$periodStart, $periodStart, $periodStart]
+            )
             ->first();
 
-        if (!$stats || !$stats->last_invoice_date) {
+        if (!$stats || !(int) $stats->frequency_count) {
+            $this->detachRfmTags($customer, $hydrateTagModels);
+
             return;
         }
 
-        /** 🔹 RECENCY **/
-        $lastInvoiceDate = Carbon::parse($stats->last_invoice_date);
-        $daysSinceLast = $lastInvoiceDate->diffInDays($now);
+        $segments = [
+            $this->recencySegment(
+                Carbon::parse($stats->first_invoice_date),
+                Carbon::parse($stats->last_invoice_date),
+                $periodEnd
+            ),
+            $this->frequencySegment((int) $stats->frequency_count),
+            $this->monetarySegment($customer->shop_id, (float) $stats->monetary_value, $periodStart, $periodEnd),
+        ];
 
-        if ($daysSinceLast <= 30) {
-            $recencyTag = 'Active';
-        } elseif ($daysSinceLast <= 90) {
-            $recencyTag = 'At Risk';
-        } elseif ($daysSinceLast <= 180) {
-            $recencyTag = 'Inactive';
-        } else {
-            $recencyTag = 'Lost Customer';
-        }
-
-        /** 🔹 FREQUENCY **/
-        $frequencyCount = (int) $stats->frequency_count;
-        if ($frequencyCount == 1) {
-            $frequencyTag = 'One-Time Buyer';
-        } elseif ($frequencyCount <= 4) {
-            $frequencyTag = 'Occasional Shopper';
-        } elseif ($frequencyCount <= 9) {
-            $frequencyTag = 'Frequent Buyer';
-        } else {
-            $frequencyTag = 'Brand Advocate';
-        }
-
-        /** 🔹 MONETARY **/
-        $monetaryValue = (float) $stats->monetary_value;
-        $percentile = $this->getMonetaryPercentileByShop($customer->shop_id, $monetaryValue);
-
-        if ($percentile <= 50) {
-            $monetaryTag = 'Low Value';
-        } elseif ($percentile <= 80) {
-            $monetaryTag = 'Medium Value';
-        } elseif ($percentile <= 95) {
-            $monetaryTag = 'High Value';
-        } elseif ($percentile <= 99) {
-            $monetaryTag = 'Gold Reward';
-        } else {
-            $monetaryTag = 'Top 100';
-        }
-
-        /** 🔹 Update Tag RFM **/
-        $this->replaceRfmTags($customer, [$recencyTag, $frequencyTag, $monetaryTag]);
+        $this->replaceRfmTags($customer, $segments, $hydrateTagModels);
     }
 
-    protected function replaceRfmTags(Customer $customer, array $newTagNames): void
+    public function recencyCutoffs(Carbon $periodEnd): array
     {
-        $rfmTagIds = Tag::whereIn('data->type', ['recency', 'frequency', 'monetary'])
-            ->pluck('id')
-            ->toArray();
+        $reference = $periodEnd->copy()->startOfDay();
 
-        if (!empty($rfmTagIds)) {
-            $customer->tags()->detach($rfmTagIds);
+        return [
+            CustomerRfmSegmentEnum::RECENT_DAYS   => $reference->copy()->subDays(CustomerRfmSegmentEnum::RECENT_DAYS),
+            CustomerRfmSegmentEnum::AT_RISK_DAYS  => $reference->copy()->subDays(CustomerRfmSegmentEnum::AT_RISK_DAYS),
+            CustomerRfmSegmentEnum::INACTIVE_DAYS => $reference->copy()->subDays(CustomerRfmSegmentEnum::INACTIVE_DAYS),
+        ];
+    }
+
+    public function recencySegment(Carbon $firstInvoiceDate, Carbon $lastInvoiceDate, Carbon $periodEnd): CustomerRfmSegmentEnum
+    {
+        $cutoffs = $this->recencyCutoffs($periodEnd);
+
+        return match (true) {
+            $firstInvoiceDate >= $cutoffs[CustomerRfmSegmentEnum::RECENT_DAYS]   => CustomerRfmSegmentEnum::NEW_CUSTOMER,
+            $lastInvoiceDate >= $cutoffs[CustomerRfmSegmentEnum::RECENT_DAYS]    => CustomerRfmSegmentEnum::ACTIVE,
+            $lastInvoiceDate >= $cutoffs[CustomerRfmSegmentEnum::AT_RISK_DAYS]   => CustomerRfmSegmentEnum::AT_RISK,
+            $lastInvoiceDate >= $cutoffs[CustomerRfmSegmentEnum::INACTIVE_DAYS]  => CustomerRfmSegmentEnum::INACTIVE,
+            default                                                              => CustomerRfmSegmentEnum::LOST_CUSTOMER,
+        };
+    }
+
+    public function frequencySegment(int $invoicesCount): CustomerRfmSegmentEnum
+    {
+        return match (true) {
+            $invoicesCount <= 1                                                            => CustomerRfmSegmentEnum::ONE_TIME_BUYER,
+            $invoicesCount <= CustomerRfmSegmentEnum::OCCASIONAL_SHOPPER_MAX_INVOICES      => CustomerRfmSegmentEnum::OCCASIONAL_SHOPPER,
+            $invoicesCount <= CustomerRfmSegmentEnum::FREQUENT_BUYER_MAX_INVOICES          => CustomerRfmSegmentEnum::FREQUENT_BUYER,
+            default                                                                        => CustomerRfmSegmentEnum::BRAND_ADVOCATE,
+        };
+    }
+
+    protected function monetarySegment(int $shopId, float $spend, Carbon $periodStart, Carbon $periodEnd): CustomerRfmSegmentEnum
+    {
+        $benchmark = $this->shopSpendBenchmark($shopId, $periodStart, $periodEnd);
+
+        if ($benchmark === null) {
+            return CustomerRfmSegmentEnum::LOW_VALUE;
         }
 
-        $newTagIds = Tag::whereIn('name', $newTagNames)
-            ->pluck('id')
-            ->toArray();
+        return match (true) {
+            $benchmark['top_spender_floor'] !== null && $spend >= $benchmark['top_spender_floor'] => CustomerRfmSegmentEnum::TOP_10,
+            $spend <= $benchmark['p50']                                                           => CustomerRfmSegmentEnum::LOW_VALUE,
+            $spend <= $benchmark['p80']                                                           => CustomerRfmSegmentEnum::MEDIUM_VALUE,
+            $spend <= $benchmark['p95']                                                           => CustomerRfmSegmentEnum::HIGH_VALUE,
+            $spend <= $benchmark['p99']                                                           => CustomerRfmSegmentEnum::GOLD_REWARD,
+            default                                                                               => CustomerRfmSegmentEnum::TOP_100,
+        };
+    }
 
-        if (!empty($newTagIds)) {
-            $customer->tags()->syncWithoutDetaching($newTagIds);
+    protected function shopSpendBenchmark(int $shopId, Carbon $periodStart, Carbon $periodEnd): ?array
+    {
+        $cacheKey = "rfm_spend_benchmark_shop_{$shopId}_".$periodEnd->toDateString();
+
+        return Cache::remember($cacheKey, now()->addHours(6), function () use ($shopId, $periodStart, $periodEnd) {
+            $benchmark = DB::selectOne(
+                "
+                WITH spend AS (
+                    SELECT customer_id, SUM(net_amount) AS total
+                    FROM invoices
+                    WHERE shop_id = ? AND in_process = false AND deleted_at IS NULL AND date BETWEEN ? AND ?
+                    GROUP BY customer_id
+                )
+                SELECT
+                    percentile_cont(0.5)  WITHIN GROUP (ORDER BY total) AS p50,
+                    percentile_cont(0.8)  WITHIN GROUP (ORDER BY total) AS p80,
+                    percentile_cont(0.95) WITHIN GROUP (ORDER BY total) AS p95,
+                    percentile_cont(0.99) WITHIN GROUP (ORDER BY total) AS p99,
+                    (SELECT total FROM spend ORDER BY total DESC LIMIT 1 OFFSET ?) AS top_spender_floor
+                FROM spend
+            ",
+                [$shopId, $periodStart, $periodEnd, CustomerRfmSegmentEnum::TOP_SPENDERS_SIZE - 1]
+            );
+
+            if (!$benchmark || $benchmark->p50 === null) {
+                return null;
+            }
+
+            return [
+                'p50'               => (float) $benchmark->p50,
+                'p80'               => (float) $benchmark->p80,
+                'p95'               => (float) $benchmark->p95,
+                'p99'               => (float) $benchmark->p99,
+                'top_spender_floor' => $benchmark->top_spender_floor === null ? null : (float) $benchmark->top_spender_floor,
+            ];
+        });
+    }
+
+    protected function replaceRfmTags(Customer $customer, array $segments, bool $hydrateTagModels): void
+    {
+        $rfmTagIds = GetCustomerRfmTagIds::run();
+
+        $newTagIds = array_values(array_filter(array_map(
+            fn (CustomerRfmSegmentEnum $segment) => $rfmTagIds[$segment->value] ?? null,
+            $segments
+        )));
+
+        $customer->tags()->detach(array_diff(array_values($rfmTagIds), $newTagIds));
+
+        if (empty($newTagIds)) {
+            return;
         }
 
-        foreach ($newTagIds as $tagId) {
+        $customer->tags()->syncWithoutDetaching($newTagIds);
+
+        if ($hydrateTagModels) {
+            $this->hydrateTagModels($newTagIds);
+        }
+    }
+
+    protected function detachRfmTags(Customer $customer, bool $hydrateTagModels): void
+    {
+        $rfmTagIds = array_values(GetCustomerRfmTagIds::run());
+
+        if (empty($rfmTagIds)) {
+            return;
+        }
+
+        $detached = $customer->tags()->detach($rfmTagIds);
+
+        if ($detached && $hydrateTagModels) {
+            $this->hydrateTagModels($rfmTagIds);
+        }
+    }
+
+    protected function hydrateTagModels(array $tagIds): void
+    {
+        foreach ($tagIds as $tagId) {
             try {
                 TagHydrateModels::dispatch($tagId)->delay(300);
             } catch (\Throwable) {
                 // Skip errors
             }
         }
-    }
-
-    protected function getMonetaryPercentileByShop(int $shopId, float $value): float
-    {
-        $cacheKey = "rfm_monetary_percentiles_shop_{$shopId}";
-        $percentiles = Cache::get($cacheKey);
-
-        if (!$percentiles && !Cache::has("rfm_generating_{$shopId}")) {
-            // Avoid race condition
-            Cache::put("rfm_generating_{$shopId}", true, now()->addMinutes(5));
-            $this->generateMonetaryPercentilesByShop($shopId);
-            Cache::forget("rfm_generating_{$shopId}");
-            $percentiles = Cache::get($cacheKey);
-        }
-
-        if (!$percentiles) {
-            return 0;
-        }
-
-        if ($value <= $percentiles[50]) {
-            return 50;
-        }
-        if ($value <= $percentiles[80]) {
-            return 80;
-        }
-        if ($value <= $percentiles[95]) {
-            return 95;
-        }
-        if ($value <= $percentiles[99]) {
-            return 99;
-        }
-        return 100;
-    }
-
-    protected function generateMonetaryPercentilesByShop(int $shopId): void
-    {
-        $now = Carbon::now();
-        $oneYearAgo = $now->copy()->subYear();
-
-        $spending = DB::table('invoices')
-            ->select('customer_id', DB::raw('SUM(net_amount) as total_spend'))
-            ->where('shop_id', $shopId)
-            ->where('in_process', false)
-            ->whereBetween('date', [$oneYearAgo, $now])
-            ->groupBy('customer_id')
-            ->pluck('total_spend', 'customer_id');
-
-        if ($spending->isEmpty()) {
-            return;
-        }
-
-        $sorted = $spending->values()->sort()->values();
-        $count = $sorted->count();
-
-        $percentiles = [
-            50 => $sorted[(int)($count * 0.5)] ?? 0,
-            80 => $sorted[(int)($count * 0.8)] ?? 0,
-            95 => $sorted[(int)($count * 0.95)] ?? 0,
-            99 => $sorted[(int)($count * 0.99)] ?? 0,
-        ];
-
-        Cache::put("rfm_monetary_percentiles_shop_{$shopId}", $percentiles, now()->addHours(24));
     }
 }

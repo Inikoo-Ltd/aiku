@@ -94,7 +94,8 @@ class PickPickingSessionItemByScan extends OrgAction
         }
 
         $location       = $this->pickingLocation($itemToPick, $requestedLocation);
-        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $requestedQuantity) : 0;
+        $quantityWanted = $this->scannedQuantityInStockUnits($itemToPick, $scanned, $requestedQuantity);
+        $quantityToPick = $location ? $this->storeScannedPicking($itemToPick, $user, $location, $quantityWanted) : 0;
 
         if ($quantityToPick <= 0) {
             return $this->outcome(
@@ -115,14 +116,14 @@ class PickPickingSessionItemByScan extends OrgAction
 
         $message = $remainingAfter > 0
             ? __('Picked :quantity x :code from :location for :reference, :remaining still to pick', [
-                'quantity'  => $quantityToPick + 0,
+                'quantity'  => $this->formatScanQuantity($itemToPick, $quantityToPick),
                 'code'      => $itemToPick->orgStock?->code ?? $scanned,
                 'location'  => $location->location_code,
                 'reference' => $itemToPick->deliveryNote->reference,
-                'remaining' => $remainingAfter + 0,
+                'remaining' => $this->formatScanQuantity($itemToPick, $remainingAfter),
             ])
             : __('Picked :quantity x :code from :location for :reference', [
-                'quantity'  => $quantityToPick + 0,
+                'quantity'  => $this->formatScanQuantity($itemToPick, $quantityToPick),
                 'code'      => $itemToPick->orgStock?->code ?? $scanned,
                 'location'  => $location->location_code,
                 'reference' => $itemToPick->deliveryNote->reference,
@@ -248,14 +249,17 @@ class PickPickingSessionItemByScan extends OrgAction
             'warning'               => $warning,
             'scanned'               => $scanned,
             'item'                  => $deliveryNoteItem ? [
-                'id'                    => $deliveryNoteItem->id,
-                'code'                  => $deliveryNoteItem->orgStock?->code,
-                'name'                  => $deliveryNoteItem->orgStock?->name,
-                'quantity_required'     => (float)$deliveryNoteItem->quantity_required,
-                'quantity_picked'       => (float)$deliveryNoteItem->quantity_picked,
-                'quantity_to_pick'      => static::quantityLeftToPick($deliveryNoteItem),
-                'location_code'         => $location?->location_code,
-                'location_org_stock_id' => $location?->id,
+                'id'                     => $deliveryNoteItem->id,
+                'code'                   => $deliveryNoteItem->orgStock?->code,
+                'name'                   => $deliveryNoteItem->orgStock?->name,
+                'packed_in'              => (int)($deliveryNoteItem->orgStock?->packed_in ?? 1),
+                'quantity_required'      => (float)$deliveryNoteItem->quantity_required,
+                'quantity_picked'        => (float)$deliveryNoteItem->quantity_picked,
+                'quantity_to_pick'       => static::quantityLeftToPick($deliveryNoteItem),
+                'quantity_to_pick_label' => $this->formatScanQuantity($deliveryNoteItem, static::quantityLeftToPick($deliveryNoteItem)),
+                'quantity_to_pick_fractional' => $this->scanQuantityFraction($deliveryNoteItem, static::quantityLeftToPick($deliveryNoteItem)),
+                'location_code'          => $location?->location_code,
+                'location_org_stock_id'  => $location?->id,
             ] : null,
             'delivery_note'         => $deliveryNote ? [
                 'id'        => $deliveryNote->id,

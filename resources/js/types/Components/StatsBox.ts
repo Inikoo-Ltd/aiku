@@ -25,6 +25,16 @@ export interface StatsBoxTS {
         name: string
         parameters: {}
     }
+    editable?: {
+        label: string
+        icon?: string
+        field: string
+        value: number
+        title?: string
+        tooltip?: string
+        readonly?: boolean
+        route: routeType
+    }
     metaRight?: {
         count: number
         icon: Icon

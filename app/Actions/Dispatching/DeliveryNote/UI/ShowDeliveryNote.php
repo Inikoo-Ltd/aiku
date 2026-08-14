@@ -1217,7 +1217,14 @@ class ShowDeliveryNote extends OrgAction
                 : Inertia::optional(fn () => DeliveryNoteTariffCodeResource::collection(IndexDeliveryNoteTariffCodes::run($deliveryNote, DeliveryNoteTabsEnum::TARIFF_CODES->value))),
 
             'tariff_codes_export' => [
-                'currency_code'  => $deliveryNote->shop->currency->code,
+                'currency_code'    => $deliveryNote->shop->currency->code,
+                'org_stock_route'  => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show',
+                    'parameters' => [
+                        'organisation' => $deliveryNote->organisation->slug,
+                        'warehouse'    => $deliveryNote->warehouse->slug,
+                    ],
+                ],
                 'fields'         => $this->getTariffCodesExportFields(),
                 'download_route' => [
                     'xlsx' => [
@@ -1245,10 +1252,7 @@ class ShowDeliveryNote extends OrgAction
             'tab_counts'                         => $tabCounts,
             'total_unit_counts'                  => DB::table('delivery_note_items')
                                                         ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
-                                                        ->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
-                                                        ->sum(DB::raw(
-                                                            'delivery_note_items.quantity_required * org_stocks.packed_in'
-                                                        )),
+                                                        ->sum('delivery_note_items.quantity_required'),
         ];
 
         $props = array_merge($props, $this->getItems($deliveryNote));

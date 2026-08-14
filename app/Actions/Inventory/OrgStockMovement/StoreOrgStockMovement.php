@@ -16,6 +16,7 @@ use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
@@ -120,9 +121,15 @@ class StoreOrgStockMovement extends OrgAction
                     ->where('org_stock_id', $orgStock->id)->sum('quantity');
 
 
+                $lppPerSku  = $this->getLppPerSku($orgStock, now());
+                $valuation  = $this->getValuationPerSku($orgStock, now());
+
                 $orgStockMovement->update([
                     'running_quantity'           => $runningQuantity,
                     'running_quantity_org_stock' => $runningQuantityOrg,
+                    'running_lpp_value'          => round($runningQuantityOrg * $lppPerSku, 2),
+                    'running_wac_value'          => $valuation['wac'] === null ? null : round($runningQuantityOrg * $valuation['wac'], 2),
+                    'running_fifo_value'         => $valuation['fifo'] === null ? null : round($runningQuantityOrg * $valuation['fifo'], 2),
                 ]);
 
 
@@ -172,6 +179,8 @@ class StoreOrgStockMovement extends OrgAction
             $rules['fetched_at']         = ['sometimes', 'date'];
             $rules['source_id']          = ['sometimes', 'string'];
             $rules['is_migration_point'] = ['sometimes', 'boolean'];
+            $rules['cost_per_sku']       = ['sometimes', 'nullable', 'numeric'];
+            $rules['cost_status']        = ['sometimes', 'nullable', Rule::enum(OrgStockMovementCostStatusEnum::class)];
         }
 
         return $rules;

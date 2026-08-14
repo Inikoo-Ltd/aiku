@@ -51,7 +51,18 @@ class ShowSysAdminDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-users-cog'],
                         'title' => __('System Administration')
                     ],
-                    'title' => __('System Administration'),
+                    'title'   => __('System Administration'),
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Settings'),
+                            'icon'  => ['fal', 'fa-cog'],
+                            'route' => [
+                                'name' => 'grp.sysadmin.settings.edit',
+                            ]
+                        ]
+                    ]
                 ],
                 'users_insights'  => GetUsersInsights::run($group),
                 'search_insights' => GetSearchAnalytics::run($group),

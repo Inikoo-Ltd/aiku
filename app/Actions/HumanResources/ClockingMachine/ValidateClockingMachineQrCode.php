@@ -354,6 +354,7 @@ class ValidateClockingMachineQrCode
                     'name' => $machine->name,
                     'workplace_id' => $machine->workplace_id
                 ],
+                'is_visiting' => $clocking->subject->organisation_id !== $machine->organisation_id,
                 'working_hours' => $workingHours,
                 'clocking' => [
                     'clocked_at' => $clocking->clocked_at,

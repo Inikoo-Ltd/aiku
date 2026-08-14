@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufactureTaskSession;
 
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\OrgAction;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
@@ -46,7 +47,7 @@ class StartManufactureTaskSession extends OrgAction
             'job_order_item_task_id' => $jobOrderItemTask->id,
             'manufacture_task_id'    => $jobOrderItemTask->manufacture_task_id,
             'user_id'                => $user->id,
-            'employee_id'            => $user->employees()->first()?->id,
+            'employee_id'            => GetUserCurrentEmployee::run($user, $jobOrderItemTask->organisation_id)?->id,
             'state'                  => ManufactureTaskSessionStateEnum::OPEN,
             'started_at'             => now(),
         ]);

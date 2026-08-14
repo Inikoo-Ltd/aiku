@@ -12,7 +12,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, ref } from "vue"
+import { computed, reactive, ref } from "vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
@@ -54,8 +54,8 @@ const component = computed(() => {
     return components[currentTab.value]
 })
 
-const selectedProductsId = ref<{[key: string]: boolean}>({})
-const compSelectedProductsId = computed(() => Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key]))
+const selectedProductsId = reactive(new Set<number>())
+const compSelectedProductsId = computed(() => [...selectedProductsId])
 const isOpenModalAddToFamily = ref(false)
 const selectedFamilyId = ref(null)
 const isLoadingButton = ref(false)
@@ -77,7 +77,7 @@ const onSubmitToFamily = () => {
             onSuccess: () => {
                 isOpenModalAddToFamily.value = false
                 selectedFamilyId.value = null
-                selectedProductsId.value = {}
+                selectedProductsId.clear()
                 notify({
                     title: trans("Success"),
                     text: selectedProductsIdToSubmit.length + ' ' + trans("Products added to Family successfully."),
@@ -109,7 +109,7 @@ const onSubmitToFamily = () => {
                 @click="() => isOpenModalAddToFamily = true"
                 type="tertiary"
                 icon="fas fa-plus"
-                label="Add to Family"
+                :label="ctrans('Add :familyCount to Family', { familyCount: compSelectedProductsId.length })"
                 :disabled="compSelectedProductsId.length < 1"
                 v-tooltip="compSelectedProductsId.length < 1 ? trans('Select at least one product') : ''"
             />
@@ -125,8 +125,6 @@ const onSubmitToFamily = () => {
         :selectedProductsId
         :data="props[currentTab]"
         :isCheckboxProducts="is_orphan_products"
-        xselectedRow="(productsId: {}) => (console.log('qqqqqq', productsId), selectedProductsId = productsId)"
-        @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
     />
     
 

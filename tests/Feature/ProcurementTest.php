@@ -145,7 +145,7 @@ beforeEach(function () {
     $this->orgAgent = $orgAgent;
 
 
-    $supplier = Supplier::first();
+    $supplier = Supplier::where('agent_id', $this->agent->id)->first();
     if (!$supplier) {
         $storeData = Supplier::factory()->definition();
         $supplier  = StoreSupplier::make()->action(

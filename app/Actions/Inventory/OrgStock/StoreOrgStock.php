@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock;
 use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksWithoutProducts;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -75,6 +76,11 @@ class StoreOrgStock extends OrgAction
 
 
         OrganisationHydrateOrgStocks::dispatch($organisation)->delay($this->hydratorsDelay);
+
+        foreach ($organisation->warehouses as $warehouse) {
+            WarehouseHydrateOrgStocksWithoutProducts::dispatch($warehouse)->delay($this->hydratorsDelay);
+        }
+
         if ($orgStock->orgStockFamily) {
             OrgStockFamilyHydrateOrgStocks::dispatch($orgStock->orgStockFamily)->delay($this->hydratorsDelay);
         }

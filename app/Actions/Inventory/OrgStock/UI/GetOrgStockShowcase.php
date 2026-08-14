@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\UI;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
@@ -18,6 +19,8 @@ use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use Illuminate\Support\Facades\DB;
 
 class GetOrgStockShowcase
 {
@@ -72,6 +75,7 @@ class GetOrgStockShowcase
                     ],
                 ],
                 'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
+                'has_no_products'    => $this->hasNoProducts($orgStock),
                 'latest_movements'   => $this->getLatestMovements($orgStock),
                 'stock_history_route' => [
                     'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes)$/', '', request()->route()->getName()).'.stock_history',
@@ -119,11 +123,7 @@ class GetOrgStockShowcase
                         'set_location_as_picking_priority_route' => [],  // TODO
                         'add_parts_location_note'                => [],  // TODO
                     ],
-                    'stock_cost'      => [
-                        'sku_value'                 => $orgStock->sku_value,
-                        'total_stock_value'         => $orgStock->sku_value * $orgStock->quantity_available,
-                        'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
-                    ],
+                    'stock_cost'      => $this->getStockCost($orgStock),
                     'summary'         => [
                         'quantity_in_locations' => [
                             'icon_state' => [
@@ -159,9 +159,44 @@ class GetOrgStockShowcase
     }
 
 
+    private function hasNoProducts(OrgStock $orgStock): bool
+    {
+        if (!in_array($orgStock->state, [OrgStockStateEnum::ACTIVE, OrgStockStateEnum::DISCONTINUING])) {
+            return false;
+        }
+
+        return !DB::table('product_has_org_stocks')->where('org_stock_id', $orgStock->id)->exists();
+    }
+
     /**
      * @return array{0: int|float, 1: array{0: int|float, 1: int|float}}
      */
+    /**
+     * @return array{sku_value: ?float, total_stock_value: float, current_supplier_sku_cost: ?float, fifo_per_sku: ?float, wac_per_sku: ?float, lpp_per_sku: ?float}
+     */
+    private function getStockCost(OrgStock $orgStock): array
+    {
+        $now       = now();
+        $valuation = $this->getValuationPerSku($orgStock, $now);
+        $perSku    = [
+            OrgStockValuationMethodEnum::FIFO->value => $valuation['fifo'],
+            OrgStockValuationMethodEnum::WAC->value  => $valuation['wac'],
+            OrgStockValuationMethodEnum::LPP->value  => $this->getLppPerSku($orgStock, $now),
+        ];
+        $officialPerSku = $perSku[OrgStockValuationMethodEnum::official()->value] ?? $perSku[OrgStockValuationMethodEnum::LPP->value];
+
+        return [
+            'sku_value'                 => $officialPerSku,
+            'total_stock_value'         => $officialPerSku * $orgStock->quantity_available,
+            'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
+            'official_method'           => OrgStockValuationMethodEnum::official()->label(),
+            'valuations'                => array_map(fn (OrgStockValuationMethodEnum $method) => [
+                'label' => $method->labelWithStatus(),
+                'value' => $perSku[$method->value],
+            ], OrgStockValuationMethodEnum::ordered()),
+        ];
+    }
+
     private function getFractionalQuantity(int|float|null $quantity, int|float|null $packedIn): array
     {
         return riseDivisor(divideWithRemainder(findSmallestFactors($quantity ?? 0)), $packedIn ?? 1);
