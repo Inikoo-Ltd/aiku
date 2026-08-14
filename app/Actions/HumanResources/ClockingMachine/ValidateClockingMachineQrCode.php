@@ -105,8 +105,8 @@ class ValidateClockingMachineQrCode
 
     /**
      * The QR code is scanned by a signed in user, so the employee comes from the user rather than
-     * from the machine. An employee in the machine's own organisation wins, but a user employed
-     * elsewhere in the group is still allowed to clock in on any site's machine.
+     * from the machine. Reaching across organisations is left to GetUserCurrentEmployee, which
+     * ranks an active employment elsewhere above a closed one on the machine's own site.
      */
     private function resolveEmployee(ClockingMachine $clockingMachine): ?Employee
     {
@@ -116,8 +116,7 @@ class ValidateClockingMachineQrCode
             return null;
         }
 
-        return GetUserCurrentEmployee::run($user, $clockingMachine->organisation_id)
-            ?? GetUserCurrentEmployee::run($user);
+        return GetUserCurrentEmployee::run($user, $clockingMachine->organisation_id);
     }
 
     private function processClocking(ClockingMachine $machine, ClockingMachineQRCode $clockingMachineQRCode, Employee $employee, ?int $workScheduleId = null): array
