@@ -799,3 +799,27 @@ test('a product can be exclusive to several customers and only they can see it',
         ->and($product->isExclusive())->toBeFalse()
         ->and($visibleTo(null))->toBeTrue();
 });
+
+test('repair repoints products from a discontinued org stock to its active twin', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+
+    $activeOrgStock = $this->orgStock1;
+    $activeOrgStock->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE, 'code' => 'REPAIR-01']);
+
+    $brokenOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action(
+        $this->organisation,
+        $activeOrgStock->stock,
+        array_merge(\App\Models\Inventory\OrgStock::factory()->definition(), ['code' => 'REPAIR-01-error']),
+    );
+    $brokenOrgStock->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+
+    $product->orgStocks()->sync([$brokenOrgStock->id => ['quantity' => 1]]);
+
+    $repaired = \App\Actions\Catalogue\Product\RepairProductsLinkedToDiscontinuedOrgStock::make()
+        ->handle($this->organisation->id);
+
+    expect($repaired)->toBeGreaterThanOrEqual(1)
+        ->and($product->orgStocks()->pluck('org_stocks.id')->all())->toBe([$activeOrgStock->id]);
+});
