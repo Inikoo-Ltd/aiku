@@ -106,6 +106,17 @@ const remainingOnLastItem = computed(() => {
 
 const remainingFractionOnLastItem = computed(() => lastOutcome.value?.item?.quantity_to_pack_fractional ?? null)
 
+/*
+ * The count sits inside the sentence, so the translated sentence is split around its placeholder and
+ * the fraction rendered into the gap. Translating the words on either side as their own keys would
+ * fix the English word order onto every other language.
+ */
+const splitAroundRemaining = (sentence: string) => ctrans(sentence).split(":remaining").map(part => part.trim())
+
+const remainingLabelParts = computed(() => splitAroundRemaining(":remaining left on this item"))
+
+const packAllLabelParts = computed(() => splitAroundRemaining("Pack all :remaining"))
+
 const { queuedCount, enqueueScan } = useScanQueue<PendingScan>((scan) => submitScan(scan))
 
 // One scan is one physical item, which is what makes partial packing natural: scan as many times
@@ -176,7 +187,7 @@ const applyOutcome = (outcome: ScanOutcome) => {
     }
 
     if (outcome.warning) {
-        notify({ title: ctrans("Check what you packed"), text: outcome.warning, type: "warn" })
+        notify({ title: ctrans("Check what you packed"), text: outcome.warning, type: "warning" })
     }
 
     emits("scanned", outcome)
@@ -257,8 +268,9 @@ const applyOutcome = (outcome: ScanOutcome) => {
                     class="ml-auto flex items-center gap-x-2">
                     <span class="inline-flex items-center gap-x-1 whitespace-nowrap rounded bg-amber-950 px-2 py-1 text-sm font-bold text-amber-50">
                         <template v-if="remainingFractionOnLastItem">
+                            <span v-if="remainingLabelParts[0]">{{ remainingLabelParts[0] }}</span>
                             <FractionDisplay :fractionData="remainingFractionOnLastItem" />
-                            {{ ctrans("left on this item") }}
+                            <span v-if="remainingLabelParts[1]">{{ remainingLabelParts[1] }}</span>
                         </template>
                         <template v-else>
                             {{ ctrans(":remaining left on this item", { remaining: remainingOnLastItem }) }}
@@ -277,8 +289,9 @@ const applyOutcome = (outcome: ScanOutcome) => {
                         @click="packRestOfLastScannedItem">
                         <span class="inline-flex items-center gap-x-1">
                             <template v-if="remainingFractionOnLastItem">
-                                {{ ctrans("Pack all") }}
+                                <span v-if="packAllLabelParts[0]">{{ packAllLabelParts[0] }}</span>
                                 <FractionDisplay :fractionData="remainingFractionOnLastItem" />
+                                <span v-if="packAllLabelParts[1]">{{ packAllLabelParts[1] }}</span>
                             </template>
                             <template v-else>
                                 {{ ctrans("Pack all :remaining", { remaining: remainingOnLastItem }) }}

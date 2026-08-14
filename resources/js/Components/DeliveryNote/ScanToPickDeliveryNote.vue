@@ -108,6 +108,17 @@ const remainingOnLastItem = computed(() => {
 
 const remainingFractionOnLastItem = computed(() => lastOutcome.value?.item?.quantity_to_pick_fractional ?? null)
 
+/*
+ * The count sits inside the sentence, so the translated sentence is split around its placeholder and
+ * the fraction rendered into the gap. Translating the words on either side as their own keys would
+ * fix the English word order onto every other language.
+ */
+const splitAroundRemaining = (sentence: string) => ctrans(sentence).split(":remaining").map(part => part.trim())
+
+const remainingLabelParts = computed(() => splitAroundRemaining(":remaining left on this item"))
+
+const pickAllLabelParts = computed(() => splitAroundRemaining("Pick all :remaining"))
+
 const { queuedCount, enqueueScan } = useScanQueue<PendingScan>((scan) => submitScan(scan))
 
 // One scan is one physical thing taken off the shelf, so a line needing three is scanned three times,
@@ -272,8 +283,9 @@ const applyOutcome = (outcome: ScanOutcome) => {
                     class="ml-auto flex items-center gap-x-2">
                     <span class="inline-flex items-center gap-x-1 whitespace-nowrap rounded border border-dashed border-amber-950 px-2 py-1 text-sm font-bold text-amber-800">
                         <template v-if="remainingFractionOnLastItem">
+                            <span v-if="remainingLabelParts[0]">{{ remainingLabelParts[0] }}</span>
                             <FractionDisplay :fractionData="remainingFractionOnLastItem" />
-                            {{ ctrans("left on this item") }}
+                            <span v-if="remainingLabelParts[1]">{{ remainingLabelParts[1] }}</span>
                         </template>
                         <template v-else>
                             {{ ctrans(":remaining left on this item", { remaining: remainingOnLastItem }) }}
@@ -293,8 +305,9 @@ const applyOutcome = (outcome: ScanOutcome) => {
                         @click="pickRestOfLastScannedItem">
                         <span class="inline-flex items-center gap-x-1">
                             <template v-if="remainingFractionOnLastItem">
-                                {{ ctrans("Pick all") }}
+                                <span v-if="pickAllLabelParts[0]">{{ pickAllLabelParts[0] }}</span>
                                 <FractionDisplay :fractionData="remainingFractionOnLastItem" />
+                                <span v-if="pickAllLabelParts[1]">{{ pickAllLabelParts[1] }}</span>
                             </template>
                             <template v-else>
                                 {{ ctrans("Pick all :remaining", { remaining: remainingOnLastItem }) }}
