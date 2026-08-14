@@ -99,10 +99,16 @@ trait WithScannedDeliveryNoteItemMatching
 
     /**
      * Dropshipping ships loose units to the end customer, everything else ships outers/SKOs picked
-     * as a whole. The warning only fires when the scan kind disagrees with what the shop expects.
+     * as a whole. The warning only fires when the scan kind disagrees with what the shop expects,
+     * and never when the SKO holds a single unit: there the outer and the unit are the same thing
+     * in hand, so whichever of the two barcodes was read, the picker took the right item.
      */
     protected function scanKindWarning(DeliveryNoteItem $item, string $matchedKind): ?string
     {
+        if ((int)($item->orgStock?->packed_in ?? 1) <= 1) {
+            return null;
+        }
+
         $isDropshipping = $item->shop?->type === \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING;
 
         if ($isDropshipping && $matchedKind === 'sko') {

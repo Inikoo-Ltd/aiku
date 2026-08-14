@@ -74,6 +74,7 @@ const props = defineProps < {
             }
             packs: number | null
             editable: boolean
+            warning?: string | null
         }[]
         barcode_update_route?: routeType
         can_edit_unit_barcode?: boolean
@@ -179,6 +180,7 @@ const barcodeInput = ref("")
 const isSavingBarcode = ref(false)
 const editingLevel = ref<string>("sko")
 const editingHasNumber = ref(false)
+const editingWarning = ref<string | null>(null)
 
 const barcodeInputElement = ref<HTMLInputElement | null>(null)
 
@@ -190,9 +192,10 @@ const canEditBarcode = (barcode: { level: string, editable: boolean }): boolean 
     return !!barcode.editable && !!props.data.barcode_update_route
 }
 
-const openBarcodeModal = (barcode: { level: string, number: string }) => {
+const openBarcodeModal = (barcode: { level: string, number: string, warning?: string | null }) => {
     editingLevel.value = barcode.level
     editingHasNumber.value = !!barcode.number
+    editingWarning.value = barcode.warning ?? null
     barcodeInput.value = barcode.number || ""
     isBarcodeModalOpen.value = true
     nextTick(() => barcodeInputElement.value?.focus())
@@ -217,8 +220,8 @@ const applyBarcodeChange = (value: string | null) => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors[field] || errors.unit_barcode || trans("Could not save the barcode"),
+                    title: ctrans("Something went wrong"),
+                    text: errors[field] || errors.unit_barcode || ctrans("Could not save the barcode"),
                     type: "error",
                 })
             },
@@ -228,23 +231,39 @@ const applyBarcodeChange = (value: string | null) => {
 
 const confirm = useConfirm()
 
+const rejectProps = {
+    label: ctrans("Cancel"),
+    severity: "secondary",
+    outlined: true,
+}
+
 const saveBarcode = (value: string | null) => {
-    if (editingLevel.value !== "unit") {
+    if (editingLevel.value === "unit") {
+        confirm.require({
+            message: ctrans("Changing the unit EAN updates the product barcode on the website and every sales channel (Shopify, eBay, Amazon, etc.) — this affects customers. Continue?"),
+            header: ctrans("Confirm unit EAN change"),
+            icon: "pi pi-exclamation-triangle",
+            acceptLabel: ctrans("Yes, update it"),
+            rejectLabel: ctrans("Cancel"),
+            rejectProps,
+            accept: () => applyBarcodeChange(value),
+        })
+        return
+    }
+
+    // Clearing the slot is what the warning asks for, so only putting a number into it is questioned.
+    if (!value || !editingWarning.value) {
         applyBarcodeChange(value)
         return
     }
 
     confirm.require({
-        message: trans("Changing the unit EAN updates the product barcode on the website and every sales channel (Shopify, eBay, Amazon, etc.) — this affects customers. Continue?"),
-        header: trans("Confirm unit EAN change"),
+        message: editingWarning.value,
+        header: ctrans("This SKO has no outer packing"),
         icon: "pi pi-exclamation-triangle",
-        acceptLabel: trans("Yes, update it"),
-        rejectLabel: trans("Cancel"),
-        rejectProps: {
-            label: trans("Cancel"),
-            severity: "secondary",
-            outlined: true
-        },
+        acceptLabel: ctrans("Save it as the SKO barcode anyway"),
+        rejectLabel: ctrans("Cancel"),
+        rejectProps,
         accept: () => applyBarcodeChange(value),
     })
 }
@@ -369,6 +388,11 @@ const saveBarcode = (value: string | null) => {
                                 class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
                                 {{ barcode.dimensions.type }}
                             </span>
+                        </span>
+                        <span v-else-if="barcode.warning"
+                            class="inline-flex items-start gap-2 text-xs leading-snug text-amber-700">
+                            <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="w-4 shrink-0 mt-0.5 text-amber-500" />
+                            <span>{{ barcode.warning }}</span>
                         </span>
                         <span v-else class="text-sm text-gray-300">—</span>
 
