@@ -24,6 +24,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisProductEcomOrdering;
 use App\Actions\Catalogue\Product\Json\GetIrisProductTrends;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetProductSiblings;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
 use App\Actions\Catalogue\Product\Json\GetVariantAndProducts;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
@@ -116,7 +117,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('channels', IndexRetinaDropshippingCustomerSalesChannels::class)->name('channels.index');
     Route::get('product/{product:id}', GetIrisProductEcomOrdering::class)->name('product.ecom_ordering_data')->whereNumber('product');
-
+    
+    Route::get('product/{product:id}/siblings', GetProductSiblings::class)->name('product.get-siblings')->whereNumber('product');
+    
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant')->whereNumber('variant');
     Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant')->whereNumber('variant');
     Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');

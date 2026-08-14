@@ -303,13 +303,16 @@ const severityMap: Record<string, string> = {
 const getSeverity = (type?: string) => {
   return type ? severityMap[type.toLowerCase()] || "info" : "info"
 }
+
+// Ensure tab is selected properly if index 0 has all hidden fields
+switchTab(Object.keys(props.formData.blueprint).find(key =>
+    Object.values(props.formData.blueprint[key].fields).some(item => !item.hidden)
+))
+
 </script>
-
-
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-
     <div v-if="warning && showWarningMessage">
         <Message v-if="warning && showWarningMessage" :severity="getSeverity(warning.type)" xclosable="true"
             @close="showWarningMessage = false">

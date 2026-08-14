@@ -683,19 +683,24 @@ class EditProduct extends OrgAction
 
                         ]
                     ],
-                $canEditNotForSale
-                    ? [
-                        'label'  => __('Sale Status'),
-                        'icon'   => 'fal fa-cart-arrow-down',
-                        'fields' => [
-                            'is_for_sale' => [
-                                'type'  => 'toggle',
-                                'information'   => __("If an item is not for sale, it will not appear in the website's search results and will be excluded from other related features"),
-                                'label' => __('For Sale'),
-                                'value' => $product->is_for_sale,
-                            ],
-                        ],
-                    ] : [],
+                [
+                    'label'  => __('Sale Status'),
+                    'icon'   => 'fal fa-cart-arrow-down',
+                    'fields' => [
+                        'is_for_sale' => $canEditNotForSale ? [
+                            'type'  => 'toggle',
+                            'information'   => __("If an item is not for sale, it will not appear in the website's search results and will be excluded from other related features"),
+                            'label' => __('For Sale'),
+                            'value' => $product->is_for_sale,
+                        ] : null,
+                        'show_siblings_as_option'   => is_null($product->variant_id) && $product->family ? [
+                            'type'  => 'toggle',
+                            'information'   => __("Would generate a variant-like behavior, but instead would show all siblings as option"),
+                            'label' => __('Show Siblings as Option'),
+                            'value' => $product->show_siblings_as_option,
+                        ] : null,
+                    ],
+                ],
                 [
                     'label'  => __('Trade Unit'),
                     'icon'   => 'fal fa-atom',

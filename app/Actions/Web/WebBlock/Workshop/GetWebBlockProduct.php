@@ -44,8 +44,41 @@ class GetWebBlockProduct
                 TradeAttachmentScopeEnum::TEST_REPORTS,
             ])
             ->get();
+            
+        $variant            = null;
+        $isNaturalVariant   = false;
+        if ($product->show_siblings_as_option) {
+            $siblings = $product->family->getActiveProducts()->orderBy('code');
 
-        $variant     = $product->is_variant_leader ? Variant::where('leader_id', $product->id)->first() : null;
+            $variant = [
+                'id'    => null,
+                'data'  => [
+                    'groupBy'   => 'Siblings',
+                    'products'  => $siblings->mapWithKeys(fn ($product) => [
+                        $product->id    => [
+                            'Siblings'  => $product->code,
+                            'product'   => [
+                                'id'        =>  $product->id,
+                                'code'      =>  $product->code, 
+                                'name'      =>  $product->name, 
+                                'slug'      =>  $product->slug,
+                                'images'    =>  $product->web_images
+                            ],
+                            'is_leader' => $product->id == $webpage->model_id, // TODO CHANGE ARYA
+                        ]
+                    ]),
+                    'variants'  => [
+                        'label'     => 'Siblings',
+                        'options'   => $siblings->pluck('code')
+                    ]
+                ],
+                'is_natural_variant'   => $isNaturalVariant
+            ];
+        } elseif ($product->is_variant_leader) {
+            $variant            = Variant::where('leader_id', $product->id)->first()?->only(['id', 'data']);
+            $isNaturalVariant   = true;
+            $variant->is_natural_variant = $isNaturalVariant;
+        }
 
         $resourceWebBlockProduct = WebBlockProductForWorkshopResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
@@ -55,7 +88,10 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
 
         if ($variant) {
-            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant->only(['id', 'data']));
+            $excludedProducts = $isNaturalVariant ? collect(data_get($variant, 'data.products'))->reject(fn ($product) => isset($product['is_hide']) ? $product['is_hide'] : false) : null;
+
+            data_set($variant, 'data.products', $excludedProducts);
+            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant);
         }
 
         return $webBlock;

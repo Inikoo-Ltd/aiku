@@ -325,7 +325,7 @@ class UpdateProduct extends OrgAction
 
         $fieldsUsedInWebpages = array_merge(
             $fieldsUsedInLuigi,
-            ['rrp', 'units', 'unit'],
+            ['rrp', 'units', 'unit', 'show_siblings_as_option'],
             $this->getDangerousGoodsFieldNames(),
             $this->getProductInformationFieldNames()
         );
@@ -528,6 +528,8 @@ class UpdateProduct extends OrgAction
             'not_follow_master_trade_units' => ['sometimes', 'boolean'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
             'not_follow_master_media'       => ['sometimes', 'boolean'],
+
+            'show_siblings_as_option'       => ['sometimes', 'boolean']
         ];
 
 

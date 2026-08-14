@@ -130,7 +130,7 @@ class ProductOfVariantResource extends JsonResource
             'discounted_margin'          => $marginDiscounted,
             'discounted_percentage'      => percentage($bestPercentageOff, 1),
 
-
+            'canonical_url'              => $product->canonical_url
         ];
     }
 

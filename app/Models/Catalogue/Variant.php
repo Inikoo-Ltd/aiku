@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Masters\MasterVariant;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -144,7 +145,8 @@ class Variant extends Model implements Auditable, HasMedia
     public function allProductForSale(): HasMany
     {
         return $this->hasMany(Product::class, 'variant_id')
-                ->where('is_for_sale', true);
+                ->where('is_for_sale', true)
+                ->where('state', '!=', ProductStateEnum::DISCONTINUED->value);
     }
 
     public function leaderProduct(): HasOne
