@@ -8,6 +8,9 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\Production\ManufactureTask\StoreManufactureTask;
+use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowanceTypeEnum;
+use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
 use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
@@ -20,7 +23,8 @@ class ImportManufactureRewardSheet extends Command
     protected $signature = 'manufacture:import-reward-sheet
                            {production : Production slug}
                            {file : Path to the reward xlsx}
-                           {--dry-run : Report without writing anything}';
+                           {--dry-run : Report without writing anything}
+                           {--create-missing : Create manufacture tasks for sheet families with no matching task}';
 
     protected $description = 'Seed pay bands and standard rates for a production from management\'s reward spreadsheet';
 
@@ -79,7 +83,7 @@ class ImportManufactureRewardSheet extends Command
             return Command::FAILURE;
         }
 
-        $result = $this->importFamilies($production, $sheet, $dryRun);
+        $result = $this->importFamilies($production, $sheet, $dryRun, (bool) $this->option('create-missing'));
 
         $this->report($bandsSeeded, $result, $dryRun);
 
@@ -135,20 +139,20 @@ class ImportManufactureRewardSheet extends Command
     }
 
     /**
-     * @return array{updated: int, skipped: int, orphans: array<int, string>, overrides: array<int, string>, warnings: array<int, string>}
+     * @return array{updated: int, skipped: int, created: int, orphans: array<int, string>, overrides: array<int, string>, warnings: array<int, string>}
      */
-    private function importFamilies(Production $production, Worksheet $sheet, bool $dryRun): array
+    private function importFamilies(Production $production, Worksheet $sheet, bool $dryRun, bool $createMissing = false): array
     {
         $headerRow = $this->findHeaderRow($sheet);
 
         if ($headerRow === null) {
-            return ['updated' => 0, 'skipped' => 0, 'orphans' => [], 'overrides' => [], 'warnings' => ["Could not locate a header row with 'Family' and 'Piece Rate' columns."]];
+            return ['updated' => 0, 'skipped' => 0, 'created' => 0, 'orphans' => [], 'overrides' => [], 'warnings' => ["Could not locate a header row with 'Family' and 'Piece Rate' columns."]];
         }
 
         $columns = $this->mapColumns($sheet, $headerRow);
 
         if (!isset($columns['family'], $columns['piece_rate'])) {
-            return ['updated' => 0, 'skipped' => 0, 'orphans' => [], 'overrides' => [], 'warnings' => ["Could not locate 'Family' or 'Piece Rate (Old)' columns."]];
+            return ['updated' => 0, 'skipped' => 0, 'created' => 0, 'orphans' => [], 'overrides' => [], 'warnings' => ["Could not locate 'Family' or 'Piece Rate (Old)' columns."]];
         }
 
         $tasks = ManufactureTask::where('production_id', $production->id)
@@ -157,6 +161,7 @@ class ImportManufactureRewardSheet extends Command
 
         $updated      = 0;
         $skipped      = 0;
+        $created      = 0;
         $orphans      = [];
         $overrides    = [];
         $warnings     = [];
@@ -190,9 +195,46 @@ class ImportManufactureRewardSheet extends Command
             $task = $tasks->get(strtolower($code));
 
             if (!$task) {
-                $orphans[] = $code;
+                if (!$createMissing) {
+                    $orphans[] = $code;
 
-                continue;
+                    continue;
+                }
+
+                $name = '';
+
+                if (isset($columns['description'])) {
+                    $name = trim((string) $sheet->getCell($columns['description'].$row)->getValue());
+                }
+
+                if ($name === '') {
+                    $name = $code;
+                }
+
+                if ($dryRun) {
+                    $created++;
+
+                    continue;
+                }
+
+                $upperTarget = round($standardRate * 15 / 12.71, 4);
+
+                $task = StoreManufactureTask::make()->action($production, [
+                    'code'                             => $code,
+                    'name'                              => $name,
+                    'task_materials_cost'               => 0,
+                    'task_energy_cost'                  => 0,
+                    'task_other_cost'                   => 0,
+                    'task_work_cost'                    => 0,
+                    'task_lower_target'                 => $standardRate,
+                    'task_upper_target'                 => $upperTarget,
+                    'operative_reward_terms'            => ManufactureTaskOperativeRewardTermsEnum::NEVER,
+                    'operative_reward_allowance_type'   => ManufactureTaskOperativeRewardAllowanceTypeEnum::ON_TOP_SALARY,
+                    'operative_reward_amount'           => 0,
+                ]);
+
+                $tasks->put(strtolower($code), $task);
+                $created++;
             }
 
             $overrideReason = null;
@@ -228,6 +270,7 @@ class ImportManufactureRewardSheet extends Command
         return [
             'updated'   => $updated,
             'skipped'   => $skipped,
+            'created'   => $created,
             'orphans'   => $orphans,
             'overrides' => $overrides,
             'warnings'  => $warnings,
@@ -276,6 +319,8 @@ class ImportManufactureRewardSheet extends Command
                 $map['piece_rate'] = $letter;
             } elseif ($header === '0') {
                 $map['target_0'] = $letter;
+            } elseif ($header === 'description') {
+                $map['description'] = $letter;
             }
         }
 
@@ -283,7 +328,7 @@ class ImportManufactureRewardSheet extends Command
     }
 
     /**
-     * @param array{updated: int, skipped: int, orphans: array<int, string>, overrides: array<int, string>, warnings: array<int, string>} $result
+     * @param array{updated: int, skipped: int, created: int, orphans: array<int, string>, overrides: array<int, string>, warnings: array<int, string>} $result
      */
     private function report(int $bandsSeeded, array $result, bool $dryRun): void
     {
@@ -292,6 +337,7 @@ class ImportManufactureRewardSheet extends Command
         $this->table(['Metric', 'Count'], [
             ['Pay bands seeded', $bandsSeeded],
             ['Tasks updated', $result['updated']],
+            ['Tasks created', $result['created']],
             ['Rows skipped (no code / no piece rate)', $result['skipped']],
             ['Sheet families with no matching task', count($result['orphans'])],
             ['Detected target overrides', count($result['overrides'])],

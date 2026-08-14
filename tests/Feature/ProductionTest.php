@@ -1607,4 +1607,55 @@ describe('reward sheet import', function () {
             ->and($this->rewardTask->target_override_reason)->not->toBeNull()
             ->and(\App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('effective_from', now()->startOfYear())->count())->toBe(6);
     });
+
+    test('create-missing with dry-run creates nothing', function () {
+        \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->forceDelete();
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production'        => $this->production->slug,
+            'file'              => $this->rewardSheetPath,
+            '--create-missing'  => true,
+            '--dry-run'         => true,
+        ])->assertSuccessful();
+
+        expect(\App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->exists())->toBeFalse();
+    });
+
+    test('create-missing creates the orphan task', function () {
+        \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->forceDelete();
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production'        => $this->production->slug,
+            'file'              => $this->rewardSheetPath,
+            '--create-missing'  => true,
+        ])->assertSuccessful();
+
+        $orphanTask = \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)
+            ->where('code', 'ORPHAN1')
+            ->first();
+
+        expect($orphanTask)->not->toBeNull()
+            ->and((float) $orphanTask->standard_rate)->toBe(round(13.00 / 0.2, 4))
+            ->and($orphanTask->slug)->not->toBeNull();
+    });
+
+    test('create-missing is idempotent on re-run', function () {
+        \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->forceDelete();
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production'        => $this->production->slug,
+            'file'              => $this->rewardSheetPath,
+            '--create-missing'  => true,
+        ])->assertSuccessful();
+
+        expect(\App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->count())->toBe(1);
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production'        => $this->production->slug,
+            'file'              => $this->rewardSheetPath,
+            '--create-missing'  => true,
+        ])->assertSuccessful();
+
+        expect(\App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->count())->toBe(1);
+    });
 });
