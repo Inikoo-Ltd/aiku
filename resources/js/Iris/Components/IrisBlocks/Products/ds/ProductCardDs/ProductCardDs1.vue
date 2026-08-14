@@ -10,6 +10,7 @@ import { Image as ImageTS } from "@/types/Image"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import BestsellerBadge from "@/Components/CMS/Webpage/Products/BestsellerBadge.vue"
+import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductBadge.vue"
 import Prices from "@/Iris/Components/BlocksUtils/Prices.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
@@ -42,6 +43,7 @@ interface ProductResource {
     units: number
     bestseller?: boolean
     is_favourite?: boolean
+    is_golden_product?: boolean
     exist_in_portfolios_channel: number[]
     is_exist_in_all_channel: boolean
     top_seller: number | null
@@ -276,6 +278,8 @@ const openBundlePanel = (product:any) => {
                     </slot>
                 </div>
 
+                <!-- Section: Golden product -->
+                <GoldenProductBadge v-if="product.is_golden_product" class="absolute right-2 top-2 z-10" />
 
                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <button

@@ -273,7 +273,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
+        if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit', 'is_golden_product'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
 
             $product->updateQuietly(
@@ -528,6 +528,7 @@ class UpdateProduct extends OrgAction
             'not_follow_master_trade_units' => ['sometimes', 'boolean'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
             'not_follow_master_media'       => ['sometimes', 'boolean'],
+            'is_golden_product'             => ['sometimes', 'boolean'],
         ];
 
 
