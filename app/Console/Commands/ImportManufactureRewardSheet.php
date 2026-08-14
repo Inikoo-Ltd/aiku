@@ -219,19 +219,13 @@ class ImportManufactureRewardSheet extends Command
 
                 $upperTarget = round($standardRate * 15 / 12.71, 4);
 
-                $task = StoreManufactureTask::make()->action($production, [
-                    'code'                             => $code,
-                    'name'                              => $name,
-                    'task_materials_cost'               => 0,
-                    'task_energy_cost'                  => 0,
-                    'task_other_cost'                   => 0,
-                    'task_work_cost'                    => 0,
-                    'task_lower_target'                 => $standardRate,
-                    'task_upper_target'                 => $upperTarget,
-                    'operative_reward_terms'            => ManufactureTaskOperativeRewardTermsEnum::NEVER,
-                    'operative_reward_allowance_type'   => ManufactureTaskOperativeRewardAllowanceTypeEnum::ON_TOP_SALARY,
-                    'operative_reward_amount'           => 0,
-                ]);
+                try {
+                    $task = $this->storeTask($production, $code, $name, $standardRate, $upperTarget);
+                } catch (\Illuminate\Validation\ValidationException $e) {
+                    $warnings[] = "row {$row} ({$code}): not created — ".implode(' ', array_map(fn (array $messages) => implode(' ', $messages), $e->errors()));
+
+                    continue;
+                }
 
                 $tasks->put(strtolower($code), $task);
                 $created++;
@@ -258,10 +252,20 @@ class ImportManufactureRewardSheet extends Command
             }
 
             if (!$dryRun) {
-                $task->update([
-                    'standard_rate'           => $standardRate,
-                    'target_override_reason'  => $overrideReason,
-                ]);
+                $updateData = [
+                    'standard_rate'          => $standardRate,
+                    'target_override_reason' => $overrideReason,
+                ];
+
+                if ($task->name === $task->code && isset($columns['description'])) {
+                    $sheetName = trim((string) $sheet->getCell($columns['description'].$row)->getValue());
+
+                    if ($sheetName !== '') {
+                        $updateData['name'] = $sheetName;
+                    }
+                }
+
+                $task->update($updateData);
             }
 
             $updated++;
@@ -275,6 +279,23 @@ class ImportManufactureRewardSheet extends Command
             'overrides' => $overrides,
             'warnings'  => $warnings,
         ];
+    }
+
+    private function storeTask(Production $production, string $code, string $name, float $standardRate, float $upperTarget): ManufactureTask
+    {
+        return StoreManufactureTask::make()->action($production, [
+            'code'                            => $code,
+            'name'                            => $name,
+            'task_materials_cost'             => 0,
+            'task_energy_cost'                => 0,
+            'task_other_cost'                 => 0,
+            'task_work_cost'                  => 0,
+            'task_lower_target'               => $standardRate,
+            'task_upper_target'               => $upperTarget,
+            'operative_reward_terms'          => ManufactureTaskOperativeRewardTermsEnum::NEVER,
+            'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::ON_TOP_SALARY,
+            'operative_reward_amount'         => 0,
+        ]);
     }
 
     private function findHeaderRow(Worksheet $sheet): ?int
@@ -321,6 +342,15 @@ class ImportManufactureRewardSheet extends Command
                 $map['target_0'] = $letter;
             } elseif ($header === 'description') {
                 $map['description'] = $letter;
+            }
+        }
+
+        if (!isset($map['description']) && isset($map['family'])) {
+            $familyIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($map['family']);
+            $candidate   = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($familyIndex + 1);
+
+            if (!in_array($candidate, $map, true)) {
+                $map['description'] = $candidate;
             }
         }
 
