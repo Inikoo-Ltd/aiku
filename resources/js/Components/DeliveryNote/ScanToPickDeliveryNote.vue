@@ -17,6 +17,7 @@ import { useBarcodeScanner, useScanQueue } from "@/Composables/useBarcodeScanner
 import { routeType } from "@/types/route"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Toggle from "../Pure/Toggle.vue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import { notify } from "@kyvg/vue3-notification"
 
 library.add(faBarcodeRead, faCheckCircle, faTimesCircle, faExclamationTriangle, faMapMarkerAlt)
@@ -43,9 +44,12 @@ type ScanOutcome = {
         id: number
         code: string
         name: string
+        packed_in?: number
         quantity_required: number
         quantity_picked: number
         quantity_to_pick: number
+        quantity_to_pick_label?: string
+        quantity_to_pick_fractional?: [number, [number, number]] | null
         location_code: string | null
         location_org_stock_id: number | null
     } | null
@@ -88,10 +92,27 @@ const statusStyles: Record<ScanStatus, { wrapper: string; icon: string; iconClas
 
 const lastOutcomeStyle = computed(() => (lastOutcome.value ? statusStyles[lastOutcome.value.status] : statusStyles.error))
 
+// An item that comes in a pack is counted in units over that pack, the same 1 15/16 the picking
+// table shows, because the raw 1.9375 behind it tells a picker nothing about what to take off the
+// shelf. The tuple is what gets set in fraction type; the string stays for tooltips, which take
+// no markup.
+const remainingOnLastItem = computed(() => {
+    const item = lastOutcome.value?.item
+
+    if (!item) {
+        return ""
+    }
+
+    return item.quantity_to_pick_label ?? String(item.quantity_to_pick)
+})
+
+const remainingFractionOnLastItem = computed(() => lastOutcome.value?.item?.quantity_to_pick_fractional ?? null)
+
 const { queuedCount, enqueueScan } = useScanQueue<PendingScan>((scan) => submitScan(scan))
 
-// One scan is one physical item taken off the shelf, so a line needing three is scanned three times,
-// or finished in one go with the pick-the-rest button.
+// One scan is one physical thing taken off the shelf, so a line needing three is scanned three times,
+// or finished in one go with the pick-the-rest button. What that thing is worth is the backend's
+// call: the outer barcode is a whole SKO, the unit EAN is one unit out of it.
 const { buffer, inputElement, isListening, registerKeystroke, clearBuffer, flushBuffer } = useBarcodeScanner(
     (code) => enqueueScan({ code, quantity: 1 })
 )
@@ -249,8 +270,14 @@ const applyOutcome = (outcome: ScanOutcome) => {
                 <div
                     v-if="lastOutcome.item && lastOutcome.item.quantity_to_pick > 0"
                     class="ml-auto flex items-center gap-x-2">
-                    <span class="whitespace-nowrap rounded border border-dashed border-amber-950 px-2 py-1 text-sm font-bold text-amber-800">
-                        {{ ctrans(":remaining left on this item", { remaining: lastOutcome.item.quantity_to_pick }) }}
+                    <span class="inline-flex items-center gap-x-1 whitespace-nowrap rounded border border-dashed border-amber-950 px-2 py-1 text-sm font-bold text-amber-800">
+                        <template v-if="remainingFractionOnLastItem">
+                            <FractionDisplay :fractionData="remainingFractionOnLastItem" />
+                            {{ ctrans("left on this item") }}
+                        </template>
+                        <template v-else>
+                            {{ ctrans(":remaining left on this item", { remaining: remainingOnLastItem }) }}
+                        </template>
                     </span>
 
                     <!-- mousedown.prevent stops the button from taking focus at all, so the scanner
@@ -260,11 +287,19 @@ const applyOutcome = (outcome: ScanOutcome) => {
                         v-if="lastOutcome.status === 'picked'"
                         type="button"
                         :disabled="isProcessing || queuedCount > 0"
-                        v-tooltip="ctrans('Pick the remaining :remaining without scanning them one by one', { remaining: lastOutcome.item.quantity_to_pick })"
+                        v-tooltip="ctrans('Pick the remaining :remaining without scanning them one by one', { remaining: remainingOnLastItem })"
                         class="whitespace-nowrap rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
                         @mousedown.prevent
                         @click="pickRestOfLastScannedItem">
-                        {{ ctrans("Pick all :remaining", { remaining: lastOutcome.item.quantity_to_pick }) }}
+                        <span class="inline-flex items-center gap-x-1">
+                            <template v-if="remainingFractionOnLastItem">
+                                {{ ctrans("Pick all") }}
+                                <FractionDisplay :fractionData="remainingFractionOnLastItem" />
+                            </template>
+                            <template v-else>
+                                {{ ctrans("Pick all :remaining", { remaining: remainingOnLastItem }) }}
+                            </template>
+                        </span>
                     </button>
                 </div>
                 <div class="font-mono text-xs opacity-70" :class="{ 'ml-auto': !(lastOutcome.item?.quantity_to_pick > 0) }">
