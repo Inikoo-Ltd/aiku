@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
+import { computed } from 'vue'
 import { route } from 'ziggy-js'
 import { useLocaleStore } from '@/Stores/locale'
 import { routeType } from '@/types/route'
@@ -41,12 +42,14 @@ const props = defineProps<{
         campaigns?: {
             name: string
             reference: string
+            owner?: string
             customers: number
             purchases: number
             revenue: number
             cost: number
             roas: number | null
         }[]
+        campaigns_total?: number
         children?: {
             name: string
             slug: string
@@ -66,6 +69,13 @@ const money = (value: number) => locale.currencyFormat(props.data.currency_code,
 
 /* Share-weighted counts: a customer touched by three channels is a third of one here. */
 const share = (value: number) => Number.isInteger(value) ? locale.number(value) : value.toFixed(1)
+
+/* Above the shop a campaign needs saying whose it is; a shop's own page already knows. */
+const campaignsHaveOwner = computed(() => props.data.campaigns?.some(campaign => campaign.owner) ?? false)
+
+const campaignsAreTruncated = computed(
+    () => (props.data.campaigns_total ?? 0) > (props.data.campaigns?.length ?? 0)
+)
 </script>
 
 <template>
@@ -180,10 +190,14 @@ const share = (value: number) => Number.isInteger(value) ? locale.number(value) 
 
         <div v-if="data.campaigns?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <span class="text-sm font-medium text-gray-800">{{ trans('Campaigns') }}</span>
+            <span v-if="campaignsAreTruncated" class="ml-2 text-xs text-gray-400">
+                {{ trans('top :shown of :total', { shown: data.campaigns.length, total: data.campaigns_total }) }}
+            </span>
             <table class="mt-3 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
                         <th class="text-left font-normal py-1.5 pr-2">{{ trans('Campaign') }}</th>
+                        <th v-if="campaignsHaveOwner" class="text-left font-normal py-1.5 px-2">{{ trans('Shop') }}</th>
                         <th class="text-left font-normal py-1.5 px-2">{{ trans('Reference') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
@@ -196,6 +210,7 @@ const share = (value: number) => Number.isInteger(value) ? locale.number(value) 
                     <tr v-for="campaign in data.campaigns" :key="campaign.reference"
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 text-gray-700">{{ campaign.name }}</td>
+                        <td v-if="campaignsHaveOwner" class="px-2 text-gray-500">{{ campaign.owner }}</td>
                         <td class="px-2 text-gray-400">{{ campaign.reference }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(campaign.cost) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(campaign.revenue) }}</td>
