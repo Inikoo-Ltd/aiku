@@ -56,7 +56,9 @@ use Illuminate\Foundation\Testing\TestCase;
  * the test that wants them, never left to the dice.
  */
 $seedFaker = function (): void {
-    $seed = crc32(static::class.'::'.$this->name());
+    /* toString() rather than name(): a dataset test runs once per case, and cases sharing one
+       seed draw identical unique values - the second guest is "already taken". */
+    $seed = crc32(static::class.'::'.$this->toString());
     fake()->seed($seed);
     fake('en_GB')->seed($seed);
 };
