@@ -25,7 +25,7 @@ class UpdateShippingZone extends OrgAction
 
     public function handle(ShippingZone $shippingZone, array $modelData): ShippingZone
     {
-        return $this->update($shippingZone, $modelData, ['price', 'shippers_price']);
+        return $this->update($shippingZone, $modelData, ['price']);
     }
 
     public function rules(): array
