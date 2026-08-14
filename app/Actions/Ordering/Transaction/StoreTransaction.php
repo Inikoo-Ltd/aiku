@@ -121,12 +121,16 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'submitted_at', $order->submitted_at, overwrite: false);
         data_set($modelData, 'gross_amount', $gross ?? 0);
         data_set($modelData, 'net_amount', $net ?? 0);
-        data_set($modelData, 'state', TransactionStateEnum::CREATING, overwrite: false);
-        data_set($modelData, 'status', TransactionStatusEnum::CREATING, overwrite: false);
-
-
         if ($order->state == OrderStateEnum::SUBMITTED) {
+            data_set($modelData, 'state', TransactionStateEnum::SUBMITTED, overwrite: false);
+            data_set($modelData, 'status', TransactionStatusEnum::PROCESSING, overwrite: false);
             data_set($modelData, 'submitted_at', now(), overwrite: false);
+            data_set($modelData, 'submitted_quantity_ordered', Arr::get($modelData, 'quantity_ordered'), overwrite: false);
+            data_set($modelData, 'submitted_gross_amount', $gross, overwrite: false);
+            data_set($modelData, 'submitted_net_amount', $net, overwrite: false);
+        } else {
+            data_set($modelData, 'state', TransactionStateEnum::CREATING, overwrite: false);
+            data_set($modelData, 'status', TransactionStatusEnum::CREATING, overwrite: false);
         }
 
 

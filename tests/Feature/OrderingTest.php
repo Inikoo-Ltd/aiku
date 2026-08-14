@@ -83,6 +83,7 @@ use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -1917,6 +1918,40 @@ test('transaction import marks rows with missing code or quantity as failed', fu
     $import->storeModel(collect(['code' => $this->product->code]), $missingQuantityRecord);
     expect($missingQuantityRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
         ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
+});
+
+test('transaction import prefers the active product when a discontinued one shares the code', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $staleProduct = $this->product->replicate(['slug']);
+    $staleProduct->slug  = $this->product->slug.'-old';
+    $staleProduct->state = ProductStateEnum::DISCONTINUED;
+    $staleProduct->saveQuietly();
+
+    $upload = Upload::create([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'model'             => 'Transaction',
+        'parent_type'       => $order->getMorphClass(),
+        'parent_id'         => $order->id,
+        'original_filename' => 'test.xlsx',
+        'filename'          => 'test.xlsx',
+        'filesize'          => 0,
+        'number_rows'       => 0,
+        'number_success'    => 0,
+        'number_fails'      => 0,
+    ]);
+
+    $import = new TransactionImport($order, $upload);
+    $record = $upload->records()->create([
+        'values' => [],
+        'status' => UploadRecordStatusEnum::PROCESSING,
+    ]);
+
+    $import->storeModel(collect(['code' => $this->product->code, 'quantity' => 2]), $record);
+
+    expect($record->refresh()->status)->toBe(UploadRecordStatusEnum::COMPLETE->value)
+        ->and($order->transactions()->where('model_type', 'Product')->pluck('model_id')->all())->toBe([$this->product->id]);
 });
 
 test('recalculating basket totals skips orders that are no longer baskets', function () {
