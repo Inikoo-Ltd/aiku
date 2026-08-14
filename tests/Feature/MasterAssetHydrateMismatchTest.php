@@ -411,6 +411,11 @@ test('a big master queues the fan out and chains the mismatch hydration after it
 });
 
 test('killing a rebel writes an audit record naming the flags that changed', function () {
+    /* Product::$auditingDisabled is a process-wide static and app actions that disable it rarely
+       re-enable it, so whether it is on here depends on which files this worker ran before this
+       one. This test is about the audit, so it turns auditing on itself. */
+    Product::enableAuditing();
+
     $rebel = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 6, 12);
     $rebel->updateQuietly([
         'not_follow_master_trade_units' => true,
