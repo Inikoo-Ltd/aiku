@@ -57,7 +57,7 @@ class ShowAggregatedMarketingChannel extends OrgAction
     {
         $this->parent      = $organisation;
         $this->channelType = $this->resolveChannelType($channelType);
-        $this->initialisation($organisation, $request)->withTab(TrafficSourceTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(TrafficSourceTabsEnum::valuesFor(null));
 
         return $request;
     }
@@ -66,7 +66,7 @@ class ShowAggregatedMarketingChannel extends OrgAction
     {
         $this->parent      = group();
         $this->channelType = $this->resolveChannelType($channelType);
-        $this->initialisationFromGroup(group(), $request)->withTab(TrafficSourceTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(TrafficSourceTabsEnum::valuesFor(null));
 
         return $request;
     }

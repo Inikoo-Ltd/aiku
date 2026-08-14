@@ -71,6 +71,7 @@ function mailshotRoute(mailshot: Mailshot) {
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
                     mailshot.slug]);
+        case "grp.org.shops.show.marketing.traffic_sources.show":
         case "grp.org.shops.show.marketing.newsletters.index":
             return route(
                 "grp.org.shops.show.marketing.newsletters.show",

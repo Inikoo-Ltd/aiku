@@ -10,12 +10,15 @@
 
 namespace App\Actions\CRM\TrafficSource\UI;
 
+use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Ordering\Order\UI\IndexOrdersInTrafficSource;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithCustomersSubNavigation;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\CRM\TrafficSourceResource;
+use App\Http\Resources\Mail\NewsletterMailshotsResource;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSource;
@@ -38,17 +41,22 @@ class ShowTrafficSource extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, TrafficSource $trafficSource, ActionRequest $request): TrafficSource
     {
         $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request)->withTab(TrafficSourceTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(TrafficSourceTabsEnum::valuesFor($trafficSource));
 
         return $this->handle($trafficSource);
     }
 
+    private function isNewsletter(TrafficSource $trafficSource): bool
+    {
+        return $trafficSource->type === TrafficSourcesTypeEnum::NEWSLETTER->value;
+    }
+
     public function htmlResponse(TrafficSource $trafficSource, ActionRequest $request): Response
     {
-        $navigations = TrafficSourceTabsEnum::navigation();
+        $navigations = TrafficSourceTabsEnum::navigation($trafficSource);
 
 
-        return Inertia::render('Org/Shop/CRM/TrafficSource', [
+        $props = [
             'title'       => $trafficSource->name,
             'breadcrumbs' => $this->getBreadcrumbs(
                 $request->route()->getName(),
@@ -81,9 +89,25 @@ class ShowTrafficSource extends OrgAction
                 : Inertia::optional(fn () => OrdersResource::collection(IndexOrdersInTrafficSource::run($trafficSource, TrafficSourceTabsEnum::ORDERS->value))),
 
 
-        ])
+        ];
+
+        if ($this->isNewsletter($trafficSource)) {
+            $props[TrafficSourceTabsEnum::NEWSLETTERS->value] = $this->tab == TrafficSourceTabsEnum::NEWSLETTERS->value
+                ? fn () => NewsletterMailshotsResource::collection(IndexNewsletterMailshots::run($trafficSource->shop, TrafficSourceTabsEnum::NEWSLETTERS->value))
+                : Inertia::optional(fn () => NewsletterMailshotsResource::collection(IndexNewsletterMailshots::run($trafficSource->shop, TrafficSourceTabsEnum::NEWSLETTERS->value)));
+        }
+
+        $response = Inertia::render('Org/Shop/CRM/TrafficSource', $props)
             ->table(IndexCustomers::make()->tableStructure($trafficSource, [], TrafficSourceTabsEnum::CUSTOMERS->value))
             ->table(IndexOrdersInTrafficSource::make()->tableStructure($trafficSource, TrafficSourceTabsEnum::ORDERS->value));
+
+        if ($this->isNewsletter($trafficSource)) {
+            $response = $response->table(
+                IndexNewsletterMailshots::make()->tableStructure($trafficSource->shop, null, TrafficSourceTabsEnum::NEWSLETTERS->value)
+            );
+        }
+
+        return $response;
     }
 
     public function jsonResponse(TrafficSource $trafficSource): TrafficSourceResource
