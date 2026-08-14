@@ -710,32 +710,6 @@ const onChangeInsurance = async (val: boolean) => {
         <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
     </div>
 
-    <div v-if="shipping_options" class="mx-4 mt-4 mb-2 border border-gray-200 rounded-md p-3">
-        <div class="font-medium mb-2">{{ trans('Shipping method') }}</div>
-        <div class="space-y-1">
-            <label
-                v-for="option in shipping_options"
-                :key="option.shipper_id"
-                class="flex items-center justify-between gap-2 px-2 py-1.5 rounded border cursor-pointer"
-                :class="option.is_selected ? 'bg-indigo-50 border-indigo-300' : 'border-gray-200 hover:bg-gray-50'"
-                :aria-disabled="isLoadingSelectShipper">
-                <span class="flex items-center gap-2">
-                    <input
-                        type="radio"
-                        name="shipping_option"
-                        :checked="option.is_selected"
-                        :disabled="isLoadingSelectShipper"
-                        @change="() => onSelectShipper(option.shipper_id)"
-                    />
-                    <span>{{ option.name }}</span>
-                </span>
-                <span class="text-gray-500">
-                    {{ option.is_tbc ? trans('To be confirmed') : locale.currencyFormat(order?.currency_code, option.amount) }}
-                </span>
-            </label>
-        </div>
-    </div>
-
     <EcomCheckoutSummary
         :order
         :summary
@@ -758,6 +732,32 @@ const onChangeInsurance = async (val: boolean) => {
                 :data="transactions"
                 :updateRoute="routes.update_route"
             />
+
+            <div v-if="shipping_options" class="mx-3 md:mx-6 my-4 border border-gray-200 rounded-md p-3">
+                <div class="font-medium mb-2">{{ trans('Shipping method') }}</div>
+                <div class="space-y-1">
+                    <label
+                        v-for="option in shipping_options"
+                        :key="option.shipper_id"
+                        class="flex items-center justify-between gap-2 px-2 py-1.5 rounded border cursor-pointer"
+                        :class="option.is_selected ? 'bg-indigo-50 border-indigo-300' : 'border-gray-200 hover:bg-gray-50'"
+                        :aria-disabled="isLoadingSelectShipper">
+                        <span class="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="shipping_option"
+                                :checked="option.is_selected"
+                                :disabled="isLoadingSelectShipper"
+                                @change="() => onSelectShipper(option.shipper_id)"
+                            />
+                            <span>{{ option.name }}</span>
+                        </span>
+                        <span class="text-gray-500">
+                            {{ option.is_tbc ? trans('To be confirmed') : locale.currencyFormat(order?.currency_code, option.amount) }}
+                        </span>
+                    </label>
+                </div>
+            </div>
 
             <div class="grid md:grid-cols-2 gap-x-8 py-4">
                 <!-- Section: Instructions (delivery and other) -->

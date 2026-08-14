@@ -2489,8 +2489,6 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <!-- Shipper selection (multi-shipper) -->
                                 <div v-if="fieldSummary.data?.shipper || fieldSummary.data?.shipping_options"
                                     class="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
-                                    <FontAwesomeIcon v-if="fieldSummary.data?.is_shipper_locked" icon="fal fa-lock"
-                                        v-tooltip="ctrans('Shipper locked by customer')" fixed-width aria-hidden="true" />
                                     <select
                                         v-if="routes.updateOrderRoute?.name && fieldSummary.data?.shipping_options?.length"
                                         :value="fieldSummary.data?.shipper?.id"
