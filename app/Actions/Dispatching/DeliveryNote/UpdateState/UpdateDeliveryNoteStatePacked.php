@@ -45,6 +45,13 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
             return $deliveryNote;
         }
 
+        if ($deliveryNote->deliveryNoteItems()
+            ->where(function ($query) {
+                $query->where('has_waiting_warehouse', true)->orWhere('has_waiting_crm', true);
+            })->exists()) {
+            abort(422, __('Cannot pack: some items are waiting for a replacement decision or warehouse release'));
+        }
+
         $oldState = $deliveryNote->state;
 
         data_set($modelData, 'packed_at', now());

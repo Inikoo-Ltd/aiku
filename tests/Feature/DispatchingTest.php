@@ -569,6 +569,19 @@ test('set remaining quantity to not picked (2nd picking)', function (Picking $pi
     return $picking;
 })->depends('store second picking');
 
+test('packing blocked while an item waits for warehouse or crm', function (Picking $picking) {
+    $deliveryNote     = $picking->deliveryNote;
+    $deliveryNoteItem = $picking->deliveryNoteItem;
+
+    $deliveryNoteItem->update(['has_waiting_warehouse' => true]);
+
+    expect(fn () => UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $this->user))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    $deliveryNoteItem->update(['has_waiting_warehouse' => false]);
+    expect($deliveryNote->refresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED);
+})->depends('set remaining quantity to not picked (2nd picking)');
+
 test('Set Delivery Note state to Packed', function (Picking $picking) {
     $deliveryNote = $picking->deliveryNote;
 
