@@ -2378,10 +2378,13 @@ test('merging a duplicate stock moves its links to the stocked twin and retires 
         'quantity' => 1, 'created_at' => now(), 'updated_at' => now(),
     ]);
 
-    \App\Actions\Goods\Stock\MergeDuplicateStock::make()->handle($empty->refresh(), $held->refresh());
+    \App\Actions\Goods\Stock\MergeDuplicateStock::make()->handle($empty->refresh(), $held->refresh(), 'ArtTT-MERGE');
 
     expect(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $empty->id)->count())->toBe(0)
         ->and(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $held->id)->where('trade_unit_id', $tradeUnit->id)->exists())->toBeTrue()
         ->and($empty->refresh()->state)->toBe(\App\Enums\Goods\Stock\StockStateEnum::DISCONTINUED)
-        ->and($emptyOrgStock->refresh()->state)->toBe(\App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED);
+        ->and($emptyOrgStock->refresh()->state)->toBe(\App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED)
+        ->and($held->refresh()->code)->toBe('ArtTT-MERGE')
+        ->and($held->slug)->toBe('arttt-merge')
+        ->and($empty->refresh()->slug)->not->toBe('arttt-merge');
 });

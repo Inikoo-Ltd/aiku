@@ -15,6 +15,7 @@ use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -77,8 +78,14 @@ class MergeDuplicateStock
                 ->update(['stock_id' => $to->id]);
 
             if ($rename) {
-                $from->update(['code' => $from->code.'-merged']);
-                $to->update(['code' => $rename, 'state' => StockStateEnum::ACTIVE]);
+                /*
+                 * Slugs are set by hand: the model does not regenerate them on update, so a
+                 * rename alone would leave the survivor answering on the retired code's slug
+                 * and keep "-error" in its URL, which is the whole point of the rename.
+                 */
+                $retiredCode = $from->code.'-merged';
+                $from->update(['code' => $retiredCode, 'slug' => Str::slug($retiredCode)]);
+                $to->update(['code' => $rename, 'slug' => Str::slug($rename), 'state' => StockStateEnum::ACTIVE]);
             }
 
             $from->update(['state' => StockStateEnum::DISCONTINUED]);
