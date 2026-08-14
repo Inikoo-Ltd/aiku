@@ -34,6 +34,16 @@ class CheckEbayChannel
             $ebayUser->refresh();
         }
 
+        if ($ebayUser->fulfillment_policy_id) {
+            $usableFulfilmentPolicyId = $ebayUser->getUsableFulfilmentPolicyId($ebayUser->fulfillment_policy_id);
+
+            if ($usableFulfilmentPolicyId && $usableFulfilmentPolicyId !== $ebayUser->fulfillment_policy_id) {
+                $this->update($ebayUser, ['fulfillment_policy_id' => $usableFulfilmentPolicyId]);
+
+                $ebayUser->refresh();
+            }
+        }
+
         $step = EbayUserStepEnum::MARKETPLACE;
 
         if (! blank($ebayUser->getUser())) {
