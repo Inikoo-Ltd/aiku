@@ -187,7 +187,8 @@ class RedoDailyInvoiceTimeSeries
 
         $stockPivotBase = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_stocks as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
-            ->whereDate('invoice_transactions.date', $today)
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->whereDate('invoices.date', $today)
             ->whereNull('invoice_transactions.deleted_at');
 
         (clone $stockPivotBase)->whereNotNull('pivot.stock_id')->distinct()->pluck('pivot.stock_id')->each(
@@ -200,7 +201,8 @@ class RedoDailyInvoiceTimeSeries
 
         $orgStockPivotBase = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_org_stocks as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
-            ->whereDate('invoice_transactions.date', $today)
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->whereDate('invoices.date', $today)
             ->whereNull('invoice_transactions.deleted_at');
 
         (clone $orgStockPivotBase)->whereNotNull('pivot.org_stock_id')->distinct()->pluck('pivot.org_stock_id')->each(
@@ -213,7 +215,8 @@ class RedoDailyInvoiceTimeSeries
 
         $tradeUnitPivotBase = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_trade_units as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
-            ->whereDate('invoice_transactions.date', $today)
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->whereDate('invoices.date', $today)
             ->whereNull('invoice_transactions.deleted_at');
 
         (clone $tradeUnitPivotBase)->whereNotNull('pivot.trade_unit_id')->distinct()->pluck('pivot.trade_unit_id')->each(
@@ -226,7 +229,8 @@ class RedoDailyInvoiceTimeSeries
 
         $offerBase = DB::connection('aiku_no_sticky')->table('transaction_has_offer_allowances')
             ->join('invoice_transactions', 'invoice_transactions.transaction_id', '=', 'transaction_has_offer_allowances.transaction_id')
-            ->whereDate('invoice_transactions.date', $today)
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->whereDate('invoices.date', $today)
             ->whereNull('invoice_transactions.deleted_at');
 
         (clone $offerBase)->whereNotNull('transaction_has_offer_allowances.offer_id')

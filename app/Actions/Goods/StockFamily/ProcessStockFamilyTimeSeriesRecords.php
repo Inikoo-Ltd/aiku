@@ -59,9 +59,10 @@ class ProcessStockFamilyTimeSeriesRecords implements ShouldBeUnique
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_stocks as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
             ->where('pivot.stock_family_id', $timeSeries->stock_family_id)
-            ->where('invoice_transactions.date', '>=', $from)
-            ->where('invoice_transactions.date', '<=', $to)
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
         $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();

@@ -55,10 +55,11 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
         $rows             = [];
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
             ->where('invoice_transactions.brand_id', '=', $timeSeries->brand_id)
             ->where('invoice_transactions.shop_id', '=', $shop->id)
-            ->where('invoice_transactions.date', '>=', $from)
-            ->where('invoice_transactions.date', '<=', $to)
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
         $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();

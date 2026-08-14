@@ -61,10 +61,11 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
         $assetsIDs = $timeSeries->collection->products->pluck('id')->unique()->toArray();
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
             ->whereIn('asset_id', $assetsIDs)
-            ->where('date', '>=', $from)
-            ->where('date', '<=', $to)
-            ->whereNull('deleted_at');
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
+            ->whereNull('invoice_transactions.deleted_at');
 
         $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
 

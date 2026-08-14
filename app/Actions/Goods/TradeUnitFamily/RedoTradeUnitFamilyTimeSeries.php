@@ -52,8 +52,9 @@ class RedoTradeUnitFamilyTimeSeries implements ShouldBeUnique
             $dateRange = DB::connection('aiku_no_sticky')->table('invoice_transactions')
                 ->join('invoice_transaction_has_trade_units', 'invoice_transaction_has_trade_units.invoice_transaction_id', '=', 'invoice_transactions.id')
                 ->where('invoice_transaction_has_trade_units.trade_unit_family_id', $tradeUnitFamily->id)
+                ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
                 ->whereNull('invoice_transactions.deleted_at')
-                ->selectRaw('MIN(invoice_transactions.date) as first_date, MAX(invoice_transactions.date) as last_date')
+                ->selectRaw('MIN(invoices.date) as first_date, MAX(invoices.date) as last_date')
                 ->first();
 
             if (!$dateRange?->first_date) {

@@ -29,8 +29,9 @@ class OrgStockHydrateWeekOfCover implements ShouldBeUnique
         $result = DB::table('invoice_transactions')
             ->join('invoice_transaction_has_org_stocks', 'invoice_transaction_has_org_stocks.invoice_transaction_id', '=', 'invoice_transactions.id')
             ->where('invoice_transaction_has_org_stocks.org_stock_id', $orgStock->id)
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
             ->whereNull('invoice_transactions.deleted_at')
-            ->selectRaw('COALESCE(SUM(invoice_transactions.quantity), 0) as total_quantity, MIN(invoice_transactions.date) as min_date')
+            ->selectRaw('COALESCE(SUM(invoice_transactions.quantity), 0) as total_quantity, MIN(invoices.date) as min_date')
             ->first();
 
         $weekOfCover = null;

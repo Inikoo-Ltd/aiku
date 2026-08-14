@@ -64,7 +64,7 @@ class IndexInvoicesInMasterFamily extends OrgAction
             ->defaultSort('-date')
             ->allowedSorts(['reference', 'customer_name', 'date', 'pay_status', 'net_amount', 'total_amount'])
             ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['invoice_transactions.date'])
+            ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

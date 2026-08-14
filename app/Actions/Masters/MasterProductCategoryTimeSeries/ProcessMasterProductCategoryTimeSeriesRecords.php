@@ -81,10 +81,11 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
         };
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
             ->where($categoryColumn, $timeSeries->master_product_category_id)
-            ->where('date', '>=', $from)
-            ->where('date', '<=', $to)
-            ->whereNull('deleted_at');
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
+            ->whereNull('invoice_transactions.deleted_at');
 
         $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
 

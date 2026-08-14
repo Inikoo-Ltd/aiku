@@ -70,8 +70,9 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
                 $join->on('itoha.invoice_transaction_id', '=', 'invoice_transactions.id')
                     ->where('itoha.offer_campaign_id', $offerCampaignId);
             })
-            ->where('invoice_transactions.date', '>=', $from)
-            ->where('invoice_transactions.date', '<=', $to)
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
         $discountSelects = [

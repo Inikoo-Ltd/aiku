@@ -72,9 +72,10 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
                     ->whereColumn('transaction_has_offer_allowances.transaction_id', 'invoice_transactions.transaction_id')
                     ->where('transaction_has_offer_allowances.offer_id', $offerId);
             })
-            ->where('date', '>=', $from)
-            ->where('date', '<=', $to)
-            ->whereNull('deleted_at');
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
+            ->whereNull('invoice_transactions.deleted_at');
 
         $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
 

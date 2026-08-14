@@ -100,6 +100,6 @@ trait BuildsInvoiceTransactionTimeSeriesQuery
 
     protected function applyFrequencyGrouping(Builder $query, TimeSeriesFrequencyEnum $frequency, ?array $selects = null): Builder
     {
-        return $this->applyFrequencyGroupingOn($query, $frequency, 'invoice_transactions.date', $selects ?? $this->fullInvoiceTransactionSelects());
+        return $this->applyFrequencyGroupingOn($query, $frequency, 'invoices.date', $selects ?? $this->fullInvoiceTransactionSelects());
     }
 }
