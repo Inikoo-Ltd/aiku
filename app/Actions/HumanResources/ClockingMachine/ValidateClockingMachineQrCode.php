@@ -11,8 +11,10 @@ use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\ClockingMachineCoordinatePolicy;
 use App\Models\HumanResources\ClockingMachineQRCode;
 use App\Models\HumanResources\ClockingMachineCoordinatePolicyRule;
+use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\WorkSchedule;
 use App\Notifications\LateClockInNotification;
+use Closure;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -48,8 +50,13 @@ class ValidateClockingMachineQrCode
 
             $config = $clockingMachine->config['qr'] ?? [];
 
-            $employeeId = Auth::user() ? GetUserCurrentEmployee::run(Auth::user(), $clockingMachine->organisation_id)?->id : null;
-            $effectiveMode = $this->resolveEffectivePolicyMode($clockingMachine, $employeeId, now());
+            $employee = $this->resolveEmployee($clockingMachine);
+
+            if (!$employee) {
+                throw new Exception(__('User is not associated with an employee record.'));
+            }
+
+            $effectiveMode = $this->resolveEffectivePolicyMode($clockingMachine, $employee, now());
 
             if (($config['allow_coordinates'] ?? false) === true && $effectiveMode !== ClockingPolicyModeEnum::REMOTE->value) {
                 if ($userLat === null || $userLng === null) {
@@ -70,8 +77,8 @@ class ValidateClockingMachineQrCode
 
             $workingHours = $this->getWorkingHours($clockingMachine);
 
-            $clockingResult = DB::transaction(function () use ($clockingMachine, $clockingMachineQRCode, $userLat, $userLng, $workScheduleId) {
-                return $this->processClocking($clockingMachine, $clockingMachineQRCode, $userLat, $userLng, $workScheduleId);
+            $clockingResult = DB::transaction(function () use ($clockingMachine, $clockingMachineQRCode, $employee, $workScheduleId) {
+                return $this->processClocking($clockingMachine, $clockingMachineQRCode, $employee, $workScheduleId);
             });
 
             return [
@@ -96,15 +103,25 @@ class ValidateClockingMachineQrCode
         }
     }
 
-    private function processClocking(ClockingMachine $machine, ClockingMachineQRCode $clockingMachineQRCode, ?float $lat, ?float $lng, ?int $workScheduleId = null): array
+    /**
+     * The QR code is scanned by a signed in user, so the employee comes from the user rather than
+     * from the machine. An employee in the machine's own organisation wins, but a user employed
+     * elsewhere in the group is still allowed to clock in on any site's machine.
+     */
+    private function resolveEmployee(ClockingMachine $clockingMachine): ?Employee
     {
         $user = Auth::user();
-        $employee = $user ? GetUserCurrentEmployee::run($user, $machine->organisation_id) : null;
 
-        if (!$employee) {
-            throw new Exception(__('User is not associated with an employee record.'));
+        if (!$user) {
+            return null;
         }
 
+        return GetUserCurrentEmployee::run($user, $clockingMachine->organisation_id)
+            ?? GetUserCurrentEmployee::run($user);
+    }
+
+    private function processClocking(ClockingMachine $machine, ClockingMachineQRCode $clockingMachineQRCode, Employee $employee, ?int $workScheduleId = null): array
+    {
         $clockedInAt = now();
 
         $modelData = [
@@ -217,10 +234,9 @@ class ValidateClockingMachineQrCode
         }
     }
 
-    private function resolveEffectivePolicyMode(ClockingMachine $clockingMachine, ?int $employeeId, Carbon $now): string
+    private function findPolicy(ClockingMachine $clockingMachine, Carbon $now, Closure $scope): ?ClockingMachineCoordinatePolicy
     {
-        $candidates = ClockingMachineCoordinatePolicy::query()
-            ->where('organisation_id', $clockingMachine->organisation_id)
+        return ClockingMachineCoordinatePolicy::query()
             ->where('is_active', true)
             ->where(function ($query) use ($clockingMachine) {
                 $query->whereNull('clocking_machine_id')
@@ -232,30 +248,30 @@ class ValidateClockingMachineQrCode
             ->where(function ($query) use ($now) {
                 $query->whereNull('end_at')->orWhere('end_at', '>=', $now);
             })
-            ->where(function ($query) use ($employeeId, $clockingMachine) {
-                $query->where(function ($q) use ($clockingMachine) {
-                    $q->where('scope_type', 'organisation')->where('scope_id', $clockingMachine->organisation_id);
-                });
-
-                if ($employeeId) {
-                    $query->orWhere(function ($q) use ($employeeId) {
-                        $q->where('scope_type', 'employee')->where('scope_id', $employeeId);
-                    });
-                }
-            })
+            ->where($scope)
             ->with('rules')
             ->orderByDesc('start_at')
             ->orderByDesc('id')
-            ->get();
+            ->first();
+    }
 
-        $policy = null;
-
-        if ($employeeId) {
-            $policy = $candidates->first(fn (ClockingMachineCoordinatePolicy $p) => $p->scope_type === 'employee');
-        }
+    /**
+     * An employee scoped policy travels with the employee, so it is looked up by employee alone and
+     * still applies on a machine belonging to another organisation. Only when the employee has no
+     * policy of their own does the site take over, through the organisation policy of the machine.
+     */
+    private function resolveEffectivePolicyMode(ClockingMachine $clockingMachine, Employee $employee, Carbon $now): string
+    {
+        $policy = $this->findPolicy($clockingMachine, $now, function ($query) use ($employee) {
+            $query->where('scope_type', 'employee')->where('scope_id', $employee->id);
+        });
 
         if (!$policy) {
-            $policy = $candidates->first(fn (ClockingMachineCoordinatePolicy $p) => $p->scope_type === 'organisation');
+            $policy = $this->findPolicy($clockingMachine, $now, function ($query) use ($clockingMachine) {
+                $query->where('organisation_id', $clockingMachine->organisation_id)
+                    ->where('scope_type', 'organisation')
+                    ->where('scope_id', $clockingMachine->organisation_id);
+            });
         }
 
         if (!$policy) {
