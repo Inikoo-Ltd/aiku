@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Ordering\ShippingZoneResource;
 use App\Models\Billables\ShippingZone;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -25,6 +26,15 @@ class UpdateShippingZone extends OrgAction
 
     public function handle(ShippingZone $shippingZone, array $modelData): ShippingZone
     {
+        // The zone edit screen sends both halves together so only one of them can survive
+        if (Arr::has($modelData, 'pricing')) {
+            $pricing   = Arr::pull($modelData, 'pricing');
+            $modelData = array_merge($modelData, [
+                'price'          => Arr::get($pricing, 'price'),
+                'shippers_price' => Arr::get($pricing, 'shippers_price', []),
+            ]);
+        }
+
         return $this->update($shippingZone, $modelData, ['price']);
     }
 
@@ -46,6 +56,12 @@ class UpdateShippingZone extends OrgAction
             ],
             'name'                                => ['sometimes', 'max:250', 'string'],
             'status'                              => ['sometimes', 'required', 'boolean'],
+            'pricing'                             => ['sometimes', 'array'],
+            'pricing.price'                       => ['sometimes', 'nullable', 'array'],
+            'pricing.shippers_price'              => ['sometimes', 'nullable', 'array'],
+            'pricing.shippers_price.*.shipper_id' => ['required', 'integer', 'distinct', Rule::exists('shippers', 'id')->where('organisation_id', $this->organisation->id)->where('status', true)],
+            'pricing.shippers_price.*.type'       => ['required', Rule::in(['Step Order Items Net Amount', 'Step Order Estimated Weight', 'TBC'])],
+            'pricing.shippers_price.*.steps'      => ['sometimes', 'array'],
             'price'                               => ['sometimes', 'array'],
             'shippers_price'                      => ['sometimes', 'nullable', 'array'],
             'shippers_price.*.shipper_id'         => ['required', 'integer', 'distinct', Rule::exists('shippers', 'id')->where('organisation_id', $this->organisation->id)->where('status', true)],

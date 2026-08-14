@@ -94,17 +94,14 @@ class EditShippingZone extends OrgAction
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),
                                 ],
-                                'price' => [
-                                    'type'  => 'pricing_zone',
-                                    'label' => __('Price'),
-                                    'value' => $shippingZone->price,
-                                    'currency' =>  $shippingZone->shop->currency
-                                ],
-                                'shippers_price' => [
+                                'pricing' => [
                                     'full'     => true,
-                                    'type'     => 'pricing_zone_multi_shipper',
-                                    'label'    => __('Per shipper pricing'),
-                                    'value'    => $shippingZone->shippers_price ?? [],
+                                    'type'     => 'pricing_zone_mode',
+                                    'label'    => __('Price'),
+                                    'value'    => [
+                                        'price'          => $shippingZone->price,
+                                        'shippers_price' => $shippingZone->shippers_price ?? [],
+                                    ],
                                     'currency' => $shippingZone->shop->currency,
                                     'options'  => [
                                         'shippers' => Shipper::where('organisation_id', $shippingZone->organisation_id)
