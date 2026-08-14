@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\Traits\Dashboards\WithLatestStockHistory;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Stubs\Migrations\HasInventoryStats;
@@ -86,27 +87,24 @@ class ShowInventoryDashboard extends OrgAction
                 ],
                 'statsBox' => [
                     [
-                        'is_negative' => true,
-                        'label' => __('SKO Without Product'),
-                        'route' => [
-                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
-                            'parameters' => $routeParameters
-                        ],
-                        'icon'  => 'fal fa-box',
-                        'backgroundColor' => '#ff000011',
-                        'color'           => '#df1c1cff',
-                        'value' => '0', // No stat for this just yet
-                    ],
-                    [
                         'label' => __('Replenishments'),
                         'route' => [
                             'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.index',
                             'parameters' => $routeParameters
                         ],
-                        'icon'  => 'fal fa-dolly',
+                        'icon'  => 'fas fa-dolly-flatbed-empty',
                         'backgroundColor' => '#0ea5e911',
                         'color'           => '#0284c7ff',
-                        'value' => '0', // No stat for this just yet
+                        'value' => $this->warehouse->stats->number_org_stocks_replenishments_wholesale,
+                        'metaRight' => [
+                            'tooltip' => __('Dropshipping replenishments'),
+                            'icon'    => ['icon' => 'fas fa-shopping-basket', 'class' => 'mr-1'],
+                            'count'   => $this->warehouse->stats->number_org_stocks_replenishments_dropshipping,
+                            'route'   => [
+                                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.dropshipping',
+                                'parameters' => $routeParameters
+                            ],
+                        ],
                     ],
                     [
                         'label' => __('Low Stock Audits'),
@@ -120,6 +118,7 @@ class ShowInventoryDashboard extends OrgAction
                         'value' => $this->warehouse->stats->number_org_stocks_low_stock_audits,
                         'editable' => [
                             'label'    => __('Threshold'),
+                            'icon'     => 'fal fa-less-than-equal',
                             'field'    => 'low_stock_threshold',
                             'value'    => $this->warehouse->getLowStockThreshold(),
                             'title'    => __('Low stock threshold'),
@@ -130,6 +129,26 @@ class ShowInventoryDashboard extends OrgAction
                                 'parameters' => ['warehouse' => $this->warehouse->id]
                             ],
                         ],
+                    ],
+                ],
+                'additionalStatBox' => [
+                    [
+                        'label' => __('Negative Stocks'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.negative_stocks.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-exclamation-triangle',
+                        'value' => LocationOrgStock::where('warehouse_id', $this->warehouse->id)->where('quantity', '<', 0)->count(),
+                    ],
+                    [
+                        'label' => __('SKOs Without Product'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-box',
+                        'value' => $this->warehouse->stats->number_org_stocks_without_products,
                     ],
                 ],
                 // 'dashboardStats' => $this->getDashboardStats(),

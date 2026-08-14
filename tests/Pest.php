@@ -48,10 +48,25 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
 use Illuminate\Foundation\Testing\TestCase;
 
-uses(TestCase::class)->in('Feature');
-uses(TestCase::class)->in('Unit');
-uses(TestCase::class)->group('integration')->in('Integration');
-uses(TestCase::class)->group('browser')->in('Browser');
+/*
+ * Faker is seeded per test from the test's own name, so every factory draws the same values on
+ * every run, in any order, on any machine. Data still looks real, but a value combination that
+ * breaks something breaks every run instead of one run in eleven - flaky-by-fixture is a class
+ * of bug this line deletes. Edge cases (zero quantities, empty strings, …) must be explicit in
+ * the test that wants them, never left to the dice.
+ */
+$seedFaker = function (): void {
+    /* toString() rather than name(): a dataset test runs once per case, and cases sharing one
+       seed draw identical unique values - the second guest is "already taken". */
+    $seed = crc32(static::class.'::'.$this->toString());
+    fake()->seed($seed);
+    fake('en_GB')->seed($seed);
+};
+
+uses(TestCase::class)->beforeEach($seedFaker)->in('Feature');
+uses(TestCase::class)->beforeEach($seedFaker)->in('Unit');
+uses(TestCase::class)->group('integration')->beforeEach($seedFaker)->in('Integration');
+uses(TestCase::class)->group('browser')->beforeEach($seedFaker)->in('Browser');
 
 function loadDB(): void
 {
@@ -149,28 +164,26 @@ function createAdminGuest(Group $group): Guest
 }
 
 /**
+ * The calling test file's own shop, created on first use and reused by every test in that file.
+ *
+ * This used to hand out Shop::first(), which returns whatever shop happens to sort first in the
+ * table - fine while a file only ever had one, but roulette as soon as any other fixture in the
+ * file creates a shop of its own. Keying by caller file keeps the old continuity-within-a-file
+ * semantics while guaranteeing the shop is always the one this helper created.
+ *
  * @throws \Throwable
  */
 function createShop(): array
 {
-    $organisation = createOrganisation();
-    $adminGuest   = createAdminGuest($organisation->group);
+    $caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file'] ?? 'createShop';
 
-    $shop = Shop::first();
-    if (!$shop) {
-        $shop = StoreShop::run(
-            $organisation,
-            Shop::factory()->definition()
-        );
-        $shop->refresh();
-    }
+    [$organisation, , $shop] = createOwnShop($caller);
 
+    $adminGuest = createAdminGuest($organisation->group);
 
-    return [
-        $organisation,
-        $adminGuest->getUser(),
-        $shop
-    ];
+    /* Fresh instances, not the cached ones: a relation lazy-loaded in an earlier test (crmStats,
+       salesStats, …) stays loaded on the cached model and reads stale counts in the next test. */
+    return [$organisation->fresh(), $adminGuest->getUser(), $shop->fresh()];
 }
 
 /**
@@ -192,6 +205,12 @@ function createShop(): array
 function createOwnShop(string $key): array
 {
     static $shops = [];
+
+    /* A test that resets the database mid-file (loadDB() in a test body) leaves the cached models
+       pointing at rows that no longer exist; detect that and rebuild instead of handing them out. */
+    if (isset($shops[$key]) && !$shops[$key][2]->fresh()) {
+        unset($shops[$key]);
+    }
 
     if (!isset($shops[$key])) {
         $organisation = createOrganisation();

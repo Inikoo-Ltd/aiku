@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\GetUserRequestAnalytics;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\UI\SysAdmin\SysAdminAnalyticsDashboardTabsEnum;
 use App\Models\SysAdmin\Group;
@@ -47,15 +48,16 @@ class ShowSysAdminAnalyticsDashboard extends OrgAction
             'SysAdmin/SysAdminAnalyticsDashboard',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('System analytics'),
+                'title'       => __('System Analytics'),
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-analytics'],
-                        'title' => __('System analytics')
+                        'title' => __('System Analytics')
                     ],
-                    'title' => __('System analytics'),
+                    'title' => __('System Analytics'),
                     'subNavigation' => $subNavigation,
                 ],
+                'analytics' => GetUserRequestAnalytics::run($group),
                 // 'tabs' => [
                 //     'current'    => $this->tab,
                 //     'navigation' => SysAdminAnalyticsDashboardTabsEnum::navigation()
@@ -76,7 +78,7 @@ class ShowSysAdminAnalyticsDashboard extends OrgAction
                             'route' => [
                                 'name' => 'grp.sysadmin.analytics.dashboard'
                             ],
-                            'label' => __('analytics'),
+                            'label' => __('System Analytics'),
                         ]
                     ]
                 ]

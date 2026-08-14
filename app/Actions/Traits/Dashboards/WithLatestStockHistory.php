@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits\Dashboards;
 
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Inventory\GroupStockHistory;
 use App\Models\Inventory\OrganisationStockHistory;
@@ -43,11 +44,13 @@ trait WithLatestStockHistory
             ])
             ->get();
 
+        $official = OrgStockValuationMethodEnum::official();
+
         $totalSkus       = $groupHistory->number_org_stocks;
         $totalOutOfStock = $groupHistory->number_out_of_stock_org_stocks;
         $totalLocations  = $groupHistory->number_locations;
-        $stockValue      = (float) $groupHistory->grp_stock_lpp_value;
-        $dormant1y       = (float) $groupHistory->grp_value_dormant_stock_1y;
+        $stockValue      = (float) ($groupHistory->{$official->grpStockValueColumn()} ?? $groupHistory->grp_stock_lpp_value);
+        $dormant1y       = (float) ($orgHistories->sum(fn ($history) => $history->{$official->dormantValueColumn()}) ?: $groupHistory->grp_value_dormant_stock_1y);
 
         $pctOutOfStock = $totalSkus > 0 ? round($totalOutOfStock / $totalSkus * 100, 1) : 0;
         $pctDormant1y  = $groupHistory->percentage_value_dormant_stock_1y ?? 0;
@@ -60,12 +63,14 @@ trait WithLatestStockHistory
             'percentage_out_of_stock'        => $pctOutOfStock,
             'number_locations'               => $totalLocations,
             'grp_stock_lpp_value'                => $stockValue,
+            'valuation_method'               => $official->label(),
+            'valuation_legend'               => $official->legend(),
             'currency_code'                  => $group->currency->code,
             'grp_value_dormant_stock_1y'     => $dormant1y,
             'percentage_dormant_1y'          => $pctDormant1y,
             'number_org_stocks_not_sold_1y'  => $totalNotSold1y,
             'percentage_not_sold_1y'         => $pctNotSold1y,
-            'organisations'                  => $orgHistories->map(function ($history) {
+            'organisations'                  => $orgHistories->map(function ($history) use ($official) {
                 $org           = $history->organisation;
                 $orgSlug       = $org->slug;
                 $warehouseSlug = $org->warehouses->first()?->slug;
@@ -80,8 +85,8 @@ trait WithLatestStockHistory
                     'number_out_of_stock_org_stocks' => $history->number_out_of_stock_org_stocks,
                     'percentage_out_of_stock'        => $history->percentage_out_of_stock,
                     'number_locations'               => $history->number_locations,
-                    'org_stock_lpp_value'                => (float) $history->org_stock_lpp_value,
-                    'value_dormant_stock_1y'         => (float) $history->value_dormant_stock_1y,
+                    'org_stock_lpp_value'                => (float) ($history->{$official->stockValueColumn()} ?? $history->org_stock_lpp_value),
+                    'value_dormant_stock_1y'         => (float) ($history->{$official->dormantValueColumn()} ?? $history->value_dormant_stock_1y),
                     'percentage_dormant_1y'          => $history->percentage_value_dormant_stock_1y ?? 0,
                     'number_org_stocks_not_sold_1y'  => $history->number_org_stocks_not_sold_1y,
                     'percentage_not_sold_1y'         => $history->number_org_stocks > 0
@@ -125,15 +130,19 @@ trait WithLatestStockHistory
             ? round($history->number_org_stocks_not_sold_1y / $totalSkus * 100, 1)
             : 0;
 
+        $official = OrgStockValuationMethodEnum::official();
+
         $data = [
             'date'                           => $history->date->toDateString(),
             'number_org_stocks'              => $totalSkus,
             'number_out_of_stock_org_stocks' => $history->number_out_of_stock_org_stocks,
             'percentage_out_of_stock'        => $history->percentage_out_of_stock,
             'number_locations'               => $history->number_locations,
-            'org_stock_lpp_value'                => $history->org_stock_lpp_value,
+            'org_stock_lpp_value'                => $history->{$official->stockValueColumn()} ?? $history->org_stock_lpp_value,
+            'valuation_method'               => $official->label(),
+            'valuation_legend'               => $official->legend(),
             'currency_code'                  => $organisation->currency->code,
-            'value_dormant_stock_1y'         => $history->value_dormant_stock_1y,
+            'value_dormant_stock_1y'         => $history->{$official->dormantValueColumn()} ?? $history->value_dormant_stock_1y,
             'percentage_dormant_1y'          => $history->percentage_value_dormant_stock_1y ?? 0,
             'number_org_stocks_not_sold_1y'  => $history->number_org_stocks_not_sold_1y,
             'percentage_not_sold_1y'         => $pctNotSold1y,

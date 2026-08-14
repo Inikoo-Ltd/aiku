@@ -45,7 +45,7 @@ function toYmd(date: Date): string {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(bucket)="{ item }">
-            <Link :href="showRoute(item)" class="primaryLink">
+            <Link :href="showRoute(item)" class="primaryLink whitespace-nowrap tabular-nums">
                 {{ item.bucket }}
             </Link>
         </template>
@@ -71,6 +71,14 @@ function toYmd(date: Date): string {
             <span class="tabular-nums">{{ locale.currencyFormat(item.org_currency_code, item.org_stock_lpp_value) }}</span>
         </template>
 
+        <template #cell(org_stock_wac_value)="{ item }">
+            <span class="tabular-nums">{{ item.org_stock_wac_value != null ? locale.currencyFormat(item.org_currency_code, item.org_stock_wac_value) : '-' }}</span>
+        </template>
+
+        <template #cell(org_stock_fifo_value)="{ item }">
+            <span class="tabular-nums">{{ item.org_stock_fifo_value != null ? locale.currencyFormat(item.org_currency_code, item.org_stock_fifo_value) : '-' }}</span>
+        </template>
+
         <template #cell(grp_stock_lpp_value)="{ item }">
             <span class="tabular-nums">{{ locale.currencyFormat(item.grp_currency_code, item.grp_stock_lpp_value) }}</span>
         </template>
@@ -83,6 +91,16 @@ function toYmd(date: Date): string {
         <template #cell(value_dormant_stock_1y)="{ item }">
             <Link :href="showRoute(item, 'dormant_stock_1y')" class="primaryLink tabular-nums text-red-500 hover:text-red-700">
                 {{ locale.currencyFormat(item.org_currency_code, item.value_dormant_stock_1y) }}
+            </Link>
+        </template>
+        <template #cell(value_dormant_stock_1y_wac)="{ item }">
+            <Link :href="showRoute(item, 'dormant_stock_1y')" class="primaryLink tabular-nums text-red-500 hover:text-red-700">
+                {{ item.value_dormant_stock_1y_wac != null ? locale.currencyFormat(item.org_currency_code, item.value_dormant_stock_1y_wac) : '-' }}
+            </Link>
+        </template>
+        <template #cell(value_dormant_stock_1y_fifo)="{ item }">
+            <Link :href="showRoute(item, 'dormant_stock_1y')" class="primaryLink tabular-nums text-red-500 hover:text-red-700">
+                {{ item.value_dormant_stock_1y_fifo != null ? locale.currencyFormat(item.org_currency_code, item.value_dormant_stock_1y_fifo) : '-' }}
             </Link>
         </template>
     </Table>

@@ -81,6 +81,7 @@ class OrgStockMovementsResource extends JsonResource
             'running_quantity'                          => trimDecimalZeros($orgStockMovement->running_quantity),
             'running_quantity_fractional'               => riseDivisor(divideWithRemainder(findSmallestFactors($orgStockMovement->running_quantity ?? 0)), $packedIn),
             'running_quantity_org_stock'                => trimDecimalZeros($runningQuantityOrgStock),
+            'running_value'                             => $orgStockMovement->running_value ?? null,
             'running_quantity_org_stock_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($runningQuantityOrgStock ?? 0)), $packedIn),
             'delivery_note_id'                          => $orgStockMovement->delivery_note_id,
             'delivery_note_reference'                   => $orgStockMovement->delivery_note_reference,

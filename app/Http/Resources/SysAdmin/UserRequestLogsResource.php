@@ -25,12 +25,10 @@ class UserRequestLogsResource extends JsonResource
             'module'          => Str::title($this['module']),
             'datetime'        => $this['datetime'],
             'location'        => $this['location'],
-            'user_agent'      => [
-                $this['device_type'],
-                $this['platform'],
-                $this['browser']
-            ],
-            'url'             => $this['url'],
+            'user_agent'      => collect([$this['device_type'], $this['platform'], $this['browser']])
+                ->filter()
+                ->map(fn (string $part) => Str::title($part))
+                ->implode(' · '),
         ];
     }
 }

@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStockHistory\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\Inventory\OrgStockHistory;
@@ -94,10 +95,13 @@ class IndexOrgStockHistories extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity_in_locations', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'org_stock_lpp_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
-                ->column(key: 'org_stock_wac_value', label: __('Stock Value (WAC)'), canBeHidden: true, sortable: true, type: 'currency')
-                ->column(key: 'org_stock_fifo_value', label: __('Stock Value (FIFO)'), canBeHidden: true, sortable: true, type: 'currency')
+                ->column(key: 'quantity_in_locations', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
+
+            foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
+                $table->column(key: $method->stockValueColumn(), label: __('Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, sortable: true, type: 'currency');
+            }
+
+            $table
                 ->column(key: 'sold_within_1y', label: '', icon: 'fal fa-cash-register', tooltip: __('Sold Within 1Y'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
                 ->column(key: 'non_moving_1y', label: '', icon: 'fal fa-skull-cow', tooltip: __('Non Moving 1Y'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->defaultSort('code');

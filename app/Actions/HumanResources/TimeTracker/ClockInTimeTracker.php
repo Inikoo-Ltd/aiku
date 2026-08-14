@@ -54,10 +54,8 @@ class ClockInTimeTracker
         ]);
 
         if ($timeTracker->ends_at) {
-            $timeTracker->update([
-                'status'   => TimeTrackerStatusEnum::CLOSED,
-                'duration' => (int) $clockedAtUtc->diffInSeconds($timeTracker->ends_at),
-            ]);
+            $timeTracker->update(['status' => TimeTrackerStatusEnum::CLOSED]);
+            $timeTracker->normaliseInterval();
         }
 
         $this->rehydrateTimesheet($timeTracker->timesheet);

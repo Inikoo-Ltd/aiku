@@ -13,13 +13,13 @@ import Modal from '../Utils/Modal.vue'
 import PureInputNumber from '../Pure/PureInputNumber.vue'
 import Button from '../Elements/Buttons/Button.vue'
 
-import { faCubes, faSeedling, faRulerCombined, faWindowFrame, faPencil } from "@fal"
+import { faCubes, faSeedling, faRulerCombined, faWindowFrame, faPencil, faLessThanEqual } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { StatsBoxTS } from '@/types/Components/StatsBox'
 
-library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faRulerCombined, faFireAlt, faWindowFrame, faPencil)
+library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faRulerCombined, faFireAlt, faWindowFrame, faPencil, faLessThanEqual)
 
 const props = defineProps<{
     stat: StatsBoxTS
@@ -133,7 +133,8 @@ const saveEditable = () => {
             v-tooltip="stat.editable.tooltip"
             @click.prevent.stop="openEditable()"
         >
-            <div>{{ stat.editable.label }}: {{ locale.number(Number(stat.editable.value)) }}</div>
+            <FontAwesomeIcon v-if="stat.editable.icon" :icon="stat.editable.icon" class="text-sm" fixed-width aria-hidden="true" />
+            <div>{{ stat.editable.icon ? '' : stat.editable.label + ': ' }}{{ locale.number(Number(stat.editable.value)) }}</div>
             <FontAwesomeIcon v-if="!stat.editable.readonly" icon="fal fa-pencil" class="text-xs" fixed-width aria-hidden="true" />
         </div>
 
