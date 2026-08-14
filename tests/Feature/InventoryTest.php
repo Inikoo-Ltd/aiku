@@ -2362,3 +2362,26 @@ describe('aurora provisional cost fix', function () {
             ->and((float) $picked->running_fifo_value)->toBe(50.0);
     });
 });
+
+test('merging a duplicate stock moves its links to the stocked twin and retires the orphans', function () {
+    $group  = $this->organisation->group;
+    $stocks = createStocks($group);
+    $empty  = $stocks[0];
+    $held   = $stocks[1];
+
+    [$emptyOrgStock] = createOrgStocks($this->organisation, [$empty]);
+    createOrgStocks($this->organisation, [$held]);
+
+    $tradeUnit = StoreTradeUnit::make()->action($group, TradeUnit::factory()->definition());
+    DB::table('model_has_trade_units')->insert([
+        'model_type' => 'Stock', 'model_id' => $empty->id, 'trade_unit_id' => $tradeUnit->id,
+        'quantity' => 1, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+
+    \App\Actions\Goods\Stock\MergeDuplicateStock::make()->handle($empty->refresh(), $held->refresh());
+
+    expect(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $empty->id)->count())->toBe(0)
+        ->and(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $held->id)->where('trade_unit_id', $tradeUnit->id)->exists())->toBeTrue()
+        ->and($empty->refresh()->state)->toBe(\App\Enums\Goods\Stock\StockStateEnum::DISCONTINUED)
+        ->and($emptyOrgStock->refresh()->state)->toBe(\App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED);
+});
