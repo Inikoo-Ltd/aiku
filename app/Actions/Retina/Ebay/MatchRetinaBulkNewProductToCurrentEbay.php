@@ -23,15 +23,18 @@ class MatchRetinaBulkNewProductToCurrentEbay extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
+    /**
+     * @return array{matched: int, ignored: int}
+     */
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): array
     {
-        MatchBulkNewProductToCurrentEbay::run($customerSalesChannel, $attributes);
+        return MatchBulkNewProductToCurrentEbay::run($customerSalesChannel, $attributes);
     }
 
     public function rules(): array
     {
         return [
-            'portfolios' => ['required', 'array'],
+            'portfolios' => ['sometimes', 'array'],
             'portfolios.*' => ['required', 'integer'],
         ];
     }
