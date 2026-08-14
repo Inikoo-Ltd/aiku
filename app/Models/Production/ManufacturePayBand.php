@@ -10,9 +10,11 @@ namespace App\Models\Production;
 
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -60,5 +62,15 @@ class ManufacturePayBand extends Model
     public function production(): BelongsTo
     {
         return $this->belongsTo(Production::class);
+    }
+
+    public function scopeEffectiveAt(Builder $query, int $productionId, Carbon|string $at): Builder
+    {
+        return $query->where('production_id', $productionId)
+            ->where('effective_from', '<=', $at)
+            ->where(function (Builder $query) use ($at) {
+                $query->whereNull('effective_to')
+                    ->orWhere('effective_to', '>', $at);
+            });
     }
 }

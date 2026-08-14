@@ -1400,6 +1400,44 @@ describe('production reward pay bands', function () {
             ->and($session->units_per_hour)->toBeNull();
     });
 
+    test('manufacture floor shows live band feedback when the task has a standard rate', function () {
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 152]);
+
+        \App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession::make()->action(
+            auth()->user(),
+            $this->payBandJobOrderItemTask
+        );
+
+        $response = get(route('grp.org.productions.show.floor', [
+            $this->organisation->slug,
+            $this->production->slug,
+        ]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Production/ManufactureFloor')
+                ->has('open_session.band_feedback.bands', 3)
+                ->where('open_session.band_feedback.band0_hourly_rate', 12.71)
+                ->where('open_session.band_feedback.bands.0.target_units_per_hour', round(152 * 1.0228, 1))
+                ->where('open_session.band_feedback.bands.1.target_units_per_hour', round(152 * 1.1015, 1))
+                ->where('open_session.band_feedback.bands.2.target_units_per_hour', round(152 * 1.1802, 1));
+        });
+
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => null]);
+        \App\Models\Production\ManufactureTaskSession::where('user_id', auth()->user()->id)
+            ->where('state', \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN)
+            ->update(['job_order_item_task_id' => $this->payBandJobOrderItemTask->id]);
+
+        $response = get(route('grp.org.productions.show.floor', [
+            $this->organisation->slug,
+            $this->production->slug,
+        ]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Production/ManufactureFloor')
+                ->where('open_session.band_feedback', null);
+        });
+    });
+
     test('development activity pays the development band', function () {
         $session = makePayBandSession(
             $this->payBandJobOrderItemTask,

@@ -20,13 +20,7 @@ class CalculateManufactureTaskSessionPay
 
     public function handle(ManufactureTaskSession $session): ManufactureTaskSession
     {
-        $bands = ManufacturePayBand::where('production_id', $session->production_id)
-            ->where('effective_from', '<=', $session->ended_at)
-            ->where(function ($query) use ($session) {
-                $query->whereNull('effective_to')
-                    ->orWhere('effective_to', '>', $session->ended_at);
-            })
-            ->get();
+        $bands = ManufacturePayBand::effectiveAt($session->production_id, $session->ended_at)->get();
 
         if ($bands->isEmpty()) {
             return $session;
