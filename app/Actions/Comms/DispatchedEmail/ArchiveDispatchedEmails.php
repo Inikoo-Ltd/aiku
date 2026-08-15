@@ -12,6 +12,7 @@ use App\Models\Comms\MailshotStats;
 use App\Models\Comms\OutboxStats;
 use App\Models\CRM\CustomerStats;
 use App\Models\CRM\Prospect;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ class ArchiveDispatchedEmails
 {
     use AsAction;
 
-    public string $commandSignature = 'comms:archive_dispatched_emails {--c|chunk=5000} {--l|limit=} {--d|dry-run}';
+    public string $commandSignature = 'comms:archive_dispatched_emails {--c|chunk=5000} {--l|limit=} {--d|dry-run} {--from=} {--until=}';
 
     public string $commandDescription = 'Copy dispatched emails older than the retention window to the email archive database, bank their stats baselines and delete them';
 
@@ -29,22 +30,47 @@ class ArchiveDispatchedEmails
 
     private const ADVISORY_LOCK_KEY = 826_041_501;
 
-    public function handle(int $chunkSize = 5000, ?int $limit = null, bool $dryRun = false, ?Command $command = null): int
-    {
-        $cutoff   = now()->subDays(config('archive.email_retention_days'));
+    public function handle(
+        int $chunkSize = 5000,
+        ?int $limit = null,
+        ?string $from = null,
+        ?string $until = null,
+        bool $dryRun = false,
+        ?Command $command = null
+    ): int {
+        /*
+         * --until can only ever bring the cutoff forward. Letting it push the cutoff past the
+         * retention window would archive emails that are supposed to stay in the operational
+         * database, which no later run would put back.
+         */
+        $cutoff = now()->subDays(config('archive.email_retention_days'));
+        if ($until && Carbon::parse($until)->lt($cutoff)) {
+            $cutoff = Carbon::parse($until);
+        }
+
         $children = $this->getChildTables();
 
         /*
-         * Two concurrent runs would pick overlapping batches and contend for the same stats rows.
-         * The advisory lock is held by the session, so it clears by itself if the process is killed.
+         * Runs over the same rows would pick overlapping batches and contend for the same stats
+         * rows, so each range takes its own lock: identical ranges still refuse to double-start,
+         * while disjoint ranges run side by side. Held by the session, so a killed process frees it.
+         *
+         * Nothing here can verify that ranges given to separate processes are actually disjoint —
+         * that is the operator's responsibility.
          */
-        if (!$dryRun && !DB::selectOne('select pg_try_advisory_lock(?) as locked', [self::ADVISORY_LOCK_KEY])->locked) {
-            throw new Exception('Another archive run holds the lock; refusing to start a second one.');
+        $lockKey = $from || $until ? crc32(self::ADVISORY_LOCK_KEY.'|'.$from.'|'.$until) : self::ADVISORY_LOCK_KEY;
+
+        if (!$dryRun && !DB::selectOne('select pg_try_advisory_lock(?) as locked', [$lockKey])->locked) {
+            throw new Exception('Another archive run holds the lock for this range; refusing to start a second one.');
         }
 
         if ($dryRun) {
-            $total = DB::table('dispatched_emails')->where('created_at', '<', $cutoff)->count();
-            $command?->info("Dry run: $total dispatched emails older than {$cutoff->toDateString()} would be archived");
+            $total = DB::table('dispatched_emails')
+                ->where('created_at', '<', $cutoff)
+                ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+                ->count();
+            $range = $from ? " from {$from}" : '';
+            $command?->info("Dry run: $total dispatched emails older than {$cutoff->toDateString()}$range would be archived");
 
             return $total;
         }
@@ -55,7 +81,7 @@ class ArchiveDispatchedEmails
 
         $archivedTotal  = 0;
         $lastId         = 0;
-        $lastCreatedAt  = '1970-01-01';
+        $lastCreatedAt  = $from ?: '1970-01-01';
         while (true) {
             $batchSize = $limit ? min($chunkSize, $limit - $archivedTotal) : $chunkSize;
             if ($batchSize <= 0) {
@@ -107,7 +133,7 @@ class ArchiveDispatchedEmails
             $command?->info("Archived $archivedTotal dispatched emails (up to id $lastId)");
         }
 
-        DB::selectOne('select pg_advisory_unlock(?)', [self::ADVISORY_LOCK_KEY]);
+        DB::selectOne('select pg_advisory_unlock(?)', [$lockKey]);
 
         return $archivedTotal;
     }
@@ -424,6 +450,8 @@ class ArchiveDispatchedEmails
         $archived = $this->handle(
             chunkSize: (int) $command->option('chunk'),
             limit: $command->option('limit') ? (int) $command->option('limit') : null,
+            from: $command->option('from') ?: null,
+            until: $command->option('until') ?: null,
             dryRun: (bool) $command->option('dry-run'),
             command: $command
         );

@@ -3579,6 +3579,54 @@ describe('email retention', function () {
             ->and($resolvedFromLive->getConnectionName())->not->toBe('archive');
     });
 
+    test('archiver range options keep parallel workers on disjoint slices', function () {
+        config()->set(
+            'database.connections.archive',
+            array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+        );
+        DB::purge('archive');
+        DB::statement('create schema if not exists archive');
+
+        $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+
+        $makeEmail = function ($date) use ($outbox) {
+            return DB::table('dispatched_emails')->insertGetId([
+                'outbox_id'  => $outbox->id,
+                'state'      => 'sent',
+                'data'       => '{}',
+                'created_at' => $date,
+                'updated_at' => now(),
+            ]);
+        };
+
+        $old    = $makeEmail('2015-06-15 10:00:00');
+        $middle = $makeEmail('2017-06-15 10:00:00');
+        $recent = $makeEmail(now()->subDay());
+
+        \App\Actions\Comms\DispatchedEmail\ArchiveDispatchedEmails::run(
+            from: '2016-01-01',
+            until: '2018-01-01'
+        );
+
+        expect(DB::table('dispatched_emails')->where('id', $middle)->exists())->toBeFalse()
+            ->and(DB::table('dispatched_emails')->where('id', $old)->exists())->toBeTrue()
+            ->and(DB::table('dispatched_emails')->where('id', $recent)->exists())->toBeTrue();
+
+        \App\Actions\Comms\DispatchedEmail\ArchiveDispatchedEmails::run(until: '2016-01-01');
+
+        expect(DB::table('dispatched_emails')->where('id', $old)->exists())->toBeFalse()
+            ->and(DB::table('dispatched_emails')->where('id', $recent)->exists())->toBeTrue();
+
+        $wouldArchive = \App\Actions\Comms\DispatchedEmail\ArchiveDispatchedEmails::run(
+            until: now()->addYear()->toDateString(),
+            dryRun: true
+        );
+
+        expect($wouldArchive)->toBe(
+            DB::table('dispatched_emails')->where('created_at', '<', now()->subDays(config('archive.email_retention_days')))->count()
+        );
+    });
+
     test('archiver dry run counts but does not move anything', function () {
         $outbox  = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
         $emailId = DB::table('dispatched_emails')->insertGetId([
