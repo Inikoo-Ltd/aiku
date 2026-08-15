@@ -399,6 +399,17 @@ test('link purchase order transaction to agent supplier purchase order', functio
 
     expect($agentSupplierPurchaseOrder->purchaseOrderTransactions()->count())->toBe(1)
         ->and($purchaseOrderTransaction->refresh()->agentSupplierPurchaseOrder->id)->toBe($agentSupplierPurchaseOrder->id);
+
+    UpdatePurchaseOrderTransaction::make()->action(
+        $purchaseOrderTransaction,
+        ['net_amount' => 360],
+        strict: false
+    );
+
+    $purchaseOrderTransaction->refresh();
+    expect((float)$purchaseOrderTransaction->net_amount)->toBe(360.0)
+        ->and((float)$purchaseOrderTransaction->org_net_amount)->toBe(360.0 * ($purchaseOrderTransaction->org_exchange ?? 1))
+        ->and((float)$purchaseOrderTransaction->grp_net_amount)->toBe(360.0 * ($purchaseOrderTransaction->grp_exchange ?? 1));
 })->depends('create agent supplier purchase order', 'add item to purchase order');
 
 test('housekeeping flags legacy stalled agent supplier purchase orders', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {

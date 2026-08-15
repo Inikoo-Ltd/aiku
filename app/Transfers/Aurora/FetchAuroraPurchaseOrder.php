@@ -130,7 +130,17 @@ class FetchAuroraPurchaseOrder extends FetchAurora
         );
 
 
-        $data                               = [];
+        $estimatedReceivingDate = $this->parseDatetime($this->auroraModelData->{'Purchase Order Estimated Receiving Date'});
+
+        $data = array_filter([
+            'delivery_type'            => strtolower($this->auroraModelData->{'Purchase Order Type'} ?? ''),
+            'incoterm'                 => $this->auroraModelData->{'Purchase Order Incoterm'},
+            'port_of_export'           => $this->auroraModelData->{'Purchase Order Port of Export'},
+            'port_of_import'           => $this->auroraModelData->{'Purchase Order Port of Import'},
+            'delivery_address'         => $this->auroraModelData->{'Purchase Order Warehouse Address'},
+            'terms_and_conditions'     => $this->auroraModelData->{'Purchase Order Terms and Conditions'},
+            'estimated_receiving_date' => $estimatedReceivingDate?->toDateString(),
+        ]);
         $this->parsedData["purchase_order"] = [
             'date'            => $date,
             'submitted_at'    => $submittedAt,
@@ -147,7 +157,11 @@ class FetchAuroraPurchaseOrder extends FetchAurora
 
             "cost_items"    => $this->auroraModelData->{'Purchase Order Items Net Amount'},
             "cost_shipping" => $this->auroraModelData->{'Purchase Order Shipping Net Amount'},
+            "cost_extra"    => $this->auroraModelData->{'Purchase Order Extra Cost Amount'},
+            "cost_tax"      => $this->auroraModelData->{'Purchase Order Total Tax Amount'},
             "cost_total"    => $this->auroraModelData->{'Purchase Order Total Amount'},
+
+            "estimated_received_at" => $estimatedReceivingDate,
 
             "source_id"       => $this->organisation->id.':'.$this->auroraModelData->{'Purchase Order Key'},
             "org_exchange"    => $org_exchange,

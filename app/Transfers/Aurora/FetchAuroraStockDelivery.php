@@ -75,7 +75,15 @@ class FetchAuroraStockDelivery extends FetchAurora
 
 
 
-        $data = [];
+        $data = array_filter([
+            'delivery_type'            => strtolower($this->auroraModelData->{'Supplier Delivery Type'} ?? ''),
+            'incoterm'                 => $this->auroraModelData->{'Supplier Delivery Incoterm'},
+            'port_of_export'           => $this->auroraModelData->{'Supplier Delivery Port of Export'},
+            'port_of_import'           => $this->auroraModelData->{'Supplier Delivery Port of Import'},
+            'invoice_number'           => $this->auroraModelData->{'Supplier Delivery Invoice Public ID'},
+            'invoice_date'             => $this->parseDatetime($this->auroraModelData->{'Supplier Delivery Invoice Date'})?->toDateString(),
+            'estimated_receiving_date' => $this->parseDatetime($this->auroraModelData->{'Supplier Delivery Estimated Receiving Date'})?->toDateString(),
+        ]);
 
 
         $date = $this->parseDatetime($this->auroraModelData->{'Supplier Delivery Last Updated Date'});
