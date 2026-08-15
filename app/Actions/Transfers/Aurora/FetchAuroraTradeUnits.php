@@ -9,6 +9,7 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
@@ -16,6 +17,9 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Barcode;
+use Exception;
+use Throwable;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\Aurora\WithAuroraAttachments;
@@ -66,6 +70,47 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                         $tradeUnit,
                     );
                     $this->processFetchAttachments($tradeUnit, 'Part', $tradeUnitData['trade_unit']['source_id']);
+                }
+            } else {
+                // Create-only path for parts born in Aurora after the cutover: aiku has
+                // never seen this source_slug, so nothing staff maintain can be rewritten.
+                try {
+                    $tradeUnit = StoreTradeUnit::make()->action(
+                        group: $organisationSource->getOrganisation()->group,
+                        modelData: $tradeUnitData['trade_unit'],
+                        hydratorsDelay: $this->hydratorsDelay,
+                        strict: false,
+                        audit: false
+                    );
+                    TradeUnit::enableAuditing();
+                    $this->saveMigrationHistory(
+                        $tradeUnit,
+                        Arr::except($tradeUnitData['trade_unit'], ['fetched_at', 'last_fetched_at', 'source_id'])
+                    );
+                    $this->recordNew($organisationSource);
+
+                    $this->updateTradeUnitSources($tradeUnit, $tradeUnitData['trade_unit']['source_id']);
+
+                    if (count(Arr::get($tradeUnitData, 'barcodes', [])) > 0) {
+                        $tradeUnit->barcodes()->sync($tradeUnitData['barcodes']);
+
+                        foreach ($tradeUnitData['barcodes'] as $barcodeKey => $barcodeData) {
+                            if ($barcodeData['status']) {
+                                $barcode = Barcode::find($barcodeKey);
+                                $tradeUnit->updateQuietly([
+                                    'barcode_id' => $barcode->id,
+                                    'barcode'    => $barcode->number,
+                                ]);
+                                break;
+                            }
+                        }
+                    }
+
+                    $this->processFetchAttachments($tradeUnit, 'Part', $tradeUnitData['trade_unit']['source_id']);
+                } catch (Exception|Throwable $e) {
+                    $this->recordError($organisationSource, $e, $tradeUnitData['trade_unit'], 'TradeUnit', 'store');
+
+                    return null;
                 }
             }
 
