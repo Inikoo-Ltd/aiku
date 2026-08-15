@@ -12,7 +12,6 @@ use App\Models\Traits\InGroup;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * App\Models\Comms\EmailAddress
@@ -29,7 +28,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\Comms\Mailshot|null $mailshot
  * @method static Builder<static>|EmailAddress newModelQuery()
  * @method static Builder<static>|EmailAddress newQuery()
  * @method static Builder<static>|EmailAddress query()
@@ -44,10 +42,5 @@ class EmailAddress extends Model
     public function getRouteKeyName(): string
     {
         return 'email';
-    }
-
-    public function mailshot(): BelongsTo
-    {
-        return $this->belongsTo(Mailshot::class);
     }
 }
