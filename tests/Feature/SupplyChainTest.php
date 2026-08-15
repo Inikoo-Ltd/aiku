@@ -75,7 +75,11 @@ test('create agent', function () {
 
 test('update agent', function (Agent $agent) {
     $modelData    = [
-        'name' => 'UpdatedName'
+        'name'          => 'UpdatedName',
+        'delivery_type' => 'parcel',
+        'delivery_time' => 45,
+        'payment_terms' => '50% upfront',
+        'image'         => \Illuminate\Http\UploadedFile::fake()->image('agent.jpg', 200, 200),
     ];
     $updatedAgent = UpdateAgent::make()->action(
         agent: $agent,
@@ -83,7 +87,11 @@ test('update agent', function (Agent $agent) {
     );
 
     expect($updatedAgent)->toBeInstanceOf(Agent::class)
-        ->and($updatedAgent->name)->toBe('UpdatedName');
+        ->and($updatedAgent->name)->toBe('UpdatedName')
+        ->and(Arr::get($updatedAgent->data, 'delivery_type'))->toBe('parcel')
+        ->and(Arr::get($updatedAgent->data, 'delivery_time'))->toBe(45)
+        ->and(Arr::get($updatedAgent->settings, 'payment_terms'))->toBe('50% upfront')
+        ->and($updatedAgent->image_id)->not->toBeNull();
 
     return $updatedAgent;
 })->depends('create agent');

@@ -3,6 +3,7 @@
 namespace App\Actions\SupplyChain\Supplier\UI;
 
 use App\Models\Helpers\Country;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
 
@@ -11,7 +12,7 @@ trait WithSupplierInfo
     /**
      * @return array<string, mixed>
      */
-    protected function supplierInfo(Supplier $supplier): array
+    protected function supplierInfo(Supplier|Agent $supplier): array
     {
         $originCountryId = Arr::get($supplier->settings, 'default_product_country_origin');
 

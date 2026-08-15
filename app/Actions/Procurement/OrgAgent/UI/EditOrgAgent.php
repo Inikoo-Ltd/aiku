@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgAgent\UI;
 
+use App\Actions\SupplyChain\Agent\UI\WithAgentEditFields;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\Procurement\OrgAgent;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 class EditOrgAgent extends OrgAction
 {
     use WithProcurementAuthorisation;
+    use WithAgentEditFields;
+
     public function handle(OrgAgent $orgAgent): OrgAgent
     {
         return $orgAgent;
@@ -31,8 +34,49 @@ class EditOrgAgent extends OrgAction
         return $this->handle($orgAgent);
     }
 
+    protected function ownsAgent(OrgAgent $orgAgent): bool
+    {
+        return $orgAgent->agent->organisation_id === $this->organisation->id;
+    }
+
     public function htmlResponse(OrgAgent $orgAgent, ActionRequest $request): Response
     {
+        $agent = $orgAgent->agent;
+
+        $blueprint = $this->ownsAgent($orgAgent)
+            ? $this->agentEditSections($agent)
+            : [
+                [
+                    'title'  => __('Agent Details'),
+                    'icon'   => 'fal fa-address-book',
+                    'fields' => [
+                        'code' => [
+                            'type'     => 'input',
+                            'label'    => __('Code'),
+                            'value'    => $agent->code,
+                            'required' => true,
+                            'readonly' => true,
+                        ],
+                        'name' => [
+                            'type'     => 'input',
+                            'label'    => __('Name'),
+                            'value'    => $agent->organisation->name,
+                            'readonly' => true,
+                        ],
+                    ],
+                ],
+            ];
+
+        $updateRoute = $this->ownsAgent($orgAgent)
+            ? [
+                'name'       => 'grp.models.agent.update',
+                'parameters' => $agent->id,
+            ]
+            : [
+                'name'       => 'grp.models.org_agent.update',
+                'parameters' => $orgAgent->id,
+            ];
+
         return Inertia::render(
             'EditModel',
             [
@@ -59,33 +103,9 @@ class EditOrgAgent extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
-                        [
-                            'title'  => __('Agent Details'),
-                            'icon'   => 'fal fa-address-book',
-                            'label' => 'Agent Details',
-                            'fields' => [
-                                'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('Code'),
-                                    'value'    => $orgAgent->agent->code,
-                                    'required' => true,
-                                    'readonly' => true,
-                                ],
-                                'name' => [
-                                    'type'     => 'input',
-                                    'label'    => __('Name'),
-                                    'value'    => $orgAgent->agent->organisation->name,
-                                    'readonly' => true,
-                                ],
-                            ],
-                        ],
-                    ],
+                    'blueprint' => $blueprint,
                     'args' => [
-                        'updateRoute' => [
-                            'name'       => 'grp.models.org_agent.update',
-                            'parameters' => $orgAgent->id,
-                        ],
+                        'updateRoute' => $updateRoute,
                     ],
                 ],
             ]
