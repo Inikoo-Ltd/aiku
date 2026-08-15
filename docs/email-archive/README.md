@@ -198,6 +198,52 @@ From the 15 August 2026 runs, 96,101 emails archived in total:
   engaged.
 - Memory was flat across batches (RSS ~320 MB), so nothing accumulates over a long run.
 
+## Running in parallel
+
+A single process settles around 200 emails/second and is CPU bound in PHP, not in either database,
+so the way to go faster is more processes rather than a bigger `--chunk`. `--from` and `--until`
+give each worker a slice:
+
+```bash
+php artisan comms:archive_dispatched_emails --from=2019-08-16 --until=2020-02-15
+php artisan comms:archive_dispatched_emails --from=2020-02-15 --until=2020-08-16
+```
+
+- **Slices must be disjoint, and nothing checks that for you.** Overlapping ranges would have two
+  workers selecting the same rows; the copy is idempotent and the deletes are transactional, so the
+  result would still be correct, but they would fight over the same stats rows for no gain.
+- `--until` can only ever bring the cutoff *forward*. It is clamped to the retention window, so a
+  worker can never be told to archive emails that are supposed to stay.
+- The advisory lock is keyed on the range, so identical ranges still refuse to double-start while
+  disjoint ones run side by side.
+- **Do not go far past four workers.** Each generates its own WAL, and the replication gate is what
+  stands between a long run and the disk-full outage that WAL backlog caused before. Every worker
+  checks the gate independently, so they throttle together, but four is a sensible ceiling.
+- Expect somewhat less than linear speedup: workers on different date ranges still touch the same
+  outbox and mailshot stats rows, since an outbox spans years. The deterministic lock ordering in
+  `applyIncrements` keeps that contention from deadlocking.
+
+Pick split points by volume rather than by even dates, so workers finish together:
+
+```sql
+select date_trunc('month', created_at)::date as month, count(*)
+from dispatched_emails where created_at < now() - interval '2190 days'
+group by 1 order by 1;
+```
+
+## Vacuum between runs
+
+Autovacuum will not fire during these runs — its threshold is roughly 20% of the table, tens of
+millions of rows here — so dead tuples accumulate and the index-only scan starts doing more heap
+fetches for visibility checks. After each large run:
+
+```sql
+VACUUM (ANALYZE) dispatched_emails;
+```
+
+Plain `VACUUM`, never `FULL`: it takes no exclusive lock, makes the space reusable and refreshes the
+visibility map. Reclaiming space back to the operating system is `pg_repack`'s job, at the end.
+
 ## Operational notes
 
 - The archived data is PII: customer email addresses, subjects and full bodies (`email_copies`).
