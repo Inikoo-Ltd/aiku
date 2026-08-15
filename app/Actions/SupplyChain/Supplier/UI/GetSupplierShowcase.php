@@ -46,7 +46,9 @@ class GetSupplierShowcase
                     'icon'  => 'fal fa-clipboard-list',
                     'count' => $supplier->stats->number_purchase_orders,
                     'route' => [
-                        'name'       => 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index',
+                        'name'       => $supplier->agent_id
+                            ? 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index'
+                            : 'grp.supply-chain.suppliers.purchase_orders.index',
                         'parameters' => [$supplier->slug],
                     ],
                 ],

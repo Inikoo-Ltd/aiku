@@ -1107,6 +1107,53 @@ test('UI Index purchase orders', function () {
     });
 });
 
+test('UI index purchase orders for supplier shows supplier-specific columns and row details', function () {
+    $purchaseOrder = StorePurchaseOrder::make()->action(
+        $this->orgSupplier,
+        array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'Supplier table test PO']),
+        strict: false,
+    );
+    $this->orgSupplier->supplier->stats()->update([
+        'number_purchase_orders_state_in_process'   => 11,
+        'number_purchase_orders_state_submitted'    => 12,
+        'number_purchase_orders_state_confirmed'    => 13,
+        'number_purchase_orders_state_settled'      => 14,
+        'number_purchase_orders_state_cancelled'    => 15,
+        'number_purchase_orders_state_not_received' => 16,
+    ]);
+
+    $this->get(route('grp.org.procurement.org_suppliers.show.purchase_orders.index', [
+        $this->organisation->slug,
+        $this->orgSupplier->slug,
+    ]))->assertInertia(function (AssertableInertia $page) use ($purchaseOrder) {
+        $page
+            ->component('Procurement/PurchaseOrders')
+            ->where('queryBuilderProps.default.columns', function ($columns) {
+                $columnsByKey = $columns->keyBy('key');
+
+                return !$columnsByKey->has('parent_name')
+                    && $columnsByKey->has('number_current_purchase_order_transactions')
+                    && $columnsByKey->get('date')['align'] === 'right';
+            })
+            ->where('queryBuilderProps.default.elementGroups.state.elements', [
+                'in_process'   => [__('In process'), 11],
+                'submitted'    => [__('Submitted'), 12],
+                'confirmed'    => [__('Confirmed'), 13],
+                'settled'      => [__('Settled'), 14],
+                'cancelled'    => [__('Cancelled'), 15],
+                'not_received' => [__('Not Received'), 16],
+            ])
+            ->where('data.data', function ($rows) use ($purchaseOrder) {
+                $row = $rows->firstWhere('slug', $purchaseOrder->slug);
+
+                return $row
+                    && $row['state_label'] === PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value]
+                    && $row['number_current_purchase_order_transactions'] === $purchaseOrder->number_current_purchase_order_transactions;
+            })
+            ->etc();
+    });
+});
+
 test('UI show purchase order', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $this->purchaseOrder->slug]));
