@@ -26,7 +26,9 @@ trait WithNoStrictProcurementOrderRules
         $rules['date'] = ['sometimes', 'date'];
 
         $rules['submitted_at']    = ['sometimes', 'nullable', 'date'];
-        $rules['consolidated_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['confirmed_at']    = ['sometimes', 'nullable', 'date'];
+        $rules['settled_at']      = ['sometimes', 'nullable', 'date'];
+        $rules['not_received_at'] = ['sometimes', 'nullable', 'date'];
         $rules['cancelled_at']    = ['sometimes', 'nullable', 'date'];
 
 

@@ -67,8 +67,22 @@ class FetchAuroraPurchaseOrder extends FetchAurora
             "InProcess" => PurchaseOrderStateEnum::IN_PROCESS,
             "Submitted" => PurchaseOrderStateEnum::SUBMITTED,
             "Cancelled" => PurchaseOrderStateEnum::CANCELLED,
+            "Received", "Checked", "QC_Pass", "Placed", "Costing", "InvoiceChecked" => PurchaseOrderStateEnum::SETTLED,
+            "NoReceived" => PurchaseOrderStateEnum::NOT_RECEIVED,
             default => PurchaseOrderStateEnum::CONFIRMED,
         };
+
+        $settledAt    = null;
+        $notReceivedAt = null;
+        if ($state == PurchaseOrderStateEnum::SETTLED) {
+            $settledAt = $this->parseDatetime($this->auroraModelData->{'Purchase Order Consolidated Date'})
+                ?? $this->parseDatetime($this->auroraModelData->{'Purchase Order Checked Date'})
+                ?? $this->parseDatetime($this->auroraModelData->{'Purchase Order Received Date'});
+            $date = $settledAt ?? $confirmedAt ?? $date;
+        }
+        if ($state == PurchaseOrderStateEnum::NOT_RECEIVED) {
+            $notReceivedAt = $this->parseDatetime($this->auroraModelData->{'Purchase Order Cancelled Date'});
+        }
 
 
         if ($state == PurchaseOrderStateEnum::SUBMITTED) {
@@ -118,13 +132,11 @@ class FetchAuroraPurchaseOrder extends FetchAurora
 
         $data                               = [];
         $this->parsedData["purchase_order"] = [
-            'date'         => $date,
-            'submitted_at' => $submittedAt,
-            'confirmed_at' => $confirmedAt,
-            //'manufactured_at' => $this->parseDatetime($this->auroraModelData->{'Purchase Order Manufactured Date'}),
-            //'received_at'     => $this->parseDatetime($this->auroraModelData->{'Purchase Order Received Date'}),
-            //'checked_at'      => $this->parseDatetime($this->auroraModelData->{'Purchase Order Checked Date'}),
-            //'settled_at'      => $this->parseDatetime($this->auroraModelData->{'Purchase Order Consolidated Date'}),
+            'date'            => $date,
+            'submitted_at'    => $submittedAt,
+            'confirmed_at'    => $confirmedAt,
+            'settled_at'      => $settledAt,
+            'not_received_at' => $notReceivedAt,
 
             'parent_code' => $this->auroraModelData->{'Purchase Order Parent Code'},
             'parent_name' => $this->auroraModelData->{'Purchase Order Parent Name'},
