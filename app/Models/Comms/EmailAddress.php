@@ -19,12 +19,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $group_id
  * @property string $email
- * @property string|null $last_marketing_dispatch_at
- * @property string|null $last_transactional_dispatch_at
- * @property string|null $soft_bounced_at
- * @property string|null $hard_bounced_at
- * @property int $number_marketing_dispatches
- * @property int $number_transactional_dispatches
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Group|null $group
