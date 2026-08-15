@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
@@ -584,6 +585,10 @@ class UpdateShop extends OrgAction
             }
         }
 
+        if (Arr::has($changes, 'state') && $shop->state == ShopStateEnum::CLOSED) {
+            DiscontinueProductsInClosedShop::dispatch($shop)->delay($this->hydratorsDelay);
+        }
+
         if (Arr::hasAny($changes, ['master_shop_id'])) {
             if ($shop->master_shop_id) {
                 MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);
@@ -782,7 +787,9 @@ class UpdateShop extends OrgAction
             'timezone_id'                                             => ['sometimes', 'required', 'exists:timezones,id'],
             'address'                                                 => ['sometimes', 'required', new ValidAddress()],
             'collection_address'                                      => ['sometimes', 'required', new ValidAddress()],
-            'state'                                                   => ['sometimes', Rule::enum(ShopStateEnum::class)],
+            'state'                                                   => $this->asAction
+                ? ['sometimes', Rule::enum(ShopStateEnum::class)]
+                : ['prohibited'],
             'shopify_shop_name'                                       => ['sometimes', 'string'],
             'shopify_api_key'                                         => ['sometimes', 'string'],
             'shopify_api_secret'                                      => ['sometimes', 'string'],

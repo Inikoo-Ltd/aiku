@@ -363,6 +363,22 @@ test('create product with many org stocks', function ($shop) {
     return $product;
 })->depends('create family');
 
+test('closing shop discontinues its active products', function (Product $product) {
+    $shop = $product->shop;
+    if ($product->state != \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE) {
+        \App\Actions\Catalogue\Product\UpdateProduct::make()->action($product, ['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE]);
+    }
+
+    UpdateShop::make()->action($shop, ['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::CLOSED]);
+
+    expect($product->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED);
+
+    UpdateShop::make()->action($shop, ['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    \App\Actions\Catalogue\Product\UpdateProduct::make()->action($product, ['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE]);
+
+    expect($product->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE);
+})->depends('create product');
+
 test('update product', function (Product $product) {
     expect($product->name)->not->toBe('Updated Asset Name')
         ->and($product->asset->stats->number_historic_assets)->toBe(1);
