@@ -53,8 +53,9 @@ class ArchiveDispatchedEmails
         $this->assertReplicationMeasurable();
         $this->ensureArchiveTables($children);
 
-        $archivedTotal = 0;
-        $lastId        = 0;
+        $archivedTotal  = 0;
+        $lastId         = 0;
+        $lastCreatedAt  = '1970-01-01';
         while (true) {
             $batchSize = $limit ? min($chunkSize, $limit - $archivedTotal) : $chunkSize;
             if ($batchSize <= 0) {
@@ -64,23 +65,27 @@ class ArchiveDispatchedEmails
             $this->waitForReplication($command);
 
             /*
-             * Resuming from the previous batch's highest id keeps every scan short: without it each
-             * batch restarts at the lowest id and re-reads the index entries of everything already
-             * deleted, which autovacuum only clears well behind a run of this size. Safe because the
-             * cutoff is fixed for the run and rows are taken in ascending id order.
+             * Ordered by (created_at, id) to match the index of the same name: ordering by id alone
+             * cannot use it, so the planner walks the primary key and reads every row from disk just
+             * to test its date, which grows steadily worse as the remaining rows thin out. The pair
+             * is also the resume cursor, so no batch rescans what an earlier one already took.
+             * created_at is not unique, hence the row comparison rather than a plain column one.
              */
-            $dispatchedEmailIds = DB::table('dispatched_emails')
+            $rows = DB::table('dispatched_emails')
                 ->where('created_at', '<', $cutoff)
-                ->where('id', '>', $lastId)
+                ->whereRaw('(created_at, id) > (?, ?)', [$lastCreatedAt, $lastId])
+                ->orderBy('created_at')
                 ->orderBy('id')
                 ->limit($batchSize)
-                ->pluck('id')->all();
+                ->get(['id', 'created_at']);
 
-            if (!$dispatchedEmailIds) {
+            if ($rows->isEmpty()) {
                 break;
             }
 
-            $lastId = end($dispatchedEmailIds);
+            $dispatchedEmailIds = $rows->pluck('id')->all();
+            $lastCreatedAt      = $rows->last()->created_at;
+            $lastId             = $rows->last()->id;
 
             $this->copyToArchive('dispatched_emails', 'id', $dispatchedEmailIds);
             foreach ($children as $child) {
