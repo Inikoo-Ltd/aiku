@@ -119,7 +119,11 @@ test('create independent supplier', function () {
 
 test('update supplier', function (Supplier $supplier) {
     $modelData       = [
-        'contact_name' => 'UpdatedName'
+        'contact_name'  => 'UpdatedName',
+        'delivery_type' => 'parcel',
+        'delivery_time' => 45,
+        'payment_terms' => '50% upfront',
+        'image'         => \Illuminate\Http\UploadedFile::fake()->image('supplier.jpg', 200, 200),
     ];
     $updatedSupplier = UpdateSupplier::make()->action(
         supplier: $supplier,
@@ -127,7 +131,11 @@ test('update supplier', function (Supplier $supplier) {
     );
 
     expect($updatedSupplier)->toBeInstanceOf(Supplier::class)
-        ->and($updatedSupplier->contact_name)->toBe('UpdatedName');
+        ->and($updatedSupplier->contact_name)->toBe('UpdatedName')
+        ->and(Arr::get($updatedSupplier->data, 'delivery_type'))->toBe('parcel')
+        ->and(Arr::get($updatedSupplier->data, 'delivery_time'))->toBe(45)
+        ->and(Arr::get($updatedSupplier->settings, 'payment_terms'))->toBe('50% upfront')
+        ->and($updatedSupplier->image_id)->not->toBeNull();
 
     return $updatedSupplier;
 })->depends('create independent supplier');
