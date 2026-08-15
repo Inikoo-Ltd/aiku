@@ -107,9 +107,29 @@ all-or-nothing in practice. The read path exploits that instead of paginating ac
 - **Single email pages**: `DispatchedEmail::resolveRouteBinding` falls back to the archive when the
   id is not in the live table, and the resolved model keeps the archive connection, which the
   tracking events listing follows.
-- Outbox listings and the customer timeline intentionally stay live-only for now: outboxes always
-  have recent live rows, and a customer with both live and archived emails only shows the live ones
-  until a mixed-source view is built.
+- Outbox listings and the customer timeline stay live-only.
+- **Known limitation:** the switch is all-or-nothing per parent. That matches how mailshots and
+  orders send (one burst), but a customer or prospect active longer than the retention window has
+  emails on both sides permanently; they see the live ones with no indication that older emails
+  exist. The switch still only ever helps — a parent whose emails are entirely archived would
+  otherwise show an empty table — but the mixed case needs a footer note stating how far back the
+  history goes. Not built yet.
+
+## Safety guards in the archiver
+
+Added after an adversarial review; each one exists because the failure it prevents is silent:
+
+- **The archive must not be the operational database.** `ARCHIVE_DB_HOST` defaults to `127.0.0.1`,
+  and `copyToArchive` clears its batch on the target before re-inserting, so a misconfigured
+  connection would delete production rows outside any transaction. The run refuses to start unless
+  the archive's cluster/database/schema differs from the live one.
+- **The replication gate fails closed.** It reads retained WAL from `pg_replication_slots` rather
+  than `pg_stat_replication`, because an inactive slot is what actually pins WAL, and `replay_lsn`
+  reads as NULL without `pg_monitor` rights — which made the original gate report zero lag while a
+  replica was disconnected, the exact shape of the earlier disk-full outage. If slots exist but
+  cannot be measured, the run refuses to start rather than assume all is well.
+- **One run at a time**, via a Postgres advisory lock that clears itself if the process is killed.
+- **Deterministic stats lock ordering**, so concurrent batches cannot deadlock on the same rows.
 
 ## Cascade safety
 
@@ -139,9 +159,15 @@ first batch would never finish. Nothing noticed before because nothing ever dele
 email.
 
 Migration `2026_08_15_120000_add_dispatched_email_id_indexes_to_cascade_children` adds all ten with
-`CREATE INDEX CONCURRENTLY`. It must complete before the archiver runs. On production the two large
-ones take a while and need roughly 10-15 GB of free disk between them — check `df -h` first, and
-verify afterwards that no index came out `invalid` (a failed concurrent build leaves one behind):
+`CREATE INDEX CONCURRENTLY`, which is correct for small environments but must NOT be left to the
+deploy on production: the two large builds run for a long time and would hang the CI deploy. Build
+them manually on boro first (in `screen`/`tmux`, one statement at a time), after which the
+migration finds them and is a no-op. They need roughly 10-15 GB of free disk — check `df -h` first.
+
+An interrupted concurrent build leaves an `invalid` index behind, and plain
+`CREATE INDEX CONCURRENTLY IF NOT EXISTS` matches it by name and skips it, silently leaving the
+cascade unindexed. The migration drops invalid indexes before recreating; when building manually,
+check for them yourself afterwards:
 
 ```sql
 select indexrelid::regclass from pg_index where not indisvalid;

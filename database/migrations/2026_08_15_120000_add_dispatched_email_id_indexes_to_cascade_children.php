@@ -36,8 +36,25 @@ return new class () extends Migration {
 
     public function up(): void
     {
-        $concurrently = DB::getDriverName() === 'pgsql' ? 'CONCURRENTLY ' : '';
+        $isPostgres   = DB::getDriverName() === 'pgsql';
+        $concurrently = $isPostgres ? 'CONCURRENTLY ' : '';
+
         foreach ($this->indexes as $name => $table) {
+            /*
+             * An interrupted concurrent build leaves an invalid index behind, and IF NOT EXISTS
+             * matches it by name, so a retry would skip it and leave the cascade unindexed.
+             */
+            if ($isPostgres) {
+                $invalid = DB::selectOne(
+                    'select 1 as found from pg_index i join pg_class c on c.oid = i.indexrelid where c.relname = ? and not i.indisvalid',
+                    [$name]
+                );
+
+                if ($invalid) {
+                    DB::statement("DROP INDEX CONCURRENTLY IF EXISTS {$name}");
+                }
+            }
+
             DB::statement("CREATE INDEX {$concurrently}IF NOT EXISTS {$name} ON {$table} (dispatched_email_id)");
         }
     }

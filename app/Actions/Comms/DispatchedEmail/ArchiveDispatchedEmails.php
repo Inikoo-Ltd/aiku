@@ -10,6 +10,7 @@ namespace App\Actions\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRunStats;
 use App\Models\Comms\MailshotStats;
 use App\Models\Comms\OutboxStats;
+use App\Models\CRM\Prospect;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -25,10 +26,20 @@ class ArchiveDispatchedEmails
 
     public string $archiveConnection = 'archive';
 
+    private const ADVISORY_LOCK_KEY = 826_041_501;
+
     public function handle(int $chunkSize = 5000, ?int $limit = null, bool $dryRun = false, ?Command $command = null): int
     {
         $cutoff   = now()->subDays(config('archive.email_retention_days'));
         $children = $this->getChildTables();
+
+        /*
+         * Two concurrent runs would pick overlapping batches and contend for the same stats rows.
+         * The advisory lock is held by the session, so it clears by itself if the process is killed.
+         */
+        if (!$dryRun && !DB::selectOne('select pg_try_advisory_lock(?) as locked', [self::ADVISORY_LOCK_KEY])->locked) {
+            throw new Exception('Another archive run holds the lock; refusing to start a second one.');
+        }
 
         if ($dryRun) {
             $total = DB::table('dispatched_emails')->where('created_at', '<', $cutoff)->count();
@@ -37,6 +48,8 @@ class ArchiveDispatchedEmails
             return $total;
         }
 
+        $this->assertArchiveIsNotProduction();
+        $this->assertReplicationMeasurable();
         $this->ensureArchiveTables($children);
 
         $archivedTotal = 0;
@@ -87,6 +100,8 @@ class ArchiveDispatchedEmails
             $archivedTotal += count($dispatchedEmailIds);
             $command?->info("Archived $archivedTotal dispatched emails (up to id $lastId)");
         }
+
+        DB::selectOne('select pg_advisory_unlock(?)', [self::ADVISORY_LOCK_KEY]);
 
         return $archivedTotal;
     }
@@ -187,22 +202,92 @@ class ArchiveDispatchedEmails
         }
     }
 
+    /**
+     * Measured from replication slots rather than pg_stat_replication: an inactive slot is what
+     * actually pins WAL and fills the disk, and replay_lsn reads as null without pg_monitor rights,
+     * which silently made the previous gate report zero lag while a replica was gone. Everything
+     * here fails closed, since an unmeasurable gate is indistinguishable from a broken replica.
+     */
+    private function replicationState(): ?object
+    {
+        return DB::selectOne("
+            select count(*) as slots,
+                   count(*) filter (where not active) as inactive,
+                   max(pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)) as retained_bytes
+            from pg_replication_slots
+            where slot_type = 'physical'
+        ");
+    }
+
+    private function assertReplicationMeasurable(): void
+    {
+        $state = $this->replicationState();
+
+        if (!$state) {
+            throw new Exception('Cannot read pg_replication_slots; refusing to archive without a working replication gate.');
+        }
+
+        if ($state->slots > 0 && $state->retained_bytes === null) {
+            throw new Exception(
+                'Replication slots exist but their retained WAL cannot be measured (missing pg_monitor rights?); '.
+                'refusing to archive with a gate that would silently report no lag.'
+            );
+        }
+    }
+
     private function waitForReplication(?Command $command): void
     {
         $maxLagBytes = config('archive.email_max_replication_lag_mb') * 1024 * 1024;
 
         while (true) {
-            $lag = (int) DB::selectOne('
-                select coalesce(max(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn)), 0) as lag
-                from pg_stat_replication
-            ')->lag;
+            $state = $this->replicationState();
 
-            if ($lag <= $maxLagBytes) {
+            if (!$state || ($state->slots > 0 && $state->retained_bytes === null)) {
+                throw new Exception('Replication gate became unreadable mid-run; stopping before generating more WAL.');
+            }
+
+            if ($state->slots == 0) {
                 return;
             }
 
-            $command?->warn('Replication lag '.round($lag / 1048576).' MB, waiting for replicas to catch up');
+            if ($state->inactive == 0 && (int) $state->retained_bytes <= $maxLagBytes) {
+                return;
+            }
+
+            $command?->warn(
+                $state->inactive > 0
+                    ? "{$state->inactive} replication slot(s) disconnected, waiting: WAL is piling up and will fill the disk"
+                    : 'Replicas hold '.round((int) $state->retained_bytes / 1048576).' MB of WAL, waiting for them to catch up'
+            );
             sleep(10);
+        }
+    }
+
+    /**
+     * copyToArchive clears its batch on the target before re-inserting, so an archive connection
+     * pointing back at the operational database would delete production rows outside any
+     * transaction. Same cluster and database and schema is always that mistake.
+     */
+    private function assertArchiveIsNotProduction(): void
+    {
+        if (!config('database.connections.archive.database')) {
+            throw new Exception('The archive connection is not configured; set the ARCHIVE_DB_* environment variables.');
+        }
+
+        $fingerprint = 'select current_database() as db, current_schema() as schema, system_identifier from pg_control_system()';
+
+        $live    = DB::selectOne($fingerprint);
+        $archive = DB::connection($this->archiveConnection)->selectOne($fingerprint);
+
+        if (
+            $live->system_identifier === $archive->system_identifier
+            && $live->db === $archive->db
+            && $live->schema === $archive->schema
+        ) {
+            throw new Exception(
+                'The archive connection resolves to the operational database itself '.
+                "({$live->db}.{$live->schema}); refusing to run."
+            );
         }
     }
 
@@ -259,6 +344,17 @@ class ArchiveDispatchedEmails
             $increments['number_clicked_emails']                      = ($increments['number_clicked_emails'] ?? 0) + $row->clicked;
         }
 
+        $prospectIncrements = [];
+        $prospectRows       = DB::table('prospect_has_dispatched_emails')
+            ->whereIn('dispatched_email_id', $dispatchedEmailIds)
+            ->selectRaw('prospect_id, count(*) as total')
+            ->groupBy('prospect_id')
+            ->get();
+        foreach ($prospectRows as $row) {
+            $prospectIncrements[$row->prospect_id] = ['number_dispatched_emails' => $row->total];
+        }
+
+        $this->applyIncrements(Prospect::class, 'id', $prospectIncrements);
         $this->applyIncrements(OutboxStats::class, 'outbox_id', $outboxIncrements);
         $this->applyIncrements(MailshotStats::class, 'mailshot_id', $mailshotIncrements);
         $this->applyIncrements(EmailBulkRunStats::class, 'email_bulk_run_id', $bulkRunIncrements);
@@ -270,7 +366,10 @@ class ArchiveDispatchedEmails
             return;
         }
 
-        foreach ($statsModel::whereIn($ownerColumn, array_keys($incrementsByOwner))->lockForUpdate()->get() as $stats) {
+        $owners = array_keys($incrementsByOwner);
+        sort($owners);
+
+        foreach ($statsModel::whereIn($ownerColumn, $owners)->orderBy($ownerColumn)->lockForUpdate()->get() as $stats) {
             $archived = $stats->archived_dispatched_emails ?? [];
             foreach ($incrementsByOwner[$stats->{$ownerColumn}] as $key => $increment) {
                 $archived[$key] = ($archived[$key] ?? 0) + $increment;

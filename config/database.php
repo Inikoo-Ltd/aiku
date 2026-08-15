@@ -120,6 +120,10 @@ return [
             'prefix_indexes' => true,
             'search_path'    => env('ARCHIVE_DB_SEARCH_PATH', 'public'),
             'sslmode'        => env('ARCHIVE_DB_SSLMODE', 'prefer'),
+            'connect_timeout' => env('ARCHIVE_DB_CONNECT_TIMEOUT', 3),
+            'options'         => [
+                PDO::ATTR_TIMEOUT => env('ARCHIVE_DB_CONNECT_TIMEOUT', 3),
+            ],
         ],
         'aurora'         => [
             'driver'         => 'mysql',
