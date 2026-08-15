@@ -10,6 +10,7 @@ namespace App\Actions\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRunStats;
 use App\Models\Comms\MailshotStats;
 use App\Models\Comms\OutboxStats;
+use App\Models\CRM\CustomerStats;
 use App\Models\CRM\Prospect;
 use Exception;
 use Illuminate\Console\Command;
@@ -354,10 +355,45 @@ class ArchiveDispatchedEmails
             $prospectIncrements[$row->prospect_id] = ['number_dispatched_emails' => $row->total];
         }
 
+        $this->bankCustomerArchivedEmails($dispatchedEmailIds);
+
         $this->applyIncrements(Prospect::class, 'id', $prospectIncrements);
         $this->applyIncrements(OutboxStats::class, 'outbox_id', $outboxIncrements);
         $this->applyIncrements(MailshotStats::class, 'mailshot_id', $mailshotIncrements);
         $this->applyIncrements(EmailBulkRunStats::class, 'email_bulk_run_id', $bulkRunIncrements);
+    }
+
+    /**
+     * Not a stats baseline: no customer counter is recounted from dispatched emails. This records
+     * what was moved so the customer email listing can offer the archived ones without reaching
+     * across to the archive server on every page load.
+     */
+    private function bankCustomerArchivedEmails(array $dispatchedEmailIds): void
+    {
+        $rows = DB::table('customer_has_dispatched_emails')
+            ->join('dispatched_emails', 'dispatched_emails.id', '=', 'customer_has_dispatched_emails.dispatched_email_id')
+            ->whereIn('dispatched_emails.id', $dispatchedEmailIds)
+            ->selectRaw('customer_id, count(*) as total, max(dispatched_emails.created_at) as latest')
+            ->groupBy('customer_id')
+            ->orderBy('customer_id')
+            ->get();
+
+        foreach ($rows as $row) {
+            $stats = CustomerStats::where('customer_id', $row->customer_id)->lockForUpdate()->first();
+
+            if (!$stats) {
+                continue;
+            }
+
+            $archived = $stats->archived_dispatched_emails ?? [];
+
+            $stats->update([
+                'archived_dispatched_emails' => [
+                    'number_dispatched_emails' => ($archived['number_dispatched_emails'] ?? 0) + $row->total,
+                    'last_dispatched_email_at' => max($archived['last_dispatched_email_at'] ?? '', (string) $row->latest),
+                ]
+            ]);
+        }
     }
 
     private function applyIncrements(string $statsModel, string $ownerColumn, array $incrementsByOwner): void

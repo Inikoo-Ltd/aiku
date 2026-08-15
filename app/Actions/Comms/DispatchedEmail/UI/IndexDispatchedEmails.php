@@ -17,6 +17,7 @@ use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Services\QueryBuilder;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -29,11 +30,16 @@ class IndexDispatchedEmails extends OrgAction
 
     public function handle(Mailshot|Outbox|Customer|Prospect $parent, $prefix = null): LengthAwarePaginator
     {
-        $connection = match (class_basename($parent)) {
-            'Mailshot' => $this->dispatchedEmailReadConnection('mailshot_has_dispatched_emails', ['mailshot_id' => $parent->id]),
-            'Customer' => $this->dispatchedEmailReadConnection('customer_has_dispatched_emails', ['customer_id' => $parent->id]),
-            'Prospect' => $this->dispatchedEmailReadConnection('prospect_has_dispatched_emails', ['prospect_id' => $parent->id]),
-            default    => null,
+        /*
+         * A customer collects emails over years, so its history straddles the retention window
+         * permanently and is never switched wholesale: the archived ones are summoned on request
+         * from the footer note instead, which keeps what is on screen unambiguous. A mailshot is a
+         * single send, so it is either entirely live or entirely archived.
+         */
+        $connection = match (true) {
+            request()->boolean('archived') && config('database.connections.archive.database') => 'archive',
+            $parent instanceof Mailshot => $this->dispatchedEmailReadConnection('mailshot_has_dispatched_emails', ['mailshot_id' => $parent->id]),
+            default => null,
         };
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -148,6 +154,38 @@ class IndexDispatchedEmails extends OrgAction
             ->withQueryString();
     }
 
+    /**
+     * A customer's older emails live on the archive server, so they are offered rather than mixed in:
+     * the counts come from what the archiver recorded when it moved them, which keeps the note free
+     * of any cross-server query.
+     */
+    private function addArchivedEmailsNote(InertiaTable $table, Customer $customer): void
+    {
+        if (request()->boolean('archived')) {
+            $table->withFooterNote(
+                __('Showing archived emails.'),
+                ['label' => __('Back to recent emails'), 'href' => request()->fullUrlWithoutQuery(['archived'])]
+            );
+
+            return;
+        }
+
+        $archived = $customer->stats?->archived_dispatched_emails;
+        $count    = $archived['number_dispatched_emails'] ?? 0;
+
+        if (!$count) {
+            return;
+        }
+
+        $table->withFooterNote(
+            __(':count emails before :date are archived.', [
+                'count' => number_format($count),
+                'date'  => Carbon::parse($archived['last_dispatched_email_at'])->format('j M Y'),
+            ]),
+            ['label' => '🧟 '.__('Summon them'), 'href' => request()->fullUrlWithQuery(['archived' => 1])]
+        );
+    }
+
     public function tableStructure($parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
@@ -187,6 +225,10 @@ class IndexDispatchedEmails extends OrgAction
             $table->column(key: 'number_reads', label: __('reads'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_clicks', label: __('clicks'), canBeHidden: false, sortable: true);
             $table->defaultSort('-sent_at');
+
+            if ($parent instanceof Customer) {
+                $this->addArchivedEmailsNote($table, $parent);
+            }
         };
     }
 }
