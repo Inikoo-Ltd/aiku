@@ -75,6 +75,7 @@ use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\UI\Grp\Layout\GetOrganisationNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
@@ -966,6 +967,32 @@ test('UI Index org suppliers', function () {
             ->has('title')
             ->has('breadcrumbs', 3);
     });
+});
+
+test('procurement navigation positions the shipping list and separates agent suppliers', function () {
+    $navigation = GetOrganisationNavigation::run($this->adminGuest->getUser(), $this->organisation);
+
+    expect(data_get($navigation, 'procurement.topMenu.subSections.2'))
+        ->toMatchArray([
+            'label' => "Agent's Shipping List",
+            'route' => [
+                'name'       => 'grp.org.procurement.shopping_list.index',
+                'parameters' => [$this->organisation->slug],
+            ],
+        ])
+        ->and(data_get($navigation, 'procurement.topMenu.subSections.3.route'))->toBe([
+            'name'       => 'grp.org.procurement.org_agent_suppliers.index',
+            'parameters' => [$this->organisation->slug],
+        ])
+        ->and(data_get($navigation, 'procurement.topMenu.subSections.4.route'))->toBe([
+            'name'       => 'grp.org.procurement.org_suppliers.index',
+            'parameters' => [
+                'organisation' => $this->organisation->slug,
+                '_query'       => [
+                    'sort' => 'code',
+                ],
+            ],
+        ]);
 });
 
 test('UI show org supplier', function () {
