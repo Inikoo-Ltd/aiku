@@ -26,6 +26,14 @@ const isSubSectionActive = (routeName: string) => {
 }
 
 const isLoading = ref<string | boolean>(false)
+
+const getTooltip = (subSection: SubSection) => {
+    if (!subSection.tooltip || subSection.tooltip === subSection.label) {
+        return undefined
+    }
+
+    return capitalize(subSection.tooltip)
+}
 </script>
 
 <template>
@@ -34,7 +42,7 @@ const isLoading = ref<string | boolean>(false)
             :is="subSection.route?.name ? Link : 'div'"
             :href="subSection.route?.name ? route(subSection.route.name, subSection.route.parameters) : '#'"
             class="group relative text-gray-700 group text-l font-bold flex justify-end items-center cursor-pointer py-3 gap-x-2 px-4 md:px-4 lg:px-4"
-            :class="[]" :title="capitalize(subSection.tooltip ?? subSection.label ?? '')"
+            :class="[]" :title="getTooltip(subSection)"
             
             @start="() => isLoading = 'subSection' + idxSubSec"
             @finish="() => isLoading = false"

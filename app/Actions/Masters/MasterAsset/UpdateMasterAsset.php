@@ -400,7 +400,7 @@ class UpdateMasterAsset extends OrgAction
                     if ($masterAsset->wasChanged('description_extra')) {
                         $dataToBeUpdated['description_extra']             = Translate::run($masterAsset->description_extra, $english, $shopLanguage, 'gpt-5-nano');
                         $dataToBeUpdated['is_description_extra_reviewed'] = false;
-                    }   
+                    }
                 }
 
                 if ($dataToBeUpdated) {

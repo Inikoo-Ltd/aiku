@@ -717,7 +717,7 @@ class EditProduct extends OrgAction
                         'composition' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
                             'type'         => 'button',
                             'noSaveButton' => true,
-                            'label'        => $tradeUnits->map(fn($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']) . ' × ' . $tradeUnit['code'])->implode(', '),
+                            'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']) . ' × ' . $tradeUnit['code'])->implode(', '),
                             'label_button' => __('Edit composition & packing'),
                             'icon'         => 'fal fa-atom',
                             'type_button'  => 'secondary',

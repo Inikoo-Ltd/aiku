@@ -61,7 +61,7 @@ class ShowOrgStock extends OrgAction
         }
 
         $organisation = $orgStock->orgStockFamily->organisation;
-        
+
         return [
             'label' => $orgStock->orgStockFamily->name,
             'route' => [
@@ -98,7 +98,7 @@ class ShowOrgStock extends OrgAction
                 'icon'    => ['fal', 'fa-boxes-alt']
             ];
         }
-        
+
         $miniBreadcrumbs[] = [
             'label'   => $orgStock->code,
             'to'      => null,

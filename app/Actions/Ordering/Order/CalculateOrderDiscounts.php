@@ -582,7 +582,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     }
 
                     if (
-                        Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity') || 
+                        Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity') ||
                         $this->transactions->contains(fn ($item) => ($item->family_id == $offerData->trigger_id) && $item->is_golden_product)
                     ) {
                         $enabledOffers[$offerData->allowance_signature] = [

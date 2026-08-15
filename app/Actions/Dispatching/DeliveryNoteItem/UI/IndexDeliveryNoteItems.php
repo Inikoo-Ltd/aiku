@@ -65,7 +65,7 @@ class IndexDeliveryNoteItems extends OrgAction
         } elseif ($stateFilter) {
             $query->whereRaw("$packedSoFar >= $pickedTotal");
         }
-        
+
         $query->where(function ($q) {
             $q->where('delivery_note_items.quantity_required', '>', 0)
                 ->orWhere('delivery_note_items.is_dirty', true);
