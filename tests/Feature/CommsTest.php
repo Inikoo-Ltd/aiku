@@ -3436,7 +3436,7 @@ describe('email retention', function () {
 
     test('process outbox time series records does not rebuild periods before the retention cutoff', function () {
         $outbox    = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
-        $archived  = now()->subDays(config('comms.email_retention_days') + 10)->startOfDay();
+        $archived  = now()->subDays(config('archive.email_retention_days') + 10)->startOfDay();
         $retained  = now()->subDay()->startOfDay();
 
         $timeSeries = $outbox->timeSeries()->firstOrCreate(['frequency' => TimeSeriesFrequencyEnum::DAILY], []);
@@ -3471,7 +3471,7 @@ describe('email retention', function () {
 
     test('process outbox time series records returns early when the whole window is before the cutoff', function () {
         $outbox   = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
-        $archived = now()->subDays(config('comms.email_retention_days') + 10)->startOfDay();
+        $archived = now()->subDays(config('archive.email_retention_days') + 10)->startOfDay();
 
         $timeSeries = $outbox->timeSeries()->firstOrCreate(['frequency' => TimeSeriesFrequencyEnum::DAILY], []);
         $timeSeries->records()->updateOrCreate(
@@ -3487,5 +3487,111 @@ describe('email retention', function () {
         );
 
         expect($timeSeries->records()->where('period', $archived->format('Y-m-d'))->value('dispatched_emails'))->toBe(500);
+    });
+
+    test('archiver moves old dispatched emails to the archive database and banks stats baselines', function () {
+        config()->set(
+            'database.connections.archive',
+            array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+        );
+        DB::purge('archive');
+        DB::statement('create schema if not exists archive');
+
+        $outbox   = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+        $mailshot = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+
+        $oldEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+            $mailshot,
+            $this->customer,
+            ['email_address' => 'archiver-old@example.com']
+        );
+        $freshEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+            $mailshot,
+            $this->customer,
+            ['email_address' => 'archiver-fresh@example.com']
+        );
+
+        $fullyArchivedMailshot = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+        $fullyArchivedEmail    = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+            $fullyArchivedMailshot,
+            $this->customer,
+            ['email_address' => 'archiver-only-old@example.com']
+        );
+
+        $oldDate = now()->subDays(config('archive.email_retention_days') + 30);
+        DB::table('dispatched_emails')->where('id', $fullyArchivedEmail->id)->update(['created_at' => $oldDate]);
+        DB::table('dispatched_emails')->where('id', $oldEmail->id)->update([
+            'created_at'   => $oldDate,
+            'sent_at'      => $oldDate,
+            'state'        => 'opened',
+            'number_reads' => 2,
+        ]);
+        DB::table('email_tracking_events')->insert([
+            'dispatched_email_id' => $oldEmail->id,
+            'type'                => 'open',
+            'data'                => '{}',
+            'created_at'          => $oldDate,
+        ]);
+
+        \App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails::run($mailshot->id);
+        expect($mailshot->stats->refresh()->number_dispatched_emails)->toBe(2);
+
+        $archivedCount = \App\Actions\Comms\DispatchedEmail\ArchiveDispatchedEmails::run();
+
+        expect($archivedCount)->toBeGreaterThanOrEqual(1)
+            ->and(DB::table('dispatched_emails')->where('id', $oldEmail->id)->exists())->toBeFalse()
+            ->and(DB::table('dispatched_emails')->where('id', $freshEmail->id)->exists())->toBeTrue()
+            ->and(DB::table('email_tracking_events')->where('dispatched_email_id', $oldEmail->id)->exists())->toBeFalse()
+            ->and(DB::table('mailshot_has_dispatched_emails')->where('dispatched_email_id', $oldEmail->id)->exists())->toBeFalse()
+            ->and(DB::connection('archive')->table('dispatched_emails')->where('id', $oldEmail->id)->exists())->toBeTrue()
+            ->and(DB::connection('archive')->table('email_tracking_events')->where('dispatched_email_id', $oldEmail->id)->count())->toBe(1)
+            ->and(DB::connection('archive')->table('mailshot_has_dispatched_emails')->where('dispatched_email_id', $oldEmail->id)->exists())->toBeTrue();
+
+        $mailshotBaseline = $mailshot->stats->refresh()->archived_dispatched_emails;
+        expect($mailshotBaseline['number_dispatched_emails'])->toBe(1)
+            ->and($mailshotBaseline['number_dispatched_emails_state_opened'])->toBe(1)
+            ->and($mailshotBaseline['number_delivered_open_success'])->toBe(1)
+            ->and($outbox->stats->refresh()->archived_dispatched_emails['number_dispatched_emails'])->toBe(2);
+
+        \App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails::run($mailshot->id);
+
+        expect($mailshot->stats->refresh()->number_dispatched_emails)->toBe(2)
+            ->and($mailshot->stats->number_dispatched_emails_state_opened)->toBe(1);
+
+        $reader = new class () {
+            use \App\Actions\Traits\WithDispatchedEmailArchiveRead;
+
+            public function connectionFor(int $mailshotId): ?string
+            {
+                return $this->dispatchedEmailReadConnection('mailshot_has_dispatched_emails', ['mailshot_id' => $mailshotId]);
+            }
+        };
+
+        expect($reader->connectionFor($mailshot->id))->toBeNull()
+            ->and($reader->connectionFor($fullyArchivedMailshot->id))->toBe('archive')
+            ->and(DB::connection('archive')->table('email_addresses')->where('email', 'archiver-only-old@example.com')->exists())->toBeTrue();
+
+        $resolvedFromArchive = (new \App\Models\Comms\DispatchedEmail())->resolveRouteBinding($fullyArchivedEmail->id);
+        $resolvedFromLive    = (new \App\Models\Comms\DispatchedEmail())->resolveRouteBinding($freshEmail->id);
+
+        expect($resolvedFromArchive)->not->toBeNull()
+            ->and($resolvedFromArchive->getConnectionName())->toBe('archive')
+            ->and($resolvedFromLive->getConnectionName())->not->toBe('archive');
+    });
+
+    test('archiver dry run counts but does not move anything', function () {
+        $outbox  = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+        $emailId = DB::table('dispatched_emails')->insertGetId([
+            'outbox_id'  => $outbox->id,
+            'state'      => 'sent',
+            'data'       => '{}',
+            'created_at' => now()->subDays(config('archive.email_retention_days') + 5),
+            'updated_at' => now(),
+        ]);
+
+        $wouldArchive = \App\Actions\Comms\DispatchedEmail\ArchiveDispatchedEmails::run(dryRun: true);
+
+        expect($wouldArchive)->toBeGreaterThanOrEqual(1)
+            ->and(DB::table('dispatched_emails')->where('id', $emailId)->exists())->toBeTrue();
     });
 });

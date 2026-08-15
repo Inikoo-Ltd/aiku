@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\DispatchedEmail\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithDispatchedEmailArchiveRead;
 use App\InertiaTable\InertiaTable;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Mailshot;
@@ -24,8 +25,17 @@ use App\Models\Ordering\Order;
 
 class IndexDispatchedEmails extends OrgAction
 {
+    use WithDispatchedEmailArchiveRead;
+
     public function handle(Mailshot|Outbox|Customer|Prospect $parent, $prefix = null): LengthAwarePaginator
     {
+        $connection = match (class_basename($parent)) {
+            'Mailshot' => $this->dispatchedEmailReadConnection('mailshot_has_dispatched_emails', ['mailshot_id' => $parent->id]),
+            'Customer' => $this->dispatchedEmailReadConnection('customer_has_dispatched_emails', ['customer_id' => $parent->id]),
+            'Prospect' => $this->dispatchedEmailReadConnection('prospect_has_dispatched_emails', ['prospect_id' => $parent->id]),
+            default    => null,
+        };
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->orWhereWith('email_addresses.email', $value);
@@ -36,7 +46,7 @@ class IndexDispatchedEmails extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(DispatchedEmail::class);
+        $queryBuilder = QueryBuilder::for(DispatchedEmail::on($connection));
         $queryBuilder->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id');
 
         switch (class_basename($parent)) {

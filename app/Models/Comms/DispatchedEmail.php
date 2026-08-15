@@ -68,6 +68,22 @@ class DispatchedEmail extends Model
 
     protected $guarded = [];
 
+    /**
+     * Emails older than the retention window are moved to the archive database, so a route that
+     * points at an archived email resolves it from there; the returned model keeps the archive
+     * connection, which downstream reads (tracking events, email copy) must follow.
+     */
+    public function resolveRouteBinding($value, $field = null): ?self
+    {
+        $dispatchedEmail = $this->where($field ?? $this->getRouteKeyName(), $value)->first();
+
+        if (!$dispatchedEmail && config('database.connections.archive.database')) {
+            $dispatchedEmail = $this->on('archive')->where($field ?? $this->getRouteKeyName(), $value)->first();
+        }
+
+        return $dispatchedEmail;
+    }
+
     public function emailAddress(): BelongsTo
     {
         return $this->belongsTo(EmailAddress::class);
