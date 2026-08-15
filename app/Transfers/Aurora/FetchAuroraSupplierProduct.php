@@ -123,7 +123,7 @@ class FetchAuroraSupplierProduct extends FetchAurora
             [
                 'code'                  => $supplierProductCode,
                 'name'                  => $name,
-                'cost'                  => round($this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0, 2),
+                'cost'                  => $this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0,
                 'units_per_pack'        => $auroraPartData->{'Part Units Per Package'},
                 'units_per_carton'      => $this->auroraModelData->{'Supplier Part Packages Per Carton'} * $auroraPartData->{'Part Units Per Package'},
                 'is_available'          => $isAvailable,
