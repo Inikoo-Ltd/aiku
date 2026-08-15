@@ -129,6 +129,24 @@ select (select count(*) from kids) as kids,
 
 `second_level_fks` must be 0.
 
+## Prerequisite: FK indexes on the cascade children
+
+Ten of the sixteen child tables reference `dispatched_emails` with `ON DELETE CASCADE` but had no
+index on `dispatched_email_id`, including `mailshot_has_dispatched_emails` (241M rows, 20 GB) and
+`customer_has_dispatched_emails` (238M rows, 12 GB). Postgres runs the cascade **once per deleted
+row**, so without those indexes each archived email costs a sequential scan of a 20 GB table — the
+first batch would never finish. Nothing noticed before because nothing ever deleted a dispatched
+email.
+
+Migration `2026_08_15_120000_add_dispatched_email_id_indexes_to_cascade_children` adds all ten with
+`CREATE INDEX CONCURRENTLY`. It must complete before the archiver runs. On production the two large
+ones take a while and need roughly 10-15 GB of free disk between them — check `df -h` first, and
+verify afterwards that no index came out `invalid` (a failed concurrent build leaves one behind):
+
+```sql
+select indexrelid::regclass from pg_index where not indisvalid;
+```
+
 ## Operational notes
 
 - The archived data is PII: customer email addresses, subjects and full bodies (`email_copies`).

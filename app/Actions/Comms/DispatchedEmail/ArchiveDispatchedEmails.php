@@ -40,6 +40,7 @@ class ArchiveDispatchedEmails
         $this->ensureArchiveTables($children);
 
         $archivedTotal = 0;
+        $lastId        = 0;
         while (true) {
             $batchSize = $limit ? min($chunkSize, $limit - $archivedTotal) : $chunkSize;
             if ($batchSize <= 0) {
@@ -48,8 +49,15 @@ class ArchiveDispatchedEmails
 
             $this->waitForReplication($command);
 
+            /*
+             * Resuming from the previous batch's highest id keeps every scan short: without it each
+             * batch restarts at the lowest id and re-reads the index entries of everything already
+             * deleted, which autovacuum only clears well behind a run of this size. Safe because the
+             * cutoff is fixed for the run and rows are taken in ascending id order.
+             */
             $dispatchedEmailIds = DB::table('dispatched_emails')
                 ->where('created_at', '<', $cutoff)
+                ->where('id', '>', $lastId)
                 ->orderBy('id')
                 ->limit($batchSize)
                 ->pluck('id')->all();
@@ -57,6 +65,8 @@ class ArchiveDispatchedEmails
             if (!$dispatchedEmailIds) {
                 break;
             }
+
+            $lastId = end($dispatchedEmailIds);
 
             $this->copyToArchive('dispatched_emails', 'id', $dispatchedEmailIds);
             foreach ($children as $child) {
@@ -75,7 +85,7 @@ class ArchiveDispatchedEmails
             });
 
             $archivedTotal += count($dispatchedEmailIds);
-            $command?->info("Archived $archivedTotal dispatched emails (up to id ".end($dispatchedEmailIds).')');
+            $command?->info("Archived $archivedTotal dispatched emails (up to id $lastId)");
         }
 
         return $archivedTotal;
