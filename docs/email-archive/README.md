@@ -173,6 +173,31 @@ check for them yourself afterwards:
 select indexrelid::regclass from pg_index where not indisvalid;
 ```
 
+## Indexes the archiver depends on
+
+Two indexes must exist on production before any sizeable run, and both are large enough that they
+must be built manually rather than left to the deploy's `migrate` step:
+
+- `dispatched_emails (created_at, id)` — the batch selection walks rows oldest first and uses this
+  pair as its resume cursor. Without it nothing covers `created_at`, so the planner walks the
+  primary key and reads every candidate row from disk to test its date. Measured on production at
+  24 seconds per batch and degrading as eligible rows thin out; with roughly 20,000 batches in the
+  full window that alone is the difference between hours and a week. Built in ~4 minutes, 7.4 GB.
+- `dispatched_email_id` on the ten cascade children (see above).
+
+## Measured behaviour
+
+From the 15 August 2026 runs, 96,101 emails archived in total:
+
+- Throughput was 220-330 emails/second at `--chunk=5000`, i.e. roughly 20 seconds per batch.
+- Batches heavy in `email_copies` are slower, and during those **both databases sit idle while PHP
+  burns CPU** marshalling rows into arrays and building 500-row inserts. If that becomes the limit
+  at millions of rows, the fix is streaming via Postgres `COPY` rather than a larger `--chunk`,
+  which only amortises per-batch round trips.
+- Replication never fell behind: WAL retained by helio stayed at 0 MB throughout and the gate never
+  engaged.
+- Memory was flat across batches (RSS ~320 MB), so nothing accumulates over a long run.
+
 ## Operational notes
 
 - The archived data is PII: customer email addresses, subjects and full bodies (`email_copies`).
