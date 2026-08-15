@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
+use App\Actions\Ordering\Order\CancelOrdersInClosedShop;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
@@ -587,6 +588,7 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($changes, 'state') && $shop->state == ShopStateEnum::CLOSED) {
             DiscontinueProductsInClosedShop::dispatch($shop)->delay($this->hydratorsDelay);
+            CancelOrdersInClosedShop::dispatch($shop)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny($changes, ['master_shop_id'])) {
