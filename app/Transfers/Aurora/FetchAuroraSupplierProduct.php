@@ -56,8 +56,10 @@ class FetchAuroraSupplierProduct extends FetchAurora
         $tradeUnit = $this->parseTradeUnit($tradeUnitSlug, $auroraPartData->{'Part SKU'});
 
         if (!$tradeUnit) {
-            print "NO TRADE UNIT WTF";
-            dd($this->auroraModelData);
+            print "Skipped supplier part ".$this->auroraModelData->{'Supplier Part Reference'}." (".$this->auroraModelData->{'Supplier Part Key'}."): no trade unit for part SKU ".$this->auroraModelData->{'Supplier Part Part SKU'}."\n";
+            $this->parsedData = null;
+
+            return;
         }
 
         $this->parsedData['trade_unit'] = $tradeUnit;
