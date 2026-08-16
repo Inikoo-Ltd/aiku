@@ -42,12 +42,12 @@ class ParseCategoryHistory
         };
     }
 
-    public static function extractValues(object $row, string $event, ?string $field, string $auditableType): array
+    public static function extractValues(object $row, string $event, ?string $field, ?string $auditableType = null): array
     {
         if ($event === 'created') {
             return match ($auditableType) {
-                'ProductCategory' => self::extractCategoryOrFamilyOrDepartmentCreatedValues($row),
-                default           => ['old_values' => [], 'new_values' => [], 'data' => []],
+                'ProductCategory', null => self::extractCategoryOrFamilyOrDepartmentCreatedValues($row),
+                default => ['old_values' => [], 'new_values' => [], 'data' => []],
             };
         }
 
