@@ -237,6 +237,7 @@ class FetchAuroraAction extends FetchAction
                 'Supplier' => ['Supplier'],
                 'Agent' => ['Agent'],
                 'Charge' => ['Charge'],
+                'CustomerClient' => ['Customer Client'],
                 default => null
             };
 
