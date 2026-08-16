@@ -110,7 +110,7 @@ class ParsePartHistory
         }
 
         if (self::matchMainSupplier(self::abstract($row)) !== null) {
-            return ['handling' => 'import', 'event' => 'updated', 'field' => 'main_supplier', 'auditable_type' => 'SupplierProduct'];
+            return ['handling' => 'import', 'event' => 'updated', 'field' => 'main_supplier', 'auditable_type' => 'TradeUnit'];
         }
 
         return self::skip();
@@ -135,7 +135,7 @@ class ParsePartHistory
 
         if ($indirectObject === null || $indirectObject === '') {
             if (self::matchMainSupplier($abstract) !== null) {
-                return ['handling' => 'import', 'event' => 'updated', 'field' => 'main_supplier', 'auditable_type' => 'SupplierProduct'];
+                return ['handling' => 'import', 'event' => 'updated', 'field' => 'main_supplier', 'auditable_type' => 'TradeUnit'];
             }
 
             if (self::extractBarcodeDigits($abstract) !== null) {
@@ -346,7 +346,8 @@ class ParsePartHistory
             $data['negative_margin'] = true;
         }
 
-        $numeric = str_replace(',', '', $value);
+        $numeric = preg_replace('/margin\s+-?[\d.]+%/', '', $value);
+        $numeric = str_replace(',', '', $numeric);
         if (preg_match('/([\d]+(?:\.\d+)?)/', $numeric, $matches)) {
             $value = $matches[1];
         }

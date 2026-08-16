@@ -72,13 +72,13 @@ class HistoryValueExtractor
 
         $rows = [];
 
-        if (preg_match_all('/<tr>\s*<td[^>]*>(.*?)<\/td>\s*<td[^>]*>(.*?)<\/td>\s*<\/tr>/is', $details, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all('/<tr>\s*<td[^>]*>(.*?)<\/td>\s*<td[^>]*>(.*?)<\/td>\s*<\/tr>\s*(?=<tr|<\/table|$)/is', $details, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $rows[] = [$match[1], $match[2]];
             }
         }
 
-        if (preg_match_all('/<div class="field tr">\s*<div>(.*?)<\/div>\s*<div>(.*?)<\/div>\s*<\/div>/is', $details, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all('/<div class="field tr">\s*<div>(.*?)<\/div>\s*<div>(.*?)<\/div>\s*<\/div>\s*(?=<div class="field tr"|<\/div>|$)/is', $details, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $rows[] = [$match[1], $match[2]];
             }

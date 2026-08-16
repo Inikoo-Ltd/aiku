@@ -71,7 +71,7 @@ class ParseCustomerHistory
     {
         $abstract = trim((string) ($row->{'History Abstract'} ?? ''));
 
-        if ($abstract === 'Customer Created') {
+        if (in_array($abstract, ['Customer Created', 'Compte Client Créé'], true)) {
             return ['handling' => 'import', 'event' => 'created', 'field' => null];
         }
 
@@ -138,7 +138,16 @@ class ParseCustomerHistory
     {
         $abstract = trim((string) ($row->{'History Abstract'} ?? ''));
 
-        if ($abstract === 'Customer Created') {
+        if (in_array($abstract, ['Customer Created', 'Compte Client Créé'], true)) {
+            $details = trim((string) ($row->{'History Details'} ?? ''));
+            foreach (self::CREATED_PATTERNS as $pattern) {
+                if ($details !== '' && preg_match($pattern, $details, $matches)) {
+                    $name = trim($matches[1]);
+
+                    return ['old_values' => [], 'new_values' => $name === '' ? [] : ['name' => $name], 'data' => []];
+                }
+            }
+
             return ['old_values' => [], 'new_values' => [], 'data' => ['name_unavailable' => true]];
         }
 

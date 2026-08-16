@@ -281,7 +281,8 @@ class ParseProductHistory
             $data['negative_margin'] = true;
         }
 
-        $numeric = str_replace(',', '', $value);
+        $numeric = preg_replace('/margin\s+-?[\d.]+%/', '', $value);
+        $numeric = str_replace(',', '', $numeric);
         if (preg_match('/([\d]+(?:\.\d+)?)/', $numeric, $matches)) {
             $value = $matches[1];
         }

@@ -69,7 +69,7 @@ it('routes main supplier set to SupplierProduct', function () {
         'History Abstract' => 'Part main supplier set to SUP01 (Acme Ltd)',
     ]);
 
-    expect(ParsePartHistory::classify($row))->toBe(['handling' => 'import', 'event' => 'updated', 'field' => 'main_supplier', 'auditable_type' => 'SupplierProduct']);
+    expect(ParsePartHistory::classify($row))->toBe(['handling' => 'import', 'event' => 'updated', 'field' => 'main_supplier', 'auditable_type' => 'TradeUnit']);
 
     $values = ParsePartHistory::extractValues($row, 'updated', 'main_supplier');
     expect($values['new_values'])->toBe(['main_supplier' => 'SUP01']);

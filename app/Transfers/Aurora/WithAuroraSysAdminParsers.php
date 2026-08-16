@@ -48,6 +48,20 @@ trait WithAuroraSysAdminParsers
 
     protected function parseUserFromHistory(): User|WebUser|null
     {
+        static $resolvedHistoryUsers = [];
+
+        $cacheKey = $this->organisation->id.'|'.$this->auroraModelData->{'Subject'}.'|'.$this->auroraModelData->{'Subject Key'}.'|'.($this->auroraModelData->{'User Key'} ?? '');
+        if (array_key_exists($cacheKey, $resolvedHistoryUsers)) {
+            return $resolvedHistoryUsers[$cacheKey];
+        }
+
+        $resolvedHistoryUsers[$cacheKey] = $this->resolveUserFromHistory();
+
+        return $resolvedHistoryUsers[$cacheKey];
+    }
+
+    protected function resolveUserFromHistory(): User|WebUser|null
+    {
         $user = null;
 
         if ($this->auroraModelData->{'Subject'} == 'Staff' and $this->auroraModelData->{'Subject Key'} > 0) {

@@ -39,7 +39,7 @@ use Illuminate\Support\Str;
 
 class FetchAuroraHistory extends FetchAurora
 {
-    protected const array PARSERS = [
+    public const array PARSERS = [
         'Customer' => ParseCustomerHistory::class,
         'Prospect' => ParseProspectHistory::class,
         'Product' => ParseProductHistory::class,
@@ -95,7 +95,7 @@ class FetchAuroraHistory extends FetchAurora
         }
 
         $event  = $classification['event'];
-        $values = $parser::extractValues($this->auroraModelData, $event, $classification['field']);
+        $values = $parser::extractValues($this->auroraModelData, $event, $classification['field'], $classification['auditable_type'] ?? null);
 
         if ($event == 'updated' && count($values['old_values']) == 0 && count($values['new_values']) == 0) {
             $this->markSkippedInAurora();
@@ -110,6 +110,10 @@ class FetchAuroraHistory extends FetchAurora
                 data_set($data, 'upload_id', $upload->id);
             }
             unset($data['upload_source_id']);
+        }
+
+        if (!($auditable->organisation_id ?? null)) {
+            data_set($data, 'source_organisation', $this->organisation->slug);
         }
 
         $user = $this->parseUserFromHistory();
@@ -186,9 +190,7 @@ class FetchAuroraHistory extends FetchAurora
         return match ($auditableType) {
             'TradeUnit' => TradeUnit::withTrashed()->where('source_id', $key)->first(),
             'OrgStock' => $this->parseOrgStock($key),
-            'SupplierProduct' => $directObject == 'Part'
-                ? TradeUnit::withTrashed()->where('source_id', $key)->first()
-                : $this->parseSupplierProduct($key),
+            'SupplierProduct' => $this->parseSupplierProduct($key),
             'ProductCategory' => match ($directObject) {
                 'Family' => $this->parseFamily($key),
                 'Department' => $this->parseDepartment($key),
@@ -249,12 +251,29 @@ class FetchAuroraHistory extends FetchAurora
         return null;
     }
 
+    protected static array $skippedBuffer = [];
+
     protected function markSkippedInAurora(): void
     {
+        self::$skippedBuffer[] = $this->auroraModelData->{'History Key'};
+
+        if (count(self::$skippedBuffer) >= 1000) {
+            self::flushSkipped();
+        }
+    }
+
+    public static function flushSkipped(): void
+    {
+        if (count(self::$skippedBuffer) == 0) {
+            return;
+        }
+
         DB::connection('aurora')
             ->table('History Dimension')
-            ->where('History Key', $this->auroraModelData->{'History Key'})
+            ->whereIn('History Key', self::$skippedBuffer)
             ->update(['aiku_id' => 0]);
+
+        self::$skippedBuffer = [];
     }
 
     protected function fetchData($id): object|null

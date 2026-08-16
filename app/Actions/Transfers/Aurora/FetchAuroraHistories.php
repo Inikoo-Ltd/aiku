@@ -13,8 +13,10 @@ use App\Actions\Helpers\History\UpdateHistory;
 use App\Models\Helpers\History;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\WarehouseArea;
+use App\Transfers\Aurora\FetchAuroraHistory;
 use App\Transfers\SourceOrganisationService;
 use Exception;
+use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -71,7 +73,7 @@ class FetchAuroraHistories extends FetchAuroraAction
     }
 
 
-    protected function updateModelCreatedAt($history): void
+    protected function updateModelCreatedAt(History $history): void
     {
         if ($history->event == 'created') {
             if ($history->auditable_type == 'Location') {
@@ -94,41 +96,17 @@ class FetchAuroraHistories extends FetchAuroraAction
             return $this->model;
         }
 
-        return [
-            'Customer',
-            'Location',
-            'Product',
-            'Warehouse Area',
-            'Prospect',
-            'Order',
-            'Delivery Note',
-            'Invoice',
-            'Purchase Order',
-            'Agent Supplier Purchase Order',
-            'Supplier Delivery',
-            'Part',
-            'Supplier Part',
-            'Barcode',
-            'Category',
-            'Family',
-            'Department',
-            'Staff',
-            'User',
-            'Website User',
-            'Email Campaign',
-            'Deal Campaign',
-            'Deal',
-            'Deal Component',
-            'Shipping Zone',
-            'Shipping Zone Schema',
-            'Supplier',
-            'Agent',
-        ];
+        return array_keys(FetchAuroraHistory::PARSERS);
+    }
+
+    public function fetchAll(SourceOrganisationService $organisationSource, ?Command $command = null): void
+    {
+        parent::fetchAll($organisationSource, $command);
+        FetchAuroraHistory::flushSkipped();
     }
 
     public function getModelsQuery(): Builder
     {
-        //enum('sold_since','last_sold','first_sold','placed','wrote','deleted','edited','cancelled','charged','merged','created','associated','disassociate','register','login','logout','fail_login','password_request','password_reset','search')
         $query = DB::connection('aurora')->table('History Dimension');
         $query = $this->commonSelectModelsToFetch($query);
 
@@ -147,7 +125,7 @@ class FetchAuroraHistories extends FetchAuroraAction
         return $query->count();
     }
 
-    public function commonSelectModelsToFetch($query)
+    public function commonSelectModelsToFetch(Builder $query): Builder
     {
         $query->whereIn('Direct Object', $this->getHistoryModels())
             ->whereIn('Action', ['edited', 'created', 'edit', 'merged', 'deleted', 'associated', 'disassociate', '']);
