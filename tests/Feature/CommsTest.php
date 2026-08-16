@@ -3668,6 +3668,47 @@ describe('email retention', function () {
             ->and(DB::connection('archive')->table('dispatched_emails')->where('id', $emailId)->exists())->toBeTrue();
     });
 
+    test('archiver tolerates an email address another worker already archived', function () {
+        config()->set(
+            'database.connections.archive',
+            array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+        );
+        DB::purge('archive');
+        DB::statement('create schema if not exists archive');
+
+        $outbox   = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+        $mailshot = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+
+        $email = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+            $mailshot,
+            $this->customer,
+            ['email_address' => 'shared-across-workers@example.com']
+        );
+        DB::table('dispatched_emails')->where('id', $email->id)
+            ->update(['created_at' => now()->subDays(config('archive.email_retention_days') + 40)]);
+
+        $addressId = DB::table('dispatched_emails')->where('id', $email->id)->value('email_address_id');
+
+        \App\Actions\Comms\DispatchedEmail\ArchiveDispatchedEmails::run(limit: 1);
+
+        expect(DB::connection('archive')->table('email_addresses')->where('id', $addressId)->exists())->toBeTrue();
+
+        // A second worker meets the same address again: it must not clear it, duplicate it, or fail.
+        $second = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+            $mailshot,
+            $this->customer,
+            ['email_address' => 'shared-across-workers@example.com']
+        );
+        DB::table('dispatched_emails')->where('id', $second->id)
+            ->update(['created_at' => now()->subDays(config('archive.email_retention_days') + 39)]);
+
+        \App\Actions\Comms\DispatchedEmail\ArchiveDispatchedEmails::run(limit: 1);
+
+        expect(DB::table('dispatched_emails')->where('id', $second->id)->exists())->toBeFalse()
+            ->and(DB::connection('archive')->table('dispatched_emails')->where('id', $second->id)->exists())->toBeTrue()
+            ->and(DB::connection('archive')->table('email_addresses')->where('id', $addressId)->count())->toBe(1);
+    });
+
     test('archiver dry run counts but does not move anything', function () {
         $outbox  = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
         $emailId = DB::table('dispatched_emails')->insertGetId([

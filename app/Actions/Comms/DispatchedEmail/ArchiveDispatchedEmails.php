@@ -285,8 +285,44 @@ class ArchiveDispatchedEmails
             ->distinct()
             ->pluck('email_address_id')->all();
 
-        if ($emailAddressIds) {
-            $this->copyToArchive('email_addresses', 'id', $emailAddressIds);
+        if (!$emailAddressIds) {
+            return;
+        }
+
+        /*
+         * Unlike everything else here this table is shared: workers split on dispatched emails cover
+         * disjoint rows there but heavily overlapping addresses, since one person is written to over
+         * many years. So it is never cleared and never rewritten — only the missing rows are added,
+         * tolerating another worker inserting the same one at the same moment. Verification asks
+         * whether every referenced address is present rather than comparing counts, which two
+         * workers touching the same rows can never agree on.
+         */
+        $archive = DB::connection($this->archiveConnection);
+
+        $missing = array_values(array_diff(
+            $emailAddressIds,
+            $archive->table('email_addresses')->whereIn('id', $emailAddressIds)->pluck('id')->all()
+        ));
+
+        if ($missing) {
+            $buffer = [];
+            foreach (DB::table('email_addresses')->whereIn('id', $missing)->cursor() as $row) {
+                $buffer[] = (array) $row;
+                if (count($buffer) >= 500) {
+                    $archive->table('email_addresses')->insertOrIgnore($buffer);
+                    $buffer = [];
+                }
+            }
+            if ($buffer) {
+                $archive->table('email_addresses')->insertOrIgnore($buffer);
+            }
+        }
+
+        $present = $archive->table('email_addresses')->whereIn('id', $emailAddressIds)->count();
+        if ($present !== count($emailAddressIds)) {
+            throw new Exception(
+                'Archive is missing '.(count($emailAddressIds) - $present).' of '.count($emailAddressIds).' referenced email addresses'
+            );
         }
     }
 
