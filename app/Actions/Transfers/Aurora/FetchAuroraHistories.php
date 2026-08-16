@@ -94,7 +94,37 @@ class FetchAuroraHistories extends FetchAuroraAction
             return $this->model;
         }
 
-        return ['Customer', 'Location', 'Product', 'WarehouseArea', 'Prospect'];
+        return [
+            'Customer',
+            'Location',
+            'Product',
+            'Warehouse Area',
+            'Prospect',
+            'Order',
+            'Delivery Note',
+            'Invoice',
+            'Purchase Order',
+            'Agent Supplier Purchase Order',
+            'Supplier Delivery',
+            'Part',
+            'Supplier Part',
+            'Barcode',
+            'Category',
+            'Family',
+            'Department',
+            'Staff',
+            'User',
+            'Website User',
+            'Email Campaign',
+            'Email Template',
+            'Deal Campaign',
+            'Deal',
+            'Deal Component',
+            'Shipping Zone',
+            'Shipping Zone Schema',
+            'Supplier',
+            'Agent',
+        ];
     }
 
     public function getModelsQuery(): Builder
@@ -121,7 +151,7 @@ class FetchAuroraHistories extends FetchAuroraAction
     public function commonSelectModelsToFetch($query)
     {
         $query->whereIn('Direct Object', $this->getHistoryModels())
-            ->whereIn('Action', ['edited', 'created', 'edit', 'merged']);
+            ->whereIn('Action', ['edited', 'created', 'edit', 'merged', 'deleted', 'associated', 'disassociate', '']);
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
         }

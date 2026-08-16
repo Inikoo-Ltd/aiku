@@ -8,16 +8,34 @@
 
 namespace App\Transfers\Aurora;
 
-use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
-use App\Models\CRM\Prospect;
-use App\Models\Inventory\Location;
-use App\Models\Inventory\WarehouseArea;
+use App\Models\Goods\StockFamily;
+use App\Models\Goods\TradeUnit;
+use App\Models\GoodsIn\StockDelivery;
+use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgSupplier;
+use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Transfers\Aurora\History\Parsers\ParseBarcodeHistory;
+use App\Transfers\Aurora\History\Parsers\ParseCategoryHistory;
 use App\Transfers\Aurora\History\Parsers\ParseCustomerHistory;
+use App\Transfers\Aurora\History\Parsers\ParseDealHistory;
+use App\Transfers\Aurora\History\Parsers\ParseDeliveryNoteHistory;
+use App\Transfers\Aurora\History\Parsers\ParseInvoiceHistory;
 use App\Transfers\Aurora\History\Parsers\ParseLocationHistory;
+use App\Transfers\Aurora\History\Parsers\ParseMarketingHistory;
+use App\Transfers\Aurora\History\Parsers\ParseOrderHistory;
+use App\Transfers\Aurora\History\Parsers\ParsePartHistory;
 use App\Transfers\Aurora\History\Parsers\ParseProductHistory;
 use App\Transfers\Aurora\History\Parsers\ParseProspectHistory;
+use App\Transfers\Aurora\History\Parsers\ParsePurchaseOrderHistory;
+use App\Transfers\Aurora\History\Parsers\ParseShippingZoneHistory;
+use App\Transfers\Aurora\History\Parsers\ParseStaffUserHistory;
+use App\Transfers\Aurora\History\Parsers\ParseSupplierAgentHistory;
+use App\Transfers\Aurora\History\Parsers\ParseSupplierDeliveryHistory;
+use App\Transfers\Aurora\History\Parsers\ParseSupplierPartHistory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class FetchAuroraHistory extends FetchAurora
 {
@@ -27,13 +45,42 @@ class FetchAuroraHistory extends FetchAurora
         'Product' => ParseProductHistory::class,
         'Location' => ParseLocationHistory::class,
         'Warehouse Area' => ParseLocationHistory::class,
+        'Order' => ParseOrderHistory::class,
+        'Delivery Note' => ParseDeliveryNoteHistory::class,
+        'Invoice' => ParseInvoiceHistory::class,
+        'Purchase Order' => ParsePurchaseOrderHistory::class,
+        'Agent Supplier Purchase Order' => ParsePurchaseOrderHistory::class,
+        'Supplier Delivery' => ParseSupplierDeliveryHistory::class,
+        'Part' => ParsePartHistory::class,
+        'Supplier Part' => ParseSupplierPartHistory::class,
+        'Barcode' => ParseBarcodeHistory::class,
+        'Category' => ParseCategoryHistory::class,
+        'Family' => ParseCategoryHistory::class,
+        'Department' => ParseCategoryHistory::class,
+        'Staff' => ParseStaffUserHistory::class,
+        'User' => ParseStaffUserHistory::class,
+        'Website User' => ParseStaffUserHistory::class,
+        'Email Campaign' => ParseMarketingHistory::class,
+        'Email Template' => ParseMarketingHistory::class,
+        'Deal Campaign' => ParseMarketingHistory::class,
+        'Deal' => ParseDealHistory::class,
+        'Deal Component' => ParseDealHistory::class,
+        'Shipping Zone' => ParseShippingZoneHistory::class,
+        'Shipping Zone Schema' => ParseShippingZoneHistory::class,
+        'Supplier' => ParseSupplierAgentHistory::class,
+        'Agent' => ParseSupplierAgentHistory::class,
     ];
 
     protected function parseModel(): void
     {
-        $parser = self::PARSERS[$this->auroraModelData->{'Direct Object'}] ?? null;
+        $directObject = (string) $this->auroraModelData->{'Direct Object'};
+        $parser       = self::PARSERS[$directObject] ?? null;
         if (!$parser) {
             return;
+        }
+
+        if ($directObject == 'Category') {
+            $this->enrichCategoryRow();
         }
 
         $classification = $parser::classify($this->auroraModelData);
@@ -43,7 +90,7 @@ class FetchAuroraHistory extends FetchAurora
             return;
         }
 
-        $auditable = $this->parseAuditableFromHistory();
+        $auditable = $this->resolveAuditable($directObject, $classification['auditable_type'] ?? null);
         if (!$auditable) {
             return;
         }
@@ -75,7 +122,7 @@ class FetchAuroraHistory extends FetchAurora
             'fetched_at'      => now(),
             'last_fetched_at' => now(),
             'event'           => $event,
-            'tags'            => $auditable->generateTags(),
+            'tags'            => $this->auditableTags($auditable),
             'new_values'      => $values['new_values'],
             'old_values'      => $values['old_values'],
             'data'            => $data,
@@ -85,6 +132,110 @@ class FetchAuroraHistory extends FetchAurora
             $this->parsedData['history']['user_type'] = class_basename($user);
             $this->parsedData['history']['user_id']   = $user->id;
         }
+    }
+
+    protected function auditableTags(Model $auditable): array
+    {
+        if (method_exists($auditable, 'generateTags')) {
+            $tags = $auditable->generateTags();
+            if (count($tags) > 0) {
+                return $tags;
+            }
+        }
+
+        return [Str::kebab(class_basename($auditable))];
+    }
+
+    protected function enrichCategoryRow(): void
+    {
+        $category = DB::connection('aurora')
+            ->table('Category Dimension')
+            ->where('Category Key', $this->auroraModelData->{'Direct Object Key'})
+            ->first();
+
+        $this->auroraModelData->aikuCategoryScope   = $category?->{'Category Scope'};
+        $this->auroraModelData->aikuCategorySubject = $category?->{'Category Subject'};
+    }
+
+    protected function resolveAuditable(string $directObject, ?string $auditableType): ?Model
+    {
+        $key = $this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'};
+
+        if ($auditableType) {
+            return $this->resolveByAuditableType($directObject, $auditableType, $key);
+        }
+
+        return match ($directObject) {
+            'Customer' => $this->parseCustomer($key),
+            'Prospect' => $this->parseProspect($key),
+            'Product' => $this->parseProduct($key),
+            'Location' => $this->parseLocation($key, $this->organisationSource),
+            'Warehouse Area' => $this->parseWarehouseArea($key),
+            'Order' => $this->parseOrder($key),
+            'Delivery Note' => $this->parseDeliveryNote($key),
+            'Invoice' => $this->parseInvoice($key),
+            'Purchase Order' => PurchaseOrder::where('source_id', $key)->first(),
+            'Agent Supplier Purchase Order' => AgentSupplierPurchaseOrder::where('source_id', $key)->first(),
+            'Supplier Delivery' => StockDelivery::where('source_id', $key)->first(),
+            'Barcode' => $this->parseBarcode($key),
+            default => null,
+        };
+    }
+
+    protected function resolveByAuditableType(string $directObject, string $auditableType, string $key): ?Model
+    {
+        return match ($auditableType) {
+            'TradeUnit' => TradeUnit::withTrashed()->where('source_id', $key)->first(),
+            'OrgStock' => $this->parseOrgStock($key),
+            'SupplierProduct' => $directObject == 'Part'
+                ? TradeUnit::withTrashed()->where('source_id', $key)->first()
+                : $this->parseSupplierProduct($key),
+            'ProductCategory' => match ($directObject) {
+                'Family' => $this->parseFamily($key),
+                'Department' => $this->parseDepartment($key),
+                default => $this->parseFamily($key) ?? $this->parseDepartment($key) ?? $this->parseCollection($key),
+            },
+            'StockFamily' => StockFamily::withTrashed()->where('source_id', $key)->first(),
+            'Employee' => $this->parseEmployee($key),
+            'User' => $this->parseUser($key),
+            'WebUser' => $this->parseWebUser($key),
+            'Mailshot' => $this->parseMailshot($key),
+            'EmailTemplate' => \App\Models\Comms\EmailTemplate::where('source_id', $key)->first(),
+            'OfferCampaign' => $this->parseOfferCampaign($key),
+            'Offer' => $this->parseOffer($key),
+            'OfferComponent' => $this->parseOfferAllowance($key),
+            'ShippingZone' => $this->parseShippingZone($key),
+            'ShippingZoneSchema' => $this->parseShippingZoneSchema($key),
+            'Supplier' => $this->parseSupplier($key),
+            'Agent' => $this->parseAgent($key),
+            'OrgSupplier' => $this->resolveOrgSupplier($key),
+            'OrgAgent' => $this->resolveOrgAgent($key),
+            default => null,
+        };
+    }
+
+    protected function resolveOrgSupplier(string $key): ?OrgSupplier
+    {
+        $supplier = $this->parseSupplier($key);
+        if (!$supplier) {
+            return null;
+        }
+
+        return OrgSupplier::where('supplier_id', $supplier->id)
+            ->where('organisation_id', $this->organisation->id)
+            ->first();
+    }
+
+    protected function resolveOrgAgent(string $key): ?OrgAgent
+    {
+        $agent = $this->parseAgent($key);
+        if (!$agent) {
+            return null;
+        }
+
+        return OrgAgent::where('agent_id', $agent->id)
+            ->where('organisation_id', $this->organisation->id)
+            ->first();
     }
 
     protected function getUploadSourceId(array $data): ?int
@@ -113,17 +264,5 @@ class FetchAuroraHistory extends FetchAurora
         return DB::connection('aurora')
             ->table('History Dimension')
             ->where('History Key', $id)->first();
-    }
-
-    protected function parseAuditableFromHistory(): Customer|Location|Product|WarehouseArea|Prospect|null
-    {
-        return match ($this->auroraModelData->{'Direct Object'}) {
-            'Customer' => $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}),
-            'Location' => $this->parseLocation($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}, $this->organisationSource),
-            'Product' => $this->parseProduct($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}),
-            'Warehouse Area' => $this->parseWarehouseArea($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}),
-            'Prospect' => $this->parseProspect($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}),
-            default => null,
-        };
     }
 }

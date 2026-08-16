@@ -219,6 +219,23 @@ class FetchAuroraAction extends FetchAction
                 'Location' => ['Location'],
                 'Product' => ['Product'],
                 'WarehouseArea' => ['Warehouse Area'],
+                'Order' => ['Order'],
+                'DeliveryNote' => ['Delivery Note'],
+                'Invoice' => ['Invoice'],
+                'PurchaseOrder' => ['Purchase Order', 'Agent Supplier Purchase Order'],
+                'SupplierDelivery' => ['Supplier Delivery'],
+                'Part' => ['Part'],
+                'SupplierPart' => ['Supplier Part'],
+                'Barcode' => ['Barcode'],
+                'Category' => ['Category', 'Family', 'Department'],
+                'Staff' => ['Staff'],
+                'User' => ['User'],
+                'WebsiteUser' => ['Website User'],
+                'Marketing' => ['Email Campaign', 'Email Template', 'Deal Campaign'],
+                'Deal' => ['Deal', 'Deal Component'],
+                'ShippingZone' => ['Shipping Zone', 'Shipping Zone Schema'],
+                'Supplier' => ['Supplier'],
+                'Agent' => ['Agent'],
                 default => null
             };
 
