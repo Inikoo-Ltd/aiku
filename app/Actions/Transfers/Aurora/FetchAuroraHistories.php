@@ -127,7 +127,15 @@ class FetchAuroraHistories extends FetchAuroraAction
 
     public function commonSelectModelsToFetch(Builder $query): Builder
     {
-        $query->whereIn('Direct Object', $this->getHistoryModels())
+        $models       = $this->getHistoryModels();
+        $sweepBlanks  = !$this->model;
+        $query->where(function (Builder $query) use ($models, $sweepBlanks) {
+            $query->whereIn('Direct Object', $models);
+            if ($sweepBlanks) {
+                $query->orWhere('Direct Object', '')
+                    ->orWhereNull('Direct Object');
+            }
+        })
             ->whereIn('Action', ['edited', 'created', 'edit', 'merged', 'deleted', 'associated', 'disassociate', '']);
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');

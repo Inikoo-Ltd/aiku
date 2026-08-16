@@ -74,10 +74,30 @@ class FetchAuroraHistory extends FetchAurora
         'Customer Client' => ParseCustomerClientHistory::class,
     ];
 
+    protected const array BLANK_OBJECT_SNIFFS = [
+        '/^Website user .+ created/i' => 'Website User',
+        "/^Customer's client created/i" => 'Customer Client',
+        '/^Supplier delivery /i' => 'Supplier Delivery',
+        "/^Supplier Part's /i" => 'Supplier Part',
+        "/^Deal Component's /i" => 'Deal Component',
+        '/^Barcode record /i' => 'Barcode',
+    ];
+
     protected function parseModel(): void
     {
         $directObject = (string) $this->auroraModelData->{'Direct Object'};
-        $parser       = self::PARSERS[$directObject] ?? null;
+
+        if ($directObject === '') {
+            $directObject = $this->sniffBlankDirectObject();
+            if ($directObject === null) {
+                $this->markSkippedInAurora();
+
+                return;
+            }
+            $this->auroraModelData->{'Direct Object'} = $directObject;
+        }
+
+        $parser = self::PARSERS[$directObject] ?? null;
         if (!$parser) {
             return;
         }
@@ -141,6 +161,19 @@ class FetchAuroraHistory extends FetchAurora
         }
     }
 
+    protected function sniffBlankDirectObject(): ?string
+    {
+        $abstract = (string) $this->auroraModelData->{'History Abstract'};
+
+        foreach (self::BLANK_OBJECT_SNIFFS as $pattern => $directObject) {
+            if (preg_match($pattern, $abstract)) {
+                return $directObject;
+            }
+        }
+
+        return null;
+    }
+
     protected function auditableTags(Model $auditable): array
     {
         if (method_exists($auditable, 'generateTags')) {
@@ -194,7 +227,7 @@ class FetchAuroraHistory extends FetchAurora
     protected function resolveByAuditableType(string $directObject, string $auditableType, string $key): ?Model
     {
         return match ($auditableType) {
-            'TradeUnit' => TradeUnit::withTrashed()->where('source_id', $key)->first(),
+            'TradeUnit' => $this->resolveTradeUnit($key),
             'OrgStock' => $this->parseOrgStock($key),
             'SupplierProduct' => $this->parseSupplierProduct($key),
             'ProductCategory' => match ($directObject) {
@@ -218,6 +251,16 @@ class FetchAuroraHistory extends FetchAurora
             'OrgAgent' => $this->resolveOrgAgent($key),
             default => null,
         };
+    }
+
+    protected function resolveTradeUnit(string $key): ?TradeUnit
+    {
+        $tradeUnit = TradeUnit::withTrashed()->where('source_id', $key)->first();
+        if ($tradeUnit) {
+            return $tradeUnit;
+        }
+
+        return $this->parseOrgStock($key)?->stock?->tradeUnits()->first();
     }
 
     protected function resolveOrgSupplier(string $key): ?OrgSupplier
