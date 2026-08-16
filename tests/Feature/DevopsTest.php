@@ -9,6 +9,7 @@ use App\Models\DevOps\WebsiteHealthLog;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 
@@ -279,14 +280,34 @@ it('can record a deployment without a commit hash', function () {
     ]);
 });
 
-test('every horizon supervisor reserves jobs for longer than its worker timeout', function () {
+test('every horizon supervisor reserves jobs for longer than any job it runs can take', function () {
+    $queueCeilings = [];
+
+    foreach (File::allFiles(app_path('Actions')) as $file) {
+        $source = $file->getContents();
+
+        if (!preg_match("/jobQueue\\s*=\\s*'([^']+)'/", $source, $queue)) {
+            continue;
+        }
+
+        $jobTimeout = preg_match('/jobTimeout\\s*=\\s*(\\d+)/', $source, $timeout) ? (int)$timeout[1] : 0;
+
+        $queueCeilings[$queue[1]] = max($queueCeilings[$queue[1]] ?? 0, $jobTimeout);
+    }
+
     $offenders = [];
 
     foreach (config('horizon.defaults') as $name => $supervisor) {
+        $ceiling = $supervisor['timeout'];
+
+        foreach ((array)$supervisor['queue'] as $queue) {
+            $ceiling = max($ceiling, $queueCeilings[$queue] ?? 0);
+        }
+
         $retryAfter = config('queue.connections.'.$supervisor['connection'].'.retry_after');
 
-        if ($retryAfter <= $supervisor['timeout']) {
-            $offenders[$name] = 'retry_after '.$retryAfter.' <= timeout '.$supervisor['timeout'];
+        if ($retryAfter <= $ceiling) {
+            $offenders[$name] = 'retry_after '.$retryAfter.' <= longest possible run '.$ceiling;
         }
     }
 

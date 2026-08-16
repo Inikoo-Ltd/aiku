@@ -341,7 +341,7 @@ return [
             'balanceCooldown' => 3,
         ],
         'analytics'            => [
-            'connection'      => 'redis',
+            'connection'      => 'redis-analytics',
             'queue'           => ['analytics'],
             'balance'         => 'auto',
             'maxProcesses'    => 5,

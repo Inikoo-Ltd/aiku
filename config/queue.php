@@ -77,6 +77,15 @@ return [
             'after_commit' => true,
         ],
 
+        'redis-analytics'    => [
+            'driver'       => 'redis',
+            'connection'   => 'horizon',
+            'queue'        => 'analytics',
+            'retry_after'  => 660,
+            'block_for'    => null,
+            'after_commit' => true,
+        ],
+
         'redis-aurora'       => [
             'driver'       => 'redis',
             'connection'   => 'horizon',
