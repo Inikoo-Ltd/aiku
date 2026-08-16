@@ -80,7 +80,6 @@
     "picqer/php-barcode-generator": "^3.2",
     "pragmarx/google2fa-laravel": "*",
     "predis/predis": "^3",
-    "propaganistas/laravel-phone": "^5.0",
     "psr/http-message": "^1.1|^2.0",
     "pusher/pusher-php-server": "^7.2",
     "ralouphie/mimey": "^1.0",
@@ -108,7 +107,7 @@
     "tuupola/base32": "^2.0",
     "typesense/typesense-php": "^6.0",
     "vemcogroup/laravel-translation": "^3.0",
-    "vildanbina/laravel-auto-translation": "^1.5",
+    "vildanbina/laravel-auto-translation": "^2.0",
     "vlucas/phpdotenv": "^5.4",
     "webklex/laravel-imap": "^6.2",
     "willdurand/geocoder": "^5.0"
