@@ -84,7 +84,7 @@ All env-driven, nothing hardcoded:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `EMAIL_RETENTION_DAYS` | 1095 | Keep this many days on boro. Deliberately cautious 3 years to start; tighten to 1 year (~171 GB reclaimed) once the archive is proven. |
+| `EMAIL_RETENTION_DAYS` | 90 | Keep this many days on boro. See "Why 90 days" below. Set it higher while working down to the target, so each run is a bounded step. |
 | `EMAIL_ARCHIVE_MAX_REPLICATION_LAG_MB` | 256 | Pause between batches while any replica is further behind than this. |
 | `ARCHIVE_DB_HOST` / `PORT` / `DATABASE` / `USERNAME` / `PASSWORD` | — | The archive Postgres. |
 | `ARCHIVE_DB_SEARCH_PATH` / `SSLMODE` | `public` / `prefer` | Schema and TLS. |
@@ -172,6 +172,28 @@ check for them yourself afterwards:
 ```sql
 select indexrelid::regclass from pg_index where not indisvalid;
 ```
+
+## Why 90 days
+
+**SES stops reporting opens and clicks 60 days after a send.** Past that an email can never change
+again, so archiving it cannot lose an event. Measured against 300,000 recent tracking events, this
+holds exactly: 94.4% arrive within a day of the send, 99.85% within 30 days, and the oldest email
+still receiving anything was 59 days 17 hours old — right against the AWS ceiling. The retention
+window is therefore a product decision, not a correctness one, and 90 days leaves a month of margin
+for a delayed job or clock skew.
+
+If a late event ever does arrive for an archived email, `ProcessSesNotification` finds no match,
+deletes the notification and returns — a silent drop, no error and no orphan row.
+
+The choice of 90 over 180 is about the *live* row count rather than disk: 28.0M rows at 180 days
+versus 16.8M at 90. That is what a developer downloads when pulling production down to work against
+real data, and what every rollup query scans. Sixty days was rejected as sitting on the SES boundary
+with no margin, for only another 4.5M rows.
+
+**Expected reclaim at 90 days: ~220 GB**, taking the database from 515 GB to roughly 295 GB —
+`dispatched_emails` ~106 GB, `email_tracking_events` ~57 GB, `mailshot_has_dispatched_emails` ~23 GB,
+`customer_has_dispatched_emails` ~15 GB, `email_copies` ~13 GB, the rest ~7 GB. None of it returns to
+the operating system until `pg_repack` runs.
 
 ## Indexes the archiver depends on
 
@@ -265,7 +287,7 @@ visibility map. Reclaiming space back to the operating system is `pg_repack`'s j
 - First supervised production run, then `pg_repack`.
 - `email_tracking_events` has not been audited for its own recount patterns (nothing currently
   recounts stats from it the way `dispatched_emails` is recounted, but the audit was never done).
-- Tightening `EMAIL_RETENTION_DAYS` from 3 years to 1 year once the archive is trusted.
+- Working `EMAIL_RETENTION_DAYS` down to the 90-day target, one bounded run at a time.
 
 ## Tests
 
