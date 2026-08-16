@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Facades\Nightwatch;
+use Lorisleiva\Actions\ActionManager;
+use Lorisleiva\Actions\DesignPatterns\CommandDesignPattern;
+use Lorisleiva\Actions\DesignPatterns\ControllerDesignPattern;
 use Lorisleiva\Actions\Facades\Actions;
 use Illuminate\Support\Facades\Event;
 use Laravel\Nightwatch\Records\QueuedJob;
@@ -39,6 +42,13 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
+
+        $this->app->scoped(ActionManager::class, function () {
+            return new ActionManager([
+                new ControllerDesignPattern(),
+                new CommandDesignPattern(),
+            ]);
+        });
 
         $this->app->singleton(GeocoderService::class, function ($app) {
             return new GeocoderService();
