@@ -236,6 +236,7 @@ class FetchAuroraAction extends FetchAction
                 'ShippingZone' => ['Shipping Zone', 'Shipping Zone Schema'],
                 'Supplier' => ['Supplier'],
                 'Agent' => ['Agent'],
+                'Charge' => ['Charge'],
                 default => null
             };
 

@@ -224,3 +224,23 @@ test('supplier delivery edit with both sides null returns empty arrays', functio
     $values = ParseSupplierDeliveryHistory::extractValues($row, 'updated', 'dispatched_date');
     expect($values)->toBe(['old_values' => [], 'new_values' => [], 'data' => []]);
 });
+
+test('charge field edit classifies and extracts values', function () {
+    $row = auroraHistoryRow([
+        'Action' => 'edited',
+        'Direct Object' => 'Charge',
+        'Indirect Object' => 'Charge Public Description',
+        'History Details' => '<div class="table"><div class="field tr"><div>Time:</div><div>Mon 3 Feb 2025 10:00:00 UTC</div></div><div class="field tr"><div>User:</div><div>Ana</div></div><div class="field tr"><div>Action:</div><div>Changed</div></div><div class="field tr"><div>Old value:</div><div>Old text</div></div><div class="field tr"><div>New value:</div><div>New text</div></div><div class="field tr"><div>Charge:</div><div></div></div></div>',
+    ]);
+
+    expect(\App\Transfers\Aurora\History\Parsers\ParseChargeHistory::classify($row))
+        ->toBe(['handling' => 'import', 'event' => 'updated', 'field' => 'public_description']);
+
+    expect(\App\Transfers\Aurora\History\Parsers\ParseChargeHistory::extractValues($row, 'updated', 'public_description'))
+        ->toBe(['old_values' => ['public_description' => 'Old text'], 'new_values' => ['public_description' => 'New text'], 'data' => []]);
+});
+
+test('charge unknown indirect object skips', function () {
+    $row = auroraHistoryRow(['Action' => 'edited', 'Direct Object' => 'Charge', 'Indirect Object' => 'Charge Something Else']);
+    expect(\App\Transfers\Aurora\History\Parsers\ParseChargeHistory::classify($row)['handling'])->toBe('skip');
+});

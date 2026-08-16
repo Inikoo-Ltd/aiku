@@ -17,6 +17,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Transfers\Aurora\History\Parsers\ParseBarcodeHistory;
 use App\Transfers\Aurora\History\Parsers\ParseCategoryHistory;
+use App\Transfers\Aurora\History\Parsers\ParseChargeHistory;
 use App\Transfers\Aurora\History\Parsers\ParseCustomerHistory;
 use App\Transfers\Aurora\History\Parsers\ParseDealHistory;
 use App\Transfers\Aurora\History\Parsers\ParseDeliveryNoteHistory;
@@ -68,6 +69,7 @@ class FetchAuroraHistory extends FetchAurora
         'Shipping Zone Schema' => ParseShippingZoneHistory::class,
         'Supplier' => ParseSupplierAgentHistory::class,
         'Agent' => ParseSupplierAgentHistory::class,
+        'Charge' => ParseChargeHistory::class,
     ];
 
     protected function parseModel(): void
@@ -181,6 +183,7 @@ class FetchAuroraHistory extends FetchAurora
             'Agent Supplier Purchase Order' => AgentSupplierPurchaseOrder::where('source_id', $key)->first(),
             'Supplier Delivery' => StockDelivery::where('source_id', $key)->first(),
             'Barcode' => $this->parseBarcode($key),
+            'Charge' => $this->parseCharge($key),
             default => null,
         };
     }
