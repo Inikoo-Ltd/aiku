@@ -26,9 +26,11 @@ use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
 use App\Actions\Comms\Outbox\StoreOutbox;
 use App\Actions\CRM\Customer\ApproveCustomer;
 use App\Actions\CRM\Customer\RejectCustomer;
+use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\FetchNewWebhookFulfilmentCustomer;
+use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStatus;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\UpdateFulfilmentCustomer;
 use App\Actions\Fulfilment\FulfilmentTransaction\DeleteFulfilmentTransaction;
@@ -3490,4 +3492,30 @@ test('fulfilment rentals index uses time series aggregation', function () {
     $fulfilment = createFulfilment($this->organisation);
 
     expect(\App\Actions\Fulfilment\UI\Catalogue\Rentals\IndexFulfilmentRentals::make()->handle($fulfilment)->total())->toBeGreaterThanOrEqual(0);
+});
+
+test('deleting a customer cascades to its fulfilment customer and hydrator skips it', function () {
+    $fulfilment         = createFulfilment($this->organisation);
+    $fulfilmentCustomer = StoreFulfilmentCustomer::make()->action(
+        $fulfilment,
+        [
+            'state'           => CustomerStateEnum::IN_PROCESS,
+            'status'          => CustomerStatusEnum::PENDING_APPROVAL,
+            'contact_name'    => 'Contact Deleted',
+            'company_name'    => 'Company Deleted',
+            'interest'        => ['pallets_storage'],
+            'contact_address' => Address::factory()->definition(),
+        ]
+    );
+
+    DeleteCustomer::make()->handle($fulfilmentCustomer->customer, [], true);
+
+    $trashed = FulfilmentCustomer::withTrashed()->find($fulfilmentCustomer->id);
+
+    expect($trashed->trashed())->toBeTrue()
+        ->and($trashed->customer)->toBeNull();
+
+    FulfilmentCustomerHydrateStatus::run($trashed);
+
+    expect($trashed->fresh()->status)->toBe($fulfilmentCustomer->status);
 });
