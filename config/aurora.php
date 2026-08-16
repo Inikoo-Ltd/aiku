@@ -25,6 +25,7 @@ return [
         'Agents',
         'AgentSupplierPurchaseOrders',
         'Artefacts',
+        'Histories',
         'ClockingMachines',
         'JobOrders',
         'OrgStockMovements',
