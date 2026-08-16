@@ -15,6 +15,7 @@ use App\Models\Inventory\Location;
 use App\Models\Inventory\WarehouseArea;
 use App\Transfers\SourceOrganisationService;
 use Exception;
+use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -125,6 +126,27 @@ class FetchAuroraHistories extends FetchAuroraAction
             'Supplier',
             'Agent',
         ];
+    }
+
+    public function fetchAll(SourceOrganisationService $organisationSource, ?Command $command = null): void
+    {
+        $lastKey = 0;
+        do {
+            $query = DB::connection('aurora')->table('History Dimension');
+            $query = $this->commonSelectModelsToFetch($query);
+
+            $ids = $query->where('History Key', '>', $lastKey)
+                ->orderBy('History Key')
+                ->limit(10000)
+                ->pluck('History Key');
+
+            foreach ($ids as $id) {
+                $this->handle($organisationSource, $id);
+                $this->progressBar?->advance();
+            }
+
+            $lastKey = $ids->last() ?? $lastKey;
+        } while ($ids->count() == 10000);
     }
 
     public function getModelsQuery(): Builder
