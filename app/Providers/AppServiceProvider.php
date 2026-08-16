@@ -43,6 +43,13 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
 
+        /**
+         * ListenerDesignPattern is deliberately excluded: laravel-actions v2.10.2 backtrace
+         * heuristic wrapped Action::make() in a ListenerDecorator when called from model
+         * event closures (Dispatcher::invokeListeners), breaking calls like
+         * HydrateIsInWebsite::make()->fromWebpage(). No action is used as an event listener;
+         * if one ever is, re-add ListenerDesignPattern here knowingly.
+         */
         $this->app->scoped(ActionManager::class, function () {
             return new ActionManager([
                 new ControllerDesignPattern(),
