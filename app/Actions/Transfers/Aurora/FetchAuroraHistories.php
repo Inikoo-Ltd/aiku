@@ -117,7 +117,6 @@ class FetchAuroraHistories extends FetchAuroraAction
             'User',
             'Website User',
             'Email Campaign',
-            'Email Template',
             'Deal Campaign',
             'Deal',
             'Deal Component',

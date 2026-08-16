@@ -231,7 +231,7 @@ class FetchAuroraAction extends FetchAction
                 'Staff' => ['Staff'],
                 'User' => ['User'],
                 'WebsiteUser' => ['Website User'],
-                'Marketing' => ['Email Campaign', 'Email Template', 'Deal Campaign'],
+                'Marketing' => ['Email Campaign', 'Deal Campaign'],
                 'Deal' => ['Deal', 'Deal Component'],
                 'ShippingZone' => ['Shipping Zone', 'Shipping Zone Schema'],
                 'Supplier' => ['Supplier'],
