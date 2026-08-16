@@ -118,6 +118,7 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementBillingCycleEnum;
+use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Enums\Fulfilment\RentalAgreement\RentalAgreementStateEnum;
 use App\Enums\Fulfilment\StoredItemAudit\StoredItemAuditStateEnum;
 use App\Enums\Fulfilment\StoredItemAuditDelta\StoredItemAuditDeltaStateEnum;
@@ -3518,4 +3519,58 @@ test('deleting a customer cascades to its fulfilment customer and hydrator skips
     FulfilmentCustomerHydrateStatus::run($trashed);
 
     expect($trashed->fresh()->status)->toBe($fulfilmentCustomer->status);
+});
+
+test('fulfilment customer status follows invoicing recency', function () {
+    $fulfilment         = createFulfilment($this->organisation);
+    $fulfilmentCustomer = StoreFulfilmentCustomer::make()->action(
+        $fulfilment,
+        [
+            'state'           => CustomerStateEnum::IN_PROCESS,
+            'status'          => CustomerStatusEnum::PENDING_APPROVAL,
+            'contact_name'    => 'Contact Recency',
+            'company_name'    => 'Company Recency',
+            'interest'        => ['pallets_storage'],
+            'contact_address' => Address::factory()->definition(),
+        ]
+    );
+
+    StoreRentalAgreement::make()->action(
+        $fulfilmentCustomer,
+        [
+            'state'         => RentalAgreementStateEnum::ACTIVE,
+            'billing_cycle' => RentalAgreementBillingCycleEnum::MONTHLY,
+            'pallets_limit' => null,
+            'username'      => 'recency',
+            'email'         => 'recency@testmail.com',
+            'clauses'       => [],
+        ]
+    );
+
+    $fulfilmentCustomer->update([
+        'number_pallets_status_storing'         => 0,
+        'number_pallets_status_returning'       => 0,
+        'number_pallets_status_receiving'       => 0,
+        'number_recurring_bills_status_current' => 0,
+    ]);
+
+    $statusWhenLastInvoicedMonthsAgo = function (int $months) use ($fulfilmentCustomer) {
+        $fulfilmentCustomer->customer->update(['last_invoiced_at' => now()->subMonths($months)]);
+        FulfilmentCustomerHydrateStatus::run($fulfilmentCustomer->fresh());
+
+        return $fulfilmentCustomer->fresh()->status;
+    };
+
+    expect($statusWhenLastInvoicedMonthsAgo(1))->toBe(FulfilmentCustomerStatusEnum::ACTIVE)
+        ->and($statusWhenLastInvoicedMonthsAgo(4))->toBe(FulfilmentCustomerStatusEnum::INACTIVE)
+        ->and($statusWhenLastInvoicedMonthsAgo(7))->toBe(FulfilmentCustomerStatusEnum::LOST);
+
+    $fulfilmentCustomer->customer->update(['last_invoiced_at' => null]);
+    $fulfilmentCustomer->rentalAgreement->update(['created_at' => now()->subMonths(2)]);
+    FulfilmentCustomerHydrateStatus::run($fulfilmentCustomer->fresh());
+    expect($fulfilmentCustomer->fresh()->status)->toBe(FulfilmentCustomerStatusEnum::ACTIVE);
+
+    $fulfilmentCustomer->rentalAgreement->update(['created_at' => now()->subMonths(7)]);
+    FulfilmentCustomerHydrateStatus::run($fulfilmentCustomer->fresh());
+    expect($fulfilmentCustomer->fresh()->status)->toBe(FulfilmentCustomerStatusEnum::UNACCOMPLISHED);
 });
