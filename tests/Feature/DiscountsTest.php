@@ -88,6 +88,8 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
+use App\Actions\Ordering\Order\SweepGoldRewardWindowBaskets;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
@@ -104,6 +106,7 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 
@@ -2870,4 +2873,46 @@ test('repair aurora submitted transaction snapshots', function () {
     $basketTransaction->refresh();
     expect($basketTransaction->submitted_at)->not->toBeNull()
         ->and((float)$basketTransaction->submitted_quantity_ordered)->toBe(1.0);
+});
+
+describe('gold reward window sweep', function () {
+    test('SweepGoldRewardWindowBaskets queues only baskets that just aged out of the window', function () {
+        Queue::fake();
+
+        $shop = $this->shop;
+        $shop->update([
+            'is_aiku'     => true,
+            'type'        => ShopTypeEnum::B2B,
+            'offers_data' => ['gr' => ['active' => true, 'interval' => 30]],
+        ]);
+
+        $agedOutCustomer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $agedOutCustomer->update(['last_invoiced_at' => now()->subDays(30)]);
+        $agedOutOrder = StoreOrder::make()->action($agedOutCustomer, []);
+
+        $insideWindowCustomer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $insideWindowCustomer->update(['last_invoiced_at' => now()->subDays(10)]);
+        StoreOrder::make()->action($insideWindowCustomer, []);
+
+        $neverInvoicedCustomer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        StoreOrder::make()->action($neverInvoicedCustomer, []);
+
+        expect(SweepGoldRewardWindowBaskets::run($shop))->toBe(1)
+            ->and($agedOutOrder->refresh()->state)->toBe(OrderStateEnum::CREATING);
+
+        $shop->update(['offers_data' => ['gr' => ['active' => true, 'interval' => 30, 'amnesty_offer_id' => 99]]]);
+        expect(SweepGoldRewardWindowBaskets::run($shop))->toBe(0);
+    });
+
+    test('sweep command runs for a single shop', function () {
+        Queue::fake();
+
+        $this->shop->update([
+            'is_aiku'     => true,
+            'type'        => ShopTypeEnum::B2B,
+            'offers_data' => ['gr' => ['active' => true, 'interval' => 30]],
+        ]);
+
+        $this->artisan('ordering:sweep-gold-reward-window-baskets '.$this->shop->slug)->assertSuccessful();
+    });
 });
