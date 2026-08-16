@@ -104,6 +104,9 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
+use App\Jobs\BoundedUniqueJobDecorator;
+use App\Actions\Ordering\Order\CleanFinishedVouchers;
+use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -2914,5 +2917,42 @@ describe('gold reward window sweep', function () {
         ]);
 
         $this->artisan('ordering:sweep-gold-reward-window-baskets '.$this->shop->slug)->assertSuccessful();
+    });
+});
+
+describe('unique job lock bounds', function () {
+    $countPushed = function (string $actionClass): int {
+        return collect(Queue::pushedJobs())
+            ->flatten(1)
+            ->filter(fn ($pushed) => $pushed['job']->getAction() instanceof $actionClass)
+            ->count();
+    };
+
+    test('a stale CalculateOrderDiscounts lock expires instead of swallowing every later dispatch', function () use ($countPushed) {
+        Queue::fake();
+
+        $order     = new Order();
+        $order->id = 999999;
+
+        CalculateOrderDiscounts::dispatch($order);
+        CalculateOrderDiscounts::dispatch($order);
+        expect($countPushed(CalculateOrderDiscounts::class))->toBe(1);
+
+        $this->travel(CalculateOrderDiscounts::make()->jobUniqueFor + 1)->seconds();
+
+        CalculateOrderDiscounts::dispatch($order);
+        expect($countPushed(CalculateOrderDiscounts::class))->toBe(2);
+    });
+
+    test('a unique action declaring no jobUniqueFor gets a lock outliving its worker timeout', function () {
+        $onDefaultQueue = CleanFinishedVouchers::makeJob();
+
+        expect($onDefaultQueue)->toBeInstanceOf(BoundedUniqueJobDecorator::class)
+            ->and($onDefaultQueue->uniqueFor)->toBe(3600 + BoundedUniqueJobDecorator::LOCK_MARGIN);
+
+        $onLongQueue = RedoInvoiceCategoryTimeSeries::makeJob();
+
+        expect($onLongQueue->uniqueFor)->toBe(7200 + BoundedUniqueJobDecorator::LOCK_MARGIN)
+            ->and($onLongQueue->uniqueFor)->toBeGreaterThan(config('horizon.defaults.long-low-priority.timeout'));
     });
 });

@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Facades\Nightwatch;
+use App\Jobs\BoundedUniqueJobDecorator;
 use Lorisleiva\Actions\ActionManager;
 use Lorisleiva\Actions\DesignPatterns\CommandDesignPattern;
 use Lorisleiva\Actions\DesignPatterns\ControllerDesignPattern;
@@ -138,6 +139,8 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
+
+        ActionManager::useUniqueJobDecorator(BoundedUniqueJobDecorator::class);
 
         if ($this->app->runningInConsole()) {
             Actions::registerCommands();

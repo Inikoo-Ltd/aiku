@@ -1686,7 +1686,7 @@ test('run mailshot tracking updates dispatches hydrator for active mailshots', f
 
     RunMailshotTrackingUpdates::run($mailshot->shop->organisation->slug, $mailshot->shop->slug);
 
-    Queue::assertPushed(\Lorisleiva\Actions\Decorators\UniqueJobDecorator::class, fn ($job) => $job->displayName() === \App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails::class);
+    Queue::assertPushed(\App\Jobs\BoundedUniqueJobDecorator::class, fn ($job) => $job->displayName() === \App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails::class);
 })->depends('create mailshot with recipe for filters');
 
 test('cancel mailshot schedule is no-op when not scheduled', function (Mailshot $mailshot) {

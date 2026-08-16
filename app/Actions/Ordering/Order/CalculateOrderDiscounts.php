@@ -28,6 +28,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     use WithGiftOptOut;
 
     public string $jobQueue = 'urgent';
+    public int $jobUniqueFor = 120;
 
     private \Illuminate\Support\Collection $transactions;
     private \Illuminate\Support\Collection $transactionsQuantityBonus;

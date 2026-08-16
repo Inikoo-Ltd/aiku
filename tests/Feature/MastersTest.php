@@ -2266,7 +2266,7 @@ test('updating master prices cascades to children, updates baskets and breaks we
     );
 
     Queue::assertPushed(
-        \Lorisleiva\Actions\Decorators\UniqueJobDecorator::class,
+        \App\Jobs\BoundedUniqueJobDecorator::class,
         fn ($job) => $job->displayName() === \App\Actions\Catalogue\Product\UpdateOrdersInBasketsAfterProductUpdated::class
     );
     Queue::assertNotPushed(
