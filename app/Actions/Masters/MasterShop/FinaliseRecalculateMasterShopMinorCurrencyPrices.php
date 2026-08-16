@@ -43,8 +43,19 @@ class FinaliseRecalculateMasterShopMinorCurrencyPrices
             Auth::guard('web')->loginUsingId($userID);
         }
 
-        ini_set('memory_limit', '2048M');
+        $previousMemoryLimit = ini_set('memory_limit', '2048M');
 
+        try {
+            $this->finalise($masterShop, $currencyCode, $userID);
+        } finally {
+            if ($previousMemoryLimit !== false) {
+                ini_set('memory_limit', $previousMemoryLimit);
+            }
+        }
+    }
+
+    private function finalise(MasterShop $masterShop, string $currencyCode, ?int $userID): void
+    {
         $affectedShops = RecalculateMasterShopMinorCurrencyPrices::getAffectedShops($masterShop, $currencyCode);
         $progress      = RecalculateMasterShopMinorCurrencyPrices::getProgress($masterShop, $currencyCode) ?? [
             'done'  => 0,
