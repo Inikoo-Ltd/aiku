@@ -278,3 +278,17 @@ it('can record a deployment without a commit hash', function () {
         'commit_hash' => null,
     ]);
 });
+
+test('every horizon supervisor reserves jobs for longer than its worker timeout', function () {
+    $offenders = [];
+
+    foreach (config('horizon.defaults') as $name => $supervisor) {
+        $retryAfter = config('queue.connections.'.$supervisor['connection'].'.retry_after');
+
+        if ($retryAfter <= $supervisor['timeout']) {
+            $offenders[$name] = 'retry_after '.$retryAfter.' <= timeout '.$supervisor['timeout'];
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});
