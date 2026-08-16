@@ -85,7 +85,7 @@ class FetchAuroraAgent extends FetchAurora
         $data = [
             'delivery_type' => $deliveryType,
             'delivery_time' => $this->parseNumber($this->auroraColumn('Agent Average Delivery Days')),
-            'incoterm'      => $this->auroraColumn('Agent Default Incoterm'),
+            'incoterm'      => $this->parseIncoterm($this->auroraColumn('Agent Default Incoterm')),
         ];
 
         if ($deliveryType == 'container') {

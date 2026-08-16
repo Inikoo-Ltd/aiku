@@ -134,7 +134,7 @@ class FetchAuroraPurchaseOrder extends FetchAurora
 
         $data = array_filter([
             'delivery_type'            => strtolower($this->auroraModelData->{'Purchase Order Type'} ?? ''),
-            'incoterm'                 => $this->auroraModelData->{'Purchase Order Incoterm'},
+            'incoterm'                 => $this->parseIncoterm($this->auroraModelData->{'Purchase Order Incoterm'}),
             'port_of_export'           => $this->auroraModelData->{'Purchase Order Port of Export'},
             'port_of_import'           => $this->auroraModelData->{'Purchase Order Port of Import'},
             'delivery_address'         => $this->auroraModelData->{'Purchase Order Warehouse Address'},

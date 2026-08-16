@@ -135,7 +135,7 @@ class FetchAuroraSupplier extends FetchAurora
         ];
 
         if ($deliveryType == 'container') {
-            $settings['incoterm']       = $this->auroraColumn('Supplier Default Incoterm');
+            $settings['incoterm']       = $this->parseIncoterm($this->auroraColumn('Supplier Default Incoterm'));
             $settings['port_of_export'] = $this->auroraColumn('Supplier Default Port of Export');
             $settings['port_of_import'] = $this->auroraColumn('Supplier Default Port of Import');
         }

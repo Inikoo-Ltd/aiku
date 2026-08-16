@@ -137,6 +137,10 @@ trait WithAuroraParsers
     use WithAuroraCleaners;
     use WithAuroraHumanResourcesParsers;
     use WithAuroraSysAdminParsers;
+    public function parseIncoterm(?string $incoterm): ?string
+    {
+        return in_array($incoterm, [null, '', 'No'], true) ? null : $incoterm;
+    }
 
     protected function parseDate($value): ?string
     {

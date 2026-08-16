@@ -77,7 +77,7 @@ class FetchAuroraStockDelivery extends FetchAurora
 
         $data = array_filter([
             'delivery_type'            => strtolower($this->auroraModelData->{'Supplier Delivery Type'} ?? ''),
-            'incoterm'                 => $this->auroraModelData->{'Supplier Delivery Incoterm'},
+            'incoterm'                 => $this->parseIncoterm($this->auroraModelData->{'Supplier Delivery Incoterm'}),
             'port_of_export'           => $this->auroraModelData->{'Supplier Delivery Port of Export'},
             'port_of_import'           => $this->auroraModelData->{'Supplier Delivery Port of Import'},
             'invoice_number'           => $this->auroraModelData->{'Supplier Delivery Invoice Public ID'},
