@@ -423,13 +423,13 @@ trait WithAuroraParsers
 
     public function parseDepartment(string $sourceId): ?ProductCategory
     {
-        return ProductCategory::where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('source_department_id', $sourceId)->first();
+        return ProductCategory::withTrashed()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('source_department_id', $sourceId)->first();
 
     }
 
     public function parseFamily(string $sourceId): ?ProductCategory
     {
-        $family = ProductCategory::where('type', ProductCategoryTypeEnum::FAMILY)->where('source_family_id', $sourceId)->first();
+        $family = ProductCategory::withTrashed()->where('type', ProductCategoryTypeEnum::FAMILY)->where('source_family_id', $sourceId)->first();
         if (!$family) {
             $sourceData = explode(':', $sourceId);
             $family     = FetchAuroraFamilies::run($this->organisationSource, $sourceData[1]);
@@ -1120,7 +1120,7 @@ trait WithAuroraParsers
 
     public function parseCollection(string $sourceId): ?Collection
     {
-        $collection = Collection::where('source_id', $sourceId)->first();
+        $collection = Collection::withTrashed()->where('source_id', $sourceId)->first();
         if (!$collection) {
             $sourceData = explode(':', $sourceId);
             $collection     = FetchAuroraCollections::run($this->organisationSource, $sourceData[1]);
