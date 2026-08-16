@@ -17,6 +17,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class ArchiveDispatchedEmails
 {
@@ -79,6 +80,19 @@ class ArchiveDispatchedEmails
         $this->assertReplicationMeasurable();
         $this->ensureArchiveTables($children);
 
+        $progress = null;
+        if ($command) {
+            $eligible = DB::table('dispatched_emails')
+                ->where('created_at', '<', $cutoff)
+                ->when($from, fn ($query) => $query->where('created_at', '>=', $from))
+                ->count();
+
+            $progress = $command->getOutput()->createProgressBar($limit ? min($limit, $eligible) : $eligible);
+            $progress->setFormat(' %current%/%max% [%bar%] %percent:3s%%  elapsed %elapsed:6s%  eta %estimated:-6s%  %message%');
+            $progress->setMessage('');
+            $progress->start();
+        }
+
         $archivedTotal  = 0;
         $lastId         = 0;
         $lastCreatedAt  = $from ?: '1970-01-01';
@@ -88,7 +102,7 @@ class ArchiveDispatchedEmails
                 break;
             }
 
-            $this->waitForReplication($command);
+            $this->waitForReplication($command, $progress);
 
             /*
              * Ordered by (created_at, id) to match the index of the same name: ordering by id alone
@@ -130,8 +144,12 @@ class ArchiveDispatchedEmails
             });
 
             $archivedTotal += count($dispatchedEmailIds);
-            $command?->info("Archived $archivedTotal dispatched emails (up to id $lastId)");
+            $progress?->setMessage(Carbon::parse($lastCreatedAt)->format('M Y'));
+            $progress?->advance(count($dispatchedEmailIds));
         }
+
+        $progress?->finish();
+        $command?->newLine();
 
         DB::selectOne('select pg_advisory_unlock(?)', [$lockKey]);
 
@@ -164,31 +182,69 @@ class ArchiveDispatchedEmails
         }
     }
 
-    private function ensureArchiveTable($archive, string $table): void
+    /**
+     * @return array<int, object{name: string, type: string, not_null: bool}>
+     */
+    private function tableColumns($connection, string $table): array
     {
-        $columns = DB::select("
+        return $connection->select("
             select a.attname as name, format_type(a.atttypid, a.atttypmod) as type, a.attnotnull as not_null
             from pg_attribute a
             where a.attrelid = ?::regclass and a.attnum > 0 and not a.attisdropped
             order by a.attnum
         ", [$table]);
+    }
 
-        $primaryKey = DB::select("
-            select a.attname
-            from pg_index i
-            join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
-            where i.indrelid = ?::regclass and i.indisprimary
-        ", [$table]);
+    /**
+     * The operational schema moves on its own schedule, so the archive is reconciled to it on every
+     * run rather than only created once: a column added there is added here, and a column dropped
+     * there has its NOT NULL lifted here so inserts that no longer carry it still succeed. Columns
+     * are never dropped from the archive, because what they hold is the only remaining copy.
+     */
+    private function ensureArchiveTable($archive, string $table): void
+    {
+        $columns = $this->tableColumns(DB::connection(), $table);
 
-        $definitions = [];
+        $exists = $archive->selectOne('select to_regclass(?) as found', [$table])->found;
+
+        if (!$exists) {
+            $primaryKey = DB::select("
+                select a.attname
+                from pg_index i
+                join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
+                where i.indrelid = ?::regclass and i.indisprimary
+            ", [$table]);
+
+            $definitions = [];
+            foreach ($columns as $column) {
+                $definitions[] = "\"$column->name\" $column->type".($column->not_null ? ' not null' : '');
+            }
+            if ($primaryKey) {
+                $definitions[] = 'primary key ('.implode(', ', array_map(fn ($col) => "\"$col->attname\"", $primaryKey)).')';
+            }
+
+            $archive->statement("create table \"$table\" (".implode(', ', $definitions).')');
+
+            return;
+        }
+
+        $archiveColumns = [];
+        foreach ($this->tableColumns($archive, $table) as $column) {
+            $archiveColumns[$column->name] = $column;
+        }
+
         foreach ($columns as $column) {
-            $definitions[] = "\"$column->name\" $column->type".($column->not_null ? ' not null' : '');
-        }
-        if ($primaryKey) {
-            $definitions[] = 'primary key ('.implode(', ', array_map(fn ($col) => "\"$col->attname\"", $primaryKey)).')';
+            if (!isset($archiveColumns[$column->name])) {
+                $archive->statement("alter table \"$table\" add column \"$column->name\" $column->type");
+            }
         }
 
-        $archive->statement("create table if not exists \"$table\" (".implode(', ', $definitions).')');
+        $sourceNames = array_column($columns, 'name');
+        foreach ($archiveColumns as $name => $column) {
+            if ($column->not_null && !in_array($name, $sourceNames, true)) {
+                $archive->statement("alter table \"$table\" alter column \"$name\" drop not null");
+            }
+        }
     }
 
     private function copyToArchive(string $table, string $keyColumn, array $dispatchedEmailIds): void
@@ -267,7 +323,7 @@ class ArchiveDispatchedEmails
         }
     }
 
-    private function waitForReplication(?Command $command): void
+    private function waitForReplication(?Command $command, ?ProgressBar $progress = null): void
     {
         $maxLagBytes = config('archive.email_max_replication_lag_mb') * 1024 * 1024;
 
@@ -286,11 +342,13 @@ class ArchiveDispatchedEmails
                 return;
             }
 
+            $progress?->clear();
             $command?->warn(
                 $state->inactive > 0
                     ? "{$state->inactive} replication slot(s) disconnected, waiting: WAL is piling up and will fill the disk"
                     : 'Replicas hold '.round((int) $state->retained_bytes / 1048576).' MB of WAL, waiting for them to catch up'
             );
+            $progress?->display();
             sleep(10);
         }
     }
@@ -457,6 +515,7 @@ class ArchiveDispatchedEmails
         );
 
         $command->info(($command->option('dry-run') ? 'Would archive' : 'Archived')." $archived dispatched emails");
+        $command->info('Run VACUUM (ANALYZE) dispatched_emails; before starting another large run.');
 
         return 0;
     }

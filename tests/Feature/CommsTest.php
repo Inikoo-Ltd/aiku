@@ -3627,6 +3627,47 @@ describe('email retention', function () {
         );
     });
 
+    test('archiver reconciles archive tables when the live schema has moved on', function () {
+        config()->set(
+            'database.connections.archive',
+            array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+        );
+        DB::purge('archive');
+        DB::statement('create schema if not exists archive');
+
+        $outbox  = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+        $emailId = DB::table('dispatched_emails')->insertGetId([
+            'outbox_id'  => $outbox->id,
+            'state'      => 'sent',
+            'data'       => '{}',
+            'created_at' => now()->subDays(config('archive.email_retention_days') + 20),
+            'updated_at' => now(),
+        ]);
+
+        \App\Actions\Comms\DispatchedEmail\ArchiveDispatchedEmails::run(limit: 1);
+
+        /*
+         * A column dropped from the operational table after the archive was first created, still
+         * NOT NULL on the archive side: inserts no longer carry it and used to fail outright.
+         */
+        DB::statement('alter table archive.dispatched_emails add column legacy_counter integer not null default 0');
+        DB::statement('alter table archive.dispatched_emails alter column legacy_counter drop default');
+
+        $secondId = DB::table('dispatched_emails')->insertGetId([
+            'outbox_id'  => $outbox->id,
+            'state'      => 'sent',
+            'data'       => '{}',
+            'created_at' => now()->subDays(config('archive.email_retention_days') + 19),
+            'updated_at' => now(),
+        ]);
+
+        \App\Actions\Comms\DispatchedEmail\ArchiveDispatchedEmails::run(limit: 1);
+
+        expect(DB::table('dispatched_emails')->where('id', $secondId)->exists())->toBeFalse()
+            ->and(DB::connection('archive')->table('dispatched_emails')->where('id', $secondId)->exists())->toBeTrue()
+            ->and(DB::connection('archive')->table('dispatched_emails')->where('id', $emailId)->exists())->toBeTrue();
+    });
+
     test('archiver dry run counts but does not move anything', function () {
         $outbox  = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
         $emailId = DB::table('dispatched_emails')->insertGetId([
