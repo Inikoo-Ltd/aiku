@@ -383,6 +383,22 @@ test('create transaction', function ($order) {
     return $transaction;
 })->depends('delete previous transaction');
 
+test('store transaction for existing product adds to quantity instead of duplicating', function (Transaction $transaction) {
+    $order         = $transaction->order;
+    $historicAsset = $this->product->historicAsset;
+    $quantityBefore = (float) $transaction->quantity_ordered;
+
+    $transactionData                     = Transaction::factory()->definition();
+    $transactionData['quantity_ordered'] = 3;
+
+    $dedupedTransaction = StoreTransaction::make()->action($order, $historicAsset, $transactionData);
+    $order->refresh();
+
+    expect($dedupedTransaction->id)->toBe($transaction->id)
+        ->and((float) $dedupedTransaction->quantity_ordered)->toEqual($quantityBefore + 3)
+        ->and($order->transactions()->where('model_type', 'Product')->count())->toBe(1);
+})->depends('create transaction');
+
 test('create transaction from adjustment', function (Order $order) {
     $adjustment = StoreAdjustment::make()->action(
         $order->shop,
