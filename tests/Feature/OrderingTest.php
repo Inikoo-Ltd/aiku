@@ -706,6 +706,11 @@ test('update order state to Finalised ', function (Order $order) {
     return $order;
 })->depends('update order state to Handling');
 
+test('finalising an already invoiced order does not create a second invoice', function (Order $order) {
+    expect(fn () => FinaliseOrder::make()->action($order))->toThrow(ValidationException::class)
+        ->and($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->count())->toBe(1);
+})->depends('update order state to Finalised ');
+
 test('create customer client', function () {
     $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
     $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
