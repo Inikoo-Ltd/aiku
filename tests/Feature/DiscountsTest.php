@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
@@ -1235,6 +1236,20 @@ describe('calculate order discounts', function () {
         expect((float)$order->refresh()->amount_off)->toBe(9.24);
 
         $order->shop->update(['type' => $originalType]);
+    });
+
+    test('Faire discount targets the invoice, never a credit note', function () {
+        $order = Order::latest('id')->first();
+
+        $refund = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($this->customer, \App\Models\Accounting\Invoice::factory()->definition());
+        $refund->update(['order_id' => $order->id, 'type' => \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND]);
+
+        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($this->customer, \App\Models\Accounting\Invoice::factory()->definition());
+        $invoice->update(['order_id' => $order->id, 'type' => \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE]);
+
+        // the refund is the older row, so an unordered first() would have picked it
+        expect($refund->id)->toBeLessThan($invoice->id)
+            ->and(UpdateFaireOrder::make()->getInvoiceToDiscount($order->refresh())->id)->toBe($invoice->id);
     });
 
     test('suspend all active offers', function () {

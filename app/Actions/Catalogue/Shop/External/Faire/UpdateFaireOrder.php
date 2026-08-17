@@ -26,11 +26,13 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
@@ -142,7 +144,10 @@ class UpdateFaireOrder extends OrgAction
 
             $this->updateDeliveryNoteItem($order, $transaction);
 
-            $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)->first();
+            $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)
+                ->whereRelation('invoice', 'type', InvoiceTypeEnum::INVOICE)
+                ->orderBy('id')
+                ->first();
 
             $invoiceTransaction?->update([
                 'historic_asset_id' => $product->current_historic_asset_id,
@@ -204,7 +209,7 @@ class UpdateFaireOrder extends OrgAction
             'total_amount' => $order->net_amount + $faireTaxAmount,
         ]);
 
-        $invoice = $order->invoices()->first();
+        $invoice = $this->getInvoiceToDiscount($order);
         if ($invoice) {
             /**
              * Faire's discount has to be on both: CalculateInvoiceTotals deducts the invoice's
@@ -221,6 +226,18 @@ class UpdateFaireOrder extends OrgAction
                 'total_amount' => $invoice->net_amount + $faireTaxAmount,
             ]);
         }
+    }
+
+    /**
+     * Faire's discount belongs on the order's invoice, never on a credit note: refunds
+     * are raised from their own transactions and writing amount_off onto one turns it positive.
+     */
+    public function getInvoiceToDiscount(Order $order): ?Invoice
+    {
+        return $order->invoices()
+            ->where('type', InvoiceTypeEnum::INVOICE)
+            ->orderBy('id')
+            ->first();
     }
 
     public function getFaireTaxAmount(array $orderFaireData, Shop $shop): float
