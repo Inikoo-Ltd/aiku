@@ -12,8 +12,8 @@ use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
 use App\Actions\Catalogue\Product\UpdateProduct;
-use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -33,6 +33,7 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Product;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
@@ -40,11 +41,12 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateFaireOrder extends OrgAction
 {
-    use HasDeliveryNoteHydrators;
+    use WithDeliveryNoteQuantitySync;
 
     /**
      * @throws \Throwable
@@ -306,13 +308,12 @@ class UpdateFaireOrder extends OrgAction
 
     public function createDeliveryNoteItem(Order $order, Transaction $transaction): void
     {
-        /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes()->whereNotIn('state', [
-            DeliveryNoteStateEnum::CANCELLED,
-            DeliveryNoteStateEnum::DISPATCHED,
-            DeliveryNoteStateEnum::FINALISED,
-        ])->where('type', DeliveryNoteTypeEnum::ORDER)->first();
-        if ($deliveryNote) {
+        DB::transaction(function () use ($order, $transaction) {
+            $deliveryNote = $this->lockWorkableDeliveryNote($order);
+            if (!$deliveryNote) {
+                return;
+            }
+
             $transactionData = [
                 'state'           => TransactionStateEnum::IN_WAREHOUSE,
                 'status'          => TransactionStatusEnum::PROCESSING,
@@ -338,90 +339,81 @@ class UpdateFaireOrder extends OrgAction
                 StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
             }
 
-            $oldState = $deliveryNote->state;
+            /*
+             * A line the warehouse has never seen cannot be picked from a note that is already
+             * packed, so the note goes back far enough for the new line to be worked.
+             */
+            $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, false, null);
+        });
+    }
 
-            if (in_array($deliveryNote->state, [
-                DeliveryNoteStateEnum::PICKED,
-                DeliveryNoteStateEnum::PACKING,
-                DeliveryNoteStateEnum::PACKED,
-            ])) {
-                $deliveryNote->update([
-                    'state' => DeliveryNoteStateEnum::HANDLING,
-                ]);
-
-                $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-                $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
-            }
-        }
+    /**
+     * Walking a note back deletes packings and moves the order's state, and this runs unattended
+     * over every Faire order, so the note is locked for the duration and the whole walk commits or
+     * none of it does. Without it a throw further down the poll leaves a half unpacked note.
+     */
+    protected function lockWorkableDeliveryNote(Order $order): ?DeliveryNote
+    {
+        return $order->deliveryNotes()->whereNotIn('state', [
+            DeliveryNoteStateEnum::CANCELLED,
+            DeliveryNoteStateEnum::DISPATCHED,
+            DeliveryNoteStateEnum::FINALISED,
+        ])->where('type', DeliveryNoteTypeEnum::ORDER)->lockForUpdate()->first();
     }
 
     public function updateDeliveryNoteItem(Order $order, Transaction $transaction): void
     {
-        /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes()->whereNotIn('state', [
-            DeliveryNoteStateEnum::CANCELLED,
-            DeliveryNoteStateEnum::DISPATCHED,
-            DeliveryNoteStateEnum::FINALISED,
-            DeliveryNoteStateEnum::PACKED,
-            DeliveryNoteStateEnum::PACKING,
-            DeliveryNoteStateEnum::PICKED,
-            DeliveryNoteStateEnum::HANDLING_BLOCKED
-        ])->where('type', DeliveryNoteTypeEnum::ORDER)->first();
-        if ($deliveryNote) {
-            $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->where('transaction_id', $transaction->id)->first();
-            if (!$deliveryNoteItem) {
-                $this->createDeliveryNoteItem($order, $transaction);
-
-                return;
+        /*
+         * Faire is the source of truth: the buyer edits the order whatever the warehouse has
+         * already done to it, so every state a note can still be worked in has to accept the
+         * change. Only the terminal ones are refused, and what the pickers already did is walked
+         * back properly rather than overwritten.
+         */
+        $needsCreate = DB::transaction(function () use ($order, $transaction) {
+            $deliveryNote = $this->lockWorkableDeliveryNote($order);
+            if (!$deliveryNote) {
+                return false;
             }
 
+            $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->where('transaction_id', $transaction->id)->first();
+            if (!$deliveryNoteItem) {
+                return true;
+            }
 
-            $product = Product::find($transaction->model_id);
+            $product   = Product::find($transaction->model_id);
+            $orgStocks = $product->orgStocks->keyBy('id');
 
+            $createdItem = false;
+            foreach ($orgStocks as $orgStock) {
+                $exists = $deliveryNote->deliveryNoteItems()
+                    ->where('org_stock_id', $orgStock->id)
+                    ->where('transaction_id', $transaction->id)
+                    ->exists();
 
-            foreach ($product->orgStocks as $orgStock) {
-                $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->where('org_stock_id', $orgStock->id)->where('transaction_id', $transaction->id)->first();
-                $quantity         = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+                if (!$exists) {
+                    $quantity = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
 
-                if (!$deliveryNoteItem) {
-                    $deliveryNoteItemData = [
+                    StoreDeliveryNoteItem::make()->action($deliveryNote, [
                         'org_stock_id'               => $orgStock->id,
                         'transaction_id'             => $transaction->id,
                         'quantity_required'          => $quantity,
                         'original_quantity_required' => $quantity,
-                    ];
-
-                    StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
-                } else {
-                    $deliveryNoteItem->update([
-                        'quantity_required' => $quantity,
                     ]);
-
-                    $toPick = $quantity - $deliveryNoteItem->quantity_picked;
-                    if ($toPick > 0) {
-                        $deliveryNoteItem->update([
-                            'state'      => DeliveryNoteStateEnum::HANDLING->value,
-                            'is_handled' => false,
-                        ]);
-                    }
+                    $createdItem = true;
                 }
             }
 
+            $this->syncDeliveryNote($deliveryNote->refresh(), $transaction, $orgStocks, null);
 
-            $oldState = $deliveryNote->state;
-
-            if (in_array($deliveryNote->state, [
-                DeliveryNoteStateEnum::PICKED,
-                DeliveryNoteStateEnum::PACKING,
-                DeliveryNoteStateEnum::PACKED,
-            ])) {
-                $deliveryNote->update([
-                    'state' => DeliveryNoteStateEnum::HANDLING,
-                ]);
-
-                $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-                $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+            if ($createdItem) {
+                $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, false, null);
             }
+
+            return false;
+        });
+
+        if ($needsCreate) {
+            $this->createDeliveryNoteItem($order, $transaction);
         }
     }
 
