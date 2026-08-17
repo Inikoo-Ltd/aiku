@@ -3063,3 +3063,38 @@ test('raising a pick cannot take more than the location holds', function () {
     expect((float)$picking->refresh()->quantity)->toBe($cap)
         ->and((float)$locationOrgStock->refresh()->quantity)->toBeGreaterThanOrEqual(0.0);
 });
+
+test('replacing a waiting gift keeps the replacement free', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $order = $deliveryNote->orders()->first();
+    $item->transaction->update([
+        'quantity_ordered' => 0,
+        'quantity_bonus'   => 1,
+        'is_gift'          => true,
+        'gross_amount'     => 0,
+        'net_amount'       => 0,
+    ]);
+    $item->update([
+        'has_waiting_crm'      => true,
+        'quantity_waiting_crm' => 1,
+        'quantity_picked'      => 0,
+        'locked_at'            => null,
+    ]);
+
+    \App\Actions\Ordering\WaitingCrmItem\ReplaceWaitingCrmItemProduct::run($item->refresh(), $this->user, [
+        'quantity' => 1,
+        'products' => [['id' => $this->product2->id, 'quantity' => 1]],
+    ]);
+
+    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->first();
+
+    expect($replacement)->not->toBeNull()
+        ->and($replacement->is_gift)->toBeTrue()
+        ->and((float)$replacement->net_amount)->toBe(0.0)
+        ->and((float)$replacement->quantity_bonus)->toBe(1.0);
+});
