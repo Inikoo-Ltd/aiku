@@ -31,76 +31,72 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
     public function handle(Product $product): void
     {
         $tradeUnits = $product->tradeUnits;
-        if ($tradeUnits->count() == 1) {
-            $this->updateFromASingleTradeUnit($tradeUnits->first(), $product);
-        } else {
-            $this->updateFromMultipleTradeUnits($tradeUnits, $product);
+
+        if ($tradeUnits->isEmpty()) {
+            return;
+        }
+
+        $dataToUpdate = $tradeUnits->count() == 1
+            ? $this->dataFromASingleTradeUnit($tradeUnits->first())
+            : $this->dataFromMultipleTradeUnits($tradeUnits);
+
+        $product->update($dataToUpdate);
+
+        if ($product->wasChanged() && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
+            BreakWebpageCache::dispatch($product->webpage)->delay(5);
         }
     }
 
-    public function updateFromASingleTradeUnit(TradeUnit $tradeUnit, Product $product): void
+    public function dataFromASingleTradeUnit(TradeUnit $tradeUnit): array
     {
-        $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
-        $productInformationFields = $this->getProductInformationFieldNames();
-
         $dataToUpdate = [];
 
-        foreach (array_merge($dangerousGoodsFields, $productInformationFields) as $field) {
-            if ($tradeUnit->$field !== null) {
-                $dataToUpdate[$field] = $tradeUnit->$field;
-            }
+        foreach ($this->hydratedFieldNames() as $field) {
+            $dataToUpdate[$field] = $this->isPictogram($field) ? (bool)$tradeUnit->$field : $tradeUnit->$field;
         }
 
-        if (!empty($dataToUpdate)) {
-            $product->updateQuietly($dataToUpdate);
-        }
+        return $dataToUpdate;
     }
 
-    public function updateFromMultipleTradeUnits($tradeUnits, Product $product): void
+    public function dataFromMultipleTradeUnits($tradeUnits): array
     {
-        $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
-        $productInformationFields = $this->getProductInformationFieldNames();
-
         $dataToUpdate = [];
 
-        foreach (array_merge($dangerousGoodsFields, $productInformationFields) as $field) {
+        foreach ($this->hydratedFieldNames() as $field) {
             $values  = [];
             $hasTrue = false;
 
-            // Collect all non-null values for this field from all trade units
             foreach ($tradeUnits as $tradeUnit) {
                 if ($tradeUnit->$field !== null) {
-                    // For boolean fields, check if any value is true
                     if (is_bool($tradeUnit->$field)) {
-                        if ($tradeUnit->$field) {
-                            $hasTrue = true;
-                        }
+                        $hasTrue = $hasTrue || $tradeUnit->$field;
                     } else {
                         $values[] = $tradeUnit->$field;
                     }
                 }
             }
 
-            // For boolean fields, if any value is true, set it as true for the product
-            if ($hasTrue) {
-                $dataToUpdate[$field] = true;
-            } // For non-boolean fields, if we have values, concatenate them with comma separators
-            elseif (!empty($values)) {
-                if ($field == 'origin_country_id') {
-                    $dataToUpdate[$field] = $values[0];
-                } else {
-                    $dataToUpdate[$field] = implode(', ', array_unique($values));
-                }
+            if ($this->isPictogram($field)) {
+                $dataToUpdate[$field] = $hasTrue;
+            } elseif (empty($values)) {
+                $dataToUpdate[$field] = null;
+            } elseif ($field == 'origin_country_id') {
+                $dataToUpdate[$field] = $values[0];
+            } else {
+                $dataToUpdate[$field] = implode(', ', array_unique($values));
             }
         }
 
-        if (!empty($dataToUpdate)) {
-            $product->update($dataToUpdate);
-
-            if ($product->wasChanged() && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
-                BreakWebpageCache::dispatch($product->webpage)->delay(5);
-            }
-        }
+        return $dataToUpdate;
     }
 
+    private function isPictogram(string $field): bool
+    {
+        return str_starts_with($field, 'pictogram_');
+    }
+
+    private function hydratedFieldNames(): array
+    {
+        return array_merge($this->getDangerousGoodsFieldNames(), $this->getProductInformationFieldNames());
+    }
 }

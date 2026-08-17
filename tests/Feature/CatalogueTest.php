@@ -850,3 +850,69 @@ test('repair repoints products from a discontinued org stock to its active twin'
     expect($repaired)->toBeGreaterThanOrEqual(1)
         ->and($product->orgStocks()->pluck('org_stocks.id')->all())->toBe([$activeOrgStock->id]);
 });
+
+test('product ingredients and origin stop reflecting a trade unit once it is removed', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $lamp = $this->tradeUnit1;
+    $lamp->update(['marketing_ingredients' => 'Coconut Leaf, Albasia Wood, Cotton', 'country_of_origin' => 'IDN']);
+
+    $fitting = $this->tradeUnit2;
+    $fitting->update(['marketing_ingredients' => 'Glass', 'country_of_origin' => 'CHN']);
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $lamp->id, 'quantity' => 1],
+        ['id' => $fitting->id, 'quantity' => 1],
+    ]);
+    $product->refresh();
+
+    expect($product->country_of_origin)->toContain('CHN')
+        ->and($product->country_of_origin)->toContain('IDN');
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $lamp->id, 'quantity' => 1],
+    ]);
+    $product->refresh();
+
+    expect($product->marketing_ingredients)->toBe('Coconut Leaf, Albasia Wood, Cotton')
+        ->and($product->country_of_origin)->toBe('IDN');
+
+    $lamp->update(['country_of_origin' => null]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits::run(Product::find($product->id));
+    $product->refresh();
+
+    expect($product->country_of_origin)->toBeNull();
+});
+
+test('repair command resyncs product ingredients and origin from trade units', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $this->tradeUnit1->update(['marketing_ingredients' => 'Coconut Leaf', 'country_of_origin' => 'IDN']);
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $this->tradeUnit1->id, 'quantity' => 1],
+    ]);
+
+    Product::where('id', $product->id)->update([
+        'marketing_ingredients' => 'Glass',
+        'country_of_origin'     => 'CHN, IDN',
+    ]);
+
+    $dryRun = \App\Actions\Catalogue\Product\RepairProductIngredientsAndOriginFromTradeUnits::make()
+        ->handle($shop->id, true);
+
+    expect($dryRun['stale'])->toBe(1)
+        ->and(Product::find($product->id)->marketing_ingredients)->toBe('Glass');
+
+    $repaired = \App\Actions\Catalogue\Product\RepairProductIngredientsAndOriginFromTradeUnits::make()
+        ->handle($shop->id);
+
+    expect($repaired['stale'])->toBe(1);
+
+    $product = Product::find($product->id);
+    expect($product->marketing_ingredients)->toBe('Coconut Leaf')
+        ->and($product->country_of_origin)->toBe('IDN');
+});
