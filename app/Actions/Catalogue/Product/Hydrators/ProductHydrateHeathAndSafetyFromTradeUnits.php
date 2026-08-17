@@ -52,7 +52,9 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
         $dataToUpdate = [];
 
         foreach ($this->hydratedFieldNames() as $field) {
-            $dataToUpdate[$field] = $this->isPictogram($field) ? (bool)$tradeUnit->$field : $tradeUnit->$field;
+            if ($tradeUnit->$field !== null || $this->isOwnedByTradeUnits($field)) {
+                $dataToUpdate[$field] = $tradeUnit->$field;
+            }
         }
 
         return $dataToUpdate;
@@ -76,10 +78,12 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
                 }
             }
 
-            if ($this->isPictogram($field)) {
-                $dataToUpdate[$field] = $hasTrue;
+            if ($hasTrue) {
+                $dataToUpdate[$field] = true;
             } elseif (empty($values)) {
-                $dataToUpdate[$field] = null;
+                if ($this->isOwnedByTradeUnits($field)) {
+                    $dataToUpdate[$field] = null;
+                }
             } elseif ($field == 'origin_country_id') {
                 $dataToUpdate[$field] = $values[0];
             } else {
@@ -90,9 +94,14 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
         return $dataToUpdate;
     }
 
-    private function isPictogram(string $field): bool
+    /**
+     * Fields the trade units are the sole source of truth for, so a null there must
+     * blank the product. The rest (GPSR texts, dangerous goods, pictograms) are also
+     * populated per shop and by hand, so a trade unit with nothing to say leaves them.
+     */
+    private function isOwnedByTradeUnits(string $field): bool
     {
-        return str_starts_with($field, 'pictogram_');
+        return in_array($field, ['country_of_origin', 'origin_country_id']);
     }
 
     private function hydratedFieldNames(): array
