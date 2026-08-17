@@ -1559,6 +1559,22 @@ test('delivery note item delete and fetch', function () {
         ->and($deliveryNote->number_items)->toBe($deliveryNote->deliveryNoteItems()->count());
 });
 
+test('over-picked item is trimmed back to required when picking is done', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $duplicate = $item->pickings()->where('type', PickingTypeEnum::PICK)->first()->replicate();
+    $duplicate->save();
+    \App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked::make()->action($item);
+
+    expect((float)$item->fresh()->quantity_picked)->toBeGreaterThan((float)$item->quantity_required);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+
+    $item = $item->fresh();
+    expect((float)$item->quantity_picked)->toEqual((float)$item->quantity_required)
+        ->and($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
 test('delivery note item packing and unpack', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
