@@ -33,6 +33,7 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
@@ -530,6 +531,8 @@ test('create service', function (Shop $shop) {
     $asset        = $service->asset;
 
     expect($service)->toBeInstanceOf(Service::class)
+        ->and($service->state)->toBe(ServiceStateEnum::ACTIVE)
+        ->and($service->status)->toBeTrue()
         ->and($asset)->toBeInstanceOf(Asset::class)
         ->and($service->asset->stats->number_historic_assets)->toBe(1)
         ->and($group->catalogueStats->number_assets)->toBe(4)
@@ -561,6 +564,14 @@ test('update service', function (Service $service) {
     expect($service->asset->name)->toBe('Updated Service Name')
         ->and($service->asset->stats->number_historic_assets)->toBe(2)
         ->and($service->asset->stats->number_historic_assets)->toBe(2);
+
+    $service = UpdateService::make()->action($service, ['state' => ServiceStateEnum::DISCONTINUED->value]);
+    expect($service->state)->toBe(ServiceStateEnum::DISCONTINUED)
+        ->and($service->status)->toBeFalse();
+
+    $service = UpdateService::make()->action($service, ['state' => ServiceStateEnum::ACTIVE->value]);
+    expect($service->state)->toBe(ServiceStateEnum::ACTIVE)
+        ->and($service->status)->toBeTrue();
 
     return $service;
 })->depends('create service');
