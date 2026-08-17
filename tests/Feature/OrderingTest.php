@@ -44,6 +44,7 @@ use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
+use App\Actions\Billables\Charge\DeleteCharge;
 use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Ordering\Order\CalculateOrderHangingCharges;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
@@ -106,6 +107,8 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
+use App\Models\Catalogue\Asset;
+use Illuminate\Validation\ValidationException;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
@@ -510,6 +513,38 @@ test('small order charge configured through the UI applies to an order', functio
     CalculateOrderHangingCharges::run($order);
 
     expect($chargeTransactions()->count())->toBe(0);
+})->depends('create order');
+
+test('delete an unused charge', function (Order $order) {
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'del-me',
+        'name'        => 'delete me',
+        'description' => 'never used',
+        'type'        => ChargeTypeEnum::OTHER,
+    ]);
+    $assetId = $charge->asset_id;
+
+    DeleteCharge::make()->action($charge);
+
+    expect(Charge::find($charge->id))->toBeNull()
+        ->and(Asset::find($assetId))->toBeNull();
+})->depends('create order');
+
+test('deleting a charge already used on an order is refused', function (Order $order) {
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'keep-me',
+        'name'        => 'keep me',
+        'description' => 'used on an order',
+        'type'        => ChargeTypeEnum::OTHER,
+    ]);
+
+    StoreTransactionFromCharge::make()->action($order, $charge, [
+        'date'             => Carbon::now(),
+        'quantity_ordered' => 1,
+    ]);
+
+    expect(fn () => DeleteCharge::make()->action($charge))->toThrow(ValidationException::class)
+        ->and(Charge::find($charge->id))->not->toBeNull();
 })->depends('create order');
 
 test('create transaction from shipping', function (Order $order) {
