@@ -134,8 +134,8 @@ class EditOutboxInShop extends OrgAction
                             'type' => 'input_number',
                             'label' => __('Days after order dispatched'),
                             'placeholder' => __('Days after order dispatched'),
-                            'required' => false,
-                            'value' => $outbox->days_after ?? 10,
+                            'required' => true,
+                            'value' => $outbox->days_after,
                         ],
                     ]
                 ];

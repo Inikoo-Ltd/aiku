@@ -627,4 +627,24 @@ enum OutboxCodeEnum: string
             default => false,
         };
     }
+
+    public function requiresDaysAfter(): bool
+    {
+        return match ($this) {
+            self::REVIEW_REMINDER,
+            self::REORDER_REMINDER,
+            self::REORDER_REMINDER_2ND,
+            self::REORDER_REMINDER_3RD,
+            self::GOLD_REWARD_REMINDER_1,
+            self::GOLD_REWARD_REMINDER_2,
+            self::GOLD_REWARD_REMINDER_3,
+            self::ABANDONED_CART_REMINDER_1,
+            self::ABANDONED_CART_REMINDER_2,
+            self::ABANDONED_CART_REMINDER_3,
+            self::PROSPECT_CONVERTION_1,
+            self::PROSPECT_CONVERTION_2,
+            self::PROSPECT_CONVERTION_3 => true,
+            default => false,
+        };
+    }
 }

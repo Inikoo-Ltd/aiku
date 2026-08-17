@@ -2331,6 +2331,37 @@ test('send review reminder email', function () {
     expect($outbox->emailBulkRuns()->count())->toBeGreaterThanOrEqual(1);
 });
 
+test('cannot activate review reminder outbox without days_after', function () {
+    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REVIEW_REMINDER->value)->first();
+    $outbox->update(['days_after' => null, 'state' => OutboxStateEnum::IN_PROCESS]);
+
+    expect(fn () => UpdateOutbox::make()->action($outbox, [
+        'state' => OutboxStateEnum::ACTIVE,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect(fn () => PublishOutbox::make()->action($outbox, [
+        'layout'          => '{}',
+        'compiled_layout' => '<div>test</div>',
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $outbox = UpdateOutbox::make()->action($outbox, [
+        'state'      => OutboxStateEnum::ACTIVE,
+        'days_after' => 5,
+    ]);
+    expect($outbox->state)->toBe(OutboxStateEnum::ACTIVE)
+        ->and($outbox->days_after)->toBe(5);
+});
+
+test('outbox showcase returns email funnel stats', function () {
+    $outbox = $this->shop->outboxes()->where('code', OutboxCode::REVIEW_REMINDER->value)->first();
+
+    $showcase = GetOutboxShowcase::run($outbox);
+
+    $funnel = $showcase['dashboard_stats']['widgets']['components'][0]['data']['funnel'];
+    expect(collect($funnel)->pluck('key')->all())->toBe(['sent', 'delivered', 'opened', 'clicked'])
+        ->and($showcase['dashboard_stats']['widgets']['components'][0]['data']['issues'])->toBeArray();
+});
+
 test('process review reminder recipients returns early when bulk run not found', function () {
     ProcessReviewReminderRecipients::run(999999999, []);
 
