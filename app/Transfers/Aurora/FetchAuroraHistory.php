@@ -36,6 +36,7 @@ use App\Transfers\Aurora\History\Parsers\ParseSupplierAgentHistory;
 use App\Transfers\Aurora\History\Parsers\ParseSupplierDeliveryHistory;
 use App\Transfers\Aurora\History\Parsers\ParseSupplierPartHistory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -129,18 +130,20 @@ class FetchAuroraHistory extends FetchAurora
 
         $data = $values['data'];
         if ($uploadSourceId = $this->getUploadSourceId($data)) {
-            $upload = $this->parseUpload($this->organisation->id.':'.$uploadSourceId);
+            $upload = $this->lookup(\App\Models\Helpers\Upload::class, $this->organisation->id.':'.$uploadSourceId);
             if ($upload) {
                 data_set($data, 'upload_id', $upload->id);
+                unset($data['upload_source_id']);
+            } else {
+                data_set($data, 'upload_source_id', $uploadSourceId);
             }
-            unset($data['upload_source_id']);
         }
 
         if (!($auditable->organisation_id ?? null)) {
             data_set($data, 'source_organisation', $this->organisation->slug);
         }
 
-        $user = $this->parseUserFromHistory();
+        $user = $this->lookupActor();
 
         $this->parsedData['auditable'] = $auditable;
         $this->parsedData['history']   = [
@@ -159,6 +162,63 @@ class FetchAuroraHistory extends FetchAurora
             $this->parsedData['history']['user_type'] = class_basename($user);
             $this->parsedData['history']['user_id']   = $user->id;
         }
+    }
+
+    protected function lookupActor(): Model|null
+    {
+        static $actorCache = [];
+
+        $subject    = (string) ($this->auroraModelData->{'Subject'} ?? '');
+        $subjectKey = (int) ($this->auroraModelData->{'Subject Key'} ?? 0);
+        $cacheKey   = $this->organisation->id.'|'.$subject.'|'.$subjectKey;
+
+        if (array_key_exists($cacheKey, $actorCache)) {
+            return $actorCache[$cacheKey];
+        }
+
+        $actorCache[$cacheKey] = $this->resolveActorLookupOnly($subject, $subjectKey);
+
+        return $actorCache[$cacheKey];
+    }
+
+    protected function resolveActorLookupOnly(string $subject, int $subjectKey): Model|null
+    {
+        if ($subjectKey <= 0) {
+            return null;
+        }
+
+        $key = $this->organisation->id.':'.$subjectKey;
+
+        if ($subject == 'Staff') {
+            $employee = $this->lookup(\App\Models\HumanResources\Employee::class, $key);
+            if ($employee) {
+                $userHasModel = DB::table('user_has_models')
+                    ->where('model_id', $employee->id)
+                    ->where('model_type', 'Employee')
+                    ->first();
+                if ($userHasModel) {
+                    return \App\Models\SysAdmin\User::withTrashed()->find($userHasModel->user_id);
+                }
+            }
+
+            return \App\Models\SysAdmin\User::withTrashed()
+                ->where('group_id', $this->organisation->group_id)
+                ->whereJsonContains('sources->parents', $key)
+                ->first() ?? $this->lookupUser($key);
+        }
+
+        if ($subject == 'Customer') {
+            $webUserKey = DB::connection('aurora')
+                ->table('Website User Dimension')
+                ->where('Website User Customer Key', $subjectKey)
+                ->orderBy('Website User Key')
+                ->value('Website User Key');
+            if ($webUserKey) {
+                return $this->lookup(\App\Models\CRM\WebUser::class, $this->organisation->id.':'.$webUserKey);
+            }
+        }
+
+        return null;
     }
 
     protected function sniffBlankDirectObject(): ?string
@@ -197,6 +257,15 @@ class FetchAuroraHistory extends FetchAurora
         $this->auroraModelData->aikuCategorySubject = $category?->{'Category Subject'};
     }
 
+    protected function lookup(string $class, string $key, string $column = 'source_id'): ?Model
+    {
+        $query = in_array(SoftDeletes::class, class_uses_recursive($class), true)
+            ? $class::withTrashed()
+            : $class::query();
+
+        return $query->where($column, $key)->first();
+    }
+
     protected function resolveAuditable(string $directObject, ?string $auditableType): ?Model
     {
         $key = $this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'};
@@ -206,20 +275,20 @@ class FetchAuroraHistory extends FetchAurora
         }
 
         return match ($directObject) {
-            'Customer' => $this->parseCustomer($key),
-            'Prospect' => $this->parseProspect($key),
-            'Product' => $this->parseProduct($key),
-            'Location' => $this->parseLocation($key, $this->organisationSource),
-            'Warehouse Area' => $this->parseWarehouseArea($key),
-            'Order' => $this->parseOrder($key),
-            'Delivery Note' => $this->parseDeliveryNote($key),
-            'Invoice' => $this->parseInvoice($key),
-            'Purchase Order' => PurchaseOrder::where('source_id', $key)->first(),
-            'Agent Supplier Purchase Order' => AgentSupplierPurchaseOrder::where('source_id', $key)->first(),
-            'Supplier Delivery' => StockDelivery::where('source_id', $key)->first(),
-            'Barcode' => $this->parseBarcode($key),
-            'Charge' => $this->parseCharge($key),
-            'Customer Client' => $this->parseCustomerClient($key),
+            'Customer' => $this->lookup(\App\Models\CRM\Customer::class, $key),
+            'Prospect' => $this->lookup(\App\Models\CRM\Prospect::class, $key),
+            'Product' => $this->lookup(\App\Models\Catalogue\Product::class, $key),
+            'Location' => $this->lookup(\App\Models\Inventory\Location::class, $key),
+            'Warehouse Area' => $this->lookup(\App\Models\Inventory\WarehouseArea::class, $key),
+            'Order' => $this->lookup(\App\Models\Ordering\Order::class, $key),
+            'Delivery Note' => $this->lookup(\App\Models\Dispatching\DeliveryNote::class, $key),
+            'Invoice' => $this->lookup(\App\Models\Accounting\Invoice::class, $key),
+            'Purchase Order' => $this->lookup(PurchaseOrder::class, $key),
+            'Agent Supplier Purchase Order' => $this->lookup(AgentSupplierPurchaseOrder::class, $key),
+            'Supplier Delivery' => $this->lookup(StockDelivery::class, $key),
+            'Barcode' => $this->lookup(\App\Models\Helpers\Barcode::class, $key),
+            'Charge' => $this->lookup(\App\Models\Billables\Charge::class, $key),
+            'Customer Client' => $this->lookup(\App\Models\Dropshipping\CustomerClient::class, $key),
             default => null,
         };
     }
@@ -228,29 +297,45 @@ class FetchAuroraHistory extends FetchAurora
     {
         return match ($auditableType) {
             'TradeUnit' => $this->resolveTradeUnit($key),
-            'OrgStock' => $this->parseOrgStock($key),
-            'SupplierProduct' => $this->parseSupplierProduct($key),
+            'OrgStock' => $this->lookup(\App\Models\Inventory\OrgStock::class, $key),
+            'SupplierProduct' => $this->lookup(\App\Models\SupplyChain\SupplierProduct::class, $key),
             'ProductCategory' => match ($directObject) {
-                'Family' => $this->parseFamily($key),
-                'Department' => $this->parseDepartment($key),
-                default => $this->parseFamily($key) ?? $this->parseDepartment($key) ?? $this->parseCollection($key),
+                'Family' => $this->lookupProductCategory('source_family_id', $key),
+                'Department' => $this->lookupProductCategory('source_department_id', $key),
+                default => $this->lookupProductCategory('source_family_id', $key)
+                    ?? $this->lookupProductCategory('source_department_id', $key)
+                    ?? $this->lookup(\App\Models\Catalogue\Collection::class, $key),
             },
-            'StockFamily' => StockFamily::withTrashed()->where('source_id', $key)->first(),
-            'Employee' => $this->parseEmployee($key),
-            'User' => $this->parseUser($key),
-            'WebUser' => $this->parseWebUser($key),
-            'Mailshot' => $this->parseMailshot($key),
-            'OfferCampaign' => $this->parseOfferCampaign($key),
-            'Offer' => $this->parseOffer($key),
-            'OfferComponent' => $this->parseOfferAllowance($key),
-            'ShippingZone' => $this->parseShippingZone($key),
-            'ShippingZoneSchema' => $this->parseShippingZoneSchema($key),
-            'Supplier' => $this->parseSupplier($key),
-            'Agent' => $this->parseAgent($key),
+            'StockFamily' => $this->lookup(StockFamily::class, $key),
+            'Employee' => $this->lookup(\App\Models\HumanResources\Employee::class, $key),
+            'User' => $this->lookupUser($key),
+            'WebUser' => $this->lookup(\App\Models\CRM\WebUser::class, $key),
+            'Mailshot' => $this->lookup(\App\Models\Comms\Mailshot::class, $key),
+            'OfferCampaign' => $this->lookup(\App\Models\Discounts\OfferCampaign::class, $key),
+            'Offer' => $this->lookup(\App\Models\Discounts\Offer::class, $key),
+            'OfferComponent' => $this->lookup(\App\Models\Discounts\OfferAllowance::class, $key),
+            'ShippingZone' => $this->lookup(\App\Models\Billables\ShippingZone::class, $key),
+            'ShippingZoneSchema' => $this->lookup(\App\Models\Billables\ShippingZoneSchema::class, $key),
+            'Supplier' => $this->lookup(\App\Models\SupplyChain\Supplier::class, $key),
+            'Agent' => $this->lookup(\App\Models\SupplyChain\Agent::class, $key),
             'OrgSupplier' => $this->resolveOrgSupplier($key),
             'OrgAgent' => $this->resolveOrgAgent($key),
             default => null,
         };
+    }
+
+    protected function lookupProductCategory(string $column, string $key): ?Model
+    {
+        return \App\Models\Catalogue\ProductCategory::withTrashed()->where($column, $key)->first();
+    }
+
+    protected function lookupUser(string $key): ?Model
+    {
+        return \App\Models\SysAdmin\User::withTrashed()->where('source_id', $key)->first()
+            ?? \App\Models\SysAdmin\User::withTrashed()
+                ->where('group_id', $this->organisation->group_id)
+                ->whereJsonContains('sources->users', $key)
+                ->first();
     }
 
     protected function resolveTradeUnit(string $key): ?TradeUnit
@@ -260,12 +345,12 @@ class FetchAuroraHistory extends FetchAurora
             return $tradeUnit;
         }
 
-        return $this->parseOrgStock($key)?->stock?->tradeUnits()->first();
+        return $this->lookup(\App\Models\Inventory\OrgStock::class, $key)?->stock?->tradeUnits()->first();
     }
 
     protected function resolveOrgSupplier(string $key): ?OrgSupplier
     {
-        $supplier = $this->parseSupplier($key);
+        $supplier = $this->lookup(\App\Models\SupplyChain\Supplier::class, $key);
         if (!$supplier) {
             return null;
         }
@@ -277,7 +362,7 @@ class FetchAuroraHistory extends FetchAurora
 
     protected function resolveOrgAgent(string $key): ?OrgAgent
     {
-        $agent = $this->parseAgent($key);
+        $agent = $this->lookup(\App\Models\SupplyChain\Agent::class, $key);
         if (!$agent) {
             return null;
         }
