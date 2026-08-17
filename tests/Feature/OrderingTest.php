@@ -44,6 +44,8 @@ use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
+use App\Actions\Billables\Charge\UpdateCharge;
+use App\Actions\Ordering\Order\CalculateOrderHangingCharges;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\HydrateOrders;
@@ -473,6 +475,41 @@ test('create transaction from charge', function (Order $order) {
         ->and($order->stats->number_item_transactions)->toBe(1);
 
     return $transaction;
+})->depends('create order');
+
+test('small order charge configured through the UI applies to an order', function (Order $order) {
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'SOC',
+        'name'        => 'SOC',
+        'description' => 'small order charge',
+        'type'        => ChargeTypeEnum::HANGING,
+    ]);
+
+    expect($charge->state)->toBe(ChargeStateEnum::IN_PROCESS)
+        ->and($charge->settings)->not->toHaveKey('rules');
+
+    UpdateCharge::make()->action($charge, [
+        'state'     => ChargeStateEnum::ACTIVE,
+        'min_order' => 2550,
+        'amount'    => 255,
+    ], strict: false);
+
+    $charge->refresh();
+    expect($charge->settings['rules'])->toBe('<;2550');
+    $chargeTransactions = fn () => $order->transactions()
+        ->where('model_type', 'Charge')
+        ->where('model_id', $charge->id);
+
+    $order->goods_amount = 1000;
+    CalculateOrderHangingCharges::run($order);
+
+    expect($chargeTransactions()->count())->toBe(1)
+        ->and((int) $chargeTransactions()->first()->net_amount)->toBe(255);
+
+    $order->goods_amount = 3000;
+    CalculateOrderHangingCharges::run($order);
+
+    expect($chargeTransactions()->count())->toBe(0);
 })->depends('create order');
 
 test('create transaction from shipping', function (Order $order) {
