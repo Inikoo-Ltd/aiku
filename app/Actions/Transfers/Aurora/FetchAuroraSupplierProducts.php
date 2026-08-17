@@ -162,12 +162,17 @@ class FetchAuroraSupplierProducts extends FetchAuroraAction
                 $supplierProduct->updateQuietly(['current_historic_supplier_product_id' => $historicSupplierProduct->id]);
 
 
-                $tradeUnit = $supplierProductData['trade_unit'];
-                SyncSupplierProductTradeUnits::run($supplierProduct, [
-                    $tradeUnit->id => [
-                        'quantity' => $supplierProductData['supplierProduct']['units_per_pack']
-                    ]
-                ]);
+                // Trade-unit composition is maintained in aiku: only a supplier product
+                // this run just created gets its trade unit linked, an existing one is
+                // never rewired from Aurora.
+                if ($supplierProduct->wasRecentlyCreated) {
+                    $tradeUnit = $supplierProductData['trade_unit'];
+                    SyncSupplierProductTradeUnits::run($supplierProduct, [
+                        $tradeUnit->id => [
+                            'quantity' => $supplierProductData['supplierProduct']['units_per_pack']
+                        ]
+                    ]);
+                }
             }
         }
 

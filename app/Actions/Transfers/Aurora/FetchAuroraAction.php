@@ -13,6 +13,7 @@ use App\Enums\Transfers\Fetch\FetchTypeEnum;
 use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use App\Transfers\AuroraCatalogueGuard;
 use App\Transfers\AuroraOrganisationService;
 use App\Transfers\WowsbarOrganisationService;
 use App\Models\Transfers\FetchStack;
@@ -65,7 +66,7 @@ class FetchAuroraAction extends FetchAction
             return null;
         }
 
-        return static::make()->handle(...$arguments);
+        return AuroraCatalogueGuard::during(fn () => static::make()->handle(...$arguments));
     }
 
     public function processOrganisation(Command $command, Organisation $organisation): int
@@ -86,7 +87,7 @@ class FetchAuroraAction extends FetchAction
             return 0;
         }
 
-        return parent::processOrganisation($command, $organisation);
+        return AuroraCatalogueGuard::during(fn () => parent::processOrganisation($command, $organisation));
     }
 
     protected function markFetchStackIgnored(?int $fetchStackId): void
@@ -321,7 +322,7 @@ class FetchAuroraAction extends FetchAction
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
-        $this->handle($this->organisationSource, $organisationSourceId);
+        AuroraCatalogueGuard::during(fn () => $this->handle($this->organisationSource, $organisationSourceId));
 
         if ($fetchStackId) {
             $fetchStack = FetchStack::find($fetchStackId);
@@ -355,7 +356,7 @@ class FetchAuroraAction extends FetchAction
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
-        return $this->handle($this->organisationSource, $organisationSourceId);
+        return AuroraCatalogueGuard::during(fn () => $this->handle($this->organisationSource, $organisationSourceId));
     }
 
 

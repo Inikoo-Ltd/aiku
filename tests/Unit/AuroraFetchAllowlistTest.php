@@ -15,6 +15,7 @@ use App\Actions\Transfers\Aurora\FetchAuroraStockLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraSuppliers;
 use App\Actions\Transfers\Aurora\FetchAuroraTimesheets;
 use App\Models\SysAdmin\Organisation;
+use App\Transfers\AuroraCatalogueGuard;
 use App\Transfers\AuroraOrganisationService;
 
 /**
@@ -87,4 +88,69 @@ it('lets a following organisation and a forced fetch through the on-miss gate', 
 
 it('returns null from run instead of fetching when the gate refuses', function () {
     expect(FetchAuroraLocations::run(auroraSourceFor('aw'), 1))->toBeNull();
+});
+
+it('freezes every catalogue-tier model against aurora updates while a fetch runs', function (string $modelClass) {
+    $model = (new $modelClass())->forceFill(['id' => 1]);
+    $model->exists = true;
+
+    expect(AuroraCatalogueGuard::blocksUpdate($model))->toBeFalse()
+        ->and(AuroraCatalogueGuard::during(fn () => AuroraCatalogueGuard::blocksUpdate($model)))->toBeTrue();
+})->with([
+    'trade units'               => [\App\Models\Goods\TradeUnit::class],
+    'products'                  => [\App\Models\Catalogue\Product::class],
+    'assets'                    => [\App\Models\Catalogue\Asset::class],
+    'historic assets'           => [\App\Models\Catalogue\HistoricAsset::class],
+    'product categories'        => [\App\Models\Catalogue\ProductCategory::class],
+    'collections'               => [\App\Models\Catalogue\Collection::class],
+    'stocks'                    => [\App\Models\Goods\Stock::class],
+    'org stocks'                => [\App\Models\Inventory\OrgStock::class],
+    'stock families'            => [\App\Models\Goods\StockFamily::class],
+    'master assets'             => [\App\Models\Masters\MasterAsset::class],
+    'master product categories' => [\App\Models\Masters\MasterProductCategory::class],
+    'master shops'              => [\App\Models\Masters\MasterShop::class],
+]);
+
+it('lets a row the same fetch just created finish being assembled', function () {
+    $product = (new \App\Models\Catalogue\Product())->forceFill(['id' => 1]);
+    $product->exists = true;
+    $product->wasRecentlyCreated = true;
+
+    expect(AuroraCatalogueGuard::during(fn () => AuroraCatalogueGuard::blocksUpdate($product)))->toBeFalse();
+});
+
+it('does not freeze models outside the catalogue tier', function () {
+    $organisation = organisationNamed('aw');
+    $organisation->exists = true;
+
+    expect(AuroraCatalogueGuard::during(fn () => AuroraCatalogueGuard::blocksUpdate($organisation)))->toBeFalse();
+});
+
+it('makes the shared update chokepoint a no-op on a frozen model', function () {
+    $updater = new class () {
+        use \App\Actions\Traits\WithActionUpdate;
+
+        public function attempt($model, array $modelData)
+        {
+            return $this->update($model, $modelData);
+        }
+    };
+
+    $tradeUnit = (new \App\Models\Goods\TradeUnit())->forceFill(['id' => 1, 'name' => 'kept']);
+    $tradeUnit->exists = true;
+    $tradeUnit->syncOriginal();
+
+    $result = AuroraCatalogueGuard::during(fn () => $updater->attempt($tradeUnit, ['name' => 'from aurora']));
+
+    expect($result->name)->toBe('kept')
+        ->and($result->isDirty())->toBeFalse();
+});
+
+it('drops the guard even when the fetch throws', function () {
+    try {
+        AuroraCatalogueGuard::during(fn () => throw new RuntimeException('fetch blew up'));
+    } catch (RuntimeException) {
+    }
+
+    expect(AuroraCatalogueGuard::active())->toBeFalse();
 });
