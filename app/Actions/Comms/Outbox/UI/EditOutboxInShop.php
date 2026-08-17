@@ -79,9 +79,6 @@ class EditOutboxInShop extends OrgAction
         $fields[] = $subjectField; // init fields
 
         switch ($outbox->code) {
-            case OutboxCodeEnum::REORDER_REMINDER:
-            case OutboxCodeEnum::REORDER_REMINDER_2ND:
-            case OutboxCodeEnum::REORDER_REMINDER_3RD:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_1:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_2:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_3:

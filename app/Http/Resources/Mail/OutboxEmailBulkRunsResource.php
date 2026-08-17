@@ -11,7 +11,7 @@ namespace App\Http\Resources\Mail;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ReorderRemainderEmailBulkRunsResource extends JsonResource
+class OutboxEmailBulkRunsResource extends JsonResource
 {
     public function toArray($request): array
     {

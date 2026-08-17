@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Eka Yudinata
  */
 
-namespace App\Actions\Comms\Outbox\ReorderRemainder\UI;
+namespace App\Actions\Comms\EmailBulkRun\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
@@ -16,7 +16,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class IndexReorderEmailBulkRuns extends OrgAction
+class IndexOutboxEmailBulkRuns extends OrgAction
 {
     public function handle(Outbox $parent, $prefix = null): LengthAwarePaginator
     {

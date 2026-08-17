@@ -40,6 +40,7 @@ enum EmailOngoingRunCodeEnum: string
     case ABANDONED_CART_REMINDER_1 = 'abandoned_cart_reminder_1';
     case ABANDONED_CART_REMINDER_2 = 'abandoned_cart_reminder_2';
     case ABANDONED_CART_REMINDER_3 = 'abandoned_cart_reminder_3';
+    // Retired Jul 2026, replaced by Gold reward reminder; cases kept because historic outboxes/dispatched_emails rows still hold these codes
     case REORDER_REMINDER = 'reorder_reminder';
     case REORDER_REMINDER_2ND = 'reorder_reminder_2nd';
     case REORDER_REMINDER_3RD = 'reorder_reminder_3rd';

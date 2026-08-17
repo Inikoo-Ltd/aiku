@@ -89,7 +89,6 @@ use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
 use App\Actions\Comms\OrgPostRoom\UpdateOrgPostRoom;
 use App\Actions\Comms\Outbox\HydrateOutbox;
 use App\Actions\Comms\Outbox\PublishOutbox;
-use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
 use App\Actions\Comms\Outbox\StoreOutbox;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
@@ -99,7 +98,6 @@ use App\Actions\Comms\PostRoom\UpdatePostRoom;
 use App\Actions\Comms\SubscriptionEvent\StoreSubscriptionEvent;
 use App\Actions\Comms\SubscriptionEvent\UpdateSubscriptionEvent;
 use App\Actions\Comms\TestEmailRecipient\StoreTestEmailRecipient;
-use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\StoreWebsite;
@@ -162,7 +160,7 @@ use App\Actions\Comms\Outbox\PriceChangeNotification\ProcessPriceChangeRecipient
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ProcessOutboxTimeSeriesRecords;
 use App\Actions\Comms\Outbox\RedoOutboxTimeSeries;
-use App\Actions\Comms\Outbox\ReorderRemainder\UI\IndexReorderEmailBulkRuns;
+use App\Actions\Comms\EmailBulkRun\UI\IndexOutboxEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReviewReminder\ProcessReviewReminderRecipients;
 use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
@@ -388,41 +386,6 @@ test('test send email reset password', function () {
 
     return $this->customer;
 })->depends('outbox seeded when shop created');
-
-test('send reorder reminder email', function () {
-
-    $outbox = createOutboxDirectly($this->shop, OutboxCodeEnum::REORDER_REMINDER);
-
-    $outbox = UpdateOutbox::make()->action($outbox, [
-        'days_after' => 14
-    ]);
-
-    expect($outbox->days_after)->toBe(14);
-
-    // ponytail: state before publishing isn't asserted here — see the password_reminder outbox above for why
-    // (an active EmailTemplate for reorder_reminder already auto-activates it at seed time).
-    $outbox = PublishOutbox::make()->action(
-        $outbox,
-        [
-            'layout' => '{}',
-            'compiled_layout' => '<div>test</div>',
-        ]
-    );
-
-
-    expect($outbox->state)->toBe(OutboxStateEnum::ACTIVE);
-
-    UpdateCustomerLastInvoicedDate::run(
-        $this->customer,
-        now()->subDays(14),
-    );
-    $this->customer->refresh();
-
-    RunReorderRemainderEmailBulkRuns::run();
-
-
-});
-
 
 test('UI comms dashboard', function () {
     $response = $this->get(route('grp.org.shops.show.dashboard.comms.dashboard', [$this->organisation->slug, $this->shop->slug]));
@@ -2286,7 +2249,7 @@ test('index reorder email bulk runs', function () {
     $fakeRoute->name('grp.json.outbox.reorder-email-bulk-runs');
     app('request')->setRouteResolver(fn () => $fakeRoute);
 
-    $bulkRuns = IndexReorderEmailBulkRuns::make()->handle($outbox);
+    $bulkRuns = IndexOutboxEmailBulkRuns::make()->handle($outbox);
 
     expect($bulkRuns)->toBeInstanceOf(\Illuminate\Contracts\Pagination\LengthAwarePaginator::class);
 });
