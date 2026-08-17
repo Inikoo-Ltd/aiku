@@ -1252,6 +1252,36 @@ describe('calculate order discounts', function () {
             ->and(UpdateFaireOrder::make()->getInvoiceToDiscount($order->refresh())->id)->toBe($invoice->id);
     });
 
+    test('a dispatched Faire line missing from the invoice gets billed, a waiting one does not', function () {
+        $order = Order::latest('id')->first();
+        $invoice = \App\Models\Accounting\Invoice::where('order_id', $order->id)
+            ->where('type', \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE)->firstOrFail();
+
+        $dispatched = $order->transactions()->where('model_type', 'Product')->first();
+        $dispatched->update(['quantity_dispatched' => $dispatched->quantity_ordered]);
+        $dispatched->invoiceTransaction?->delete();
+
+        $billedBefore = $invoice->invoiceTransactions()->count();
+        UpdateFaireOrder::make()->invoiceDispatchedLinesMissingFromInvoice($order->refresh(), $invoice);
+
+        expect($invoice->invoiceTransactions()->count())->toBe($billedBefore + 1)
+            ->and($dispatched->refresh()->invoiceTransaction)->not->toBeNull();
+
+        // second pass adds nothing: only genuinely missing lines are billed
+        UpdateFaireOrder::make()->invoiceDispatchedLinesMissingFromInvoice($order->refresh(), $invoice);
+        expect($invoice->invoiceTransactions()->count())->toBe($billedBefore + 1);
+
+        // a line still waiting stays off the invoice
+        $waiting = $order->transactions()->where('model_type', 'Product')->where('id', '!=', $dispatched->id)->first();
+        if ($waiting) {
+            $waiting->update(['quantity_dispatched' => 0]);
+            $waiting->invoiceTransaction?->delete();
+            $countBefore = $invoice->invoiceTransactions()->count();
+            UpdateFaireOrder::make()->invoiceDispatchedLinesMissingFromInvoice($order->refresh(), $invoice);
+            expect($invoice->invoiceTransactions()->count())->toBe($countBefore);
+        }
+    });
+
     test('suspend all active offers', function () {
         foreach (Offer::where('state', OfferStateEnum::ACTIVE)->get() as $offer) {
             SuspendOffer::run($offer);

@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
@@ -30,6 +31,15 @@ class CalculateOrderShipping
 
     public function handle(Order $order): Order
     {
+        /**
+         * External shops are Faire, and Faire bills its own shipping: its payload carries no
+         * shipping cost for us to charge. An Aiku shipping line here is money the marketplace
+         * never invoiced, and it pushes the order total away from Faire's figure.
+         */
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL) {
+            return $order;
+        }
+
         if (in_array($order->shipping_engine, [OrderShippingEngineEnum::MANUAL, OrderShippingEngineEnum::NO_APPLICABLE])) {
             return $order;
         }

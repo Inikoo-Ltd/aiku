@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Ordering\Transaction\DestroyTransaction;
 use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Models\Billables\Charge;
@@ -27,6 +28,14 @@ class CalculateOrderHangingCharges
 
     public function handle(Order $order): Order
     {
+        /**
+         * External shops are Faire, which bills the retailer itself: an Aiku charge line is
+         * money the marketplace never invoiced. See CalculateOrderShipping for the same reason.
+         */
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL) {
+            return $order;
+        }
+
         if ($order->charges_engine == OrderChargesEngineEnum::MANUAL) {
             return $order;
         }

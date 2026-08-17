@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
@@ -219,11 +220,40 @@ class UpdateFaireOrder extends OrgAction
             $order->update(['amount_off' => $amountOff]);
             $invoice->update(['amount_off' => $amountOff]);
 
+            $this->invoiceDispatchedLinesMissingFromInvoice($order, $invoice);
+
             CalculateInvoiceTotals::run($invoice);
             $invoice->refresh();
             $invoice->update([
                 'tax_amount'   => $faireTaxAmount,
                 'total_amount' => $invoice->net_amount + $faireTaxAmount,
+            ]);
+        }
+    }
+
+    /**
+     * A line Faire adds to an already-invoiced order gets a transaction and a delivery note item
+     * but never an invoice line, so it ships and is never billed. Only dispatched lines are added:
+     * a line still waiting is legitimately absent from the invoice until it goes out.
+     */
+    public function invoiceDispatchedLinesMissingFromInvoice(Order $order, Invoice $invoice): void
+    {
+        $missing = $order->transactions()
+            ->where('model_type', 'Product')
+            ->where('quantity_dispatched', '>', 0)
+            ->whereDoesntHave('invoiceTransaction', fn ($query) => $query->whereRelation('invoice', 'type', InvoiceTypeEnum::INVOICE))
+            ->get();
+
+        foreach ($missing as $transaction) {
+            $dispatchedRatio = $transaction->quantity_ordered > 0
+                ? min(1, $transaction->quantity_dispatched / $transaction->quantity_ordered)
+                : 1;
+
+            StoreInvoiceTransaction::make()->action($invoice, $transaction, [
+                'tax_category_id' => $transaction->tax_category_id,
+                'quantity'        => $transaction->quantity_dispatched,
+                'gross_amount'    => round($transaction->gross_amount * $dispatchedRatio, 2),
+                'net_amount'      => round($transaction->net_amount * $dispatchedRatio, 2),
             ]);
         }
     }
