@@ -45,6 +45,7 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateFaireOrder extends OrgAction
@@ -204,11 +205,6 @@ class UpdateFaireOrder extends OrgAction
         CalculateOrderTotalAmounts::run($order);
 
         $faireTaxAmount = $this->getFaireTaxAmount($orderFaireData, $shop);
-        $order->refresh();
-        $order->update([
-            'tax_amount'   => $faireTaxAmount,
-            'total_amount' => $order->net_amount + $faireTaxAmount,
-        ]);
 
         $invoice = $this->getInvoiceToDiscount($order);
         if ($invoice) {
@@ -229,6 +225,81 @@ class UpdateFaireOrder extends OrgAction
                 'total_amount' => $invoice->net_amount + $faireTaxAmount,
             ]);
         }
+
+        /**
+         * Last, deliberately: removing the lines Faire never billed recalculates the order, which
+         * derives tax from Aiku's own rates. Faire states the tax it paid, so it is asserted after
+         * everything that could recompute it.
+         */
+        $order->refresh();
+        $order->update([
+            'tax_amount'   => $faireTaxAmount,
+            'total_amount' => $order->net_amount + $faireTaxAmount,
+        ]);
+
+        $this->reportDivergenceFromFaire($order->refresh(), $invoice?->refresh(), $orderFaireData, $amountOff, $faireTaxAmount);
+    }
+
+    /**
+     * Faire is the source of truth, so whatever it says the order is worth is what we must hold.
+     * Nothing compared the two until now, which is how six months of drift went unnoticed: every
+     * divergence was found by a support ticket instead. Logged rather than thrown, because a wrong
+     * total must not stop the sync from importing the rest of the order.
+     */
+    public function reportDivergenceFromFaire(Order $order, ?Invoice $invoice, array $orderFaireData, float $amountOff, float $faireTaxAmount): void
+    {
+        /**
+         * Faire charges the retailer shipping too: it is not in the items but its VAT is in the
+         * taxes array (taxable_item_type SHIPPING), so the expected total includes the order's
+         * shipping line. subtotal_after_brand_discounts fits nowhere here - it is net of both
+         * shipping and damaged_and_missing_items.
+         */
+        $expectedNet   = round($this->getFaireItemsNet($orderFaireData, $order->shop) - $amountOff + $order->shipping_amount + $order->charges_amount, 2);
+        $expectedTotal = round($expectedNet + $faireTaxAmount, 2);
+
+        foreach (['order' => $order, 'invoice' => $invoice] as $side => $model) {
+            if (!$model || abs(round($model->total_amount - $expectedTotal, 2)) < 0.01) {
+                continue;
+            }
+
+            Log::warning('Faire total mismatch', [
+                'faire_order'    => $order->slug,
+                'shop'           => $order->shop->code,
+                'side'           => $side,
+                'faire_total'    => $expectedTotal,
+                'aiku_total'     => (float)$model->total_amount,
+                'difference'     => round($model->total_amount - $expectedTotal, 2),
+                'faire_net'      => $expectedNet,
+                'faire_tax'      => $faireTaxAmount,
+                'faire_discount' => $amountOff,
+                'damaged'        => Arr::get($orderFaireData, 'payout_costs.damaged_and_missing_items.amount_minor', 0) / 100,
+            ]);
+        }
+    }
+
+    /**
+     * What Faire says the goods are worth: the sum of its own line items. This is the invoice figure,
+     * NOT payout_costs.subtotal_after_brand_discounts, which is already net of damaged_and_missing_items
+     * that Faire withholds from the payout and Aiku does not model.
+     */
+    public function getFaireItemsNet(array $orderFaireData, Shop $shop): float
+    {
+        $net      = 0;
+        $exchange = 1;
+
+        $currencyCode = Arr::get($orderFaireData, 'items.0.price.currency');
+        if ($currencyCode && $currencyCode != $shop->currency->code) {
+            $currency = Currency::where('code', $currencyCode)->first();
+            if ($currency) {
+                $exchange = GetCurrencyExchange::run($currency, $shop->currency);
+            }
+        }
+
+        foreach (Arr::get($orderFaireData, 'items', []) as $item) {
+            $net += Arr::get($item, 'quantity', 0) * Arr::get($item, 'price.amount_minor', 0) / 100;
+        }
+
+        return round($net * $exchange, 2);
     }
 
     /**
