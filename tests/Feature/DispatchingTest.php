@@ -1540,7 +1540,23 @@ test('delivery note item delete and fetch', function () {
     $fetched = \App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem::run($item);
     expect($fetched)->toBeInstanceOf(DeliveryNoteItem::class);
 
+    $item->update([
+        'has_waiting_crm'            => true,
+        'quantity_waiting_crm'       => 1,
+        'has_waiting_warehouse'      => true,
+        'quantity_waiting_warehouse' => 1,
+    ]);
+    DeliveryNoteHydrateWaitingItems::run($deliveryNote->id);
+    $itemsBefore = $deliveryNote->refresh()->number_items;
+    expect($deliveryNote->number_items_waiting_crm)->toBe(1)
+        ->and($deliveryNote->number_items_waiting_warehouse)->toBe(1);
+
     \App\Actions\Dispatching\DeliveryNoteItem\DeleteDeliveryNoteItem::run($item);
+
+    expect($deliveryNote->refresh()->number_items_waiting_crm)->toBe(0)
+        ->and($deliveryNote->number_items_waiting_warehouse)->toBe(0)
+        ->and($deliveryNote->number_items)->toBe($itemsBefore - 1)
+        ->and($deliveryNote->number_items)->toBe($deliveryNote->deliveryNoteItems()->count());
 });
 
 test('delivery note item packing and unpack', function () {
