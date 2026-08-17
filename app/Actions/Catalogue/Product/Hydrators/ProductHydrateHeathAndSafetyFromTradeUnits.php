@@ -28,7 +28,12 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
         return $product->id;
     }
 
-    public function handle(Product $product): void
+    /**
+     * @param array<string>|null $onlyFields Restrict the write to these fields, used by the
+     *                                       repair command so a bulk run cannot overwrite the
+     *                                       shop's translated GPSR text with the trade unit's.
+     */
+    public function handle(Product $product, ?array $onlyFields = null): void
     {
         $tradeUnits = $product->tradeUnits;
 
@@ -39,6 +44,10 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
         $dataToUpdate = $tradeUnits->count() == 1
             ? $this->dataFromASingleTradeUnit($tradeUnits->first())
             : $this->dataFromMultipleTradeUnits($tradeUnits);
+
+        if ($onlyFields !== null) {
+            $dataToUpdate = array_intersect_key($dataToUpdate, array_flip($onlyFields));
+        }
 
         $product->update($dataToUpdate);
 

@@ -18,6 +18,8 @@ class RepairProductIngredientsAndOriginFromTradeUnits
 {
     use AsAction;
 
+    private const ORIGIN_FIELDS = ['country_of_origin', 'origin_country_id'];
+
     public string $commandSignature = 'products:repair-ingredients-and-origin
         {--dry-run : Count the products that would change without writing}
         {--S|shop= : Restrict to one shop slug}';
@@ -29,33 +31,44 @@ class RepairProductIngredientsAndOriginFromTradeUnits
      *
      * @return array{scanned: int, stale: int}
      */
-    public function handle(?int $shopId = null, bool $dryRun = false): array
+    public function handle(?int $shopId = null, bool $dryRun = false, ?Command $command = null): array
     {
         $ingredientsHydrator = ProductHydrateMarketingIngredientsFromTradeUnits::make();
         $healthHydrator      = ProductHydrateHeathAndSafetyFromTradeUnits::make();
 
+        $query = Product::has('tradeUnits')
+            ->with('tradeUnits')
+            ->when($shopId, fn ($query) => $query->where('shop_id', $shopId));
+
+        $bar = null;
+        if ($command) {
+            $bar = $command->getOutput()->createProgressBar($query->count());
+            $bar->setFormat('debug');
+            $bar->start();
+        }
+
         $scanned = 0;
         $stale   = 0;
 
-        Product::has('tradeUnits')
-            ->with('tradeUnits')
-            ->when($shopId, fn ($query) => $query->where('shop_id', $shopId))
-            ->chunkById(1000, function ($products) use ($ingredientsHydrator, $healthHydrator, $dryRun, &$scanned, &$stale) {
-                foreach ($products as $product) {
-                    $scanned++;
+        $query->chunkById(1000, function ($products) use ($ingredientsHydrator, $healthHydrator, $dryRun, $bar, &$scanned, &$stale) {
+            foreach ($products as $product) {
+                $scanned++;
 
-                    if (!$this->isStale($product, $ingredientsHydrator, $healthHydrator)) {
-                        continue;
-                    }
-
+                if ($this->isStale($product, $ingredientsHydrator, $healthHydrator)) {
                     $stale++;
 
                     if (!$dryRun) {
                         $ingredientsHydrator->handle($product);
-                        $healthHydrator->handle($product);
+                        $healthHydrator->handle($product, self::ORIGIN_FIELDS);
                     }
                 }
-            });
+
+                $bar?->advance();
+            }
+        });
+
+        $bar?->finish();
+        $command?->line('');
 
         return ['scanned' => $scanned, 'stale' => $stale];
     }
@@ -73,7 +86,7 @@ class RepairProductIngredientsAndOriginFromTradeUnits
             ? $healthHydrator->dataFromASingleTradeUnit($product->tradeUnits->first())
             : $healthHydrator->dataFromMultipleTradeUnits($product->tradeUnits);
 
-        foreach ($expected as $field => $value) {
+        foreach (array_intersect_key($expected, array_flip(self::ORIGIN_FIELDS)) as $field => $value) {
             if ($product->$field != $value) {
                 return true;
             }
@@ -98,7 +111,7 @@ class RepairProductIngredientsAndOriginFromTradeUnits
             $shopId = $shop->id;
         }
 
-        $result = $this->handle($shopId, (bool)$command->option('dry-run'));
+        $result = $this->handle($shopId, (bool)$command->option('dry-run'), $command);
 
         $command->line('Products scanned: '.$result['scanned']);
         $command->line('Products out of sync with their trade units: '.$result['stale']);
