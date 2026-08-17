@@ -1755,6 +1755,33 @@ test('agent organisation manages its own supplier identity', function () {
     expect($ownSupplier->fresh()->company_name)->toBe('Renamed Own Supplier');
 });
 
+test('current supplier sku cost distrusts implausible supplier cost and falls back to sku_value', function () {
+    $stockHasSupplierProduct = StockHasSupplierProduct::firstOrCreate(
+        ['stock_id' => $this->stock->id, 'supplier_product_id' => $this->supplierProduct->id],
+        ['available' => true]
+    );
+    OrgStockHasOrgSupplierProduct::firstOrCreate(
+        ['org_stock_id' => $this->orgStocks[0]->id, 'org_supplier_product_id' => $this->orgSupplierProduct->id],
+        ['stock_has_supplier_product_id' => $stockHasSupplierProduct->id, 'status' => true, 'local_priority' => 0]
+    );
+
+    $orgStock = $this->orgStocks[0];
+    $orgStock->updateQuietly(['sku_value' => 4, 'packed_in' => 1]);
+
+    $exchange = \App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange::run(
+        $this->supplierProduct->currency,
+        $orgStock->organisation->currency
+    );
+
+    $this->supplierProduct->updateQuietly(['cost' => 5 / $exchange, 'extra_costs' => 0]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost::run($orgStock);
+    expect((float) $orgStock->fresh()->current_supplier_sku_cost)->toEqualWithDelta(5.0, 0.01);
+
+    $this->supplierProduct->updateQuietly(['cost' => 237 / $exchange]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost::run($orgStock->fresh());
+    expect((float) $orgStock->fresh()->current_supplier_sku_cost)->toEqualWithDelta(4.0, 0.001);
+});
+
 test('agent organisation creates a supplier under its own agent', function () {
     $ownAgent = StoreAgent::make()->action($this->group, Agent::factory()->definition());
 
