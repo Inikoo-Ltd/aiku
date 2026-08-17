@@ -20,12 +20,16 @@ return [
      * name (FetchAurora<name>). Stocks, OrgStocks and TradeUnits appear here because new
      * ones must still arrive for purchase orders and supplier deliveries — the create only
      * rule that keeps Aurora off existing rows lives in WithFetchStock, not here.
+     * StockFamilies and HistoricSupplierProducts are here because the allowed Stocks and
+     * SupplierProducts fetchers resolve them on miss; without them a new stock or supplier
+     * product arriving for a purchase order would land without its family/history chain.
      */
     'allowed_fetchers' => [
         'Agents',
         'AgentSupplierPurchaseOrders',
         'Artefacts',
         'Histories',
+        'HistoricSupplierProducts',
         'ClockingMachines',
         'JobOrders',
         'OrgStockMovements',
@@ -35,6 +39,7 @@ return [
         'RawMaterials',
         'StockDeliveries',
         'StockDeliveryItems',
+        'StockFamilies',
         'Stocks',
         'SupplierProducts',
         'Suppliers',

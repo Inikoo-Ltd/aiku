@@ -290,6 +290,26 @@ class AuroraOrganisationService implements SourceOrganisationService
 
     protected bool $forcedFetch = false;
 
+    /**
+     * The command-level allowlist (FetchAuroraAction::auroraStillFeeds) is bypassed when a
+     * parse* helper fetches a missing record mid-run, so the same rule is enforced here at
+     * the one place every transitive Fetch*::run() passes through.
+     */
+    public function allowsFetchOnMiss(string $fetchActionClass): bool
+    {
+        if ($this->forcedFetch) {
+            return true;
+        }
+
+        if (in_array($this->organisation->slug, config('aurora.following_organisations', []))) {
+            return true;
+        }
+
+        $fetcher = str_replace('FetchAurora', '', class_basename($fetchActionClass));
+
+        return in_array($fetcher, config('aurora.allowed_fetchers', []));
+    }
+
     public function isForcedFetch(): bool
     {
         return $this->forcedFetch;
