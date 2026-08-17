@@ -1621,6 +1621,7 @@ test('over-picked item is trimmed back to required when picking is done', functi
     $duplicate = $item->pickings()->where('type', PickingTypeEnum::PICK)->first()->replicate();
     $duplicate->save();
     \App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked::make()->action($item);
+    $item->update(['is_dirty' => true]);
 
     expect((float)$item->fresh()->quantity_picked)->toBeGreaterThan((float)$item->quantity_required);
 
@@ -1628,6 +1629,7 @@ test('over-picked item is trimmed back to required when picking is done', functi
 
     $item = $item->fresh();
     expect((float)$item->quantity_picked)->toEqual((float)$item->quantity_required)
+        ->and($item->is_dirty)->toBeFalse()
         ->and($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
 });
 

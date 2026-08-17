@@ -90,6 +90,17 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
                 UpdatePicking::make()->action($picking, ['quantity' => (float)$picking->quantity - $trim]);
                 $excess -= $trim;
             }
+
+            /*
+             * Same rule as StorePicking: once picked covers required the line is no longer
+             * dirty. UpdatePicking does not clear the flag, and without this a line whose
+             * required was lowered after picking would block the note in HANDLING_BLOCKED
+             * forever (no further pick ever happens, so nothing else clears it).
+             */
+            $deliveryNoteItem->refresh();
+            if ($deliveryNoteItem->is_dirty && (float)$deliveryNoteItem->quantity_picked >= (float)$deliveryNoteItem->quantity_required) {
+                $deliveryNoteItem->update(['is_dirty' => false]);
+            }
         }
 
         $deliveryNote->unsetRelation('deliveryNoteItems');
