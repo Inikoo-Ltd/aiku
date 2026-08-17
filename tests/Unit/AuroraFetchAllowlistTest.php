@@ -2,7 +2,12 @@
 
 use App\Actions\Transfers\Aurora\FetchAuroraArtefacts;
 use App\Actions\Transfers\Aurora\FetchAuroraCustomers;
+use App\Actions\Transfers\Aurora\FetchAuroraDeletedSuppliers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeliveryNotes;
+use App\Actions\Transfers\Aurora\FetchAuroraHistoricSupplierProducts;
+use App\Actions\Transfers\Aurora\FetchAuroraLocations;
+use App\Actions\Transfers\Aurora\FetchAuroraStockFamilies;
+use App\Actions\Transfers\Aurora\FetchAuroraWarehouses;
 use App\Actions\Transfers\Aurora\FetchAuroraJobOrders;
 use App\Actions\Transfers\Aurora\FetchAuroraRawMaterials;
 use App\Actions\Transfers\Aurora\FetchAuroraPurchaseOrders;
@@ -10,6 +15,7 @@ use App\Actions\Transfers\Aurora\FetchAuroraStockLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraSuppliers;
 use App\Actions\Transfers\Aurora\FetchAuroraTimesheets;
 use App\Models\SysAdmin\Organisation;
+use App\Transfers\AuroraOrganisationService;
 
 /**
  * Nothing here goes near the database. createOrganisation() builds the one organisation the
@@ -51,4 +57,34 @@ it('only lets a departed organisation keep the fetchers it has no aiku replaceme
 it('leaves an organisation that still follows aurora untouched', function () {
     expect(auroraStillFeeds(FetchAuroraCustomers::class, organisationNamed('aroma')))->toBeTrue()
         ->and(auroraStillFeeds(FetchAuroraStockLocations::class, organisationNamed('aroma')))->toBeTrue();
+});
+
+function auroraSourceFor(string $slug, bool $forced = false): AuroraOrganisationService
+{
+    $source = new AuroraOrganisationService();
+    $source->organisation = organisationNamed($slug);
+    $source->setForcedFetch($forced);
+
+    return $source;
+}
+
+it('refuses a transitive fetch-on-miss for a departed organisation', function (string $fetcher, bool $expected) {
+    expect(auroraSourceFor('aw')->allowsFetchOnMiss($fetcher))->toBe($expected);
+})->with([
+    'locations no longer feed from aurora'  => [FetchAuroraLocations::class, false],
+    'warehouses no longer feed from aurora' => [FetchAuroraWarehouses::class, false],
+    'deleted suppliers stay lookup only'    => [FetchAuroraDeletedSuppliers::class, false],
+    'customers stay lookup only'            => [FetchAuroraCustomers::class, false],
+    'suppliers may still create on miss'    => [FetchAuroraSuppliers::class, true],
+    'stock families follow allowed stocks'  => [FetchAuroraStockFamilies::class, true],
+    'historic supplier products follow allowed supplier products' => [FetchAuroraHistoricSupplierProducts::class, true],
+]);
+
+it('lets a following organisation and a forced fetch through the on-miss gate', function () {
+    expect(auroraSourceFor('aroma')->allowsFetchOnMiss(FetchAuroraCustomers::class))->toBeTrue()
+        ->and(auroraSourceFor('aw', forced: true)->allowsFetchOnMiss(FetchAuroraCustomers::class))->toBeTrue();
+});
+
+it('returns null from run instead of fetching when the gate refuses', function () {
+    expect(FetchAuroraLocations::run(auroraSourceFor('aw'), 1))->toBeNull();
 });

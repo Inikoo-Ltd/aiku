@@ -52,6 +52,22 @@ class FetchAuroraAction extends FetchAction
         return in_array($fetcher, config('aurora.allowed_fetchers', []));
     }
 
+    /**
+     * Every fetch-on-miss inside parsers and sibling fetchers goes through ::run(), while
+     * command sweeps call handle() directly — so gating here closes the transitive bypass
+     * of auroraStillFeeds without touching the command path. Refusal returns null, the
+     * same as a lookup miss.
+     */
+    public static function run(mixed ...$arguments): mixed
+    {
+        $organisationSource = $arguments[0] ?? null;
+        if ($organisationSource instanceof AuroraOrganisationService && !$organisationSource->allowsFetchOnMiss(static::class)) {
+            return null;
+        }
+
+        return static::make()->handle(...$arguments);
+    }
+
     public function processOrganisation(Command $command, Organisation $organisation): int
     {
         // An override is BOTH flags together: -s names the one record and --force says
