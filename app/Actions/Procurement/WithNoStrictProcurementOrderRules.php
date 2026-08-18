@@ -17,6 +17,7 @@ trait WithNoStrictProcurementOrderRules
         $rules['parent_name']  = ['sometimes', 'required', 'string', 'max:256'];
         $rules['grp_exchange'] = ['sometimes', 'numeric'];
         $rules['org_exchange'] = ['sometimes', 'numeric'];
+        $rules['data']         = ['sometimes', 'array'];
 
         return $rules;
     }
@@ -26,8 +27,12 @@ trait WithNoStrictProcurementOrderRules
         $rules['date'] = ['sometimes', 'date'];
 
         $rules['submitted_at']    = ['sometimes', 'nullable', 'date'];
-        $rules['consolidated_at'] = ['sometimes', 'nullable', 'date'];
+        $rules['confirmed_at']    = ['sometimes', 'nullable', 'date'];
+        $rules['settled_at']      = ['sometimes', 'nullable', 'date'];
+        $rules['not_received_at'] = ['sometimes', 'nullable', 'date'];
         $rules['cancelled_at']    = ['sometimes', 'nullable', 'date'];
+
+        $rules['estimated_received_at'] = ['sometimes', 'nullable', 'date'];
 
 
         return $rules;

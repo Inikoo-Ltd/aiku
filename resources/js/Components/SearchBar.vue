@@ -24,6 +24,7 @@ import { SearchBookmarkKey } from '@/types/SearchBookmark'
 library.add(faTimes, faSearch, faSpinnerThird, faHistory, fasBookmark)
 
 const SearchResultGeneric = defineAsyncComponent(() => import('@/Components/Search/SearchResultGeneric.vue'))
+const SearchResultProcurement = defineAsyncComponent(() => import('@/Components/Search/SearchResultProcurement.vue'))
 
 const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
     sysadmin: defineAsyncComponent(() => import('@/Components/Search/SearchResultSysAdmin.vue')),
@@ -46,7 +47,7 @@ const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> =
     trade_units: SearchResultGeneric,
     hr: SearchResultGeneric,
     chat: SearchResultGeneric,
-    procurement: SearchResultGeneric,
+    procurement: SearchResultProcurement,
 }
 
 const isOpen = defineModel<boolean>()

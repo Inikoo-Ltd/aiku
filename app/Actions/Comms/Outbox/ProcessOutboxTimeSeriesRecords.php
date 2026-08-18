@@ -43,7 +43,7 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
          * records, which survive the archiving, so they are left to cover the whole window.
          */
         if ($frequency === TimeSeriesFrequencyEnum::DAILY) {
-            $cutoff = now()->subDays(config('comms.email_retention_days'))->startOfDay();
+            $cutoff = now()->subDays(config('archive.email_retention_days'))->startOfDay();
 
             if ($cutoff->gt($to)) {
                 return;

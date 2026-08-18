@@ -161,7 +161,7 @@ class FetchAuroraArtefacts extends FetchAuroraAction
             $query->whereNull('spp.aiku_id');
         }
 
-        return $query->where('Supplier Part Status', ['Available', 'NoAvailable'])
+        return $query->whereIn('Supplier Part Status', ['Available', 'NoAvailable'])
             ->where('Part Status', '!=', 'Not In Use')
             ->where('spp.aiku_ignore', 'No')
             ->where('sd.Supplier Production', 'Yes')
@@ -180,7 +180,7 @@ class FetchAuroraArtefacts extends FetchAuroraAction
             $query->whereNull('spp.aiku_id');
         }
 
-        return $query->where('Supplier Part Status', ['Available', 'NoAvailable'])
+        return $query->whereIn('Supplier Part Status', ['Available', 'NoAvailable'])
             ->where('Part Status', '!=', 'Not In Use')
             ->where('spp.aiku_ignore', 'No')
             ->where('sd.Supplier Production', 'Yes')

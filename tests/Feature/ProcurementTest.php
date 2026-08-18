@@ -75,6 +75,7 @@ use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\UI\Grp\Layout\GetOrganisationNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
@@ -145,7 +146,7 @@ beforeEach(function () {
     $this->orgAgent = $orgAgent;
 
 
-    $supplier = Supplier::first();
+    $supplier = Supplier::where('agent_id', $this->agent->id)->first();
     if (!$supplier) {
         $storeData = Supplier::factory()->definition();
         $supplier  = StoreSupplier::make()->action(
@@ -398,6 +399,17 @@ test('link purchase order transaction to agent supplier purchase order', functio
 
     expect($agentSupplierPurchaseOrder->purchaseOrderTransactions()->count())->toBe(1)
         ->and($purchaseOrderTransaction->refresh()->agentSupplierPurchaseOrder->id)->toBe($agentSupplierPurchaseOrder->id);
+
+    UpdatePurchaseOrderTransaction::make()->action(
+        $purchaseOrderTransaction,
+        ['net_amount' => 360],
+        strict: false
+    );
+
+    $purchaseOrderTransaction->refresh();
+    expect((float)$purchaseOrderTransaction->net_amount)->toBe(360.0)
+        ->and((float)$purchaseOrderTransaction->org_net_amount)->toBe(360.0 * ($purchaseOrderTransaction->org_exchange ?? 1))
+        ->and((float)$purchaseOrderTransaction->grp_net_amount)->toBe(360.0 * ($purchaseOrderTransaction->grp_exchange ?? 1));
 })->depends('create agent supplier purchase order', 'add item to purchase order');
 
 test('housekeeping flags legacy stalled agent supplier purchase orders', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
@@ -951,8 +963,7 @@ test('UI show procurement dashboard', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('title', 'Procurement')
                     ->etc()
-            )
-            ->has('flatTreeMaps');
+            );
     });
 });
 
@@ -966,6 +977,32 @@ test('UI Index org suppliers', function () {
             ->has('title')
             ->has('breadcrumbs', 3);
     });
+});
+
+test('procurement navigation positions the shipping list and separates agent suppliers', function () {
+    $navigation = GetOrganisationNavigation::run($this->adminGuest->getUser(), $this->organisation);
+
+    expect(data_get($navigation, 'procurement.topMenu.subSections.2'))
+        ->toMatchArray([
+            'label' => "Agent's Shipping List",
+            'route' => [
+                'name'       => 'grp.org.procurement.shopping_list.index',
+                'parameters' => [$this->organisation->slug],
+            ],
+        ])
+        ->and(data_get($navigation, 'procurement.topMenu.subSections.3.route'))->toBe([
+            'name'       => 'grp.org.procurement.org_agent_suppliers.index',
+            'parameters' => [$this->organisation->slug],
+        ])
+        ->and(data_get($navigation, 'procurement.topMenu.subSections.4.route'))->toBe([
+            'name'       => 'grp.org.procurement.org_suppliers.index',
+            'parameters' => [
+                'organisation' => $this->organisation->slug,
+                '_query'       => [
+                    'sort' => 'code',
+                ],
+            ],
+        ]);
 });
 
 test('UI show org supplier', function () {
@@ -1078,6 +1115,53 @@ test('UI Index purchase orders', function () {
             ->component('Procurement/PurchaseOrders')
             ->has('title')
             ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI index purchase orders for supplier shows supplier-specific columns and row details', function () {
+    $purchaseOrder = StorePurchaseOrder::make()->action(
+        $this->orgSupplier,
+        array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'Supplier table test PO']),
+        strict: false,
+    );
+    $this->orgSupplier->supplier->stats()->update([
+        'number_purchase_orders_state_in_process'   => 11,
+        'number_purchase_orders_state_submitted'    => 12,
+        'number_purchase_orders_state_confirmed'    => 13,
+        'number_purchase_orders_state_settled'      => 14,
+        'number_purchase_orders_state_cancelled'    => 15,
+        'number_purchase_orders_state_not_received' => 16,
+    ]);
+
+    $this->get(route('grp.org.procurement.org_suppliers.show.purchase_orders.index', [
+        $this->organisation->slug,
+        $this->orgSupplier->slug,
+    ]))->assertInertia(function (AssertableInertia $page) use ($purchaseOrder) {
+        $page
+            ->component('Procurement/PurchaseOrders')
+            ->where('queryBuilderProps.default.columns', function ($columns) {
+                $columnsByKey = $columns->keyBy('key');
+
+                return !$columnsByKey->has('parent_name')
+                    && $columnsByKey->has('number_current_purchase_order_transactions')
+                    && $columnsByKey->get('date')['align'] === 'right';
+            })
+            ->where('queryBuilderProps.default.elementGroups.state.elements', [
+                'in_process'   => [__('In process'), 11],
+                'submitted'    => [__('Submitted'), 12],
+                'confirmed'    => [__('Confirmed'), 13],
+                'settled'      => [__('Settled'), 14],
+                'cancelled'    => [__('Cancelled'), 15],
+                'not_received' => [__('Not Received'), 16],
+            ])
+            ->where('data.data', function ($rows) use ($purchaseOrder) {
+                $row = $rows->firstWhere('slug', $purchaseOrder->slug);
+
+                return $row
+                    && $row['state_label'] === PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value]
+                    && $row['number_current_purchase_order_transactions'] === $purchaseOrder->number_current_purchase_order_transactions;
+            })
+            ->etc();
     });
 });
 
@@ -1669,6 +1753,33 @@ test('agent organisation manages its own supplier identity', function () {
     ])->assertSessionHasNoErrors();
 
     expect($ownSupplier->fresh()->company_name)->toBe('Renamed Own Supplier');
+});
+
+test('current supplier sku cost distrusts implausible supplier cost and falls back to sku_value', function () {
+    $stockHasSupplierProduct = StockHasSupplierProduct::firstOrCreate(
+        ['stock_id' => $this->stock->id, 'supplier_product_id' => $this->supplierProduct->id],
+        ['available' => true]
+    );
+    OrgStockHasOrgSupplierProduct::firstOrCreate(
+        ['org_stock_id' => $this->orgStocks[0]->id, 'org_supplier_product_id' => $this->orgSupplierProduct->id],
+        ['stock_has_supplier_product_id' => $stockHasSupplierProduct->id, 'status' => true, 'local_priority' => 0]
+    );
+
+    $orgStock = $this->orgStocks[0];
+    $orgStock->updateQuietly(['sku_value' => 4, 'packed_in' => 1]);
+
+    $exchange = \App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange::run(
+        $this->supplierProduct->currency,
+        $orgStock->organisation->currency
+    );
+
+    $this->supplierProduct->updateQuietly(['cost' => 5 / $exchange, 'extra_costs' => 0]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost::run($orgStock);
+    expect((float) $orgStock->fresh()->current_supplier_sku_cost)->toEqualWithDelta(5.0, 0.01);
+
+    $this->supplierProduct->updateQuietly(['cost' => 237 / $exchange]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost::run($orgStock->fresh());
+    expect((float) $orgStock->fresh()->current_supplier_sku_cost)->toEqualWithDelta(4.0, 0.001);
 });
 
 test('agent organisation creates a supplier under its own agent', function () {

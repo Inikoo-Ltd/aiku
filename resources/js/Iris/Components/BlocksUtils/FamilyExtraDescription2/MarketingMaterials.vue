@@ -9,7 +9,7 @@ import {
 } from '@fal'
 import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { getStyles } from "@/Composables/styles"
 
 const props = defineProps<{
@@ -25,15 +25,17 @@ library.add(faHeart,
 
 const containerStyle = computed(() => (getStyles(props.fieldValue?.marketing?.container?.properties)))
 
+const resolveRoute = inject<((name: string, params?: object) => string) | null>('route', null)
+
 const marketingMaterialUrl = computed(() => {
     const marketingMaterialRoute = props.fieldValue?.family?.marketing_material_route
 
-    if (!marketingMaterialRoute?.name || typeof window === 'undefined' || typeof route !== 'function') {
+    if (!marketingMaterialRoute?.name || !resolveRoute) {
         return '#'
     }
 
     try {
-        return route(marketingMaterialRoute.name, marketingMaterialRoute.parameters)
+        return resolveRoute(marketingMaterialRoute.name, marketingMaterialRoute.parameters)
     } catch {
         return '#'
     }

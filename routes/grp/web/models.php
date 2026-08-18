@@ -17,6 +17,7 @@ use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\UpdatePaymentAccountShop;
+use App\Actions\Billables\Charge\DeleteCharge;
 use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
@@ -1436,6 +1437,7 @@ Route::any('translate/{languageFrom}/{languageTo}', Translate::class)->name('tra
 
 Route::prefix('charge/{charge:id}')->name('charge.')->group(function () {
     Route::patch('update', UpdateCharge::class)->name('update');
+    Route::delete('delete', DeleteCharge::class)->name('delete');
 });
 
 Route::name('brand.')->prefix('brand')->group(function () {

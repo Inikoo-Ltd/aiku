@@ -48,6 +48,7 @@ use Illuminate\Support\Arr;
  * @property mixed $product_offers_data
  * @property mixed $net_amount
  * @property mixed $is_on_demand
+ * @property mixed $is_golden_product
  * @property mixed $variant_id
  * @property mixed $step_discount_data
  */
@@ -168,6 +169,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'available_quantity'         => $this->available_quantity,
             'is_coming_soon'             => $this->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'               => $this->is_on_demand,
+            'is_golden_product'          => (bool)$this->is_golden_product,
             'variant'                    => $this->variant_id,
             'family_id'                  => $this->family_id,
             'product_offers_data'        => $productOffersData,

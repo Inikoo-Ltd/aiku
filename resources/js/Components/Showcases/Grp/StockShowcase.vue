@@ -12,7 +12,7 @@ import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
-import { faExclamationTriangle } from "@fad"
+import { faExclamationTriangle, faFireAlt } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
@@ -31,7 +31,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useConfirm } from "primevue/useconfirm"
 import ConfirmDialog from "primevue/confirmdialog"
-library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
+library.add(faExclamationTriangle, faFireAlt, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
 
 const props = defineProps < {
     data: {
@@ -59,6 +59,7 @@ const props = defineProps < {
         stocks_management: StocksManagementTS
         currency_code: string
         is_quantity_excess: boolean
+        has_no_products?: boolean
         barcodes?: {
             level: string
             label: string
@@ -74,6 +75,7 @@ const props = defineProps < {
             }
             packs: number | null
             editable: boolean
+            warning?: string | null
         }[]
         barcode_update_route?: routeType
         can_edit_unit_barcode?: boolean
@@ -179,6 +181,7 @@ const barcodeInput = ref("")
 const isSavingBarcode = ref(false)
 const editingLevel = ref<string>("sko")
 const editingHasNumber = ref(false)
+const editingWarning = ref<string | null>(null)
 
 const barcodeInputElement = ref<HTMLInputElement | null>(null)
 
@@ -190,9 +193,10 @@ const canEditBarcode = (barcode: { level: string, editable: boolean }): boolean 
     return !!barcode.editable && !!props.data.barcode_update_route
 }
 
-const openBarcodeModal = (barcode: { level: string, number: string }) => {
+const openBarcodeModal = (barcode: { level: string, number: string, warning?: string | null }) => {
     editingLevel.value = barcode.level
     editingHasNumber.value = !!barcode.number
+    editingWarning.value = barcode.warning ?? null
     barcodeInput.value = barcode.number || ""
     isBarcodeModalOpen.value = true
     nextTick(() => barcodeInputElement.value?.focus())
@@ -217,8 +221,8 @@ const applyBarcodeChange = (value: string | null) => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors[field] || errors.unit_barcode || trans("Could not save the barcode"),
+                    title: ctrans("Something went wrong"),
+                    text: errors[field] || errors.unit_barcode || ctrans("Could not save the barcode"),
                     type: "error",
                 })
             },
@@ -228,23 +232,39 @@ const applyBarcodeChange = (value: string | null) => {
 
 const confirm = useConfirm()
 
+const rejectProps = {
+    label: ctrans("Cancel"),
+    severity: "secondary",
+    outlined: true,
+}
+
 const saveBarcode = (value: string | null) => {
-    if (editingLevel.value !== "unit") {
+    if (editingLevel.value === "unit") {
+        confirm.require({
+            message: ctrans("Changing the unit EAN updates the product barcode on the website and every sales channel (Shopify, eBay, Amazon, etc.) — this affects customers. Continue?"),
+            header: ctrans("Confirm unit EAN change"),
+            icon: "pi pi-exclamation-triangle",
+            acceptLabel: ctrans("Yes, update it"),
+            rejectLabel: ctrans("Cancel"),
+            rejectProps,
+            accept: () => applyBarcodeChange(value),
+        })
+        return
+    }
+
+    // Clearing the slot is what the warning asks for, so only putting a number into it is questioned.
+    if (!value || !editingWarning.value) {
         applyBarcodeChange(value)
         return
     }
 
     confirm.require({
-        message: trans("Changing the unit EAN updates the product barcode on the website and every sales channel (Shopify, eBay, Amazon, etc.) — this affects customers. Continue?"),
-        header: trans("Confirm unit EAN change"),
+        message: editingWarning.value,
+        header: ctrans("This SKO has no outer packing"),
         icon: "pi pi-exclamation-triangle",
-        acceptLabel: trans("Yes, update it"),
-        rejectLabel: trans("Cancel"),
-        rejectProps: {
-            label: trans("Cancel"),
-            severity: "secondary",
-            outlined: true
-        },
+        acceptLabel: ctrans("Save it as the SKO barcode anyway"),
+        rejectLabel: ctrans("Cancel"),
+        rejectProps,
         accept: () => applyBarcodeChange(value),
     })
 }
@@ -275,8 +295,27 @@ const saveBarcode = (value: string | null) => {
                         class="w-full h-52 flex items-center justify-center" />
                 </div>
 
+                <!-- Card: No product warning -->
+                <div v-if="data.has_no_products"
+                    class="sm:col-span-2 self-start relative overflow-hidden rounded-lg border border-red-200 bg-red-50 px-4 py-4 shadow-sm">
+                    <FontAwesomeIcon icon="fad fa-fire-alt"
+                        class="text-red-400 opacity-20 absolute -bottom-2 -right-4 text-8xl -z-0 pointer-events-none"
+                        fixed-width aria-hidden="true" />
+                    <div class="relative z-10 flex items-start gap-3">
+                        <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-red-400 text-lg mt-0.5" fixed-width aria-hidden="true" />
+                        <div>
+                            <div class="text-sm font-semibold text-red-600">
+                                {{ trans("This SKO has no product") }}
+                            </div>
+                            <div class="mt-1 text-xs text-red-500">
+                                {{ trans("It cannot be sold until it is attached to a product") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Card: Stock Summary + Sales Analytics -->
-                <div class="sm:col-span-2 flex flex-col gap-4 self-start">
+                <div v-else class="sm:col-span-2 flex flex-col gap-4 self-start">
                     <div class="flex flex-wrap gap-3">
                         <div v-for="stat in stockCostStats" :key="stat.title"
                             class="flex-1 min-w-max rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
@@ -369,6 +408,11 @@ const saveBarcode = (value: string | null) => {
                                 class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
                                 {{ barcode.dimensions.type }}
                             </span>
+                        </span>
+                        <span v-else-if="barcode.warning"
+                            class="inline-flex items-start gap-2 text-xs leading-snug text-amber-700">
+                            <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="w-4 shrink-0 mt-0.5 text-amber-500" />
+                            <span>{{ barcode.warning }}</span>
                         </span>
                         <span v-else class="text-sm text-gray-300">—</span>
 

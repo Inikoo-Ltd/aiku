@@ -67,6 +67,8 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
 import ScanToPickDeliveryNote from "@/Components/DeliveryNote/ScanToPickDeliveryNote.vue"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
+import { ctrans } from "@/Composables/useTrans"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck, faBarcodeRead);
@@ -290,6 +292,42 @@ const tabsNavigation = computed(() => {
 
 	return navigation
 });
+
+/*
+ * Emptying the todo list is the whole point of a picking or packing round, so the tab that runs out
+ * says so rather than leaving a bare table header behind, and offers the step that comes next right
+ * where the operator is already looking instead of making them find it back up in the header.
+ */
+const TODO_TABS = ["picking_todo_items", "pending_items"] as const
+
+const isTodoTabCleared = computed(() => {
+	if (!TODO_TABS.includes(currentTab.value as typeof TODO_TABS[number])) {
+		return false
+	}
+
+	const rows = (props[currentTab.value as keyof typeof props] as { data?: any[] } | undefined)?.data
+
+	return Array.isArray(rows) && rows.length === 0
+})
+
+const clearedTodoTabTitle = computed(() =>
+	currentTab.value === "pending_items" ? ctrans("Everything is packed") : ctrans("Everything is picked")
+)
+
+/*
+ * Read off the page head rather than rebuilt here, so the empty state offers whatever the note's own
+ * state allows and nothing else: "Set as packed" while packing, "Finalise and Dispatch" once packed.
+ */
+const clearedTodoTabAction = computed(() =>
+	props.pageHead?.actions?.find((action: any) => action?.style === "save" && action?.route)
+)
+
+// Finishing a pick is a bay selection rather than a plain link, so the header's own component is the
+// one repeated here instead of a button built out of a route the action does not carry.
+const hasClearedTodoTabBaySelector = computed(() =>
+	props.shop?.type !== "dropshipping"
+	&& !!props.pageHead?.actions?.some((action: any) => action?.key === "trigger-set-as-picked-or-packed")
+)
 
 // Section: To Queue
 const isModalToQueue = ref(false);
@@ -1065,7 +1103,28 @@ const stopSocketListener = () => {
 	<Tabs :current="currentTab" :navigation="tabsNavigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
+		<EmptyState
+			v-if="isTodoTabCleared"
+			:data="{ title: clearedTodoTabTitle }">
+			<template #button-empty-state>
+				<div v-if="clearedTodoTabAction || hasClearedTodoTabBaySelector" class="mt-4 flex justify-center">
+					<ButtonWithLink
+						v-if="clearedTodoTabAction"
+						:label="clearedTodoTabAction.label"
+						:style="clearedTodoTabAction.style"
+						v-tooltip="clearedTodoTabAction.tooltip"
+						:routeTarget="clearedTodoTabAction.route"
+						@error="handleFinaliseError" />
+					<ButtonSelectBays
+						v-else
+						:warehouse="warehouse"
+						:deliveryNote="delivery_note" />
+				</div>
+			</template>
+		</EmptyState>
+
 		<component
+			v-else
 			:is="component"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"

@@ -83,14 +83,15 @@ const screenType = inject("screenType", "desktop")
 
 
 			<!-- Button: Logout -->
-            <LinkIris
+            <button
 				v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
-				href="/app/logout"
+				type="button"
+				@click="onLogout?.()"
 				class="ml-6 mr-4 buttonTopbar hover:!text-red-500 whitespace-nowrap"
             >
 				<FontAwesomeIcon icon="fal fa-sign-out" class="inline opacity-70" fixed-width aria-hidden="true" />
 				<span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
-			</LinkIris>
+			</button>
 
 		</div>
 	</div>

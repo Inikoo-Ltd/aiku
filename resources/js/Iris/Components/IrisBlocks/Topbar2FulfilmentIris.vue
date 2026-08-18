@@ -11,6 +11,7 @@ import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
 import Image from "@common/Components/Image.vue";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import { clearIrisSession } from "@/Composables/clearIrisSession"
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -128,6 +129,7 @@ const screenType = inject("screenType", "desktop")
                 url="/app/logout"
                 method="post"
                 :data="{}"
+                @success="clearIrisSession(layout)"
                 icon="fal fa-sign-out"
                 class="col-span-2 text-right block md:hidden space-x-1.5 "
             >
@@ -153,6 +155,7 @@ const screenType = inject("screenType", "desktop")
                 url="/app/logout"
                 method="post"
                 :data="{}"
+                @success="clearIrisSession(layout)"
                 icon="fal fa-sign-out"
                 class="hidden md:block space-x-1.5 "
                 type="negative"

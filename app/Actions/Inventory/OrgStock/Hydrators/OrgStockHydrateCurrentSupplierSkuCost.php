@@ -56,7 +56,18 @@ class OrgStockHydrateCurrentSupplierSkuCost implements ShouldBeUnique
             //Todo, this is probably wrong, wer need to find the relation units/SKUs form (org_)supplier_product to org_stock
             // e.g. return $unitCost*$orgSupplierProduct->pivot->quantity;
 
-            return $unitCost * $orgStock->packed_in;
+            $skuCost = $unitCost * $orgStock->packed_in;
+
+            // ponytail: some Aurora supplier parts store a per-carton cost while packed_in
+            // stays 1, inflating the SKU cost ~50-200x (HELP-2965). Until the supplier
+            // product -> org stock unit relation is resolved (Todo above), distrust any
+            // supplier cost more than 10x away from the last-in sku_value.
+            $skuValue = (float) ($orgStock->sku_value ?? 0);
+            if ($skuValue > 0 && ($skuCost > $skuValue * 10 || $skuCost < $skuValue / 10)) {
+                return $skuValue;
+            }
+
+            return $skuCost;
         }
 
         return null;

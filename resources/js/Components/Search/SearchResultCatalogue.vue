@@ -5,11 +5,18 @@ import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBookmark } from '@fal'
-import { faBookmark as fasBookmark } from '@fas'
+import { faBookmark as fasBookmark, faCircle as fasCircle } from '@fas'
 import { inject } from 'vue'
 import { SearchBookmarkKey } from '@/types/SearchBookmark'
 
-library.add(faBookmark, fasBookmark)
+library.add(faBookmark, fasBookmark, fasCircle)
+
+const productStateColor: Record<string, string> = {
+    active: 'text-emerald-500',
+    discontinuing: 'text-amber-500',
+    discontinued: 'text-red-500',
+    in_process: 'text-gray-400',
+}
 
 const model = defineModel<boolean>('open')
 
@@ -19,6 +26,8 @@ const props = defineProps<{
             id: number
             code: string
             name: string
+            state?: string | null
+            available_quantity?: number | null
             image: Record<string, any>
             route?: { name: string; parameters?: Record<string, any> }
         }[]
@@ -186,7 +195,22 @@ const collectionHref = (collection: { id: number }) => route('grp.majordomo.redi
                                 </div>
                                 <div class="p-1.5">
                                     <p class="text-xs font-medium text-slate-800 truncate leading-tight">{{ product.name }}</p>
-                                    <p class="text-[10px] text-gray-400 truncate">{{ product.code }}</p>
+                                    <p class="text-[10px] text-gray-400 truncate flex items-center gap-1">
+                                        <FontAwesomeIcon
+                                            v-if="product.state"
+                                            icon="fas fa-circle"
+                                            class="text-[6px] shrink-0"
+                                            :class="productStateColor[product.state] ?? 'text-gray-300'"
+                                            v-tooltip="product.state"
+                                            aria-hidden="true"
+                                        />
+                                        <span class="truncate">{{ product.code }}</span>
+                                        <span
+                                            v-if="product.available_quantity != null"
+                                            class="ml-auto shrink-0 text-gray-500 tabular-nums"
+                                            v-tooltip="ctrans('Available stock')"
+                                        >{{ product.available_quantity }}</span>
+                                    </p>
                                 </div>
                             </Link>
                             <button

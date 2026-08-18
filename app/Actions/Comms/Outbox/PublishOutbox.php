@@ -21,6 +21,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Helpers\Snapshot;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class PublishOutbox extends OrgAction
@@ -29,6 +30,12 @@ class PublishOutbox extends OrgAction
 
     public function handle(Outbox $outbox, array $modelData): Outbox
     {
+        if ($outbox->code->requiresDaysAfter() && $outbox->days_after === null) {
+            throw ValidationException::withMessages([
+                'days_after' => __('Set "days after" before activating this outbox, otherwise it will never send.')
+            ]);
+        }
+
         $email               = $outbox->emailOngoingRun->email;
         $unpublishedSnapshot = $email->unpublishedSnapshot;
 

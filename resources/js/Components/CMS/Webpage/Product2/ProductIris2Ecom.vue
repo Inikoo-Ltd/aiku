@@ -37,6 +37,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import Product2Image from "./Product2Image.vue"
+import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductBadge.vue"
 import Image from "@common/Components/Image.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
@@ -110,6 +111,7 @@ interface ProductResource {
     bestseller?: boolean
     is_favourite?: boolean
     is_back_in_stock?: boolean
+    is_golden_product?: boolean
 
     description?: string
     description_extra?: string
@@ -162,6 +164,20 @@ watch(
 )
 
 const currency = computed(() => layout?.iris?.currency)
+
+const resolveRoute = inject<((name: string, params?: object) => string) | null>("route", null)
+
+const marketingMaterialUrl = computed(() => {
+    if (!product.value?.slug || !resolveRoute) {
+        return "#"
+    }
+
+    try {
+        return resolveRoute("iris.catalogue.feeds.product.download_img", { product: product.value.slug })
+    } catch {
+        return "#"
+    }
+})
 
 /* ================= LOGIC ================= */
 
@@ -258,8 +274,6 @@ const getIcon = (type: string) => {
     return faFileCheck
 }
 
-const baseUrl = ref("")
-
 const _popoverProfit = ref(null)
 const _popoverProfitMobile = ref(null)
 
@@ -303,8 +317,6 @@ const variantNavigation = ref<{ prevEl: HTMLElement | null; nextEl: HTMLElement 
 })
 
 onMounted(async () => {
-    baseUrl.value = `${window.location.origin}/`
-
     await nextTick()
     variantNavigation.value.prevEl = variantPrevEl.value
     variantNavigation.value.nextEl = variantNextEl.value
@@ -328,7 +340,7 @@ onMounted(async () => {
                 <div class="py-1 w-full">
                     <Product2Image :images="validImages" :video="videoSetup?.url" />
 
-                    <a :href="`${baseUrl}app/catalogue/feeds/feeds/product/${product.slug}/download?type=products_images`"
+                    <a :href="marketingMaterialUrl"
                         class="
                         group
                         flex items-center gap-3
@@ -354,6 +366,8 @@ onMounted(async () => {
             <div class="col-span-5 self-start">
                 <div class="relative flex justify-between items-start mb-4">
                     <div class="w-full">
+                        <GoldenProductBadge v-if="product.is_golden_product" class="mb-2" />
+
                         <div class="text-xl text-black font-bold w-[80%]">
                             <span v-if="product.units > 1">{{ product.units }}x</span> {{ product.name }}
                         </div>
@@ -699,6 +713,8 @@ onMounted(async () => {
         <div class="px-4 py-4 space-y-5">
 
             <!-- TITLE -->
+            <GoldenProductBadge v-if="product.is_golden_product" />
+
             <h1 class="!text-xl font-bold leading-tight">
                 <span v-if="product.units > 1">{{ product.units }}x</span>
                 {{ product.name }}
@@ -826,7 +842,7 @@ onMounted(async () => {
             <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
 
             <!-- DOWNLOAD -->
-            <a :href="`${baseUrl}app/catalogue/feeds/feeds/product/${product.slug}/download?type=products_images`"
+            <a :href="marketingMaterialUrl"
                 class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-[#f9f8f5] ">
                 <FontAwesomeIcon :icon="faArrowToBottom" />
                 <span class="text-sm font-medium truncate">

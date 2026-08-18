@@ -36,8 +36,8 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         $platformUser = $customerSalesChannel->user;
 
         $shippingService = Arr::pull($modelData, 'shipping_service');
-        $shippingPrice = (string) Arr::pull($modelData, 'shipping_price', 0);
-        $shippingDispatchTime = (string) Arr::pull($modelData, 'shipping_max_dispatch_time');
+        $shippingPrice = Arr::pull($modelData, 'shipping_price');
+        $shippingDispatchTime = Arr::pull($modelData, 'shipping_max_dispatch_time');
 
         if (Arr::has($modelData, 'is_vat_adjustment')) {
             data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
@@ -52,11 +52,13 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.shipping', $shippingServiceData);
         }
 
-        if ($shippingDispatchTime) {
-            data_set($modelData, 'settings.shipping.max_dispatch_time', $shippingDispatchTime);
+        if (filled($shippingDispatchTime)) {
+            data_set($modelData, 'settings.shipping.max_dispatch_time', (string) $shippingDispatchTime);
         }
 
-        data_set($modelData, 'settings.shipping.price', $shippingPrice);
+        if (filled($shippingPrice)) {
+            data_set($modelData, 'settings.shipping.price', (string) $shippingPrice);
+        }
 
         $returnAccepted = Arr::pull($modelData, 'return_accepted');
         $returnPayer = Arr::pull($modelData, 'return_payer');
@@ -85,7 +87,7 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
 
         $customerSalesChannel = UpdateCustomerSalesChannel::run($customerSalesChannel, $modelData);
 
-        if ($fulfillmentPolicyId || $shippingService || $shippingPrice || $shippingDispatchTime) {
+        if ($fulfillmentPolicyId || filled($shippingService) || filled($shippingPrice) || filled($shippingDispatchTime)) {
             if ($fulfillmentPolicyId) {
                 data_set($modelData, 'fulfillment_policy_id', $fulfillmentPolicyId);
             }

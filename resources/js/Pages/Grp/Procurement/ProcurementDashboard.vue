@@ -5,28 +5,42 @@
   -->
 
 <script setup>
-import {Head} from '@inertiajs/vue3';
-import PageHeading from '@/Components/Headings/PageHeading.vue';
-import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue';
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
+import ProcurementOverviewCard from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewCard.vue"
 
-defineProps(['title', 'pageHead', 'flatTreeMaps', 'search_demand']);
+defineProps(["title", "pageHead", "dashboardCards", "search_demand"])
 
-import SearchDemandOpportunities from '@/Components/DataDisplay/Dashboard/Widget/SearchDemandOpportunities.vue';
+import SearchDemandOpportunities from "@/Components/DataDisplay/Dashboard/Widget/SearchDemandOpportunities.vue"
 
-import {library} from '@fortawesome/fontawesome-svg-core';
-import {faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList} from '@fal';
+import { library } from "@fortawesome/fontawesome-svg-core"
+import {
+	faPeopleArrows,
+	faBoxUsd,
+	faPersonDolly,
+	faTruckContainer,
+	faClipboardList,
+	faArrowRight,
+} from "@fal"
 
-library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList);
-
+library.add(
+	faPeopleArrows,
+	faBoxUsd,
+	faPersonDolly,
+	faTruckContainer,
+	faClipboardList,
+	faArrowRight
+)
 </script>
 
 <template>
-    <Head :title="capitalize(title)"/>
-    <PageHeading :data="pageHead"></PageHeading>
-    <FlatTreeMap class="mx-4" v-for="(treeMap,idx) in flatTreeMaps" :key="idx" :nodes="treeMap"/>
-    <div class="mx-4 mt-4 max-w-3xl">
-        <SearchDemandOpportunities :demand="search_demand"/>
-    </div>
+	<Head :title="capitalize(title)" />
+	<PageHeading :data="pageHead"></PageHeading>
+	<div class="mx-4 mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+		<ProcurementOverviewCard v-for="card in dashboardCards" :key="card.label" :card="card" />
+	</div>
+	<div class="mx-4 mt-6 max-w-3xl">
+		<SearchDemandOpportunities :demand="search_demand" />
+	</div>
 </template>
-

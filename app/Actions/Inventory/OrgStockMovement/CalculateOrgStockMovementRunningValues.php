@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
@@ -49,7 +50,7 @@ class CalculateOrgStockMovementRunningValues implements ShouldBeUniqueUntilProce
         }
 
         $movements = OrgStockMovement::on('aiku_no_sticky')
-            ->select(['id', 'type', 'quantity', 'cost_per_sku', 'org_amount', 'date', 'running_quantity_org_stock'])
+            ->select(['id', 'type', 'class', 'location_id', 'quantity', 'audited_quantity', 'cost_per_sku', 'org_amount', 'date'])
             ->where('org_stock_id', $orgStock->id)
             ->orderBy('date')
             ->orderBy('id')
@@ -67,10 +68,24 @@ class CalculateOrgStockMovementRunningValues implements ShouldBeUniqueUntilProce
             ? $this->initValuationState($orgStock, $wacStartDate)
             : ['onHand' => 0.0, 'wac' => null, 'layers' => []];
 
-        $lppPerSku = null;
+        $lppPerSku         = null;
+        $locationQuantities = [];
 
         foreach ($movements as $movement) {
             $inValuationWindow = $wacStartDate === null || !Carbon::parse($movement->date)->lt($wacStartDate);
+
+            /*
+             * Same rule as GetLocationOrgStockQuantity: an audit reseeds the location's level and
+             * ordinary movements accumulate on top of it. running_quantity_org_stock is null on
+             * most Aurora fetched movements, so the level has to be replayed rather than read.
+             */
+            if ($movement->location_id) {
+                if ($movement->class == OrgStockMovementClassEnum::HELPER) {
+                    $locationQuantities[$movement->location_id] = (float) ($movement->audited_quantity ?? 0);
+                } elseif ($movement->class == OrgStockMovementClassEnum::MOVEMENT) {
+                    $locationQuantities[$movement->location_id] = ($locationQuantities[$movement->location_id] ?? 0) + (float) $movement->quantity;
+                }
+            }
 
             if ($wacStartDate !== null && $inValuationWindow) {
                 $this->applyMovementToValuation($state, $movement, $orgStock);
@@ -83,7 +98,7 @@ class CalculateOrgStockMovementRunningValues implements ShouldBeUniqueUntilProce
                 $lppPerSku = $this->getLppPerSku($orgStock, Carbon::parse($movement->date));
             }
 
-            $quantity   = (float) ($movement->running_quantity_org_stock ?? $state['onHand']);
+            $quantity   = array_sum($locationQuantities);
             $wacPerSku  = $inValuationWindow && $wacStartDate !== null ? $state['wac'] : null;
             $fifoPerSku = $inValuationWindow && $wacStartDate !== null ? $this->fifoPerSkuFromLayers($state['layers']) : null;
 

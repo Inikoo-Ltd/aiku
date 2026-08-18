@@ -99,6 +99,8 @@ class DeleteCustomer
         // Todo delete portfolios
 
 
+        $customer->fulfilmentCustomer?->delete();
+
         $customer->delete();
         $customer = $this->update($customer, $deletedData, ['data']);
 

@@ -22,6 +22,11 @@ const props = defineProps<{
             quantity_required: number
         }
         close_route: { name: string, parameters: object }
+        band_feedback: null | {
+            band0_hourly_rate: number
+            bands: { code: string, name: string | null, hourly_rate: number, target_units_per_hour: number }[]
+            session: { started_at: string, break_minutes: number, quantity_made: number }
+        }
     }
 }>()
 
@@ -40,6 +45,39 @@ const elapsed = computed(() => {
     const m = Math.floor((seconds % 3600) / 60)
     const s = seconds % 60
     return `${h ? h + ':' : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+})
+
+const elapsedHours = computed(() => {
+    const bandFeedback = props.session.band_feedback
+    const breakMinutes = bandFeedback?.session.break_minutes ?? 0
+    const seconds = Math.max(0, Math.floor((now.value - new Date(props.session.started_at).getTime()) / 1000) - breakMinutes * 60)
+    return seconds / 3600
+})
+
+const currentRate = computed(() => {
+    if (!elapsedHours.value) return 0
+    return (quantityMade.value ?? 0) / elapsedHours.value
+})
+
+const currentBandIndex = computed(() => {
+    const bands = props.session.band_feedback?.bands ?? []
+    const roundedRate = Math.round(currentRate.value)
+    let index = -1
+    bands.forEach((band, i) => {
+        if (roundedRate >= band.target_units_per_hour) index = i
+    })
+    return index
+})
+
+const currentBandRate = computed(() => {
+    const bandFeedback = props.session.band_feedback
+    if (!bandFeedback) return 0
+    return currentBandIndex.value === -1 ? bandFeedback.band0_hourly_rate : bandFeedback.bands[currentBandIndex.value].hourly_rate
+})
+
+const nextBand = computed(() => {
+    const bands = props.session.band_feedback?.bands ?? []
+    return bands[currentBandIndex.value + 1] ?? null
 })
 
 function closeSession() {
@@ -105,6 +143,36 @@ function closeSession() {
             >
                 {{ trans('DONE') }}
             </button>
+        </div>
+
+        <div v-if="session.band_feedback" class="mt-6 border-t border-indigo-200 pt-4">
+            <div class="text-center text-3xl font-semibold tabular-nums">
+                {{ currentRate.toFixed(1) }} <span class="text-base font-normal text-gray-600">{{ trans('units/hour') }}</span>
+            </div>
+
+            <div class="mt-3 flex gap-1">
+                <div
+                    class="flex-1 rounded-lg py-3 text-center"
+                    :class="currentBandIndex === -1 ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500'"
+                >
+                    <div class="text-lg font-semibold">0</div>
+                    <div class="text-xs">—</div>
+                </div>
+                <div
+                    v-for="(band, i) in session.band_feedback.bands"
+                    :key="band.code"
+                    class="flex-1 rounded-lg py-3 text-center"
+                    :class="i === currentBandIndex ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-500'"
+                >
+                    <div class="text-lg font-semibold">{{ band.code }}</div>
+                    <div class="text-xs">{{ band.target_units_per_hour }}/h</div>
+                </div>
+            </div>
+
+            <div v-if="nextBand" class="mt-2 text-center text-sm text-gray-600">
+                {{ trans('Next') }}: {{ trans('band') }} {{ nextBand.code }} {{ trans('at') }} {{ nextBand.target_units_per_hour }} {{ trans('units/h') }}
+                — +£{{ (nextBand.hourly_rate - currentBandRate).toFixed(2) }}/{{ trans('hour') }}
+            </div>
         </div>
     </div>
 </template>
