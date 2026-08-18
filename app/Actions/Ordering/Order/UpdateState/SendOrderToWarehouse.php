@@ -113,7 +113,7 @@ class SendOrderToWarehouse extends OrgAction
 
         $deliveryNote = DB::transaction(function () use ($order, $deliveryNoteData, $date) {
             /** @var Transaction $transactions */
-            $transactions = $order->transactions()->where('state', TransactionStateEnum::SUBMITTED)->get();
+            $transactions = $order->transactions()->whereIn('state', [TransactionStateEnum::CREATING, TransactionStateEnum::SUBMITTED])->get();
             foreach ($transactions as $transaction) {
                 $transactionData = [
                     'state'           => TransactionStateEnum::IN_WAREHOUSE,

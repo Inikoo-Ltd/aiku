@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksWithoutProducts;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
@@ -29,7 +30,8 @@ class SyncProductOrgStocksFromTradeUnits
 
         foreach ($product->tradeUnits as $tradeUnit) {
             foreach ($tradeUnit->stocks as $stock) {
-                $orgStock = $stock->orgStocks->where('organisation_id', $product->organisation_id)->first();
+                $candidates = $stock->orgStocks->where('organisation_id', $product->organisation_id);
+                $orgStock   = $candidates->firstWhere('state', OrgStockStateEnum::ACTIVE) ?? $candidates->first();
 
                 if (!$orgStock) {
                     if ($stock->stockFamily) {
@@ -84,6 +86,9 @@ class SyncProductOrgStocksFromTradeUnits
 
         $product->orgStocks()->sync($orgStocks);
 
+        foreach ($product->organisation->warehouses as $warehouse) {
+            WarehouseHydrateOrgStocksWithoutProducts::dispatch($warehouse)->delay(2);
+        }
 
         return $product;
     }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplier\UI;
 
+use App\Actions\SupplyChain\Supplier\UI\WithSupplierInfo;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Procurement\OrgSupplier;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetOrgSupplierShowcase
 {
     use AsObject;
+    use WithSupplierInfo;
 
     public function handle(OrgSupplier $orgSupplier): array
     {
@@ -31,7 +33,8 @@ class GetOrgSupplierShowcase
                 'phone'      => $supplier->phone,
                 'currency'   => $supplier->currency,
                 'address'    => AddressResource::make($supplier->address)->getArray(),
-                'image_id'   => $supplier->image_id,
+                'photo'      => $supplier->imageSources(320, 320),
+                'supplierInfo' => $this->supplierInfo($supplier),
             ],
             'stats'       => [
                 [

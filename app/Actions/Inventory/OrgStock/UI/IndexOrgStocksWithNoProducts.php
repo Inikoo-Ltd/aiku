@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
@@ -392,7 +393,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             } else {
                 if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
                     $table
-                        ->column(key: 'sku_value', label: __('Sku value'), canBeHidden: false, sortable: true, type: 'currency')
+                        ->column(key: 'sku_value', label: __('Sku value'), tooltip: __('Valued with').' '.OrgStockValuationMethodEnum::official()->label().' ('.__('the official valuation').')', tooltipIcon: true, canBeHidden: false, sortable: true, type: 'currency')
                         ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                         ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency');
                 }

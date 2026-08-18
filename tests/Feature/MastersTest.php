@@ -394,10 +394,9 @@ test('UI Edit Master Department', function (MasterProductCategory $masterDepartm
                 'formData',
                 fn (AssertableInertia $form) => $form
                     ->has('blueprint')
-                    ->has('blueprint.0.fields.code')
-                    ->where('blueprint.0.fields.code.type', 'input')
-                    ->where('blueprint.0.fields.code.value', $masterDepartment->code)
-                    ->where('blueprint.1.fields.name.type', 'input')
+                    ->has('blueprint.0.fields.name')
+                    ->where('blueprint.0.fields.name.type', 'input')
+                    ->where('blueprint.0.fields.name.value', $masterDepartment->name)
                     ->etc()
             );
     });
@@ -452,10 +451,9 @@ test('UI Edit Master SubDepartment', function (MasterProductCategory $masterSubD
                 'formData',
                 fn (AssertableInertia $form) => $form
                     ->has('blueprint')
-                    ->has('blueprint.0.fields.code')
-                    ->where('blueprint.0.fields.code.type', 'input')
-                    ->where('blueprint.0.fields.code.value', $masterSubDepartment->code)
-                    ->where('blueprint.1.fields.name.type', 'input')
+                    ->has('blueprint.0.fields.name')
+                    ->where('blueprint.0.fields.name.type', 'input')
+                    ->where('blueprint.0.fields.name.value', $masterSubDepartment->name)
                     ->etc()
             );
     });
@@ -1346,16 +1344,13 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
                 'formData',
                 fn (AssertableInertia $form) => $form
                     ->has('blueprint')
-                    ->has('blueprint.0.fields.code')
-                    ->where('blueprint.0.fields.code.type', 'input')
-                    ->where('blueprint.0.fields.code.value', $masterAsset->code)
-                    ->has('blueprint.1.fields.name')
-                    ->where('blueprint.1.fields.name.type', 'input')
-                    ->where('blueprint.1.fields.name.value', $masterAsset->name)
+                    ->has('blueprint.0.fields.name')
+                    ->where('blueprint.0.fields.name.type', 'input')
+                    ->where('blueprint.0.fields.name.value', $masterAsset->name)
                     ->has('args.updateRoute')
                     ->where('args.updateRoute.name', 'grp.models.master_asset.update')
                     ->where('args.updateRoute.parameters.masterAsset', $masterAsset->id)
-                    ->has('blueprint.6.fields.composition.route')
+                    ->has('blueprint.5.fields.composition.route')
                     ->etc()
             );
     });
@@ -1540,7 +1535,7 @@ test('bulk update master assets prices applies per-unit rrp and skips independen
 
     Queue::fake();
 
-    \App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices::make()->action([
+    $result = \App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices::make()->action([
         'ids'          => [$assetA->id, $assetB->id, $foreignAsset->id],
         'rrp_per_unit' => true,
         'master_rrps'  => [
@@ -1559,7 +1554,9 @@ test('bulk update master assets prices applies per-unit rrp and skips independen
         ->and(data_get($assetA->master_rrps, 'HUF'))->toBeNull()
         ->and(data_get($assetB->master_rrps, 'EUR.value'))->toEqual(4)
         ->and(data_get($assetB->master_rrps, 'PLN.value'))->toEqual(198)
-        ->and(data_get($foreignAsset->refresh()->master_rrps, 'EUR.value'))->toBe(5);
+        ->and(data_get($foreignAsset->refresh()->master_rrps, 'EUR.value'))->toBe(5)
+        ->and($result['updated'])->toBe(2)
+        ->and($result['skipped'])->toBe([$assetA->code => ['PLN']]);
 
     Queue::assertPushed(
         \Lorisleiva\Actions\Decorators\JobDecorator::class,
@@ -2271,7 +2268,7 @@ test('updating master prices cascades to children, updates baskets and breaks we
     );
 
     Queue::assertPushed(
-        \Lorisleiva\Actions\Decorators\UniqueJobDecorator::class,
+        \App\Jobs\BoundedUniqueJobDecorator::class,
         fn ($job) => $job->displayName() === \App\Actions\Catalogue\Product\UpdateOrdersInBasketsAfterProductUpdated::class
     );
     Queue::assertNotPushed(

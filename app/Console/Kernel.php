@@ -22,6 +22,7 @@ use App\Actions\Comms\Outbox\GoldRewardReminder\RunGoldRewardReminderEmailBulkRu
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
+use App\Actions\Ordering\Order\SweepGoldRewardWindowBaskets;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ProspectConversion\RunProspectConvertionEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChange\RunPriceChangeEmailBulkRunsToSubscribers;
@@ -91,6 +92,15 @@ class Kernel extends ConsoleKernel
                 name: 'ActivateScheduledOffers',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(SweepGoldRewardWindowBaskets::makeJob())->dailyAt('02:15')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SweepGoldRewardWindowBaskets',
+                ),
+                name: 'SweepGoldRewardWindowBaskets',
+                type: 'job',
+                scheduledAt: '02:15'
             );
 
 
@@ -338,6 +348,28 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            foreach (['aw' => '4:05', 'sk' => '4:15', 'es' => '4:25', 'aroma' => '4:35'] as $organisationSlug => $scheduledAt) {
+                $this->logSchedule(
+                    $schedule->command('org_stock_movement:get_cost_per_sku_from_aurora '.$organisationSlug)->dailyAt($scheduledAt)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'GetOrgStockMovementCostPerSkuFromAurora'.ucfirst($organisationSlug),
+                    ),
+                    name: 'GetOrgStockMovementCostPerSkuFromAurora'.ucfirst($organisationSlug),
+                    type: 'command',
+                    scheduledAt: now()->format('H:i')
+                );
+            }
+
+            foreach (['aw' => '5:05', 'sk' => '5:15', 'es' => '5:25', 'aroma' => '5:35'] as $organisationSlug => $scheduledAt) {
+                $this->logSchedule(
+                    $schedule->command('org_stock_movement:calculate_running_values '.$organisationSlug.' --days=2')->dailyAt($scheduledAt)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'CalculateOrgStockMovementRunningValues'.ucfirst($organisationSlug),
+                    ),
+                    name: 'CalculateOrgStockMovementRunningValues'.ucfirst($organisationSlug),
+                    type: 'command',
+                    scheduledAt: now()->format('H:i')
+                );
+            }
 
 
             $this->logSchedule(

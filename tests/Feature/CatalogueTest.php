@@ -33,6 +33,7 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
@@ -377,6 +378,22 @@ test('create product with many org stocks', function ($shop) {
     return $product;
 })->depends('create family');
 
+test('closing shop discontinues its active products', function (Product $product) {
+    $shop = $product->shop;
+    if ($product->state != \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE) {
+        \App\Actions\Catalogue\Product\UpdateProduct::make()->action($product, ['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE]);
+    }
+
+    UpdateShop::make()->action($shop, ['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::CLOSED]);
+
+    expect($product->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED);
+
+    UpdateShop::make()->action($shop, ['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    \App\Actions\Catalogue\Product\UpdateProduct::make()->action($product, ['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE]);
+
+    expect($product->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE);
+})->depends('create product');
+
 test('update product', function (Product $product) {
     expect($product->name)->not->toBe('Updated Asset Name')
         ->and($product->asset->stats->number_historic_assets)->toBe(1);
@@ -528,6 +545,8 @@ test('create service', function (Shop $shop) {
     $asset        = $service->asset;
 
     expect($service)->toBeInstanceOf(Service::class)
+        ->and($service->state)->toBe(ServiceStateEnum::ACTIVE)
+        ->and($service->status)->toBeTrue()
         ->and($asset)->toBeInstanceOf(Asset::class)
         ->and($service->asset->stats->number_historic_assets)->toBe(1)
         ->and($group->catalogueStats->number_assets)->toBe(4)
@@ -559,6 +578,14 @@ test('update service', function (Service $service) {
     expect($service->asset->name)->toBe('Updated Service Name')
         ->and($service->asset->stats->number_historic_assets)->toBe(2)
         ->and($service->asset->stats->number_historic_assets)->toBe(2);
+
+    $service = UpdateService::make()->action($service, ['state' => ServiceStateEnum::DISCONTINUED->value]);
+    expect($service->state)->toBe(ServiceStateEnum::DISCONTINUED)
+        ->and($service->status)->toBeFalse();
+
+    $service = UpdateService::make()->action($service, ['state' => ServiceStateEnum::ACTIVE->value]);
+    expect($service->state)->toBe(ServiceStateEnum::ACTIVE)
+        ->and($service->status)->toBeTrue();
 
     return $service;
 })->depends('create service');
@@ -812,4 +839,94 @@ test('a product can be exclusive to several customers and only they can see it',
         ->and($product->exclusive_for_customer_id)->toBeNull()
         ->and($product->isExclusive())->toBeFalse()
         ->and($visibleTo(null))->toBeTrue();
+});
+
+test('repair repoints products from a discontinued org stock to its active twin', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+
+    $activeOrgStock = $this->orgStock1;
+    $activeOrgStock->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE, 'code' => 'REPAIR-01']);
+
+    $brokenOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action(
+        $this->organisation,
+        $activeOrgStock->stock,
+        array_merge(\App\Models\Inventory\OrgStock::factory()->definition(), ['code' => 'REPAIR-01-error']),
+    );
+    $brokenOrgStock->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+
+    $product->orgStocks()->sync([$brokenOrgStock->id => ['quantity' => 1]]);
+
+    $repaired = \App\Actions\Catalogue\Product\RepairProductsLinkedToDiscontinuedOrgStock::make()
+        ->handle($this->organisation->id);
+
+    expect($repaired)->toBeGreaterThanOrEqual(1)
+        ->and($product->orgStocks()->pluck('org_stocks.id')->all())->toBe([$activeOrgStock->id]);
+});
+
+test('product ingredients and origin stop reflecting a trade unit once it is removed', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $lamp = $this->tradeUnit1;
+    $lamp->update(['marketing_ingredients' => 'Coconut Leaf, Albasia Wood, Cotton', 'country_of_origin' => 'IDN']);
+
+    $fitting = $this->tradeUnit2;
+    $fitting->update(['marketing_ingredients' => 'Glass', 'country_of_origin' => 'CHN']);
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $lamp->id, 'quantity' => 1],
+        ['id' => $fitting->id, 'quantity' => 1],
+    ]);
+    $product->refresh();
+
+    expect($product->country_of_origin)->toContain('CHN')
+        ->and($product->country_of_origin)->toContain('IDN');
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $lamp->id, 'quantity' => 1],
+    ]);
+    $product->refresh();
+
+    expect($product->marketing_ingredients)->toBe('Coconut Leaf, Albasia Wood, Cotton')
+        ->and($product->country_of_origin)->toBe('IDN');
+
+    $lamp->update(['country_of_origin' => null]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits::run(Product::find($product->id));
+    $product->refresh();
+
+    expect($product->country_of_origin)->toBeNull();
+});
+
+test('repair command resyncs product ingredients and origin from trade units', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $this->tradeUnit1->update(['marketing_ingredients' => 'Coconut Leaf', 'country_of_origin' => 'IDN']);
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $this->tradeUnit1->id, 'quantity' => 1],
+    ]);
+
+    Product::where('id', $product->id)->update([
+        'marketing_ingredients' => 'Glass',
+        'country_of_origin'     => 'CHN, IDN',
+    ]);
+
+    $dryRun = \App\Actions\Catalogue\Product\RepairProductIngredientsAndOriginFromTradeUnits::make()
+        ->handle($shop->id, true);
+
+    expect($dryRun['stale'])->toBe(1)
+        ->and(Product::find($product->id)->marketing_ingredients)->toBe('Glass');
+
+    $repaired = \App\Actions\Catalogue\Product\RepairProductIngredientsAndOriginFromTradeUnits::make()
+        ->handle($shop->id);
+
+    expect($repaired['stale'])->toBe(1);
+
+    $product = Product::find($product->id);
+    expect($product->marketing_ingredients)->toBe('Coconut Leaf')
+        ->and($product->country_of_origin)->toBe('IDN');
 });

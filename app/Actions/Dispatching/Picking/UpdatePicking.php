@@ -18,6 +18,7 @@ use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -61,7 +62,7 @@ class UpdatePicking extends OrgAction
                 abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
             }
 
-            $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding);
+            $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding, $this->quantityAvailableInLocation($picking));
         }
 
         $picking = $this->update($picking, $modelData);
@@ -87,6 +88,24 @@ class UpdatePicking extends OrgAction
         $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
         return $picking;
+    }
+
+    /**
+     * What this picking can be raised to without sending the location negative. The location
+     * already has this picking's current quantity taken out of it, so that amount is headroom
+     * the picking gets to keep.
+     */
+    private function quantityAvailableInLocation(Picking $picking): float
+    {
+        $locationOrgStock = LocationOrgStock::where('location_id', $picking->location_id)
+            ->where('org_stock_id', $picking->org_stock_id)
+            ->first();
+
+        if (!$locationOrgStock) {
+            return (float)$picking->quantity;
+        }
+
+        return (float)$locationOrgStock->quantity + (float)$picking->quantity;
     }
 
     public function rules(): array

@@ -19,6 +19,7 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Audits\DispatchSimpleAudit;
@@ -47,27 +48,53 @@ class StorePicking extends OrgAction
         data_set($modelData, 'type', PickingTypeEnum::PICK, false);
 
         $type = $modelData['type'] instanceof PickingTypeEnum ? $modelData['type'] : PickingTypeEnum::from($modelData['type']);
-        if (in_array($type, [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK], true)) {
-            /*
-             * Same clamp as SetAsWaitingWarehouse: a pick can never take the total picked
-             * past what the delivery note item still needs, box splits go through
-             * SplitPicking which keeps the total constant.
-             */
-            $outstanding = (float)$deliveryNoteItem->quantity_required
-                - (float)$deliveryNoteItem->quantity_picked
-                - (float)$deliveryNoteItem->quantity_waiting_warehouse
-                - (float)$deliveryNoteItem->quantity_waiting_crm;
 
-            if ($outstanding <= 0) {
-                abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
+        /*
+         * The clamp below is read-then-write, so two simultaneous requests (a double tap on
+         * the pick button) would each see the full outstanding quantity and both create a
+         * pick (HELP-2949). The row lock on the delivery note item serialises them, and the
+         * picked total is recalculated before the lock is released so the loser of the race
+         * sees the winner's pick.
+         */
+        $picking = DB::transaction(function () use (&$deliveryNoteItem, $locationOrgStock, $modelData, $type) {
+            $deliveryNoteItem = DeliveryNoteItem::lockForUpdate()->find($deliveryNoteItem->id);
+
+            if (in_array($type, [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK], true)) {
+                /*
+                 * Same clamp as SetAsWaitingWarehouse: a pick can never take the total picked
+                 * past what the delivery note item still needs, box splits go through
+                 * SplitPicking which keeps the total constant.
+                 */
+                $outstanding = (float)$deliveryNoteItem->quantity_required
+                    - (float)$deliveryNoteItem->quantity_picked
+                    - (float)$deliveryNoteItem->quantity_waiting_warehouse
+                    - (float)$deliveryNoteItem->quantity_waiting_crm;
+
+                if ($outstanding <= 0) {
+                    abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
+                }
+
+                /*
+                 * A pick can never take more than the location holds, otherwise the
+                 * location stock would go negative. If the system quantity is wrong
+                 * the location must be stock-audited first.
+                 */
+                $availableInLocation = (float)$locationOrgStock->quantity;
+                if ($availableInLocation <= 0) {
+                    abort(422, 'Nothing to pick: the location has no stock, audit the location first');
+                }
+
+                $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding, $availableInLocation);
+                data_set($modelData, 'last_picked_at', now());
             }
 
-            $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding);
-            data_set($modelData, 'last_picked_at', now());
-        }
+            /** @var Picking $picking */
+            $picking = $deliveryNoteItem->pickings()->create($modelData);
 
-        /** @var Picking $picking */
-        $picking = $deliveryNoteItem->pickings()->create($modelData);
+            CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+
+            return $picking;
+        });
         $picking->refresh();
 
         if (app()->environment('production')) {
@@ -87,7 +114,6 @@ class StorePicking extends OrgAction
         );
 
 
-        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
         $deliveryNoteItem->refresh();
         if ($deliveryNoteItem->is_dirty && $deliveryNoteItem->quantity_picked >= $deliveryNoteItem->quantity_required) {
             $deliveryNoteItem->updateQuietly([

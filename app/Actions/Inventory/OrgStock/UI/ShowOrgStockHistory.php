@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Http\Resources\Inventory\OrgStockHistoryResource;
 use App\InertiaTable\InertiaTable;
@@ -62,8 +63,12 @@ class ShowOrgStockHistory extends OrgAction
                 'quantity_in_locations',
                 'org_stock_lpp_value',
                 'grp_stock_lpp_value',
+                'org_stock_wac_value',
+                'org_stock_fifo_value',
                 'number_locations',
                 'lpp_per_sku',
+                'wac_per_sku',
+                'fifo_per_sku',
             ])
             ->orderBy('date', 'desc');
 
@@ -103,9 +108,14 @@ class ShowOrgStockHistory extends OrgAction
                 ->betweenDates(['date'])
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: false, type: 'date')
                 ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, align: 'right')
-                ->column(key: 'number_locations', label: __('Number of Locations'), canBeHidden: false, align: 'right')
-                ->column(key: 'org_stock_lpp_value', label: __('Stock Value'), canBeHidden: false, align: 'right')
-                ->column(key: 'lpp_per_sku', label: __('Value per SKO'), canBeHidden: false, align: 'right');
+                ->column(key: 'number_locations', label: __('Number of Locations'), canBeHidden: false, align: 'right');
+
+            foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
+                $table->column(key: $method->stockValueColumn(), label: __('Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, align: 'right');
+            }
+            foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
+                $table->column(key: $method->perSkuColumn(), label: __('Per SKO').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, align: 'right');
+            }
         };
     }
 

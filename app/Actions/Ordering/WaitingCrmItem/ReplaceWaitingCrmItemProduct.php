@@ -91,11 +91,21 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                         continue;
                     }
 
+                    /**
+                     * Replacing a free gift must stay free: the gift's own line carries the quantity
+                     * as a bonus and prices at zero, so a replacement stored as an ordered quantity
+                     * charges for what was given away - on an order that is already paid, leaving it
+                     * short by the replacement's price with nobody to collect it.
+                     */
+                    $replacesAGift = (bool)$deliveryNoteItem->transaction?->is_gift;
+
                     $transaction = StoreTransaction::make()->action(
                         order: $order,
                         historicAsset: $product->currentHistoricProduct,
                         modelData: [
-                            'quantity_ordered' => $quantityOrdered,
+                            'quantity_ordered' => $replacesAGift ? 0 : $quantityOrdered,
+                            'quantity_bonus'   => $replacesAGift ? $quantityOrdered : 0,
+                            'is_gift'          => $replacesAGift,
                             'state'            => TransactionStateEnum::HANDLING_BLOCKED,
                             'status'           => TransactionStatusEnum::PROCESSING,
                             'submitted_at'     => now()

@@ -8,6 +8,7 @@
 
 namespace App\Exports\Inventory;
 
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,8 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
         $query = DB::table('organisation_stock_histories')
             ->select([
                 'date as bucket',
+                'org_stock_fifo_value',
+                'org_stock_wac_value',
                 'org_stock_lpp_value',
                 'grp_stock_lpp_value',
                 'number_org_stocks',
@@ -64,11 +67,11 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             __('Total SKOs'),
             __('Out of Stock'),
             __('Locations'),
-            $this->isSameCurrency() ? __('Stock Value') : __('Stock Value').' ('.$this->organisation->currency->symbol.')',
+            ...array_map(fn ($method) => __('Stock Value').' '.$method->label().$method->headingSuffix(), OrgStockValuationMethodEnum::ordered()),
         ];
 
         if (!$this->isSameCurrency()) {
-            $headings[] = __('Stock Value').' ('.$this->organisation->group->currency->symbol.')';
+            $headings[] = __('Stock Value LPP').' ('.$this->organisation->group->currency->symbol.')';
         }
 
         return $headings;
@@ -83,8 +86,11 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             'D' => NumberFormat::FORMAT_TEXT,
         ];
 
+        $formats['E'] = NumberFormat::FORMAT_TEXT;
+        $formats['F'] = NumberFormat::FORMAT_TEXT;
+
         if (!$this->isSameCurrency()) {
-            $formats['E'] = NumberFormat::FORMAT_TEXT;
+            $formats['G'] = NumberFormat::FORMAT_TEXT;
         }
 
         return $formats;
@@ -99,7 +105,7 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
             (string)($row->number_org_stocks ?? '0'),
             (string)($row->number_out_of_stock_org_stocks ?? '0'),
             (string)($row->number_locations ?? '0'),
-            $orgSymbol.number_format((float)($row->org_stock_lpp_value ?? 0), 2, '.', ''),
+            ...array_map(fn ($method) => $row->{$method->stockValueColumn()} !== null ? $orgSymbol.number_format((float)$row->{$method->stockValueColumn()}, 2, '.', '') : '', OrgStockValuationMethodEnum::ordered()),
         ];
 
         if (!$this->isSameCurrency()) {

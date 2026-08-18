@@ -28,79 +28,93 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
         return $product->id;
     }
 
-    public function handle(Product $product): void
+    /**
+     * @param array<string>|null $onlyFields Restrict the write to these fields, used by the
+     *                                       repair command so a bulk run cannot overwrite the
+     *                                       shop's translated GPSR text with the trade unit's.
+     */
+    public function handle(Product $product, ?array $onlyFields = null): void
     {
         $tradeUnits = $product->tradeUnits;
-        if ($tradeUnits->count() == 1) {
-            $this->updateFromASingleTradeUnit($tradeUnits->first(), $product);
-        } else {
-            $this->updateFromMultipleTradeUnits($tradeUnits, $product);
+
+        if ($tradeUnits->isEmpty()) {
+            return;
+        }
+
+        $dataToUpdate = $tradeUnits->count() == 1
+            ? $this->dataFromASingleTradeUnit($tradeUnits->first())
+            : $this->dataFromMultipleTradeUnits($tradeUnits);
+
+        if ($onlyFields !== null) {
+            $dataToUpdate = array_intersect_key($dataToUpdate, array_flip($onlyFields));
+        }
+
+        $product->update($dataToUpdate);
+
+        if ($product->wasChanged() && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
+            BreakWebpageCache::dispatch($product->webpage)->delay(5);
         }
     }
 
-    public function updateFromASingleTradeUnit(TradeUnit $tradeUnit, Product $product): void
+    public function dataFromASingleTradeUnit(TradeUnit $tradeUnit): array
     {
-        $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
-        $productInformationFields = $this->getProductInformationFieldNames();
-
         $dataToUpdate = [];
 
-        foreach (array_merge($dangerousGoodsFields, $productInformationFields) as $field) {
-            if ($tradeUnit->$field !== null) {
+        foreach ($this->hydratedFieldNames() as $field) {
+            if ($tradeUnit->$field !== null || $this->isOwnedByTradeUnits($field)) {
                 $dataToUpdate[$field] = $tradeUnit->$field;
             }
         }
 
-        if (!empty($dataToUpdate)) {
-            $product->updateQuietly($dataToUpdate);
-        }
+        return $dataToUpdate;
     }
 
-    public function updateFromMultipleTradeUnits($tradeUnits, Product $product): void
+    public function dataFromMultipleTradeUnits($tradeUnits): array
     {
-        $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
-        $productInformationFields = $this->getProductInformationFieldNames();
-
         $dataToUpdate = [];
 
-        foreach (array_merge($dangerousGoodsFields, $productInformationFields) as $field) {
+        foreach ($this->hydratedFieldNames() as $field) {
             $values  = [];
             $hasTrue = false;
 
-            // Collect all non-null values for this field from all trade units
             foreach ($tradeUnits as $tradeUnit) {
                 if ($tradeUnit->$field !== null) {
-                    // For boolean fields, check if any value is true
                     if (is_bool($tradeUnit->$field)) {
-                        if ($tradeUnit->$field) {
-                            $hasTrue = true;
-                        }
+                        $hasTrue = $hasTrue || $tradeUnit->$field;
                     } else {
                         $values[] = $tradeUnit->$field;
                     }
                 }
             }
 
-            // For boolean fields, if any value is true, set it as true for the product
             if ($hasTrue) {
                 $dataToUpdate[$field] = true;
-            } // For non-boolean fields, if we have values, concatenate them with comma separators
-            elseif (!empty($values)) {
-                if ($field == 'origin_country_id') {
-                    $dataToUpdate[$field] = $values[0];
-                } else {
-                    $dataToUpdate[$field] = implode(', ', array_unique($values));
+            } elseif (empty($values)) {
+                if ($this->isOwnedByTradeUnits($field)) {
+                    $dataToUpdate[$field] = null;
                 }
+            } elseif ($field == 'origin_country_id') {
+                $dataToUpdate[$field] = $values[0];
+            } else {
+                $dataToUpdate[$field] = implode(', ', array_unique($values));
             }
         }
 
-        if (!empty($dataToUpdate)) {
-            $product->update($dataToUpdate);
-
-            if ($product->wasChanged() && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
-                BreakWebpageCache::dispatch($product->webpage)->delay(5);
-            }
-        }
+        return $dataToUpdate;
     }
 
+    /**
+     * Fields the trade units are the sole source of truth for, so a null there must
+     * blank the product. The rest (GPSR texts, dangerous goods, pictograms) are also
+     * populated per shop and by hand, so a trade unit with nothing to say leaves them.
+     */
+    private function isOwnedByTradeUnits(string $field): bool
+    {
+        return in_array($field, ['country_of_origin', 'origin_country_id']);
+    }
+
+    private function hydratedFieldNames(): array
+    {
+        return array_merge($this->getDangerousGoodsFieldNames(), $this->getProductInformationFieldNames());
+    }
 }

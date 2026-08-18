@@ -54,11 +54,58 @@ class ShowOrgStock extends OrgAction
         return $this->handle($orgStock);
     }
 
+    public function getParent(OrgStock $orgStock): ?array
+    {
+        if (!$orgStock->orgStockFamily) {
+            return null;
+        }
+
+        $organisation = $orgStock->orgStockFamily->organisation;
+
+        return [
+            'label' => $orgStock->orgStockFamily->name,
+            'route' => [
+                'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
+                'parameters' => [
+                    'organisation'   => $organisation->slug,
+                    'warehouse'      => $this->warehouse->slug,
+                    'orgStockFamily' => $orgStock->orgStockFamily->slug
+                ]
+            ]
+        ];
+    }
 
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
         $hasMaster     = $orgStock->stock;
         $subNavigation = $this->getOrgStockSubNavigation($orgStock, $request);
+
+        $miniBreadcrumbs = [];
+        if ($orgStock->orgStockFamily) {
+            $organisation = $orgStock->orgStockFamily->organisation;
+
+            $miniBreadcrumbs[] = [
+                'label'   => $orgStock->orgStockFamily->code,
+                'to'      => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
+                    'parameters' => [
+                        'organisation'   => $organisation->slug,
+                        'warehouse'      => $this->warehouse->slug,
+                        'orgStockFamily' => $orgStock->orgStockFamily->slug
+                    ]
+                ],
+                'tooltip' => __('Org Stock Family'),
+                'icon'    => ['fal', 'fa-boxes-alt']
+            ];
+        }
+
+        $miniBreadcrumbs[] = [
+            'label'   => $orgStock->code,
+            'to'      => null,
+            'tooltip' => __('Org Stock'),
+            'icon'    => ['fal', 'fa-box']
+        ];
+
 
         return Inertia::render(
             'Org/Inventory/OrgStock',
@@ -71,8 +118,10 @@ class ShowOrgStock extends OrgAction
                 ),
                 'navigation'  => [
                     'previous' => $this->getPreviousModel($orgStock, $request),
+                    'up'       => $this->getParent($orgStock),
                     'next'     => $this->getNextModel($orgStock, $request),
                 ],
+                'mini_breadcrumbs'  => $miniBreadcrumbs,
                 'pageHead'    => [
                     'icon'          => [
                         'title' => __('SKO'),

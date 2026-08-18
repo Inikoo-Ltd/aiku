@@ -152,12 +152,35 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
+                            'label' => __("Agent's Shipping List"),
+                            'icon'  => ['fal', 'fa-shopping-basket'],
+                            'root'  => 'grp.org.procurement.shopping_list.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.shopping_list.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Agent Suppliers'),
+                            'icon'  => ['fal', 'fa-person-dolly'],
+                            'root'  => 'grp.org.procurement.org_agent_suppliers.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_agent_suppliers.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Suppliers'),
                             'icon'  => ['fal', 'fa-person-dolly'],
                             'root'  => 'grp.org.procurement.org_suppliers.',
                             'route' => [
                                 'name'       => 'grp.org.procurement.org_suppliers.index',
-                                'parameters' => [$organisation->slug],
+                                'parameters' => [
+                                    'organisation' => $organisation->slug,
+                                    '_query'       => [
+                                        'sort' => 'code',
+                                    ],
+                                ],
                             ]
                         ],
                         [
@@ -175,15 +198,6 @@ class GetOrganisationNavigation
                             'root'  => 'grp.org.procurement.purchase_orders.',
                             'route' => [
                                 'name'       => 'grp.org.procurement.purchase_orders.index',
-                                'parameters' => [$organisation->slug],
-                            ]
-                        ],
-                        [
-                            'label' => __('Shopping List'),
-                            'icon'  => ['fal', 'fa-shopping-basket'],
-                            'root'  => 'grp.org.procurement.shopping_list.',
-                            'route' => [
-                                'name'       => 'grp.org.procurement.shopping_list.index',
                                 'parameters' => [$organisation->slug],
                             ]
                         ],

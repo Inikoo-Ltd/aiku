@@ -28,12 +28,6 @@ class EmailAddressResource extends JsonResource
         return [
             'id'      => $this->id,
             'email'   => $this->email,
-            'number_marketing_dispatches'  => $this->number_marketing_dispatches,
-            'number_transactional_dispatches'  => $this->number_transactional_dispatches,
-            'last_marketing_dispatch_at'  => $this->last_marketing_dispatch_at,
-            'last_transactional_dispatch_at'  => $this->last_transactional_dispatch_at,
-            'soft_bounced_at'  => $this->soft_bounced_at,
-            'hard_bounced_at'  => $this->hard_bounced_at,
         ];
     }
 }

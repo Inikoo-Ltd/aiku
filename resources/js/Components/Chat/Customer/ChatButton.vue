@@ -30,7 +30,7 @@ import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 import OfflineChatForm from "../OfflineChatForm.vue"
 import { router, usePage } from "@inertiajs/vue3"
-import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt } from "@fal"
+import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck } from "@fal"
 import { useWindowSize } from "@vueuse/core"
 import { useBundle } from "../../../Composables/useBundle"
 import Image from "@common/Components/Image.vue"
@@ -38,7 +38,7 @@ import Image from "@common/Components/Image.vue"
 library.add(
     faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok,
     faYoutube, faLinkedinIn, faLine, faWeixin, faPinterest, faSnapchat, faDiscord,
-    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt,
+    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck
 )
 
 interface ChatMessage {
@@ -149,6 +149,7 @@ const brandColors: Record<string, string> = {
     pinterest: "#BD081C",
     snapchat: "#FFFC00",
     discord: "#5865F2",
+    'faLightbulb' : "#FFD700",
 }
 
 const websiteLogo = computed(() => layout?.iris?.header?.header?.data?.fieldValue?.logo)

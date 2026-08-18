@@ -121,9 +121,10 @@ class Prospect extends Model implements Auditable
     protected array $auditExclude = ['traffic_sources'];
 
     protected $casts = [
-        'data'                    => 'array',
-        'location'                => 'array',
-        'contact_name_components' => 'array',
+        'data'                       => 'array',
+        'location'                   => 'array',
+        'contact_name_components'    => 'array',
+        'archived_dispatched_emails' => 'array',
         'state'                   => ProspectStateEnum::class,
         'contacted_state'         => ProspectContactedStateEnum::class,
         'fail_status'             => ProspectFailStatusEnum::class,

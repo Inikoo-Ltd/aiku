@@ -27,11 +27,6 @@ class TimeTrackersResource extends JsonResource
         $startsAt = $this->starts_at;
         $endsAt = $this->ends_at;
 
-        if (($this->organisation_code ?? null) === 'SK') {
-            $startsAt = $startsAt?->copy()->subHour();
-            $endsAt = $endsAt?->copy()->subHour();
-        }
-
         return [
             'id'           => $this->id,
             'starts_at'    => $startsAt,

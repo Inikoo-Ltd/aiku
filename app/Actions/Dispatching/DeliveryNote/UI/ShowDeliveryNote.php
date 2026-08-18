@@ -1217,7 +1217,14 @@ class ShowDeliveryNote extends OrgAction
                 : Inertia::optional(fn () => DeliveryNoteTariffCodeResource::collection(IndexDeliveryNoteTariffCodes::run($deliveryNote, DeliveryNoteTabsEnum::TARIFF_CODES->value))),
 
             'tariff_codes_export' => [
-                'currency_code'  => $deliveryNote->shop->currency->code,
+                'currency_code'    => $deliveryNote->shop->currency->code,
+                'org_stock_route'  => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show',
+                    'parameters' => [
+                        'organisation' => $deliveryNote->organisation->slug,
+                        'warehouse'    => $deliveryNote->warehouse->slug,
+                    ],
+                ],
                 'fields'         => $this->getTariffCodesExportFields(),
                 'download_route' => [
                     'xlsx' => [

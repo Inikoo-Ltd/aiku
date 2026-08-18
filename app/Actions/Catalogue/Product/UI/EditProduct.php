@@ -689,10 +689,10 @@ class EditProduct extends OrgAction
                         'icon'   => 'fal fa-cart-arrow-down',
                         'fields' => [
                             'is_for_sale' => [
-                                'type'  => 'toggle',
+                                'type'          => 'toggle',
                                 'information'   => __("If an item is not for sale, it will not appear in the website's search results and will be excluded from other related features"),
-                                'label' => __('For Sale'),
-                                'value' => $product->is_for_sale,
+                                'label'         => __('For Sale'),
+                                'value'         => $product->is_for_sale,
                             ],
                         ],
                     ] : [],
@@ -717,7 +717,7 @@ class EditProduct extends OrgAction
                         'composition' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
                             'type'         => 'button',
                             'noSaveButton' => true,
-                            'label'        => $tradeUnits->map(fn($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']) . ' × ' . $tradeUnit['code'])->implode(', '),
+                            'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']) . ' × ' . $tradeUnit['code'])->implode(', '),
                             'label_button' => __('Edit composition & packing'),
                             'icon'         => 'fal fa-atom',
                             'type_button'  => 'secondary',
@@ -731,6 +731,21 @@ class EditProduct extends OrgAction
                             ],
                         ] : [],
                     ]),
+                ],
+                $product->shop->type == ShopTypeEnum::DROPSHIPPING ? [] : [
+                    'label'  => __('Offer Details'),
+                    'icon'   => 'fa-light fa-badge-percent',
+                    'fields'        => [
+                        'is_golden_product' => [
+                            'type'          => 'toggle',
+                            'label'         => __('Golden Product'),
+                            'value'         => $product->is_golden_product,
+                            'information'   => __("Would mark the product as Golden Product, which would apply Gold Reward offer to all siblings in basket when a customer added it"),
+                            'warningText'   => __('Modifying this setting would mark the product as Golden Product, which would apply Gold Reward offer to all siblings in basket when a customer added it').'. '.__('Are you sure you want to do this?'),
+                            'noSaveButton'    => true,
+                            'submitOnConfirm' => true,
+                        ],
+                    ]
                 ],
             ]
         );

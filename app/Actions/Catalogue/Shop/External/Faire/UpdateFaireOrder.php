@@ -11,9 +11,10 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Catalogue\Product\UpdateProduct;
-use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -26,13 +27,16 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Product;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
@@ -40,11 +44,13 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateFaireOrder extends OrgAction
 {
-    use HasDeliveryNoteHydrators;
+    use WithDeliveryNoteQuantitySync;
 
     /**
      * @throws \Throwable
@@ -140,7 +146,10 @@ class UpdateFaireOrder extends OrgAction
 
             $this->updateDeliveryNoteItem($order, $transaction);
 
-            $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)->first();
+            $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)
+                ->whereRelation('invoice', 'type', InvoiceTypeEnum::INVOICE)
+                ->orderBy('id')
+                ->first();
 
             $invoiceTransaction?->update([
                 'historic_asset_id' => $product->current_historic_asset_id,
@@ -196,13 +205,8 @@ class UpdateFaireOrder extends OrgAction
         CalculateOrderTotalAmounts::run($order);
 
         $faireTaxAmount = $this->getFaireTaxAmount($orderFaireData, $shop);
-        $order->refresh();
-        $order->update([
-            'tax_amount'   => $faireTaxAmount,
-            'total_amount' => $order->net_amount + $faireTaxAmount,
-        ]);
 
-        $invoice = $order->invoices()->first();
+        $invoice = $this->getInvoiceToDiscount($order);
         if ($invoice) {
             /**
              * Faire's discount has to be on both: CalculateInvoiceTotals deducts the invoice's
@@ -212,6 +216,8 @@ class UpdateFaireOrder extends OrgAction
             $order->update(['amount_off' => $amountOff]);
             $invoice->update(['amount_off' => $amountOff]);
 
+            $this->invoiceDispatchedLinesMissingFromInvoice($order, $invoice);
+
             CalculateInvoiceTotals::run($invoice);
             $invoice->refresh();
             $invoice->update([
@@ -219,6 +225,120 @@ class UpdateFaireOrder extends OrgAction
                 'total_amount' => $invoice->net_amount + $faireTaxAmount,
             ]);
         }
+
+        /**
+         * Last, deliberately: removing the lines Faire never billed recalculates the order, which
+         * derives tax from Aiku's own rates. Faire states the tax it paid, so it is asserted after
+         * everything that could recompute it.
+         */
+        $order->refresh();
+        $order->update([
+            'tax_amount'   => $faireTaxAmount,
+            'total_amount' => $order->net_amount + $faireTaxAmount,
+        ]);
+
+        $this->reportDivergenceFromFaire($order->refresh(), $invoice?->refresh(), $orderFaireData, $amountOff, $faireTaxAmount);
+    }
+
+    /**
+     * Faire is the source of truth, so whatever it says the order is worth is what we must hold.
+     * Nothing compared the two until now, which is how six months of drift went unnoticed: every
+     * divergence was found by a support ticket instead. Logged rather than thrown, because a wrong
+     * total must not stop the sync from importing the rest of the order.
+     */
+    public function reportDivergenceFromFaire(Order $order, ?Invoice $invoice, array $orderFaireData, float $amountOff, float $faireTaxAmount): void
+    {
+        /**
+         * Faire charges the retailer shipping too: it is not in the items but its VAT is in the
+         * taxes array (taxable_item_type SHIPPING), so the expected total includes the order's
+         * shipping line. subtotal_after_brand_discounts fits nowhere here - it is net of both
+         * shipping and damaged_and_missing_items.
+         */
+        $expectedNet   = round($this->getFaireItemsNet($orderFaireData, $order->shop) - $amountOff + $order->shipping_amount + $order->charges_amount, 2);
+        $expectedTotal = round($expectedNet + $faireTaxAmount, 2);
+
+        foreach (['order' => $order, 'invoice' => $invoice] as $side => $model) {
+            if (!$model || abs(round($model->total_amount - $expectedTotal, 2)) < 0.01) {
+                continue;
+            }
+
+            Log::warning('Faire total mismatch', [
+                'faire_order'    => $order->slug,
+                'shop'           => $order->shop->code,
+                'side'           => $side,
+                'faire_total'    => $expectedTotal,
+                'aiku_total'     => (float)$model->total_amount,
+                'difference'     => round($model->total_amount - $expectedTotal, 2),
+                'faire_net'      => $expectedNet,
+                'faire_tax'      => $faireTaxAmount,
+                'faire_discount' => $amountOff,
+                'damaged'        => Arr::get($orderFaireData, 'payout_costs.damaged_and_missing_items.amount_minor', 0) / 100,
+            ]);
+        }
+    }
+
+    /**
+     * What Faire says the goods are worth: the sum of its own line items. This is the invoice figure,
+     * NOT payout_costs.subtotal_after_brand_discounts, which is already net of damaged_and_missing_items
+     * that Faire withholds from the payout and Aiku does not model.
+     */
+    public function getFaireItemsNet(array $orderFaireData, Shop $shop): float
+    {
+        $net      = 0;
+        $exchange = 1;
+
+        $currencyCode = Arr::get($orderFaireData, 'items.0.price.currency');
+        if ($currencyCode && $currencyCode != $shop->currency->code) {
+            $currency = Currency::where('code', $currencyCode)->first();
+            if ($currency) {
+                $exchange = GetCurrencyExchange::run($currency, $shop->currency);
+            }
+        }
+
+        foreach (Arr::get($orderFaireData, 'items', []) as $item) {
+            $net += Arr::get($item, 'quantity', 0) * Arr::get($item, 'price.amount_minor', 0) / 100;
+        }
+
+        return round($net * $exchange, 2);
+    }
+
+    /**
+     * A line Faire adds to an already-invoiced order gets a transaction and a delivery note item
+     * but never an invoice line, so it ships and is never billed. Only dispatched lines are added:
+     * a line still waiting is legitimately absent from the invoice until it goes out.
+     */
+    public function invoiceDispatchedLinesMissingFromInvoice(Order $order, Invoice $invoice): void
+    {
+        $missing = $order->transactions()
+            ->where('model_type', 'Product')
+            ->where('quantity_dispatched', '>', 0)
+            ->whereDoesntHave('invoiceTransaction', fn ($query) => $query->whereRelation('invoice', 'type', InvoiceTypeEnum::INVOICE))
+            ->get();
+
+        foreach ($missing as $transaction) {
+            $dispatchedRatio = $transaction->quantity_ordered > 0
+                ? min(1, $transaction->quantity_dispatched / $transaction->quantity_ordered)
+                : 1;
+
+            StoreInvoiceTransaction::make()->action($invoice, $transaction, [
+                'tax_category_id' => $transaction->tax_category_id,
+                'quantity'        => $transaction->quantity_dispatched,
+                'gross_amount'    => round($transaction->gross_amount * $dispatchedRatio, 2),
+                'net_amount'      => round($transaction->net_amount * $dispatchedRatio, 2),
+            ]);
+        }
+    }
+
+    /**
+     * Faire's discount belongs on the order's invoice, never on a credit note: refunds
+     * are raised from their own transactions and writing amount_off onto one turns it positive.
+     */
+    public function getInvoiceToDiscount(Order $order): ?Invoice
+    {
+        return $order->invoices()
+            ->where('type', InvoiceTypeEnum::INVOICE)
+            ->orderBy('id')
+            ->first();
     }
 
     public function getFaireTaxAmount(array $orderFaireData, Shop $shop): float
@@ -306,13 +426,12 @@ class UpdateFaireOrder extends OrgAction
 
     public function createDeliveryNoteItem(Order $order, Transaction $transaction): void
     {
-        /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes()->whereNotIn('state', [
-            DeliveryNoteStateEnum::CANCELLED,
-            DeliveryNoteStateEnum::DISPATCHED,
-            DeliveryNoteStateEnum::FINALISED,
-        ])->where('type', DeliveryNoteTypeEnum::ORDER)->first();
-        if ($deliveryNote) {
+        DB::transaction(function () use ($order, $transaction) {
+            $deliveryNote = $this->lockWorkableDeliveryNote($order);
+            if (!$deliveryNote) {
+                return;
+            }
+
             $transactionData = [
                 'state'           => TransactionStateEnum::IN_WAREHOUSE,
                 'status'          => TransactionStatusEnum::PROCESSING,
@@ -338,90 +457,81 @@ class UpdateFaireOrder extends OrgAction
                 StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
             }
 
-            $oldState = $deliveryNote->state;
+            /*
+             * A line the warehouse has never seen cannot be picked from a note that is already
+             * packed, so the note goes back far enough for the new line to be worked.
+             */
+            $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, false, null);
+        });
+    }
 
-            if (in_array($deliveryNote->state, [
-                DeliveryNoteStateEnum::PICKED,
-                DeliveryNoteStateEnum::PACKING,
-                DeliveryNoteStateEnum::PACKED,
-            ])) {
-                $deliveryNote->update([
-                    'state' => DeliveryNoteStateEnum::HANDLING,
-                ]);
-
-                $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-                $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
-            }
-        }
+    /**
+     * Walking a note back deletes packings and moves the order's state, and this runs unattended
+     * over every Faire order, so the note is locked for the duration and the whole walk commits or
+     * none of it does. Without it a throw further down the poll leaves a half unpacked note.
+     */
+    protected function lockWorkableDeliveryNote(Order $order): ?DeliveryNote
+    {
+        return $order->deliveryNotes()->whereNotIn('state', [
+            DeliveryNoteStateEnum::CANCELLED,
+            DeliveryNoteStateEnum::DISPATCHED,
+            DeliveryNoteStateEnum::FINALISED,
+        ])->where('type', DeliveryNoteTypeEnum::ORDER)->lockForUpdate()->first();
     }
 
     public function updateDeliveryNoteItem(Order $order, Transaction $transaction): void
     {
-        /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes()->whereNotIn('state', [
-            DeliveryNoteStateEnum::CANCELLED,
-            DeliveryNoteStateEnum::DISPATCHED,
-            DeliveryNoteStateEnum::FINALISED,
-            DeliveryNoteStateEnum::PACKED,
-            DeliveryNoteStateEnum::PACKING,
-            DeliveryNoteStateEnum::PICKED,
-            DeliveryNoteStateEnum::HANDLING_BLOCKED
-        ])->where('type', DeliveryNoteTypeEnum::ORDER)->first();
-        if ($deliveryNote) {
-            $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->where('transaction_id', $transaction->id)->first();
-            if (!$deliveryNoteItem) {
-                $this->createDeliveryNoteItem($order, $transaction);
-
-                return;
+        /*
+         * Faire is the source of truth: the buyer edits the order whatever the warehouse has
+         * already done to it, so every state a note can still be worked in has to accept the
+         * change. Only the terminal ones are refused, and what the pickers already did is walked
+         * back properly rather than overwritten.
+         */
+        $needsCreate = DB::transaction(function () use ($order, $transaction) {
+            $deliveryNote = $this->lockWorkableDeliveryNote($order);
+            if (!$deliveryNote) {
+                return false;
             }
 
+            $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->where('transaction_id', $transaction->id)->first();
+            if (!$deliveryNoteItem) {
+                return true;
+            }
 
-            $product = Product::find($transaction->model_id);
+            $product   = Product::find($transaction->model_id);
+            $orgStocks = $product->orgStocks->keyBy('id');
 
+            $createdItem = false;
+            foreach ($orgStocks as $orgStock) {
+                $exists = $deliveryNote->deliveryNoteItems()
+                    ->where('org_stock_id', $orgStock->id)
+                    ->where('transaction_id', $transaction->id)
+                    ->exists();
 
-            foreach ($product->orgStocks as $orgStock) {
-                $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->where('org_stock_id', $orgStock->id)->where('transaction_id', $transaction->id)->first();
-                $quantity         = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+                if (!$exists) {
+                    $quantity = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
 
-                if (!$deliveryNoteItem) {
-                    $deliveryNoteItemData = [
+                    StoreDeliveryNoteItem::make()->action($deliveryNote, [
                         'org_stock_id'               => $orgStock->id,
                         'transaction_id'             => $transaction->id,
                         'quantity_required'          => $quantity,
                         'original_quantity_required' => $quantity,
-                    ];
-
-                    StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
-                } else {
-                    $deliveryNoteItem->update([
-                        'quantity_required' => $quantity,
                     ]);
-
-                    $toPick = $quantity - $deliveryNoteItem->quantity_picked;
-                    if ($toPick > 0) {
-                        $deliveryNoteItem->update([
-                            'state'      => DeliveryNoteStateEnum::HANDLING->value,
-                            'is_handled' => false,
-                        ]);
-                    }
+                    $createdItem = true;
                 }
             }
 
+            $this->syncDeliveryNote($deliveryNote->refresh(), $transaction, $orgStocks, null);
 
-            $oldState = $deliveryNote->state;
-
-            if (in_array($deliveryNote->state, [
-                DeliveryNoteStateEnum::PICKED,
-                DeliveryNoteStateEnum::PACKING,
-                DeliveryNoteStateEnum::PACKED,
-            ])) {
-                $deliveryNote->update([
-                    'state' => DeliveryNoteStateEnum::HANDLING,
-                ]);
-
-                $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-                $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+            if ($createdItem) {
+                $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, false, null);
             }
+
+            return false;
+        });
+
+        if ($needsCreate) {
+            $this->createDeliveryNoteItem($order, $transaction);
         }
     }
 

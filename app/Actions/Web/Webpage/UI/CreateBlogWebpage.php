@@ -10,7 +10,6 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Enums\Web\Webpage\WebpageBlogTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;

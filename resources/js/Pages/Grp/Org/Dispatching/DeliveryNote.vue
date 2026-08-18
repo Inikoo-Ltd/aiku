@@ -67,6 +67,8 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
 import ScanToPickDeliveryNote from "@/Components/DeliveryNote/ScanToPickDeliveryNote.vue"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
+import { ctrans } from "@/Composables/useTrans"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck, faBarcodeRead);
@@ -291,6 +293,42 @@ const tabsNavigation = computed(() => {
 	return navigation
 });
 
+/*
+ * Emptying the todo list is the whole point of a picking or packing round, so the tab that runs out
+ * says so rather than leaving a bare table header behind, and offers the step that comes next right
+ * where the operator is already looking instead of making them find it back up in the header.
+ */
+const TODO_TABS = ["picking_todo_items", "pending_items"] as const
+
+const isTodoTabCleared = computed(() => {
+	if (!TODO_TABS.includes(currentTab.value as typeof TODO_TABS[number])) {
+		return false
+	}
+
+	const rows = (props[currentTab.value as keyof typeof props] as { data?: any[] } | undefined)?.data
+
+	return Array.isArray(rows) && rows.length === 0
+})
+
+const clearedTodoTabTitle = computed(() =>
+	currentTab.value === "pending_items" ? ctrans("Everything is packed") : ctrans("Everything is picked")
+)
+
+/*
+ * Read off the page head rather than rebuilt here, so the empty state offers whatever the note's own
+ * state allows and nothing else: "Set as packed" while packing, "Finalise and Dispatch" once packed.
+ */
+const clearedTodoTabAction = computed(() =>
+	props.pageHead?.actions?.find((action: any) => action?.style === "save" && action?.route)
+)
+
+// Finishing a pick is a bay selection rather than a plain link, so the header's own component is the
+// one repeated here instead of a button built out of a route the action does not carry.
+const hasClearedTodoTabBaySelector = computed(() =>
+	props.shop?.type !== "dropshipping"
+	&& !!props.pageHead?.actions?.some((action: any) => action?.key === "trigger-set-as-picked-or-packed")
+)
+
 // Section: To Queue
 const isModalToQueue = ref(false);
 
@@ -482,6 +520,92 @@ watch(pickingView, (val) => {
 });
 
 const showWarningMessage = ref(true);
+
+// Section: Warehouse note from customer service, raised once so the picker/packer cannot miss it
+const PICKING_PACKING_STATES = ["handling", "handling_blocked", "picked", "packing"]
+
+const warehouseNote = computed(() => {
+	const note = props.notes?.note_list?.find(item => item.field === "private_warehouse_note")
+
+	return note?.note?.trim() ? note : null
+})
+
+const isModalWarehouseNote = ref(false)
+
+// Only pressing "Understood" retires the note, so a picker who closes the modal without reading it
+// gets it back on the next refresh. The note is fingerprinted rather than stored whole, so a note
+// the customer service rewrites afterwards is raised again without keeping 4000 characters around.
+const ACKNOWLEDGED_WAREHOUSE_NOTES_KEY = "delivery-note:warehouse-note-acknowledged"
+const ACKNOWLEDGED_WAREHOUSE_NOTES_LIMIT = 100
+
+const fingerprintNote = (note: string) => {
+	let hash = 5381
+
+	for (let index = 0; index < note.length; index++) {
+		hash = ((hash * 33) ^ note.charCodeAt(index)) >>> 0
+	}
+
+	return `${note.length}.${hash.toString(36)}`
+}
+
+const readAcknowledgedWarehouseNotes = (): Record<string, string> => {
+	try {
+		return JSON.parse(localStorage.getItem(ACKNOWLEDGED_WAREHOUSE_NOTES_KEY) ?? "{}")
+	} catch {
+		return {}
+	}
+}
+
+const rememberWarehouseNote = (note: string) => {
+	const acknowledged = readAcknowledgedWarehouseNotes()
+	acknowledged[props.delivery_note.id] = fingerprintNote(note)
+
+	// Delivery note ids are numeric, so the browser keeps them in ascending order and trimming from
+	// the front drops the oldest delivery notes the picker worked on.
+	const kept = Object.entries(acknowledged).slice(-ACKNOWLEDGED_WAREHOUSE_NOTES_LIMIT)
+
+	localStorage.setItem(ACKNOWLEDGED_WAREHOUSE_NOTES_KEY, JSON.stringify(Object.fromEntries(kept)))
+}
+
+const acknowledgeWarehouseNote = () => {
+	isModalWarehouseNote.value = false
+
+	if (warehouseNote.value) {
+		rememberWarehouseNote(warehouseNote.value.note)
+	}
+}
+
+// Nobody needs the note read back to them right after they wrote it, so a warehouse note saved from
+// this page counts as read the moment it is sent, before the reload brings the new text in.
+const onNoteSubmitted = ({ field, note }: { field: string, note: string }) => {
+	if (field !== "private_warehouse_note") {
+		return
+	}
+
+	rememberWarehouseNote(note)
+}
+
+watch(
+	() => [props.delivery_note.state, warehouseNote.value?.note],
+	(e) => {
+		if (!props.is_editable || !warehouseNote.value) {
+			return
+		}
+
+		if (!PICKING_PACKING_STATES.includes(props.delivery_note.state)) {
+			return
+		}
+
+		const acknowledged = readAcknowledgedWarehouseNotes()
+
+		if (acknowledged[props.delivery_note.id] === fingerprintNote(warehouseNote.value.note)) {
+			return
+		}
+
+		isModalWarehouseNote.value = true
+	},
+	{ immediate: true }
+);
 
 
 const debReloadPage = debounce(() => {
@@ -914,6 +1038,7 @@ const stopSocketListener = () => {
 					:key="index + note.label"
 					:noteData="note"
 					:updateRoute="routes.update"
+					@submitted="onNoteSubmitted"
 				/>
 			</div>
 		</Transition>
@@ -978,7 +1103,28 @@ const stopSocketListener = () => {
 	<Tabs :current="currentTab" :navigation="tabsNavigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
+		<EmptyState
+			v-if="isTodoTabCleared"
+			:data="{ title: clearedTodoTabTitle }">
+			<template #button-empty-state>
+				<div v-if="clearedTodoTabAction || hasClearedTodoTabBaySelector" class="mt-4 flex justify-center">
+					<ButtonWithLink
+						v-if="clearedTodoTabAction"
+						:label="clearedTodoTabAction.label"
+						:style="clearedTodoTabAction.style"
+						v-tooltip="clearedTodoTabAction.tooltip"
+						:routeTarget="clearedTodoTabAction.route"
+						@error="handleFinaliseError" />
+					<ButtonSelectBays
+						v-else
+						:warehouse="warehouse"
+						:deliveryNote="delivery_note" />
+				</div>
+			</template>
+		</EmptyState>
+
 		<component
+			v-else
 			:is="component"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
@@ -997,6 +1143,39 @@ const stopSocketListener = () => {
 			@validation-error="handleValidationError"
 			@open-tab="handleTabUpdate" />
 	</div>
+
+	<!-- Modal: Warehouse note from customer service -->
+	<Modal
+		:isOpen="isModalWarehouseNote"
+		@onClose="isModalWarehouseNote = false"
+		width="w-full max-w-lg">
+		<div class="flex flex-col gap-y-4">
+			<div class="flex items-center gap-x-3">
+				<FontAwesomeIcon
+					:icon="faExclamationTriangle"
+					class="text-xl text-amber-500"
+					fixed-width
+					aria-hidden="true" />
+				<div class="text-lg font-semibold">
+					{{ ctrans("Note from customer service") }}
+				</div>
+			</div>
+
+			<div
+				class="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-base text-gray-800 whitespace-pre-line break-words max-h-72 overflow-y-auto">
+				{{ warehouseNote?.note }}
+			</div>
+
+			<div class="flex justify-end mt-4">
+				<Button
+					:label="ctrans('Understood')"
+					icon="fas fa-check"
+					full
+					size="lg"
+					@click="acknowledgeWarehouseNote" />
+			</div>
+		</div>
+	</Modal>
 
 	<!-- Modal: Select picker -->
 	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>

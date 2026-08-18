@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateReplenishments;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -47,6 +48,10 @@ class SetOrgStockPickingLocation implements ShouldBeUnique
             'picking_location_id'              => $pickLocationId('default_wholesale_picking_location') ?? $orgStock->picking_location_id,
             'picking_dropshipping_location_id' => $pickLocationId('default_dropshipping_picking_location') ?? $orgStock->picking_dropshipping_location_id,
         ]);
+
+        foreach ($orgStock->organisation->warehouses as $warehouse) {
+            WarehouseHydrateReplenishments::dispatch($warehouse)->delay(2);
+        }
     }
 
 

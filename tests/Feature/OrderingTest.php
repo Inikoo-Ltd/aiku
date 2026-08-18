@@ -44,6 +44,9 @@ use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
+use App\Actions\Billables\Charge\DeleteCharge;
+use App\Actions\Billables\Charge\UpdateCharge;
+use App\Actions\Ordering\Order\CalculateOrderHangingCharges;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\HydrateOrders;
@@ -83,6 +86,7 @@ use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -103,6 +107,8 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
+use App\Models\Catalogue\Asset;
+use Illuminate\Validation\ValidationException;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
@@ -382,6 +388,22 @@ test('create transaction', function ($order) {
     return $transaction;
 })->depends('delete previous transaction');
 
+test('store transaction for existing product adds to quantity instead of duplicating', function (Transaction $transaction) {
+    $order         = $transaction->order;
+    $historicAsset = $this->product->historicAsset;
+    $quantityBefore = (float) $transaction->quantity_ordered;
+
+    $transactionData                     = Transaction::factory()->definition();
+    $transactionData['quantity_ordered'] = 3;
+
+    $dedupedTransaction = StoreTransaction::make()->action($order, $historicAsset, $transactionData);
+    $order->refresh();
+
+    expect($dedupedTransaction->id)->toBe($transaction->id)
+        ->and((float) $dedupedTransaction->quantity_ordered)->toEqual($quantityBefore + 3)
+        ->and($order->transactions()->where('model_type', 'Product')->count())->toBe(1);
+})->depends('create transaction');
+
 test('create transaction from adjustment', function (Order $order) {
     $adjustment = StoreAdjustment::make()->action(
         $order->shop,
@@ -456,6 +478,73 @@ test('create transaction from charge', function (Order $order) {
         ->and($order->stats->number_item_transactions)->toBe(1);
 
     return $transaction;
+})->depends('create order');
+
+test('small order charge configured through the UI applies to an order', function (Order $order) {
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'SOC',
+        'name'        => 'SOC',
+        'description' => 'small order charge',
+        'type'        => ChargeTypeEnum::HANGING,
+    ]);
+
+    expect($charge->state)->toBe(ChargeStateEnum::IN_PROCESS)
+        ->and($charge->settings)->not->toHaveKey('rules');
+
+    UpdateCharge::make()->action($charge, [
+        'state'     => ChargeStateEnum::ACTIVE,
+        'min_order' => 2550,
+        'amount'    => 255,
+    ], strict: false);
+
+    $charge->refresh();
+    expect($charge->settings['rules'])->toBe('<;2550');
+    $chargeTransactions = fn () => $order->transactions()
+        ->where('model_type', 'Charge')
+        ->where('model_id', $charge->id);
+
+    $order->goods_amount = 1000;
+    CalculateOrderHangingCharges::run($order);
+
+    expect($chargeTransactions()->count())->toBe(1)
+        ->and((int) $chargeTransactions()->first()->net_amount)->toBe(255);
+
+    $order->goods_amount = 3000;
+    CalculateOrderHangingCharges::run($order);
+
+    expect($chargeTransactions()->count())->toBe(0);
+})->depends('create order');
+
+test('delete an unused charge', function (Order $order) {
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'del-me',
+        'name'        => 'delete me',
+        'description' => 'never used',
+        'type'        => ChargeTypeEnum::OTHER,
+    ]);
+    $assetId = $charge->asset_id;
+
+    DeleteCharge::make()->action($charge);
+
+    expect(Charge::find($charge->id))->toBeNull()
+        ->and(Asset::find($assetId))->toBeNull();
+})->depends('create order');
+
+test('deleting a charge already used on an order is refused', function (Order $order) {
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'keep-me',
+        'name'        => 'keep me',
+        'description' => 'used on an order',
+        'type'        => ChargeTypeEnum::OTHER,
+    ]);
+
+    StoreTransactionFromCharge::make()->action($order, $charge, [
+        'date'             => Carbon::now(),
+        'quantity_ordered' => 1,
+    ]);
+
+    expect(fn () => DeleteCharge::make()->action($charge))->toThrow(ValidationException::class)
+        ->and(Charge::find($charge->id))->not->toBeNull();
 })->depends('create order');
 
 test('create transaction from shipping', function (Order $order) {
@@ -616,6 +705,11 @@ test('update order state to Finalised ', function (Order $order) {
 
     return $order;
 })->depends('update order state to Handling');
+
+test('finalising an already invoiced order does not create a second invoice', function (Order $order) {
+    expect(fn () => FinaliseOrder::make()->action($order))->toThrow(ValidationException::class)
+        ->and($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->count())->toBe(1);
+})->depends('update order state to Finalised ');
 
 test('create customer client', function () {
     $shop     = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
@@ -1917,6 +2011,40 @@ test('transaction import marks rows with missing code or quantity as failed', fu
     $import->storeModel(collect(['code' => $this->product->code]), $missingQuantityRecord);
     expect($missingQuantityRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
         ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
+});
+
+test('transaction import prefers the active product when a discontinued one shares the code', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $staleProduct = $this->product->replicate(['slug']);
+    $staleProduct->slug  = $this->product->slug.'-old';
+    $staleProduct->state = ProductStateEnum::DISCONTINUED;
+    $staleProduct->saveQuietly();
+
+    $upload = Upload::create([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'model'             => 'Transaction',
+        'parent_type'       => $order->getMorphClass(),
+        'parent_id'         => $order->id,
+        'original_filename' => 'test.xlsx',
+        'filename'          => 'test.xlsx',
+        'filesize'          => 0,
+        'number_rows'       => 0,
+        'number_success'    => 0,
+        'number_fails'      => 0,
+    ]);
+
+    $import = new TransactionImport($order, $upload);
+    $record = $upload->records()->create([
+        'values' => [],
+        'status' => UploadRecordStatusEnum::PROCESSING,
+    ]);
+
+    $import->storeModel(collect(['code' => $this->product->code, 'quantity' => 2]), $record);
+
+    expect($record->refresh()->status)->toBe(UploadRecordStatusEnum::COMPLETE->value)
+        ->and($order->transactions()->where('model_type', 'Product')->pluck('model_id')->all())->toBe([$this->product->id]);
 });
 
 test('recalculating basket totals skips orders that are no longer baskets', function () {

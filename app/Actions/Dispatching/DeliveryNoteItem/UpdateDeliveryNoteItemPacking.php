@@ -76,7 +76,16 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
         );
 
 
-        if ($hasUnfinishedPackings->count() == 0) {
+        /*
+         * An item waiting for a replacement decision or warehouse release has quantity_picked 0,
+         * which isFullyPacked() reads as complete. Without this check, scanning the last real item
+         * silently packs a note whose waiting lines were never picked, zeroing them on the order.
+         */
+        $hasWaitingItems = $siblingDeliveryNoteItems->contains(
+            fn (DeliveryNoteItem $item) => $item->has_waiting_warehouse || $item->has_waiting_crm
+        );
+
+        if ($hasUnfinishedPackings->count() == 0 && !$hasWaitingItems) {
             UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $user);
         }
 

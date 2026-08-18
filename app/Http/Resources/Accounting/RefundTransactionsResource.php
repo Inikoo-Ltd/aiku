@@ -25,8 +25,10 @@ class RefundTransactionsResource extends JsonResource
     public function toArray($request): array
     {
         $packedInMessage = '';
-        if ($this->model_type === 'Product' && $this->model && $this->model->units > 1) {
-            $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($this->model->units) . ")";
+        $historicUnits = $this->historicAsset?->units;
+        $units = $historicUnits > 1 ? $historicUnits : $this->model?->units;
+        if ($this->model_type === 'Product' && $units > 1) {
+            $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($units) . ")";
         }
 
         return [

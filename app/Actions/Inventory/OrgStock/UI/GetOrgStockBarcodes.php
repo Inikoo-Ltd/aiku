@@ -39,6 +39,7 @@ class GetOrgStockBarcodes
                 'dimensions' => null,
                 'packs'      => null,
                 'editable'   => true,
+                'warning'    => static::singleUnitSkoWarning($orgStock),
             ],
             [
                 'level'      => 'unit',
@@ -49,7 +50,23 @@ class GetOrgStockBarcodes
                 'dimensions' => $tradeUnit?->marketing_dimensions,
                 'packs'      => null,
                 'editable'   => (bool) $tradeUnit,
+                'warning'    => null,
             ],
         ];
+    }
+
+    /**
+     * An SKO that holds a single unit has no outer packing distinct from the unit, so a number in
+     * this slot is the unit's own EAN sitting one level too high: it is where scanning reads it as
+     * an outer and where the label printer prints it as CODE 128. Staff are not blocked, because a
+     * warehouse is free to put its own CODE 128 label on a single-unit item, but the card says so.
+     */
+    public static function singleUnitSkoWarning(OrgStock $orgStock): ?string
+    {
+        if ((int)($orgStock->packed_in ?? 1) > 1) {
+            return null;
+        }
+
+        return __('This SKO holds one unit, so it has no outer packing of its own.');
     }
 }

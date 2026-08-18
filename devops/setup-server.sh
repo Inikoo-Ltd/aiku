@@ -127,6 +127,31 @@ else
   echo "  skipped (INSTALL_SCHEDULER=0 — scheduler runs on one host only)"
 fi
 
+if [[ $APP_HOST == boro ]]; then
+  if [[ $DRY_RUN == 1 ]]; then
+    echo "  [dry-run] would install /etc/cron.d/pg-freeze-sweep"
+  else
+    install -m 644 "$DEVOPS/cron/pg-freeze-sweep" /etc/cron.d/pg-freeze-sweep
+    echo "  -> pg-freeze-sweep installed (primary DB host)"
+  fi
+else
+  echo "  pg-freeze-sweep skipped (primary DB host only)"
+fi
+
+echo "postgres:"
+case $APP_HOST in
+  boro)  pg_conf="boro-production.conf" ;;
+  helio) pg_conf="helio-replica.conf" ;;
+  *)     pg_conf="" ;;
+esac
+if [[ -n $pg_conf ]]; then
+  place "$DEVOPS/postgres/$pg_conf" "/etc/postgresql/18/main/conf.d/99-$APP_HOST.conf"
+  echo "  NOTE: postgresql.auto.conf (ALTER SYSTEM) overrides conf.d — on an"
+  echo "  existing cluster verify with: psql -c 'select name,setting,source from pg_settings'"
+else
+  echo "  skipped (no postgres conf for $APP_HOST)"
+fi
+
 if [[ $DRY_RUN == 1 ]]; then
   echo "dry-run complete — nothing written."
   exit 0

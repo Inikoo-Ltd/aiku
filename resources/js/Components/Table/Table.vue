@@ -1161,6 +1161,8 @@ const getSeverity = (type?: string) => {
                             </div>
                         </template>
 
+                        <slot name="tableExtraAction" />
+                        
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
@@ -1214,6 +1216,13 @@ const getSeverity = (type?: string) => {
             <slot name="before-table" />
 
             <!-- <pre>{{ compResourceData }}</pre> -->
+
+            <!-- Header note: small grey caveat above the table (currency, cut-offs, ...) -->
+            <slot name="headerNote">
+                <div v-if="queryBuilderProps.headerNote" class="pb-1 text-right text-xs text-gray-400">
+                    {{ queryBuilderProps.headerNote }}
+                </div>
+            </slot>
 
             <!-- The Main Table -->
             <slot name="tableWrapper" :meta="compResourceMeta">
@@ -1333,7 +1342,12 @@ const getSeverity = (type?: string) => {
                                         <HeaderCell :key="`table-${name}-header-${column.key}`"
                                             :cell="header(column.key)" :type="columnsType[column.key]" :column="column"
                                             :resource="compResourceData"
-                                            :highlight="queryBuilderProps?.betweenDatesValue?.column === column.key">
+                                            :highlight="queryBuilderProps?.betweenDatesValue?.column === column.key"
+                                        >
+                                            <template #cellLabel>
+                                                <slot :name="`table-header-${column.key}`">
+                                                </slot>
+                                            </template>
                                         </HeaderCell>
                                     </slot>
                                 </tr>
@@ -1403,7 +1417,7 @@ const getSeverity = (type?: string) => {
                                                 <td v-for="(column, index) in queryBuilderProps.columns"
                                                     v-show="show(column.key)"
                                                     :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                    class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                    class="text-[13px] py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                         column.type === 'avatar' || column.type === 'icon'
                                                             ? 'text-center min-w-fit px-3'
                                                             : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
@@ -1479,7 +1493,7 @@ const getSeverity = (type?: string) => {
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-[13px] py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-3'
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
@@ -1550,7 +1564,7 @@ const getSeverity = (type?: string) => {
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-[13px] py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
@@ -1598,7 +1612,7 @@ const getSeverity = (type?: string) => {
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`footerRows-rows-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-500 whitespace-normal h-full" :class="[
+                                                class="text-[13px] py-2 text-gray-500 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.align === 'right'
@@ -1629,6 +1643,19 @@ const getSeverity = (type?: string) => {
                                 </slot>
                             </tbody>
                         </table>
+                        </div>
+                    </slot>
+
+                    <!-- Footer note: small grey caveat under the table (currency, cut-offs, ...) -->
+                    <slot name="footerNote">
+                        <div v-if="queryBuilderProps.footerNote" class="px-4 pt-2 text-right text-xs text-gray-400">
+                            {{ queryBuilderProps.footerNote }}
+                            <Link v-if="queryBuilderProps.footerNoteAction"
+                                :href="queryBuilderProps.footerNoteAction.href"
+                                preserve-scroll
+                                class="ml-1 underline hover:text-gray-600">
+                                {{ queryBuilderProps.footerNoteAction.label }}
+                            </Link>
                         </div>
                     </slot>
 

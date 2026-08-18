@@ -102,6 +102,7 @@ class DeliveryNotesResource extends JsonResource
             'parcels'                     => $totalParcels,
             'batch_code_expiry_date'      => $this->batch_code_expiry_date,
             'date'                        => $this->date,
+            'last_modified_date'          => $this->last_modified_date,
             'state'                       => $this->state,
             'state_icon'                  => $this->state->stateIcon()[$this->state->value],
             'type'                        => $this->type,

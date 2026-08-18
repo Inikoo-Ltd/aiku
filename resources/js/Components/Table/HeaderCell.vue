@@ -86,7 +86,7 @@ const isDebug = false   //  True will show the column key in the header
                     </div>
                     
                     <!-- Label: simple and icon -->
-                    <div v-else class="text-xs md:text-sm lg:text-base w-full" v-tooltip="cell?.tooltip"
+                    <div v-else class="text-xs md:text-[13px] w-full" v-tooltip="cell?.tooltip"
                         :class="[cell?.type == 'number' || cell?.type == 'currency' ? 'text-right pr-3' : '']"
                     >
                         <FontAwesomeIcon
@@ -108,8 +108,18 @@ const isDebug = false   //  True will show the column key in the header
                         </span>
                         
                         <template v-else>
-                            <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
-                            <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
+                            <span class="whitespace-nowrap">
+                                <slot name="cellLabel">
+                                    <span v-if="cell?.label" class="hidden lg:inline">{{ cell?.label || ''}}</span>
+                                    <span v-if="cell?.shortLabel || cell?.label" class="inline lg:hidden">{{ cell?.shortLabel || cell?.label || ''}}</span>
+                                </slot>
+                                <FontAwesomeIcon
+                                    v-if="cell?.tooltip_icon && cell?.tooltip"
+                                    icon="fal fa-question-circle"
+                                    aria-hidden="true"
+                                    fixed-width
+                                    class="ml-0.5 cursor-help text-gray-300 hover:text-gray-500" />
+                            </span>
                         </template>
                         
                     </div>

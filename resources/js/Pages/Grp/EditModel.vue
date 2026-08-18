@@ -72,7 +72,8 @@ import {
     faCalendarCheck,
     faPercent,
     faBusinessTime,
-    faChessClock
+    faChessClock,
+    faCameraRetro
 } from "@fal"
 import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"

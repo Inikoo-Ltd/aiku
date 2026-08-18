@@ -29,6 +29,7 @@ const props = defineProps<{
   todo?: Boolean
   shopType: string
   picking_session_route : routeType
+  bucket: string
 }>()
 
 const selectedDeliveryNotes = reactive(new Set<number>())
@@ -97,5 +98,5 @@ const isHidden = computed(() => {
     </template>
   </PageHeading>
   <HasPickTableDeliveryNote v-if="todo" :data="data" :selectedDeliveryNotes="selectedDeliveryNotes"/>
-  <TableDeliveryNotes v-else :data="data" />
+  <TableDeliveryNotes v-else :data="data" :bucket/>
 </template>

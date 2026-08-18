@@ -10,8 +10,6 @@
 namespace App\Actions\Api\Retina\Fulfilment\Transaction;
 
 use App\Actions\Api\Retina\Fulfilment\Resource\SKUApiResource;
-use App\Actions\Fulfilment\StoredItem\AttachStoredItemToReturn;
-use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
 use App\Actions\RetinaApiAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
@@ -21,9 +19,7 @@ use App\Models\Fulfilment\PalletStoredItem;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
-use League\Uri\Components\Port;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -43,7 +39,7 @@ class AttachApiOrderTransaction extends RetinaApiAction
             /** @var StoredItem $storedItem */
             $storedItem = $portfolio->item;
 
-            if(!$storedItem) {
+            if (!$storedItem) {
                 throw ValidationException::withMessages(['message' => 'Item not found.']);
             }
 
@@ -66,11 +62,11 @@ class AttachApiOrderTransaction extends RetinaApiAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if(!$this->storedItem) {
+        if (!$this->storedItem) {
             throw ValidationException::withMessages(['message' => 'Item not found.']);
         }
 
-        if(!$this->storedItem instanceof StoredItem) {
+        if (!$this->storedItem instanceof StoredItem) {
             throw ValidationException::withMessages(['message' => 'Portfolio not found.']);
         }
     }

@@ -39,16 +39,8 @@ class TimesheetsResource extends JsonResource
             $subjectHasLeft = $this->subject->state === EmployeeStateEnum::LEFT;
         }
 
-        $organisationCode = $this->organisation_code
-            ?? ($this->resource->relationLoaded('organisation') ? $this->organisation?->code : null);
-
         $startAt = $this->start_at;
         $endAt = $this->end_at;
-
-        if ($organisationCode === 'SK') {
-            $startAt = $startAt?->copy()->subHour();
-            $endAt = $endAt?->copy()->subHour();
-        }
 
         return [
             'id'                        => $this->id,

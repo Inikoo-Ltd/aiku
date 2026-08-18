@@ -11,8 +11,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Pie } from "vue-chartjs"
 import { trans } from "laravel-vue-i18n"
-import { faBox, faInventory, faSkullCow, faDollarSign, faBan } from "@fal"
-import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle } from "@fas"
+import { faBox, faInventory, faSkullCow, faDollarSign, faBan, faClipboardListCheck } from "@fal"
+import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faDollyFlatbedEmpty, faShoppingBasket } from "@fas"
 
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
@@ -20,6 +20,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
+import StatsBoxNegativeList from "@/Components/Stats/StatsBoxNegativeList.vue"
 
 library.add(
     faBox,
@@ -31,6 +32,9 @@ library.add(
     faSkullCow,
     faDollarSign,
     faBan,
+    faClipboardListCheck,
+    faDollyFlatbedEmpty,
+    faShoppingBasket,
 )
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
@@ -54,6 +58,7 @@ defineProps<{
         }>
     }
     statsBox: {}
+    additionalStatBox?: {}[]
     stockHistoryToday?: {
         date: string
         number_org_stocks: number
@@ -61,6 +66,8 @@ defineProps<{
         percentage_out_of_stock: number
         number_locations: number
         org_stock_lpp_value: number
+        valuation_method?: string
+        valuation_legend?: string
         currency_code: string
         value_dormant_stock_1y: number
         percentage_dormant_1y: number
@@ -128,6 +135,7 @@ const options = {
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" />
                     {{ trans('Stock Value') }}
+                    <FontAwesomeIcon icon="fal fa-question-circle" class="cursor-help text-gray-300 hover:text-gray-500" fixed-width aria-hidden="true" v-tooltip="stockHistoryToday.valuation_legend" />
                 </dt>
                 <dd class="mt-1 text-3xl font-semibold tabular-nums text-gray-800">
                     {{ locale.CurrencyShort(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_lpp_value)) }}
@@ -184,6 +192,7 @@ const options = {
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-skull-cow" class="text-red-500" fixed-width aria-hidden="true" />
                     {{ trans('Dormant 1Y') }}
+                    <FontAwesomeIcon icon="fal fa-question-circle" class="cursor-help text-gray-300 hover:text-gray-500" fixed-width aria-hidden="true" v-tooltip="stockHistoryToday.valuation_legend" />
                 </dt>
                 <dd class="mt-1 flex items-baseline gap-x-2">
                     <span class="text-2xl font-semibold tabular-nums text-red-500">
@@ -223,12 +232,20 @@ const options = {
     <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" />
 
     <div class="py-6 px-4">
-        <dl class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+        <span class="font-semibold">{{ trans('Inventory') }}</span>
+        <dl class="pt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
             <StatsBox v-for="(stat, index) in statsBox"
                 :key="index"
                 :stat="stat"
             />
         </dl>
+    </div>
+
+    <div v-if="additionalStatBox?.length" class="px-4 pb-6">
+        <span class="font-semibold">{{ trans('Faulty Inventory') }}</span>
+        <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5 gap-2">
+            <StatsBoxNegativeList :stats="additionalStatBox" />
+        </div>
     </div>
 
     <dl class="px-4 mt-5 grid grid-cols-1 md:grid-cols-2 gap-x-2 gap-y-3">

@@ -17,6 +17,7 @@ use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\UpdatePaymentAccountShop;
+use App\Actions\Billables\Charge\DeleteCharge;
 use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
@@ -486,6 +487,8 @@ use App\Actions\Web\Redirect\DeleteRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
+use App\Actions\Web\WebLayoutTemplate\ApplyWebLayoutTemplate;
+use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
@@ -1151,6 +1154,9 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
     Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
+
+    Route::post('store-as-template', StoreWebLayoutTemplate::class)->name('store_as_template');
+    Route::post('apply-template', ApplyWebLayoutTemplate::class)->name('apply_template');
 });
 
 Route::patch('website/{website:id}/bulk-offline-webpages', SetWebpageOfflineBulk::class)->name('webpage.set_offline_bulk');
@@ -1431,6 +1437,7 @@ Route::any('translate/{languageFrom}/{languageTo}', Translate::class)->name('tra
 
 Route::prefix('charge/{charge:id}')->name('charge.')->group(function () {
     Route::patch('update', UpdateCharge::class)->name('update');
+    Route::delete('delete', DeleteCharge::class)->name('delete');
 });
 
 Route::name('brand.')->prefix('brand')->group(function () {

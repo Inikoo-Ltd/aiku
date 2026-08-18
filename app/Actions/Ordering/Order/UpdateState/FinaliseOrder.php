@@ -19,6 +19,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class FinaliseOrder extends OrgAction
@@ -34,11 +35,15 @@ class FinaliseOrder extends OrgAction
     {
         $oldState = $order->state;
 
-        $currentInvoicesInOrder = $order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->count();
-        if ($currentInvoicesInOrder > 0) {
-            throw ValidationException::withMessages(['status' => 'You can not change the status to finalized, because there are invoices in this order']);
-        }
-        GenerateInvoiceFromOrder::make()->action($order);
+        DB::transaction(function () use ($order) {
+            Order::whereKey($order->id)->lockForUpdate()->first();
+
+            $currentInvoicesInOrder = $order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->count();
+            if ($currentInvoicesInOrder > 0) {
+                throw ValidationException::withMessages(['status' => 'You can not change the status to finalized, because there are invoices in this order']);
+            }
+            GenerateInvoiceFromOrder::make()->action($order);
+        });
 
         $data = [
             'state' => OrderStateEnum::FINALISED
