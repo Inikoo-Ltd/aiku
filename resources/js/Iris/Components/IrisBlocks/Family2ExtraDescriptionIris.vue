@@ -6,6 +6,7 @@ import About from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/About.v
 import MarketingMaterials from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/MarketingMaterials.vue"
 import Faq from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Faq.vue"
 import Customisation from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Customisation.vue"
+import Storage from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Storage.vue"
 
 const props = defineProps<{
   fieldValue: any
@@ -71,6 +72,8 @@ const component = (tab: string) => {
       return Faq
     case "customisation":
       return Customisation
+    case "storage_and_shelf_life":
+      return Storage
     default:
       return null
   }
