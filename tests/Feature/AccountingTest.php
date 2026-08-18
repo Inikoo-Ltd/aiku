@@ -41,6 +41,11 @@ use App\Actions\Accounting\TopUp\UpdateTopUp;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\ProcessCustomerTimeSeriesRecords;
+use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
+use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use Illuminate\Support\Str;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +58,7 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Helpers\TaxCategory;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
@@ -2524,4 +2530,81 @@ test('a tax only refund gives back exactly the tax the invoice charged', functio
     expect((float) $refund->tax_amount)->toBe(-380.21)
         ->and((float) $refund->total_amount)->toBe(-380.21)
         ->and(round($refund->invoiceTransactions->sum('tax_amount'), 2))->toBe(380.21);
+});
+
+test('returning excess payment as balance pays off the order refund', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 774.23]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -39.04, 'in_process' => false]);
+
+    DB::table('orders')->where('id', $order->id)->update([
+        'total_amount'   => 774.23,
+        'payment_amount' => 756.23,
+    ]);
+
+    request()->setLaravelSession(app('session.store'));
+    AddBalanceFromExcessPaymentOrder::make()->handle($order->refresh());
+
+    expect((float) $refund->refresh()->payment_amount)->toBe(-21.04);
+});
+
+test('excess bigger than the refund pays it in full and keeps the rest as balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 500]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -176.97, 'in_process' => false]);
+
+    DB::table('orders')->where('id', $order->id)->update([
+        'total_amount'   => 500,
+        'payment_amount' => 660.32,
+    ]);
+
+    request()->setLaravelSession(app('session.store'));
+    AddBalanceFromExcessPaymentOrder::make()->handle($order->refresh());
+
+    expect((float) $refund->refresh()->payment_amount)->toBe(-176.97)
+        ->and(round($order->refresh()->payments()->where('payments.type', PaymentTypeEnum::REFUND)->sum('payments.amount'), 2))->toBe(-337.29);
+});
+
+test('repair command attaches order only excess refunds to their credit note', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 774.23]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -39.04, 'in_process' => false]);
+
+    $payment = StorePayment::make()->action(
+        $customer,
+        $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount,
+        [
+            'amount'    => -21.04,
+            'reference' => 'ref-bal-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::REFUND,
+        ]
+    );
+    AttachPaymentToOrder::make()->action($order, $payment, []);
+
+    $this->artisan('repair:excess_payment_refunds_not_attached_to_invoice --apply')->assertOk();
+
+    expect((float) $refund->refresh()->payment_amount)->toBe(-21.04);
 });
