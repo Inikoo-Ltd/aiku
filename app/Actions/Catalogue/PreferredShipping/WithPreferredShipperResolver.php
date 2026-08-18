@@ -87,7 +87,7 @@ trait WithPreferredShipperResolver
         return $rules
             ->filter(
                 fn (PreferredShipping $rule) => (!$rule->country_id || $rule->country_id == $countryId)
-                    && (!$rule->postcode || str_starts_with($postalCode, $this->normalisePostcode($rule->postcode)))
+                    && $this->postcodeMatchesRule($postalCode, $rule->postcode)
             )
             ->sortByDesc(
                 fn (PreferredShipping $rule) => ($rule->important ? 4 : 0)
@@ -122,6 +122,26 @@ trait WithPreferredShipperResolver
         return collect([$rule->country?->iso3, $rule->postcode])
             ->filter()
             ->implode(' ') ?: __('all destinations');
+    }
+
+    /**
+     * A rule can hold several comma-separated prefixes ("91,93,67"); any of them matching is a match.
+     */
+    private function postcodeMatchesRule(string $postalCode, ?string $rulePostcode): bool
+    {
+        $prefixes = array_filter(explode(',', $this->normalisePostcode($rulePostcode)));
+
+        if (empty($prefixes)) {
+            return true;
+        }
+
+        foreach ($prefixes as $prefix) {
+            if (str_starts_with($postalCode, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function normalisePostcode(?string $postcode): string

@@ -69,6 +69,18 @@ it('returns the winning rule so a lock can be told apart from a preference', fun
         ->and($resolver->pickPreferredShippingRule($rules, 99, ''))->toBeNull();
 });
 
+it('matches any of several comma-separated postcode prefixes', function () {
+    $rules = collect([
+        makeRule(shipperId: 1, countryId: 10, postcode: '91, 93,67'),
+    ]);
+
+    $resolver = makePreferredShipperResolver();
+
+    expect($resolver->pickPreferredShipperId($rules, 10, '93100'))->toBe(1)
+        ->and($resolver->pickPreferredShipperId($rules, 10, '67000'))->toBe(1)
+        ->and($resolver->pickPreferredShipperId($rules, 10, '75001'))->toBeNull();
+});
+
 it('matches postcode prefixes ignoring spaces and case', function () {
     $rules = collect([
         makeRule(shipperId: 1, countryId: 10, postcode: 'sw1 a'),

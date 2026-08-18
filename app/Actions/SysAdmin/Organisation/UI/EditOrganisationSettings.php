@@ -288,7 +288,7 @@ class EditOrganisationSettings extends OrgAction
                                                 $query->where('status', true)->orWhereIn('id', $usedShipperIds);
                                             })
                                             ->orderBy('name')
-                                            ->get(['id', 'name']),
+                                            ->get(['id', 'name', 'code', 'api_shipper']),
                                         'countries' => GetCountriesOptions::run(),
                                     ],
                                 ],

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { reactive, computed, watch } from "vue"
+import { reactive, ref, computed, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import InputText from "primevue/inputtext"
 import { Select } from "primevue"
+import Modal from "@/Components/Utils/Modal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPlus, faTrashAlt, faLock, faLockOpen, faInfoCircle } from "@fal"
+import { faPlus, faTrashAlt, faLock, faLockOpen, faInfoCircle, faVial, faCheck, faTimes } from "@fal"
 
 interface PreferredShippingRow {
     id: number | null
@@ -22,13 +23,17 @@ const props = defineProps<{
     form: Record<string, any>
     fieldName: string
     options: {
-        shippers: { id: number; name: string }[]
+        shippers: { id: number; name: string; code?: string; api_shipper?: string | null }[]
         countries: Record<string, { label: string; code: string; id: number | string }>
     }
 }>()
 
 const shipperOptions = computed(() =>
-    (props.options?.shippers ?? []).map((shipper) => ({ label: shipper.name, value: shipper.id }))
+    (props.options?.shippers ?? []).map((shipper) => ({
+        label: `${shipper.api_shipper ? "API · " : ""}${shipper.name}${shipper.code ? ` (${shipper.code})` : ""}`,
+        is_api: !!shipper.api_shipper,
+        value: shipper.id,
+    }))
 )
 const countryOptions = computed(() =>
     Object.values(props.options?.countries ?? {}).map((country) => ({
@@ -76,6 +81,28 @@ const setImportant = (index: number, value: boolean) => {
         row.important = i === index ? value : false
     })
 }
+
+// Section: postcode tester
+// Mirrors the backend prefix match: both sides uppercased with spaces stripped,
+// then str_starts_with(address postcode, rule postcode).
+const normalisePostcode = (value?: string | null) => (value ?? "").toUpperCase().replace(/\s+/g, "")
+
+const isPostcodeTestOpen = ref(false)
+const postcodeTestRow = ref<PreferredShippingRow | null>(null)
+const postcodeTestInput = ref("")
+
+const postcodeTestMatched = computed(() => {
+    if (!postcodeTestInput.value) return null
+    const prefixes = normalisePostcode(postcodeTestRow.value?.postcode).split(",").filter(Boolean)
+    const postcode = normalisePostcode(postcodeTestInput.value)
+    return !prefixes.length || prefixes.some((prefix) => postcode.startsWith(prefix))
+})
+
+const openPostcodeTest = (row: PreferredShippingRow) => {
+    postcodeTestRow.value = row
+    postcodeTestInput.value = ""
+    isPostcodeTestOpen.value = true
+}
 </script>
 
 <template>
@@ -96,9 +123,32 @@ const setImportant = (index: number, value: boolean) => {
                 </template>
             </Column>
 
-            <Column field="postcode" :header="trans('Postcode')" style="min-width: 8rem">
+            <Column field="postcode" style="min-width: 8rem">
+                <template #header>
+                    <span class="inline-flex items-center gap-1 font-semibold">
+                        {{ trans('Postcode starts with') }}
+                        <FontAwesomeIcon
+                            :icon="faInfoCircle"
+                            class="text-gray-400"
+                            fixed-width
+                            aria-hidden="true"
+                            v-tooltip="trans('Not a regex, just the beginning of the postcode. BT matches BT1 7AB, BT29, etc. Several allowed with commas: 91,93,67. Spaces and case are ignored. Leave empty to match any postcode.')"
+                        />
+                    </span>
+                </template>
                 <template #body="{ data }">
-                    <InputText v-model="data.postcode" :placeholder="trans('Any')" class="w-full font-mono" />
+                    <div class="flex items-center gap-2">
+                        <InputText v-model="data.postcode" :placeholder="trans('Any')" class="w-full font-mono" />
+                        <button
+                            v-tooltip="trans('Test against a postcode')"
+                            type="button"
+                            :disabled="!data.postcode"
+                            class="flex-none p-2 text-[--theme-color-0] hover:bg-gray-50 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            @click="openPostcodeTest(data)"
+                        >
+                            <FontAwesomeIcon :icon="faVial" fixed-width aria-hidden="true" />
+                        </button>
+                    </div>
                 </template>
             </Column>
 
@@ -112,7 +162,19 @@ const setImportant = (index: number, value: boolean) => {
                         optionValue="value"
                         :placeholder="trans('Select shipper')"
                         class="w-full"
-                    />
+                    >
+                        <template #option="{ option }">
+                            <span class="inline-flex items-center gap-2">
+                                <span
+                                    v-if="option.is_api"
+                                    class="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                                >
+                                    API
+                                </span>
+                                {{ option.label.replace(/^API · /, "") }}
+                            </span>
+                        </template>
+                    </Select>
                 </template>
             </Column>
 
@@ -173,5 +235,45 @@ const setImportant = (index: number, value: boolean) => {
             <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
             {{ trans("Add shipping rule") }}
         </button>
+
+        <Modal :isOpen="isPostcodeTestOpen" @onClose="isPostcodeTestOpen = false" width="w-full max-w-md">
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-800">
+                    {{ trans("Test postcode rule") }}
+                </h3>
+
+                <div class="text-sm text-gray-500">
+                    {{ trans("Rule: postcode starts with") }}
+                    <span class="font-mono text-gray-700">{{ postcodeTestRow?.postcode }}</span>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ trans("Postcode to test") }}
+                    </label>
+                    <InputText
+                        v-model="postcodeTestInput"
+                        autofocus
+                        :placeholder="trans('Type a postcode')"
+                        class="w-full font-mono"
+                    />
+                </div>
+
+                <div
+                    v-if="postcodeTestMatched === true"
+                    class="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700"
+                >
+                    <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+                    {{ trans("Matches, this rule applies to that postcode.") }}
+                </div>
+                <div
+                    v-else-if="postcodeTestMatched === false"
+                    class="rounded-md bg-gray-50 border border-gray-200 px-3 py-2 text-sm text-gray-600"
+                >
+                    <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
+                    {{ trans("No match, this rule would not apply.") }}
+                </div>
+            </div>
+        </Modal>
     </div>
 </template>
