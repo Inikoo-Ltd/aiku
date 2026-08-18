@@ -76,7 +76,8 @@ class AuditLocationOrgStock extends OrgAction
             );
             // Update audited_at
             $locationOrgStock->updateQuietly([
-                'audited_at'    =>  now()
+                'audited_at'        => now(),
+                'is_low_stock_checked' => true
             ]);
             $locationOrgStock->refresh();
 
@@ -100,10 +101,17 @@ class AuditLocationOrgStock extends OrgAction
     }
 
 
+    /**
+     * Auditing without touching the quantity is a recount that confirms what is already there,
+     * and so is auditing a new quantity straight off the shelf without picking a reason.
+     */
     public function prepareForValidation(): void
     {
         if (!$this->has('quantity')) {
             $this->set('quantity', $this->locationOrgStock->quantity);
+        }
+
+        if (!$this->has('reason')) {
             $this->set('reason', OrgStockMovementReasonEnum::RECOUNT->value);
         }
     }

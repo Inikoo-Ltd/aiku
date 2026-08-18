@@ -56,6 +56,15 @@ class IndexOrgStockLowStockAudits extends OrgAction
         $queryBuilder->where('org_stocks.quantity_in_locations', '>', 0);
         $queryBuilder->where('org_stocks.quantity_in_locations', '<', $warehouse->getLowStockThreshold());
 
+        // A SKO drops off the list once every one of its locations in this warehouse has been counted
+        $queryBuilder->whereExists(function ($query) use ($warehouse) {
+            $query->selectRaw(1)
+                ->from('location_org_stocks')
+                ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
+                ->where('location_org_stocks.warehouse_id', $warehouse->id)
+                ->where('location_org_stocks.is_low_stock_checked', false);
+        });
+
         return $queryBuilder
             ->defaultSort('org_stocks.code')
             ->select([
@@ -68,6 +77,19 @@ class IndexOrgStockLowStockAudits extends OrgAction
                 'org_stock_families.slug as family_slug',
             ])
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
+            ->with(['locationOrgStocks' => function ($query) use ($warehouse) {
+                $query->where('location_org_stocks.warehouse_id', $warehouse->id)
+                    ->join('locations', 'location_org_stocks.location_id', 'locations.id')
+                    ->select([
+                        'location_org_stocks.id',
+                        'location_org_stocks.org_stock_id',
+                        'location_org_stocks.quantity',
+                        'location_org_stocks.audited_at',
+                        'location_org_stocks.is_low_stock_checked',
+                        'locations.code as location_code',
+                    ])
+                    ->orderBy('locations.code');
+            }])
             ->allowedSorts(['code', 'name', 'family_code', 'stock'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -91,7 +113,8 @@ class IndexOrgStockLowStockAudits extends OrgAction
                 ->column(key: 'code', label: __('Part'), sortable: true, searchable: true)
                 ->column(key: 'family_code', label: __('Family'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
-                ->column(key: 'stock', label: __('Stock'), sortable: true, align: 'right');
+                ->column(key: 'stock', label: __('Stock'), sortable: true, align: 'right')
+                ->column(key: 'locations', label: __('Locations'));
         };
     }
 
@@ -121,6 +144,10 @@ class IndexOrgStockLowStockAudits extends OrgAction
                     ],
                 ],
                 'lowStockAudits' => OrgStockLowStockAuditsResource::collection($lowStockAudits),
+                'auditRoute'     => [
+                    'name'   => 'grp.models.location_org_stock.audit',
+                    'method' => 'patch',
+                ],
             ]
         )->table($this->tableStructure(prefix: 'low_stock_audits'));
     }

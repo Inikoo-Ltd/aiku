@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $stock
  * @property mixed $family_code
  * @property mixed $family_slug
+ * @property mixed $locationOrgStocks
  */
 class OrgStockLowStockAuditsResource extends JsonResource
 {
@@ -31,6 +32,17 @@ class OrgStockLowStockAuditsResource extends JsonResource
             'family_code' => $this->family_code,
             'family_slug' => $this->family_slug,
             'stock'       => number_format((float)$this->stock, 3),
+            'locations'   => $this->whenLoaded(
+                'locationOrgStocks',
+                fn () => $this->locationOrgStocks->map(fn ($locationOrgStock) => [
+                    'id'                => $locationOrgStock->id,
+                    'code'              => $locationOrgStock->location_code,
+                    'quantity'          => (float) $locationOrgStock->quantity,
+                    'audited_at'        => $locationOrgStock->audited_at,
+                    'is_low_stock_checked' => (bool) $locationOrgStock->is_low_stock_checked,
+                ]),
+                []
+            ),
         ];
     }
 }
