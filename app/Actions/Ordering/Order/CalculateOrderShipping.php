@@ -254,18 +254,36 @@ class CalculateOrderShipping
         return $this->toBeConfirmed;
     }
 
+    public function getZonePriceDataForShipper(ShippingZone $shippingZone, ?int $shipperId): array
+    {
+        $shippersPrice = collect($shippingZone->shippers_price ?? []);
+        if ($shippersPrice->isEmpty()) {
+            return $shippingZone->price ?? [];
+        }
+
+        $entry = $shipperId ? $shippersPrice->firstWhere('shipper_id', $shipperId) : null;
+
+        return $entry ?? $shippersPrice->first();
+    }
+
+    public function getShippingAmountFromPriceData(Order $order, array $priceData): string|float|null
+    {
+        $pricingType = Arr::get($priceData, 'type');
+        if ($pricingType == 'Step Order Items Net Amount') {
+            return $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($priceData, 'steps', []));
+        } elseif ($pricingType == 'Step Order Estimated Weight') {
+            return $this->getPriceBlanketFromAmount($order->estimated_weight / 1000, Arr::get($priceData, 'steps', []));
+        } elseif ($pricingType == 'TBC') {
+            return 'TBC';
+        }
+
+        return null;
+    }
+
     private function getShippingAmountFromShippingZone(Order $order, ShippingZone $shippingZone)
     {
-        $pricingType = Arr::get($shippingZone->price, 'type');
-        if ($pricingType == 'Step Order Items Net Amount') {
-            $price = $this->getPriceBlanketFromAmount($order->goods_amount, Arr::get($shippingZone->price, 'steps'));
-        } elseif ($pricingType == 'Step Order Estimated Weight') {
-            $price = $this->getPriceBlanketFromAmount($order->estimated_weight / 1000, Arr::get($shippingZone->price, 'steps'));
-        } elseif ($pricingType == 'TBC') {
-            $price = 'TBC';
-        } else {
-            return null;
-        }
+        $priceData = $this->getZonePriceDataForShipper($shippingZone, $order->shipper_id);
+        $price     = $this->getShippingAmountFromPriceData($order, $priceData);
 
         if ($price === 'TBC') {
             $this->toBeConfirmed = true;

@@ -20,6 +20,7 @@ use App\Rules\ValidAddress;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
@@ -149,6 +150,32 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'banned_country_regions', Arr::get($bannedCountries, 'banned_list', []));
         }
 
+        if (Arr::has($modelData, 'preferred_shipping')) {
+            $preferredShippingRows = Arr::pull($modelData, 'preferred_shipping');
+
+            if (collect($preferredShippingRows)->where('important', true)->count() > 1) {
+                throw ValidationException::withMessages(['preferred_shipping' => __('Only one rule can be marked as important')]);
+            }
+
+            $keptIds = [];
+            foreach ($preferredShippingRows as $row) {
+                $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode', 'important']);
+
+                $preferredShipping = Arr::get($row, 'id') ? $organisation->preferredShippings()->find($row['id']) : null;
+                if ($preferredShipping) {
+                    $preferredShipping->update($rowData);
+                } else {
+                    data_set($rowData, 'group_id', $organisation->group_id);
+                    $preferredShipping = $organisation->preferredShippings()->create($rowData);
+                }
+                $keptIds[] = $preferredShipping->id;
+            }
+
+            foreach ($organisation->preferredShippings()->whereNotIn('id', $keptIds)->get() as $obsoleteRule) {
+                $obsoleteRule->delete();
+            }
+        }
+
 
         $organisation = $this->update($organisation, $modelData, ['data', 'settings']);
 
@@ -227,6 +254,12 @@ class UpdateOrganisation extends OrgAction
             'banned_countries.banned_list.*.postcode' => ['sometimes', 'string', 'nullable'],
             'banned_countries.banned_list.*.billing'  => ['required', 'boolean'],
             'banned_countries.banned_list.*.delivery' => ['required', 'boolean'],
+            'preferred_shipping'                      => ['sometimes', 'array'],
+            'preferred_shipping.*.id'                 => ['sometimes', 'nullable', 'integer', Rule::exists('preferred_shippings', 'id')->where('organisation_id', $this->organisation->id)->whereNull('shop_id')],
+            'preferred_shipping.*.shipper_id'         => ['required', 'integer', Rule::exists('shippers', 'id')->where('organisation_id', $this->organisation->id)],
+            'preferred_shipping.*.country_id'         => ['sometimes', 'nullable', 'integer', Rule::exists('countries', 'id')->where('status', true)],
+            'preferred_shipping.*.postcode'           => ['sometimes', 'nullable', 'string', 'max:255'],
+            'preferred_shipping.*.important'          => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
