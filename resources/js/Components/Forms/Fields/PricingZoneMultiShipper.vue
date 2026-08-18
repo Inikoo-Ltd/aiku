@@ -54,7 +54,9 @@ const updateFormValue = (newValue) => {
 
 watch(value, (newValue) => {
     updateFormValue(newValue)
-    props.form.errors[props.fieldName] = ''
+    if (props.form.errors) {
+        props.form.errors[props.fieldName] = ''
+    }
 }, { deep: true })
 
 const shippers = computed(() => props.options?.shippers ?? [])
