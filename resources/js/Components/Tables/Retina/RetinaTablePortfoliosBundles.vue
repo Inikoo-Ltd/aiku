@@ -254,6 +254,9 @@ const onSubmitVariant = () => {
 const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
 const isLoadingFetchPlatformProduct = ref(false)
 
+const normalizeFetchedProducts = (data) =>
+	Array.isArray(data) ? data : (data?.products ?? [])
+
 const fetchRoute = async () => {
 	isLoadingFetchPlatformProduct.value = true
 	currentOffset.value = 0
@@ -266,11 +269,13 @@ const fetchRoute = async () => {
 			})
 		)
 
-		if (!Array.isArray(www.data) || www.data.length < 50) {
+		const products = normalizeFetchedProducts(www.data)
+
+		if (products.length < 50) {
 			hasMore.value = false
 		}
 
-		resultOfFetchPlatformProduct.value = www.data
+		resultOfFetchPlatformProduct.value = products
 		// console.log('qweqw', www)
 	} catch (e) {
 		console.error("Error processing products", e)
@@ -421,46 +426,45 @@ const currentOffset = ref(0)
 const hasMore = ref(true)
 const isLoadingMore = ref(false)
 
-if (props.platform_data?.type === "ebay") {
-	watch(sentinel, async (element) => {
-		if (!element) return
-		await nextTick()
-		observer = new IntersectionObserver(([entry]) => {
-			if (entry.isIntersecting && hasMore) {
-				loadMore()
-			}
-		})
-		observer.observe(element)
+watch(sentinel, async (element) => {
+	if (!element) return
+	await nextTick()
+	observer = new IntersectionObserver(([entry]) => {
+		if (entry.isIntersecting && hasMore) {
+			loadMore()
+		}
 	})
+	observer.observe(element)
+})
 
-	const loadMore = async () => {
-		if (resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value) {
+const loadMore = async () => {
+	if (resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value) {
+		hasMore.value = false
+		return
+	}
+	currentOffset.value += 50
+	isLoadingMore.value = true
+	try {
+		const www = await axios.get(
+			route(props.routes.fetch_products.name, {
+				customerSalesChannel: props.customerSalesChannel?.id,
+				query: querySearchPortfolios.value,
+				offset: currentOffset.value,
+			})
+		)
+		const products = normalizeFetchedProducts(www.data)
+
+		if (products.length < 50) {
 			hasMore.value = false
-			return
 		}
-		currentOffset.value += 50
-		isLoadingMore.value = true
-		try {
-			const www = await axios.get(
-				route(props.routes.fetch_products.name, {
-					customerSalesChannel: props.customerSalesChannel?.id,
-					query: querySearchPortfolios.value,
-					offset: currentOffset.value,
-				})
-			)
-			if (!Array.isArray(www.data) || www.data.length < 50) {
-				console.log("Doesn't have more")
-				hasMore.value = false
-			}
-			isLoadingMore.value = false
-			resultOfFetchPlatformProduct.value = [
-				...resultOfFetchPlatformProduct.value,
-				...www.data,
-			]
-		} catch (e) {
-			console.error("Error processing products", e)
-			isLoadingMore.value = false
-		}
+		isLoadingMore.value = false
+		resultOfFetchPlatformProduct.value = [
+			...resultOfFetchPlatformProduct.value,
+			...products,
+		]
+	} catch (e) {
+		console.error("Error processing products", e)
+		isLoadingMore.value = false
 	}
 }
 
@@ -1313,7 +1317,7 @@ onBeforeUnmount(() => {
 								<div ref="sentinel" class="col-span-2 justify-items-center flex mx-auto">
 									<LoadingIcon v-if="hasMore" />
 								</div>
-								<div v-if="!hasMore && platform_data.type == 'ebay'" class="col-span-2 text-center">
+								<div v-if="!hasMore" class="col-span-2 text-center">
 									{{ trans("You've reached the end of item list") }}
 								</div>
 							</template>

@@ -9,7 +9,7 @@ import {Link, router} from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import {Product} from "@/types/product"
 import {library} from "@fortawesome/fontawesome-svg-core"
-import {inject, onMounted, ref, computed, watch} from "vue"
+import {inject, onMounted, ref, computed, watch, nextTick} from "vue"
 import {trans} from "laravel-vue-i18n"
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -343,13 +343,26 @@ const onSubmitVariant = () => {
 
 const resultOfFetchShopifyProduct = ref<ShopifyProduct[]>([])
 const isLoadingFetchShopifyProduct = ref(false)
+let observer = null
+const sentinel = ref(null)
+const currentOffset = ref(0)
+const hasMore = ref(true)
+const isLoadingMore = ref(false)
+
 const fetchRoute = async () => {
     isLoadingFetchShopifyProduct.value = true
+    currentOffset.value = 0
+    hasMore.value = true
     try {
         const www = await axios.get(route('retina.json.dropshipping.customer_sales_channel.shopify_products', {
             customerSalesChannel: props.customerSalesChannel?.id,
             query: querySearchPortfolios.value
         }))
+
+        if (!Array.isArray(www.data.products) || www.data.products.length < 50) {
+            hasMore.value = false
+        }
+
         resultOfFetchShopifyProduct.value = www.data.products
         // console.log('qweqw', www)
     } catch (e) {
@@ -359,6 +372,45 @@ const fetchRoute = async () => {
 
 }
 const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
+
+watch(sentinel, async (element) => {
+    if (!element) return
+    await nextTick()
+    observer = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting && hasMore) {
+            loadMore()
+        }
+    })
+    observer.observe(element)
+})
+
+const loadMore = async () => {
+    if (resultOfFetchShopifyProduct.value.length < 50 || !hasMore.value) {
+        hasMore.value = false
+        return
+    }
+    currentOffset.value += 50
+    isLoadingMore.value = true
+    try {
+        const www = await axios.get(route('retina.json.dropshipping.customer_sales_channel.shopify_products', {
+            customerSalesChannel: props.customerSalesChannel?.id,
+            query: querySearchPortfolios.value,
+            offset: currentOffset.value
+        }))
+
+        if (!Array.isArray(www.data.products) || www.data.products.length < 50) {
+            hasMore.value = false
+        }
+
+        resultOfFetchShopifyProduct.value = [
+            ...resultOfFetchShopifyProduct.value,
+            ...www.data.products,
+        ]
+    } catch (e) {
+        console.error("Error processing products", e)
+    }
+    isLoadingMore.value = false
+}
 
 
 const selectedProducts = defineModel<number[]>('selectedProducts')
@@ -934,10 +986,10 @@ onMounted(() => {
     <!-- <pre>{{ data.data[0] }}</pre> -->
 
 
-    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchPlatformProduct = []}">
+    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchShopifyProduct = []; currentOffset = 0; hasMore = true}">
         <div class="relative isolate">
 
-            <div v-if="isLoadingSubmit"
+            <div v-if="isLoadingSubmit || isLoadingMore"
                  class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
                 <LoadingIcon/>
             </div>
@@ -1026,6 +1078,12 @@ onMounted(() => {
                                             </div> -->
                                         </div>
                                     </slot>
+                                </div>
+                                <div ref="sentinel" class="col-span-2 justify-items-center flex mx-auto">
+                                    <LoadingIcon v-if="hasMore"/>
+                                </div>
+                                <div v-if="!hasMore" class="col-span-2 text-center">
+                                    {{ trans("You've reached the end of item list") }}
                                 </div>
                             </template>
                         </div>

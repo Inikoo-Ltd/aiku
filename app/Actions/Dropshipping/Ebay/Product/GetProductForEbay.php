@@ -8,13 +8,12 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Actions\Dropshipping\WithPlatformListedProducts;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -23,14 +22,13 @@ class GetProductForEbay
 {
     use AsAction;
     use WithAttributes;
+    use WithPlatformListedProducts;
 
     public $commandSignature = 'dropshipping:ebay:product:get {customerSalesChannel}';
 
     private const int INVENTORY_PAGE_SIZE = 100;
 
     private const int MAX_INVENTORY_PAGES = 20;
-
-    private const int CACHE_TTL_SECONDS = 300;
 
     /**
      * What the seller can be matched against is their offers, not their inventory:
@@ -46,31 +44,19 @@ class GetProductForEbay
             return [];
         }
 
-        $listings = $this->getListedOffers($ebayUser);
-
-        if (filled($query)) {
-            $listings = $this->filterByQuery($listings, $query);
-        }
-
-        return array_slice($listings, max(0, (int) $offset), max(1, (int) $limit));
-    }
-
-    /**
-     * @return array<int, array>
-     */
-    private function getListedOffers(EbayUser $ebayUser): array
-    {
-        return Cache::remember(
+        return $this->pickListedProducts(
             'ebay-listed-offers-'.$ebayUser->id,
-            self::CACHE_TTL_SECONDS,
-            fn () => $this->fetchListedOffers($ebayUser)
+            fn () => $this->fetchListedProducts($ebayUser),
+            (string) $query,
+            (int) $offset,
+            (int) $limit
         );
     }
 
     /**
      * @return array<int, array>
      */
-    private function fetchListedOffers(EbayUser $ebayUser): array
+    private function fetchListedProducts(EbayUser $ebayUser): array
     {
         $inventoryItems = $this->fetchInventoryItems($ebayUser);
 
@@ -121,21 +107,6 @@ class GetProductForEbay
         ]);
 
         return $inventoryItems;
-    }
-
-    /**
-     * @param  array<int, array>  $listings
-     * @return array<int, array>
-     */
-    private function filterByQuery(array $listings, string $query): array
-    {
-        $needle = Str::lower(trim($query));
-
-        return array_values(array_filter(
-            $listings,
-            fn ($listing) => Str::contains(Str::lower((string) Arr::get($listing, 'name')), $needle)
-                || Str::contains(Str::lower((string) Arr::get($listing, 'code')), $needle)
-        ));
     }
 
     /**
