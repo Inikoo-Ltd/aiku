@@ -3098,3 +3098,32 @@ test('replacing a waiting gift keeps the replacement free', function () {
         ->and((float)$replacement->net_amount)->toBe(0.0)
         ->and((float)$replacement->quantity_bonus)->toBe(1.0);
 });
+
+test('picking from waiting keeps the line at its discounted price', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
+    $item->update(['quantity_required' => 15, 'has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
+
+    $item = $item->refresh();
+    $item->load('transaction');
+
+    /** The row is discounted, but the model in hand still holds the factor of 1 a concurrent
+     * discount recalculation wiped it to - the shape that billed GB584541 an extra 60p. */
+    \Illuminate\Support\Facades\DB::table('transactions')
+        ->where('id', $item->transaction->id)
+        ->update(['current_discount_factor' => 0.9]);
+    $item->transaction->current_discount_factor = 1;
+
+    \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item, $this->user, [
+        'quantity'              => 1,
+        'location_org_stock_id' => $los->id,
+    ]);
+
+    $transaction = $item->transaction->refresh();
+
+    expect((float)$transaction->net_amount)
+        ->toBe(round((float)$transaction->gross_amount * 0.9, 2));
+});
