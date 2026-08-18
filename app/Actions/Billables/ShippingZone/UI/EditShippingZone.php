@@ -95,8 +95,7 @@ class EditShippingZone extends OrgAction
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),
                                 ],
-                                'pricing' => [
-                                    'full'     => true,
+                                'pricing' => [                                    
                                     'type'     => 'pricing_zone_mode',
                                     'label'    => __('Price'),
                                     'value'    => [
@@ -105,7 +104,10 @@ class EditShippingZone extends OrgAction
                                     ],
                                     'currency' => $shippingZone->shop->currency,
                                     'options'  => [
-                                        'can_use_shipper_pricing' => $shippingZone->shop->type !== ShopTypeEnum::DROPSHIPPING,
+<<<<<<< HEAD
+=======
+                                        'hide_per_shipper' => $shippingZone->shop->type == ShopTypeEnum::DROPSHIPPING,
+>>>>>>> origin/INI-1809
                                         'shippers' => Shipper::where('organisation_id', $shippingZone->organisation_id)
                                             ->where('status', true)
                                             ->orderBy('name')
