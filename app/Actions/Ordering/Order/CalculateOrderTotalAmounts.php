@@ -21,6 +21,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
     use WithLineTaxCategories;
 
     public string $jobQueue = 'urgent';
+    public int $jobUniqueFor = 120;
 
     public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): string
     {

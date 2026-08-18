@@ -1227,3 +1227,435 @@ test('a raw material can be updated while keeping its own code', function () {
     expect($updated->code)->toBe('SELFCODE1')
         ->and($updated->description)->toBe('Renamed while keeping the code');
 });
+
+describe('production reward pay bands', function () {
+    beforeEach(function () {
+        $this->artefact->manufactureTasks()->syncWithoutDetaching([
+            $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        ]);
+
+        $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+        $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+            'artefact_id' => $this->artefact->id,
+            'quantity'    => 1000,
+        ]);
+        ConfirmJobOrder::make()->action($jobOrder);
+        $this->payBandJobOrderItemTask = $jobOrderItem->tasks()->first();
+
+        foreach ([
+            ['code' => '0', 'name' => 'Band 0', 'hourly_rate' => 12.71, 'target_multiplier' => null],
+            ['code' => '1', 'name' => 'Band 1', 'hourly_rate' => 13.00, 'target_multiplier' => 1.0228],
+            ['code' => '2', 'name' => 'Band 2', 'hourly_rate' => 14.00, 'target_multiplier' => 1.1015],
+            ['code' => '3', 'name' => 'Band 3', 'hourly_rate' => 15.00, 'target_multiplier' => 1.1802],
+            ['code' => 'D', 'name' => 'Development', 'hourly_rate' => 13.30, 'target_multiplier' => null],
+            ['code' => 'DG', 'name' => 'Development Group', 'hourly_rate' => 15.00, 'target_multiplier' => null],
+        ] as $bandData) {
+            \App\Models\Production\ManufacturePayBand::query()->firstOrCreate(
+                [
+                    'production_id' => $this->production->id,
+                    'code'          => $bandData['code'],
+                ],
+                array_merge($bandData, [
+                    'group_id'        => $this->production->group_id,
+                    'organisation_id' => $this->production->organisation_id,
+                    'production_id'   => $this->production->id,
+                    'effective_from'  => now()->subYear(),
+                ])
+            );
+        }
+    });
+
+    function makePayBandSession(
+        \App\Models\Production\JobOrderItemTask $jobOrderItemTask,
+        float $quantityMade,
+        float $hours,
+        int $breakMinutes = 0,
+        string $activityType = \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::PRODUCTION->value
+    ): \App\Models\Production\ManufactureTaskSession {
+        $startedAt = now();
+        $endedAt   = $startedAt->clone()->addSeconds((int) round(($hours + $breakMinutes / 60) * 3600));
+
+        return \App\Models\Production\ManufactureTaskSession::create([
+            'group_id'               => $jobOrderItemTask->group_id,
+            'organisation_id'        => $jobOrderItemTask->organisation_id,
+            'production_id'          => $jobOrderItemTask->production_id,
+            'job_order_item_task_id' => $jobOrderItemTask->id,
+            'manufacture_task_id'    => $jobOrderItemTask->manufacture_task_id,
+            'user_id'                => auth()->user()->id,
+            'state'                  => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::CLOSED,
+            'started_at'             => $startedAt,
+            'ended_at'               => $endedAt,
+            'quantity_made'          => $quantityMade,
+            'break_minutes'          => $breakMinutes,
+            'activity_type'          => $activityType,
+        ]);
+    }
+
+    test('worked example lands in band 3 with the expected pay and bonus', function () {
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 152]);
+        $session = makePayBandSession($this->payBandJobOrderItemTask, 900, 4.9333);
+
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+
+        expect($session->band_code)->toBe('3')
+            ->and((float) $session->pay)->toBe(74.00)
+            ->and((float) $session->bonus)->toBe(11.30)
+            ->and((float) $session->units_per_hour)->toBe(182.0);
+    });
+
+    test('a closed session with band pay appears in the payroll export with the correct figures', function () {
+        $exportTask = ManufactureTask::where('production_id', $this->production->id)->where('code', 'EXPRT1')->first();
+
+        if (!$exportTask) {
+            $exportTask = \App\Actions\Production\ManufactureTask\StoreManufactureTask::make()->action(
+                $this->production,
+                [
+                    'code'                             => 'EXPRT1',
+                    'name'                             => 'Export task',
+                    'task_materials_cost'               => 1,
+                    'task_energy_cost'                  => 1,
+                    'task_other_cost'                   => 1,
+                    'task_work_cost'                    => 1,
+                    'task_lower_target'                 => 1,
+                    'task_upper_target'                 => 1,
+                    'operative_reward_terms'            => ManufactureTaskOperativeRewardTermsEnum::ABOVE_LOWER_LIMIT,
+                    'operative_reward_allowance_type'   => ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY,
+                    'operative_reward_amount'           => 1,
+                ]
+            );
+        }
+        $exportTask->update(['standard_rate' => 152]);
+
+        $exportArtefact = Artefact::where('production_id', $this->production->id)->where('code', 'EXPRTA1')->first();
+
+        if (!$exportArtefact) {
+            $exportArtefact = StoreArtefact::make()->action($this->production, ['code' => 'EXPRTA1', 'name' => 'Export artefact']);
+        }
+        $exportArtefact->manufactureTasks()->syncWithoutDetaching([
+            $exportTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        ]);
+        $exportJobOrder     = StoreJobOrder::make()->action($this->production, []);
+        $exportJobOrderItem = StoreJobOrderItem::make()->action($exportJobOrder, [
+            'artefact_id' => $exportArtefact->id,
+            'quantity'    => 1000,
+        ]);
+        ConfirmJobOrder::make()->action($exportJobOrder);
+        $exportJobOrderItemTask = $exportJobOrderItem->tasks()->first();
+
+        $session = makePayBandSession($exportJobOrderItemTask, 900, 4.9333);
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+
+        $export = new \App\Exports\Production\ManufacturePayrollExport(
+            $this->production,
+            $session->ended_at->clone()->subDay(),
+            $session->ended_at->clone()->addDay()
+        );
+
+        $rows = collect($export->array());
+        $row  = $rows->first(fn ($row) => $row[1] === 'EXPRT1');
+
+        expect($row)->not->toBeNull()
+            ->and($row[11])->toBe('production')
+            ->and((float) $row[16])->toBe((float) $session->hourly_rate)
+            ->and((float) $row[17])->toBe((float) $session->pay)
+            ->and((float) $row[18])->toBe((float) $session->bonus);
+    });
+
+    test('below every target lands in band 0', function () {
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 216]);
+        $session = makePayBandSession($this->payBandJobOrderItemTask, 380, 2);
+
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+
+        expect($session->band_code)->toBe('0')
+            ->and((float) $session->pay)->toBe(25.42)
+            ->and((float) $session->bonus)->toBe(0.0);
+    });
+
+    test('units per hour exactly on a band target lands on that band', function () {
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 10000]);
+
+        $sessionAtBand1 = makePayBandSession($this->payBandJobOrderItemTask, 10228, 1);
+        $sessionAtBand1 = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($sessionAtBand1);
+        expect($sessionAtBand1->band_code)->toBe('1');
+
+        $sessionAtBand3 = makePayBandSession($this->payBandJobOrderItemTask, 11802, 1);
+        $sessionAtBand3 = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($sessionAtBand3);
+        expect($sessionAtBand3->band_code)->toBe('3');
+    });
+
+    test('a non production activity always pays band 0 with no units per hour', function () {
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 152]);
+        $session = makePayBandSession(
+            $this->payBandJobOrderItemTask,
+            900,
+            4.9333,
+            0,
+            \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::CLEANING->value
+        );
+
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+
+        expect($session->band_code)->toBe('0')
+            ->and($session->units_per_hour)->toBeNull();
+    });
+
+    test('manufacture floor shows live band feedback when the task has a standard rate', function () {
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 152]);
+
+        \App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession::make()->action(
+            auth()->user(),
+            $this->payBandJobOrderItemTask
+        );
+
+        $response = get(route('grp.org.productions.show.floor', [
+            $this->organisation->slug,
+            $this->production->slug,
+        ]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Production/ManufactureFloor')
+                ->has('open_session.band_feedback.bands', 3)
+                ->where('open_session.band_feedback.band0_hourly_rate', 12.71)
+                ->where('open_session.band_feedback.bands.0.target_units_per_hour', round(152 * 1.0228, 1))
+                ->where('open_session.band_feedback.bands.1.target_units_per_hour', round(152 * 1.1015, 1))
+                ->where('open_session.band_feedback.bands.2.target_units_per_hour', round(152 * 1.1802, 1));
+        });
+
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => null]);
+        \App\Models\Production\ManufactureTaskSession::where('user_id', auth()->user()->id)
+            ->where('state', \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN)
+            ->update(['job_order_item_task_id' => $this->payBandJobOrderItemTask->id]);
+
+        $response = get(route('grp.org.productions.show.floor', [
+            $this->organisation->slug,
+            $this->production->slug,
+        ]));
+
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Production/ManufactureFloor')
+                ->where('open_session.band_feedback', null);
+        });
+    });
+
+    test('development activity pays the development band', function () {
+        $session = makePayBandSession(
+            $this->payBandJobOrderItemTask,
+            0,
+            2,
+            0,
+            \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT->value
+        );
+
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+
+        expect($session->band_code)->toBe('D')
+            ->and((float) $session->hourly_rate)->toBe(13.30);
+    });
+
+    test('a production without any configured bands keeps the pay fields empty', function () {
+        $unbandedProduction = \App\Actions\Production\Production\StoreProduction::make()->action(
+            $this->organisation,
+            ['code' => 'NOBAND1', 'name' => 'No band production']
+        );
+        $unbandedTask = \App\Actions\Production\ManufactureTask\StoreManufactureTask::make()->action(
+            $unbandedProduction,
+            [
+                'code'                             => 'NBT1',
+                'name'                             => 'No band task',
+                'task_materials_cost'               => 1,
+                'task_energy_cost'                  => 1,
+                'task_other_cost'                   => 1,
+                'task_work_cost'                    => 1,
+                'task_lower_target'                 => 1,
+                'task_upper_target'                 => 1,
+                'operative_reward_terms'            => ManufactureTaskOperativeRewardTermsEnum::ABOVE_LOWER_LIMIT,
+                'operative_reward_allowance_type'   => ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY,
+                'operative_reward_amount'           => 1,
+            ]
+        );
+        $unbandedTask->update(['standard_rate' => 152]);
+        $unbandedArtefact = StoreArtefact::make()->action($unbandedProduction, ['code' => 'NBA1', 'name' => 'No band artefact']);
+        $unbandedArtefact->manufactureTasks()->syncWithoutDetaching([
+            $unbandedTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        ]);
+        $jobOrder     = StoreJobOrder::make()->action($unbandedProduction, []);
+        $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+            'artefact_id' => $unbandedArtefact->id,
+            'quantity'    => 1000,
+        ]);
+        ConfirmJobOrder::make()->action($jobOrder);
+        $jobOrderItemTask = $jobOrderItem->tasks()->first();
+
+        $session = makePayBandSession($jobOrderItemTask, 900, 4.9333);
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+
+        expect($session->band_code)->toBeNull()
+            ->and($session->pay)->toBeNull()
+            ->and($session->bonus)->toBeNull();
+    });
+
+    test('closing a non production session without a reason is rejected', function () {
+        $session = makePayBandSession($this->payBandJobOrderItemTask, 0, 2);
+        $session->update([
+            'state'         => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN,
+            'activity_type' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::PRODUCTION,
+            'started_at'    => now()->subHours(2),
+        ]);
+
+        expect(
+            fn () => \App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession::make()->action($session, [
+                'quantity_made' => 0,
+                'activity_type' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::CLEANING->value,
+            ])
+        )->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $closed = \App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession::make()->action($session, [
+            'quantity_made'         => 0,
+            'activity_type'         => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::CLEANING->value,
+            'non_productive_reason' => 'End of shift line clean',
+        ]);
+
+        expect($closed->band_code)->toBe('0')
+            ->and((float) $closed->hourly_rate)->toBe(12.71);
+    });
+
+    test('band rates stay cost neutral against the standard rate within two percent', function () {
+        $bands = \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)
+            ->whereIn('code', ['1', '2', '3'])
+            ->get();
+
+        $standardRate = 152;
+        $ratios       = $bands->map(fn ($band) => (float) $band->hourly_rate / ($standardRate * (float) $band->target_multiplier));
+
+        $reference = $ratios->first();
+        foreach ($ratios as $ratio) {
+            expect(abs($ratio - $reference) / $reference)->toBeLessThan(0.02);
+        }
+    });
+});
+
+describe('reward sheet import', function () {
+    beforeEach(function () {
+        $this->rewardTask = \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)
+            ->where('code', 'RWT1')
+            ->first();
+
+        if (!$this->rewardTask) {
+            $this->rewardTask = \App\Actions\Production\ManufactureTask\StoreManufactureTask::make()->action(
+                $this->production,
+                [
+                    'code'                             => 'RWT1',
+                    'name'                             => 'Reward task',
+                    'task_materials_cost'               => 1,
+                    'task_energy_cost'                  => 1,
+                    'task_other_cost'                   => 1,
+                    'task_work_cost'                    => 1,
+                    'task_lower_target'                 => 1,
+                    'task_upper_target'                 => 1,
+                    'operative_reward_terms'            => ManufactureTaskOperativeRewardTermsEnum::ABOVE_LOWER_LIMIT,
+                    'operative_reward_allowance_type'   => ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY,
+                    'operative_reward_amount'           => 1,
+                ]
+            );
+        }
+
+        $this->rewardTask->update(['standard_rate' => null, 'target_override_reason' => null]);
+
+        $this->payBandCountBeforeImport = \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->count();
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Product Families');
+
+        $sheet->fromArray(['Family', 'Description', 'Piece Rate (Old)', '0', '1', '2', '3'], null, 'A2');
+        $sheet->fromArray(['RWT1', 'Matches the reward task', 0.1, 130, 133, 143, 153], null, 'A3');
+        $sheet->fromArray(['ORPHAN1', 'No matching task', 0.2, 65, 66, 71, 76], null, 'A4');
+        $sheet->fromArray(['ZEROED', 'Zero piece rate is skipped', 0, 0, 0, 0, 0], null, 'A5');
+        $sheet->fromArray(['RWT1', 'Hand typed target 0 override', 0.05, 100, 267, 287, 307], null, 'A6');
+
+        $this->rewardSheetPath = tempnam(sys_get_temp_dir(), 'reward-sheet').'.xlsx';
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($this->rewardSheetPath);
+    });
+
+    afterEach(function () {
+        if (isset($this->rewardSheetPath) && file_exists($this->rewardSheetPath)) {
+            unlink($this->rewardSheetPath);
+        }
+    });
+
+    test('dry run changes nothing', function () {
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production' => $this->production->slug,
+            'file'       => $this->rewardSheetPath,
+            '--dry-run'  => true,
+        ])->assertSuccessful();
+
+        expect($this->rewardTask->refresh()->standard_rate)->toBeNull()
+            ->and(\App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->count())->toBe($this->payBandCountBeforeImport);
+    });
+
+    test('real run sets standard rate, seeds bands, flags override and reports the orphan', function () {
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production' => $this->production->slug,
+            'file'       => $this->rewardSheetPath,
+        ])
+            ->assertSuccessful()
+            ->expectsOutputToContain('ORPHAN1');
+
+        expect((float) $this->rewardTask->refresh()->standard_rate)->toBe(round(13.00 / 0.05, 4))
+            ->and($this->rewardTask->target_override_reason)->not->toBeNull()
+            ->and(\App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('effective_from', now()->startOfYear())->count())->toBe(6);
+    });
+
+    test('create-missing with dry-run creates nothing', function () {
+        \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->forceDelete();
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production'        => $this->production->slug,
+            'file'              => $this->rewardSheetPath,
+            '--create-missing'  => true,
+            '--dry-run'         => true,
+        ])->assertSuccessful();
+
+        expect(\App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->exists())->toBeFalse();
+    });
+
+    test('create-missing creates the orphan task', function () {
+        \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->forceDelete();
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production'        => $this->production->slug,
+            'file'              => $this->rewardSheetPath,
+            '--create-missing'  => true,
+        ])->assertSuccessful();
+
+        $orphanTask = \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)
+            ->where('code', 'ORPHAN1')
+            ->first();
+
+        expect($orphanTask)->not->toBeNull()
+            ->and((float) $orphanTask->standard_rate)->toBe(round(13.00 / 0.2, 4))
+            ->and($orphanTask->slug)->not->toBeNull();
+    });
+
+    test('create-missing is idempotent on re-run', function () {
+        \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->forceDelete();
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production'        => $this->production->slug,
+            'file'              => $this->rewardSheetPath,
+            '--create-missing'  => true,
+        ])->assertSuccessful();
+
+        expect(\App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->count())->toBe(1);
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production'        => $this->production->slug,
+            'file'              => $this->rewardSheetPath,
+            '--create-missing'  => true,
+        ])->assertSuccessful();
+
+        expect(\App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->count())->toBe(1);
+    });
+});

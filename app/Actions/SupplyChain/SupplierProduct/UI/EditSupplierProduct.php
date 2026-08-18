@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -124,6 +125,24 @@ class EditSupplierProduct extends OrgAction
                                     'type'  => 'input',
                                     'label' => __('Extra costs (%)'),
                                     'value' => $supplierProduct->extra_costs,
+                                ],
+                                'minimum_carton_order' => [
+                                    'type'    => 'input',
+                                    'label'   => __('Minimum order (cartons)'),
+                                    'value'   => Arr::get($supplierProduct->data, 'minimum_carton_order'),
+                                    'options' => ['inputType' => 'number']
+                                ],
+                                'delivery_time' => [
+                                    'type'    => 'input',
+                                    'label'   => __('Average delivery time (days)'),
+                                    'value'   => Arr::get($supplierProduct->data, 'delivery_time'),
+                                    'options' => ['inputType' => 'number']
+                                ],
+                                'unit_expense' => [
+                                    'type'    => 'input',
+                                    'label'   => __('Unit expense'),
+                                    'value'   => Arr::get($supplierProduct->data, 'unit_expense'),
+                                    'options' => ['inputType' => 'number']
                                 ],
                                 'is_available' => [
                                     'type'  => 'toggle',

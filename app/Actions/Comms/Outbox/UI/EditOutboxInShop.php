@@ -79,9 +79,6 @@ class EditOutboxInShop extends OrgAction
         $fields[] = $subjectField; // init fields
 
         switch ($outbox->code) {
-            case OutboxCodeEnum::REORDER_REMINDER:
-            case OutboxCodeEnum::REORDER_REMINDER_2ND:
-            case OutboxCodeEnum::REORDER_REMINDER_3RD:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_1:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_2:
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_3:
@@ -134,8 +131,8 @@ class EditOutboxInShop extends OrgAction
                             'type' => 'input_number',
                             'label' => __('Days after order dispatched'),
                             'placeholder' => __('Days after order dispatched'),
-                            'required' => false,
-                            'value' => $outbox->days_after ?? 10,
+                            'required' => true,
+                            'value' => $outbox->days_after,
                         ],
                     ]
                 ];

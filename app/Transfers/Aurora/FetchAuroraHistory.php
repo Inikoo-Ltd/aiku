@@ -8,135 +8,407 @@
 
 namespace App\Transfers\Aurora;
 
-use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
-use App\Models\CRM\Prospect;
-use App\Models\Helpers\Upload;
-use App\Models\Inventory\Location;
-use App\Models\Inventory\WarehouseArea;
+use App\Models\Goods\StockFamily;
+use App\Models\Goods\TradeUnit;
+use App\Models\GoodsIn\StockDelivery;
+use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgSupplier;
+use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Transfers\Aurora\History\Parsers\ParseBarcodeHistory;
+use App\Transfers\Aurora\History\Parsers\ParseCategoryHistory;
+use App\Transfers\Aurora\History\Parsers\ParseChargeHistory;
+use App\Transfers\Aurora\History\Parsers\ParseCustomerClientHistory;
+use App\Transfers\Aurora\History\Parsers\ParseCustomerHistory;
+use App\Transfers\Aurora\History\Parsers\ParseDealHistory;
+use App\Transfers\Aurora\History\Parsers\ParseDeliveryNoteHistory;
+use App\Transfers\Aurora\History\Parsers\ParseInvoiceHistory;
+use App\Transfers\Aurora\History\Parsers\ParseLocationHistory;
+use App\Transfers\Aurora\History\Parsers\ParseMarketingHistory;
+use App\Transfers\Aurora\History\Parsers\ParseOrderHistory;
+use App\Transfers\Aurora\History\Parsers\ParsePartHistory;
+use App\Transfers\Aurora\History\Parsers\ParseProductHistory;
+use App\Transfers\Aurora\History\Parsers\ParseProspectHistory;
+use App\Transfers\Aurora\History\Parsers\ParsePurchaseOrderHistory;
+use App\Transfers\Aurora\History\Parsers\ParseShippingZoneHistory;
+use App\Transfers\Aurora\History\Parsers\ParseStaffUserHistory;
+use App\Transfers\Aurora\History\Parsers\ParseSupplierAgentHistory;
+use App\Transfers\Aurora\History\Parsers\ParseSupplierDeliveryHistory;
+use App\Transfers\Aurora\History\Parsers\ParseSupplierPartHistory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class FetchAuroraHistory extends FetchAurora
 {
-    use WithParseUpdateHistory;
-    use WithParseCreatedHistory;
+    public const array PARSERS = [
+        'Customer' => ParseCustomerHistory::class,
+        'Prospect' => ParseProspectHistory::class,
+        'Product' => ParseProductHistory::class,
+        'Location' => ParseLocationHistory::class,
+        'Warehouse Area' => ParseLocationHistory::class,
+        'Order' => ParseOrderHistory::class,
+        'Delivery Note' => ParseDeliveryNoteHistory::class,
+        'Invoice' => ParseInvoiceHistory::class,
+        'Purchase Order' => ParsePurchaseOrderHistory::class,
+        'Agent Supplier Purchase Order' => ParsePurchaseOrderHistory::class,
+        'Supplier Delivery' => ParseSupplierDeliveryHistory::class,
+        'Part' => ParsePartHistory::class,
+        'Supplier Part' => ParseSupplierPartHistory::class,
+        'Barcode' => ParseBarcodeHistory::class,
+        'Category' => ParseCategoryHistory::class,
+        'Family' => ParseCategoryHistory::class,
+        'Department' => ParseCategoryHistory::class,
+        'Staff' => ParseStaffUserHistory::class,
+        'User' => ParseStaffUserHistory::class,
+        'Website User' => ParseStaffUserHistory::class,
+        'Email Campaign' => ParseMarketingHistory::class,
+        'Deal Campaign' => ParseMarketingHistory::class,
+        'Deal' => ParseDealHistory::class,
+        'Deal Component' => ParseDealHistory::class,
+        'Shipping Zone' => ParseShippingZoneHistory::class,
+        'Shipping Zone Schema' => ParseShippingZoneHistory::class,
+        'Supplier' => ParseSupplierAgentHistory::class,
+        'Agent' => ParseSupplierAgentHistory::class,
+        'Charge' => ParseChargeHistory::class,
+        'Customer Client' => ParseCustomerClientHistory::class,
+    ];
+
+    protected const array BLANK_OBJECT_SNIFFS = [
+        '/^Website user .+ created/i' => 'Website User',
+        "/^Customer's client created/i" => 'Customer Client',
+        '/^Supplier delivery /i' => 'Supplier Delivery',
+        "/^Supplier Part's /i" => 'Supplier Part',
+        "/^Deal Component's /i" => 'Deal Component',
+        '/^Barcode record /i' => 'Barcode',
+    ];
 
     protected function parseModel(): void
     {
+        $directObject = (string) $this->auroraModelData->{'Direct Object'};
 
-        //enum('sold_since','last_sold','first_sold','placed','wrote','deleted','edited','cancelled','charged','merged','created','associated','disassociate','register','login','logout','fail_login','password_request','password_reset','search')
-        $event = match ($this->auroraModelData->{'Action'}) {
-            'edited' => 'updated',
-            default => $this->auroraModelData->{'Action'}
-        };
+        if ($directObject === '') {
+            $directObject = $this->sniffBlankDirectObject();
+            if ($directObject === null) {
+                $this->markSkippedInAurora();
 
+                return;
+            }
+            $this->auroraModelData->{'Direct Object'} = $directObject;
+        }
 
-        if ($event == 'created' and $this->auroraModelData->{'Indirect Object'} != '') {
-            print "*** Error: Created with indirect object\n";
-            print_r($this->auroraModelData);
+        $parser = self::PARSERS[$directObject] ?? null;
+        if (!$parser) {
+            return;
+        }
+
+        if ($directObject == 'Category') {
+            $this->enrichCategoryRow();
+        }
+
+        $classification = $parser::classify($this->auroraModelData);
+        if ($classification['handling'] !== 'import') {
+            $this->markSkippedInAurora();
 
             return;
         }
 
-
-        $auditable = $this->parseAuditableFromHistory();
+        $auditable = $this->resolveAuditable($directObject, $classification['auditable_type'] ?? null);
         if (!$auditable) {
             return;
         }
 
-        $skip = $this->checkIfSkip($auditable, $event);
-        if ($skip) {
+        $event  = $classification['event'];
+        $values = $parser::extractValues($this->auroraModelData, $event, $classification['field'], $classification['auditable_type'] ?? null);
+
+        if ($event == 'updated' && count($values['old_values']) == 0 && count($values['new_values']) == 0) {
+            $this->markSkippedInAurora();
+
             return;
         }
 
-
-        $tags = $auditable->generateTags();
-
-        $user = $this->parseUserFromHistory();
-
-        $newValues = $this->parseHistoryNewValues($auditable, $event);
-        $oldValues = $this->parseHistoryOldValues($auditable, $event);
-        $data      = $this->parseHistoryData($auditable, $event);
-
-
-        $upload = $this->parseHistoryUpload();
-        if ($upload) {
-            data_set($data, 'upload_id', $upload->id);
-        }
-
-
-        if ($event == 'updated' and
-            (
-                count($oldValues) == 0 and
-                count($newValues) == 1
-            )
-
-        ) {
-            // todo, later on check if really the old values are empty or is an parsing error
-            $oldValues = $newValues;
-            foreach ($oldValues as $key => $value) {
-                $oldValues[$key] = '';
+        $data = $values['data'];
+        if ($uploadSourceId = $this->getUploadSourceId($data)) {
+            $upload = $this->lookup(\App\Models\Helpers\Upload::class, $this->organisation->id.':'.$uploadSourceId);
+            if ($upload) {
+                data_set($data, 'upload_id', $upload->id);
+                unset($data['upload_source_id']);
+            } else {
+                data_set($data, 'upload_source_id', $uploadSourceId);
             }
         }
 
-        if ($event == 'updated' and
-            (
-                count($oldValues) == 1 and
-                count($newValues) == 0
-            )
-
-        ) {
-            // todo, later on check if really the old values are empty or is an parsing error
-            $newValues = $oldValues;
-            foreach ($newValues as $key => $value) {
-                $newValues[$key] = '';
-            }
+        if (!($auditable->organisation_id ?? null)) {
+            data_set($data, 'source_organisation', $this->organisation->slug);
         }
 
-
-        if ($event == 'updated' and
-            (
-                count($oldValues) == 0 or
-                count($newValues) == 0
-            )
-
-        ) {
-            print_r($oldValues);
-            print_r($newValues);
-            print_r($this->auroraModelData);
-        }
-
+        $user = $this->lookupActor();
 
         $this->parsedData['auditable'] = $auditable;
-        $this->parsedData['history']   =
-            [
-
-                'created_at'      => $this->auroraModelData->{'History Date'},
-                'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'History Key'},
-                'fetched_at'      => now(),
-                'last_fetched_at' => now(),
-                'event'           => $event,
-                'tags'            => $tags,
-                'new_values'      => $newValues,
-                'old_values'      => $oldValues,
-                'data'            => $data,
-            ];
-
+        $this->parsedData['history']   = [
+            'created_at'      => $this->auroraModelData->{'History Date'},
+            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'History Key'},
+            'fetched_at'      => now(),
+            'last_fetched_at' => now(),
+            'event'           => $event,
+            'tags'            => $this->auditableTags($auditable),
+            'new_values'      => $values['new_values'],
+            'old_values'      => $values['old_values'],
+            'data'            => $data,
+        ];
 
         if ($user) {
             $this->parsedData['history']['user_type'] = class_basename($user);
             $this->parsedData['history']['user_id']   = $user->id;
         }
-
-        //        print_r($this->parsedData['history']);
-        //
-        //        if ($this->parsedData['history']['event'] == 'updated') {
-        //            print "=======. ".$this->parsedData['history']['event']."=============\n";
-        //            print_r($this->parsedData['history']['old_values']);
-        //            print_r($this->parsedData['history']['new_values']);
-        //        }
     }
 
+    protected function lookupActor(): Model|null
+    {
+        static $actorCache = [];
+
+        $subject    = (string) ($this->auroraModelData->{'Subject'} ?? '');
+        $subjectKey = (int) ($this->auroraModelData->{'Subject Key'} ?? 0);
+        $cacheKey   = $this->organisation->id.'|'.$subject.'|'.$subjectKey;
+
+        if (array_key_exists($cacheKey, $actorCache)) {
+            return $actorCache[$cacheKey];
+        }
+
+        $actorCache[$cacheKey] = $this->resolveActorLookupOnly($subject, $subjectKey);
+
+        return $actorCache[$cacheKey];
+    }
+
+    protected function resolveActorLookupOnly(string $subject, int $subjectKey): Model|null
+    {
+        if ($subjectKey <= 0) {
+            return null;
+        }
+
+        $key = $this->organisation->id.':'.$subjectKey;
+
+        if ($subject == 'Staff') {
+            $employee = $this->lookup(\App\Models\HumanResources\Employee::class, $key);
+            if ($employee) {
+                $userHasModel = DB::table('user_has_models')
+                    ->where('model_id', $employee->id)
+                    ->where('model_type', 'Employee')
+                    ->first();
+                if ($userHasModel) {
+                    return \App\Models\SysAdmin\User::withTrashed()->find($userHasModel->user_id);
+                }
+            }
+
+            return \App\Models\SysAdmin\User::withTrashed()
+                ->where('group_id', $this->organisation->group_id)
+                ->whereJsonContains('sources->parents', $key)
+                ->first() ?? $this->lookupUser($key);
+        }
+
+        if ($subject == 'Customer') {
+            $webUserKey = DB::connection('aurora')
+                ->table('Website User Dimension')
+                ->where('Website User Customer Key', $subjectKey)
+                ->orderBy('Website User Key')
+                ->value('Website User Key');
+            if ($webUserKey) {
+                return $this->lookup(\App\Models\CRM\WebUser::class, $this->organisation->id.':'.$webUserKey);
+            }
+        }
+
+        return null;
+    }
+
+    protected function sniffBlankDirectObject(): ?string
+    {
+        $abstract = (string) $this->auroraModelData->{'History Abstract'};
+
+        foreach (self::BLANK_OBJECT_SNIFFS as $pattern => $directObject) {
+            if (preg_match($pattern, $abstract)) {
+                return $directObject;
+            }
+        }
+
+        return null;
+    }
+
+    protected function auditableTags(Model $auditable): array
+    {
+        if (method_exists($auditable, 'generateTags')) {
+            $tags = $auditable->generateTags();
+            if (count($tags) > 0) {
+                return $tags;
+            }
+        }
+
+        return [Str::kebab(class_basename($auditable))];
+    }
+
+    protected function enrichCategoryRow(): void
+    {
+        $category = DB::connection('aurora')
+            ->table('Category Dimension')
+            ->where('Category Key', $this->auroraModelData->{'Direct Object Key'})
+            ->first();
+
+        $this->auroraModelData->aikuCategoryScope   = $category?->{'Category Scope'};
+        $this->auroraModelData->aikuCategorySubject = $category?->{'Category Subject'};
+    }
+
+    protected function lookup(string $class, string $key, string $column = 'source_id'): ?Model
+    {
+        $query = in_array(SoftDeletes::class, class_uses_recursive($class), true)
+            ? $class::withTrashed()
+            : $class::query();
+
+        return $query->where($column, $key)->first();
+    }
+
+    protected function resolveAuditable(string $directObject, ?string $auditableType): ?Model
+    {
+        $key = $this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'};
+
+        if ($auditableType) {
+            return $this->resolveByAuditableType($directObject, $auditableType, $key);
+        }
+
+        return match ($directObject) {
+            'Customer' => $this->lookup(\App\Models\CRM\Customer::class, $key),
+            'Prospect' => $this->lookup(\App\Models\CRM\Prospect::class, $key),
+            'Product' => $this->lookup(\App\Models\Catalogue\Product::class, $key),
+            'Location' => $this->lookup(\App\Models\Inventory\Location::class, $key),
+            'Warehouse Area' => $this->lookup(\App\Models\Inventory\WarehouseArea::class, $key),
+            'Order' => $this->lookup(\App\Models\Ordering\Order::class, $key),
+            'Delivery Note' => $this->lookup(\App\Models\Dispatching\DeliveryNote::class, $key),
+            'Invoice' => $this->lookup(\App\Models\Accounting\Invoice::class, $key),
+            'Purchase Order' => $this->lookup(PurchaseOrder::class, $key),
+            'Agent Supplier Purchase Order' => $this->lookup(AgentSupplierPurchaseOrder::class, $key),
+            'Supplier Delivery' => $this->lookup(StockDelivery::class, $key),
+            'Barcode' => $this->lookup(\App\Models\Helpers\Barcode::class, $key),
+            'Charge' => $this->lookup(\App\Models\Billables\Charge::class, $key),
+            'Customer Client' => $this->lookup(\App\Models\Dropshipping\CustomerClient::class, $key),
+            default => null,
+        };
+    }
+
+    protected function resolveByAuditableType(string $directObject, string $auditableType, string $key): ?Model
+    {
+        return match ($auditableType) {
+            'TradeUnit' => $this->resolveTradeUnit($key),
+            'OrgStock' => $this->lookup(\App\Models\Inventory\OrgStock::class, $key),
+            'SupplierProduct' => $this->lookup(\App\Models\SupplyChain\SupplierProduct::class, $key),
+            'ProductCategory' => match ($directObject) {
+                'Family' => $this->lookupProductCategory('source_family_id', $key),
+                'Department' => $this->lookupProductCategory('source_department_id', $key),
+                default => $this->lookupProductCategory('source_family_id', $key)
+                    ?? $this->lookupProductCategory('source_department_id', $key)
+                    ?? $this->lookup(\App\Models\Catalogue\Collection::class, $key),
+            },
+            'StockFamily' => $this->lookup(StockFamily::class, $key),
+            'Employee' => $this->lookup(\App\Models\HumanResources\Employee::class, $key),
+            'User' => $this->lookupUser($key),
+            'WebUser' => $this->lookup(\App\Models\CRM\WebUser::class, $key),
+            'Mailshot' => $this->lookup(\App\Models\Comms\Mailshot::class, $key),
+            'OfferCampaign' => $this->lookup(\App\Models\Discounts\OfferCampaign::class, $key),
+            'Offer' => $this->lookup(\App\Models\Discounts\Offer::class, $key),
+            'OfferComponent' => $this->lookup(\App\Models\Discounts\OfferAllowance::class, $key),
+            'ShippingZone' => $this->lookup(\App\Models\Billables\ShippingZone::class, $key),
+            'ShippingZoneSchema' => $this->lookup(\App\Models\Billables\ShippingZoneSchema::class, $key),
+            'Supplier' => $this->lookup(\App\Models\SupplyChain\Supplier::class, $key),
+            'Agent' => $this->lookup(\App\Models\SupplyChain\Agent::class, $key),
+            'OrgSupplier' => $this->resolveOrgSupplier($key),
+            'OrgAgent' => $this->resolveOrgAgent($key),
+            default => null,
+        };
+    }
+
+    protected function lookupProductCategory(string $column, string $key): ?Model
+    {
+        return \App\Models\Catalogue\ProductCategory::withTrashed()->where($column, $key)->first();
+    }
+
+    protected function lookupUser(string $key): ?Model
+    {
+        return \App\Models\SysAdmin\User::withTrashed()->where('source_id', $key)->first()
+            ?? \App\Models\SysAdmin\User::withTrashed()
+                ->where('group_id', $this->organisation->group_id)
+                ->whereJsonContains('sources->users', $key)
+                ->first();
+    }
+
+    protected function resolveTradeUnit(string $key): ?TradeUnit
+    {
+        $tradeUnit = TradeUnit::withTrashed()->where('source_id', $key)->first();
+        if ($tradeUnit) {
+            return $tradeUnit;
+        }
+
+        return $this->lookup(\App\Models\Inventory\OrgStock::class, $key)?->stock?->tradeUnits()->first();
+    }
+
+    protected function resolveOrgSupplier(string $key): ?OrgSupplier
+    {
+        $supplier = $this->lookup(\App\Models\SupplyChain\Supplier::class, $key);
+        if (!$supplier) {
+            return null;
+        }
+
+        return OrgSupplier::where('supplier_id', $supplier->id)
+            ->where('organisation_id', $this->organisation->id)
+            ->first();
+    }
+
+    protected function resolveOrgAgent(string $key): ?OrgAgent
+    {
+        $agent = $this->lookup(\App\Models\SupplyChain\Agent::class, $key);
+        if (!$agent) {
+            return null;
+        }
+
+        return OrgAgent::where('agent_id', $agent->id)
+            ->where('organisation_id', $this->organisation->id)
+            ->first();
+    }
+
+    protected function getUploadSourceId(array $data): ?int
+    {
+        if (isset($data['upload_source_id'])) {
+            return (int) $data['upload_source_id'];
+        }
+
+        if (preg_match('/change_view\(\'upload\/(\d+)/', (string) $this->auroraModelData->{'History Abstract'}, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
+    }
+
+    protected static array $skippedBuffer = [];
+
+    protected function markSkippedInAurora(): void
+    {
+        self::$skippedBuffer[] = $this->auroraModelData->{'History Key'};
+
+        if (count(self::$skippedBuffer) >= 1000) {
+            self::flushSkipped();
+        }
+    }
+
+    public static function flushSkipped(): void
+    {
+        if (count(self::$skippedBuffer) == 0) {
+            return;
+        }
+
+        DB::connection('aurora')
+            ->table('History Dimension')
+            ->whereIn('History Key', self::$skippedBuffer)
+            ->update(['aiku_id' => 0]);
+
+        self::$skippedBuffer = [];
+    }
 
     protected function fetchData($id): object|null
     {
@@ -144,144 +416,4 @@ class FetchAuroraHistory extends FetchAurora
             ->table('History Dimension')
             ->where('History Key', $id)->first();
     }
-
-
-    protected function parseAuditableFromHistory(): Customer|Location|Product|WarehouseArea|Prospect|null
-    {
-        return match ($this->auroraModelData->{'Direct Object'}) {
-            'Customer' => $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}),
-            'Location' => $this->parseLocation($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}, $this->organisationSource),
-            'Product' => $this->parseProduct($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}),
-            'Warehouse Area' => $this->parseWarehouseArea($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}),
-            'Prospect' => $this->parseProspect($this->organisation->id.':'.$this->auroraModelData->{'Direct Object Key'}),
-            default => null,
-        };
-    }
-
-
-    protected function checkIfSkip($auditable, $event): bool
-    {
-        $skip = false;
-
-
-        if ($event == 'updated') {
-            $skip = true;
-            switch ($auditable) {
-                case $auditable instanceof Customer:
-                    break;
-                case $auditable instanceof Location:
-                    $skip = !in_array($this->auroraModelData->{'Indirect Object'}, ['Location Code', 'Location Max Weight', 'Location Max Volume']);
-                    break;
-                case $auditable instanceof Product:
-                    $skip = !in_array($this->auroraModelData->{'Indirect Object'}, ['Product Code', 'Product Price', 'Product Name', 'Product Status']);
-                    break;
-                case $auditable instanceof WarehouseArea:
-                    $skip = !in_array($this->auroraModelData->{'Indirect Object'}, ['Warehouse Area Code', 'Warehouse Area Name']);
-                    break;
-                case $auditable instanceof Prospect:
-
-                    if ($this->auroraModelData->{'Indirect Object'} == '') {
-                        return true;
-                    }
-
-
-                    $skip = !in_array($this->auroraModelData->{'Indirect Object'}, [
-                        'Prospect Website',
-                        'Prospect Main Plain Email',
-                        'Prospect Main Contact Name',
-                        'Prospect Company Name',
-                        'Prospect Contact Address',
-                        'Prospect Preferred Contact Number Formatted Number'
-                    ]);
-
-                    if ($skip and
-
-                        !in_array(
-                            $this->auroraModelData->{'Indirect Object'},
-                            [
-                                'Prospect Preferred Contact Number',
-                                'Prospect Sticky Note'
-                            ]
-                        )
-
-
-                    ) {
-                        print "Error unknown indirect object for skipping\n";
-                        print_r($this->auroraModelData);
-
-                    }
-
-
-                    break;
-            }
-        }
-
-
-        return $skip;
-    }
-
-    protected function parseHistoryOldValues($auditable, string $event): array
-    {
-        if ($event == 'created') {
-            return [];
-        }
-
-        return $this->parseHistoryUpdatedOldValues($auditable);
-    }
-
-
-    protected function parseHistoryUpload(): ?Upload
-    {
-        $upload   = null;
-        $abstract = $this->auroraModelData->{'History Abstract'};
-        if (preg_match('/change_view\(\'upload\/(\d+)/', $abstract, $matches)) {
-            $uploadSourceId = $matches[1];
-            $upload         = $this->parseUpload($this->organisation->id.':'.$uploadSourceId);
-        }
-
-        return $upload;
-    }
-
-
-    protected function parseHistoryNewValues($auditable, string $event): array
-    {
-        if ($event == 'created') {
-            return $this->parseHistoryCreatedNewValues($auditable);
-        } elseif ($event == 'updated') {
-            return $this->parseHistoryUpdatedNewValues($auditable);
-        }
-
-        return [];
-    }
-
-    protected function parseHistoryData($auditable, string $event): array
-    {
-        if ($event == 'created') {
-            return $this->parseHistoryCreatedData($auditable);
-        }
-
-        return [];
-    }
-
-
-    private function getField()
-    {
-        return match ($this->auroraModelData->{'Indirect Object'}) {
-            'Location Code', 'Product Code', 'Warehouse Area Code' => 'code',
-            'Location Max Weight' => 'max_weight',
-            'Location Max Volume' => 'max_volume',
-            'Product Price' => 'price',
-            'Product Status' => 'state',
-            'Product Name', 'Warehouse Area Name' => 'name',
-            'Prospect Website' => 'contact_website',
-            'Prospect Main Plain Email' => 'email',
-            'Prospect Main Contact Name' => 'contact_name',
-            'Prospect Company Name' => 'company_name',
-            'Prospect Contact Address' => 'address',
-            'Prospect Preferred Contact Number Formatted Number' => 'phone',
-            default => $this->auroraModelData->{'Indirect Object'}
-        };
-    }
-
-
 }

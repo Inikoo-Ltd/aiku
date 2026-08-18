@@ -9,10 +9,12 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -46,8 +48,10 @@ class GetMasterAssetAnomalies
             ->with(['shop', 'family', 'organisation', 'currency', 'tradeUnits', 'orgStocks.tradeUnits'])
             ->get();
 
+        $supersededOrgStocks = $this->supersededOrgStocks($products);
+
         foreach ($products as $product) {
-            $composition = $this->compositionDeviations($masterProduct, $masterTradeUnits, $masterStocks, $product);
+            $composition = $this->compositionDeviations($masterProduct, $masterTradeUnits, $masterStocks, $product, $supersededOrgStocks);
             $pricing     = $this->pricingDeviations($masterProduct, $product);
 
             $issues        = [];
@@ -111,16 +115,58 @@ class GetMasterAssetAnomalies
             $masterProduct,
             $masterProduct->tradeUnits->pluck('pivot.quantity', 'id'),
             $masterProduct->stocks->pluck('pivot.quantity', 'id'),
-            $product
+            $product,
+            $this->supersededOrgStocks(collect([$product]))
         ) === [];
+    }
+
+    /**
+     * Discontinued org stocks these products pick while an active org stock exists on the
+     * very same stock and organisation.
+     *
+     * Quantities are compared per stock, so a product picking the dead twin of the right
+     * stock matches the master exactly and never shows up. That is how every ArtTT product
+     * picked a retired SKU while reading as compliant.
+     *
+     * @return array<int, string> replacement code keyed by the superseded org stock id
+     */
+    private function supersededOrgStocks(Collection $products): array
+    {
+        $discontinuedIds = $products->pluck('orgStocks')->flatten()
+            ->where('state', OrgStockStateEnum::DISCONTINUED)
+            ->pluck('id')
+            ->unique();
+
+        if ($discontinuedIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('org_stocks as bad')
+            ->join('org_stocks as good', function ($join) {
+                $join->on('good.stock_id', '=', 'bad.stock_id')
+                    ->on('good.organisation_id', '=', 'bad.organisation_id')
+                    ->where('good.state', OrgStockStateEnum::ACTIVE->value);
+            })
+            ->whereIn('bad.id', $discontinuedIds)
+            ->pluck('good.code', 'bad.id')
+            ->all();
     }
 
     /**
      * @return list<string>
      */
-    private function compositionDeviations(MasterAsset $masterProduct, Collection $masterTradeUnits, Collection $masterStocks, Product $product): array
+    private function compositionDeviations(MasterAsset $masterProduct, Collection $masterTradeUnits, Collection $masterStocks, Product $product, array $supersededOrgStocks = []): array
     {
         $deviations = [];
+
+        foreach ($product->orgStocks as $orgStock) {
+            if ($replacement = Arr::get($supersededOrgStocks, $orgStock->id)) {
+                $deviations[] = __('Picks the discontinued SKU :picked while :active is the active one', [
+                    'picked' => $orgStock->code,
+                    'active' => $replacement,
+                ]);
+            }
+        }
 
         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
         if ($this->quantitiesDiffer($masterTradeUnits, $productTradeUnits)) {

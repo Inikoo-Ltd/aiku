@@ -22,6 +22,7 @@ use App\Actions\Comms\Outbox\GoldRewardReminder\RunGoldRewardReminderEmailBulkRu
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
+use App\Actions\Ordering\Order\SweepGoldRewardWindowBaskets;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ProspectConversion\RunProspectConvertionEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChange\RunPriceChangeEmailBulkRunsToSubscribers;
@@ -91,6 +92,15 @@ class Kernel extends ConsoleKernel
                 name: 'ActivateScheduledOffers',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(SweepGoldRewardWindowBaskets::makeJob())->dailyAt('02:15')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SweepGoldRewardWindowBaskets',
+                ),
+                name: 'SweepGoldRewardWindowBaskets',
+                type: 'job',
+                scheduledAt: '02:15'
             );
 
 

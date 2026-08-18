@@ -40,6 +40,8 @@ const props = defineProps<{
                 v-model="form[fieldName]"
                 @input="(e) => form[fieldName] = e.value"
                 inputId="horizontal-buttons"
+                :minFractionDigits="0"
+                :maxFractionDigits="2"
                 v-bind="fieldData?.bind"
                 showButtons
             >

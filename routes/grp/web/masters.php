@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\UI\IndexInvoicesInMasterFamily;
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInProduct;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
 use App\Actions\Catalogue\Shop\StoreShopFromMaster;
@@ -160,6 +161,7 @@ Route::name("master_shops")->prefix('master-shops')
                         Route::get('', [IndexMasterFamilies::class, 'inMasterDepartmentInMasterShop'])->name('index');
                         Route::prefix('{masterFamily}')->group(function () {
                             Route::get('', [ShowMasterFamily::class, 'inMasterDepartmentInMasterShop'])->name('show');
+                            Route::get('invoices', [IndexInvoicesInMasterFamily::class, 'inMasterDepartment'])->name('invoices');
                             Route::get('families', [IndexFamiliesInMasterFamilies::class, 'inMasterDepartmentInMasterShop'])->name('families');
                             Route::get('edit', [EditMasterFamily::class, 'InMasterDepartment'])->name('edit');
                             Route::prefix('variant')->as('master_variants.')->group(function () {
@@ -187,6 +189,7 @@ Route::name("master_shops")->prefix('master-shops')
                         Route::prefix('/{masterSubDepartment}/families')->as('master_families.')->group(function () {
                             Route::get('', [IndexMasterFamilies::class, 'inMasterSubDepartmentInMasterDepartment'])->name('index');
                             Route::get('{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('show');
+                            Route::get('{masterFamily}/invoices', [IndexInvoicesInMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('invoices');
                             Route::get('{masterFamily}/families', [IndexFamiliesInMasterFamilies::class, 'inMasterSubDepartmentInMasterDepartment'])->name('families');
                             Route::get('{masterFamily}/edit', [EditMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('edit');
                             Route::prefix('{masterFamily}/variant')->as('master_variants.')->group(function () {
@@ -237,6 +240,7 @@ Route::name("master_shops")->prefix('master-shops')
             Route::prefix('master-families')->as('.master_families.')->group(function () {
                 Route::get('', IndexMasterFamilies::class)->name('index');
                 Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
+                Route::get('{masterFamily}/invoices', IndexInvoicesInMasterFamily::class)->name('invoices');
                 Route::get('{masterFamily}/families', IndexFamiliesInMasterFamilies::class)->name('families');
                 Route::get('{masterFamily}/edit', EditMasterFamily::class)->name('edit');
                 Route::prefix('{masterFamily}/variant')->as('master_variants.')->group(function () {
@@ -274,6 +278,7 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::prefix('/{masterSubDepartment}/families')->as('master_families.')->group(function () {
                     Route::get('', [IndexMasterFamilies::class, 'inMasterSubDepartment'])->name('index');
                     Route::get('{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartment'])->name('show');
+                    Route::get('{masterFamily}/invoices', [IndexInvoicesInMasterFamily::class, 'inMasterSubDepartment'])->name('invoices');
                     Route::get('{masterFamily}/families', [IndexFamiliesInMasterFamilies::class, 'inMasterSubDepartment'])->name('families');
                     Route::get('{masterFamily}/edit', [EditMasterFamily::class, 'inMasterSubDepartment'])->name('edit');
                     Route::prefix('{masterFamily}/variant')->as('master_variants.')->group(function () {
@@ -318,6 +323,7 @@ Route::name("master_shops")->prefix('master-shops')
             Route::prefix('/master-family-missing-image')->as('.master_family.missing_image.')->group(function () {
                 Route::get('/', IndexMasterFamiliesWithNoImage::class)->name('index');
                 Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
+                Route::get('{masterFamily}/invoices', IndexInvoicesInMasterFamily::class)->name('invoices');
                 Route::get('{masterFamily}/families', IndexFamiliesInMasterFamilies::class)->name('families');
                 Route::get('{masterFamily}/edit', EditMasterFamily::class)->name('edit');
                 Route::get('{masterFamily}/master-products', [IndexMasterProducts::class, 'inMasterFamilyInMasterShop'])->name('master_products.index');
@@ -331,6 +337,7 @@ Route::name("master_shops")->prefix('master-shops')
             Route::prefix('/master-family-mismatch-detected')->as('.master_family.mismatch_detected.')->group(function () {
                 Route::get('/', IndexMasterFamiliesWithMismatch::class)->name('index');
                 Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
+                Route::get('{masterFamily}/invoices', IndexInvoicesInMasterFamily::class)->name('invoices');
                 Route::get('{masterFamily}/families', IndexFamiliesInMasterFamilies::class)->name('families');
                 Route::get('{masterFamily}/edit', EditMasterFamily::class)->name('edit');
                 Route::get('{masterFamily}/master-products', [IndexMasterProducts::class, 'inMasterFamilyInMasterShop'])->name('master_products.index');

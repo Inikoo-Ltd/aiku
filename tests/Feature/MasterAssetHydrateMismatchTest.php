@@ -725,3 +725,35 @@ test('a warehouse packing that divides the picks is not an anomaly', function ()
 
     expect($anomalies)->not->toHaveKey($product->id);
 });
+
+test('flags a product picking the discontinued twin of the right stock', function () {
+    $stocks = createStocks($this->group);
+    $stock  = $stocks[0];
+    [$activeOrgStock] = createOrgStocks($this->organisation, [$stock]);
+    $activeOrgStock->update(['state' => App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
+
+    $deadOrgStock = App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action(
+        $this->organisation,
+        $stock,
+        array_merge(App\Models\Inventory\OrgStock::factory()->definition(), ['code' => 'DEAD-'.uniqid()]),
+    );
+    $deadOrgStock->update(['state' => App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+
+    DB::table('master_asset_has_stocks')->updateOrInsert(
+        ['master_asset_id' => $this->masterAsset->id, 'stock_id' => $stock->id],
+        ['quantity' => 3, 'created_at' => now(), 'updated_at' => now()]
+    );
+
+    $product = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10);
+    DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $product->id, 'org_stock_id' => $deadOrgStock->id],
+        ['quantity' => 3]
+    );
+
+    $anomalies = App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies::run($this->masterAsset->refresh());
+
+    expect($anomalies)->toHaveKey($product->id)
+        ->and(implode(' | ', $anomalies[$product->id]['issues']))
+        ->toContain('discontinued SKU '.$deadOrgStock->code)
+        ->toContain($activeOrgStock->code);
+});

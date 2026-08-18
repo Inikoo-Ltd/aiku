@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Transfers\AuroraCatalogueGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -41,6 +42,10 @@ trait WithActionUpdate
 
     protected function update($model, $modelData, $jsonFields = [])
     {
+        if (AuroraCatalogueGuard::blocksUpdate($model)) {
+            return $model;
+        }
+
         $model->update(
             Arr::except($modelData, $jsonFields)
         );

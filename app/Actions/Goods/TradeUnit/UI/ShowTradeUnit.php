@@ -65,7 +65,7 @@ class ShowTradeUnit extends OrgAction
                 'icon'    => ['fal', 'fa-atom-alt']
             ];
         }
-        
+
         $miniBreadcrumbs[] = [
             'label'   => $tradeUnit->code,
             'to'      => null,
@@ -222,7 +222,7 @@ class ShowTradeUnit extends OrgAction
         if (!$tradeUnit->tradeUnitFamily) {
             return null;
         }
-        
+
         return [
             'label' => $tradeUnit->tradeUnitFamily->name,
             'route' => [

@@ -98,6 +98,7 @@ class FetchAuroraPurchaseOrderTransaction extends FetchAurora
         $this->parsedData['purchase_order_transaction'] = [
             'agent_supplier_purchase_order_id' => $agentSupplierPurchaseOrderId,
             'quantity_ordered' => $quantityOrdered,
+            'net_amount'       => $this->auroraModelData->{'Purchase Order Net Amount'},
             'state'            => $state,
             'delivery_state'  => $deliveryState,
             'source_id'        => $this->organisation->id.':'.$this->auroraModelData->{'Purchase Order Transaction Fact Key'},

@@ -42,7 +42,7 @@ class StoreDeliveryNoteItem extends OrgAction
                 data_set($modelData, 'stock_family_id', $orgStock->stock->stock_family_id);
             }
 
-            $weight = (int)(Arr::get($modelData, 'quantity_required', 0) * $orgStock->stock->gross_weight);
+            $weight = (int)(Arr::get($modelData, 'quantity_required', 0) * ($orgStock->stock?->gross_weight ?? 0));
 
             data_set($modelData, 'estimated_required_weight', $weight);
         }

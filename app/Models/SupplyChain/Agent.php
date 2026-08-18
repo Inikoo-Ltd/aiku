@@ -93,10 +93,14 @@ class Agent extends Model implements HasMedia, Auditable
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
         'sources'         => 'array',
+        'data'            => 'array',
+        'settings'        => 'array',
     ];
 
     protected $attributes = [
-        'sources' => '{}',
+        'sources'  => '{}',
+        'data'     => '{}',
+        'settings' => '{}',
     ];
 
     protected $guarded = [];

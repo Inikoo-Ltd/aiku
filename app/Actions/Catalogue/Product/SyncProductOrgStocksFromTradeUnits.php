@@ -30,7 +30,8 @@ class SyncProductOrgStocksFromTradeUnits
 
         foreach ($product->tradeUnits as $tradeUnit) {
             foreach ($tradeUnit->stocks as $stock) {
-                $orgStock = $stock->orgStocks->where('organisation_id', $product->organisation_id)->first();
+                $candidates = $stock->orgStocks->where('organisation_id', $product->organisation_id);
+                $orgStock   = $candidates->firstWhere('state', OrgStockStateEnum::ACTIVE) ?? $candidates->first();
 
                 if (!$orgStock) {
                     if ($stock->stockFamily) {

@@ -202,9 +202,19 @@ const familyQuantityOrdered = computed(() => {
     return Number(layout?.family_quantity_ordered?.[familyId] ?? 0)
 })
 
+// A golden product of the family sitting in the basket triggers the member price on its own,
+// regardless of how many units of the family have been ordered
+const familyHasGoldenProductInBasket = computed(() => {
+    const familyId = props.product?.family_id
+    if (familyId == null) return false
+
+    return Boolean(layout?.family_has_golden_product?.[familyId])
+})
+
 const showMemberPrice = computed(() => {
     if (layout?.user?.gr_data?.amnesty) return true
     if (layout?.user?.gr_data?.customer_is_gr) return true
+    if (familyHasGoldenProductInBasket.value) return true  // If a golden product of the family is in the basket, show member price for all products of the family
 
     return bestOffer.value?.category_qty_trigger <= familyQuantityOrdered.value
 })

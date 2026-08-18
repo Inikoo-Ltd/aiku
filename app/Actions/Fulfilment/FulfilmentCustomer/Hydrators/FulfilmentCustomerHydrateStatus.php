@@ -28,6 +28,10 @@ class FulfilmentCustomerHydrateStatus implements ShouldBeUnique
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer): void
     {
+        if (!$fulfilmentCustomer->customer) {
+            return;
+        }
+
         $status = FulfilmentCustomerStatusEnum::NO_RENTAL_AGREEMENT;
 
         if ($fulfilmentCustomer->rentalAgreement) {
@@ -55,27 +59,31 @@ class FulfilmentCustomerHydrateStatus implements ShouldBeUnique
 
     protected function getStatusWhenActiveRentalAgreement(FulfilmentCustomer $fulfilmentCustomer): FulfilmentCustomerStatusEnum
     {
-        $status = FulfilmentCustomerStatusEnum::ACTIVE;
-
-        $createdAt = $fulfilmentCustomer->rentalAgreement->created_at;
-        if ($createdAt->lessThan($createdAt->addMonths(3))
-            || $fulfilmentCustomer->number_pallets_status_storing
+        if ($fulfilmentCustomer->number_pallets_status_storing
             || $fulfilmentCustomer->number_pallets_status_returning
             || $fulfilmentCustomer->number_pallets_status_receiving
             || $fulfilmentCustomer->number_recurring_bills_status_current
-
         ) {
             return FulfilmentCustomerStatusEnum::ACTIVE;
         }
 
-        if ($fulfilmentCustomer->customer->last_invoiced_at) {
-            $lastInvoicesAt = $fulfilmentCustomer->customer->last_invoiced_at;
-            if ($lastInvoicesAt->lessThan($createdAt->addMonths(3))) {
-                return FulfilmentCustomerStatusEnum::ACTIVE;
-            }
+        $lastInvoicedAt = $fulfilmentCustomer->customer->last_invoiced_at;
+
+        if (!$lastInvoicedAt) {
+            return $fulfilmentCustomer->rentalAgreement->created_at->greaterThan(now()->subMonths(6))
+                ? FulfilmentCustomerStatusEnum::ACTIVE
+                : FulfilmentCustomerStatusEnum::UNACCOMPLISHED;
         }
 
-        return $status;
+        if ($lastInvoicedAt->greaterThan(now()->subMonths(3))) {
+            return FulfilmentCustomerStatusEnum::ACTIVE;
+        }
+
+        if ($lastInvoicedAt->greaterThan(now()->subMonths(6))) {
+            return FulfilmentCustomerStatusEnum::INACTIVE;
+        }
+
+        return FulfilmentCustomerStatusEnum::LOST;
     }
 
 

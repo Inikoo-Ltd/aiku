@@ -10,10 +10,6 @@ namespace App\Actions\SupplyChain\Supplier\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
-use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Actions\Helpers\Country\UI\GetCountriesOptions;
-use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
-use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
 use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Models\SupplyChain\Supplier;
@@ -24,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditSupplier extends OrgAction
 {
     use WithBucketNavigation;
+    use WithSupplierEditFields;
 
     use WithSupplyChainEditAuthorisation;
     // todo: authorisation
@@ -80,195 +77,7 @@ class EditSupplier extends OrgAction
                 ],
 
                 'formData'    => [
-                    'blueprint' => [
-                        [
-                            'title'  => __('ID/contact details '),
-                            'icon'   => 'fal fa-address-book',
-                            'fields' => [
-
-                                'code'         => [
-                                    'type'     => 'input',
-                                    'label'    => __('Code'),
-                                    'value'    => $supplier->code,
-                                    'required' => true,
-                                ],
-                                'company_name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Company'),
-                                    'value' => $supplier->company_name
-                                ],
-                                'contact_name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Contact name'),
-                                    'value' => $supplier->contact_name
-                                ],
-                                'contact_website' => [
-                                    'type'  => 'input',
-                                    'label' => __('Contact website'),
-                                    'value' => $supplier->contact_website
-                                ],
-                                'email'        => [
-                                    'type'    => 'input',
-                                    'label'   => __('Email'),
-                                    'value'   => $supplier->email,
-                                    'options' => [
-                                        'inputType' => 'email'
-                                    ]
-                                ],
-                                'phone'        => [
-                                    'type'    => 'phone',
-                                    'label'   => __('phone'),
-                                    'value'   => $supplier->phone,
-                                ],
-                                'address'      => [
-                                    'type'    => 'address',
-                                    'label'   => __('Address'),
-                                    'value'   => AddressResource::make($supplier->getAddress('contact'))->getArray(),
-                                    'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
-
-                                    ]
-                                ],
-
-                            ]
-                        ],
-
-                        /*
-                        [
-                            'title'  => __("supplier's products settings"),
-                            'fields' => [
-
-                                'allow on demand'              => [
-                                    'type'  => 'input',
-                                    'label' => __('allow on demand'),
-                                    'value' => ''
-                                ],
-                                'products origin country code' => [
-                                    'type'  => 'input',
-                                    'label' => __('products origin country code'),
-                                    'value' => ''
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('waiting times'),
-                            'fields' => [
-
-                                'delivery time' => [
-                                    'type'  => 'input',
-                                    'label' => __('delivery time (days)'),
-                                    'value' => ''
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('payment'),
-                            'fields' => [
-
-                                'incoterm'      => [
-                                    'type'  => 'input',
-                                    'label' => __('incoterm'),
-                                    'value' => ''
-                                ],
-                                'currency'      => [
-                                    'type'  => 'input',
-                                    'label' => __('Currency'),
-                                    'value' => ''
-                                ],
-                                'payment terms' => [
-                                    'type'  => 'input',
-                                    'label' => __('payment terms'),
-                                    'value' => ''
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('terms and conditions'),
-                            'fields' => [
-
-                                't&c'                 => [
-                                    'type'  => 'input',
-                                    'label' => __('t&c'),
-                                    'value' => ''
-                                ],
-                                'include general t&c' => [
-                                    'type'  => 'input',
-                                    'label' => __('include general t&c'),
-                                    'value' => ''
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('purchase order settings'),
-                            'fields' => [
-                                'minimum order'                 => [
-                                    'type'  => 'input',
-                                    'label' => __('minimum order (EUR)'),
-                                    'value' => ''
-                                ],
-                                'cooling period between orders' => [
-                                    'type'  => 'input',
-                                    'label' => __('cooling period between orders (days)'),
-                                    'value' => ''
-                                ],
-
-                                'order number format'           => [
-                                    'type'  => 'input',
-                                    'label' => __('order number format'),
-                                    'value' => ''
-                                ],
-                                'last incremental order number' => [
-                                    'type'  => 'input',
-                                    'label' => __('last incremental order number'),
-                                    'value' => ''
-                                ],
-                            ]
-
-                        ],
-
-
-                        [
-                            'title'  => __('Currency'),
-                            'fields' => [
-
-                                'currency_id' => [
-                                    'type'  => 'currencies',
-                                    'label' => __('Currency'),
-                                    'value' => ''
-                                ],
-
-                            ]
-                        ],
-                        */
-
-                        [
-                            'title'  => __('settings '),
-                            'icon'   => 'fa-light fa-cog',
-                            'fields' => [
-                                'currency_id' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Currency'),
-                                    'placeholder' => __('Select a currency'),
-                                    'options'     => GetCurrenciesOptions::run(),
-                                    'value'       => $supplier->currency_id,
-                                    'searchable'  => true,
-                                    'required'    => true,
-                                    'mode'        => 'single'
-                                ],
-
-                                'default_product_country_origin' => [
-                                    'type'        => 'select',
-                                    'label'       => __("Asset's country of origin"),
-                                    'placeholder' => __('Select a country'),
-                                    'value'       => $supplier->code,
-                                    'options'     => GetCountriesOptions::run(),
-                                    'mode'        => 'single'
-                                ],
-                            ]
-                        ]
-
-
-                    ],
+                    'blueprint' => $this->supplierEditSections($supplier),
                     'args' => [
                         'updateRoute' => [
                             'name'      => 'grp.models.supplier.update',

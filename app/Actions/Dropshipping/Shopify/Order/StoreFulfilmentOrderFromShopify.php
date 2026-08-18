@@ -12,7 +12,6 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\SubmitPalletReturn;
-use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
@@ -27,6 +26,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+
 use function Sentry\captureMessage;
 
 class StoreFulfilmentOrderFromShopify extends OrgAction
@@ -91,7 +91,7 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
 
                     $palletStoredItem = $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
 
-                    if(!$palletStoredItem) {
+                    if (!$palletStoredItem) {
                         continue;
                     }
 

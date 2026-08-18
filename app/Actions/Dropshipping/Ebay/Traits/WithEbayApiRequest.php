@@ -13,6 +13,8 @@ use App\Exceptions\Dropshipping\Ebay\EbayApiException;
 use App\Models\Catalogue\Product;
 use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -20,6 +22,8 @@ use Illuminate\Support\Str;
 trait WithEbayApiRequest
 {
     public int $timeOut = 30;
+
+    public const int NEW_CONDITION_ID = 1000;
 
     public function setTimeout(int $timeOut): void
     {
@@ -336,6 +340,61 @@ trait WithEbayApiRequest
         })->values();
     }
 
+    /**
+     * Item conditions eBay accepts for a category, as returned by the Sell Metadata API
+     *
+     * @return array<int, array{conditionId: string, conditionDescription: string}>
+     */
+    public function getItemConditionsForCategory(string $categoryId): array
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+        $cacheKey      = 'ebay_item_conditions_'.$marketplaceId.'_'.$categoryId;
+
+        $cachedConditions = Cache::get($cacheKey);
+        if (is_array($cachedConditions)) {
+            return $cachedConditions;
+        }
+
+        try {
+            $endpoint = "/sell/metadata/v1/marketplace/$marketplaceId/get_item_condition_policies";
+
+            $response = $this->makeEbayRequest('get', $endpoint, [], [
+                'filter' => 'categoryIds:{'.$categoryId.'}'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Item Condition Policies Error: '.$e->getMessage());
+
+            return [];
+        }
+
+        $conditions = Arr::get($response, 'itemConditionPolicies.0.itemConditions');
+
+        if (!is_array($conditions)) {
+            return [];
+        }
+
+        Cache::put($cacheKey, $conditions, now()->addWeek());
+
+        return $conditions;
+    }
+
+    /**
+     * Categories restrict which item conditions they take, and everything uploaded from Aiku is new.
+     * An unreadable policy is treated as accepting it, so a metadata outage does not stop uploads.
+     */
+    public function categoryAcceptsNewCondition(string $categoryId): bool
+    {
+        $conditions = $this->getItemConditionsForCategory($categoryId);
+
+        if (blank($conditions)) {
+            return true;
+        }
+
+        return collect($conditions)->contains(
+            fn ($condition) => (int) Arr::get($condition, 'conditionId') === self::NEW_CONDITION_ID
+        );
+    }
+
     public function getServicesWithCarrierInfo(): array
     {
         $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
@@ -524,6 +583,76 @@ trait WithEbayApiRequest
                 'carrier_name' => 'Otro (Other)',
             ]
         ];
+    }
+
+    /**
+     * @return array{service_code: string, service_name: string, carrier_code: string, carrier_name: string}
+     */
+    public function getDefaultCarrierForMarketplace(?string $marketplaceId): array
+    {
+        $carriers = $this->defaultCarrier();
+
+        return $carriers[$marketplaceId] ?? $carriers['EBAY_GB'];
+    }
+
+    protected function firstFilledValue(array $values, mixed $fallback): mixed
+    {
+        foreach ($values as $value) {
+            if (filled($value)) {
+                return $value;
+            }
+        }
+
+        return $fallback;
+    }
+
+    public function getMissingListingPolicy(): ?string
+    {
+        $requiredListingPolicies = [
+            'postage policy'   => $this->fulfillment_policy_id,
+            'payment policy'   => $this->payment_policy_id,
+            'return policy'    => $this->return_policy_id,
+            'inventory location' => $this->location_key,
+        ];
+
+        foreach ($requiredListingPolicies as $name => $value) {
+            if (blank($value)) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
+    public function getUsableFulfilmentPolicyIds(): Collection
+    {
+        $policies = Arr::get($this->getFulfilmentPolicies(), 'fulfillmentPolicies', []);
+
+        return collect($policies)
+            ->filter(function ($policy) {
+                $coversListingCategory = collect(Arr::get($policy, 'categoryTypes', []))
+                    ->contains(fn ($categoryType) => Arr::get($categoryType, 'name') === 'ALL_EXCLUDING_MOTORS_VEHICLES');
+
+                $hasShippingService = collect(Arr::get($policy, 'shippingOptions', []))
+                    ->flatMap(fn ($shippingOption) => Arr::get($shippingOption, 'shippingServices', []))
+                    ->contains(fn ($shippingService) => filled(Arr::get($shippingService, 'shippingServiceCode')));
+
+                return $coversListingCategory && $hasShippingService;
+            })
+            ->map(fn ($policy) => Arr::get($policy, 'fulfillmentPolicyId'))
+            ->filter()
+            ->values();
+    }
+
+    public function getUsableFulfilmentPolicyId(?string $preferredPolicyId = null): ?string
+    {
+        $usablePolicyIds = $this->getUsableFulfilmentPolicyIds();
+
+        if ($preferredPolicyId && $usablePolicyIds->contains($preferredPolicyId)) {
+            return $preferredPolicyId;
+        }
+
+        return $usablePolicyIds->first();
     }
 
     public function getServicesForOptions(): array
@@ -964,6 +1093,10 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
         $currency      = Arr::get($this->getEbayConfig(), 'currency');
 
+        if ($missingListingPolicy = $this->getMissingListingPolicy()) {
+            return ['error' => 'The eBay channel has no '.$missingListingPolicy.', reconnect the channel or run ebay:check before uploading.'];
+        }
+
         $data = [
             "sku"                 => Arr::get($offerData, 'sku'),
             "marketplaceId"       => $marketplaceId,
@@ -1361,7 +1494,10 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
         $currency      = Arr::get($this->getEbayConfig(), 'currency');
 
-        $default = $this->defaultCarrier()[$marketplaceId];
+        $default = $this->getDefaultCarrierForMarketplace($marketplaceId);
+
+        $price           = $this->firstFilledValue([Arr::get($attributes, 'price')], 1);
+        $maxDispatchTime = $this->firstFilledValue([Arr::get($attributes, 'max_dispatch_time')], 1);
 
         $data = [
             "categoryTypes"   => [
@@ -1373,7 +1509,7 @@ trait WithEbayApiRequest
             "name"            => "Shipping-".$this->customerSalesChannel?->slug,
             "handlingTime"    => [
                 "unit"  => "DAY",
-                "value" => Arr::get($attributes, 'max_dispatch_time', 1)
+                "value" => (int) $maxDispatchTime
             ],
             "shippingOptions" => [
                 [
@@ -1382,13 +1518,13 @@ trait WithEbayApiRequest
                     "shippingServices" => [
                         [
                             "buyerResponsibleForShipping" => "false",
-                            "freeShipping"                => "false",
+                            "freeShipping"                => (float) $price === 0.0 ? "true" : "false",
                             "shippingCost"                => [
                                 'currency' => $currency,
-                                'value'    => Arr::get($attributes, 'price', 1)
+                                'value'    => (string) $price
                             ],
-                            "shippingCarrierCode"         => Arr::get($attributes, 'carrier_code', $default['carrier_code']),
-                            "shippingServiceCode"         => Arr::get($attributes, 'service_code', $default['service_code'])
+                            "shippingCarrierCode"         => $this->firstFilledValue([Arr::get($attributes, 'carrier_code')], $default['carrier_code']),
+                            "shippingServiceCode"         => $this->firstFilledValue([Arr::get($attributes, 'service_code')], $default['service_code'])
                         ]
                     ]
                 ]
@@ -1414,10 +1550,15 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
         $currency      = Arr::get($this->getEbayConfig(), 'currency');
 
-        $defaults   = Arr::get($this->settings, 'shipping');
-        $attributes = Arr::get($attributes, 'settings.shipping');
+        $defaults   = Arr::get($this->settings, 'shipping', []);
+        $attributes = Arr::get($attributes, 'settings.shipping', []);
 
-        $price = Arr::get($attributes, 'price', Arr::get($defaults, 'price'));
+        $default = $this->getDefaultCarrierForMarketplace($marketplaceId);
+
+        $price           = $this->firstFilledValue([Arr::get($attributes, 'price'), Arr::get($defaults, 'price')], 0);
+        $maxDispatchTime = $this->firstFilledValue([Arr::get($attributes, 'max_dispatch_time'), Arr::get($defaults, 'max_dispatch_time')], 1);
+        $carrierCode     = $this->firstFilledValue([Arr::get($attributes, 'carrier_code'), Arr::get($defaults, 'carrier_code')], $default['carrier_code']);
+        $serviceCode     = $this->firstFilledValue([Arr::get($attributes, 'service_code'), Arr::get($defaults, 'service_code')], $default['service_code']);
 
         $data = [
             "categoryTypes"   => [
@@ -1430,7 +1571,7 @@ trait WithEbayApiRequest
             "globalShipping"  => false,
             "handlingTime"    => [
                 "unit"  => "DAY",
-                "value" => Arr::get($attributes, 'max_dispatch_time', Arr::get($defaults, 'max_dispatch_time'))
+                "value" => (int) $maxDispatchTime
             ],
             "shippingOptions" => [
                 [
@@ -1439,13 +1580,13 @@ trait WithEbayApiRequest
                     "shippingServices" => [
                         [
                             "buyerResponsibleForShipping" => "false",
-                            "freeShipping"                => $price === 0 ? "true" : "false",
+                            "freeShipping"                => (float) $price === 0.0 ? "true" : "false",
                             "shippingCost"                => [
                                 'currency' => $currency,
-                                'value'    => $price
+                                'value'    => (string) $price
                             ],
-                            "shippingCarrierCode"         => Arr::get($attributes, 'carrier_code', Arr::get($defaults, 'carrier_code')),
-                            "shippingServiceCode"         => Arr::get($attributes, 'service_code', Arr::get($defaults, 'service_code'))
+                            "shippingCarrierCode"         => $carrierCode,
+                            "shippingServiceCode"         => $serviceCode
                         ]
                     ]
                 ]
@@ -1700,12 +1841,11 @@ trait WithEbayApiRequest
     public function getCategorySuggestions($keyword)
     {
         try {
-            $encodedKeyword = urlencode($keyword);
-            $categoryTree   = $this->getCategoryTreeId();
-            $endpoint       = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_category_suggestions";
+            $categoryTree = $this->getCategoryTreeId();
+            $endpoint     = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_category_suggestions";
 
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'q' => $encodedKeyword
+                'q' => $keyword
             ]);
         } catch (Exception $e) {
             Log::error('Get Category Suggestions Error: '.$e->getMessage());

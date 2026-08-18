@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots;
 
+use App\Actions\Traits\WithArchivedDispatchedEmails;
 use App\Models\CRM\Prospect;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProspectHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
+    use WithArchivedDispatchedEmails;
 
     public string $jobQueue = 'low-priority';
 
@@ -37,9 +39,9 @@ class ProspectHydrateDispatchedEmails implements ShouldBeUnique
             ->where('prospect_has_dispatched_emails.prospect_id', $prospectId)
             ->count();
 
-        $prospect->update([
-            'number_dispatched_emails' => $numberEmailsSent
-        ]);
+        $prospect->update(
+            $this->addArchivedDispatchedEmails($prospect, ['number_dispatched_emails' => $numberEmailsSent])
+        );
     }
 
     public string $commandSignature = 'prospect:hydrate-emails-sent {prospectId}';
