@@ -179,33 +179,32 @@ class ShowAgent extends OrgAction
     {
         $previous = Organisation::where('group_id', $agent->group_id)->where('type', OrganisationTypeEnum::AGENT)->where('code', '<', $agent->organisation->code)->orderBy('code', 'desc')->first();
 
-        return $this->getNavigation($previous?->agent, $request->route()->getName());
+        return $this->getNavigation($previous?->agent, $request);
     }
 
     public function getNext(Agent $agent, ActionRequest $request): ?array
     {
         $next = Organisation::where('group_id', $agent->group_id)->where('type', OrganisationTypeEnum::AGENT)->where('code', '>', $agent->organisation->code)->orderBy('code')->first();
 
-        return $this->getNavigation($next?->agent, $request->route()->getName());
+        return $this->getNavigation($next?->agent, $request);
     }
 
-    private function getNavigation(?Agent $agent, string $routeName): ?array
+    private function getNavigation(?Agent $agent, ActionRequest $request): ?array
     {
         if (!$agent) {
             return null;
         }
 
-        return match ($routeName) {
-            'grp.supply-chain.agents.show' => [
-                'label' => $agent->organisation->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'agent' => $agent->slug
-                    ]
-
-                ]
-            ]
-        };
+        return [
+            'label' => $agent->organisation->name,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => array_merge(
+                    $request->route()->originalParameters(),
+                    ['agent' => $agent->slug]
+                ),
+            ],
+        ];
     }
+
 }

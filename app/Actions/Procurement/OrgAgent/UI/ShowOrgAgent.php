@@ -202,14 +202,14 @@ class ShowOrgAgent extends OrgAction
     {
         $previous = $this->siblings($orgAgent)->where('slug', '<', $orgAgent->slug)->orderBy('slug', 'desc')->first();
 
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($previous, $request);
     }
 
     public function getNext(OrgAgent $orgAgent, ActionRequest $request): ?array
     {
         $next = $this->siblings($orgAgent)->where('slug', '>', $orgAgent->slug)->orderBy('slug')->first();
 
-        return $this->getNavigation($next, $request->route()->getName());
+        return $this->getNavigation($next, $request);
     }
 
     private function siblings(OrgAgent $orgAgent): Builder
@@ -217,26 +217,22 @@ class ShowOrgAgent extends OrgAction
         return OrgAgent::where('organisation_id', $orgAgent->organisation_id)->whereHas('agent');
     }
 
-    private function getNavigation(?OrgAgent $orgAgent, string $routeName): ?array
+    private function getNavigation(?OrgAgent $orgAgent, ActionRequest $request): ?array
     {
         if (!$orgAgent) {
             return null;
         }
 
-        return match ($routeName) {
-            'grp.org.procurement.org_agents.show' => [
-                'label' => $orgAgent->agent->organisation->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $orgAgent->organisation->slug,
-                        'orgAgent'     => $orgAgent->slug
-                    ]
-
-                ]
+        return [
+            'label' => $orgAgent->agent->organisation->name,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => array_merge(
+                    $request->route()->originalParameters(),
+                    ['orgAgent' => $orgAgent->slug]
+                ),
             ],
-            default => null,
-        };
+        ];
     }
 
 }

@@ -161,19 +161,19 @@ class ShowSupplier extends OrgAction
 
     public function getPrevious(Supplier $supplier, ActionRequest $request): ?array
     {
-        return $this->getNavigation($this->getSupplierNeighbour($supplier, $request, forward: false), $request->route()->getName());
+        return $this->getNavigation($this->getSupplierNeighbour($supplier, $request, forward: false), $request);
     }
 
     public function getNext(Supplier $supplier, ActionRequest $request): ?array
     {
-        return $this->getNavigation($this->getSupplierNeighbour($supplier, $request, forward: true), $request->route()->getName());
+        return $this->getNavigation($this->getSupplierNeighbour($supplier, $request, forward: true), $request);
     }
 
     private function getSupplierNeighbour(Supplier $supplier, ActionRequest $request, bool $forward): ?Supplier
     {
         $query = Supplier::query()->where('suppliers.group_id', $supplier->group_id);
 
-        if ($request->route()->getName() == 'grp.supply-chain.agents.show.suppliers.show') {
+        if (array_key_exists('agent', $request->route()->originalParameters())) {
             $query->where('suppliers.agent_id', $supplier->agent_id);
         } elseif ($request->input('bucket') == 'free') {
             $query->whereNull('suppliers.agent_id');
@@ -194,33 +194,22 @@ class ShowSupplier extends OrgAction
         );
     }
 
-    private function getNavigation(?Supplier $supplier, string $routeName): ?array
+    private function getNavigation(?Supplier $supplier, ActionRequest $request): ?array
     {
         if (!$supplier) {
             return null;
         }
 
-        return match ($routeName) {
-            'grp.supply-chain.suppliers.show' => [
-                'label' => $supplier->code,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'supplier' => $supplier->slug,
-                    ],
-                ],
+        return [
+            'label' => $supplier->code,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => array_merge(
+                    $request->route()->originalParameters(),
+                    ['supplier' => $supplier->slug]
+                ),
             ],
-            'grp.supply-chain.agents.show.suppliers.show' => [
-                'label' => $supplier->code,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'agent'    => $supplier->agent->slug,
-                        'supplier' => $supplier->slug,
-                    ],
-                ],
-            ],
-            default => null,
-        };
+        ];
     }
+
 }

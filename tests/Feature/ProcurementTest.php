@@ -2597,3 +2597,33 @@ describe('supplier deposits', function () {
             ->and(\App\Models\GoodsIn\StockDeliveryDepositApplication::withTrashed()->where('aspo_deposit_id', $deposit->id)->count())->toBe(2);
     });
 });
+
+describe('org supplier sub pages navigation', function () {
+    test('previous and next arrows keep the current sub page', function () {
+        $first  = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['code' => 'navaaa', 'name' => 'Nav AAA']));
+        $second = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['code' => 'navzzz', 'name' => 'Nav ZZZ']));
+
+        $firstOrgSupplier  = $first->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+        $secondOrgSupplier = $second->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+        $routeNames = [
+            'grp.org.procurement.org_suppliers.show.supplier_products.index',
+            'grp.org.procurement.org_suppliers.show.purchase_orders.index',
+            'grp.org.procurement.org_suppliers.show.stock_deliveries.index',
+        ];
+
+        foreach ($routeNames as $routeName) {
+            $this->get(route($routeName, [$this->organisation->slug, $firstOrgSupplier->slug]))
+                ->assertInertia(fn (AssertableInertia $page) => $page
+                    ->where('navigation.next.route.name', $routeName)
+                    ->where('navigation.next.route.parameters.orgSupplier', $secondOrgSupplier->slug)
+                    ->etc());
+
+            $this->get(route($routeName, [$this->organisation->slug, $secondOrgSupplier->slug]))
+                ->assertInertia(fn (AssertableInertia $page) => $page
+                    ->where('navigation.previous.route.name', $routeName)
+                    ->where('navigation.previous.route.parameters.orgSupplier', $firstOrgSupplier->slug)
+                    ->etc());
+        }
+    });
+});

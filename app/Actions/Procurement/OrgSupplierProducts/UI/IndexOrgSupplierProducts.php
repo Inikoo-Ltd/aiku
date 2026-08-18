@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 
+use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
@@ -38,6 +39,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgSupplierProducts extends OrgAction
 {
+    use WithParentSiblingsNavigation;
     use WithProcurementAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithOrgSupplierSubNavigation;
@@ -261,6 +263,7 @@ class IndexOrgSupplierProducts extends OrgAction
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Supplier Products'),
+                'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
