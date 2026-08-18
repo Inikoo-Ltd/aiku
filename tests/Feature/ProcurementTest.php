@@ -42,6 +42,7 @@ use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
+use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateOrgSupplierProducts;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
@@ -82,6 +83,8 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
@@ -815,6 +818,19 @@ test('update org supplier product', function () {
     ]);
 
     expect($orgSupplierProduct->is_available)->toBeFalse();
+
+    OrgSupplierHydrateOrgSupplierProducts::run($orgSupplier);
+    $activeCount = $orgSupplier->stats->refresh()->number_org_supplier_products_state_active;
+    $discontinuingCount = $orgSupplier->stats->number_org_supplier_products_state_discontinuing;
+
+    UpdateOrgSupplierProduct::make()->action($orgSupplierProduct, [
+        'state' => OrgSupplierProductStateEnum::DISCONTINUING,
+    ]);
+
+    $orgSupplier->stats->refresh();
+
+    expect($orgSupplier->stats->number_org_supplier_products_state_active)->toBe($activeCount - 1)
+        ->and($orgSupplier->stats->number_org_supplier_products_state_discontinuing)->toBe($discontinuingCount + 1);
 });
 
 test('create supplier delivery items by selected purchase order', function (StockDelivery $stockDelivery, $items) {
@@ -1006,8 +1022,14 @@ test('procurement navigation positions the shipping list and separates agent sup
 });
 
 test('UI show org supplier', function () {
-    // dd($this->orgSupplier);
     $this->withoutExceptionHandling();
+    $this->orgSupplier->stats()->update([
+        'number_org_supplier_products'         => 98,
+        'number_current_org_supplier_products' => 86,
+        'number_purchase_orders'               => 232,
+        'number_stock_deliveries'               => 237,
+    ]);
+
     $response = get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $this->orgSupplier->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -1020,6 +1042,11 @@ test('UI show org supplier', function () {
                     ->where('title', $this->orgSupplier->supplier->name)
                     ->etc()
             )
+            ->where('pageHead.subNavigation.1.number', 86)
+            ->where('showcase.stats.0.count', 86)
+            ->where('showcase.stats.0.route.name', 'grp.org.procurement.org_suppliers.show.supplier_products.index')
+            ->where('showcase.stats.1.route.name', 'grp.org.procurement.org_suppliers.show.purchase_orders.index')
+            ->where('showcase.stats.2.route.name', 'grp.org.procurement.org_suppliers.show.stock_deliveries.index')
             ->has('tabs');
     });
 });
@@ -1048,6 +1075,9 @@ test('UI show org agents', function () {
                     ->where('title', $this->orgAgent->agent->organisation->name)
                     ->etc()
             )
+            ->has('pageHead.actions', 1)
+            ->where('pageHead.actions.0.style', 'edit')
+            ->where('pageHead.actions.0.route.name', 'grp.org.procurement.org_agents.show.edit')
             ->has('tabs');
     });
 });
@@ -1064,7 +1094,64 @@ test('UI index org supplier products', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('title', 'Supplier Products')
                     ->etc()
-            );
+            )
+            ->where('tabs.current', 'index')
+            ->has('index');
+    });
+});
+
+test('UI index supplier products in org supplier shows live state counts and history tab', function () {
+    $this->withoutExceptionHandling();
+
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition(),
+    );
+    $orgSupplier = $supplier->orgSuppliers()
+        ->where('organisation_id', $this->organisation->id)
+        ->firstOrFail();
+
+    foreach (SupplierProductStateEnum::cases() as $state) {
+        $supplierProductData = SupplierProduct::factory()->definition();
+        data_set($supplierProductData, 'stock_id', $this->stock->id);
+        data_set($supplierProductData, 'state', $state);
+
+        StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+    }
+
+    $orgSupplier->stats()->update([
+        'number_org_supplier_products'                     => 0,
+        'number_org_supplier_products_state_active'        => 0,
+        'number_org_supplier_products_state_discontinuing' => 0,
+        'number_org_supplier_products_state_discontinued'  => 0,
+    ]);
+
+    $route = route('grp.org.procurement.org_suppliers.show.supplier_products.index', [
+        $this->organisation->slug,
+        $orgSupplier->slug,
+    ]);
+
+    $this->get($route)->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/OrgSupplierProducts')
+            ->where('tabs.current', 'index')
+            ->where('tabs.navigation', fn ($navigation) => $navigation->keys()->all() === ['index', 'history'])
+            ->where('queryBuilderProps.index.elementGroups.state.elements', [
+                'active'        => [__('Active'), 1],
+                'discontinuing' => [__('Discontinuing'), 1],
+                'discontinued'  => [__('Discontinued'), 1],
+            ])
+            ->has('index.data', 1)
+            ->etc();
+    });
+
+    $this->get($route.'?tab=history')->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/OrgSupplierProducts')
+            ->where('tabs.current', 'history')
+            ->has('history')
+            ->has('queryBuilderProps.history')
+            ->etc();
     });
 });
 
@@ -1087,6 +1174,59 @@ test('UI show org supplier product', function () {
 
     $showcase = GetOrgSupplierProductShowcase::run($this->orgSupplierProduct);
     expect($showcase['composition'])->toBeArray();
+});
+
+test('UI purchase orders in org supplier product show product quantity and amount', function () {
+    $purchaseOrder = StorePurchaseOrder::make()->action(
+        $this->orgSupplier,
+        array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'Product table test PO']),
+        strict: false,
+    );
+    $purchaseOrderTransaction = StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $this->orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $this->orgStocks[0],
+        [
+            'quantity_ordered' => 17.5,
+            'net_amount'       => 246.75,
+        ],
+    );
+    $secondPurchaseOrderTransaction = StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $this->orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $this->orgStocks[0],
+        [
+            'quantity_ordered' => 2.5,
+            'net_amount'       => 53.25,
+        ],
+    );
+
+    $this->get(route('grp.org.procurement.org_supplier_products.show', [
+        $this->organisation->slug,
+        $this->orgSupplierProduct->slug,
+        'tab' => 'purchase_orders',
+    ]))->assertInertia(function (AssertableInertia $page) use ($purchaseOrder, $purchaseOrderTransaction, $secondPurchaseOrderTransaction) {
+        $page
+            ->component('Procurement/OrgSupplierProduct')
+            ->where('queryBuilderProps.purchase_orders.columns', function ($columns) {
+                $columnsByKey = $columns->keyBy('key');
+
+                return $columnsByKey->has('reference')
+                    && $columnsByKey->has('quantity_ordered')
+                    && $columnsByKey->has('org_net_amount')
+                    && ! $columnsByKey->has('number_current_purchase_order_transactions')
+                    && ! $columnsByKey->has('org_total_cost');
+            })
+            ->where('purchase_orders.data', function ($rows) use ($purchaseOrder, $purchaseOrderTransaction, $secondPurchaseOrderTransaction) {
+                $row = $rows->firstWhere('slug', $purchaseOrder->slug);
+
+                return $row
+                    && $row['reference'] === $purchaseOrder->reference
+                    && (float) $row['quantity_ordered'] === (float) $purchaseOrderTransaction->quantity_ordered + (float) $secondPurchaseOrderTransaction->quantity_ordered
+                    && (float) $row['org_net_amount'] === (float) $purchaseOrderTransaction->org_net_amount + (float) $secondPurchaseOrderTransaction->org_net_amount;
+            })
+            ->etc();
+    });
 });
 
 test('UI edit org supplier product', function () {

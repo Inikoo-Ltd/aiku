@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -17,6 +18,8 @@ use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
+use App\Enums\UI\Procurement\OrgSupplierProductsTabsEnum;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgSupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\OrgAgent;
@@ -44,13 +47,41 @@ class IndexOrgSupplierProducts extends OrgAction
 
     protected function getElementGroups(Organisation|OrgAgent|OrgSupplier $parent): array
     {
+        $query = OrgSupplierProduct::query()
+            ->join('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id');
+
+        $organisationAgent = $this->getParentOrganisationAgent($parent);
+
+        if ($parent instanceof OrgAgent) {
+            $query->where('org_supplier_products.org_agent_id', $parent->id);
+        } elseif ($parent instanceof OrgSupplier) {
+            $query->where('org_supplier_products.org_supplier_id', $parent->id);
+        } elseif ($organisationAgent) {
+            $query->whereIn('org_supplier_products.org_agent_id', function ($query) use ($organisationAgent) {
+                $query->select('id')
+                    ->from('org_agents')
+                    ->where('org_agents.agent_id', $organisationAgent->id);
+            });
+        } else {
+            $query->where('org_supplier_products.organisation_id', $parent->id);
+        }
+
+        $counts = $query
+            ->selectRaw('supplier_products.state, count(*) as total')
+            ->groupBy('supplier_products.state')
+            ->pluck('total', 'supplier_products.state');
+
+        $stateCounts = collect(OrgSupplierProductStateEnum::cases())
+            ->mapWithKeys(fn (OrgSupplierProductStateEnum $state) => [$state->value => $counts->get($state->value, 0)])
+            ->all();
+
         return [
             'state' => [
                 'label'    => __('State'),
                 'default'  => OrgSupplierProductStateEnum::ACTIVE->value,
                 'elements' => array_merge_recursive(
                     OrgSupplierProductStateEnum::labels(),
-                    OrgSupplierProductStateEnum::count($parent),
+                    $stateCounts,
                 ),
                 'engine'   => function ($query, $elements) {
                     $query->whereIn('supplier_products.state', $elements);
@@ -166,25 +197,25 @@ class IndexOrgSupplierProducts extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab([OrgSupplierProductsTabsEnum::INDEX->value]);
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, OrgSupplierProductsTabsEnum::INDEX->value);
     }
 
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $orgAgent;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab([OrgSupplierProductsTabsEnum::INDEX->value]);
 
-        return $this->handle($orgAgent);
+        return $this->handle($orgAgent, OrgSupplierProductsTabsEnum::INDEX->value);
     }
 
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $orgSupplier;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(OrgSupplierProductsTabsEnum::values());
 
-        return $this->handle($orgSupplier);
+        return $this->handle($orgSupplier, OrgSupplierProductsTabsEnum::INDEX->value);
     }
 
     public function jsonResponse(LengthAwarePaginator $orgSupplierProducts): AnonymousResourceCollection
@@ -202,6 +233,7 @@ class IndexOrgSupplierProducts extends OrgAction
         $subNavigation = null;
         $afterTitle    = null;
         $iconRight     = null;
+        $tabsNavigation = OrgSupplierProductsTabsEnum::navigationOnly([OrgSupplierProductsTabsEnum::INDEX->value]);
 
         if ($this->parent instanceof OrgAgent) {
             $title         = $this->parent->agent->organisation->name;
@@ -221,6 +253,7 @@ class IndexOrgSupplierProducts extends OrgAction
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
             $afterTitle    = ['label' => __('Supplier Products')];
             $iconRight     = ['icon' => 'fal fa-box-usd'];
+            $tabsNavigation = OrgSupplierProductsTabsEnum::navigation();
         }
 
         return Inertia::render(
@@ -235,9 +268,21 @@ class IndexOrgSupplierProducts extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                 ],
-                'data'        => OrgSupplierProductsResource::collection($orgSupplierProducts),
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => $tabsNavigation,
+                ],
+                OrgSupplierProductsTabsEnum::INDEX->value => $this->tab == OrgSupplierProductsTabsEnum::INDEX->value
+                    ? fn () => OrgSupplierProductsResource::collection($orgSupplierProducts)
+                    : Inertia::optional(fn () => OrgSupplierProductsResource::collection($orgSupplierProducts)),
+                OrgSupplierProductsTabsEnum::HISTORY->value => $this->parent instanceof OrgSupplier && $this->tab == OrgSupplierProductsTabsEnum::HISTORY->value
+                    ? fn () => HistoryResource::collection(IndexHistory::run($this->parent, OrgSupplierProductsTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => $this->parent instanceof OrgSupplier
+                        ? HistoryResource::collection(IndexHistory::run($this->parent, OrgSupplierProductsTabsEnum::HISTORY->value))
+                        : null),
             ],
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure($this->parent, OrgSupplierProductsTabsEnum::INDEX->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: OrgSupplierProductsTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

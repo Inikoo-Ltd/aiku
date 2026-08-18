@@ -40,7 +40,7 @@ trait WithOrgSupplierSubNavigation
                     'icon'    => ['fal', 'fa-box-usd'],
                     'tooltip' => __('Products'),
                 ],
-                'number'   => $parent->stats->number_org_supplier_products,
+                'number'   => $parent->stats->number_current_org_supplier_products,
             ],
             [
                 'label'    => __('Purchase Orders'),

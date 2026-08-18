@@ -531,7 +531,16 @@ test('UI supply chain dashboard', function () {
             ->component('SupplyChain/SupplyChainDashboard')
             ->has('title')
             ->has('pageHead')
-            ->has('flatTreeMaps')
+            ->has('dashboardCards', 6)
+            ->where('dashboardCards.0.route.name', 'grp.supply-chain.agents.index')
+            ->where('dashboardCards.1.route.name', 'grp.supply-chain.suppliers.index')
+            ->where('dashboardCards.1.route.parameters._query.elements[type]', 'free')
+            ->where('dashboardCards.1.metrics.0.route.parameters._query.elements[type]', 'through_agent')
+            ->where('dashboardCards.2.route.name', 'grp.supply-chain.supplier_products.index')
+            ->where('dashboardCards.3.route.name', 'grp.supply-chain.agent_supplier_purchase_orders.index')
+            ->where('dashboardCards.4.route.name', 'grp.supply-chain.control.dashboard')
+            ->where('dashboardCards.5.route.name', 'grp.supply-chain.shopping_list.board')
+            ->missing('search_demand')
             ->has('breadcrumbs', 2);
     });
 });
@@ -784,7 +793,7 @@ test('UI Index agents', function () {
 });
 
 test('UI show agent', function () {
-    $agent = Agent::first();
+    $agent = Agent::first() ?? StoreAgent::make()->action($this->group, Agent::factory()->definition());
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.agents.show', [$agent->slug]));
     $response->assertInertia(function (AssertableInertia $page) use ($agent) {
@@ -798,7 +807,28 @@ test('UI show agent', function () {
                     ->where('title', $agent->organisation->name)
                     ->etc()
             )
+            ->has('pageHead.actions', 1)
+            ->where('pageHead.actions.0.style', 'edit')
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.agents.edit')
+            ->where('pageHead.actions.0.route.parameters.0', $agent->slug)
             ->has('tabs');
+    });
+});
+
+test('UI edit agent', function () {
+    $agent = Agent::first() ?? StoreAgent::make()->action($this->group, Agent::factory()->definition());
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agents.edit', [$agent->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($agent) {
+        $page
+            ->component('EditModel')
+            ->where('pageHead.actions.0.style', 'exitEdit')
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.agents.show')
+            ->where('formData.args.updateRoute.name', 'grp.models.agent.update')
+            ->where('formData.args.updateRoute.parameters', $agent->id)
+            ->has('formData.blueprint.0.fields.code')
+            ->has('formData.blueprint.1.fields.currency_id');
     });
 });
 
