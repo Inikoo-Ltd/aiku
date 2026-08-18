@@ -40,7 +40,7 @@ class UpdateShippingZone extends OrgAction
             $modelData['shippers_price'] = [];
         }
 
-        return $this->update($shippingZone, $modelData, ['price']);
+        return $this->update($shippingZone, $modelData);
     }
 
     public function rules(): array
