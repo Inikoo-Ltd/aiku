@@ -14,10 +14,12 @@ import {
     faPaperclip,
     faEnvelope,
     faFileLines,
+    faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
 import { faCheck, faCheckDouble } from "@far"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { useLayoutStore } from "@/Stores/layout"
 import Image from "@common/Components/Image.vue"
@@ -41,6 +43,14 @@ const baseUrl = layout?.appUrl ?? ""
 
 const messages = ref<LocalChatMessage[]>([])
 const newMessage = ref("")
+const messageInput = ref<HTMLTextAreaElement | null>(null)
+
+const autoResize = () => {
+    const el = messageInput.value
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = Math.min(el.scrollHeight, 96) + "px"
+}
 const isLoading = ref(false)
 const isSending = ref(false)
 const unreadCount = ref(0)
@@ -71,6 +81,33 @@ const isClosed = computed(() => props.chat.status === "closed")
 const isWaiting = computed(() => props.chat.status === "waiting")
 const canSend = computed(() => !isClosed.value && !isWaiting.value)
 const hasAttachment = computed(() => !!selectedFile.value)
+
+const onChatEnded = () => {
+    isOptionMenuOpen.value = false
+    props.chat.status = "closed"
+}
+
+const isAssigningSelf = ref(false)
+const assignSelf = async () => {
+    if (!props.chat.organisationSlug || !props.chat.ulid || isAssigningSelf.value) return
+    isAssigningSelf.value = true
+    try {
+        await axios.post(
+            route("grp.org.chat.agents.assign.self", [props.chat.organisationSlug, props.chat.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.chat.status = "active"
+    } catch (e: any) {
+        notify({
+            title: trans("Error"),
+            text: e?.response?.data?.message ?? trans("Failed to assign chat"),
+            type: "error",
+        })
+    } finally {
+        isAssigningSelf.value = false
+    }
+}
 
 const jiraSession = computed(() => ({
     ulid: props.chat.ulid,
@@ -231,6 +268,7 @@ const sendMessage = async () => {
     })
 
     newMessage.value = ""
+    nextTick(autoResize)
     isSending.value = true
     clearAttachment(false)
     scrollBottom()
@@ -477,12 +515,21 @@ onUnmounted(() => {
                 {{ trans('This chat has been closed') }}
             </div>
 
-            <div v-else-if="isWaiting"
-                class="flex items-center justify-between gap-1 px-2 py-1.5 border-t border-gray-200 shrink-0">
-                <span class="text-[10px] text-gray-500 truncate">{{ trans('Assign to reply') }}</span>
-                <button class="text-[10px] font-medium hover:underline shrink-0"
-                    :style="{ color: 'var(--theme-color-4)' }" @click="openFullConversation">
-                    {{ trans('Open in inbox') }}
+            <div v-else-if="isWaiting" class="px-2 py-1.5 border-t border-gray-200 shrink-0 space-y-1.5">
+                <div class="flex items-center justify-between gap-1">
+                    <span class="text-[10px] text-gray-500 truncate">{{ trans('Assign this chat to reply') }}</span>
+                    <button class="text-[10px] font-medium hover:underline shrink-0"
+                        :style="{ color: 'var(--theme-color-4)' }" @click="openFullConversation">
+                        {{ trans('Open in inbox') }}
+                    </button>
+                </div>
+                <button type="button"
+                    class="w-full flex items-center justify-center gap-1.5 h-7 rounded-md text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                    :style="{ backgroundColor: 'var(--theme-color-4)' }"
+                    :disabled="isAssigningSelf" @click="assignSelf">
+                    <LoadingIcon v-if="isAssigningSelf" class="w-3 h-3" />
+                    <FontAwesomeIcon v-else :icon="faUser" class="text-[9px]" />
+                    {{ trans('Assign to me') }}
                 </button>
             </div>
 
@@ -518,9 +565,10 @@ onUnmounted(() => {
                     <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden"
                         @change="handleDocSelect" />
 
-                    <textarea v-model="newMessage" rows="1" :placeholder="trans('Type message...')"
-                        class="flex-1 min-w-0 resize-none text-[11px] leading-tight px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:border-gray-400 focus:ring-0"
-                        @input="handleTyping" @keydown.enter.exact.prevent="sendMessage" />
+                    <textarea ref="messageInput" v-model="newMessage" rows="1" :placeholder="trans('Type message...')"
+                        style="max-height: 96px;"
+                        class="flex-1 min-w-0 resize-none overflow-y-auto text-[11px] leading-tight px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:border-gray-400 focus:ring-0"
+                        @input="handleTyping(); autoResize()" @keydown.enter.exact.prevent="sendMessage" />
 
                     <div ref="optionMenuRef" class="relative shrink-0">
                         <button type="button"
@@ -565,6 +613,29 @@ onUnmounted(() => {
                                 <FontAwesomeIcon :icon="faJira" class="text-[9px] text-gray-400" />
                                 {{ trans('Create Jira ticket') }}
                             </button>
+
+                            <div class="my-1 border-t border-gray-100"></div>
+
+                            <ModalConfirmationDelete
+                                :routeDelete="{
+                                    name: 'grp.org.chat.agents.sessions.close',
+                                    parameters: [chat.organisationSlug, chat.ulid],
+                                    method: 'patch',
+                                }"
+                                :title="trans('Are you sure you want to end this chat?')"
+                                :description="trans('This will close the chat session. The conversation history will be preserved.')"
+                                :noLabel="trans('End chat')"
+                                :noIcon="faTimesCircle"
+                                @success="onChatEnded">
+                                <template #default="{ changeModel }">
+                                    <button type="button"
+                                        class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-red-600 hover:bg-red-50"
+                                        @click="changeModel">
+                                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[9px]" />
+                                        {{ trans('End chat') }}
+                                    </button>
+                                </template>
+                            </ModalConfirmationDelete>
                         </div>
                     </div>
 

@@ -13,14 +13,14 @@ import { useLayoutStore } from "@/Stores/layout"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faMessage } from '@fortawesome/free-solid-svg-icons'
-import { faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip } from '@fal'
+import { faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip, faStoreAlt } from '@fal'
 import Image from '@common/Components/Image.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import MiniChatWindow from '@/Components/Chat/MiniChatWindow.vue'
 import { playNotificationSoundFile, buildStorageUrl, fetchUnreadCount, totalUnread } from "@/Composables/useNotificationSound"
 import { useMiniChats } from "@/Composables/useMiniChats"
 
-library.add(faMessage, faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip)
+library.add(faMessage, faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip, faStoreAlt)
 
 interface ChatSessionItem {
     ulid: string
@@ -58,6 +58,7 @@ const searchQuery = ref('')
 const showSearch = ref(true)
 const currentPage = ref(1)
 const hasMore = ref(false)
+const tabUnread = ref<Record<string, number>>({ active: 0, waiting: 0 })
 
 const currentOrganisation = computed(() =>
     layout?.organisations?.data?.find((organisation: any) => organisation.slug === layout?.currentParams?.organisation) ?? null
@@ -94,6 +95,29 @@ const fetchSessions = async () => {
     }
 }
 
+const fetchTabCounts = async () => {
+    if (!myAgentId) return
+    await Promise.all(
+        TABS.map(async (tab) => {
+            try {
+                const { data } = await axios.get(`${baseUrl}/app/api/chats/sessions`, {
+                    params: {
+                        statuses: tab.statuses,
+                        assigned_to_me: myAgentId,
+                        page: 1,
+                        ...(currentOrganisation.value?.id ? { organisation_id: currentOrganisation.value.id } : {}),
+                        ...(currentShopId.value ? { shop_id: currentShopId.value } : {}),
+                    },
+                })
+                const list = data?.data?.sessions ?? []
+                tabUnread.value[tab.key] = list.filter((s: ChatSessionItem) => (s.unread_count ?? 0) > 0).length
+            } catch {
+                // ignore per-tab count failures
+            }
+        })
+    )
+}
+
 const loadMore = async () => {
     if (isLoadingMore.value || !hasMore.value) return
     isLoadingMore.value = true
@@ -119,7 +143,7 @@ const onListScroll = (event: Event) => {
 const togglePopover = async () => {
     showPopover.value = !showPopover.value
     if (showPopover.value) {
-        await fetchSessions()
+        await Promise.all([fetchSessions(), fetchTabCounts()])
     }
 }
 
@@ -217,6 +241,7 @@ const handleChatListEvent = async (e: any) => {
     // message: just refresh the counts, no sound.
     if (!msg) {
         await refreshUnread()
+        await fetchTabCounts()
         if (showPopover.value) await fetchSessions()
         return
     }
@@ -229,6 +254,7 @@ const handleChatListEvent = async (e: any) => {
 
     playNotificationSoundFile(soundUrl)
     await refreshUnread()
+    await fetchTabCounts()
     if (showPopover.value) await fetchSessions()
 }
 
@@ -249,13 +275,17 @@ onMounted(() => {
     if (!myAgentId) return
 
     refreshUnread()
+    fetchTabCounts()
 
     waitEchoReady(subscribeChannels)
 
     // Safety net: keep the badge fresh even if a broadcast is missed
     // or the agent handles shops org-wide (no per-shop channel).
     pollTimer = setInterval(() => {
-        if (!showPopover.value) refreshUnread()
+        if (!showPopover.value) {
+            refreshUnread()
+            fetchTabCounts()
+        }
     }, 30000)
 })
 
@@ -334,7 +364,8 @@ onUnmounted(() => {
 
             <!-- Tabs -->
             <div class="flex border-b border-gray-200 text-sm shrink-0">
-                <button v-for="tab in TABS" :key="tab.key" class="flex-1 py-2 border-b-2 -mb-px transition-colors"
+                <button v-for="tab in TABS" :key="tab.key"
+                    class="flex-1 py-2 border-b-2 -mb-px transition-colors flex items-center justify-center gap-1.5"
                     :class="activeTab === tab.key
                         ? 'font-semibold'
                         : 'border-transparent text-gray-500 hover:text-gray-700'"
@@ -343,6 +374,10 @@ onUnmounted(() => {
                         : {}"
                     @click="activeTab = tab.key">
                     {{ trans(tab.label) }}
+                    <span v-if="tabUnread[tab.key]"
+                        class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none">
+                        {{ tabUnread[tab.key] > 99 ? '99+' : tabUnread[tab.key] }}
+                    </span>
                 </button>
             </div>
 
@@ -369,7 +404,10 @@ onUnmounted(() => {
                                     class="w-full h-full object-cover" />
                                 <FontAwesomeIcon v-else :icon="faUser" class="text-base" />
                             </div>
-                           
+                            <span v-if="item.unread_count"
+                                class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none ring-2 ring-white">
+                                {{ item.unread_count > 99 ? '99+' : item.unread_count }}
+                            </span>
                         </div>
 
                         <div class="flex-1 min-w-0">
@@ -381,6 +419,11 @@ onUnmounted(() => {
                                 <span class="text-[11px] text-gray-400 shrink-0">
                                     {{ formatDate(item.last_message?.created_at) }}
                                 </span>
+                            </div>
+
+                            <div v-if="item.shop?.name" class="flex items-center gap-1 text-[11px] text-gray-400 truncate">
+                                <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
+                                <span class="truncate">{{ item.shop.name }}</span>
                             </div>
 
                             <div class="flex items-center gap-1 text-xs"
