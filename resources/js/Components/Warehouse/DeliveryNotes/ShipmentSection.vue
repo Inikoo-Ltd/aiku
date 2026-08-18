@@ -244,6 +244,7 @@ const onSubmitShipment = () => {
 					isModalShipment.value = false
 					isModalErrorShipment.value = false // Close the error modal
 					formTrackingNumber.reset()
+					preferredTrackingNumber.value = ""
 				},
 				onError: (errors) => {
 					// TODO: Make condition if the error related to delivery address then set to true
@@ -441,11 +442,15 @@ const confirmUnlockShipper = (section: string) => {
 	})
 }
 
+// Own field so typing here does not mirror into the other-shippers tracking input
+const preferredTrackingNumber = ref("")
+
 const onSavePreferredShipment = () => {
-	if (!formTrackingNumber.tracking_number) return
+	if (!preferredTrackingNumber.value) return
 
 	set(formTrackingNumber, ["errors", "address"], null)
 	formTrackingNumber.shipping_id = preferredShipper.value
+	formTrackingNumber.tracking_number = preferredTrackingNumber.value
 	onSubmitShipment()
 }
 
@@ -809,7 +814,7 @@ const onClickButtonShipmentPlatform = () => {
 								{{ trans("Tracking number") }}:
 							</span>
 							<PureInput
-								v-model="formTrackingNumber.tracking_number"
+								v-model="preferredTrackingNumber"
 								placeholder="ABC-DE-1234567"
 								@keydown.enter="() => onSavePreferredShipment()" />
 							<p
@@ -836,7 +841,7 @@ const onClickButtonShipmentPlatform = () => {
 									:style="'save'"
 									:loading="isLoadingButton == 'addTrackingNumber'"
 									:label="trans('Save Shipping')"
-									:disabled="!formTrackingNumber.tracking_number"
+									:disabled="!preferredTrackingNumber"
 									full
 									@click="() => onSavePreferredShipment()" />
 							</div>
