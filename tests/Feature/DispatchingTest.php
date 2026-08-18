@@ -3124,6 +3124,7 @@ test('picking from waiting keeps the line at its discounted price', function () 
 
     $transaction = $item->transaction->refresh();
 
+    /** Priced the way CalculateOrderDiscounts prices: the discount taken off the gross. */
     expect((float)$transaction->net_amount)
-        ->toBe(round((float)$transaction->gross_amount * 0.9, 2));
+        ->toBe(round((float)$transaction->gross_amount - round((float)$transaction->gross_amount * 0.1, 2), 2));
 });
