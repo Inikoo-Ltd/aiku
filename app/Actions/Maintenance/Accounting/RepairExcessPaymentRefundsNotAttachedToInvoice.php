@@ -52,11 +52,14 @@ class RepairExcessPaymentRefundsNotAttachedToInvoice
                     continue;
                 }
 
-                $refund         = $refunds->first();
-                $owedToCustomer = round(abs($refund->total_amount) - abs($refund->payment_amount), 2);
+                $owed = fn (Invoice $refund) => round(abs($refund->total_amount) - abs($refund->payment_amount), 2);
+                $paid = round(abs($payment->amount), 2);
 
-                if ($refunds->count() > 1 || round(abs($payment->amount), 2) > $owedToCustomer) {
-                    $skipped[] = [$payment->id, $order->reference, (float) $payment->amount, $refunds->count(), $owedToCustomer];
+                $refund = $refunds->first(fn (Invoice $refund) => abs($owed($refund) - $paid) <= 0.05)
+                    ?? ($refunds->count() === 1 ? $refunds->first() : null);
+
+                if (!$refund || $paid > $owed($refund) + 0.05) {
+                    $skipped[] = [$payment->id, $order->reference, (float) $payment->amount, $refunds->count(), $refunds->sum(fn (Invoice $refund) => $owed($refund))];
                     continue;
                 }
 
