@@ -256,6 +256,8 @@ const isLoadingFetchPlatformProduct = ref(false)
 
 const fetchRoute = async () => {
 	isLoadingFetchPlatformProduct.value = true
+	currentOffset.value = 0
+	hasMore.value = true
 	try {
 		const www = await axios.get(
 			route(props.routes.fetch_products.name, {
@@ -442,6 +444,7 @@ if (props.platform_data?.type === "ebay") {
 			const www = await axios.get(
 				route(props.routes.fetch_products.name, {
 					customerSalesChannel: props.customerSalesChannel?.id,
+					query: querySearchPortfolios.value,
 					offset: currentOffset.value,
 				})
 			)
