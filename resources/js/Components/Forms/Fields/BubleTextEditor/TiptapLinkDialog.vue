@@ -64,6 +64,7 @@ function update() {
         <Button
           label="Save"
           type="save"
+          @click="update"
         />
       </div>
     </form>
