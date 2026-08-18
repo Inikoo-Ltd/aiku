@@ -246,9 +246,11 @@ const sendMessage = async () => {
             formData.append(messageType === "image" ? "image" : "file", file)
         }
 
-        await axios.post(`${baseUrl}/app/api/chats/messages/${props.chat.ulid}/send`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        })
+        await axios.post(
+            route("grp.org.chat.agents.messages.send", [props.chat.organisationSlug, props.chat.ulid]),
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } }
+        )
 
         isEmailNotif.value = false
     } catch (error: any) {
