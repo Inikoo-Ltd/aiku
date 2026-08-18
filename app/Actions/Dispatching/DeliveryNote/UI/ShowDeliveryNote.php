@@ -1065,13 +1065,17 @@ class ShowDeliveryNote extends OrgAction
 
         $allowScanToPack = (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false);
 
+        /*
+         * Open to dropshipping as much as to wholesale: a box is filled the same way whoever it ships
+         * to, and what the two expect in it, an outer or a loose unit, is already told apart by the
+         * barcode that was scanned. $allowAction keeps the panel to whoever holds the note.
+         */
         $scanToPack = null;
         if (
             $allowScanToPack
             && $deliveryNote->state == DeliveryNoteStateEnum::PACKING
             && $isEditable
             && $allowAction
-            && $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING
         ) {
             $scanToPack = [
                 'scan_route' => [
