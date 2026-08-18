@@ -9,7 +9,7 @@ import {Link, router} from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import {Product} from "@/types/product"
 import {library} from "@fortawesome/fontawesome-svg-core"
-import {inject, onMounted, ref, computed} from "vue"
+import {inject, onMounted, ref, computed, watch} from "vue"
 import {trans} from "laravel-vue-i18n"
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -362,33 +362,16 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 
 
 const selectedProducts = defineModel<number[]>('selectedProducts')
-const selectedInvalidProductsCreate = ref<number[]>([]);
 
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
     if (!selectedProducts.value) return
-
-    const changeButtonState = disableCreateNew(item);
 
     if (checked) {
         if (!selectedProducts.value.includes(item.id)) {
             selectedProducts.value.push(item.id)
         }
-
-        if (!selectedInvalidProductsCreate.value?.includes(item.id) && changeButtonState){
-            selectedInvalidProductsCreate.value?.push(item.id)
-        }
     } else {
         selectedProducts.value = selectedProducts.value.filter(id => id != item.id)
-
-        if (changeButtonState){
-            selectedInvalidProductsCreate.value = selectedInvalidProductsCreate.value?.filter(id => id != item.id)
-        }
-    }
-
-    if(selectedInvalidProductsCreate.value.length > 0){
-        emits('hideBulkButton');
-    }else{
-        emits('showBulkButton');
     }
 }
 
@@ -417,6 +400,18 @@ const disableCreateNew = (item) => {
 const disableButtons = (item) => {
     return item.product_state == 'discontinued' || !item.is_for_sale;
 }
+
+const hasSelectedProductToCreate = computed(() =>
+    (props.data?.data ?? []).some(
+        (row) => selectedProducts.value?.includes(row.id) && !disableCreateNew(row)
+    )
+)
+
+watch(
+    hasSelectedProductToCreate,
+    (canCreate) => emits(canCreate ? 'showBulkButton' : 'hideBulkButton'),
+    { immediate: true }
+)
 
 const errorBluk = ref([])
 const _table = ref(null)
