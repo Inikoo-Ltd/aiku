@@ -15,6 +15,7 @@ use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Transfers\Fetch;
+use App\Actions\Transfers\Aurora\FetchAuroraAction;
 use App\Transfers\Aurora\FetchAuroraAdjustment;
 use App\Transfers\Aurora\FetchAuroraAgent;
 use App\Transfers\Aurora\FetchAuroraArtefact;
@@ -297,6 +298,10 @@ class AuroraOrganisationService implements SourceOrganisationService
      */
     public function allowsFetchOnMiss(string $fetchActionClass): bool
     {
+        if (FetchAuroraAction::fetcherForbidden($fetchActionClass)) {
+            return false;
+        }
+
         if ($this->forcedFetch) {
             return true;
         }
