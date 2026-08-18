@@ -1,22 +1,28 @@
 <?php
 
+use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use App\Stubs\Migrations\HasSoftDeletes;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
+    use HasGroupOrganisationRelationship;
     use HasSoftDeletes;
 
     public function up(): void
     {
         Schema::create('meta_message_templates', function (Blueprint $table) {
             $table->increments('id');
+            $this->groupOrgRelationship($table);
+            $table->unsignedSmallInteger('shop_id')->nullable()->index();
+            $table->foreign('shop_id')->references('id')->on('shops')->onUpdate('cascade');
 
             $table->unsignedSmallInteger('meta_channel_id')->index();
             $table->foreign('meta_channel_id')->references('id')->on('meta_channels')->onUpdate('cascade')->onDelete('cascade');
 
-            $table->string('template_id')->index();
+            // TODO: Make sure is unique per template_id or need to combine with meta_channel_id and shop_id
+            $table->string('template_id')->unique();
             $table->string('name');
             $table->string('parameter_format')->nullable();
             $table->string('language')->nullable();

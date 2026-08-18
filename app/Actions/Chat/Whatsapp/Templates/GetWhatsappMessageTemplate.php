@@ -19,7 +19,7 @@ class GetWhatsappMessageTemplate
     use AsAction;
 
     /**
-     * @return array<string, mixed>
+     * @return array<int, array<string, mixed>>
      */
     public function handle(Shop $shop): array
     {
@@ -39,13 +39,24 @@ class GetWhatsappMessageTemplate
             $wabaId
         );
 
-        $response = Http::withToken($accessToken)->get($url);
+        $templates = [];
+        while ($url) {
+            $response = Http::withToken($accessToken)->get($url);
 
-        $data = $response->json() ?? [];
+            if ($response->failed()) {
+                Log::warning('WhatsApp message templates request failed', [
+                    'shop'   => $shop->slug,
+                    'status' => $response->status(),
+                    'body'   => $response->json(),
+                ]);
+                break;
+            }
 
-        Log::info('WhatsApp message templates response', $data);
+            $templates = array_merge($templates, $response->json('data') ?? []);
+            $url       = $response->json('paging.next');
+        }
 
-        return $data;
+        return $templates;
     }
 
     public function getCommandSignature(): string

@@ -56,6 +56,11 @@ class MetaChannel extends Model
         return $this->hasMany(MetaChatEvent::class);
     }
 
+    public function messageTemplates(): HasMany
+    {
+        return $this->hasMany(MetaMessageTemplate::class);
+    }
+
     public function shopAgents(): HasMany
     {
         return $this->hasMany(ShopHasMetaChatAgent::class);

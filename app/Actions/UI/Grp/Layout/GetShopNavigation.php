@@ -598,6 +598,15 @@ class GetShopNavigation
                             ],
                         ],
                     ] : []),
+                    [
+                        "label" => __("Whatsapp Template"),
+                        "icon"  => ["fab", "fa-whatsapp"],
+                        "root"  => "grp.org.shops.show.chat.whatsapp_templates.",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.whatsapp_templates.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
                 ],
             ],
         ];
