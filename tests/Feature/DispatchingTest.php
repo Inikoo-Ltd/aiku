@@ -1614,6 +1614,37 @@ test('lowering a quantity on a packed delivery note unpacks it', function () {
         ->and($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED);
 });
 
+test('releasing a blocked delivery note brings its order back to handling', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $order = $deliveryNote->orders->first();
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED, 'handling_blocked_at' => now()]);
+    $order->update(['state' => OrderStateEnum::HANDLING_BLOCKED]);
+
+    $transaction = $item->transaction;
+    $product     = $transaction->model;
+    $product->orgStocks()->syncWithoutDetaching([$item->org_stock_id => ['quantity' => 10]]);
+    $transaction->update(['quantity_ordered' => 3, 'quantity_bonus' => 0]);
+
+    $syncer = new class () {
+        use \App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
+
+        /** Releasing a blocked note dispatches the handling hydrators, which OrgAction delays. */
+        public int $hydratorsDelay = 0;
+
+        public function sync($deliveryNote, $transaction, $orgStocks): void
+        {
+            $this->syncDeliveryNote($deliveryNote, $transaction, $orgStocks, null);
+        }
+    };
+
+    $syncer->sync($deliveryNote, $transaction->refresh(), $product->fresh()->orgStocks->keyBy('id'));
+
+    /** The warehouse must never be picking a note whose order still reads as held. */
+    expect($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($order->fresh()->state)->toBe(OrderStateEnum::HANDLING);
+});
+
 
 test('over-picked item is trimmed back to required when picking is done', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
