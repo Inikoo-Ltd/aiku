@@ -596,6 +596,39 @@
 </table>
 
 <br>
+@if(!empty($outOfStockTransactions) && count($outOfStockTransactions))
+    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+        <tr class="title">
+            <td colspan="4">{{ __('Ordered but not supplied (out of stock)') }}</td>
+        </tr>
+
+        <tr class="title">
+            <td style="width:14%;text-align:left">{{ __('Code') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+            <td style="width:14%;text-align:right">{{ __('Qty ordered') }}</td>
+        </tr>
+
+        <tbody class="out_of_stock">
+        @foreach($outOfStockTransactions as $transaction)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
+                <td style="text-align:left" colspan="2">
+                    @if(!$pro_mode && $transaction->model && $transaction->model->units > 1)
+                        {{ trimDecimalZeros($transaction->model->units) }}x
+                    @endif
+                    {{ $transaction->historicAsset?->name }}
+                </td>
+                <td style="text-align:right">{{ trimDecimalZeros($transaction->transaction?->quantity_ordered ?? 0) }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+    <div style="font-size: 8pt; color: #777; margin-top: 2mm;">
+        {{ __('These items were out of stock, have not been supplied and are not charged on this invoice.') }}
+    </div>
+    <br>
+@endif
+
 @if (!empty($refunds))
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <tr class="title">

@@ -496,6 +496,7 @@ class EditShop extends OrgAction
                                     ['label' => __('CPNP'), 'key' => 'cpnp'],
                                     ['label' => __('Group by Tariff Code'), 'key' => 'group_by_tariff_code'],
                                     ['label' => __('Show Dispatch Totals (SKO & Units)'), 'key' => 'show_dispatch_totals'],
+                                    ['label' => __('Out of stock items in a separate block'), 'key' => 'separate_out_of_stock'],
                                 ];
 
                                 return array_map(fn ($col) => [
