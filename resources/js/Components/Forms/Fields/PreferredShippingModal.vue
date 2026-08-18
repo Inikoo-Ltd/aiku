@@ -55,7 +55,37 @@ const scopes = [
     { value: "b2c" as const, label: trans("B2C — dropshipping & e-commerce shops") },
 ]
 
-const rowsForScope = (scope: "b2b" | "b2c") => rows.filter((row) => row.trade_scope === scope)
+// A rule with no country and no postcode is the scope's catch-all: it loses to any
+// specific rule and to the customer's choice, which is exactly what a default is.
+// The UI surfaces the first such row as the "Default shipper" select.
+const isDefaultRow = (row: PreferredShippingRow) => !row.country_id && !row.postcode
+
+const rowsForScope = (scope: "b2b" | "b2c") => rows.filter((row) => row.trade_scope === scope && !isDefaultRow(row))
+
+const defaultShipperId = (scope: "b2b" | "b2c") =>
+    rows.find((row) => row.trade_scope === scope && isDefaultRow(row))?.shipper_id ?? null
+
+const setDefaultShipper = (scope: "b2b" | "b2c", shipperId: number | null) => {
+    const existing = rows.find((row) => row.trade_scope === scope && isDefaultRow(row))
+    if (!shipperId) {
+        if (existing) rows.splice(rows.indexOf(existing), 1)
+        return
+    }
+    if (existing) {
+        existing.shipper_id = shipperId
+    } else {
+        rows.push({
+            id: null,
+            shipper_id: shipperId,
+            shipper_name: null,
+            country_id: null,
+            country_name: null,
+            postcode: "",
+            important: false,
+            trade_scope: scope,
+        })
+    }
+}
 
 watch(
     rows,
@@ -136,6 +166,39 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                 </span>
             </span>
         </h3>
+        <div class="mb-3 flex items-center gap-2">
+            <span class="text-sm text-gray-500">{{ trans("Default shipper") }}</span>
+            <FontAwesomeIcon
+                :icon="faInfoCircle"
+                class="text-gray-400"
+                fixed-width
+                aria-hidden="true"
+                v-tooltip="trans('Used when no rule below matches and the customer has not chosen a shipper. Leave empty for no default.')"
+            />
+            <Select
+                :modelValue="defaultShipperId(scope.value)"
+                @update:modelValue="(value) => setDefaultShipper(scope.value, value)"
+                filter
+                :options="shipperOptions"
+                optionLabel="label"
+                optionValue="value"
+                :placeholder="trans('No default')"
+                showClear
+                class="w-full md:w-96"
+            >
+                <template #option="{ option }">
+                    <span class="inline-flex items-center gap-2">
+                        <span
+                            v-if="option.is_api"
+                            class="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                        >
+                            API
+                        </span>
+                        {{ option.label.replace(/^API · /, "") }}
+                    </span>
+                </template>
+            </Select>
+        </div>
         <DataTable :value="rowsForScope(scope.value)" class="text-sm" removableSort>
             <Column field="country_name" :header="trans('Country')" style="min-width: 10rem">
                 <template #body="{ data }">
