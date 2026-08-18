@@ -164,20 +164,20 @@ function removeStep(index: number) {
         <Button :icon="faPlus" :label="trans('Add Step')" type="create" size="xs" @click="() => addStepBeforeInfinity()" />
       </div>
 
-      <div class="grid grid-cols-12 gap-2 border-b border-gray-200 px-3 py-2 text-xs font-semibold text-gray-500">
-        <div class="col-span-3">{{ trans('From') }}</div>
-        <div class="col-span-3">{{ trans('To') }}</div>
-        <div class="col-span-4">{{ trans('Price') }}</div>
-        <div class="col-span-2 pr-1 text-right">{{ trans('Action') }}</div>
+      <div class="flex gap-2 border-b border-gray-200 px-3 py-2 text-xs font-semibold text-gray-500">
+        <div class="flex-1">{{ trans('From') }}</div>
+        <div class="flex-1">{{ trans('To') }}</div>
+        <div class="flex-[1.6]">{{ trans('Price') }}</div>
+        <div class="w-10 shrink-0 text-right">{{ trans('Action') }}</div>
       </div>
 
       <div
         v-for="(item, index) in localSteps"
         :key="index"
-        class="grid grid-cols-12 items-center gap-2 px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50/60"
+        class="flex items-stretch gap-2 px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50/60"
       >
         <!-- From -->
-        <div class="col-span-3">
+        <div class="min-w-0 flex-1">
           <InputNumber
             :modelValue="item.from"
             @update:modelValue="val => updateStep(index, 'from', val)"
@@ -188,7 +188,7 @@ function removeStep(index: number) {
         </div>
 
         <!-- To -->
-        <div class="col-span-3 h-full">
+        <div class="min-w-0 flex-1">
           <template v-if="item.to !== 'INF'">
             <InputNumber
               :modelValue="item.to"
@@ -201,17 +201,17 @@ function removeStep(index: number) {
           <div
             v-else
             v-tooltip="trans('No upper limit')"
-            class="flex h-full items-center justify-center gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 py-2 text-gray-500"
+            class="flex h-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 py-2 text-gray-500"
           >
             <FontAwesomeIcon :icon="faInfinity" aria-hidden="true" />
           </div>
         </div>
 
         <!-- Price -->
-        <div class="col-span-4 flex items-center gap-2">
+        <div class="flex min-w-0 flex-[1.6] items-center gap-1.5">
           <div
             v-if="item.price === 'TBC'"
-            class="flex h-full flex-1 items-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2 italic text-gray-500"
+            class="flex h-full min-w-0 flex-1 items-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-2 py-2 text-xs italic text-gray-500"
           >
             {{ trans('To be confirmed') }}
           </div>
@@ -221,12 +221,12 @@ function removeStep(index: number) {
             @update:modelValue="val => updateStep(index, 'price', val)"
             v-bind="currencyInputProps"
             inputClass="w-full"
-            class="flex-1"
+            class="min-w-0 flex-1"
             fluid
           />
 
           <div
-            class="cursor-pointer select-none rounded border px-2 py-1 text-xs font-medium transition-colors"
+            class="shrink-0 cursor-pointer select-none rounded border px-1.5 py-1 text-xs font-medium transition-colors"
             :class="item.price === 'TBC' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-500 hover:text-gray-700'"
             :title="trans('To be confirmed: the price is decided later, it is not free')"
             @click="updateStep(index, 'price', item.price === 'TBC' ? 0 : 'TBC')"
@@ -236,7 +236,7 @@ function removeStep(index: number) {
         </div>
 
         <!-- Action -->
-        <div class="col-span-2 flex items-center justify-end pr-1">
+        <div class="flex w-10 shrink-0 items-center justify-end">
           <div
             v-if="item.to !== 'INF'"
             class="cursor-pointer rounded p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700"
