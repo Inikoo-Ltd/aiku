@@ -10,6 +10,7 @@ namespace App\Actions\Web\Announcement;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Actions\Web\WebsiteHydrateAnnouncements;
 use App\Models\CRM\Customer;
 use App\Models\Web\Announcement;
@@ -26,7 +27,9 @@ class DeleteAnnouncement extends OrgAction
 
     public function handle(Announcement $announcement): void
     {
+        $website = $announcement->website;
         $announcement->delete();
+        BreakWebsiteIrisCache::run($website);
         WebsiteHydrateAnnouncements::dispatch($announcement->website_id)->delay(2);
 
     }
