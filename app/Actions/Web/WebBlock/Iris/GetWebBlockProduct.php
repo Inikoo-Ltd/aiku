@@ -12,14 +12,15 @@ use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
+use App\Actions\Web\WebBlock\Traits\WithProductVariantData;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
-use App\Models\Catalogue\Variant;
 
 class GetWebBlockProduct
 {
     use AsObject;
+    use WithProductVariantData;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
@@ -47,7 +48,7 @@ class GetWebBlockProduct
             ])
             ->get();
 
-        $variant     = $product->is_variant_leader ? Variant::where('leader_id', $product->id)->first() : null;
+        $variant = $this->getProductVariantData($product);
 
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
@@ -55,11 +56,7 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
 
         if ($variant) {
-            $variant = $variant->only(['id', 'data']);
-            $excludedProducts = collect(data_get($variant, 'data.products'))->reject(fn ($product) => isset($product['is_hide']) ? $product['is_hide'] : false);
-
-            data_set($variant, 'data.products', $excludedProducts);
-            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant);
+            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $this->rejectHiddenVariantProducts($variant));
         }
 
         return [

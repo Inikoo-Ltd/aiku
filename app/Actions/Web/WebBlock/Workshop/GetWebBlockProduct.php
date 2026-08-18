@@ -11,9 +11,9 @@ namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
+use App\Actions\Web\WebBlock\Traits\WithProductVariantData;
 use App\Http\Resources\Web\WebBlockProductForWorkshopResource;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Variant;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -21,6 +21,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetWebBlockProduct
 {
     use AsObject;
+    use WithProductVariantData;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
@@ -44,41 +45,8 @@ class GetWebBlockProduct
                 TradeAttachmentScopeEnum::TEST_REPORTS,
             ])
             ->get();
-            
-        $variant            = null;
-        $isNaturalVariant   = false;
-        if ($product->show_siblings_as_option) {
-            $siblings = $product->family->getActiveProducts()->orderBy('code');
 
-            $variant = [
-                'id'    => null,
-                'data'  => [
-                    'groupBy'   => 'Siblings',
-                    'products'  => $siblings->mapWithKeys(fn ($product) => [
-                        $product->id    => [
-                            'Siblings'  => $product->code,
-                            'product'   => [
-                                'id'        =>  $product->id,
-                                'code'      =>  $product->code, 
-                                'name'      =>  $product->name, 
-                                'slug'      =>  $product->slug,
-                                'images'    =>  $product->web_images
-                            ],
-                            'is_leader' => $product->id == $webpage->model_id, // TODO CHANGE ARYA
-                        ]
-                    ]),
-                    'variants'  => [
-                        'label'     => 'Siblings',
-                        'options'   => $siblings->pluck('code')
-                    ]
-                ],
-                'is_natural_variant'   => $isNaturalVariant
-            ];
-        } elseif ($product->is_variant_leader) {
-            $variant            = Variant::where('leader_id', $product->id)->first()?->only(['id', 'data']);
-            $isNaturalVariant   = true;
-            $variant->is_natural_variant = $isNaturalVariant;
-        }
+        $variant = $this->getProductVariantData($product);
 
         $resourceWebBlockProduct = WebBlockProductForWorkshopResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
@@ -88,10 +56,7 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
 
         if ($variant) {
-            $excludedProducts = $isNaturalVariant ? collect(data_get($variant, 'data.products'))->reject(fn ($product) => isset($product['is_hide']) ? $product['is_hide'] : false) : null;
-
-            data_set($variant, 'data.products', $excludedProducts);
-            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant);
+            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $this->rejectHiddenVariantProducts($variant));
         }
 
         return $webBlock;

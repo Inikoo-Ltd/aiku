@@ -41,6 +41,7 @@ interface ProductResource {
   is_favourite?: boolean
   exist_in_portfolios_channel: number[]
   is_exist_in_all_channel: boolean
+  canonical_url?: string | null
 }
 
 interface CustomerFlagRequest {
@@ -69,6 +70,7 @@ const layout = inject("layout", {})
 const injectedWebpageData = inject<any>("webpage_data", null)
 
 const variant = ref<any>(props.fieldValue?.variant ?? null)
+const isNaturalVariant = computed(() => variant.value?.is_natural_variant !== false)
 const selected_product = ref<ProductResource>(props.fieldValue.product)
 const appliedVariantFromUrl = ref(false)
 
@@ -127,15 +129,26 @@ const listProducts = computed(() => {
 })
 
 
+const variantProductsUrl = computed<string | null>(() => {
+  if (!variant.value) return null
+
+  if (!isNaturalVariant.value) {
+    const productId = props.fieldValue?.product?.id
+    if (!productId) return null
+
+    return route("iris.json.product.get-siblings", { product: productId })
+  }
+
+  if (!variant.value.id) return null
+
+  return route("iris.json.products.variant", { variant: variant.value.id })
+})
+
 const fetchVariantProducts = async () => {
-  if (!variant.value?.id) return
+  if (!variantProductsUrl.value) return
 
   try {
-    const response = await axios.get(
-      route("iris.json.products.variant", {
-        variant: variant.value.id,
-      })
-    )
+    const response = await axios.get(variantProductsUrl.value)
     variantProductsData.value = response.data.products ?? []
   } catch (error) {
     console.error("Failed to load variant products", error)
@@ -262,7 +275,33 @@ const toggleBackInStockReminder = (product: ProductResource, isReminderWanted: b
   })
 }
 
+const visitProductPage = (product: ProductResource): boolean => {
+  const canonicalUrl = product?.canonical_url
+
+  if (typeof canonicalUrl !== "string" || !canonicalUrl.trim()) return false
+
+  let target: URL
+
+  try {
+    target = new URL(canonicalUrl.trim(), window.location.origin)
+  } catch (error) {
+    console.error("Invalid product canonical url", canonicalUrl, error)
+
+    return false
+  }
+
+  if (target.origin === window.location.origin) {
+    router.visit(target.pathname + target.search + target.hash)
+  } else {
+    window.location.href = target.href
+  }
+
+  return true
+}
+
 const changeSelectedProduct = (product: ProductResource) => {
+  if (!isNaturalVariant.value && visitProductPage(product)) return
+
   uncachedProductData.value = {}
   selected_product.value = { ...product }
   fetchOrderingData(product.id)
@@ -274,6 +313,7 @@ const changeSelectedProduct = (product: ProductResource) => {
 
 const applyVariantFromUrl = () => {
   if (appliedVariantFromUrl.value) return
+  if (!isNaturalVariant.value) return
 
   const variantCode = new URLSearchParams(window.location.search).get("variant")
   if (!variantCode) return
@@ -357,6 +397,8 @@ onBeforeUnmount(() => {
   removeStructuredDataScript(productStructuredDataScript.value)
 })
 
+
+console.log("RenderEcommerceProductIris.vue props:", props)
 </script>
 
 <template>
