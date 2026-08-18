@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\OrgStock\Hydrators;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
@@ -35,6 +36,10 @@ class OrgStockHydrateCurrentSupplierSkuCost implements ShouldBeUnique
         $orgStock->update([
             'current_supplier_sku_cost' => $skuCost
         ]);
+
+        if ($orgStock->wasChanged('current_supplier_sku_cost')) {
+            MasterAssetHydrateEffectiveCost::dispatchForOrgStock($orgStock);
+        }
     }
 
     public function getSKUCost(OrgStock $orgStock): float|int|null

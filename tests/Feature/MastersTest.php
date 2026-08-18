@@ -10,6 +10,7 @@
 
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\DeleteMasterAsset;
@@ -3037,3 +3038,22 @@ test('store master product from trade units creates even when some master_prices
         ->and((float) data_get($masterAsset->master_prices, 'EUR.value'))->toBe(10.0)
         ->and(data_get($masterAsset->master_prices, 'GBP.value'))->toBeNull();
 });
+
+test('creating a master asset queues its effective cost hydration', function (MasterProductCategory $masterFamily) {
+    Queue::fake();
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'EFFECTIVE_COST_1',
+        'name'    => 'effective cost 1',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    Queue::assertPushed(
+        \App\Jobs\BoundedUniqueJobDecorator::class,
+        fn ($job) => $job->displayName() === MasterAssetHydrateEffectiveCost::class
+            && $job->getParameters()[0]->id === $masterAsset->id
+    );
+})->depends("create master family");
