@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\PreferredShipping;
 
 function makePreferredShipperResolver()
@@ -67,6 +68,16 @@ it('returns the winning rule so a lock can be told apart from a preference', fun
     expect($resolver->pickPreferredShippingRule($rules, 20, '')->important)->toBeTrue()
         ->and($resolver->pickPreferredShippingRule($rules, 10, '')->important)->toBeFalse()
         ->and($resolver->pickPreferredShippingRule($rules, 99, ''))->toBeNull();
+});
+
+it('maps dropshipping shops to the b2c rule set and everything else to b2b', function () {
+    $resolver = makePreferredShipperResolver();
+
+    expect($resolver->tradeScopeForShopType(ShopTypeEnum::DROPSHIPPING))->toBe('b2c')
+        ->and($resolver->tradeScopeForShopType(ShopTypeEnum::B2C))->toBe('b2c')
+        ->and($resolver->tradeScopeForShopType(ShopTypeEnum::B2B))->toBe('b2b')
+        ->and($resolver->tradeScopeForShopType(ShopTypeEnum::FULFILMENT))->toBe('b2b')
+        ->and($resolver->tradeScopeForShopType(null))->toBe('b2b');
 });
 
 it('matches any of several comma-separated postcode prefixes', function () {

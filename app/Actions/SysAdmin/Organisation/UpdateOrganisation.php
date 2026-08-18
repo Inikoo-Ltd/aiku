@@ -153,13 +153,14 @@ class UpdateOrganisation extends OrgAction
         if (Arr::has($modelData, 'preferred_shipping')) {
             $preferredShippingRows = Arr::pull($modelData, 'preferred_shipping');
 
-            if (collect($preferredShippingRows)->where('important', true)->count() > 1) {
-                throw ValidationException::withMessages(['preferred_shipping' => __('Only one rule can be marked as important')]);
+            $importantPerScope = collect($preferredShippingRows)->where('important', true)->countBy(fn ($row) => Arr::get($row, 'trade_scope', 'b2b'));
+            if ($importantPerScope->max() > 1) {
+                throw ValidationException::withMessages(['preferred_shipping' => __('Only one rule per set can be marked as important')]);
             }
 
             $keptIds = [];
             foreach ($preferredShippingRows as $row) {
-                $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode', 'important']);
+                $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode', 'important', 'trade_scope']);
 
                 $preferredShipping = Arr::get($row, 'id') ? $organisation->preferredShippings()->find($row['id']) : null;
                 if ($preferredShipping) {
@@ -260,6 +261,7 @@ class UpdateOrganisation extends OrgAction
             'preferred_shipping.*.country_id'         => ['sometimes', 'nullable', 'integer', Rule::exists('countries', 'id')->where('status', true)],
             'preferred_shipping.*.postcode'           => ['sometimes', 'nullable', 'string', 'max:255'],
             'preferred_shipping.*.important'          => ['sometimes', 'boolean'],
+            'preferred_shipping.*.trade_scope'        => ['sometimes', Rule::in(['b2b', 'b2c'])],
         ];
 
         if (!$this->strict) {

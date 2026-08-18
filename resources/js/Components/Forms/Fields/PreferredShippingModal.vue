@@ -17,6 +17,7 @@ interface PreferredShippingRow {
     country_name: string | null
     postcode: string | null
     important: boolean
+    trade_scope: "b2b" | "b2c"
 }
 
 const props = defineProps<{
@@ -25,6 +26,7 @@ const props = defineProps<{
     options: {
         shippers: { id: number; name: string; code?: string; api_shipper?: string | null }[]
         countries: Record<string, { label: string; code: string; id: number | string }>
+        scope_shops?: Record<string, { code: string; name: string }[]>
     }
 }>()
 
@@ -43,8 +45,17 @@ const countryOptions = computed(() =>
 )
 
 const rows = reactive<PreferredShippingRow[]>(
-    (props.form[props.fieldName] ?? []).map((row: PreferredShippingRow) => ({ ...row }))
+    (props.form[props.fieldName] ?? []).map((row: PreferredShippingRow) => ({ trade_scope: "b2b", ...row }))
 )
+
+// Two independent rule sets: some carriers price and label wholesale (b2b) and
+// consumer (b2c/dropshipping) traffic differently, so the sets never mix.
+const scopes = [
+    { value: "b2b" as const, label: trans("B2B — wholesale shops") },
+    { value: "b2c" as const, label: trans("B2C — dropshipping & e-commerce shops") },
+]
+
+const rowsForScope = (scope: "b2b" | "b2c") => rows.filter((row) => row.trade_scope === scope)
 
 watch(
     rows,
@@ -55,12 +66,13 @@ watch(
             country_id: row.country_id,
             postcode: row.postcode,
             important: row.important,
+            trade_scope: row.trade_scope,
         }))
     },
     { deep: true }
 )
 
-const addRow = () => {
+const addRow = (scope: "b2b" | "b2c") => {
     rows.push({
         id: null,
         shipper_id: null,
@@ -69,16 +81,19 @@ const addRow = () => {
         country_name: null,
         postcode: "",
         important: false,
+        trade_scope: scope,
     })
 }
 
-const removeRow = (index: number) => {
-    rows.splice(index, 1)
+const removeRow = (row: PreferredShippingRow) => {
+    rows.splice(rows.indexOf(row), 1)
 }
 
-const setImportant = (index: number, value: boolean) => {
-    rows.forEach((row: PreferredShippingRow, i: number) => {
-        row.important = i === index ? value : false
+const setImportant = (target: PreferredShippingRow, value: boolean) => {
+    rows.forEach((row: PreferredShippingRow) => {
+        if (row.trade_scope === target.trade_scope) {
+            row.important = row === target ? value : false
+        }
     })
 }
 
@@ -106,8 +121,22 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
 </script>
 
 <template>
-    <div>
-        <DataTable :value="rows" dataKey="id" class="text-sm" removableSort>
+    <div class="space-y-8">
+        <div v-for="scope in scopes" :key="scope.value">
+        <h3 class="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm font-semibold text-gray-700">
+            {{ scope.label }}
+            <span class="inline-flex flex-wrap gap-1">
+                <span
+                    v-for="shop in options?.scope_shops?.[scope.value] ?? []"
+                    :key="shop.code"
+                    v-tooltip="shop.name"
+                    class="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] font-normal text-gray-500"
+                >
+                    {{ shop.code }}
+                </span>
+            </span>
+        </h3>
+        <DataTable :value="rowsForScope(scope.value)" class="text-sm" removableSort>
             <Column field="country_name" :header="trans('Country')" style="min-width: 10rem">
                 <template #body="{ data }">
                     <Select
@@ -200,7 +229,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                             : 'text-gray-500 bg-white border-gray-300 hover:border-gray-400 hover:bg-gray-50'"
                         :aria-pressed="data.important"
                         v-tooltip="data.important ? trans('Forced, packer cannot change it') : trans('Preselected only, packer can change it')"
-                        @click="setImportant(index, !data.important)"
+                        @click="setImportant(data, !data.important)"
                     >
                         <FontAwesomeIcon :icon="data.important ? faLock : faLockOpen" fixed-width aria-hidden="true" />
                         {{ data.important ? trans("Locked") : trans("Flexible") }}
@@ -209,11 +238,11 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
             </Column>
 
             <Column style="width: 4rem">
-                <template #body="{ index }">
+                <template #body="{ data }">
                     <button
                         type="button"
                         class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                        @click="removeRow(index)"
+                        @click="removeRow(data)"
                     >
                         <FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />
                     </button>
@@ -230,11 +259,12 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
         <button
             type="button"
             class="mt-3 inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-[--theme-color-0] border border-dashed border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            @click="addRow"
+            @click="addRow(scope.value)"
         >
             <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
             {{ trans("Add shipping rule") }}
         </button>
+        </div>
 
         <Modal :isOpen="isPostcodeTestOpen" @onClose="isPostcodeTestOpen = false" width="w-full max-w-md">
             <div class="space-y-4">

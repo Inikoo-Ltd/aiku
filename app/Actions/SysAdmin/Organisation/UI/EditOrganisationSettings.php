@@ -12,8 +12,10 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
@@ -27,6 +29,7 @@ use Carbon\Carbon;
 class EditOrganisationSettings extends OrgAction
 {
     use WithTokenPath;
+    use WithPreferredShipperResolver;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -281,8 +284,15 @@ class EditOrganisationSettings extends OrgAction
                                         'country_name' => $preferredShipping->country?->name,
                                         'postcode'     => $preferredShipping->postcode,
                                         'important'    => $preferredShipping->important,
+                                        'trade_scope'  => $preferredShipping->trade_scope,
                                     ])->all(),
                                     'options' => [
+                                        'scope_shops' => $organisation->shops()
+                                            ->whereNot('state', ShopStateEnum::CLOSED)
+                                            ->orderBy('code')
+                                            ->get(['code', 'name', 'type'])
+                                            ->groupBy(fn ($shop) => $this->tradeScopeForShopType($shop->type))
+                                            ->map(fn ($shops) => $shops->map(fn ($shop) => ['code' => $shop->code, 'name' => $shop->name])->values()),
                                         'shippers'  => Shipper::where('organisation_id', $organisation->id)
                                             ->where(function ($query) use ($usedShipperIds) {
                                                 $query->where('status', true)->orWhereIn('id', $usedShipperIds);

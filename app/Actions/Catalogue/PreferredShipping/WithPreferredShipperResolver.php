@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\PreferredShipping;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\PreferredShipping;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -66,6 +67,7 @@ trait WithPreferredShipperResolver
 
         $rules = PreferredShipping::query()
             ->where('organisation_id', $deliveryNote->organisation_id)
+            ->where('trade_scope', $this->tradeScopeForShopType($deliveryNote->shop?->type))
             ->where(function ($query) use ($deliveryNote) {
                 $query->where('shop_id', $deliveryNote->shop_id)->orWhereNull('shop_id');
             })
@@ -122,6 +124,16 @@ trait WithPreferredShipperResolver
         return collect([$rule->country?->iso3, $rule->postcode])
             ->filter()
             ->implode(' ') ?: __('all destinations');
+    }
+
+    /**
+     * Some carriers demand the wholesale/consumer distinction, so rules live in two
+     * independent sets: b2c serves consumer shops (dropshipping and b2c ecommerce),
+     * b2b serves everything else.
+     */
+    public function tradeScopeForShopType(?ShopTypeEnum $shopType): string
+    {
+        return in_array($shopType, [ShopTypeEnum::DROPSHIPPING, ShopTypeEnum::B2C], true) ? 'b2c' : 'b2b';
     }
 
     /**
