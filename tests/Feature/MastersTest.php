@@ -1479,6 +1479,75 @@ test('UI Index Master Products in family has pricing tab', function () {
     );
 });
 
+test('UI Show Master Variant has pricing tab listing all variant products', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'VPRC-DEP-'.uniqid(),
+        'name' => 'Variant Pricing Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'VPRC-FAM-'.uniqid(),
+        'name' => 'Variant Pricing Family',
+    ]);
+    $leader = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'VPRC-LEAD-'.uniqid(),
+        'name'    => 'Variant Leader',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'rrp'     => 20,
+        'stocks'  => [],
+    ]);
+    $minion = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'VPRC-MIN-'.uniqid(),
+        'name'    => 'Variant Minion',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 12,
+        'rrp'     => 24,
+        'stocks'  => [],
+    ]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id'         => $masterShop->group_id,
+        'master_shop_id'   => $masterShop->id,
+        'master_family_id' => $masterFamily->id,
+        'code'             => $leader->code,
+        'leader_id'        => $leader->id,
+        'data'             => ['products' => []],
+    ]);
+    $masterVariant->stats()->create();
+    $leader->updateQuietly(['master_variant_id' => $masterVariant->id, 'is_variant_leader' => true]);
+    $minion->updateQuietly(['master_variant_id' => $masterVariant->id, 'is_main' => false, 'is_minion_variant' => true]);
+
+    $response = get(route('grp.masters.master_shops.show.master_families.master_variants.show', [
+        $masterShop->slug,
+        $masterFamily->slug,
+        $masterVariant->slug,
+        'tab' => 'pricing',
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Masters/MasterVariant')
+            ->has('tabs.navigation.pricing')
+            ->has('pricingCurrencies')
+            ->has('pricing.data', 2)
+            ->has(
+                'pricing.data.0',
+                fn (AssertableInertia $row) => $row
+                    ->has('code')
+                    ->has('price')
+                    ->has('rrp')
+                    ->has('master_prices')
+                    ->etc()
+            )
+            ->etc()
+    );
+});
+
 test('bulk update master assets prices applies per-unit rrp and skips independents', function () {
     $masterShop = createFreshMasterShop();
 
