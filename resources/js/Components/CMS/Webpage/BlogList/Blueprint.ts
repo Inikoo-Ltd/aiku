@@ -35,7 +35,7 @@ const categoriesField = {
 		placeholder: "All blog categories",
 		options: [
 			{ label: "Blog", value: "blog" },
-			{ label: "David's Travel Blog", value: "david_aw_news" },
+			{ label: "Newsletters", value: "newsletters" },
 			{ label: "Product Guides", value: "product_guides" },
 			{ label: "Business Tips", value: "business_tips" },
 			{ label: "Industry & Retail's Insight", value: "insight" },

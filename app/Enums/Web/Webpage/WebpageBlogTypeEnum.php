@@ -16,7 +16,7 @@ enum WebpageBlogTypeEnum: string
     use EnumHelperTrait;
 
     case BLOG           = 'blog';
-    case DAVID_AW_NEWS  = 'david_aw_news';
+    case NEWSLETTERS    = 'newsletters';
     case PRODUCT_GUIDES = 'product_guides';
     case BUSINESS_TIPS  = 'business_tips';
     case INSIGHT        = 'insight';
@@ -24,10 +24,10 @@ enum WebpageBlogTypeEnum: string
     public function label(): string
     {
         return match ($this) {
-            SELF::DAVID_AW_NEWS     => "David's Travel Blog",
-            SELF::PRODUCT_GUIDES    => "Product Guides",
-            SELF::BUSINESS_TIPS     => "Business Tips",
-            SELF::INSIGHT           => "Industry & Retail's Insight",
+            self::NEWSLETTERS       => "Newsletters",
+            self::PRODUCT_GUIDES    => "Product Guides",
+            self::BUSINESS_TIPS     => "Business Tips",
+            self::INSIGHT           => "Industry & Retail's Insight",
             default                 => "Blog",
         };
     }
