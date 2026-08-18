@@ -57,24 +57,33 @@ const scopes = [
 
 // A rule with no country and no postcode is the scope's catch-all: it loses to any
 // specific rule and to the customer's choice, which is exactly what a default is.
-// The UI surfaces the first such row as the "Default shipper" select.
+// The UI surfaces it as the "Default shipper" select.
 const isDefaultRow = (row: PreferredShippingRow) => !row.country_id && !row.postcode
 
-const rowsForScope = (scope: "b2b" | "b2c") => rows.filter((row) => row.trade_scope === scope && !isDefaultRow(row))
+// Tracked by reference, not by shape: a freshly added, still-empty rule row is also
+// wildcard-shaped and must stay in the table while it is being edited.
+const defaultRowByScope = reactive<{ b2b: PreferredShippingRow | null; b2c: PreferredShippingRow | null }>({
+    b2b: rows.find((row) => row.trade_scope === "b2b" && isDefaultRow(row)) ?? null,
+    b2c: rows.find((row) => row.trade_scope === "b2c" && isDefaultRow(row)) ?? null,
+})
 
-const defaultShipperId = (scope: "b2b" | "b2c") =>
-    rows.find((row) => row.trade_scope === scope && isDefaultRow(row))?.shipper_id ?? null
+const rowsForScope = (scope: "b2b" | "b2c") => rows.filter((row) => row.trade_scope === scope && row !== defaultRowByScope[scope])
+
+const defaultShipperId = (scope: "b2b" | "b2c") => defaultRowByScope[scope]?.shipper_id ?? null
 
 const setDefaultShipper = (scope: "b2b" | "b2c", shipperId: number | null) => {
-    const existing = rows.find((row) => row.trade_scope === scope && isDefaultRow(row))
+    const existing = defaultRowByScope[scope]
     if (!shipperId) {
-        if (existing) rows.splice(rows.indexOf(existing), 1)
+        if (existing) {
+            rows.splice(rows.indexOf(existing), 1)
+            defaultRowByScope[scope] = null
+        }
         return
     }
     if (existing) {
         existing.shipper_id = shipperId
     } else {
-        rows.push({
+        const row: PreferredShippingRow = {
             id: null,
             shipper_id: shipperId,
             shipper_name: null,
@@ -83,7 +92,9 @@ const setDefaultShipper = (scope: "b2b" | "b2c", shipperId: number | null) => {
             postcode: "",
             important: false,
             trade_scope: scope,
-        })
+        }
+        rows.push(row)
+        defaultRowByScope[scope] = row
     }
 }
 
