@@ -267,6 +267,9 @@ class IndexOrgSupplierProducts extends OrgAction
                     'subNavigation' => $subNavigation,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
+                    'actions'       => $this->parent instanceof OrgSupplier
+                        ? [$this->getOrgSupplierPurchaseOrderAction($this->parent)]
+                        : [],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

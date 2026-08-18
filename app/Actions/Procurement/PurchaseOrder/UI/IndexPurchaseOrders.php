@@ -73,7 +73,7 @@ class IndexPurchaseOrders extends OrgAction
     {
         $supplierStats = match (true) {
             $parent instanceof Supplier => $parent->stats,
-            $parent instanceof OrgSupplier => $parent->supplier->stats,
+            $parent instanceof OrgSupplier => $parent->stats,
             default => null,
         };
 
@@ -396,20 +396,7 @@ class IndexPurchaseOrders extends OrgAction
             $afterTitle    = ['label' => __('Purchase Orders')];
             $iconRight     = ['icon' => 'fal fa-clipboard-list'];
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
-            $actions       = [
-                [
-                    'label' => __('Purchase Order'),
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.org-supplier.purchase-order.store',
-                        'parameters' => [
-                            'orgSupplier' => $this->parent->id,
-                        ],
-                    ],
-                ],
-            ];
+            $actions       = [$this->getOrgSupplierPurchaseOrderAction($this->parent)];
         } elseif ($this->parent instanceof Supplier) {
             $title         = $this->parent->name;
             $icon          = [

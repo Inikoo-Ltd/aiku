@@ -54,11 +54,9 @@ class ShowSupplyChainDashboard extends OrgAction
                     $this->dashboardMetric(
                         __('Through agents'),
                         $stats->number_active_suppliers_in_agents,
-                        'grp.supply-chain.suppliers.index',
-                        ['elements[type]' => 'through_agent']
+                        'grp.supply-chain.agent_suppliers.index'
                     ),
                 ],
-                ['elements[type]' => 'free']
             ),
             $this->dashboardCard(
                 __('Supplier Products'),
