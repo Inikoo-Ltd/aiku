@@ -10,6 +10,7 @@ namespace App\Actions\Billables\ShippingZone;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Ordering\ShippingZoneResource;
 use App\Models\Billables\ShippingZone;
 use App\Rules\IUnique;
@@ -33,6 +34,10 @@ class UpdateShippingZone extends OrgAction
                 'price'          => Arr::get($pricing, 'price'),
                 'shippers_price' => Arr::get($pricing, 'shippers_price', []),
             ]);
+        }
+
+        if ($shippingZone->shop->type === ShopTypeEnum::DROPSHIPPING && Arr::has($modelData, 'shippers_price')) {
+            $modelData['shippers_price'] = [];
         }
 
         return $this->update($shippingZone, $modelData, ['price']);

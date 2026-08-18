@@ -11,6 +11,7 @@ namespace App\Actions\Billables\ShippingZone\UI;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ShippingZoneSchemaTabsEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
@@ -104,6 +105,7 @@ class EditShippingZone extends OrgAction
                                     ],
                                     'currency' => $shippingZone->shop->currency,
                                     'options'  => [
+                                        'can_use_shipper_pricing' => $shippingZone->shop->type !== ShopTypeEnum::DROPSHIPPING,
                                         'shippers' => Shipper::where('organisation_id', $shippingZone->organisation_id)
                                             ->where('status', true)
                                             ->orderBy('name')

@@ -11,6 +11,7 @@ const props = defineProps<{
     fieldName: string
     options?: {
         shippers: Array<{ id: number; name: string; code: string }>
+        can_use_shipper_pricing?: boolean
     }
     fieldData?: {
         currency?: { code: string }
@@ -19,7 +20,9 @@ const props = defineProps<{
 
 // A zone prices one way or the other: shippers_price wins outright at checkout,
 // so showing both invites a price nobody is charging.
-const mode = ref(props.form[props.fieldName]?.shippers_price?.length ? "per_shipper" : "normal")
+const canUseShipperPricing = props.options?.can_use_shipper_pricing !== false
+
+const mode = ref(canUseShipperPricing && props.form[props.fieldName]?.shippers_price?.length ? "per_shipper" : "normal")
 
 watch(mode, (value) => {
     if (value === "normal") {
@@ -30,7 +33,7 @@ watch(mode, (value) => {
 
 <template>
     <div>
-        <div class="flex gap-6 mb-4">
+        <div v-if="canUseShipperPricing" class="flex gap-6 mb-4">
             <label
                 v-for="option in [
                     { value: 'normal', label: trans('Normal shipping') },

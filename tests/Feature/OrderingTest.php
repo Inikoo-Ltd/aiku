@@ -87,6 +87,7 @@ use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -608,6 +609,31 @@ test('create transaction from shipping', function (Order $order) {
 
     return $transaction;
 })->depends('create order');
+
+test('dropshipping shop strips per-shipper pricing on update', function () {
+    $shippingZone = ShippingZone::where('code', 'SHIP-1')->firstOrFail();
+    $originalShopType = $shippingZone->shop->type;
+    $shippingZone->shop->update(['type' => ShopTypeEnum::DROPSHIPPING]);
+    $shippingZone->refresh();
+
+    $shipper = StoreShipper::make()->action($shippingZone->organisation, [
+        'code'     => 'DS-SHIP',
+        'name'     => 'DS Shipper',
+        'trade_as' => 'DS Shipper',
+    ]);
+
+    try {
+        $updated = UpdateShippingZone::make()->action($shippingZone, [
+            'shippers_price' => [
+                ['shipper_id' => $shipper->id, 'type' => 'TBC'],
+            ],
+        ]);
+    } finally {
+        $shippingZone->shop->update(['type' => $originalShopType]);
+    }
+
+    expect($updated->shippers_price)->toBe([]);
+})->depends('create transaction from shipping');
 
 test('update transaction', function ($transaction) {
     $transaction = UpdateTransaction::make()->action(
