@@ -295,6 +295,54 @@ sees a token, and a token is only ever good for one shop.
 
 ---
 
+## Microsoft Advertising (Bing) ads
+
+Microsoft Advertising has its own Scripts feature, so Bing works exactly like Google: a script inside
+the ad account pushes yesterday's spend to the same endpoint. Two files come with this guide,
+`bing-ads-script.js` for a single account and `bing-ads-script-mcc.js` for a manager account, and the
+setup is the same ten minutes as above.
+
+**The token is the shop's, not the platform's.** A shop that already uploads Google Ads spend needs
+no second token: the same one posts `bing-ads` from the Microsoft script. Ask for a new token only
+when a different person or agency runs the Bing account, which is the point of one token per holder.
+
+Where to paste it:
+
+- **Single account:** **Tools > Scripts**, then the **+** button. Same authorise, preview, and
+  schedule buttons as Google.
+- **Manager account:** the Scripts editor reached from **Accounts Summary**. Multi-account scripts
+  only exist there — the editor inside a single account has no way to reach the other accounts. Each
+  entry in `ACCOUNTS` takes the account number shown in Accounts Summary (`accountNumber`) or the
+  numeric account id (`accountId`), plus its shop and that shop's token.
+
+### Tag the ads, or campaign rows stay empty
+
+A Bing click arrives with `msclkid` and nothing else: unlike Google's `gclid`, it names no campaign.
+Aiku therefore reads the campaign from `utm_campaign`, and only when it is Microsoft's dynamic
+`{CampaignId}` parameter — the numeric id, which is what the script uploads. Set the account's
+tracking template or final URL suffix to carry `utm_medium=paid&utm_campaign={CampaignId}` before
+turning the script on.
+
+Without it nothing breaks: the Bing channel total and its ROAS are still right, because every click
+is still a Bing Ads click. Only the campaign rows show cost against no revenue. A `utm_campaign`
+holding a campaign *name* rather than the id is ignored on purpose — it would never meet the cost
+row that the id keys, and would quietly split one campaign into two.
+
+### Two things the log will tell you
+
+Microsoft Advertising Scripts has no equivalent of Google's `report()` call, so the script adds up
+what the campaign selectors report instead. That has two visible consequences.
+
+- **Campaign type is mostly blank.** Microsoft has separate selectors for Shopping and Performance
+  Max, and those two are labelled; everything else comes from one mixed list that does not say what
+  kind of campaign it holds, so Aiku records no type rather than guessing `SEARCH`.
+- **Check the date on the first Preview run.** Scripts does not document the time zone it runs in,
+  so the script resolves yesterday in the account's own zone and prints both the date and the zone.
+  Compare that date with the day Microsoft Advertising itself shows, once. If they differ, tell us
+  and we will pin the zone in the script.
+
+---
+
 ## What actually gets sent (for the curious)
 
 One request per account per day. It contains: the shop slug, the word `google-ads`, the account's
@@ -325,9 +373,10 @@ php artisan traffic-source:cost-token --revoke=<id>                # cancel one,
 The mint command prints the exact endpoint URL for the environment it runs in — send that along
 with the token, and the shop slug.
 
-Other ad platforms (Bing, Pinterest) can use the same endpoint — swap `google-ads` for `bing-ads`,
-`pinterest-ads` and post the same shape. The one-off CSV route (`traffic-source:import-costs`) still
-exists for backfilling history.
+Bing has its own pair of scripts against the same endpoint (see
+[Microsoft Advertising (Bing) ads](#microsoft-advertising-bing-ads)); any other platform can post the
+same shape with `pinterest-ads` and so on in `source`. The one-off CSV route
+(`traffic-source:import-costs`) still exists for backfilling history.
 
 ### Meta (Facebook/Instagram) ads
 

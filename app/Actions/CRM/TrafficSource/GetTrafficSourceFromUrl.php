@@ -51,11 +51,18 @@ class GetTrafficSourceFromUrl
             return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::META_ADS->value].$campaignRef;
         }
 
-        /* No campaign reference for Bing: msclkid is unique per click, so recording it as a campaign
-           made every Bing click a distinct campaign, over-weighting Bing in the share split and
-           matching no imported cost row ever. */
+        /* Bing carries no campaign id of its own: msclkid is unique per click, so recording it as a
+           campaign made every Bing click a distinct campaign, over-weighting Bing in the share split
+           and matching no imported cost row ever. The campaign only arrives when the ads are tagged
+           with Microsoft's `utm_campaign={CampaignId}`, which is the same numeric id the cost script
+           uploads, so anything non-numeric is a hand-written campaign name that would never meet a
+           cost row and is dropped back to an unattributed Bing click. */
         if (array_key_exists('msclkid', $queryParams)) {
-            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::BING_ADS->value];
+            $bingCampaignRef = $this->sanitizeCampaignRef(Arr::get($queryParams, 'utm_campaign'));
+
+            return
+                TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::BING_ADS->value].
+                (ctype_digit($bingCampaignRef) ? $bingCampaignRef : '');
         }
 
 
