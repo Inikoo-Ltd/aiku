@@ -95,8 +95,7 @@ class EditShippingZone extends OrgAction
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),
                                 ],
-                                'pricing' => [
-                                    'full'     => true,
+                                'pricing' => [                                    
                                     'type'     => 'pricing_zone_mode',
                                     'label'    => __('Price'),
                                     'value'    => [
