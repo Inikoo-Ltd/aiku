@@ -51,6 +51,13 @@ class UpdateOrderPaymentsStatus extends OrgAction
             $totalAmount += $refund->total_amount;
         }
 
+        /**
+         * Rounded like the payments it is about to be compared against: a credit note leaves
+         * the sum a fraction of a penny above the amount paid - 181.02 - 4.98 is 176.04000000000002
+         * in binary - and the order reads as partially paid forever.
+         */
+        $totalAmount = round($totalAmount, 2);
+
 
         if ($totalAmount != 0) {
             if ($runningPaymentsAmount >= $totalAmount) {

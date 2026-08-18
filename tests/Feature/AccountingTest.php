@@ -43,6 +43,8 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\ProcessCustomerTimeSeriesRecords;
 use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use Illuminate\Support\Str;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -2607,4 +2609,35 @@ test('repair command attaches order only excess refunds to their credit note', f
     $this->artisan('repair:excess_payment_refunds_not_attached_to_invoice --apply')->assertOk();
 
     expect((float) $refund->refresh()->payment_amount)->toBe(-21.04);
+});
+
+test('a credit note leaves the order paid, not a fraction of a penny short', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+    $order->update(['total_amount' => 181.02]);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 181.02]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -4.98, 'in_process' => false]);
+
+    $payment = StorePayment::make()->action(
+        $customer,
+        $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount,
+        [
+            'amount'    => 176.04,
+            'reference' => 'ref-paid-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::PAYMENT,
+        ]
+    );
+    AttachPaymentToOrder::make()->action($order, $payment, []);
+
+    UpdateOrderPaymentsStatus::run($order->refresh());
+
+    expect($order->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID);
 });
