@@ -168,6 +168,10 @@ class PackDeliveryNoteItemByScan extends OrgAction
         $row     = null;
         $warning = null;
 
+        $quantityToPack = $deliveryNoteItem
+            ? UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem)
+            : 0;
+
         if ($deliveryNoteItem && $status === 'packed') {
             $row = FetchDeliveryNoteItemRow::run($deliveryNoteItem, $tab);
             $row = $row?->toArray(request());
@@ -187,9 +191,9 @@ class PackDeliveryNoteItemByScan extends OrgAction
                 'packed_in'              => (int)($deliveryNoteItem->orgStock?->packed_in ?? 1),
                 'quantity_picked'        => (float)$deliveryNoteItem->quantity_picked,
                 'quantity_packed'        => (float)$deliveryNoteItem->quantity_packed,
-                'quantity_to_pack'       => UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem),
-                'quantity_to_pack_label' => $this->formatScanQuantity($deliveryNoteItem, UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem)),
-                'quantity_to_pack_fractional' => $this->scanQuantityFraction($deliveryNoteItem, UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem)),
+                'quantity_to_pack'       => $quantityToPack,
+                'quantity_to_pack_label' => $this->formatScanQuantity($deliveryNoteItem, $quantityToPack),
+                'quantity_to_pack_fractional' => $this->scanQuantityFraction($deliveryNoteItem, $quantityToPack),
             ] : null,
             'row'                 => $row,
             'delivery_note_state' => $deliveryNote->state->value,

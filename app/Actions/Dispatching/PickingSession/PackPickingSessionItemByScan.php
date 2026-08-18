@@ -95,9 +95,11 @@ class PackPickingSessionItemByScan extends OrgAction
         // 'Pack all' passes null so the remainder is resolved inside the action's lock. Reading it
         // out here would let a second packer's scan land in between and turn this into an error
         // instead of simply packing whatever is genuinely left.
-        $quantityToPack = $requestedQuantity === null
+        $quantityWanted = $this->scannedQuantityInStockUnits($itemToPack, $scanned, $requestedQuantity);
+
+        $quantityToPack = $quantityWanted === null
             ? null
-            : min($requestedQuantity, UpdateDeliveryNoteItemPacking::quantityLeftToPack($itemToPack));
+            : min($quantityWanted, UpdateDeliveryNoteItemPacking::quantityLeftToPack($itemToPack));
 
         UpdateDeliveryNoteItemPacking::make()->action($itemToPack, $user, $quantityToPack);
 
@@ -109,13 +111,13 @@ class PackPickingSessionItemByScan extends OrgAction
 
         $message = $remainingAfter > 0
             ? __('Packed :quantity x :code for :reference, :remaining still to pack', [
-                'quantity'  => $quantityPacked,
+                'quantity'  => $this->formatScanQuantity($itemToPack, $quantityPacked),
                 'code'      => $itemToPack->orgStock?->code ?? $scanned,
                 'reference' => $itemToPack->deliveryNote->reference,
-                'remaining' => $remainingAfter,
+                'remaining' => $this->formatScanQuantity($itemToPack, $remainingAfter),
             ])
             : __('Packed :quantity x :code for :reference', [
-                'quantity'  => $quantityPacked,
+                'quantity'  => $this->formatScanQuantity($itemToPack, $quantityPacked),
                 'code'      => $itemToPack->orgStock?->code ?? $scanned,
                 'reference' => $itemToPack->deliveryNote->reference,
             ]);
@@ -297,6 +299,10 @@ class PackPickingSessionItemByScan extends OrgAction
         $row          = null;
         $warning      = null;
 
+        $quantityToPack = $deliveryNoteItem
+            ? UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem)
+            : 0;
+
         if ($deliveryNoteItem && $status === 'packed') {
             $rowId = $tab == PickingSessionTabsEnum::GROUPED->value
                 ? $deliveryNote->id
@@ -313,12 +319,15 @@ class PackPickingSessionItemByScan extends OrgAction
             'warning'               => $warning,
             'scanned'               => $scanned,
             'item'                  => $deliveryNoteItem ? [
-                'id'               => $deliveryNoteItem->id,
-                'code'             => $deliveryNoteItem->orgStock?->code,
-                'name'             => $deliveryNoteItem->orgStock?->name,
-                'quantity_picked'  => (float)$deliveryNoteItem->quantity_picked,
-                'quantity_packed'  => (float)$deliveryNoteItem->quantity_packed,
-                'quantity_to_pack' => UpdateDeliveryNoteItemPacking::quantityLeftToPack($deliveryNoteItem),
+                'id'                          => $deliveryNoteItem->id,
+                'code'                        => $deliveryNoteItem->orgStock?->code,
+                'name'                        => $deliveryNoteItem->orgStock?->name,
+                'packed_in'                   => (int)($deliveryNoteItem->orgStock?->packed_in ?? 1),
+                'quantity_picked'             => (float)$deliveryNoteItem->quantity_picked,
+                'quantity_packed'             => (float)$deliveryNoteItem->quantity_packed,
+                'quantity_to_pack'            => $quantityToPack,
+                'quantity_to_pack_label'      => $this->formatScanQuantity($deliveryNoteItem, $quantityToPack),
+                'quantity_to_pack_fractional' => $this->scanQuantityFraction($deliveryNoteItem, $quantityToPack),
             ] : null,
             'delivery_note'         => $deliveryNote ? [
                 'id'        => $deliveryNote->id,

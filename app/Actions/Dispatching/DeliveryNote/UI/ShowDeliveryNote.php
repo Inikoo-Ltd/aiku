@@ -989,8 +989,11 @@ class ShowDeliveryNote extends OrgAction
         }
 
         /*
-         * Dropshipping notes are picked off a picking session rather than one by one, so scanning is
-         * kept to the wholesale notes, which is the same line scan to pack already draws.
+         * Open to dropshipping as much as to wholesale: a note picked on its own is picked the same
+         * way whoever it ships to, and what the two expect off the shelf, an outer or a loose unit,
+         * is already told apart by the barcode that was scanned. $allowAction keeps the panel to
+         * whoever is actually handling the note, so a note being picked in a session is not opened
+         * to a second picker here.
          */
         $scanToPick = null;
         if (
@@ -998,7 +1001,6 @@ class ShowDeliveryNote extends OrgAction
             && $deliveryNote->state == DeliveryNoteStateEnum::HANDLING
             && $isEditable
             && $allowAction
-            && $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING
         ) {
             $scanToPick = [
                 'scan_route'   => [
