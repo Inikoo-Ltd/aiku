@@ -135,7 +135,7 @@ class WebBlockProductResource extends JsonResource
             'is_single_trade_unit'       => $product->is_single_trade_unit,
 
             'marketing_material_route'  => [
-                'name'          => '	iris.catalogue.feeds.product.download_img',
+                'name'          => 'iris.catalogue.feeds.product.download_img',
                 'parameters'    => [
                     'product'   => $product->slug,
                     'type'      => 'products_images'
