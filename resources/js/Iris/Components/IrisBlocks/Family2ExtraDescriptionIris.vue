@@ -5,6 +5,7 @@ import { ctrans } from "@/Composables/useTrans"
 import About from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/About.vue"
 import MarketingMaterials from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/MarketingMaterials.vue"
 import Faq from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Faq.vue"
+import Customisation from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Customisation.vue"
 
 const props = defineProps<{
   fieldValue: any
@@ -30,6 +31,9 @@ const tabs = computed(() =>
     { key: "about", label: ctrans("About the Range") },
     { key: "marketing", label: ctrans("Marketing Materials") },
     { key: "faq", label: ctrans("FAQ") },
+    { key: "customisation", label: ctrans("Customisation") },
+    { key: "labeling guide", label: ctrans("Labeling Guide") },
+    { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
   ].filter(tab => {
     if (tab.key === "about") {
       return hasContent(props.fieldValue?.family?.description_extra)
@@ -65,6 +69,8 @@ const component = (tab: string) => {
       return MarketingMaterials
     case "faq":
       return Faq
+    case "customisation":
+      return Customisation
     default:
       return null
   }
