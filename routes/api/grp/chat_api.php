@@ -28,6 +28,7 @@ use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
 use App\Actions\Chat\ChatSession\UpdateChatSession;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +40,7 @@ Route::get('/ping', function () {
 
 Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
 Route::post('/sessions', StoreChatSession::class)->name('sessions.store');
+Route::get('/meta/sessions', GetMetaChatSessions::class)->name('meta.sessions.index');
 Route::post('/meta/sessions', StoreMetaChatSession::class)->name('meta.sessions.store');
 Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-message.store');
 Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');

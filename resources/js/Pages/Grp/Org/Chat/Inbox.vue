@@ -142,11 +142,17 @@ const buildParams = (page: number) => ({
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
 
+const sessionsUrl = computed(() =>
+    selectedChannel.value === "whatsapp"
+        ? `${baseUrl}/app/api/chats/meta/sessions`
+        : `${baseUrl}/app/api/chats/sessions`
+)
+
 const reloadContacts = async () => {
     currentPage.value = 1
     hasMore.value = false
     try {
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(1) })
+        const res = await axios.get(sessionsUrl.value, { params: buildParams(1) })
         contacts.value = res.data.data.sessions.map(mapSession)
         hasMore.value = res.data.data.pagination?.has_more ?? false
     } catch (e) {
@@ -158,7 +164,7 @@ const loadMore = async () => {
     if (isLoadingMore.value || !hasMore.value) return
     isLoadingMore.value = true
     try {
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, { params: buildParams(currentPage.value + 1) })
+        const res = await axios.get(sessionsUrl.value, { params: buildParams(currentPage.value + 1) })
         contacts.value = [...contacts.value, ...res.data.data.sessions.map(mapSession)]
         currentPage.value += 1
         hasMore.value = res.data.data.pagination?.has_more ?? false
@@ -197,9 +203,7 @@ const clearAgentFilter = () => {
 
 const filteredContacts = computed(() =>
     contacts.value.filter(
-        // ponytail: the list reads chat_sessions; WhatsApp stays empty until a meta_chat_sessions list endpoint exists.
-        (c) => selectedChannel.value !== "whatsapp" &&
-            c.status === activeTab.value &&
+        (c) => c.status === activeTab.value &&
             (!selectedShopId.value || c.shop?.id === selectedShopId.value) &&
             (!selectedAgentIds.value.length ||
                 (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
