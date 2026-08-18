@@ -49,22 +49,43 @@ function yesterday(account) {
 /**
  * Scripts has no Utilities.formatDate and does not document the time zone its runtime uses, so the
  * account's own zone is applied through the locale formatter where the sandbox offers one. Where it
- * does not — or where getTimeZone() hands back a name the formatter refuses — the runtime's own date
- * is used instead. The date and the zone both go in the log line so the first Preview run shows
- * which day was actually read.
+ * does not, the runtime's own date is used instead. The date and the zone both go in the log line so
+ * the first Preview run shows which day was actually read.
  */
 function accountDateParts(date, zone) {
-  try {
-    var parts = date.toLocaleDateString('en-CA', { timeZone: zone }).split('-');
+  return localeDateParts(date, zone) ||
+         { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
+}
 
-    if (parts.length === 3) {
-      return { year: Number(parts[0]), month: Number(parts[1]), day: Number(parts[2]) };
-    }
+/**
+ * The formatter is under no obligation to honour the locale it is handed, and its output has been
+ * seen carrying a trailing time and direction marks. Splitting that on '-' yielded pieces such as
+ * '17T00:00:00', which reach forDateRange as NaN and are rejected there with a message that names
+ * the date and not the formatter that produced it. So only a string whose digits read as a real
+ * y-m-d date is trusted, and anything else hands the day back to the runtime clock.
+ */
+function localeDateParts(date, zone) {
+  var formatted;
+
+  try {
+    formatted = String(date.toLocaleDateString('en-CA', { timeZone: zone }));
   } catch (e) {
-    /* Fall through to the runtime's date. */
+    return null;
   }
 
-  return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
+  var match = /(\d{4})\D{1,3}(\d{1,2})\D{1,3}(\d{1,2})/.exec(formatted);
+
+  if (!match) {
+    return null;
+  }
+
+  var parts = { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
+
+  if (parts.month < 1 || parts.month > 12 || parts.day < 1 || parts.day > 31) {
+    return null;
+  }
+
+  return parts;
 }
 
 function pad(number) {
