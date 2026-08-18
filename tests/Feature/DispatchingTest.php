@@ -1784,6 +1784,30 @@ test('picking waiting warehouse and crm flow', function () {
     expect($sentBack->has_waiting_crm)->toBeFalse();
 });
 
+test('delete picking on blocked line partly waiting with crm does not abort', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    /** The Faire resync shape: the pick in the tote plus what CRM holds covers the line. */
+    $item->update([
+        'state'                => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
+        'quantity_required'    => 13,
+        'has_waiting_crm'      => true,
+        'quantity_waiting_crm' => 3,
+    ]);
+
+    $picking = $item->pickings()->first();
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking, $this->user);
+
+    $item->refresh();
+    expect($item->pickings()->count())->toBe(0)
+        ->and((float)$item->quantity_picked)->toBe(0.0)
+        ->and((float)$item->quantity_waiting_warehouse)->toBe(10.0);
+});
+
 test('picking upsert from waiting warehouse and magic place', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
