@@ -50,7 +50,7 @@ const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(1)
 const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref<number | null>(null)
+const offerCategories = ref<{ id: number, name: string }[]>([])
 const categoryType = ref<'department' | 'subdepartment' | 'family'>('department')
 const discountTarget = ref<'same' | 'other'>('same')
 const targetCategoryId = ref<number | null>(null)
@@ -90,7 +90,9 @@ const submitCategoryOffer = () => {
         {
             name: offerLabel.value,
             type: typeOffer.value,
-            product_category_id: offerCategoryId.value || props.product_category_id,
+            product_category_ids: props.product_category_id
+                ? [props.product_category_id]
+                : offerCategories.value.map((category) => category.id),
             trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
             trigger_data_item_amount: offerAmount.value,
             percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
@@ -101,21 +103,31 @@ const submitCategoryOffer = () => {
         }
     )
     .then((response) => {
+        const createdSlugs: string[] = response.data.slugs ?? []
+        const skippedCategories: string[] = response.data.skipped ?? []
+
+        if (!createdSlugs.length) {
+            notify({
+                title: trans("Something went wrong"),
+                text: trans("No offer was created, the selected categories already have an active offer"),
+                type: "error"
+            })
+            return
+        }
+
         notify({
             title: trans("Success"),
-            text: trans("Successfully submit the data"),
-            type: "success"
+            text: skippedCategories.length
+                ? ctrans("Offers created, skipped (already have an active offer): :categories", { categories: skippedCategories.join(', ') })
+                : trans("Successfully submit the data"),
+            type: skippedCategories.length ? "warn" : "success"
         })
         resetForm();
         isOpenModal.value = false
 
-        if (!props.product_category_id) {
-            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
-                organisation: props.shop_data.organisation,
-                shop: props.shop_data.slug,
-                offerCampaign: props.shop_data.offercampaign,
-                offer: response.data.slug
-            }))
+        if (createdSlugs.length === 1 && response.data.url) {
+            router.visit(response.data.url)
+            return
         }
         router.reload()
     })
@@ -170,7 +182,7 @@ const resetForm = () => {
     offerQtyItems.value = 1
     offerAmount.value = 0
     categoryType.value = 'department'
-    offerCategoryId.value = props.product_category_id ?? null
+    offerCategories.value = []
     discountTarget.value = 'same'
     targetCategoryId.value = null
     dateType.value = 'permanent'
@@ -180,7 +192,7 @@ const resetForm = () => {
 }
 
 const isFormInvalid = computed(() => {
-    if (!offerCategoryId.value && !props.product_category_id) return true
+    if (!props.product_category_id && !offerCategories.value.length) return true
 
     if (!offerLabel.value) return true
 
@@ -226,7 +238,7 @@ watch([startDate, endDate], () => {
 
 watch(categoryType, () => {
     if (!props.product_category_id) {
-        offerCategoryId.value = null
+        offerCategories.value = []
     }
 })
 
@@ -258,7 +270,8 @@ resetForm();
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
 
-                        {{ trans('Select category') }}:
+                        {{ trans('Select categories') }}:
+                        <InformationIcon :information="trans('You can select more than one, an offer will be created for each of them')" />
                     </label>
 
                     <div class="flex gap-4">
@@ -286,10 +299,11 @@ resetForm();
 
                     <PureMultiselectInfiniteScroll
                         :key="categoryType"
-                        v-model="offerCategoryId"
+                        v-model="offerCategories"
                         :fetchRoute="activeCategoryRoute"
-                        required
-                        :placeholder="trans('Select category from the list')"
+                        mode="tags"
+                        :object="true"
+                        :placeholder="trans('Select one or more categories from the list')"
                         valueProp="id"
                         labelProp="name" />
 

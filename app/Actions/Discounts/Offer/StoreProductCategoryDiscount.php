@@ -26,10 +26,45 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategoryDiscount extends OrgAction
 {
+    /**
+     * @throws \Throwable
+     *
+     * @return array{offers: array<int, Offer>, skipped: array<int, string>}
+     */
+    public function handleMultiple(array $modelData): array
+    {
+        $productCategoryIds = array_unique(
+            Arr::wrap(Arr::pull($modelData, 'product_category_ids') ?? Arr::pull($modelData, 'product_category_id'))
+        );
+
+        $offers  = [];
+        $skipped = [];
+
+        foreach ($productCategoryIds as $productCategoryId) {
+            try {
+                $offer = $this->handle(array_merge($modelData, ['product_category_id' => $productCategoryId]));
+            } catch (ValidationException) {
+                $offer = null;
+            }
+
+            if ($offer) {
+                $offers[] = $offer;
+            } else {
+                $skipped[] = (string)ProductCategory::where('id', $productCategoryId)->value('name');
+            }
+        }
+
+        return [
+            'offers'  => $offers,
+            'skipped' => $skipped,
+        ];
+    }
+
     /**
      * @throws \Throwable
      */
@@ -174,7 +209,9 @@ class StoreProductCategoryDiscount extends OrgAction
             ],
             'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
             'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:100'],
-            'product_category_id'        => ['required', 'integer', 'exists:product_categories,id'],
+            'product_category_id'        => ['required_without:product_category_ids', 'integer', 'exists:product_categories,id'],
+            'product_category_ids'       => ['required_without:product_category_id', 'array', 'min:1'],
+            'product_category_ids.*'     => ['integer', 'exists:product_categories,id'],
             'target_product_category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
         ];
     }
@@ -182,18 +219,33 @@ class StoreProductCategoryDiscount extends OrgAction
 
     /**
      * @throws \Throwable
+     *
+     * @return array{offers: array<int, Offer>, skipped: array<int, string>}
      */
-    public function asController(Shop $shop, ActionRequest $request): Offer
+    public function asController(Shop $shop, ActionRequest $request): array
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($this->validatedData);
+        return $this->handleMultiple($this->validatedData);
     }
 
-    public function jsonResponse(Offer $offer): array
+    /**
+     * @param array{offers: array<int, Offer>, skipped: array<int, string>} $result
+     */
+    public function jsonResponse(array $result): array
     {
+        /** @var Offer|null $firstOffer */
+        $firstOffer = Arr::first($result['offers']);
+
         return [
-            'slug' => $offer->slug,
+            'slugs'   => Arr::map($result['offers'], fn (Offer $offer) => $offer->slug),
+            'url'     => $firstOffer ? route('grp.org.shops.show.discounts.campaigns.offer.show', [
+                'organisation'  => $firstOffer->organisation->slug,
+                'shop'          => $firstOffer->shop->slug,
+                'offerCampaign' => $firstOffer->offerCampaign->slug,
+                'offer'         => $firstOffer->slug,
+            ]) : null,
+            'skipped' => $result['skipped'],
         ];
     }
 
