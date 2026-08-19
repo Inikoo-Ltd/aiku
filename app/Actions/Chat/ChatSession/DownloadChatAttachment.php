@@ -21,7 +21,7 @@ class DownloadChatAttachment
         $media = Media::where('ulid', $ulid)->firstOrFail();
 
 
-        if ($media->model_type !== 'App\Models\Chat\ChatMessage') {
+        if (!in_array($media->model_type, ['App\Models\Chat\ChatMessage', 'App\Models\Chat\MetaChatMessage'])) {
             abort(403);
         }
 

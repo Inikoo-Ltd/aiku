@@ -7,6 +7,7 @@ import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
+import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAreaAgent.vue"
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
 import SettingChat from "@/Components/Chat/SettingChat.vue"
 import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
@@ -334,7 +335,6 @@ const openChat = (c: Contact) => {
     updateUrl(String(c.ulid))
 }
 
-// ponytail: opens the new session directly; it joins the left list once a Meta list endpoint exists.
 const onWhatsappChatCreated = (session: any) => {
     selectedSession.value = {
         ulid: String(session.ulid),
@@ -383,6 +383,8 @@ const onAssignSelfSuccess = async () => {
 }
 
 const updateUrl = (ulid: string) => {
+    // ponytail: the conversation route binds website ChatSession ulids only; no deep-link for meta sessions yet.
+    if (selectedChannel.value === "whatsapp") return
     const url = route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
     window.history.replaceState(window.history.state, "", url)
 }
@@ -861,7 +863,10 @@ onUnmounted(() => {
             </div>
 
             <div v-else class="h-full">
-                <MessageAreaAgent :messages="messages" :session="selectedSession"
+                <WhatsappMessageAreaAgent v-if="selectedChannel === 'whatsapp'"
+                    :messages="messages" :session="selectedSession"
+                    @back="selectedSession = null" @messages-read="onMessagesRead" />
+                <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"

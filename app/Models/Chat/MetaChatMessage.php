@@ -6,10 +6,13 @@ use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Media;
+use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property int $id
@@ -34,10 +37,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
  */
-class MetaChatMessage extends Model
+class MetaChatMessage extends Model implements HasMedia
 {
     use HasFactory;
     use SoftDeletes;
+    use HasImage;
+    use InteractsWithMedia;
 
     protected $table = 'meta_chat_messages';
 
