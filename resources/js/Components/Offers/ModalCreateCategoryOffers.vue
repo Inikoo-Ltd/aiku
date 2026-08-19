@@ -103,10 +103,12 @@ const submitCategoryOffer = () => {
         }
     )
     .then((response) => {
-        if (!response.data.url) {
+        const { url, created, skipped } = response.data
+
+        if (!created) {
             notify({
                 title: trans("Something went wrong"),
-                text: trans("No offer was created, the selected category already has an active offer"),
+                text: trans("No offer was created, the selected categories already have an active offer"),
                 type: "error"
             })
             return
@@ -114,13 +116,15 @@ const submitCategoryOffer = () => {
 
         notify({
             title: trans("Success"),
-            text: trans("Successfully submit the data"),
-            type: "success"
+            text: skipped
+                ? trans("Created :created offers, skipped :skipped (already have an active offer)", { created: String(created), skipped: String(skipped) })
+                : trans("Successfully submit the data"),
+            type: skipped ? "warning" : "success"
         })
         resetForm();
         isOpenModal.value = false
 
-        router.visit(response.data.url)
+        router.visit(url)
     })
     .catch((error) => {
         const errors = error.response?.data?.errors || {}

@@ -34,7 +34,7 @@ class StoreProductCategoryDiscount extends OrgAction
     /**
      * @throws \Throwable
      *
-     * @return array<int, Offer>
+     * @return array{offers: array<int, Offer>, skipped: int}
      */
     public function handleMultiple(array $modelData): array
     {
@@ -42,29 +42,28 @@ class StoreProductCategoryDiscount extends OrgAction
             Arr::wrap(Arr::pull($modelData, 'product_category_ids') ?? Arr::pull($modelData, 'product_category_id'))
         );
 
-        $offers = [];
+        $offers  = [];
+        $skipped = 0;
 
         foreach ($productCategoryIds as $productCategoryId) {
-            $offer = $this->storeSkippingDuplicate(array_merge($modelData, ['product_category_id' => $productCategoryId]));
+            try {
+                $offer = $this->handle(array_merge($modelData, ['product_category_id' => $productCategoryId]));
+            } catch (ValidationException $e) {
+                if (Arr::has($e->errors(), 'code')) {
+                    $skipped++;
+                    continue;
+                }
+                throw $e;
+            }
 
             if ($offer) {
                 $offers[] = $offer;
+            } else {
+                $skipped++;
             }
         }
 
-        return $offers;
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    private function storeSkippingDuplicate(array $modelData): ?Offer
-    {
-        try {
-            return $this->handle($modelData);
-        } catch (ValidationException) {
-            return null;
-        }
+        return ['offers' => $offers, 'skipped' => $skipped];
     }
 
     /**
@@ -166,7 +165,7 @@ class StoreProductCategoryDiscount extends OrgAction
 
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
-        ActivateOffer::dispatch($offer, 30);
+        ActivateOffer::run($offer, 30);
 
         return $offer;
     }
@@ -223,7 +222,7 @@ class StoreProductCategoryDiscount extends OrgAction
     /**
      * @throws \Throwable
      *
-     * @return array<int, Offer>
+     * @return array{offers: array<int, Offer>, skipped: int}
      */
     public function asController(Shop $shop, ActionRequest $request): array
     {
@@ -233,20 +232,36 @@ class StoreProductCategoryDiscount extends OrgAction
     }
 
     /**
-     * @param array<int, Offer> $offers
+     * @param array{offers: array<int, Offer>, skipped: int} $result
      */
-    public function jsonResponse(array $offers): array
+    public function jsonResponse(array $result): array
     {
+        $offers = $result['offers'];
+
         /** @var Offer|null $offer */
         $offer = Arr::first($offers);
 
-        return [
-            'url' => $offer ? route('grp.org.shops.show.discounts.campaigns.offer.show', [
+        if (!$offer) {
+            $url = null;
+        } elseif (count($offers) == 1) {
+            $url = route('grp.org.shops.show.discounts.campaigns.offer.show', [
                 'organisation'  => $offer->organisation->slug,
                 'shop'          => $offer->shop->slug,
                 'offerCampaign' => $offer->offerCampaign->slug,
                 'offer'         => $offer->slug,
-            ]) : null,
+            ]);
+        } else {
+            $url = route('grp.org.shops.show.discounts.campaigns.show', [
+                'organisation'  => $offer->organisation->slug,
+                'shop'          => $offer->shop->slug,
+                'offerCampaign' => $offer->offerCampaign->slug,
+            ]);
+        }
+
+        return [
+            'url'     => $url,
+            'created' => count($offers),
+            'skipped' => $result['skipped'],
         ];
     }
 
