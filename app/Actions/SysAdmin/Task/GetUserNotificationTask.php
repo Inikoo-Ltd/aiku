@@ -44,7 +44,7 @@ class GetUserNotificationTask
                 'name'            => __('Notifications for :user', ['user' => $user->username]),
             ]);
 
-            $user->tasks()->attach($task->id, ['taskable_type' => User::class]);
+            $user->tasks()->attach($task->id, ['taskable_type' => class_basename(User::class)]);
 
             return $task;
         });

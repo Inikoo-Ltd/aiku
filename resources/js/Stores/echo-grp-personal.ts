@@ -115,6 +115,9 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 layout.dispatching_waiting_count = eventData.dispatching_waiting_count
                 layout.crm_waiting_count = eventData.crm_waiting_count
             })
+            .listen('.master-updated-count-update', (eventData: { master_updated_count: number }) => {
+                useLayoutStore().master_updated_count = eventData.master_updated_count
+            })
             .listen('.clone-family-progress', (eventData: CloneFamilyProgressEvent) => {
                 const masterFamilyId = eventData.family_progress?.action_id
                 if (!masterFamilyId) return
