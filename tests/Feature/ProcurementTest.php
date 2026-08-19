@@ -173,7 +173,7 @@ beforeEach(function () {
 
     $this->stock = $stock;
 
-    $supplierProduct = SupplierProduct::first();
+    $supplierProduct = SupplierProduct::where('supplier_id', $this->supplier->id)->orderBy('id')->first();
     if (!$supplierProduct) {
         $storeData = SupplierProduct::factory()->definition();
         data_set($storeData, 'stock_id', $this->stock->id);
@@ -185,7 +185,7 @@ beforeEach(function () {
 
     $this->supplierProduct = $supplierProduct;
 
-    $orgSupplier = OrgSupplier::first();
+    $orgSupplier = OrgSupplier::where('supplier_id', $this->supplier->id)->orderBy('id')->first();
     if (!$orgSupplier) {
         $orgSupplier = StoreOrgSupplier::make()->action(
             $this->organisation,
@@ -195,7 +195,10 @@ beforeEach(function () {
 
     $this->orgSupplier = $orgSupplier;
 
-    $orgSupplierProduct = OrgSupplierProduct::first();
+    $orgSupplierProduct = OrgSupplierProduct::where('org_supplier_id', $this->orgSupplier->id)
+        ->where('supplier_product_id', $this->supplierProduct->id)
+        ->orderBy('id')
+        ->first();
     if (!$orgSupplierProduct) {
         $orgSupplierProduct = StoreOrgSupplierProduct::make()->action(
             $this->orgSupplier,
@@ -972,6 +975,15 @@ test('create stock delivery from purchase order', function () {
         ->and(Arr::get($stockDelivery->data, 'incoterm'))->toBe('FOB')
         ->and(Arr::get($stockDelivery->data, 'estimated_dispatched_date'))->toBe('2026-07-27')
         ->and(Arr::get($stockDelivery->data, 'estimated_receiving_date'))->toBe('2026-08-31');
+
+    $this->withoutExceptionHandling();
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PurchaseOrder')
+            ->has('stock_delivery_timelines', 1)
+            ->where('stock_delivery_timelines.0.reference', $stockDelivery->reference)
+            ->where('stock_delivery_timelines.0.state', $stockDelivery->state->value)
+            ->has('stock_delivery_timelines.0.state_icon'));
 
     return $stockDelivery;
 });
@@ -2595,5 +2607,35 @@ describe('supplier deposits', function () {
             ->and($deposit->refresh()->unapplied_amount)->toBe(150.0)
             ->and((float) $delivery->depositApplications()->sum('amount'))->toBe(150.0)
             ->and(\App\Models\GoodsIn\StockDeliveryDepositApplication::withTrashed()->where('aspo_deposit_id', $deposit->id)->count())->toBe(2);
+    });
+});
+
+describe('org supplier sub pages navigation', function () {
+    test('previous and next arrows keep the current sub page', function () {
+        $first  = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['code' => 'navaaa', 'name' => 'Nav AAA']));
+        $second = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['code' => 'navzzz', 'name' => 'Nav ZZZ']));
+
+        $firstOrgSupplier  = $first->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+        $secondOrgSupplier = $second->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+        $routeNames = [
+            'grp.org.procurement.org_suppliers.show.supplier_products.index',
+            'grp.org.procurement.org_suppliers.show.purchase_orders.index',
+            'grp.org.procurement.org_suppliers.show.stock_deliveries.index',
+        ];
+
+        foreach ($routeNames as $routeName) {
+            $this->get(route($routeName, [$this->organisation->slug, $firstOrgSupplier->slug]))
+                ->assertInertia(fn (AssertableInertia $page) => $page
+                    ->where('navigation.next.route.name', $routeName)
+                    ->where('navigation.next.route.parameters.orgSupplier', $secondOrgSupplier->slug)
+                    ->etc());
+
+            $this->get(route($routeName, [$this->organisation->slug, $secondOrgSupplier->slug]))
+                ->assertInertia(fn (AssertableInertia $page) => $page
+                    ->where('navigation.previous.route.name', $routeName)
+                    ->where('navigation.previous.route.parameters.orgSupplier', $firstOrgSupplier->slug)
+                    ->etc());
+        }
     });
 });

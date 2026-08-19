@@ -31,6 +31,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -139,6 +140,7 @@ class IndexCollections extends OrgAction
             'webpages.slug as webpage_slug',
             'websites.slug as website_slug',
             'currencies.code as currency_code',
+            DB::raw("'".group()->currency->code."' as grp_currency_code"),
             'collections.health_rank',
         ];
 

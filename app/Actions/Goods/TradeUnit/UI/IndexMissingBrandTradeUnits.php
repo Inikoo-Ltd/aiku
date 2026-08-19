@@ -14,6 +14,7 @@ use App\Models\SysAdmin\Group;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -78,6 +79,7 @@ class IndexMissingBrandTradeUnits extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = DB::raw("'".group()->currency->code."' as grp_currency_code");
         }
 
         $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products'];

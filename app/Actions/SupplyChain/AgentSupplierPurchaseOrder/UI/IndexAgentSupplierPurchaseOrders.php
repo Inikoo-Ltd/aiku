@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI;
 
+use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -31,12 +32,15 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexAgentSupplierPurchaseOrders extends OrgAction
 {
+    use WithParentSiblingsNavigation;
     use WithOrgAgentSubNavigation;
     use WithAgentSubNavigation;
 
     private ?OrgAgent $orgAgentParent = null;
 
     private ?Agent $agentParent = null;
+
+    private ?Supplier $supplierParent = null;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -172,6 +176,7 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
 
     public function inSupplier(Supplier $supplier, ActionRequest $request): LengthAwarePaginator
     {
+        $this->supplierParent = $supplier;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle(supplier: $supplier);
@@ -221,6 +226,7 @@ class IndexAgentSupplierPurchaseOrders extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('Agent supplier purchase orders'),
+                'navigation'  => $this->getParentSiblingsNavigation($this->orgAgentParent ?? $this->agentParent ?? $this->supplierParent, $request),
                 'pageHead'    => [
                     'icon'          => $icon,
                     'title'         => $title,

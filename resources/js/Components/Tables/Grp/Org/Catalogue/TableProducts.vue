@@ -934,7 +934,7 @@ const familyRoute = (item) => {
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: product }">
-            {{ locale.currencyFormat(product.currency_code, product.sales_grp_currency_external) }}
+            {{ locale.currencyFormat(product.grp_currency_code ?? product.currency_code, product.sales_grp_currency_external) }}
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">

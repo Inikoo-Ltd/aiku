@@ -31,6 +31,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -97,6 +98,7 @@ class IndexCollectionsInProductCategory extends OrgAction
             'webpages.slug as webpage_slug',
             'websites.slug as website_slug',
             'currencies.code as currency_code',
+            DB::raw("'".group()->currency->code."' as grp_currency_code"),
         ];
 
         if ($prefix === CollectionsTabsEnum::SALES->value) {

@@ -56,6 +56,9 @@ class GenerateInvoiceFromOrder extends OrgAction
             $billingAddress = $order->billingAddress;
             $updatedData    = [];
 
+            $this->applyLineTaxCategories($order);
+            $order->unsetRelation('transactions');
+
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->first();
 

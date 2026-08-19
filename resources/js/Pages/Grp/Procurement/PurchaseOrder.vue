@@ -35,6 +35,7 @@ import { routeType } from "@/types/route"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
@@ -81,10 +82,8 @@ const props = defineProps < {
 	stock_delivery_timelines: {
 		reference: string
 		state: string
+		state_icon: any
 		route: routeType
-		timeline: {
-			[key: string]: TSTimeline
-		}
 	}[]
     delivery_items: {
         id: number
@@ -644,25 +643,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		/>
 	</div>
 
-	<!-- Stock Delivery Timelines -->
-	<div
-		v-for="stockDelivery in stock_delivery_timelines"
-		:key="stockDelivery.reference"
-		class="flex items-center gap-x-4 py-2 pl-4 border-b border-gray-300"
-	>
-		<Link :href="route(stockDelivery.route.name, stockDelivery.route.parameters)" class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap">
-			<FontAwesomeIcon icon="fas fa-truck" fixed-width aria-hidden="true" />
-			{{ stockDelivery.reference }}
-		</Link>
-		<Timeline
-			class="flex-1 min-w-0"
-			:options="stockDelivery.timeline"
-			:state="stockDelivery.state"
-			:slidesPerView="6"
-			:format-time="'MMMM d yyyy, HH:mm'"
-		/>
-	</div>
-
 	<div class="grid grid-cols-2 lg:grid-cols-4 text-gray-500 divide-x divide-gray-300 border-b border-gray-300">
 	    <!-- First Block -->
 		<BoxStatPallet class="p-4">
@@ -766,7 +746,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 		<!-- Second Block -->
 		<BoxStatPallet class="p-4">
-            <div class="flex justify-center items-center gap-4">
+            <div class="flex h-8 justify-center items-center gap-4">
                 <div class="flex items-center gap-2">
                     <FontAwesomeIcon
                         v-tooltip="trans('Purchase Order')"
@@ -794,7 +774,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                 </div>
             </div>
 
-            <hr class="my-1 border-t border-gray-300" />
+            <hr class="-mx-4 mb-1 border-t border-gray-300" />
 
             <template v-if="data.data.state === 'cancelled'">
                 <div class="space-y-1 text-sm">
@@ -875,27 +855,54 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             </div>
 		</BoxStatPallet>
 
-		<BoxStatPallet v-for="block in costBlocks" :key="block.key" class="p-4">
-			<div class="flex justify-center text-center">
-				{{ block.title }}
+		<!-- Third Block: stock deliveries -->
+		<BoxStatPallet class="p-4">
+			<div class="flex h-8 items-center justify-center text-center">
+				{{ trans("Stock Deliveries") }}
 			</div>
 
-			<hr class="my-1 border-t border-gray-300" />
+			<hr class="-mx-4 mb-1 border-t border-gray-300" />
 
-			<div class="mt-2 space-y-1 text-sm">
+			<div v-if="stock_delivery_timelines.length" class="mt-2 space-y-1 text-sm">
 				<div
-					v-for="row in block.rows"
-					:key="row.label"
-					class="flex items-center justify-between gap-4"
-					:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
+					v-for="stockDelivery in stock_delivery_timelines"
+					:key="stockDelivery.reference"
+					class="flex items-center gap-2"
 				>
-					<span>{{ row.label }}</span>
-					<span>{{ row.value }}</span>
+					<FontAwesomeIcon icon="fal fa-truck" class="text-gray-400" fixed-width aria-hidden="true" />
+					<Link :href="route(stockDelivery.route.name, stockDelivery.route.parameters)" class="primaryLink">
+						{{ stockDelivery.reference }}
+					</Link>
+					<Icon :data="stockDelivery.state_icon" />
 				</div>
+			</div>
+			<div v-else class="mt-2 text-center text-sm italic text-gray-400">
+				{{ trans("No stock deliveries") }}
 			</div>
 		</BoxStatPallet>
 
-		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
+		<!-- Fourth Block: money -->
+		<BoxStatPallet class="p-4 space-y-3">
+			<div v-for="block in costBlocks" :key="block.key">
+				<div class="flex h-8 items-center justify-center text-center">
+					{{ block.title }}
+				</div>
+
+				<hr class="-mx-4 mb-1 border-t border-gray-300" />
+
+				<div class="mt-2 space-y-1 text-sm">
+					<div
+						v-for="row in block.rows"
+						:key="row.label"
+						class="flex items-center justify-between gap-4"
+						:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
+					>
+						<span>{{ row.label }}</span>
+						<span>{{ row.value }}</span>
+					</div>
+				</div>
+			</div>
+		</BoxStatPallet>
 	</div>
 
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />

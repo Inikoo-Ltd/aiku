@@ -16,6 +16,11 @@ class GetProductCategoryTimeSeriesData
     use AsObject;
     use WithTimeSeriesData;
 
+    protected function timeSeriesSalesColumn(): string
+    {
+        return 'sales_external';
+    }
+
     public function handle(ProductCategory $productCategory): array
     {
         $currency = $productCategory->shop->currency->code;

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -45,6 +46,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPurchaseOrders extends OrgAction
 {
+    use WithParentSiblingsNavigation;
     use WithOrgAgentSubNavigation;
     use WithOrgPartnerSubNavigation;
     use WithOrgSupplierSubNavigation;
@@ -413,6 +415,7 @@ class IndexPurchaseOrders extends OrgAction
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('purchase orders'),
+                'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,

@@ -131,6 +131,7 @@ class IndexProducts extends OrgAction
             ->defaultSort('products.code')
             ->select($selects)
             ->selectRaw("'{$shop->currency->code}' as currency_code")
+            ->selectRaw("'".group()->currency->code."' as grp_currency_code")
             ->leftJoin('assets', 'products.asset_id', 'assets.id');
 
         $allowedSorts = [

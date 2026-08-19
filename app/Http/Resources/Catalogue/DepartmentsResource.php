@@ -36,6 +36,7 @@ use Illuminate\Support\Arr;
  * @property mixed $number_current_collections
  * @property mixed $master_product_category_id
  * @property mixed $currency_code
+ * @property mixed $grp_currency_code
  * @property mixed $is_name_reviewed
  * @property mixed $is_description_title_reviewed
  * @property mixed $is_description_reviewed
@@ -60,6 +61,7 @@ class DepartmentsResource extends JsonResource
             'code'                              => $this->code,
             'name'                              => $this->name,
             'currency_code'                     => $this->currency_code,
+            'grp_currency_code'                 => $this->grp_currency_code ?? null,
             'state'                             => [
                 'label' => $this->state->labels()[$this->state->value],
                 'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],

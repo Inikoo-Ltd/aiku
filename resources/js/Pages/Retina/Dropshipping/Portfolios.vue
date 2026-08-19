@@ -101,6 +101,7 @@ const props = defineProps<{
 	logs?: {}
 	routes: {
 		batch_all: routeType
+		batch_match: routeType
 		syncAllRoute: routeType
 		addPortfolioRoute: routeType
 		bulk_upload: routeType
@@ -494,6 +495,18 @@ const onFailedEditCheckmark = (error: any) => {
 	})
 }
 
+const onSuccessBulkMatch = () => {
+	selectedProducts.value = []
+
+	notify({
+		title: trans("Matching started"),
+		text: trans("Your products are being matched with the listings already on your shop."),
+		type: "success",
+	})
+
+	debReloadPage()
+}
+
 const submitPortfolioAction = async (action: any) => {
 	loadingAction.value.push(action.label)
 	try {
@@ -510,6 +523,12 @@ const submitPortfolioAction = async (action: any) => {
 
 		if (action.label === "bulk-create") {
 			isOpenModalUploadProgress.value = true
+		}
+
+		if (action.label === "bulk-match") {
+			onSuccessBulkMatch()
+
+			return
 		}
 
 		debReloadPage()
@@ -1399,6 +1418,28 @@ const layout = inject("layout", layoutStructure)
 						})
 				"
 				size="xs" />
+
+			<Button
+				v-if="selectedProducts.length > 0 && props.routes.batch_match"
+				v-tooltip="
+					trans('Match the selected products with the ones already listed on :platform', {
+						platform: props.platform_data?.name,
+					})
+				"
+				:type="'tertiary'"
+				:label="trans('Match (:_count)', { _count: selectedProducts?.length })"
+				:loading="loadingAction.includes('bulk-match')"
+				@click="
+					() =>
+						submitPortfolioAction({
+							label: 'bulk-match',
+							name: props.routes.batch_match.name,
+							parameters: { customerSalesChannel: customer_sales_channel.id },
+							method: 'post',
+						})
+				"
+				:icon="['fal', 'fa-link']"
+				size="xs" />
 		</div>
 	</div>
 	<div v-if="platform_data.type === 'shopify' && currentTab === 'products'" class="pt-2 grid justify-items-end mr-4">
@@ -1463,6 +1504,27 @@ const layout = inject("layout", layoutStructure)
 									(selectedProducts = []))
 							}
 						" />
+				</div>
+
+				<div v-if="props.routes.batch_match">
+					<ButtonWithLink
+						:tooltip="
+							trans(
+								'Link your products to the ones already listed on :platform, matched by SKU',
+								{ platform: props.platform_data?.name }
+							)
+						"
+						:label="trans('Match all with default product')"
+						type="tertiary"
+						icon="fal fa-link"
+						size="xs"
+						:routeTarget="{
+							name: props.routes.batch_match.name,
+							parameters: { customerSalesChannel: customer_sales_channel.id },
+							method: 'post',
+						}"
+						isWithError
+						@success="onSuccessBulkMatch()" />
 				</div>
 			</div>
 		</div>
