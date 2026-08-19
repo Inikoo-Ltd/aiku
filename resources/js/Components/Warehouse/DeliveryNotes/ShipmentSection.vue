@@ -23,13 +23,13 @@ import ConfirmDialog from "primevue/confirmdialog"
 import { faExclamationCircle } from "@fal"
 import { useConfirm } from "primevue/useconfirm"
 import { twBreakPoint } from "@/Composables/useWindowSize"
-import { InputNumber, RadioButton } from "primevue"
+import { InputNumber } from "primevue"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faBarcodeRead, faPrint } from '@fal'
+import { faBarcodeRead, faPrint, faChevronDown, faLock } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faBarcodeRead, faPrint)
 
@@ -53,6 +53,20 @@ const props = withDefaults(defineProps<{
 		fetch_route: routeType
 		delete_route: routeType
 	}
+	shipper_directive?: {
+		locked_shipper_id: number | null
+		preferred_shipper_id: number | null
+		locked_by?: string | null
+		locked_scope?: string | null
+		can_override_lock?: boolean
+		preferred_shipper?: {
+			id: number
+			name: string
+			trade_as: string | null
+			slug: string
+			api_shipper: string | null
+		} | null
+	} | null
 	address: {
 		delivery: Address
 		options: AddressOptions
@@ -129,7 +143,7 @@ const base64ToPdf = (base: string) => {
 
 // Print shipment
 const isLoadingPrint = ref(false)
-const onPrintShipment = async (ship) => {
+const onPrintShipment = async (ship: (typeof props.shipments)[number]) => {
 	isLoadingPrint.value = true
 	try {
 		const response = await axios.post(
@@ -180,9 +194,13 @@ const onOpenModalTrackingNumber = async () => {
 		)
 		optionShippingList.value = xxx?.data?.data || []
 		optionsCreateLabel.value = xxx?.data?.data?.filter((shipment) => shipment.api_shipper)
-		
-		if (optionShippingList.value?.filter((shipment) => shipment.api_shipper ).length < 1) {
+
+		if (preferredShipper.value) {
+			selectedShipment.value = 'preferred_shipping'
+		} else if (optionShippingList.value?.filter((shipment) => shipment.api_shipper ).length < 1) {
 			selectedShipment.value	= 'other_options'
+		} else {
+			selectedShipment.value = 'create_label'
 		}
 	} catch (error) {
 		console.error(error)
@@ -226,6 +244,7 @@ const onSubmitShipment = () => {
 					isModalShipment.value = false
 					isModalErrorShipment.value = false // Close the error modal
 					formTrackingNumber.reset()
+					preferredTrackingNumber.value = ""
 				},
 				onError: (errors) => {
 					// TODO: Make condition if the error related to delivery address then set to true
@@ -312,7 +331,7 @@ const onSubmitAddressThenShipment = () => {
 
 const confirm = useConfirm("confirm-delete")
 
-const confirmdelete = (event: MouseEvent, shipment) => {
+const confirmdelete = (event: MouseEvent, shipment: (typeof props.shipments)[number]) => {
 	confirm.require({
 		target: event.currentTarget,
 		group: "confirm-delete",
@@ -380,6 +399,96 @@ function handleShipmentClick(shipment: number) {
 }
 
 const selectedShipment = ref("create_label")
+
+const otherShippers = computed(() => optionShippingList.value.filter((shipper) => !shipper.api_shipper))
+
+const isLockOverridden = ref(false)
+const isSectionLocked = computed(() => !!lockedShipper.value && !isLockOverridden.value)
+
+const toggleSection = (section: string) => {
+	if (lockedShipper.value && !isLockOverridden.value) {
+		if (canOverrideLock.value) {
+			confirmUnlockShipper(section)
+		}
+
+		return
+	}
+
+	selectedShipment.value = selectedShipment.value === section ? "" : section
+}
+
+const confirmUnlockShipper = (section: string) => {
+	confirm.require({
+		group: "confirm-delete",
+		message: trans(
+			"This shipper is locked by :reason. Overriding it can send the parcel with the wrong carrier, and the customer may be charged the wrong price. Only continue if you are sure.",
+			{ reason: lockedByCustomer.value ? trans("the customer") : trans("the shipping rules") }
+		),
+		header: trans("Override the locked shipper?"),
+		icon: "pi pi-exclamation-triangle",
+		rejectProps: {
+			label: trans("Keep the locked shipper"),
+			severity: "secondary",
+			outlined: true,
+		},
+		acceptProps: {
+			label: trans("Yes, override it"),
+			severity: "danger",
+		},
+		accept: () => {
+			isLockOverridden.value = true
+			selectedShipment.value = section
+		},
+	})
+}
+
+// Own field so typing here does not mirror into the other-shippers tracking input
+const preferredTrackingNumber = ref("")
+
+const onSavePreferredShipment = () => {
+	if (!preferredTrackingNumber.value) return
+
+	set(formTrackingNumber, ["errors", "address"], null)
+	formTrackingNumber.shipping_id = preferredShipper.value
+	formTrackingNumber.tracking_number = preferredTrackingNumber.value
+	onSubmitShipment()
+}
+
+const lockedShipper = computed(() => {
+	if (!props.shipper_directive?.locked_shipper_id) return null
+	return optionShippingList.value.find((shipment) => shipment.id === props.shipper_directive.locked_shipper_id) || null
+})
+
+const lockedByCustomer = computed(() => props.shipper_directive?.locked_by === "customer")
+
+const isShipperLocked = computed(() => !!props.shipper_directive?.locked_shipper_id)
+const canOverrideLock = computed(() => !!props.shipper_directive?.can_override_lock)
+
+// One tap creates the label; only API shippers can skip the tracking number
+const oneTapShipper = computed(() => {
+	const shipper = props.shipper_directive?.preferred_shipper
+	return shipper?.api_shipper ? shipper : null
+})
+
+const canChooseOtherShipper = computed(() => !isShipperLocked.value || canOverrideLock.value)
+
+const onCreateOneTapShipment = () => {
+	formTrackingNumber.shipping_id = { ...oneTapShipper.value }
+	onSubmitShipment()
+}
+
+const isOtherShipperMenuOpen = ref(false)
+const onChooseOtherShipper = () => {
+	isOtherShipperMenuOpen.value = false
+	isModalShipment.value = true
+	onOpenModalTrackingNumber()
+}
+
+const preferredShipper = computed(() => {
+	if (lockedShipper.value) return lockedShipper.value
+	if (!props.shipper_directive?.preferred_shipper_id) return null
+	return optionShippingList.value.find((shipment) => shipment.id === props.shipper_directive.preferred_shipper_id) || null
+})
 
 // Section: Shipment Error
 const isModalErrorShipment = ref(false)
@@ -590,8 +699,39 @@ const onClickButtonShipmentPlatform = () => {
 					type="dashed"
 					:size="twBreakPoint().includes('lg') ? 'xs' : undefined"
 				/>
+				<!-- Preferred API shipper: one tap creates the label, caret escapes to the modal -->
+				<div
+					v-if="!shipments.length && props.shipments_routes?.submit_route?.name && oneTapShipper"
+					class="relative flex items-stretch">
+					<Button
+						@click="() => onCreateOneTapShipment()"
+						:loading="isLoadingButton == 'addTrackingNumber'"
+						:label="trans('Create :shipper shipping', { shipper: oneTapShipper.trade_as || oneTapShipper.name })"
+						icon="fal fa-print"
+						:size="twBreakPoint().includes('lg') ? 'xs' : undefined"
+					/>
+					<button
+						v-if="canChooseOtherShipper"
+						type="button"
+						class="ml-px px-2 rounded bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+						v-tooltip="trans('More shipping options')"
+						@click="isOtherShipperMenuOpen = !isOtherShipperMenuOpen">
+						<FontAwesomeIcon :icon="faChevronDown" fixed-width aria-hidden="true" />
+					</button>
+
+					<div
+						v-if="isOtherShipperMenuOpen"
+						class="absolute top-full left-0 mt-1 z-20 w-56 bg-white border border-gray-200 rounded-md shadow-lg py-1">
+						<button
+							type="button"
+							class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+							@click="() => onChooseOtherShipper()">
+							{{ trans("Choose other shipper") }}
+						</button>
+					</div>
+				</div>
 				<Button
-					v-if="!shipments.length && props.shipments_routes?.submit_route?.name"
+					v-else-if="!shipments.length && props.shipments_routes?.submit_route?.name"
 					:disabled="!props.shipments_routes?.submit_route?.name"
 					@click="() => ((isModalShipment = true), onOpenModalTrackingNumber())"
 					:label="trans('Shipment')"
@@ -613,10 +753,6 @@ const onClickButtonShipmentPlatform = () => {
 			@onClose="!isModalErrorShipment ? (isModalShipment = false) : null"
 			width="w-full max-w-2xl">
 			<div>
-				<div class="text-center font-bold mb-6 text-2xl">
-                    {{ trans("Add shipment") }}
-                </div>
-
 				<!-- Shipment Cost -->
 				<div v-if="external_shop?.engine_value === 'faire'" class="mt-3">
 					<span class="text-xs px-1 my-2">{{ trans("Shipment cost") }}: </span>
@@ -637,24 +773,130 @@ const onClickButtonShipmentPlatform = () => {
 					</p>
 				</div>
 
-				<!-- Section: Create label -->
-				<div v-if="optionsCreateLabel.length" class="w-full mt-3">
-					<div class="text-xs px-1 my-2">
-						<RadioButton
-							v-model="selectedShipment"
-							inputId="create_label"
-							name="select_shipment"
-							value="create_label"
-							size="small" />
-						<label for="create_label" class="ml-1 cursor-pointer">{{ trans("Create label") }} (API):</label>
-					</div>
+				<!-- Section: Preferred shipping -->
+				<div v-if="preferredShipper" class="mt-3">
+				<div v-if="lockedShipper" class="text-xs pb-2 italic text-gray-500">
+					{{ lockedByCustomer
+						? trans("Shipper chosen by customer — contact customer services to change")
+						: trans("Locked by shipping rules for :scope", { scope: shipper_directive?.locked_scope ?? "" }) }}
+				</div>
 
-					<div v-if="selectedShipment === 'create_label'" class="ml-6 relative">
-						<div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
+				<div class="grid grid-cols-2 gap-3">
+					<div
+						@click="
+							() => (
+								set(formTrackingNumber, ['errors', 'address'], null),
+								preferredShipper.api_shipper
+									? handleShipmentClick(preferredShipper)
+									: (formTrackingNumber.shipping_id = preferredShipper)
+							)
+						"
+						class="relative isolate w-full min-h-28 border-2 rounded-lg px-5 py-4 transition-colors flex items-start gap-5"
+						:class="[
+							preferredShipper.api_shipper ? 'cursor-pointer' : 'col-span-2',
+							formTrackingNumber.shipping_id?.id == preferredShipper.id
+								? 'bg-indigo-200 border-indigo-400'
+								: 'hover:bg-gray-100 border-gray-300',
+						]">
+						<div class="min-w-0">
+							<div v-tooltip="preferredShipper.name" class="font-bold text-lg">
+								{{ preferredShipper.trade_as || preferredShipper.name }}
+							</div>
+							<div class="text-sm text-gray-500 italic">
+								{{ preferredShipper.code }}
+							</div>
+						</div>
+
+						<!-- Manual shipper: tracking number is required before saving -->
+						<div v-if="!preferredShipper.api_shipper" class="ml-auto w-1/2 shrink-0" @click.stop>
+							<span class="text-xs">
+								<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500" fixed-width aria-hidden="true" />
+								{{ trans("Tracking number") }}:
+							</span>
+							<PureInput
+								v-model="preferredTrackingNumber"
+								placeholder="ABC-DE-1234567"
+								@keydown.enter="() => onSavePreferredShipment()" />
+							<p
+								v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
+								class="mt-2 text-sm text-red-600">
+								{{ formTrackingNumber.errors.tracking_number }}
+							</p>
+
+							<div
+								v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
+								class="mt-2 text-sm text-red-600">
+								<p
+									v-if="typeof formTrackingNumber?.errors?.address === 'string'"
+									class="italic">
+									*{{ formTrackingNumber?.errors?.address }}
+								</p>
+								<p v-else v-for="(errorx, errorIdx) in formTrackingNumber?.errors?.address" :key="errorIdx">
+									{{ errorx }}
+								</p>
+							</div>
+
+							<div class="mt-3">
+								<Button
+									:style="'save'"
+									:loading="isLoadingButton == 'addTrackingNumber'"
+									:label="trans('Save Shipping')"
+									:disabled="!preferredTrackingNumber"
+									full
+									@click="() => onSavePreferredShipment()" />
+							</div>
+						</div>
+
+						<LoadingIcon
+							v-if="
+								formTrackingNumber.shipping_id?.id == preferredShipper.id &&
+								isLoadingButton == 'addTrackingNumber'
+							"
+							class="text-gray-500 absolute top-4 right-4 text-lg" />
+						<div
+							v-if="isLoadingButton == 'addTrackingNumber'"
+							class="bg-black/40 rounded-md absolute inset-0 z-10"></div>
+					</div>
+				</div>
+				</div>
+
+				<!-- Section: Create label -->
+				<div v-if="optionsCreateLabel.length" class="w-full border border-gray-200 rounded-md mt-3">
+					<button
+						type="button"
+						class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-left transition-colors"
+						:class="isSectionLocked ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'"
+						:disabled="isSectionLocked && !canOverrideLock"
+						v-tooltip="isSectionLocked ? (lockedByCustomer ? trans('Shipper locked by the customer') : trans('Locked by shipping rules for :scope', { scope: shipper_directive?.locked_scope ?? '' })) : ''"
+						@click="toggleSection('create_label')">
+						<span class="flex items-center gap-2">
+							{{ trans("API powered Shippers") }}
+							<span v-if="selectedShipment !== 'create_label'" class="flex items-center gap-1">
+								<img
+									v-for="shipper in optionsCreateLabel"
+									:key="shipper.id"
+									:src="`/assets/shipper_logo/${shipper.slug}.png`"
+									:alt="shipper.name"
+									v-tooltip="shipper.name"
+									class="h-4 w-4 object-contain"
+									@error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+								/>
+							</span>
+						</span>
+						<FontAwesomeIcon
+							:icon="isSectionLocked ? faLock : faChevronDown"
+							class="text-gray-400 transition-transform"
+							:class="!isSectionLocked && selectedShipment === 'create_label' ? 'rotate-180' : ''"
+							fixed-width
+							aria-hidden="true" />
+					</button>
+
+					<div v-if="selectedShipment === 'create_label'" class="px-3 pb-3 relative">
+						<div class="grid grid-cols-2 gap-3 mb-2">
 							<div
 								v-if="isLoadingData === 'addTrackingNumber'"
-								v-for="sip in 3"
-								class="skeleton w-full max-w-52 h-20 rounded"></div>
+								v-for="sip in 2"
+								class="skeleton w-full min-h-28 rounded-lg"></div>
 							<div
 								v-else
 								v-for="(shipment, index) in optionsCreateLabel"
@@ -664,13 +906,13 @@ const onClickButtonShipmentPlatform = () => {
 										handleShipmentClick(shipment)
 									)
 								"
-								class="relative isolate w-full max-w-52 h-20 border rounded-md px-4 py-3 cursor-pointer"
+								class="relative isolate w-full min-h-28 border-2 rounded-lg px-5 py-4 cursor-pointer transition-colors"
 								:class="[
 									formTrackingNumber.shipping_id?.id == shipment.id
-										? 'bg-indigo-200 border-indigo-300'
+										? 'bg-indigo-200 border-indigo-400'
 										: 'hover:bg-gray-100 border-gray-300',
 								]">
-								<div v-tooltip="shipment.name" class="font-bold tesm">
+								<div v-tooltip="shipment.name" class="font-bold text-lg">
 									{{ shipment.trade_as }}
 								</div>
 								<div class="text-sm text-gray-500 italic">
@@ -685,12 +927,12 @@ const onClickButtonShipmentPlatform = () => {
 										formTrackingNumber.shipping_id?.id == shipment.id &&
 										isLoadingButton == 'addTrackingNumber'
 									"
-									class="text-gray-500 absolute top-3 right-3" />
+									class="text-gray-500 absolute top-4 right-4 text-lg" />
 								<FontAwesomeIcon
 									v-else
 									v-tooltip="trans('Barcode print')"
 									icon="fal fa-print"
-									class="text-gray-500 absolute top-3 right-3"
+									class="text-gray-500 absolute top-4 right-4 text-lg"
 									fixed-width
 									aria-hidden="true" />
 								<div
@@ -721,19 +963,29 @@ const onClickButtonShipmentPlatform = () => {
 				</div>
 
 				<!-- Section: Other options -->
-				<div class="text-xs px-1 my-2">
-					<RadioButton
-						v-model="selectedShipment"
-						inputId="other_options"
-						name="select_shipment"
-						value="other_options"
-						size="small" />
-					<label for="other_options" class="ml-1 cursor-pointer"
-						>{{ trans("Other options") }}:</label
-					>
-				</div>
+				<div class="border border-gray-200 rounded-md mt-3">
+				<button
+					type="button"
+					class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-left transition-colors"
+					:class="isSectionLocked ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'"
+					:disabled="isSectionLocked && !canOverrideLock"
+					v-tooltip="isSectionLocked ? (lockedByCustomer ? trans('Shipper locked by the customer') : trans('Locked by shipping rules for :scope', { scope: shipper_directive?.locked_scope ?? '' })) : ''"
+					@click="toggleSection('other_options')">
+					<span class="flex items-baseline gap-2 min-w-0">
+						{{ trans("Other shippers") }} ({{ otherShippers.length }})
+						<span v-if="otherShippers.length && selectedShipment !== 'other_options'" class="text-xs text-gray-400 font-normal truncate">
+							{{ otherShippers.slice(0, 4).map((shipper) => shipper.code || shipper.name).join(", ") }}<template v-if="otherShippers.length > 4">…</template>
+						</span>
+					</span>
+					<FontAwesomeIcon
+						:icon="isSectionLocked ? faLock : faChevronDown"
+						class="text-gray-400 transition-transform"
+						:class="!isSectionLocked && selectedShipment === 'other_options' ? 'rotate-180' : ''"
+						fixed-width
+						aria-hidden="true" />
+				</button>
 
-				<div v-if="selectedShipment === 'other_options'" class="ml-6">
+				<div v-if="selectedShipment === 'other_options'" class="px-3 pb-3">
 					<!-- Section: Select shipping -->
 					<div class="">
 						<PureMultiselectInfiniteScroll
@@ -819,6 +1071,7 @@ const onClickButtonShipmentPlatform = () => {
 							full
 							@click="() => onSubmitShipment()" />
 					</div>
+				</div>
 				</div>
 
 				<!-- Loading: fetching service list -->

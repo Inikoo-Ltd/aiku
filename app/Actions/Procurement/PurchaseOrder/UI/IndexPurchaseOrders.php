@@ -30,6 +30,7 @@ use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -72,7 +73,7 @@ class IndexPurchaseOrders extends OrgAction
     {
         $supplierStats = match (true) {
             $parent instanceof Supplier => $parent->stats,
-            $parent instanceof OrgSupplier => $parent->supplier->stats,
+            $parent instanceof OrgSupplier => $parent->stats,
             default => null,
         };
 
@@ -147,11 +148,16 @@ class IndexPurchaseOrders extends OrgAction
                     ->where('org_stock_id', $parent->id);
             })->with('purchaseOrderTransactions');
         } elseif ($parent instanceof OrgSupplierProduct) {
-            $query->leftJoin('purchase_order_transactions', 'purchase_orders.id', '=', 'purchase_order_transactions.purchase_order_id')
-                ->where('purchase_order_transactions.org_supplier_product_id', $parent->id)
-                ->with('purchaseOrderTransactions');
-            $query->distinct('purchase_orders.id');
-            $query->orderBy('purchase_orders.id');
+            $productTransactions = PurchaseOrderTransaction::query()
+                ->select('purchase_order_id')
+                ->selectRaw('SUM(quantity_ordered) as quantity_ordered')
+                ->selectRaw('SUM(org_net_amount) as org_net_amount')
+                ->where('org_supplier_product_id', $parent->id)
+                ->groupBy('purchase_order_id');
+
+            $query->joinSub($productTransactions, 'product_transactions', function ($join) {
+                $join->on('purchase_orders.id', '=', 'product_transactions.purchase_order_id');
+            });
         } else {
             $query->where('purchase_orders.organisation_id', $parent->id);
         }
@@ -168,6 +174,13 @@ class IndexPurchaseOrders extends OrgAction
         $query
             ->select(['purchase_orders.*'])
             ->selectRaw('purchase_orders.org_exchange * purchase_orders.cost_total as org_total_cost');
+
+        if ($parent instanceof OrgSupplierProduct) {
+            $query->addSelect([
+                'product_transactions.quantity_ordered',
+                'product_transactions.org_net_amount',
+            ]);
+        }
 
         if ($parent instanceof Group || $organisationAgent || $parent instanceof Supplier) {
             $query
@@ -191,7 +204,9 @@ class IndexPurchaseOrders extends OrgAction
                     ]);
                 },
             ])
-            ->allowedSorts(['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
+            ->allowedSorts($parent instanceof OrgSupplierProduct
+                ? ['reference', 'parent_name', 'date', 'quantity_ordered', 'org_net_amount']
+                : ['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -234,11 +249,19 @@ class IndexPurchaseOrders extends OrgAction
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
             }
 
-            $table
-                ->column(key: 'number_current_purchase_order_transactions', label: __('Items'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'org_total_cost', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency')
-                ->defaultSort('-date');
+            if ($parent instanceof OrgSupplierProduct) {
+                $table
+                    ->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, align: 'right', type: 'number')
+                    ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'org_net_amount', label: __('Amount'), canBeHidden: false, sortable: true, type: 'currency');
+            } else {
+                $table
+                    ->column(key: 'number_current_purchase_order_transactions', label: __('Items'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'org_total_cost', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            }
+
+            $table->defaultSort('-date');
         };
     }
 
@@ -373,20 +396,7 @@ class IndexPurchaseOrders extends OrgAction
             $afterTitle    = ['label' => __('Purchase Orders')];
             $iconRight     = ['icon' => 'fal fa-clipboard-list'];
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
-            $actions       = [
-                [
-                    'label' => __('Purchase Order'),
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.org-supplier.purchase-order.store',
-                        'parameters' => [
-                            'orgSupplier' => $this->parent->id,
-                        ],
-                    ],
-                ],
-            ];
+            $actions       = [$this->getOrgSupplierPurchaseOrderAction($this->parent)];
         } elseif ($this->parent instanceof Supplier) {
             $title         = $this->parent->name;
             $icon          = [

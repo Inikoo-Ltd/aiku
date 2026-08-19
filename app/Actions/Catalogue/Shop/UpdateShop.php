@@ -310,6 +310,8 @@ class UpdateShop extends OrgAction
                     'gads_customer_id' => 'settings.google_ads.customer_id',
                     'gads_login_customer_id' => 'settings.google_ads.login_customer_id',
                     'gads_user_list_id' => 'settings.google_ads.user_list_id',
+                    'meta_ads_ad_account_id' => 'settings.meta_ads.ad_account_id',
+                    'meta_ads_access_token' => 'settings.meta_ads.access_token',
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
@@ -348,6 +350,8 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'gads_customer_id');
         data_forget($modelData, 'gads_login_customer_id');
         data_forget($modelData, 'gads_user_list_id');
+        data_forget($modelData, 'meta_ads_ad_account_id');
+        data_forget($modelData, 'meta_ads_access_token');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
         data_forget($modelData, 'review_rating_labels');
@@ -823,6 +827,8 @@ class UpdateShop extends OrgAction
             'gads_customer_id'                                        => ['sometimes', 'nullable', 'string'],
             'gads_login_customer_id'                                  => ['sometimes', 'nullable', 'string'],
             'gads_user_list_id'                                       => ['sometimes', 'nullable', 'string'],
+            'meta_ads_ad_account_id'                                  => ['sometimes', 'nullable', 'string'],
+            'meta_ads_access_token'                                   => ['sometimes', 'nullable', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],

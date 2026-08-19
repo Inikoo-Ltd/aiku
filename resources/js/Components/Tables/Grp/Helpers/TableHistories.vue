@@ -7,6 +7,7 @@ import { faPlus, faMinus } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowRight, faPlus as falPlus, faMinus as falMinus} from '@fal';
+import { trans } from 'laravel-vue-i18n';
 
 library.add(faPlus, faMinus, faArrowRight);
 
@@ -206,6 +207,22 @@ const getTradeUnitHistory = (oldData, newData) => {
                                     </span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <div
+                        v-else-if="history.event == 'shipper_lock_override'"
+                        class="text-sm space-y-1"
+                    >
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-gray-700">{{ trans("Shipper") }}:</span>
+                            <span class="text-gray-600">{{ history.old_values?.shipper }}</span>
+                            <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
+                            <span class="text-gray-800 font-semibold">{{ history.new_values?.shipper }}</span>
+                        </div>
+                        <div class="text-xs text-gray-500 italic">
+                            {{ history.old_values?.locked_by == 'customer'
+                                ? trans("Overrode the shipper chosen by the customer")
+                                : trans("Overrode the lock set by the shipping rules for :scope", { scope: history.old_values?.locked_scope ?? '' }) }}
                         </div>
                     </div>
                     <div

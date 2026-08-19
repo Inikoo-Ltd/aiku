@@ -68,7 +68,7 @@ const deploymentTooltip = computed(() => {
             </div>
 
             <!-- Right: Tab Section -->
-            <div class="flex items-center text-sm">
+            <div class="flex items-center text-sm mr-4">
                 <div id="help-articles" class="h-full">
 
                 </div>
@@ -77,8 +77,8 @@ const deploymentTooltip = computed(() => {
                 </div>
                <!--  <FooterCurrency /> -->
                 <FooterLanguage />
-                <FooterMessage v-if="layout?.user?.is_agent" />
                 <FooterActiveUsers />
+                <FooterMessage v-if="layout?.user?.is_agent" />
             </div>
         </div>
     </footer>

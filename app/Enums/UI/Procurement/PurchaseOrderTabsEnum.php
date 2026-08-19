@@ -33,7 +33,7 @@ enum PurchaseOrderTabsEnum: string
                 'icon'  => 'fal fa-th-list',
             ],
             PurchaseOrderTabsEnum::SHOWCASE => [
-                'title' => __('Data'),
+                'title' => __('Showcase'),
                 'icon'  => 'fal fa-database',
             ],
             PurchaseOrderTabsEnum::HISTORY  => [

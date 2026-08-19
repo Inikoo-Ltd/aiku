@@ -388,10 +388,15 @@ php artisan traffic-source:fetch-meta-costs                    # every configure
 php artisan traffic-source:fetch-meta-costs uk --days=30 --dry-run
 ```
 
-To connect a shop, set `settings.meta_ads.ad_account_id` on it (the digits of the ad account) and
-put a Business Manager **system user** token in `META_ADS_ACCESS_TOKEN`. One system user token
-normally covers every ad account in the business; a shop whose account belongs to somebody else's
-business — an agency's — can carry its own in `settings.meta_ads.access_token`.
+To connect a shop, open its settings page in Aiku and fill in the **Meta Ads** section: the ad
+account id (the digits, without the `act_` prefix) and, when needed, an access token. Put a Business
+Manager **system user** token in `META_ADS_ACCESS_TOKEN` for the installation. One system user token
+normally covers every ad account in its business, so the token field stays empty for most shops; a
+shop whose account belongs to somebody else's business — an agency's — fills it in and that value
+wins. The two fields land in `settings.meta_ads.ad_account_id` and `settings.meta_ads.access_token`.
+
+A shop reads exactly one ad account. An ad account whose campaigns advertise two different shops
+cannot be split, so its whole spend lands on the shop it is mapped to.
 
 One thing has to be done on the Meta side for **campaign-level** figures to line up: the ads' URLs
 must carry `utm_medium=paid` and `utm_campaign={{campaign.id}}`, Meta's dynamic parameter for the

@@ -237,6 +237,12 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         return $order;
     }
 
+    /**
+     * The price a submitted order was sold at is the price, in both directions. Restoring only
+     * the lines that had lost discount let an improved tier through, so an order already paid in
+     * full was invoiced for less and the customer left in credit for the difference - GB586186
+     * was billed 12% off two lines it had bought at 5%.
+     */
     public function regenerateSubmittedTransactionDiscounts(Order $order): void
     {
         $offerAllowancePivots = [];
@@ -246,7 +252,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             $order->transactions()
                 ->where('has_discount_when_submitted', true)
                 ->whereRaw("submitted_offers_data <> '{}'::jsonb")
-                ->where('submitted_discount_factor', '<', DB::raw('current_discount_factor'))
+                ->whereRaw('submitted_discount_factor <> current_discount_factor')
                 ->get() as $transactionWithSubmittedDiscount
         ) {
             DB::table('transaction_has_offer_allowances')->where('is_gift', false)->where('transaction_id', $transactionWithSubmittedDiscount->id)->delete();

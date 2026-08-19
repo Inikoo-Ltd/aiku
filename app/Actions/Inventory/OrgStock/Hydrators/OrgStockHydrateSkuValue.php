@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -46,6 +47,7 @@ class OrgStockHydrateSkuValue implements ShouldBeUnique
         if ($orgStock->wasChanged('sku_value')) {
             OrgStockHydrateValueInLocations::dispatch($orgStock);
             OrgStockHydrateStockValue::dispatch($orgStock);
+            MasterAssetHydrateEffectiveCost::dispatchForOrgStock($orgStock);
         }
     }
 }

@@ -8,6 +8,9 @@
 
 namespace App\Actions\SupplyChain\Agent;
 
+use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateAgentSupplierPurchaseOrders;
+use App\Actions\SupplyChain\Agent\Hydrators\AgentHydratePurchaseOrders;
+use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateStockDeliveries;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
 use App\Models\SupplyChain\Agent;
@@ -24,6 +27,9 @@ class HydrateAgents
     {
         AgentHydrateSuppliers::run($agent);
         AgentHydrateSupplierProducts::run($agent);
+        AgentHydratePurchaseOrders::run($agent);
+        AgentHydrateStockDeliveries::run($agent);
+        AgentHydrateAgentSupplierPurchaseOrders::run($agent);
     }
 
     public function asCommand(Command $command): int

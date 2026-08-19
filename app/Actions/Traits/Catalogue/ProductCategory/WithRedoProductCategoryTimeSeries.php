@@ -32,7 +32,19 @@ trait WithRedoProductCategoryTimeSeries
 
     protected function modifyQuery(Builder $query): Builder
     {
-        return $query->where('type', $this->categoryType->value);
+        return $query->where('type', $this->categoryType->value)
+            ->where('state', '!=', ProductCategoryStateEnum::IN_PROCESS->value);
+    }
+
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoice_transactions')->whereNull('deleted_at'),
+                'key'   => "{$this->categoryType->value}_id",
+                'date'  => 'date',
+            ],
+        ];
     }
 
     public function handle(?int $productCategoryId, ?string $from = null, ?string $to = null, bool $async = false): void
@@ -52,25 +64,22 @@ trait WithRedoProductCategoryTimeSeries
         }
 
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->max('date');
+            $dateRange = $this->getDateRange($productCategoryId);
 
-            if (!$firstInvoicedDate) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
-                ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessProductCategoryTimeSeriesRecords::dispatch($productCategoryId, $frequency, $from, $to)->onQueue('sales_slave_historic');
             } else {
-                ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
+                ProcessProductCategoryTimeSeriesRecords::run($productCategoryId, $frequency, $from, $to);
             }
         }
     }
-
-
 }
