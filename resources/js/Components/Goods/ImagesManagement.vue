@@ -4,7 +4,8 @@ import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faPencil, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
+import { faImage, faMusic, faPencil, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
+import AudioWaveform from "@/Components/Pure/AudioWaveform.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import axios from "axios"
@@ -26,6 +27,7 @@ const props = defineProps<{
         bucket_images?: boolean
         images_update_route: routeType
         upload_images_route: routeType
+        upload_audio_route?: routeType
         delete_images_route: routeType
         update_image_alt_route?: routeType
         images_category_box: {
@@ -34,6 +36,7 @@ const props = defineProps<{
             column_in_db: string
             url?: string
             images?: ImageTS
+            audio?: { url: string, name: string } | null
             information?: string
             id?: number
         }[]
@@ -238,6 +241,32 @@ function onDropFile(event: DragEvent) {
     if (event.dataTransfer?.files?.length) uploadFiles(event.dataTransfer.files)
 }
 
+async function uploadAudioFile(event: Event) {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file || !props.data.upload_audio_route) return
+
+    const formData = new FormData()
+    formData.append("audio", file)
+
+    try {
+        loadingSubmit.value = "audio_id"
+        await axios.post(
+            route(props.data.upload_audio_route.name, props.data.upload_audio_route.parameters),
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } }
+        )
+        notifySuccess(trans("Sound sample uploaded successfully"))
+        router.reload({ only: ["images"] })
+    } catch (e) {
+        console.error(e)
+        notifyError(trans("Failed to upload sound sample"))
+    } finally {
+        loadingSubmit.value = null
+        input.value = ""
+    }
+}
+
 function onDeletefilesInBox(categoryBox: any) {
     let payload = { [categoryBox.column_in_db]: null }
     onSubmitImage(payload, categoryBox)
@@ -335,6 +364,15 @@ function onDeleteFilesInList(categoryBox: any) {
                                 selectedVideoToUpdate = { ...categoryBox }
                                 isModalEditVideo = true
                             }" :icon="faPencil" class="text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width />
+                            <label v-if="categoryBox.type == 'audio' && editable && data.upload_audio_route"
+                                class="cursor-pointer" v-tooltip="trans('Upload sound sample')">
+                                <FontAwesomeIcon :icon="faUpload" class="text-gray-400 hover:text-gray-600" fixed-width />
+                                <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" class="hidden"
+                                    @change="uploadAudioFile($event)" />
+                            </label>
+                            <FontAwesomeIcon v-if="categoryBox.type == 'audio' && categoryBox.audio && editable"
+                                :icon="faUnlink" @click="() => onDeleteFilesInList(categoryBox)"
+                                class="text-gray-400 text-red-600 cursor-pointer text-xs" />
                             <FontAwesomeIcon v-if="(categoryBox.images || categoryBox.url) && editable" :icon="faUnlink"
                                 @click="() => onDeletefilesInBox(categoryBox)"
                                 class="text-gray-400 text-red-600 cursor-pointer text-xs" />
@@ -352,6 +390,19 @@ function onDeleteFilesInList(categoryBox: any) {
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
                             <span class="text-[12px] font-medium">{{ trans('Drop image here') }}</span>
                         </div>
+                    </div>
+
+                    <div v-if="categoryBox.type == 'audio'"
+                        class="relative flex h-36 w-full items-center justify-center bg-gray-50 px-2">
+                        <AudioWaveform v-if="categoryBox.audio" :src="categoryBox.audio.url" />
+                        <label v-else class="flex flex-col items-center justify-center text-gray-400"
+                            :class="editable && data.upload_audio_route ? 'cursor-pointer' : ''">
+                            <FontAwesomeIcon :icon="faMusic" class="mb-1 text-2xl" />
+                            <span class="text-[12px] font-medium">{{ trans('Upload sound sample') }}</span>
+                            <input v-if="editable && data.upload_audio_route" type="file"
+                                accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" class="hidden"
+                                @change="uploadAudioFile($event)" />
+                        </label>
                     </div>
 
                     <div v-if="categoryBox.type == 'video'"

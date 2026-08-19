@@ -352,6 +352,7 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAssetImageAlt;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
 use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
+use App\Actions\Masters\MasterAsset\UploadAudioToMasterProduct;
 use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
@@ -675,6 +676,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
     Route::post('kill-all-rebels', KillAllMasterAssetRebelProducts::class)->name('kill_all_rebels');
     Route::patch('update-images', UpdateMasterProductImages::class)->name('update_images');
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
+    Route::post('upload-audio', UploadAudioToMasterProduct::class)->name('upload_audio');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
     Route::patch('media/{media:id}/alt', UpdateMasterAssetImageAlt::class)->name('update_image_alt')->withoutScopedBindings();
 });

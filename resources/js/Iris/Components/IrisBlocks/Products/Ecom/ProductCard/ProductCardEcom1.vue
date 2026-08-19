@@ -21,6 +21,7 @@ import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.v
 import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
+import ProductSoundButton from '@/Iris/Components/ProductSoundButton.vue'
 import { routeType } from '@/types/route'
 
 library.add(faStarHalfAlt, faQuestionCircle)
@@ -223,6 +224,8 @@ defineExpose({
 
                     </slot>
                 </div>
+
+                <ProductSoundButton v-if="product.audio" :src="product.audio" />
 
                 <!-- Section: Golden product, Favourite -->
                 <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"

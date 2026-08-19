@@ -12,6 +12,7 @@ import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartBu
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
+import ProductSoundButton from '@/Iris/Components/ProductSoundButton.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
@@ -152,6 +153,8 @@ defineExpose({
                     <div class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10 offer ">
                          <DiscountByType :offers_data="product?.product_offers_data" template="max_discount" />
                     </div>
+
+                    <ProductSoundButton v-if="product.audio" :src="product.audio" />
 
                     <!-- GOLDEN PRODUCT + FAVOURITE -->
                     <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && !product.variant)"
