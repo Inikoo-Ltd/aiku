@@ -48,6 +48,15 @@ class StorePurchaseOrder extends OrgAction
     public function handle(OrgSupplier|OrgAgent|OrgPartner $parent, array $modelData): PurchaseOrder
     {
         $modelData = $this->prepareDeliveryStoreFields($parent, $modelData);
+        $deliveryAddress = ResolvePurchaseOrderDeliveryAddress::run(
+            $parent->organisation,
+            Arr::get($modelData, 'data.delivery_address')
+        );
+
+        if ($deliveryAddress) {
+            data_set($modelData, 'data.delivery_address', $deliveryAddress);
+        }
+
         if (!Arr::get($modelData, 'reference')) {
             data_set(
                 $modelData,

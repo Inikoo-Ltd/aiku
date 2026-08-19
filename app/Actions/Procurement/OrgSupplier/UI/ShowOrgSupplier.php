@@ -88,6 +88,7 @@ class ShowOrgSupplier extends OrgAction
                     'model'         => __('Supplier'),
                     'subNavigation' => $this->getOrgSupplierNavigation($orgSupplier),
                     'actions'       => [
+                        $this->getOrgSupplierPurchaseOrderAction($orgSupplier),
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',

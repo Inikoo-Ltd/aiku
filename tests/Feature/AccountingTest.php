@@ -41,8 +41,12 @@ use App\Actions\Accounting\TopUp\UpdateTopUp;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\ProcessCustomerTimeSeriesRecords;
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\Maintenance\Accounting\SplitExcessPaymentOverCreditNote;
 use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use Illuminate\Support\Str;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -2607,4 +2611,101 @@ test('repair command attaches order only excess refunds to their credit note', f
     $this->artisan('repair:excess_payment_refunds_not_attached_to_invoice --apply')->assertOk();
 
     expect((float) $refund->refresh()->payment_amount)->toBe(-21.04);
+});
+
+test('a credit note leaves the order paid, not a fraction of a penny short', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+    $order->update(['total_amount' => 181.02]);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 181.02]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -4.98, 'in_process' => false]);
+
+    $payment = StorePayment::make()->action(
+        $customer,
+        $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount,
+        [
+            'amount'    => 176.04,
+            'reference' => 'ref-paid-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::PAYMENT,
+        ]
+    );
+    AttachPaymentToOrder::make()->action($order, $payment, []);
+
+    UpdateOrderPaymentsStatus::run($order->refresh());
+
+    expect($order->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID);
+});
+
+test('splitting an oversized excess payment settles the credit note and keeps the balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 9378.22]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -176.97, 'in_process' => false]);
+
+    $payment = StorePayment::make()->action(
+        $customer,
+        $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount,
+        [
+            'amount'    => -337.29,
+            'reference' => 'ref-bal-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::REFUND,
+        ]
+    );
+    AttachPaymentToOrder::make()->action($order, $payment, []);
+    StoreCreditTransaction::make()->action($customer, [
+        'payment_id' => $payment->id,
+        'amount'     => 337.29,
+        'date'       => now(),
+        'type'       => CreditTransactionTypeEnum::FROM_EXCESS,
+    ]);
+
+    $balanceBefore = round($customer->creditTransactions()->sum('amount'), 2);
+
+    SplitExcessPaymentOverCreditNote::make()->asCommand(
+        new class ($payment->id) extends \Illuminate\Console\Command {
+            public function __construct(private int $paymentId)
+            {
+                parent::__construct();
+                $this->setLaravel(app());
+            }
+
+            public function argument($key = null)
+            {
+                return $this->paymentId;
+            }
+
+            public function option($key = null)
+            {
+                return true;
+            }
+
+            public function line($string, $style = null, $verbosity = null): void
+            {
+            }
+
+            public function info($string, $verbosity = null): void
+            {
+            }
+        }
+    );
+
+    expect((float) $refund->refresh()->payment_amount)->toBe(-176.97)
+        ->and((float) $payment->refresh()->amount)->toBe(-160.32)
+        ->and(round($customer->refresh()->creditTransactions()->sum('amount'), 2))->toBe($balanceBefore);
 });

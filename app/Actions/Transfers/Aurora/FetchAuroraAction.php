@@ -42,8 +42,23 @@ class FetchAuroraAction extends FetchAction
      * has no aiku replacement for. Anything else arriving for it is stale by definition:
      * its staff maintain that data in aiku now, and fetching would quietly revert them.
      */
+    /**
+     * HR and sysadmin data is owned by aiku for every organisation, so these fetchers are
+     * dead for everyone — following organisations and --force included.
+     */
+    public static function fetcherForbidden(string $fetchActionClass): bool
+    {
+        $fetcher = str_replace('FetchAurora', '', class_basename($fetchActionClass));
+
+        return in_array($fetcher, config('aurora.forbidden_fetchers', []));
+    }
+
     protected function auroraStillFeeds(Organisation $organisation): bool
     {
+        if (static::fetcherForbidden(static::class)) {
+            return false;
+        }
+
         if (in_array($organisation->slug, config('aurora.following_organisations', []))) {
             return true;
         }
@@ -81,8 +96,8 @@ class FetchAuroraAction extends FetchAction
 
         $this->forcedSourceFetch = (bool)$forcedOverride;
 
-        if (!$forcedOverride && !$this->auroraStillFeeds($organisation)) {
-            $command->line('skipped '.$command->getName().' for '.$organisation->slug.': organisation no longer follows Aurora');
+        if ((!$forcedOverride || static::fetcherForbidden(static::class)) && !$this->auroraStillFeeds($organisation)) {
+            $command->line('skipped '.$command->getName().' for '.$organisation->slug.': aiku owns this data now');
 
             return 0;
         }

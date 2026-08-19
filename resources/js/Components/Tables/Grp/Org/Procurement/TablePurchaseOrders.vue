@@ -20,6 +20,9 @@ defineProps<{
 function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 	switch (route().current()) {
 		case "grp.org.procurement.purchase_orders.index":
+		case "grp.org.procurement.org_supplier_products.show":
+		case "grp.org.procurement.org_agents.show.supplier_products.show":
+		case "grp.org.procurement.org_suppliers.show.supplier_products.show":
 			return route("grp.org.procurement.purchase_orders.show", [
 				route().params["organisation"],
 				purchaseOrder.slug,
@@ -151,6 +154,15 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
 				useLocaleStore().currencyFormat(
 					purchaseOrder.org_currency_code,
 					purchaseOrder.org_total_cost
+				)
+			}}
+		</template>
+
+		<template #cell(org_net_amount)="{ item: purchaseOrder }">
+			{{
+				useLocaleStore().currencyFormat(
+					purchaseOrder.org_currency_code,
+					purchaseOrder.org_net_amount
 				)
 			}}
 		</template>

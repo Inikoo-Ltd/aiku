@@ -315,6 +315,7 @@ onMounted(() => {
                         <ShipmentSection
                             :shipments="shipments?.shipment?.shipments ?? []"
                             :shipments_routes="shipments?.shipment?.shipments_routes"
+                            :shipper_directive="shipments?.shipment?.shipper_directive"
                             :address="data?.delivery_note?.address"
                             @addSuccsess="getDataShipment()"
                             @editAddressSuccsess="getDataDeliveryNote()"

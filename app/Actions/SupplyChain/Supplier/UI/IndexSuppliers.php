@@ -23,6 +23,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,6 +35,8 @@ class IndexSuppliers extends OrgAction
     use WithSupplyChainAuthorisation;
 
     private Group|Agent $parent;
+
+    private bool $onlyFreeSuppliers = false;
 
     protected function getSupplierElementGroups(Group|Agent $parent): array
     {
@@ -131,15 +134,23 @@ class IndexSuppliers extends OrgAction
             $queryBuilder->where('suppliers.agent_id', $parent->id);
         } else {
             $queryBuilder->where('suppliers.group_id', $parent->id);
+
+            if ($this->onlyFreeSuppliers) {
+                $queryBuilder
+                    ->whereNull('suppliers.agent_id')
+                    ->where('suppliers.status', true);
+            }
         }
 
-        foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: $prefix
-            );
+        if (!$this->onlyFreeSuppliers) {
+            foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
+                $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
         }
 
         return $queryBuilder
@@ -178,20 +189,27 @@ class IndexSuppliers extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
-                $table->elementGroup(
-                    key: $key,
-                    label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
-                );
+            if (!$this->onlyFreeSuppliers) {
+                foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
+                }
             }
 
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Supplier'), __('Suppliers')])
-                ->withEmptyState($this->getEmptyState($parent))
-                ->column(key: 'status', label: '', canBeHidden: false, searchable: true, type: 'icon')
+                ->withEmptyState($this->getEmptyState($parent));
+
+            if (!$this->onlyFreeSuppliers) {
+                $table->column(key: 'status', label: '', canBeHidden: false, searchable: true, type: 'icon');
+            }
+
+            $table
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
@@ -223,9 +241,11 @@ class IndexSuppliers extends OrgAction
         }
 
         return [
-            'title'       => __('No Suppliers'),
+            'title'       => $this->onlyFreeSuppliers ? __('No Free Suppliers') : __('No Suppliers'),
             'description' => $this->canEdit ? __('Get started by creating a new supplier.') : null,
-            'count'       => $parent->supplyChainStats->number_suppliers,
+            'count'       => $this->onlyFreeSuppliers
+                ? $parent->supplyChainStats->number_active_independent_suppliers
+                : $parent->supplyChainStats->number_suppliers,
             'action'      => $this->canEdit ? [
                 'type'    => 'button',
                 'style'   => 'create',
@@ -239,10 +259,15 @@ class IndexSuppliers extends OrgAction
         ];
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator|RedirectResponse
     {
+        if ($request->routeIs('grp.supply-chain.suppliers.index') && $request->input('elements.type') === 'through_agent') {
+            return redirect()->route('grp.supply-chain.agent_suppliers.index', ['sort' => 'code']);
+        }
+
         $group        = app('group');
         $this->parent = $group;
+        $this->onlyFreeSuppliers = $request->routeIs('grp.supply-chain.suppliers.index');
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group);
@@ -261,8 +286,12 @@ class IndexSuppliers extends OrgAction
         return SuppliersResource::collection($suppliers);
     }
 
-    public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator|RedirectResponse $suppliers, ActionRequest $request): Response|RedirectResponse
     {
+        if ($suppliers instanceof RedirectResponse) {
+            return $suppliers;
+        }
+
         $title         = __('Suppliers');
         $icon          = [
             'icon'  => ['fal', 'fa-person-dolly'],
@@ -300,6 +329,11 @@ class IndexSuppliers extends OrgAction
                 ],
             ];
         } else {
+            if ($this->onlyFreeSuppliers) {
+                $title = __('Free Suppliers');
+                $icon['title'] = __('Free Suppliers');
+            }
+
             $actions = [
                 [
                     'type'  => 'button',
@@ -375,7 +409,7 @@ class IndexSuppliers extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'label' => __('Suppliers'),
+                            'label' => $this->onlyFreeSuppliers ? __('Free Suppliers') : __('Suppliers'),
                             'icon'  => 'fal fa-bars',
                             'route' => [
                                 'name'       => $routeName,

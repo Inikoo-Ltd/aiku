@@ -1614,6 +1614,37 @@ test('lowering a quantity on a packed delivery note unpacks it', function () {
         ->and($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED);
 });
 
+test('releasing a blocked delivery note brings its order back to handling', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $order = $deliveryNote->orders->first();
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED, 'handling_blocked_at' => now()]);
+    $order->update(['state' => OrderStateEnum::HANDLING_BLOCKED]);
+
+    $transaction = $item->transaction;
+    $product     = $transaction->model;
+    $product->orgStocks()->syncWithoutDetaching([$item->org_stock_id => ['quantity' => 10]]);
+    $transaction->update(['quantity_ordered' => 3, 'quantity_bonus' => 0]);
+
+    $syncer = new class () {
+        use \App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
+
+        /** Releasing a blocked note dispatches the handling hydrators, which OrgAction delays. */
+        public int $hydratorsDelay = 0;
+
+        public function sync($deliveryNote, $transaction, $orgStocks): void
+        {
+            $this->syncDeliveryNote($deliveryNote, $transaction, $orgStocks, null);
+        }
+    };
+
+    $syncer->sync($deliveryNote, $transaction->refresh(), $product->fresh()->orgStocks->keyBy('id'));
+
+    /** The warehouse must never be picking a note whose order still reads as held. */
+    expect($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($order->fresh()->state)->toBe(OrderStateEnum::HANDLING);
+});
+
 
 test('over-picked item is trimmed back to required when picking is done', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
@@ -1782,6 +1813,30 @@ test('picking waiting warehouse and crm flow', function () {
     $item->update(['has_waiting_crm' => true, 'quantity_waiting_crm' => 2]);
     $sentBack = \App\Actions\Dispatching\Picking\SendBackWaitingWarehouse::make()->action($item->refresh(), $this->user, []);
     expect($sentBack->has_waiting_crm)->toBeFalse();
+});
+
+test('delete picking on blocked line partly waiting with crm does not abort', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    /** The Faire resync shape: the pick in the tote plus what CRM holds covers the line. */
+    $item->update([
+        'state'                => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
+        'quantity_required'    => 13,
+        'has_waiting_crm'      => true,
+        'quantity_waiting_crm' => 3,
+    ]);
+
+    $picking = $item->pickings()->first();
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking, $this->user);
+
+    $item->refresh();
+    expect($item->pickings()->count())->toBe(0)
+        ->and((float)$item->quantity_picked)->toBe(0.0)
+        ->and((float)$item->quantity_waiting_warehouse)->toBe(10.0);
 });
 
 test('picking upsert from waiting warehouse and magic place', function () {
@@ -3097,4 +3152,34 @@ test('replacing a waiting gift keeps the replacement free', function () {
         ->and($replacement->is_gift)->toBeTrue()
         ->and((float)$replacement->net_amount)->toBe(0.0)
         ->and((float)$replacement->quantity_bonus)->toBe(1.0);
+});
+
+test('picking from waiting keeps the line at its discounted price', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
+    $item->update(['quantity_required' => 15, 'has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
+
+    $item = $item->refresh();
+    $item->load('transaction');
+
+    /** The row is discounted, but the model in hand still holds the factor of 1 a concurrent
+     * discount recalculation wiped it to - the shape that billed GB584541 an extra 60p. */
+    \Illuminate\Support\Facades\DB::table('transactions')
+        ->where('id', $item->transaction->id)
+        ->update(['current_discount_factor' => 0.9]);
+    $item->transaction->current_discount_factor = 1;
+
+    \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item, $this->user, [
+        'quantity'              => 1,
+        'location_org_stock_id' => $los->id,
+    ]);
+
+    $transaction = $item->transaction->refresh();
+
+    /** Priced the way CalculateOrderDiscounts prices: the discount taken off the gross. */
+    expect((float)$transaction->net_amount)
+        ->toBe(round((float)$transaction->gross_amount - round((float)$transaction->gross_amount * 0.1, 2), 2));
 });

@@ -268,14 +268,18 @@ class GenerateInvoiceFromOrder extends OrgAction
             $quantityPicked = ($transaction->quantity_ordered + $transaction->quantity_bonus) * $sumOfPickings;
         }
 
-        $discountsRatio = 1;
-        if ($transaction->gross_amount != 0) {
-            $discountsRatio = $transaction->net_amount / $transaction->gross_amount;
-        }
-
+        /**
+         * The discount comes from the line's own factor, read from the row rather than the model
+         * in hand, which may have been loaded before a discount recalculation committed. Deriving
+         * it as net/gross instead made a line that had already lost its discount keep losing it:
+         * the ratio reads as 1, the line is rewritten at full gross, and every later pick or pack
+         * writes it back the same way. Taken off the gross the way CalculateOrderDiscounts does
+         * it, so the two agree to the penny.
+         */
+        $discountFactor = (float)(DB::table('transactions')->where('id', $transaction->id)->value('current_discount_factor') ?? 1);
 
         $gross = $historicAsset->price * $quantityPicked;
-        $net   = $historicAsset->price * $discountsRatio * $quantityPicked;
+        $net   = $gross - round($gross * (1 - $discountFactor), 2);
 
 
         if ($transaction->is_gift) {

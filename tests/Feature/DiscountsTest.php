@@ -2716,6 +2716,51 @@ describe('calculate order discounts', function () {
         $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
     });
 
+    test('submitted orders keep their submitted discount when current discount is better', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        $fobOffer    = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
+        $fobAllowance = DB::table('offer_allowances')->where('offer_id', $fobOffer->id)->first();
+
+        $submittedOffersData = [
+            'v' => 1,
+            'o' => [
+                'oc'  => $fobOffer->offer_campaign_id,
+                'o'   => $fobOffer->id,
+                'oa'  => $fobAllowance->id,
+                't'   => 'percentage',
+                'p'   => '10%',
+                'l'   => $fobOffer->name,
+                'st'  => 'fob',
+                'sto' => null,
+                'f'   => 0,
+                'nf'  => 0,
+            ],
+        ];
+
+        /** Bought at 10% off, but re-priced at 20% while the order was being picked. */
+        $transaction->update([
+            'has_discount_when_submitted' => true,
+            'submitted_discount_factor'   => 0.9,
+            'submitted_offers_data'       => $submittedOffersData,
+            'gross_amount'                => 300,
+            'net_amount'                  => 240,
+            'current_discount_factor'     => 0.8,
+        ]);
+        $order->update(['state' => OrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+
+        CalculateOrderDiscounts::make()->regenerateSubmittedTransactionDiscounts($order);
+        $transaction->refresh();
+
+        /** Billed at the 10% they agreed to, not the 20% they would qualify for today. */
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.9, 0.00001);
+
+        $order->update(['state' => OrderStateEnum::CREATING]);
+        $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
+        CalculateOrderDiscounts::run($order->refresh());
+    });
+
     test('post-submission recalculation honors offers valid at submission time', function () {
         $shop = $this->shop;
         if (!$shop->offerCampaigns()->exists()) {
