@@ -148,7 +148,8 @@ library.add(
     faCalendarCheck,
     faPercent,
     faBusinessTime,
-    faChessClock
+    faChessClock,
+    faCameraRetro
 )
 
 const props = defineProps<{
