@@ -43,7 +43,7 @@ enum WebpageSubTypeEnum: string
     case MAILSHOT = 'mailshot';
 
     case BLOG = 'blog';
-    case DAVID_AW_NEWS  = 'david_aw_news';
+    case NEWSLETTERS    = 'newsletters';
     case PRODUCT_GUIDES = 'product_guides';
     case BUSINESS_TIPS  = 'business_tips';
     case INSIGHT        = 'insight';
@@ -58,10 +58,10 @@ enum WebpageSubTypeEnum: string
             'mailshot'              => __('Mailshot'),
             'article'               => __('Article'),
             'content'               => __('Content'),
-            
+
             'blog'                  => __('Blog'),
             'insight'               => __('Industry & Retail Insights'),
-            'david_aw_news'         => __("David's Travel Blog"),
+            'newsletters'           => __('Newsletters'),
             'product_guides'        => __('Product Guides'),
             'business_tips'         => __('Business Tips'),
         ];
@@ -74,7 +74,7 @@ enum WebpageSubTypeEnum: string
     {
         return [
             self::BLOG,
-            self::DAVID_AW_NEWS,
+            self::NEWSLETTERS,
             self::PRODUCT_GUIDES,
             self::BUSINESS_TIPS,
             self::INSIGHT,
@@ -89,8 +89,8 @@ enum WebpageSubTypeEnum: string
                 'label' => __("Blog"),
             ],
             [
-                'value' => self::DAVID_AW_NEWS->value,
-                'label' => __("David's Travel Blog"),
+                'value' => self::NEWSLETTERS->value,
+                'label' => __('Newsletters'),
             ],
             [
                 'value' => self::PRODUCT_GUIDES->value,
