@@ -245,10 +245,17 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
 }
 
 const sendMessage = async () => {
+    if (isSending.value) return
+
+    if (hasTemplate.value) {
+        await sendTemplateMessage()
+        return
+    }
+
     const hasText = !!newMessage.value.trim()
     const hasFile = !!selectedFile.value
 
-    if ((!hasText && !hasFile) || isSending.value) return
+    if (!hasText && !hasFile) return
 
     const tempId = `tmp-${Date.now()}`
     const messageType = hasFile
@@ -284,12 +291,11 @@ const isTemplateDialogOpen = ref(false)
 const templates = ref<WhatsappTemplate[]>([])
 const isLoadingTemplates = ref(false)
 const selectedTemplate = ref<WhatsappTemplate | null>(null)
+const hoveredTemplate = ref<WhatsappTemplate | null>(null)
 const templateParameters = ref<string[]>([])
 
 const openTemplateDialog = async () => {
     isTemplateDialogOpen.value = true
-    selectedTemplate.value = null
-    templateParameters.value = []
 
     if (templates.value.length || !chatSession.value?.shop?.id) return
 
@@ -306,9 +312,36 @@ const openTemplateDialog = async () => {
     }
 }
 
+const POPUP_WIDTH = 288
+
+const popupStyle = ref<Record<string, string>>({})
+
+const showTemplatePopup = (template: WhatsappTemplate, event: MouseEvent) => {
+    const row = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const fitsRight = row.right + 12 + POPUP_WIDTH <= window.innerWidth
+
+    popupStyle.value = {
+        top: `${Math.min(row.top, window.innerHeight - 240)}px`,
+        left: fitsRight ? `${row.right + 12}px` : `${Math.max(8, row.left - 12 - POPUP_WIDTH)}px`,
+    }
+
+    hoveredTemplate.value = template
+}
+
+const hasTemplate = computed(() => !!selectedTemplate.value)
+
 const selectTemplate = (template: WhatsappTemplate) => {
     selectedTemplate.value = template
     templateParameters.value = Array(template.parameter_count).fill("")
+    hoveredTemplate.value = null
+    isTemplateDialogOpen.value = false
+    newMessage.value = ""
+    removeFile()
+}
+
+const clearTemplate = () => {
+    selectedTemplate.value = null
+    templateParameters.value = []
 }
 
 const templatePreview = computed(() => {
@@ -326,8 +359,8 @@ const canSendTemplate = computed(() =>
     !!selectedTemplate.value && templateParameters.value.every((parameter) => parameter.trim() !== "")
 )
 
-const sendTemplate = async () => {
-    if (!selectedTemplate.value || !canSendTemplate.value || isSending.value) return
+const sendTemplateMessage = async () => {
+    if (!selectedTemplate.value || !canSendTemplate.value) return
 
     const tempId = `tmp-${Date.now()}`
     const optimisticMessage: LocalChatMessage = {
@@ -347,7 +380,7 @@ const sendTemplate = async () => {
         formData.append(`template_parameters[${index}]`, parameter)
     })
 
-    isTemplateDialogOpen.value = false
+    clearTemplate()
 
     await postMessage(formData, optimisticMessage)
 }
@@ -369,6 +402,7 @@ watch(
         messagesLocal.value = []
         nextCursor.value = null
         canLoadMore.value = false
+        clearTemplate()
         await getMessages()
     }
 )
@@ -478,18 +512,41 @@ onMounted(() => {
             <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
-                <textarea ref="messageInput" v-model="newMessage" @input="autoResize"
+                <div v-if="hasTemplate"
+                    class="flex items-center gap-2 mx-3 mt-2 px-2 py-1 rounded-lg bg-green-50 text-green-700 text-[11px]">
+                    <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" />
+                    <span class="font-medium truncate">{{ selectedTemplate?.name }}</span>
+                    <span class="text-green-600/70">{{ selectedTemplate?.language }}</span>
+                    <button @click="clearTemplate" class="ml-auto text-green-600 hover:text-red-500"
+                        :title="trans('Remove template')">
+                        <FontAwesomeIcon :icon="faXmark" class="text-[10px]" />
+                    </button>
+                </div>
+
+                <div v-if="hasTemplate"
+                    class="px-4 pt-2 pb-1 text-sm leading-5 text-gray-500 whitespace-pre-line max-h-[120px] overflow-y-auto">
+                    {{ templatePreview }}
+                </div>
+
+                <div v-if="hasTemplate && templateParameters.length" class="px-3 pb-1 space-y-1.5">
+                    <input v-for="(parameter, index) in templateParameters" :key="index"
+                        v-model="templateParameters[index]" type="text"
+                        :placeholder="trans('Value for :placeholder', { placeholder: `{{${index + 1}}}` })"
+                        class="w-full text-xs border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-green-500" />
+                </div>
+
+                <textarea v-if="!hasTemplate" ref="messageInput" v-model="newMessage" @input="autoResize"
                     @keydown.enter.exact.prevent="sendMessage" rows="1" :placeholder="trans('Type message...')"
                     class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
-                        <button @click="imageInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" :title="trans('Upload image')">
+                        <button @click="imageInput?.click()" :disabled="hasTemplate"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="trans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" />
                         </button>
-                        <button @click="fileInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" :title="trans('Upload file')">
+                        <button @click="fileInput?.click()" :disabled="hasTemplate"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="trans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
                         </button>
                         <button @click="openTemplateDialog"
@@ -497,7 +554,8 @@ onMounted(() => {
                             <FontAwesomeIcon :icon="faFileLines" class="text-sm" />
                         </button>
                     </div>
-                    <Button @click="sendMessage" :loading="isSending" :icon="faPaperPlane"></Button>
+                    <Button @click="sendMessage" :loading="isSending" :disabled="hasTemplate && !canSendTemplate"
+                        :icon="faPaperPlane"></Button>
                 </div>
             </div>
         </footer>
@@ -514,10 +572,11 @@ onMounted(() => {
             </div>
 
             <div v-else class="space-y-3">
-                <div class="max-h-48 overflow-y-auto border rounded-lg divide-y">
+                <div class="max-h-48 overflow-y-auto border rounded-lg divide-y" @scroll="hoveredTemplate = null">
                     <button v-for="template in templates" :key="template.id"
                         class="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors"
                         :class="{ 'bg-green-50': selectedTemplate?.id === template.id }"
+                        @mouseenter="showTemplatePopup(template, $event)" @mouseleave="hoveredTemplate = null"
                         @click="selectTemplate(template)">
                         <div class="text-sm font-medium">{{ template.name }}</div>
                         <div class="text-[11px] text-gray-400">
@@ -526,22 +585,21 @@ onMounted(() => {
                     </button>
                 </div>
 
-                <div v-if="selectedTemplate" class="space-y-2">
-                    <div class="text-xs text-gray-500 whitespace-pre-line border rounded-lg p-3 bg-gray-50">
-                        {{ templatePreview }}
+            </div>
+
+            <Teleport to="body">
+                <div v-if="hoveredTemplate" :style="popupStyle"
+                    class="fixed z-[2000] w-72 rounded-lg border bg-white p-3 shadow-xl pointer-events-none">
+                    <div class="text-sm font-medium mb-1">{{ hoveredTemplate.name }}</div>
+                    <div class="text-xs text-gray-600 whitespace-pre-line max-h-60 overflow-y-auto">
+                        {{ hoveredTemplate.body }}
                     </div>
-
-                    <input v-for="(parameter, index) in templateParameters" :key="index"
-                        v-model="templateParameters[index]" type="text"
-                        :placeholder="`{{${index + 1}}}`"
-                        class="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:border-green-500" />
-
-                    <div class="flex justify-end">
-                        <Button @click="sendTemplate" :disabled="!canSendTemplate" :loading="isSending"
-                            :label="trans('Send template')" :icon="faPaperPlane" />
+                    <div class="mt-2 pt-2 border-t text-[10px] text-gray-400">
+                        {{ hoveredTemplate.language }}<span v-if="hoveredTemplate.category"> · {{ hoveredTemplate.category }}</span>
+                        · {{ trans(':count parameters', { count: hoveredTemplate.parameter_count }) }}
                     </div>
                 </div>
-            </div>
+            </Teleport>
         </Dialog>
     </div>
 </template>
