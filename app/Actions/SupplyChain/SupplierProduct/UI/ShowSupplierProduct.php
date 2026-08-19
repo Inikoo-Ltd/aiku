@@ -107,8 +107,8 @@ class ShowSupplierProduct extends InertiaAction
                     : Inertia::optional(fn () => GetSupplierProductShowcase::run($supplierProduct)),
 
                 SupplierProductTabsEnum::HISTORY->value => $this->tab == SupplierProductTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($supplierProduct))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplierProduct))),
+                    fn () => HistoryResource::collection(IndexHistory::run($supplierProduct, SupplierProductTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplierProduct, SupplierProductTabsEnum::HISTORY->value))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierProductTabsEnum::HISTORY->value));
     }

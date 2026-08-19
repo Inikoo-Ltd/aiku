@@ -2,44 +2,47 @@
 import Table from '@/Components/Table/Table.vue';
 import { ref } from 'vue';
 import { useLayoutStore } from "@/Stores/retinaLayout";
-import JsonViewer from 'vue-json-viewer';
 import { faPlus, faMinus } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowRight, faPlus as falPlus, faMinus as falMinus} from '@fal';
+import { faArrowRight, faPlusCircle, faPenSquare, faTrashAlt, faUndo, faExchange } from '@fal';
 import { trans } from 'laravel-vue-i18n';
+import { useFormatTime } from '@/Composables/useFormatTime';
+import Modal from '@/Components/Utils/Modal.vue';
 
 library.add(faPlus, faMinus, faArrowRight);
+
+const eventIcons: Record<string, any> = {
+    created: faPlusCircle,
+    deleted: faTrashAlt,
+    restored: faUndo,
+    migration: faExchange,
+};
+
+const describeAgent = (userAgent?: string): string => {
+    if (!userAgent) return '';
+    const browser =
+        userAgent.includes('Edg/') ? 'Edge' :
+        userAgent.includes('Firefox/') ? 'Firefox' :
+        userAgent.includes('Chrome/') ? 'Chrome' :
+        userAgent.includes('Safari/') ? 'Safari' : '';
+    const os =
+        userAgent.includes('Mac OS X') ? 'macOS' :
+        userAgent.includes('Windows') ? 'Windows' :
+        userAgent.includes('Android') ? 'Android' :
+        userAgent.includes('iPhone') || userAgent.includes('iPad') ? 'iOS' :
+        userAgent.includes('Linux') ? 'Linux' : '';
+    return [browser, os].filter(Boolean).join(' · ');
+};
+
+const detailHistory = ref<any>(null);
 
 defineProps<{
     data: object,
     tab?: string
 }>()
 
-const index = ref(null);
-const ExpandData = ref(null);
 const layout = useLayoutStore()
-
-const formatDate = (dateIso: string) => {
-    const date = new Date(dateIso);
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
-}
-
-const onExpand = (data) => {
-    ExpandData.value = data;
-    index.value = data.rowIndex;
-}
-
-const onCloseExpand = (data) => {
-    ExpandData.value = null;
-    index.value = null;
-}
 
 const getKeys = (oldValues: any, newValues: any): string[] => {
   const keys = new Set([
@@ -55,8 +58,11 @@ const getChangedKeys = (oldValues: any, newValues: any): string[] => {
 
 const formatKey = (key: string): string => {
   return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, char => char.toUpperCase());
+    .split('.')
+    .map(segment => segment
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, char => char.toUpperCase()))
+    .join(' › ');
 };
 
 const formatValue = (value: any, key?: string) => {
@@ -89,6 +95,10 @@ const formatValue = (value: any, key?: string) => {
   }
 
   return value;
+};
+
+const hasValue = (value: any): boolean => {
+  return value !== null && value !== undefined && value !== '';
 };
 
 const expandedRows = ref<String[]>([]);
@@ -136,36 +146,41 @@ const getTradeUnitHistory = (oldData, newData) => {
 </script>
 
 <template>
-    <!-- <pre>{{ data }}</pre> {{ tab }} -->
-    <Table :resource="data" class="mt-5" :name="tab" :useExpandTable="true">
-        <template #cell(expand)="{ item: user }">
-            <div v-if="user?.rowIndex === index" class="p-4 cursor-pointer">
-                <FontAwesomeIcon @click="() => onCloseExpand(user)" icon="fas fa-minus" />
-            </div>
-            <div v-else class="p-4 cursor-pointer">
-                <FontAwesomeIcon @click="() => onExpand(user)" icon="fas fa-plus" />
-            </div>
+    <Table :resource="data" class="mt-5" :name="tab">
+        <template #cell(datetime)="{ item: history }">
+            <span class="whitespace-nowrap">
+                <FontAwesomeIcon
+                    :icon="eventIcons[history.event] ?? faPenSquare"
+                    v-tooltip="history.event?.replace(/_/g, ' ')"
+                    class="text-gray-400 mr-2"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <span v-tooltip="useFormatTime(history.datetime, { formatTime: 'hms' })">{{ useFormatTime(history.datetime, { formatTime: 'short-datetime' }) }}</span>
+            </span>
         </template>
 
-        <template #cell(datetime)="{ item: user }">
-            <span>{{ formatDate(user.datetime) }}</span>
+        <template #cell(user_name)="{ item: history }">
+            <button type="button" @click="detailHistory = history" v-tooltip="trans('Details')" class="whitespace-nowrap cursor-pointer hover:underline">
+                {{ history.user_name }}
+            </button>
         </template>
 
         <template #cell(values)="{ item: history }">
             <!-- Only display the values column if the event is not "migration" -->
              <div class="flex">
-                <div 
-                    v-if="history.event !== 'migration'" 
-                    class="space-y-2 overflow-y-auto grid flex-auto transition-all ease-in-out duration-700" 
+                <div
+                    v-if="history.event !== 'migration'"
+                    class="space-y-2 overflow-y-auto grid flex-auto transition-all ease-in-out duration-700"
                     :class="history.id && expandedRows.includes(history.id) ? 'max-h-[999px]' : 'max-h-[100px]'"
                     style="scrollbar-width:none"
                 >
-                    <div 
+                    <div
                         v-if="history.event == 'update_trade_units'"
                         :key="history.id"
                         class="grid space-x-2 text-sm"
                     >
-                        <div 
+                        <div
                             v-for="(audit, key) in getTradeUnitHistory(history.old_values, history.new_values)"
                             :class="[
                                 !audit.length ? 'hidden': 'mb-1'
@@ -173,9 +188,9 @@ const getTradeUnitHistory = (oldData, newData) => {
                             class="!mx-0"
                         >
                             <span class="font-semibold">
-                                {{ key.charAt(0).toUpperCase() + key.slice(1) }}: 
+                                {{ key.charAt(0).toUpperCase() + key.slice(1) }}:
                             </span>
-                            <div 
+                            <div
                                 class="flex flex-col gap-2 border rounded-md px-2 py-1 w-[75%] mb-1"
                                 :class="{
                                     'bg-blue-100 border-blue-400': key == 'modified',
@@ -196,12 +211,12 @@ const getTradeUnitHistory = (oldData, newData) => {
                                     </span>
                                     <span>
                                         <span v-if="item.old">
-                                            {{ item.old }} 
+                                            {{ item.old }}
                                         </span>
                                         <span v-if="item.old && item.new" class="px-1">
                                             <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
-                                        </span v-if="item.new">
-                                        <span>
+                                        </span>
+                                        <span v-if="item.new">
                                             {{ item.new }}
                                         </span>
                                     </span>
@@ -227,18 +242,30 @@ const getTradeUnitHistory = (oldData, newData) => {
                     </div>
                     <div
                         v-else
-                        v-for="key in getChangedKeys(history.old_values, history.new_values)"
-                        :key="key"
-                        class="flex items-center space-x-2 text-sm"
+                        class="grid grid-cols-[9rem_1fr] gap-x-3 gap-y-0.5 items-baseline w-full"
+                        :class="getChangedKeys(history.old_values, history.new_values).length > 1 ? 'text-xs' : 'text-sm'"
                     >
-                        <span class="font-bold text-gray-700">{{ formatKey(key) }}:</span>
-                        <span class="text-gray-600">{{ formatValue(history.old_values[key], key) }}</span>
-                            <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
-                        <span class="text-gray-800">{{ formatValue(history.new_values[key], key) }}</span>
+                        <template
+                            v-for="key in getChangedKeys(history.old_values, history.new_values)"
+                            :key="key"
+                        >
+                            <span class="text-xs text-gray-500 text-right whitespace-nowrap">{{ formatKey(key) }}:</span>
+                            <span class="text-gray-700">
+                                <template v-if="hasValue(history.old_values[key])">
+                                    <span
+                                        class="text-gray-400"
+                                        :class="{ 'line-through decoration-gray-300': hasValue(history.new_values[key]) }"
+                                    >{{ formatValue(history.old_values[key], key) }}</span>
+                                    <FontAwesomeIcon v-if="hasValue(history.new_values[key])" :icon="faArrowRight" aria-hidden="true" size="xs" class="text-gray-300 mx-1.5" />
+                                </template>
+                                <span v-if="hasValue(history.new_values[key])">{{ formatValue(history.new_values[key], key) }}</span>
+                                <span v-else class="text-gray-400 italic">{{ trans("cleared") }}</span>
+                            </span>
+                        </template>
                     </div>
                 </div>
-                <div 
-                    v-if=" 
+                <div
+                    v-if="
                         history.event == 'update_trade_units' ?
                         (getChangedKeys(history.old_values, history.new_values).length ?? 0) > 2
                         : (getChangedKeys(history.old_values, history.new_values).length ?? 0) > 4
@@ -247,41 +274,48 @@ const getTradeUnitHistory = (oldData, newData) => {
                     class="flex-initial w-[50px] my-auto cursor-pointer"
                 >
                     <span
-                        class="justify-self-end text-md p-2 rounded-full h-[30px] w-[30px] flex align-center hover:opacity-85" 
+                        class="justify-self-end text-md p-2 rounded-full h-[30px] w-[30px] flex align-center hover:opacity-85"
                         :class="history.id && expandedRows.includes(history.id) ? 'align-top' : 'align-center'"
                         :style="{
                             background: layout?.app?.theme[0],
                             color: layout?.app?.theme[1],
                         }"
                     >
-                        <FontAwesomeIcon 
-                            :icon="history.id && expandedRows.includes(history.id) ? faMinus : faPlus" 
+                        <FontAwesomeIcon
+                            :icon="history.id && expandedRows.includes(history.id) ? faMinus : faPlus"
                             class="h-fit transition-all ease-out duration-700"
                         />
                     </span>
                 </div>
              </div>
         </template>
-
-        <template #expandRow="{ item: data }">
-            <div v-if="data?.rowIndex === index" class="bg-gray-50">
-                <div class="p-4 bg-gray-50">
-                    <dl class="grid grid-cols-1 sm:grid-cols-3">
-                        <div class="border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
-                            <dt class="text-sm font-medium leading-6 text-gray-900">IP Address</dt>
-                            <dd class="mt-1 text-sm leading-6 text-gray-700 sm:mt-2">{{ ExpandData.ip_address }}</dd>
-                        </div>
-                        <div class="border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
-                            <dt class="text-sm font-medium leading-6 text-gray-900">User Agent</dt>
-                            <dd class="mt-1 text-sm leading-6 text-gray-700 sm:mt-2">{{ ExpandData.user_agent }}</dd>
-                        </div>
-                        <div class="border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
-                            <dt class="text-sm font-medium leading-6 text-gray-900">Auditable Type</dt>
-                            <dd class="mt-1 text-sm leading-6 text-gray-700 sm:mt-2">{{ ExpandData.auditable_type }}</dd>
-                        </div>
-                    </dl>
-                </div>
-            </div>
-        </template>
     </Table>
+
+    <Modal :isOpen="!!detailHistory" @onClose="detailHistory = null" width="w-full max-w-md">
+        <div v-if="detailHistory" class="text-sm">
+            <div class="text-base mb-4">{{ trans("Change details") }}</div>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+                <dt class="text-gray-400 text-right">{{ trans("User") }}</dt>
+                <dd>{{ detailHistory.user_name }}</dd>
+                <dt class="text-gray-400 text-right">{{ trans("Date") }}</dt>
+                <dd>{{ useFormatTime(detailHistory.datetime, { formatTime: 'hms' }) }}</dd>
+                <dt class="text-gray-400 text-right">{{ trans("Action") }}</dt>
+                <dd>{{ detailHistory.event?.replace(/_/g, ' ') }}</dd>
+                <template v-if="detailHistory.ip_address">
+                    <dt class="text-gray-400 text-right">{{ trans("IP address") }}</dt>
+                    <dd>{{ detailHistory.ip_address }}</dd>
+                </template>
+                <template v-if="detailHistory.user_agent">
+                    <dt class="text-gray-400 text-right">{{ trans("Browser") }}</dt>
+                    <dd>{{ describeAgent(detailHistory.user_agent) }}</dd>
+                    <dt class="text-gray-400 text-right">{{ trans("User agent") }}</dt>
+                    <dd class="break-words text-gray-500 text-xs">{{ detailHistory.user_agent }}</dd>
+                </template>
+                <template v-if="detailHistory.url">
+                    <dt class="text-gray-400 text-right">{{ trans("URL") }}</dt>
+                    <dd class="break-all text-gray-500 text-xs">{{ detailHistory.url }}</dd>
+                </template>
+            </dl>
+        </div>
+    </Modal>
 </template>

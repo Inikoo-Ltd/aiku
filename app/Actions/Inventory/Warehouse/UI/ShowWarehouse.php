@@ -92,8 +92,8 @@ class ShowWarehouse extends OrgAction
 
 
                 WarehouseTabsEnum::HISTORY->value => $this->tab == WarehouseTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($warehouse))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($warehouse)))
+                    fn () => HistoryResource::collection(IndexHistory::run($warehouse, WarehouseTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($warehouse, WarehouseTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: WarehouseTabsEnum::HISTORY->value));

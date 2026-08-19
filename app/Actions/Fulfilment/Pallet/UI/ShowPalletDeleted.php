@@ -160,8 +160,8 @@ class ShowPalletDeleted extends OrgAction
                     : Inertia::optional(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))),
 
                 PalletTabsEnum::HISTORY->value => $this->tab == PalletTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($pallet))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($pallet)))
+                    fn () => HistoryResource::collection(IndexHistory::run($pallet, PalletTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($pallet, PalletTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: PalletTabsEnum::HISTORY->value))

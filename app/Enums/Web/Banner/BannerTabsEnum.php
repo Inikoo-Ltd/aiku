@@ -21,6 +21,7 @@ enum BannerTabsEnum: string
 
 
     case CHANGELOG            = 'changelog';
+    case HISTORY               = 'history';
 
 
 
@@ -38,6 +39,12 @@ enum BannerTabsEnum: string
 
             BannerTabsEnum::CHANGELOG => [
                 'title' => __('Changelog'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
+            BannerTabsEnum::HISTORY => [
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

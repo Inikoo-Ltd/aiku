@@ -19,6 +19,7 @@ enum CustomerPlatformTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case LOGS     = 'logs';
+    case HISTORY  = 'history';
 
     public function blueprint(): array
     {
@@ -32,7 +33,13 @@ enum CustomerPlatformTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
-            ]
+            ],
+            CustomerPlatformTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
         };
     }
 }
