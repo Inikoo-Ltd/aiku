@@ -11,6 +11,7 @@ import axios from "axios"
 import { Image as ImageTS } from "@/types/Image"
 import ProductIris1Ecom from "@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris1Ecom.vue"
 import ProductIris2Ecom from "@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris2Ecom.vue"
+import ProductIris3Ecom from "@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris3Ecom.vue"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import { ProductViewCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { useProductStructuredData } from "@/Iris/Composables/useProductStructuredData"
@@ -20,6 +21,7 @@ library.add(faCube, faLink, faFilePdf, faFileDownload)
 const productPageComponents: Record<string, any> = {
     "product-1": ProductIris1Ecom,
     "product-2": ProductIris2Ecom,
+    "product-3": ProductIris3Ecom,
 }
 
 
