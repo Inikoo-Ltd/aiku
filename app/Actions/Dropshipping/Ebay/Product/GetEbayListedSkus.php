@@ -21,26 +21,53 @@ class GetEbayListedSkus
 
     private const int MAX_PAGES = 400;
 
+    public function handle(EbayUser $ebayUser): array
+    {
+        $skus = $this->getInventorySkus($ebayUser);
+
+        if (blank($skus)) {
+            return [];
+        }
+
+        $offersBySku = $ebayUser->getOffersForSkus($skus);
+
+        $listedSkus = [];
+
+        foreach ($skus as $sku) {
+            if (blank($offersBySku[$sku] ?? null)) {
+                continue;
+            }
+
+            $listedSkus[Str::lower($sku)] = $sku;
+        }
+
+        $skippedCount = count($skus) - count($listedSkus);
+
+        if ($skippedCount > 0) {
+            Log::info('eBay inventory items without an offer skipped for bulk matching', [
+                'ebay_user_id' => $ebayUser->id,
+                'skipped'      => $skippedCount
+            ]);
+        }
+
+        return $listedSkus;
+    }
+
     /**
-     * Every SKU the seller has on eBay, keyed by its lowercased form so the comparison
-     * survives the casing drifting between Aiku and what was typed into eBay.
-     *
-     * eBay offers are looked up by SKU rather than by id, so the SKU is what a match needs.
-     *
-     * @return array<string, string>
+     * @return array<int, string>
      *
      * @throws \Exception
      */
-    public function handle(EbayUser $ebayUser): array
+    private function getInventorySkus(EbayUser $ebayUser): array
     {
-        $listedSkus = [];
-        $offset     = 0;
+        $skus   = [];
+        $offset = 0;
 
         for ($page = 0; $page < self::MAX_PAGES; $page++) {
             $response = $ebayUser->getProducts(self::PAGE_SIZE, $offset);
 
             if (Arr::has($response, 'error') || Arr::has($response, 'errors')) {
-                return $listedSkus;
+                return $skus;
             }
 
             $inventoryItems = Arr::get($response, 'inventoryItems', []);
@@ -49,22 +76,17 @@ class GetEbayListedSkus
                 $sku = Arr::get($inventoryItem, 'sku');
 
                 if ($sku) {
-                    $listedSkus[Str::lower($sku)] = $sku;
+                    $skus[] = $sku;
                 }
             }
 
             if (count($inventoryItems) < self::PAGE_SIZE) {
-                return $listedSkus;
+                return $skus;
             }
 
             $offset += self::PAGE_SIZE;
         }
 
-        Log::warning('eBay inventory too large to read in full for bulk matching', [
-            'ebay_user_id' => $ebayUser->id,
-            'skus_read'    => count($listedSkus)
-        ]);
-
-        return $listedSkus;
+        return $skus;
     }
 }

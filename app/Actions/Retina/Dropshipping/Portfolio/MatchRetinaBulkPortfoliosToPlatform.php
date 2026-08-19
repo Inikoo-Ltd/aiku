@@ -19,6 +19,8 @@ class MatchRetinaBulkPortfoliosToPlatform extends RetinaAction
     use AsAction;
     use WithAttributes;
 
+    private CustomerSalesChannel $customerSalesChannel;
+
     /**
      * @throws \Exception
      */
@@ -35,11 +37,17 @@ class MatchRetinaBulkPortfoliosToPlatform extends RetinaAction
         ];
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->customerSalesChannel->customer_id == $this->customer->id;
+    }
+
     /**
      * @throws \Exception
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisation($request);
 
         $this->handle($customerSalesChannel, $this->validatedData);
