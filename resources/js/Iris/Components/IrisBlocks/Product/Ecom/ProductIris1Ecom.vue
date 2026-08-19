@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch, onMounted, nextTick } from "vue"
+import { defineAsyncComponent, ref, inject, computed, watch, onMounted, nextTick } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
@@ -11,7 +11,6 @@ import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductConten
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
 
 import Image from "@common/Components/Image.vue"
-import ProductSoundButton from "@/Iris/Components/ProductSoundButton.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
@@ -43,6 +42,8 @@ import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOff
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductBadge.vue"
 import { Rating } from "primevue"
+
+const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
 
 // Register icons
 library.add(faCube, faLink, faPlus, faMinus)

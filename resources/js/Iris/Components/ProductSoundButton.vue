@@ -7,6 +7,15 @@ const props = defineProps<{ src: string, topSeller?: number | null }>()
 
 const layout = inject('layout', retinaLayoutStructure)
 
+// Per-website look, set in the website settings. Unknown or missing values fall back to rainbow.
+const VARIANTS = ['rainbow', 'mono', 'wave', 'equalizer', 'minimal']
+const variant = computed(() => {
+    const style = layout?.iris?.sound_player_style
+    return VARIANTS.includes(style) ? style : 'rainbow'
+})
+
+const MONO_COLOR = '#334155'
+
 // Logged out cards show the "Login or Register" call to action under the image, which the
 // bottom-left button overlaps on narrow screens, so it moves to the top-left corner there.
 // The bestseller badge already sits at top-2 left-2, so drop below it when one is shown.
@@ -28,11 +37,25 @@ let rafId = 0
 
 const BAR_COUNT = 32
 
+function barValues(): number[] | null {
+    if (!analyser || !frequencyData) return null
+    analyser.getByteFrequencyData(frequencyData)
+    const usableBins = Math.floor(frequencyData.length * 0.66)
+    const binsPerBar = Math.max(1, Math.floor(usableBins / BAR_COUNT))
+    const values: number[] = []
+    for (let i = 0; i < BAR_COUNT; i++) {
+        let sum = 0
+        for (let j = i * binsPerBar; j < (i + 1) * binsPerBar; j++) {
+            sum += frequencyData[j]
+        }
+        values.push(sum / binsPerBar / 255)
+    }
+    return values
+}
+
 function drawSpectrum() {
     const canvas = canvasRef.value
-    if (!canvas || !analyser || !frequencyData) return
-
-    analyser.getByteFrequencyData(frequencyData)
+    if (!canvas) return
 
     const dpr = window.devicePixelRatio || 1
     const width = canvas.clientWidth
@@ -46,25 +69,37 @@ function drawSpectrum() {
     context.scale(dpr, dpr)
     context.clearRect(0, 0, width, height)
 
+    const values = barValues()
+    if (!values) return
+
+    if (variant.value === 'wave') {
+        context.beginPath()
+        context.moveTo(0, height / 2)
+        const step = width / (BAR_COUNT - 1)
+        values.forEach((v, i) => context.lineTo(i * step, height / 2 - v * height * 0.45))
+        for (let i = BAR_COUNT - 1; i >= 0; i--) {
+            context.lineTo(i * step, height / 2 + values[i] * height * 0.45)
+        }
+        context.closePath()
+        context.fillStyle = 'rgba(51, 65, 85, 0.55)'
+        context.fill()
+        return
+    }
+
     const gap = 3
     const barWidth = Math.max((width - gap * (BAR_COUNT - 1)) / BAR_COUNT, 1)
-    const usableBins = Math.floor(frequencyData.length * 0.66)
-    const binsPerBar = Math.max(1, Math.floor(usableBins / BAR_COUNT))
 
-    for (let i = 0; i < BAR_COUNT; i++) {
-        let sum = 0
-        for (let j = i * binsPerBar; j < (i + 1) * binsPerBar; j++) {
-            sum += frequencyData[j]
-        }
-        const value = sum / binsPerBar / 255
+    values.forEach((value, i) => {
         const barHeight = Math.max(value * height * 0.85, 4)
         const x = i * (barWidth + gap)
-        const y = (height - barHeight) / 2
-        context.fillStyle = `hsla(${(i / BAR_COUNT) * 300}, 85%, 50%, 0.9)`
+        const y = variant.value === 'equalizer' ? height - barHeight : (height - barHeight) / 2
+        context.fillStyle = variant.value === 'rainbow'
+            ? `hsla(${(i / BAR_COUNT) * 300}, 85%, 50%, 0.9)`
+            : MONO_COLOR + 'e6'
         context.beginPath()
         context.roundRect(x, y, barWidth, barHeight, barWidth / 2)
         context.fill()
-    }
+    })
 }
 
 function tick() {
@@ -100,7 +135,9 @@ function togglePlay() {
         playbackContext?.resume()
         audio.play()
         isPlaying.value = true
-        tick()
+        if (variant.value !== 'minimal') {
+            tick()
+        }
     }
 }
 
@@ -114,8 +151,10 @@ onBeforeUnmount(() => {
 <template>
     <div>
         <!-- Live spectrum overlay on the product image -->
-        <div v-show="isPlaying" class="absolute inset-0 z-10 flex items-end bg-white/40 pointer-events-none">
-            <canvas ref="canvasRef" class="w-full h-2/3" />
+        <div v-if="variant !== 'minimal'" v-show="isPlaying"
+            class="absolute inset-0 z-10 pointer-events-none flex items-end"
+            :class="variant === 'equalizer' ? '' : 'bg-white/40'">
+            <canvas ref="canvasRef" class="w-full" :class="variant === 'equalizer' ? 'h-1/4' : 'h-2/3'" />
         </div>
 
         <!-- Circular wave play/stop button -->
@@ -134,7 +173,8 @@ onBeforeUnmount(() => {
                 <line x1="16" y1="7" x2="16" y2="17" />
                 <line x1="20" y1="10" x2="20" y2="14" />
             </svg>
-            <svg v-else viewBox="0 0 24 24" class="h-4 w-4 text-gray-700" fill="currentColor">
+            <svg v-else viewBox="0 0 24 24" class="h-4 w-4 text-gray-700" fill="currentColor"
+                :class="{ 'animate-pulse': variant === 'minimal' }">
                 <rect x="5" y="5" width="14" height="14" rx="2" />
             </svg>
         </button>

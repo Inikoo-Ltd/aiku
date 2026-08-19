@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Image from "@common/Components/Image.vue"
-import { inject, ref, computed } from 'vue'
+import { defineAsyncComponent, inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -23,7 +23,8 @@ import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductB
 import { routeType } from '@/types/route'
 /* import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue' */
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
-import ProductSoundButton from '@/Iris/Components/ProductSoundButton.vue'
+
+const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
 
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
