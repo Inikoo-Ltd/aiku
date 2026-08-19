@@ -10,9 +10,9 @@
     "is_in_test": false,
 	"data": {
 		"fieldValue": {
-			"title": "Read The Blog: David's AW News",
+			"title": "Read The Blog: Newsletters",
 			"source": "latest",
-			"categories": ["davids_travel_blog"],
+			"categories": ["newsletters"],
 			"picked_posts": [],
 			"number_of_posts": 5,
 			"show_published_date": true,
