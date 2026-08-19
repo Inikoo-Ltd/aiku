@@ -16,6 +16,11 @@ class GetCollectionTimeSeriesData
     use AsObject;
     use WithTimeSeriesData;
 
+    protected function timeSeriesSalesColumn(): string
+    {
+        return 'sales_external';
+    }
+
     public function handle(Collection $collection): array
     {
         $currency = $collection->shop->currency->code;

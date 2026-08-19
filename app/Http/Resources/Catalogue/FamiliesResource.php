@@ -51,6 +51,7 @@ use Illuminate\Support\Arr;
  * @property mixed $web_images
  * @property mixed $image_id
  * @property mixed $currency_code
+ * @property mixed $grp_currency_code
  * @property mixed $health_rank
  * @property mixed $webpage_state
  */
@@ -101,6 +102,7 @@ class FamiliesResource extends JsonResource
             'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
             'currency_code'                 => $this->currency_code,
+            'grp_currency_code'             => $this->grp_currency_code ?? null,
             'customers_invoiced'            => $this->customers_invoiced ?? 0,
             'invoices'                      => $this->invoices ?? 0,
             'invoices_ly'                   => $this->invoices_ly ?? 0,

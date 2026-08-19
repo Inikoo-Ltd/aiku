@@ -139,6 +139,7 @@ class IndexProductsInProductCategory extends OrgAction
             'products.web_images',
             DB::raw('products.price / products.units as rrp_per_unit'),
             'currencies.code as currency_code',
+            DB::raw("'".group()->currency->code."' as grp_currency_code"),
             'variant.slug as variant_slug',
             'variant.code as variant_code',
             'products.is_variant_leader as is_variant_leader',

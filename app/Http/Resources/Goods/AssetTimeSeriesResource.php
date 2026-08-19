@@ -23,6 +23,7 @@ class AssetTimeSeriesResource extends JsonResource
             'id' => $this->id,
             'period' => $this->formatPeriod($this->from, $this->to, $frequencyEnum),
             'filter_date' => $this->formatFilterDate($this->from, $this->to),
+            'currency_code' => $this->currency_code,
             'sales_external' => (float) $this->sales_external,
             'invoices' => (int) $this->invoices,
             'refunds' => (int) $this->refunds,

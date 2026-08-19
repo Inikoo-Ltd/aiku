@@ -46,6 +46,7 @@ use Carbon\Carbon;
  * @property mixed $id
  * @property mixed $units
  * @property mixed $currency_code
+ * @property mixed $grp_currency_code
  * @property mixed $rrp
  * @property mixed $gross_weight
  * @property mixed $images
@@ -149,6 +150,7 @@ class ProductsResource extends JsonResource
             'listings'                          => $this->listings ?? 0,
             'sold'                              => $this->sold ?? 0,
             'currency_code'                     => $this->currency_code,
+            'grp_currency_code'                 => $this->grp_currency_code ?? null,
             'stock'                             => $this->available_quantity,
             'image_thumbnail'                   => Arr::get($this->web_images, 'main.thumbnail'),
             'master_product_id'                 => $this->master_product_id,
