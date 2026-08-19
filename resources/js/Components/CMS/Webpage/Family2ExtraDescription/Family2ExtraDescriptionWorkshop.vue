@@ -9,6 +9,9 @@ import { getStyles } from "@/Composables/styles"
 import About from "@/Components/CMS/Webpage/Family2ExtraDescription/AboutWorkshop.vue"
 import FaqWorkshop from "./FaqWorkshop.vue"
 import MarketingMaterialsWorkshop from "./MarketingMaterialsWorkshop.vue"
+import CustomisationWorkshop from "./CustomisationWorkshop.vue"
+import LabelingGuideWorkshop from "./LabelingGuideWorkshop.vue"
+import StorageWorkshop from "./StorageWorkshop.vue"
 
 library.add(
   faCube,
@@ -37,6 +40,9 @@ const tabs = computed(() =>
     { key: "about", label: ctrans("About the Range") },
     { key: "marketing", label: ctrans("Marketing Materials") },
     { key: "faq", label: ctrans("FAQ") },
+    { key: "customisation", label: ctrans("Customisation") },
+    { key: "labeling guide", label: ctrans("Labeling Guide") },
+    { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
   ])
 
 const sectionId = computed(
@@ -60,6 +66,12 @@ const component = (tab: string) => {
       return MarketingMaterialsWorkshop
     case "faq":
       return FaqWorkshop
+    case "customisation":
+      return CustomisationWorkshop
+    case "labeling guide":
+      return LabelingGuideWorkshop
+    case "storage_and_shelf_life":
+      return StorageWorkshop
     default:
       return null
   }
@@ -160,7 +172,7 @@ const sectionStyle = computed(() => {
         :is="component(activeTab)"
         :field-value="modelValue"
         :screen-type="screenType"
-        :faqs="modelValue.family.faq"
+        :faqs="modelValue?.family?.faq"
       />
     </div>
   </section>
