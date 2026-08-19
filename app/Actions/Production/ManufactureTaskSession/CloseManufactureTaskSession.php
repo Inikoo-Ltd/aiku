@@ -10,10 +10,12 @@ namespace App\Actions\Production\ManufactureTaskSession;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\ManufactureTaskSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -38,9 +40,13 @@ class CloseManufactureTaskSession extends OrgAction
             'operative_reward_terms'          => $manufactureTask->operative_reward_terms,
             'operative_reward_allowance_type' => $manufactureTask->operative_reward_allowance_type,
             'operative_reward_amount'         => $manufactureTask->operative_reward_amount,
+            'break_minutes'                   => $modelData['break_minutes'] ?? $session->break_minutes ?? 0,
+            'activity_type'                   => $modelData['activity_type'] ?? $session->activity_type ?? ManufactureTaskSessionActivityTypeEnum::PRODUCTION,
+            'non_productive_reason'           => $modelData['non_productive_reason'] ?? null,
         ]);
 
         CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
+        CalculateManufactureTaskSessionPay::run($session);
 
         return $session;
     }
@@ -48,8 +54,20 @@ class CloseManufactureTaskSession extends OrgAction
     public function rules(): array
     {
         return [
-            'quantity_made'     => ['required', 'numeric', 'min:0'],
-            'quantity_rejected' => ['sometimes', 'numeric', 'min:0'],
+            'quantity_made'          => ['required', 'numeric', 'min:0'],
+            'quantity_rejected'      => ['sometimes', 'numeric', 'min:0'],
+            'break_minutes'          => ['sometimes', 'integer', 'min:0'],
+            'activity_type'          => ['sometimes', Rule::enum(ManufactureTaskSessionActivityTypeEnum::class)],
+            'non_productive_reason'  => [
+                Rule::requiredIf(function () {
+                    $activityType = $this->get('activity_type');
+
+                    return $activityType && $activityType != ManufactureTaskSessionActivityTypeEnum::PRODUCTION->value;
+                }),
+                'nullable',
+                'string',
+                'max:255',
+            ],
         ];
     }
 

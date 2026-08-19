@@ -13,6 +13,7 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\JobOrderItemTask;
+use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -90,6 +91,7 @@ class ShowManufactureFloor extends OrgAction
                         'parameters' => ['manufactureTaskSession' => $openSession->id],
                         'method'     => 'patch',
                     ],
+                    'band_feedback' => $this->bandFeedback($openSession),
                 ] : null,
                 'tasks'        => $tasks,
                 'today'        => [
@@ -99,6 +101,46 @@ class ShowManufactureFloor extends OrgAction
                 ],
             ]
         );
+    }
+
+    protected function bandFeedback(ManufactureTaskSession $session): ?array
+    {
+        $standardRate = $session->manufactureTask?->standard_rate;
+        if ($standardRate === null) {
+            return null;
+        }
+
+        $bands = ManufacturePayBand::effectiveAt($session->production_id, now())->get();
+        if ($bands->isEmpty()) {
+            return null;
+        }
+
+        $band0 = $bands->firstWhere('code', '0');
+
+        $measuredBands = $bands
+            ->filter(fn (ManufacturePayBand $band) => $band->target_multiplier !== null && $band->code != '0')
+            ->sortBy('target_multiplier')
+            ->values()
+            ->map(fn (ManufacturePayBand $band) => [
+                'code'                   => $band->code,
+                'name'                   => $band->name,
+                'hourly_rate'            => (float)$band->hourly_rate,
+                'target_units_per_hour'  => round((float)$standardRate * (float)$band->target_multiplier, 1),
+            ]);
+
+        if ($measuredBands->isEmpty()) {
+            return null;
+        }
+
+        return [
+            'band0_hourly_rate' => $band0 ? (float)$band0->hourly_rate : 0.0,
+            'bands'             => $measuredBands->all(),
+            'session'           => [
+                'started_at'    => $session->started_at,
+                'break_minutes' => (int)($session->break_minutes ?? 0),
+                'quantity_made' => (float)($session->quantity_made ?? 0),
+            ],
+        ];
     }
 
     protected function serializeTask(JobOrderItemTask $task): array

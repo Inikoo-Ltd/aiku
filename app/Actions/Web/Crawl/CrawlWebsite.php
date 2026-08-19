@@ -29,6 +29,13 @@ class CrawlWebsite
 
     private const TRAFFIC_COVERAGE = 0.9;
 
+    /**
+     * Every unit of concurrency is one in-flight SSR render, competing with live customer
+     * traffic for the same worker pool. ponytail: a flat budget, revisit if warming falls
+     * behind deploys rather than raising it because the box looks idle.
+     */
+    private const CONCURRENT_FETCH_BUDGET = 8;
+
     protected Website $website;
     protected Crawl $crawl;
     private bool $shouldStop = false;
@@ -146,26 +153,8 @@ class CrawlWebsite
     {
         $totalCrawlInstances = (int)Crawl::where('running', true)->sum('concurrency');
 
-        $available     = 16 - $totalCrawlInstances;
-        $realAvailable = $available;
-
-        if ($available < 1) {
-            $available = 1;
-        } elseif ($available <= 5) {
-            $available = 2;
-        }
-
-        $concurrency = min($available, $crawl->concurrency);
-        if ($realAvailable > 12) {
-            $concurrency = max(6, $crawl->concurrency);
-        } elseif ($realAvailable > 10) {
-            $concurrency = max(4, $crawl->concurrency);
-        } elseif ($realAvailable > 8) {
-            $concurrency = max(3, $crawl->concurrency);
-        } elseif ($realAvailable > 4) {
-            $concurrency = max(2, $crawl->concurrency);
-        }
-
+        $available   = self::CONCURRENT_FETCH_BUDGET - $totalCrawlInstances;
+        $concurrency = max(1, min($available, $crawl->concurrency));
 
         $crawl->update(
             [

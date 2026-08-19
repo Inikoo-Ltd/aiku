@@ -120,6 +120,7 @@ class WebBlockProductResource extends JsonResource
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $product->is_on_demand,
+            'is_golden_product' => (bool)$product->is_golden_product,
             'is_back_in_stock'  => $product->backInStockReminders,
             'back_in_stock'     => $back_in_stock,
 
@@ -132,9 +133,9 @@ class WebBlockProductResource extends JsonResource
             'discounted_percentage'      => percentage($bestPercentageOff, 1),
 
             'is_single_trade_unit'       => $product->is_single_trade_unit,
-            
+
             'marketing_material_route'  => [
-                'name'          => '	iris.catalogue.feeds.product.download_img',
+                'name'          => 'iris.catalogue.feeds.product.download_img',
                 'parameters'    => [
                     'product'   => $product->slug,
                     'type'      => 'products_images'

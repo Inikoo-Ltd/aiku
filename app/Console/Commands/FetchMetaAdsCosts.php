@@ -29,7 +29,8 @@ use Illuminate\Support\Facades\Log;
  * Configure a shop by putting its ad account in `shop.settings.meta_ads.ad_account_id` (the digits
  * only, no `act_` prefix). The access token comes from the same settings block, falling back to
  * `services.meta_ads.access_token` - a Business Manager system user token usually covers every ad
- * account in the business, so one env value normally serves every shop.
+ * account in the business, so one env value normally serves every shop. A shop is fetched only when
+ * it has both, because an ad account with no token reachable is not a run that can succeed.
  *
  * Campaign references are Meta's numeric campaign ids. The touch history stores whatever the ad's
  * `utm_campaign` said, so campaign-level ROAS only lines up when the ads are tagged with Meta's
@@ -64,7 +65,7 @@ class FetchMetaAdsCosts extends Command
         $shops = $this->shops();
 
         if ($shops->isEmpty()) {
-            $this->error('No shop has settings.meta_ads.ad_account_id set.');
+            $this->error('No shop is configured for Meta Ads: an ad account id, and a token of its own or in the environment.');
 
             return Command::FAILURE;
         }
@@ -99,18 +100,35 @@ class FetchMetaAdsCosts extends Command
             $this->error("Unknown shop '{$this->argument('shop')}'.");
         }
 
-        return $shops->filter(fn (Shop $shop) => filled(data_get($shop->settings, 'meta_ads.ad_account_id')));
+        return $shops->filter(function (Shop $shop) {
+            if (blank(data_get($shop->settings, 'meta_ads.ad_account_id'))) {
+                return false;
+            }
+
+            /* A shop whose ad account sits in somebody else's business manager needs a token of its
+               own, and the nightly run would otherwise spend its attempt collecting the same Meta
+               auth error every night. Half-configured is reported rather than skipped in silence:
+               an ad account was entered, so somebody meant this shop to be uploading. */
+            if (blank($this->accessToken($shop))) {
+                $this->warn("{$shop->slug}: skipped, ad account set but no Meta access token.");
+
+                return false;
+            }
+
+            return true;
+        });
+    }
+
+    private function accessToken(Shop $shop): string
+    {
+        return (string) (data_get($shop->settings, 'meta_ads.access_token')
+            ?: config('services.meta_ads.access_token'));
     }
 
     private function fetchShop(Shop $shop, Carbon $since, Carbon $until): int
     {
         $accountId = (string) data_get($shop->settings, 'meta_ads.ad_account_id');
-        $token     = (string) (data_get($shop->settings, 'meta_ads.access_token')
-            ?: config('services.meta_ads.access_token'));
-
-        if ($token === '') {
-            throw new \RuntimeException('no Meta access token, set services.meta_ads.access_token or the shop setting');
-        }
+        $token     = $this->accessToken($shop);
 
         $trafficSources = TrafficSource::where('shop_id', $shop->id)
             ->whereIn('type', [TrafficSourcesTypeEnum::META_ADS->value, TrafficSourcesTypeEnum::INSTAGRAM_ADS->value])

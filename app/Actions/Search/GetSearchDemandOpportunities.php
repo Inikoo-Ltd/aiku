@@ -28,9 +28,9 @@ class GetSearchDemandOpportunities
      *
      * @return array{days: int, opportunities: array<int, array{query: string, searches: int, customers: int, websites: int, last_searched_at: string|null}>}
      */
-    public function handle(Group $group, ?Organisation $organisation = null, int $days = 30, int $limit = 15): array
+    public function handle(Group $group, ?Organisation $organisation = null, int $days = 180, int $limit = 15): array
     {
-        $cacheKey = 'search_demand_opportunities:'.$group->id.':'.($organisation?->id ?? 'all').':'.$days.':'.$limit;
+        $cacheKey = 'search_demand_opportunities:v2:'.$group->id.':'.($organisation?->id ?? 'all').':'.$days.':'.$limit;
 
         return Cache::remember($cacheKey, now()->addHour(), function () use ($group, $organisation, $days, $limit) {
             return [
@@ -56,10 +56,18 @@ class GetSearchDemandOpportunities
             ->when($organisation, fn ($query) => $query->where('organisation_id', $organisation->id))
             ->where('created_at', '>=', now()->subDays($days))
             ->where('keyword_results_count', 0)
+            ->whereNotNull('customer_id')
             ->whereRaw('char_length(query) between 3 and 40')
+            ->whereRaw("btrim(query) !~ '^[0-9[:space:].,+-]+$'")
+            ->where(function ($query) {
+                $query->whereRaw("lower(btrim(query)) !~ '^[a-z0-9-]+$'")
+                    ->orWhereRaw("lower(query) !~ '[a-z]'")
+                    ->orWhereRaw("query !~ '[0-9]'")
+                    ->orWhereRaw("query !~ '-'");
+            })
             ->selectRaw('lower(query) as query, count(*) as searches, count(distinct customer_id) as customers, count(distinct website_id) as websites, max(created_at) as last_searched_at')
             ->groupByRaw('lower(query)')
-            ->havingRaw('count(*) > 1 or count(distinct customer_id) > 1')
+            ->havingRaw('count(distinct customer_id) >= 2')
             ->orderByDesc('customers')
             ->orderByDesc('searches')
             ->limit($limit * 3)

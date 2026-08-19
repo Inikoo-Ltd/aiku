@@ -15,12 +15,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $code
  * @property string $name
  * @property string $location
- * @property bool $status
- * @property int|null $org_agent_id
  * @property int $number_org_supplier_products
  * @property int $number_purchase_orders
  * @property int $number_stock_deliveries
- * @property string|null $organisation_name
  */
 class OrgSuppliersResource extends JsonResource
 {
@@ -31,36 +28,9 @@ class OrgSuppliersResource extends JsonResource
             'code'                         => $this->code,
             'name'                         => $this->name,
             'location'                     => json_decode($this->location),
-            'status_icon'                  => $this->getStatusIcon(),
             'number_org_supplier_products' => $this->number_org_supplier_products,
             'number_purchase_orders'       => $this->number_purchase_orders,
             'number_stock_deliveries'      => $this->number_stock_deliveries,
-            'organisation_name'            => $this->organisation_name,
-        ];
-    }
-
-    protected function getStatusIcon(): array
-    {
-        if (!$this->status) {
-            return [
-                'icon'    => 'fal fa-archive',
-                'class'   => 'text-red-500',
-                'tooltip' => __('Archived'),
-            ];
-        }
-
-        if ($this->org_agent_id) {
-            return [
-                'icon'    => 'fal fa-people-arrows',
-                'class'   => 'text-blue-500',
-                'tooltip' => __('Through Agent'),
-            ];
-        }
-
-        return [
-            'icon'    => 'fal fa-person-dolly',
-            'class'   => 'text-green-500',
-            'tooltip' => __('Free'),
         ];
     }
 }

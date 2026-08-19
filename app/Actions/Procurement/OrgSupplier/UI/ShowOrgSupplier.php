@@ -88,6 +88,7 @@ class ShowOrgSupplier extends OrgAction
                     'model'         => __('Supplier'),
                     'subNavigation' => $this->getOrgSupplierNavigation($orgSupplier),
                     'actions'       => [
+                        $this->getOrgSupplierPurchaseOrderAction($orgSupplier),
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -215,6 +216,10 @@ class ShowOrgSupplier extends OrgAction
 
         if ($this->parent instanceof OrgAgent) {
             $query->where('org_agent_id', $this->parent->id);
+        } elseif ($orgSupplier->org_agent_id) {
+            $query->where('org_agent_id', $orgSupplier->org_agent_id);
+        } else {
+            $query->whereNull('org_agent_id');
         }
 
         return $query;

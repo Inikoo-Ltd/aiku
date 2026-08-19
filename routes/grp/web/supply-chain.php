@@ -7,6 +7,7 @@
  */
 
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\SupplyChain\Agent\UI\CreateAgent;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\EditAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\IndexAgentSupplierPurchaseOrders;
@@ -17,6 +18,7 @@ use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Supplier\ExportSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\SupplyChain\Supplier\UI\EditSupplier;
+use App\Actions\SupplyChain\Supplier\UI\IndexAgentSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\SupplierProduct\DownloadSupplierProductsTemplate;
@@ -32,6 +34,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', ShowSupplyChainDashboard::class)->name('dashboard');
 Route::get('control', ShowSupplyChainControl::class)->name('control.dashboard');
 Route::get('shopping-list', [ShowShoppingListBoard::class, 'asGroupController'])->name('shopping_list.board');
+Route::get('agent-suppliers', IndexAgentSuppliers::class)->name('agent_suppliers.index');
 
 
 Route::prefix("agents")->name("agents.")->group(
@@ -100,6 +103,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
             });
 
             Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inSupplier'])->name('.agent_supplier_purchase_orders.index');
+            Route::get('purchase-orders', [IndexPurchaseOrders::class, 'inSupplier'])->name('.purchase_orders.index');
             Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inSupplier'])->name('.stock_deliveries.index');
         });
 

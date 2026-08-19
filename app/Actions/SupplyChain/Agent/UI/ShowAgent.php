@@ -31,6 +31,8 @@ class ShowAgent extends OrgAction
 {
     use WithSupplyChainAuthorisation;
     use WithAgentSubNavigation;
+    use WithAgentEditAction;
+
     public function handle(Agent $agent): Agent
     {
         return $agent;
@@ -61,14 +63,20 @@ class ShowAgent extends OrgAction
                     'next'     => $this->getNext($agent, $request),
                 ],
                 'pageHead'                     => [
-                    'model'   => __('Agent'),
-                    'icon'    =>
+                    'model'         => __('Agent'),
+                    'icon'          =>
                         [
                             'icon'  => ['fal', 'people-arrows'],
                             'title' => __('Agent')
                         ],
                     'subNavigation' => $this->getAgentNavigation($agent),
-                    'title'   => $agent->organisation->name,
+                    'title'         => $agent->organisation->name,
+                    'actions'       => [
+                        $this->agentEditAction(
+                            'grp.supply-chain.agents.edit',
+                            $request->route()->originalParameters()
+                        ),
+                    ],
                 ],
                 'tabs'                         => [
                     'current'    => $this->tab,

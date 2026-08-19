@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\Agent\UI\WithAgentEditAction;
 use App\Enums\UI\Procurement\OrgAgentTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
@@ -31,6 +32,7 @@ class ShowOrgAgent extends OrgAction
     use WithProcurementAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithAgentOrganisation;
+    use WithAgentEditAction;
 
     public function handle(OrgAgent $orgAgent): OrgAgent
     {
@@ -78,15 +80,10 @@ class ShowOrgAgent extends OrgAction
                     'subNavigation' => $this->getOrgAgentNavigation($orgAgent),
                     'title'         => $orgAgent->agent->organisation->name,
                     'actions'       => [
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Edit'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'show.edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
+                        $this->agentEditAction(
+                            'grp.org.procurement.org_agents.show.edit',
+                            $request->route()->originalParameters()
+                        ),
                     ],
                     'create_direct' => $this->canEdit ? [
                         'route' => [

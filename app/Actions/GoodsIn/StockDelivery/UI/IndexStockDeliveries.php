@@ -399,6 +399,9 @@ class IndexStockDeliveries extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
+                    'actions'       => $this->parent instanceof OrgSupplier
+                        ? [$this->getOrgSupplierPurchaseOrderAction($this->parent)]
+                        : [],
                     'create'        => $this->canEdit && !$this->getParentOrganisationAgent($this->parent) && $request->route()->getName() == 'grp.org.procurement.stock_deliveries.index' ? [
                         'route' => [
                             'name'       => 'grp.org.procurement.stock_deliveries.create',

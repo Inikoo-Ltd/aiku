@@ -16,6 +16,7 @@ class MasterProductCategoryTimeSeriesResource extends JsonResource
         return [
             'id' => $this->id,
             'period' => $this->formatPeriod($this->from, $this->to, $frequencyEnum),
+            'filter_date' => $this->formatFilterDate($this->from, $this->to),
             'from' => $this->from,
             'to' => $this->to,
             'sales_external' => (float) $this->sales_external,
@@ -41,5 +42,14 @@ class MasterProductCategoryTimeSeriesResource extends JsonResource
             TimeSeriesFrequencyEnum::QUARTERLY => 'Q' . $from->quarter . ' ' . $from->format('Y'),
             TimeSeriesFrequencyEnum::YEARLY => $from->format('Y'),
         };
+    }
+
+    protected function formatFilterDate(?Carbon $from, ?Carbon $to): string
+    {
+        if (!$from || !$to) {
+            return '-';
+        }
+
+        return $from->format('Ymd') . '-' . $to->format('Ymd');
     }
 }

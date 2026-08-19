@@ -115,6 +115,16 @@ const props = defineProps<{
             state: string
             is_available: boolean
         }
+        supplierProductInfo?: {
+            minimum_carton_order?: number
+            delivery_time?: number
+            unit_expense?: number
+            extra_costs?: number
+            barcode?: string
+            net_weight?: number
+            gross_weight?: number
+            marketing_dimensions?: Record<string, any>
+        }
         stats: {
             label: string
             count: number
@@ -151,6 +161,47 @@ const packagingRows = computed(() => [
         value: props.data.packaging.cbm ? `${locale.number(props.data.packaging.cbm)} m³` : "-",
     },
 ])
+
+const supplyingRows = computed(() => {
+    const info = props.data.supplierProductInfo
+
+    if (!info) {
+        return []
+    }
+
+    return [
+        {
+            key: "minimum_carton_order",
+            label: trans("Minimum order"),
+            value: info.minimum_carton_order ? trans(":count cartons", { count: info.minimum_carton_order }) : null,
+        },
+        {
+            key: "delivery_time",
+            label: trans("Delivery time"),
+            value: info.delivery_time ? trans(":days days", { days: info.delivery_time }) : null,
+        },
+        {
+            key: "unit_expense",
+            label: trans("Unit expense"),
+            value: info.unit_expense ? money(info.unit_expense) : null,
+        },
+        {
+            key: "barcode",
+            label: trans("Barcode"),
+            value: info.barcode,
+        },
+        {
+            key: "net_weight",
+            label: trans("Net weight"),
+            value: info.net_weight ? `${locale.number(info.net_weight)} g` : null,
+        },
+        {
+            key: "gross_weight",
+            label: trans("Gross weight"),
+            value: info.gross_weight ? `${locale.number(info.gross_weight)} g` : null,
+        },
+    ].filter((row) => row.value)
+})
 
 const availabilityBadge = (isAvailable: boolean) =>
     isAvailable
@@ -237,6 +288,19 @@ const availabilityBadge = (isAvailable: boolean) =>
                     <dd class="text-sm tabular-nums text-gray-700">{{ row.value }}</dd>
                 </div>
             </dl>
+
+            <template v-if="supplyingRows.length">
+                <h3 class="mb-3 mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <Icon :data="{ icon: 'fal fa-truck-container' }" />
+                    {{ trans("Supplying") }}
+                </h3>
+                <dl class="divide-y divide-gray-100">
+                    <div v-for="row in supplyingRows" :key="row.key" class="flex items-baseline justify-between py-2">
+                        <dt class="text-sm text-gray-500">{{ row.label }}</dt>
+                        <dd class="text-sm tabular-nums text-gray-700">{{ row.value }}</dd>
+                    </div>
+                </dl>
+            </template>
 
             <template v-if="data.parties.length">
                 <h3 class="mb-3 mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">

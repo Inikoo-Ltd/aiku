@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Models\Catalogue\PreferredShipping;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use Eloquent;
@@ -126,6 +127,11 @@ class Shipper extends Model implements Auditable
     public function shipments(): HasMany
     {
         return $this->hasMany(Shipment::class);
+    }
+
+    public function preferredShippings(): HasMany
+    {
+        return $this->hasMany(PreferredShipping::class);
     }
 
     public function stats(): HasOne

@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
@@ -88,6 +89,8 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
+use App\Actions\Ordering\Order\SweepGoldRewardWindowBaskets;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
@@ -102,8 +105,12 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
+use App\Jobs\BoundedUniqueJobDecorator;
+use App\Actions\Ordering\Order\CleanFinishedVouchers;
+use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 
@@ -1229,6 +1236,50 @@ describe('calculate order discounts', function () {
         expect((float)$order->refresh()->amount_off)->toBe(9.24);
 
         $order->shop->update(['type' => $originalType]);
+    });
+
+    test('Faire discount targets the invoice, never a credit note', function () {
+        $order = Order::latest('id')->first();
+
+        $refund = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($this->customer, \App\Models\Accounting\Invoice::factory()->definition());
+        $refund->update(['order_id' => $order->id, 'type' => \App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND]);
+
+        $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($this->customer, \App\Models\Accounting\Invoice::factory()->definition());
+        $invoice->update(['order_id' => $order->id, 'type' => \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE]);
+
+        // the refund is the older row, so an unordered first() would have picked it
+        expect($refund->id)->toBeLessThan($invoice->id)
+            ->and(UpdateFaireOrder::make()->getInvoiceToDiscount($order->refresh())->id)->toBe($invoice->id);
+    });
+
+    test('a dispatched Faire line missing from the invoice gets billed, a waiting one does not', function () {
+        $order = Order::latest('id')->first();
+        $invoice = \App\Models\Accounting\Invoice::where('order_id', $order->id)
+            ->where('type', \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE)->firstOrFail();
+
+        $dispatched = $order->transactions()->where('model_type', 'Product')->first();
+        $dispatched->update(['quantity_dispatched' => $dispatched->quantity_ordered]);
+        $dispatched->invoiceTransaction?->delete();
+
+        $billedBefore = $invoice->invoiceTransactions()->count();
+        UpdateFaireOrder::make()->invoiceDispatchedLinesMissingFromInvoice($order->refresh(), $invoice);
+
+        expect($invoice->invoiceTransactions()->count())->toBe($billedBefore + 1)
+            ->and($dispatched->refresh()->invoiceTransaction)->not->toBeNull();
+
+        // second pass adds nothing: only genuinely missing lines are billed
+        UpdateFaireOrder::make()->invoiceDispatchedLinesMissingFromInvoice($order->refresh(), $invoice);
+        expect($invoice->invoiceTransactions()->count())->toBe($billedBefore + 1);
+
+        // a line still waiting stays off the invoice
+        $waiting = $order->transactions()->where('model_type', 'Product')->where('id', '!=', $dispatched->id)->first();
+        if ($waiting) {
+            $waiting->update(['quantity_dispatched' => 0]);
+            $waiting->invoiceTransaction?->delete();
+            $countBefore = $invoice->invoiceTransactions()->count();
+            UpdateFaireOrder::make()->invoiceDispatchedLinesMissingFromInvoice($order->refresh(), $invoice);
+            expect($invoice->invoiceTransactions()->count())->toBe($countBefore);
+        }
     });
 
     test('suspend all active offers', function () {
@@ -2665,6 +2716,51 @@ describe('calculate order discounts', function () {
         $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
     });
 
+    test('submitted orders keep their submitted discount when current discount is better', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        $fobOffer    = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
+        $fobAllowance = DB::table('offer_allowances')->where('offer_id', $fobOffer->id)->first();
+
+        $submittedOffersData = [
+            'v' => 1,
+            'o' => [
+                'oc'  => $fobOffer->offer_campaign_id,
+                'o'   => $fobOffer->id,
+                'oa'  => $fobAllowance->id,
+                't'   => 'percentage',
+                'p'   => '10%',
+                'l'   => $fobOffer->name,
+                'st'  => 'fob',
+                'sto' => null,
+                'f'   => 0,
+                'nf'  => 0,
+            ],
+        ];
+
+        /** Bought at 10% off, but re-priced at 20% while the order was being picked. */
+        $transaction->update([
+            'has_discount_when_submitted' => true,
+            'submitted_discount_factor'   => 0.9,
+            'submitted_offers_data'       => $submittedOffersData,
+            'gross_amount'                => 300,
+            'net_amount'                  => 240,
+            'current_discount_factor'     => 0.8,
+        ]);
+        $order->update(['state' => OrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+
+        CalculateOrderDiscounts::make()->regenerateSubmittedTransactionDiscounts($order);
+        $transaction->refresh();
+
+        /** Billed at the 10% they agreed to, not the 20% they would qualify for today. */
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.9, 0.00001);
+
+        $order->update(['state' => OrderStateEnum::CREATING]);
+        $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
+        CalculateOrderDiscounts::run($order->refresh());
+    });
+
     test('post-submission recalculation honors offers valid at submission time', function () {
         $shop = $this->shop;
         if (!$shop->offerCampaigns()->exists()) {
@@ -2870,4 +2966,83 @@ test('repair aurora submitted transaction snapshots', function () {
     $basketTransaction->refresh();
     expect($basketTransaction->submitted_at)->not->toBeNull()
         ->and((float)$basketTransaction->submitted_quantity_ordered)->toBe(1.0);
+});
+
+describe('gold reward window sweep', function () {
+    test('SweepGoldRewardWindowBaskets queues only baskets that just aged out of the window', function () {
+        Queue::fake();
+
+        $shop = $this->shop;
+        $shop->update([
+            'is_aiku'     => true,
+            'type'        => ShopTypeEnum::B2B,
+            'offers_data' => ['gr' => ['active' => true, 'interval' => 30]],
+        ]);
+
+        $agedOutCustomer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $agedOutCustomer->update(['last_invoiced_at' => now()->subDays(30)]);
+        $agedOutOrder = StoreOrder::make()->action($agedOutCustomer, []);
+
+        $insideWindowCustomer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $insideWindowCustomer->update(['last_invoiced_at' => now()->subDays(10)]);
+        StoreOrder::make()->action($insideWindowCustomer, []);
+
+        $neverInvoicedCustomer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        StoreOrder::make()->action($neverInvoicedCustomer, []);
+
+        expect(SweepGoldRewardWindowBaskets::run($shop))->toBe(1)
+            ->and($agedOutOrder->refresh()->state)->toBe(OrderStateEnum::CREATING);
+
+        $shop->update(['offers_data' => ['gr' => ['active' => true, 'interval' => 30, 'amnesty_offer_id' => 99]]]);
+        expect(SweepGoldRewardWindowBaskets::run($shop))->toBe(0);
+    });
+
+    test('sweep command runs for a single shop', function () {
+        Queue::fake();
+
+        $this->shop->update([
+            'is_aiku'     => true,
+            'type'        => ShopTypeEnum::B2B,
+            'offers_data' => ['gr' => ['active' => true, 'interval' => 30]],
+        ]);
+
+        $this->artisan('ordering:sweep-gold-reward-window-baskets '.$this->shop->slug)->assertSuccessful();
+    });
+});
+
+describe('unique job lock bounds', function () {
+    $countPushed = function (string $actionClass): int {
+        return collect(Queue::pushedJobs())
+            ->flatten(1)
+            ->filter(fn ($pushed) => $pushed['job']->getAction() instanceof $actionClass)
+            ->count();
+    };
+
+    test('a stale CalculateOrderDiscounts lock expires instead of swallowing every later dispatch', function () use ($countPushed) {
+        Queue::fake();
+
+        $order     = new Order();
+        $order->id = 999999;
+
+        CalculateOrderDiscounts::dispatch($order);
+        CalculateOrderDiscounts::dispatch($order);
+        expect($countPushed(CalculateOrderDiscounts::class))->toBe(1);
+
+        $this->travel(CalculateOrderDiscounts::make()->jobUniqueFor + 1)->seconds();
+
+        CalculateOrderDiscounts::dispatch($order);
+        expect($countPushed(CalculateOrderDiscounts::class))->toBe(2);
+    });
+
+    test('a unique action declaring no jobUniqueFor gets a lock outliving its worker timeout', function () {
+        $onDefaultQueue = CleanFinishedVouchers::makeJob();
+
+        expect($onDefaultQueue)->toBeInstanceOf(BoundedUniqueJobDecorator::class)
+            ->and($onDefaultQueue->uniqueFor)->toBe(3600 + BoundedUniqueJobDecorator::LOCK_MARGIN);
+
+        $onLongQueue = RedoInvoiceCategoryTimeSeries::makeJob();
+
+        expect($onLongQueue->uniqueFor)->toBe(7200 + BoundedUniqueJobDecorator::LOCK_MARGIN)
+            ->and($onLongQueue->uniqueFor)->toBeGreaterThan(config('horizon.defaults.long-low-priority.timeout'));
+    });
 });

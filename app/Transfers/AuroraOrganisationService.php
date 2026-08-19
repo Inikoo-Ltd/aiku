@@ -15,6 +15,7 @@ use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Transfers\Fetch;
+use App\Actions\Transfers\Aurora\FetchAuroraAction;
 use App\Transfers\Aurora\FetchAuroraAdjustment;
 use App\Transfers\Aurora\FetchAuroraAgent;
 use App\Transfers\Aurora\FetchAuroraArtefact;
@@ -289,6 +290,30 @@ class AuroraOrganisationService implements SourceOrganisationService
     }
 
     protected bool $forcedFetch = false;
+
+    /**
+     * The command-level allowlist (FetchAuroraAction::auroraStillFeeds) is bypassed when a
+     * parse* helper fetches a missing record mid-run, so the same rule is enforced here at
+     * the one place every transitive Fetch*::run() passes through.
+     */
+    public function allowsFetchOnMiss(string $fetchActionClass): bool
+    {
+        if (FetchAuroraAction::fetcherForbidden($fetchActionClass)) {
+            return false;
+        }
+
+        if ($this->forcedFetch) {
+            return true;
+        }
+
+        if (in_array($this->organisation->slug, config('aurora.following_organisations', []))) {
+            return true;
+        }
+
+        $fetcher = str_replace('FetchAurora', '', class_basename($fetchActionClass));
+
+        return in_array($fetcher, config('aurora.allowed_fetchers', []));
+    }
 
     public function isForcedFetch(): bool
     {

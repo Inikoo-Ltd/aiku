@@ -2361,4 +2361,48 @@ describe('aurora provisional cost fix', function () {
             ->and((float) $picked->running_wac_value)->toBe(45.0)
             ->and((float) $picked->running_fifo_value)->toBe(50.0);
     });
+
+    test('running values replay the quantity when it was never stored', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFJ');
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 100]);
+        $purchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(3)]);
+        $picked = StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PICKED->value, 'quantity' => -40]);
+        $picked->update(['date' => now()->subDays(2)]);
+
+        // Aurora fetched movements arrive without a running quantity
+        DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->update(['running_quantity_org_stock' => null]);
+
+        \App\Actions\Inventory\OrgStockMovement\CalculateOrgStockMovementRunningValues::run($orgStock->id);
+
+        expect((float) $picked->fresh()->running_fifo_value)->toBe(120.0);
+    });
+});
+
+test('merging a duplicate stock moves its links to the stocked twin and retires the orphans', function () {
+    $group  = $this->organisation->group;
+    $stocks = createStocks($group);
+    $empty  = $stocks[0];
+    $held   = $stocks[1];
+
+    [$emptyOrgStock] = createOrgStocks($this->organisation, [$empty]);
+    createOrgStocks($this->organisation, [$held]);
+
+    $tradeUnit = StoreTradeUnit::make()->action($group, TradeUnit::factory()->definition());
+    DB::table('model_has_trade_units')->insert([
+        'model_type' => 'Stock', 'model_id' => $empty->id, 'trade_unit_id' => $tradeUnit->id,
+        'quantity' => 1, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+
+    \App\Actions\Goods\Stock\MergeDuplicateStock::make()->handle($empty->refresh(), $held->refresh(), 'ArtTT-MERGE');
+
+    expect(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $empty->id)->count())->toBe(0)
+        ->and(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $held->id)->where('trade_unit_id', $tradeUnit->id)->exists())->toBeTrue()
+        ->and($empty->refresh()->state)->toBe(\App\Enums\Goods\Stock\StockStateEnum::DISCONTINUED)
+        ->and($emptyOrgStock->refresh()->state)->toBe(\App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED)
+        ->and($held->refresh()->code)->toBe('ArtTT-MERGE')
+        ->and($held->slug)->toBe('arttt-merge')
+        ->and($empty->refresh()->slug)->not->toBe('arttt-merge');
 });

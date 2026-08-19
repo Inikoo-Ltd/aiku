@@ -10,6 +10,7 @@
 
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\DeleteMasterAsset;
@@ -1479,6 +1480,75 @@ test('UI Index Master Products in family has pricing tab', function () {
     );
 });
 
+test('UI Show Master Variant has pricing tab listing all variant products', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'VPRC-DEP-'.uniqid(),
+        'name' => 'Variant Pricing Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'VPRC-FAM-'.uniqid(),
+        'name' => 'Variant Pricing Family',
+    ]);
+    $leader = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'VPRC-LEAD-'.uniqid(),
+        'name'    => 'Variant Leader',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'rrp'     => 20,
+        'stocks'  => [],
+    ]);
+    $minion = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'VPRC-MIN-'.uniqid(),
+        'name'    => 'Variant Minion',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 12,
+        'rrp'     => 24,
+        'stocks'  => [],
+    ]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id'         => $masterShop->group_id,
+        'master_shop_id'   => $masterShop->id,
+        'master_family_id' => $masterFamily->id,
+        'code'             => $leader->code,
+        'leader_id'        => $leader->id,
+        'data'             => ['products' => []],
+    ]);
+    $masterVariant->stats()->create();
+    $leader->updateQuietly(['master_variant_id' => $masterVariant->id, 'is_variant_leader' => true]);
+    $minion->updateQuietly(['master_variant_id' => $masterVariant->id, 'is_main' => false, 'is_minion_variant' => true]);
+
+    $response = get(route('grp.masters.master_shops.show.master_families.master_variants.show', [
+        $masterShop->slug,
+        $masterFamily->slug,
+        $masterVariant->slug,
+        'tab' => 'pricing',
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Masters/MasterVariant')
+            ->has('tabs.navigation.pricing')
+            ->has('pricingCurrencies')
+            ->has('pricing.data', 2)
+            ->has(
+                'pricing.data.0',
+                fn (AssertableInertia $row) => $row
+                    ->has('code')
+                    ->has('price')
+                    ->has('rrp')
+                    ->has('master_prices')
+                    ->etc()
+            )
+            ->etc()
+    );
+});
+
 test('bulk update master assets prices applies per-unit rrp and skips independents', function () {
     $masterShop = createFreshMasterShop();
 
@@ -1535,7 +1605,7 @@ test('bulk update master assets prices applies per-unit rrp and skips independen
 
     Queue::fake();
 
-    \App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices::make()->action([
+    $result = \App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices::make()->action([
         'ids'          => [$assetA->id, $assetB->id, $foreignAsset->id],
         'rrp_per_unit' => true,
         'master_rrps'  => [
@@ -1554,7 +1624,9 @@ test('bulk update master assets prices applies per-unit rrp and skips independen
         ->and(data_get($assetA->master_rrps, 'HUF'))->toBeNull()
         ->and(data_get($assetB->master_rrps, 'EUR.value'))->toEqual(4)
         ->and(data_get($assetB->master_rrps, 'PLN.value'))->toEqual(198)
-        ->and(data_get($foreignAsset->refresh()->master_rrps, 'EUR.value'))->toBe(5);
+        ->and(data_get($foreignAsset->refresh()->master_rrps, 'EUR.value'))->toBe(5)
+        ->and($result['updated'])->toBe(2)
+        ->and($result['skipped'])->toBe([$assetA->code => ['PLN']]);
 
     Queue::assertPushed(
         \Lorisleiva\Actions\Decorators\JobDecorator::class,
@@ -2266,7 +2338,7 @@ test('updating master prices cascades to children, updates baskets and breaks we
     );
 
     Queue::assertPushed(
-        \Lorisleiva\Actions\Decorators\UniqueJobDecorator::class,
+        \App\Jobs\BoundedUniqueJobDecorator::class,
         fn ($job) => $job->displayName() === \App\Actions\Catalogue\Product\UpdateOrdersInBasketsAfterProductUpdated::class
     );
     Queue::assertNotPushed(
@@ -2966,3 +3038,22 @@ test('store master product from trade units creates even when some master_prices
         ->and((float) data_get($masterAsset->master_prices, 'EUR.value'))->toBe(10.0)
         ->and(data_get($masterAsset->master_prices, 'GBP.value'))->toBeNull();
 });
+
+test('creating a master asset queues its effective cost hydration', function (MasterProductCategory $masterFamily) {
+    Queue::fake();
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'EFFECTIVE_COST_1',
+        'name'    => 'effective cost 1',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    Queue::assertPushed(
+        \App\Jobs\BoundedUniqueJobDecorator::class,
+        fn ($job) => $job->displayName() === MasterAssetHydrateEffectiveCost::class
+            && $job->getParameters()[0]->id === $masterAsset->id
+    );
+})->depends("create master family");

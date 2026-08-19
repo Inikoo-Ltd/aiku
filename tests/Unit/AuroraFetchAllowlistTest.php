@@ -1,15 +1,29 @@
 <?php
 
+use App\Actions\Transfers\Aurora\FetchAuroraAction;
 use App\Actions\Transfers\Aurora\FetchAuroraArtefacts;
+use App\Actions\Transfers\Aurora\FetchAuroraClockingMachines;
 use App\Actions\Transfers\Aurora\FetchAuroraCustomers;
+use App\Actions\Transfers\Aurora\FetchAuroraDeletedEmployees;
+use App\Actions\Transfers\Aurora\FetchAuroraDeletedSuppliers;
+use App\Actions\Transfers\Aurora\FetchAuroraDeletedUsers;
+use App\Actions\Transfers\Aurora\FetchAuroraEmployees;
 use App\Actions\Transfers\Aurora\FetchAuroraDeliveryNotes;
+use App\Actions\Transfers\Aurora\FetchAuroraHistoricSupplierProducts;
+use App\Actions\Transfers\Aurora\FetchAuroraLocations;
+use App\Actions\Transfers\Aurora\FetchAuroraStockFamilies;
+use App\Actions\Transfers\Aurora\FetchAuroraWarehouses;
 use App\Actions\Transfers\Aurora\FetchAuroraJobOrders;
 use App\Actions\Transfers\Aurora\FetchAuroraRawMaterials;
 use App\Actions\Transfers\Aurora\FetchAuroraPurchaseOrders;
 use App\Actions\Transfers\Aurora\FetchAuroraStockLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraSuppliers;
 use App\Actions\Transfers\Aurora\FetchAuroraTimesheets;
+use App\Actions\Transfers\Aurora\FetchAuroraUsers;
+use App\Actions\Transfers\Aurora\FetchAuroraWebUsers;
 use App\Models\SysAdmin\Organisation;
+use App\Transfers\AuroraCatalogueGuard;
+use App\Transfers\AuroraOrganisationService;
 
 /**
  * Nothing here goes near the database. createOrganisation() builds the one organisation the
@@ -42,7 +56,7 @@ it('only lets a departed organisation keep the fetchers it has no aiku replaceme
     'artefacts still come from aurora'       => [FetchAuroraArtefacts::class, true],
     'raw materials still come from aurora'   => [FetchAuroraRawMaterials::class, true],
     'suppliers still come from aurora'       => [FetchAuroraSuppliers::class, true],
-    'timesheets are the clocking machine'    => [FetchAuroraTimesheets::class, true],
+    'timesheets are hr, aiku owned now'      => [FetchAuroraTimesheets::class, false],
     'customers are aiku owned now'           => [FetchAuroraCustomers::class, false],
     'stock locations are aroma only'         => [FetchAuroraStockLocations::class, false],
     'delivery notes are aiku owned now'      => [FetchAuroraDeliveryNotes::class, false],
@@ -51,4 +65,119 @@ it('only lets a departed organisation keep the fetchers it has no aiku replaceme
 it('leaves an organisation that still follows aurora untouched', function () {
     expect(auroraStillFeeds(FetchAuroraCustomers::class, organisationNamed('aroma')))->toBeTrue()
         ->and(auroraStillFeeds(FetchAuroraStockLocations::class, organisationNamed('aroma')))->toBeTrue();
+});
+
+function auroraSourceFor(string $slug, bool $forced = false): AuroraOrganisationService
+{
+    $source = new AuroraOrganisationService();
+    $source->organisation = organisationNamed($slug);
+    $source->setForcedFetch($forced);
+
+    return $source;
+}
+
+it('refuses a transitive fetch-on-miss for a departed organisation', function (string $fetcher, bool $expected) {
+    expect(auroraSourceFor('aw')->allowsFetchOnMiss($fetcher))->toBe($expected);
+})->with([
+    'locations no longer feed from aurora'  => [FetchAuroraLocations::class, false],
+    'warehouses no longer feed from aurora' => [FetchAuroraWarehouses::class, false],
+    'deleted suppliers stay lookup only'    => [FetchAuroraDeletedSuppliers::class, false],
+    'customers stay lookup only'            => [FetchAuroraCustomers::class, false],
+    'suppliers may still create on miss'    => [FetchAuroraSuppliers::class, true],
+    'stock families follow allowed stocks'  => [FetchAuroraStockFamilies::class, true],
+    'historic supplier products follow allowed supplier products' => [FetchAuroraHistoricSupplierProducts::class, true],
+]);
+
+it('lets a following organisation and a forced fetch through the on-miss gate', function () {
+    expect(auroraSourceFor('aroma')->allowsFetchOnMiss(FetchAuroraCustomers::class))->toBeTrue()
+        ->and(auroraSourceFor('aw', forced: true)->allowsFetchOnMiss(FetchAuroraCustomers::class))->toBeTrue();
+});
+
+it('returns null from run instead of fetching when the gate refuses', function () {
+    expect(FetchAuroraLocations::run(auroraSourceFor('aw'), 1))->toBeNull();
+});
+
+it('forbids hr and sysadmin fetchers for every organisation, even following ones', function (string $fetcher) {
+    expect(FetchAuroraAction::fetcherForbidden($fetcher))->toBeTrue()
+        ->and(auroraStillFeeds($fetcher, organisationNamed('aroma')))->toBeFalse()
+        ->and(auroraStillFeeds($fetcher, organisationNamed('aw')))->toBeFalse()
+        ->and(auroraSourceFor('aroma')->allowsFetchOnMiss($fetcher))->toBeFalse()
+        ->and(auroraSourceFor('aroma', forced: true)->allowsFetchOnMiss($fetcher))->toBeFalse();
+})->with([
+    'employees'         => [FetchAuroraEmployees::class],
+    'deleted employees' => [FetchAuroraDeletedEmployees::class],
+    'users'             => [FetchAuroraUsers::class],
+    'deleted users'     => [FetchAuroraDeletedUsers::class],
+    'clocking machines' => [FetchAuroraClockingMachines::class],
+    'timesheets'        => [FetchAuroraTimesheets::class],
+]);
+
+it('does not forbid fetchers outside hr and sysadmin', function () {
+    expect(FetchAuroraAction::fetcherForbidden(FetchAuroraSuppliers::class))->toBeFalse()
+        ->and(FetchAuroraAction::fetcherForbidden(FetchAuroraWebUsers::class))->toBeFalse();
+});
+
+it('freezes every catalogue-tier model against aurora updates while a fetch runs', function (string $modelClass) {
+    $model = (new $modelClass())->forceFill(['id' => 1]);
+    $model->exists = true;
+
+    expect(AuroraCatalogueGuard::blocksUpdate($model))->toBeFalse()
+        ->and(AuroraCatalogueGuard::during(fn () => AuroraCatalogueGuard::blocksUpdate($model)))->toBeTrue();
+})->with([
+    'trade units'               => [\App\Models\Goods\TradeUnit::class],
+    'products'                  => [\App\Models\Catalogue\Product::class],
+    'assets'                    => [\App\Models\Catalogue\Asset::class],
+    'historic assets'           => [\App\Models\Catalogue\HistoricAsset::class],
+    'product categories'        => [\App\Models\Catalogue\ProductCategory::class],
+    'collections'               => [\App\Models\Catalogue\Collection::class],
+    'stocks'                    => [\App\Models\Goods\Stock::class],
+    'org stocks'                => [\App\Models\Inventory\OrgStock::class],
+    'stock families'            => [\App\Models\Goods\StockFamily::class],
+    'master assets'             => [\App\Models\Masters\MasterAsset::class],
+    'master product categories' => [\App\Models\Masters\MasterProductCategory::class],
+    'master shops'              => [\App\Models\Masters\MasterShop::class],
+]);
+
+it('lets a row the same fetch just created finish being assembled', function () {
+    $product = (new \App\Models\Catalogue\Product())->forceFill(['id' => 1]);
+    $product->exists = true;
+    $product->wasRecentlyCreated = true;
+
+    expect(AuroraCatalogueGuard::during(fn () => AuroraCatalogueGuard::blocksUpdate($product)))->toBeFalse();
+});
+
+it('does not freeze models outside the catalogue tier', function () {
+    $organisation = organisationNamed('aw');
+    $organisation->exists = true;
+
+    expect(AuroraCatalogueGuard::during(fn () => AuroraCatalogueGuard::blocksUpdate($organisation)))->toBeFalse();
+});
+
+it('makes the shared update chokepoint a no-op on a frozen model', function () {
+    $updater = new class () {
+        use \App\Actions\Traits\WithActionUpdate;
+
+        public function attempt($model, array $modelData)
+        {
+            return $this->update($model, $modelData);
+        }
+    };
+
+    $tradeUnit = (new \App\Models\Goods\TradeUnit())->forceFill(['id' => 1, 'name' => 'kept']);
+    $tradeUnit->exists = true;
+    $tradeUnit->syncOriginal();
+
+    $result = AuroraCatalogueGuard::during(fn () => $updater->attempt($tradeUnit, ['name' => 'from aurora']));
+
+    expect($result->name)->toBe('kept')
+        ->and($result->isDirty())->toBeFalse();
+});
+
+it('drops the guard even when the fetch throws', function () {
+    try {
+        AuroraCatalogueGuard::during(fn () => throw new RuntimeException('fetch blew up'));
+    } catch (RuntimeException) {
+    }
+
+    expect(AuroraCatalogueGuard::active())->toBeFalse();
 });

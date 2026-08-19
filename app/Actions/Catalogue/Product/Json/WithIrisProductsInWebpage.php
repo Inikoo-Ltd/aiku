@@ -194,6 +194,7 @@ trait WithIrisProductsInWebpage
             'products.top_seller',
             'products.web_images',
             'products.is_on_demand',
+            'products.is_golden_product',
             'webpages.url',
             'webpages.canonical_url',
             'webpages.website_id',

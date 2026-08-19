@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\Tiktok\Fulfilment;
 use App\Actions\Dropshipping\Tiktok\Order\StoreTiktokOrder;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
-use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
 use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
 use App\Actions\RetinaAction;
@@ -23,6 +22,7 @@ use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+
 use function Sentry\captureMessage;
 
 class StoreTiktokFulfilmentOrder extends RetinaAction
@@ -86,7 +86,7 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
 
                     $palletStoredItem = $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
 
-                    if(!$palletStoredItem) {
+                    if (!$palletStoredItem) {
                         continue;
                     }
 
