@@ -151,6 +151,29 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'platform'                   => $this->customerSalesChannel->platform,
                 'customerSalesChannel'       => $this->customerSalesChannel,
                 'customerSalesChannelId'     => $this->customerSalesChannel->id,
+                'download_route' => [
+                    'csv'                 => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.download',
+                        'parameters' => [
+                            'organisation'         => $this->organisation->slug,
+                            'shop'                 => $this->shop->slug,
+                            'customer'             => $this->customerSalesChannel->customer->slug,
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
+                            'type'                 => 'portfolio_csv'
+                        ]
+                    ],
+                    'extended_properties' => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.download',
+                        'parameters' => [
+                            'organisation'         => $this->organisation->slug,
+                            'shop'                 => $this->shop->slug,
+                            'customer'             => $this->customerSalesChannel->customer->slug,
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
+                            'type'                 => 'portfolio_csv_extended_properties'
+                        ]
+                    ],
+                ],
+
                 'routes'         => [
                     'bulk_upload'               => [
                         'name'       => 'grp.models.dropshipping.shopify.bulk_upload',

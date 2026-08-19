@@ -30,6 +30,7 @@ use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInCustomers;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannels;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Dropshipping\Portfolio\UI\DownloadPortfoliosInCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInCustomerSalesChannels;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
@@ -100,6 +101,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
 
             Route::prefix('/portfolios')->as('.portfolios')->group(function () {
                 Route::get('', IndexPortfoliosInCustomerSalesChannels::class)->name('.index');
+                Route::get('download', DownloadPortfoliosInCustomerSalesChannel::class)->name('.download');
             });
 
             Route::prefix('/customer-clients')->as('.customer_clients')->group(function () {
