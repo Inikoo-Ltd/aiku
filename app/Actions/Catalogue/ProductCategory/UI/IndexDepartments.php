@@ -30,6 +30,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -116,6 +117,7 @@ class IndexDepartments extends OrgAction
             'shops.code as shop_code',
             'shops.name as shop_name',
             'currencies.code as currency_code',
+            DB::raw("'".group()->currency->code."' as grp_currency_code"),
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
             'product_categories.health_rank',

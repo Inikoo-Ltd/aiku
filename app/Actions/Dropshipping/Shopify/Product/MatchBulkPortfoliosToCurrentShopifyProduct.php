@@ -8,10 +8,10 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -22,31 +22,22 @@ class MatchBulkPortfoliosToCurrentShopifyProduct extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
+    public string $jobQueue = 'dropshipping-long';
+
     /**
+     * @return array{matched: int, ignored: int}
+     *
      * @throws \Exception
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes = []): array
     {
-        $portfolios = $customerSalesChannel
-            ->portfolios()
-            ->where('status', true)
-            ->whereIn('id', Arr::get($attributes, 'portfolios'))
-            ->get();
-
-        foreach ($portfolios as $portfolio) {
-            $platformProductId = Arr::get($portfolio->platform_possible_matches, 'raw_data.0.id');
-            if ($platformProductId) {
-                MatchPortfolioToCurrentShopifyProduct::dispatch($portfolio, [
-                    'shopify_product_id' => $platformProductId
-                ]);
-            }
-        }
+        return MatchBulkPortfoliosToPlatform::run($customerSalesChannel, $attributes);
     }
 
     public function rules(): array
     {
         return [
-            'portfolios' => ['required', 'array'],
+            'portfolios'   => ['sometimes', 'array'],
             'portfolios.*' => ['required', 'integer'],
         ];
     }
@@ -58,6 +49,6 @@ class MatchBulkPortfoliosToCurrentShopifyProduct extends OrgAction
     {
         $this->initialisation($customerSalesChannel->organisation, $request);
 
-        $this->handle($customerSalesChannel, $this->validatedData);
+        MatchBulkPortfoliosToPlatform::dispatch($customerSalesChannel, $this->validatedData);
     }
 }

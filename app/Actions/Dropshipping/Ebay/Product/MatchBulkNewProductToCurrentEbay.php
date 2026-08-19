@@ -8,9 +8,10 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -19,24 +20,33 @@ class MatchBulkNewProductToCurrentEbay extends OrgAction
     use AsAction;
     use WithAttributes;
 
+    public string $jobQueue = 'dropshipping-long';
+
+    /**
+     * @return array{matched: int, ignored: int}
+     *
+     * @throws \Exception
+     */
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes = []): array
+    {
+        return MatchBulkPortfoliosToPlatform::run($customerSalesChannel, $attributes);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'portfolios'   => ['sometimes', 'array'],
+            'portfolios.*' => ['required', 'integer'],
+        ];
+    }
+
     /**
      * @throws \Exception
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
-        $portfolios = $customerSalesChannel
-            ->portfolios()
-            ->where('status', true)
-            ->whereIn('id', Arr::get($attributes, 'portfolios'))
-            ->get();
+        $this->initialisation($customerSalesChannel->organisation, $request);
 
-        foreach ($portfolios as $portfolio) {
-            $platformProductId = Arr::get($portfolio->platform_possible_matches, 'raw_data.0.sku');
-            if ($platformProductId) {
-                MatchPortfolioToCurrentEbayProduct::dispatch($portfolio, [
-                    'platform_product_id' => $platformProductId
-                ]);
-            }
-        }
+        MatchBulkPortfoliosToPlatform::dispatch($customerSalesChannel, $this->validatedData);
     }
 }

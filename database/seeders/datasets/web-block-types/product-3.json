@@ -1,0 +1,43 @@
+{
+	"slug": "product-3",
+	"scope": "webpage",
+	"code": "product-3",
+	"name": "Product showcase B",
+	"icon": ["fal", "cube"],
+	"category": "product",
+	"website_type": ["b2b", "b2c"],
+	"is_in_test": true,
+	"fixed": true,
+	"data": {
+		"fieldValue": {
+			"setting": {
+				"product_specs": true,
+				"payments_and_policy": true,
+				"bespoke": true,
+				"appointment": false
+			},
+			"delivery_info": {
+				"text": ""
+			},
+			"bespoke_data": {
+				"title": "Bespoke Options",
+				"text": "<p>Have something specific in mind?</p><p>Contact Us</p>",
+				"link": {
+					"id": null,
+					"url": null,
+					"href": null,
+					"type": "internal"
+				}
+			},
+			"appointment_data": {
+				"text": "<p>See Product In The Showroom</p><p>- Book Appointment</p>",
+				"link": {
+					"id": null,
+					"url": null,
+					"href": null,
+					"type": "internal"
+				}
+			}
+		}
+	}
+}
