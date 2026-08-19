@@ -39,6 +39,7 @@ class ChatMessageResource extends JsonResource
 
             'message_type' => $chatMessage->message_type->value,
             'sender_type' => $chatMessage->sender_type->value,
+            'sender_name' => $chatMessage->sender_name,
             'is_agent' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AGENT->value,
             'is_guest' => $chatMessage->sender_type->value === ChatSenderTypeEnum::GUEST->value,
             'is_user' => $chatMessage->sender_type->value === ChatSenderTypeEnum::USER->value,

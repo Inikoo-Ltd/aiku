@@ -388,6 +388,8 @@ const initWebSocket = () => {
     chatChannel = window.Echo.channel(channelName)
     websocketInitialized = true
 
+    bindConnectionRecovery()
+
     const notifiedMessageIds = new Set<number>()
 
     chatChannel.listen(".message", (e: any) => {
@@ -473,6 +475,33 @@ const initChat = async () => {
     initWebSocket()
     forceScrollBottom()
 }
+
+let boundConnection: any = null
+const onSocketConnected = () => reconcileChat()
+const bindConnectionRecovery = () => {
+    if (boundConnection) return
+    const connection = window.Echo?.connector?.pusher?.connection
+    if (!connection) return
+    connection.bind("connected", onSocketConnected)
+    boundConnection = connection
+}
+
+const reconcileChat = async () => {
+    if (!chatSession.value?.ulid) return
+    websocketInitialized = false
+    initWebSocket()
+    await getMessages()
+}
+
+const onChatVisibilityChange = () => {
+    if (document.visibilityState === "visible") reconcileChat()
+}
+const onChatWindowFocus = () => reconcileChat()
+const onChatWindowOnline = () => reconcileChat()
+const onChatPageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) reconcileChat()
+}
+let chatPollTimer: ReturnType<typeof setInterval> | null = null
 
 const statusChat = ref(false)
 const chatHours = ref({
@@ -698,6 +727,18 @@ onMounted(() => {
     syncLoginState()
     window.addEventListener("storage", syncLoginState)
 
+    document.addEventListener("visibilitychange", onChatVisibilityChange)
+    window.addEventListener("focus", onChatWindowFocus)
+    window.addEventListener("online", onChatWindowOnline)
+    window.addEventListener("pageshow", onChatPageShow)
+
+
+    chatPollTimer = setInterval(() => {
+        if (open.value && chatSession.value?.ulid && document.visibilityState === "visible") {
+            getMessages()
+        }
+    }, 25000)
+
     handleChatFromUrl()
 
     document.addEventListener("mousedown", (e) => {
@@ -720,7 +761,18 @@ onMounted(() => {
     })
 })
 
-onBeforeUnmount(stopChatWebSocket)
+onBeforeUnmount(() => {
+    stopChatWebSocket()
+    document.removeEventListener("visibilitychange", onChatVisibilityChange)
+    window.removeEventListener("focus", onChatWindowFocus)
+    window.removeEventListener("online", onChatWindowOnline)
+    window.removeEventListener("pageshow", onChatPageShow)
+    if (chatPollTimer) clearInterval(chatPollTimer)
+    if (boundConnection) {
+        boundConnection.unbind("connected", onSocketConnected)
+        boundConnection = null
+    }
+})
 
 defineExpose({
     messages,

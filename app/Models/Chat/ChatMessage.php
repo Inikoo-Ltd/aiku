@@ -107,6 +107,20 @@ class ChatMessage extends Model implements HasMedia
     {
         return $this->morphTo(__FUNCTION__, 'sender_type', 'sender_id');
     }
+    public function getSenderNameAttribute(): ?string
+    {
+        if (array_key_exists('sender_name', $this->attributes)) {
+            return $this->attributes['sender_name'];
+        }
+
+        if ($this->sender_type === ChatSenderTypeEnum::AGENT && $this->sender_id) {
+            $chatAgent = ChatAgent::with('user')->find($this->sender_id);
+
+            return $chatAgent?->user?->contact_name ?? $chatAgent?->user?->username;
+        }
+
+        return null;
+    }
 
     public function translations(): HasMany
     {
