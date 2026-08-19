@@ -107,6 +107,7 @@ export interface Contact {
 	lastMessageTime?: string
 	unread: number
 	status: "waiting" | "active" | "closed" | string
+	is_spam?: boolean
 	messages?: ChatMessage[]
 	webUser?: {
 		id: string

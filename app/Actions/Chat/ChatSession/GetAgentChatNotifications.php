@@ -60,6 +60,7 @@ class GetAgentChatNotifications
             'assignments.chatAgent.user',
         ])
             ->whereHas('messages')
+            ->where('is_spam', false)
             ->withLastMessageTime()
             ->orderBy('last_message_at', 'desc');
     }

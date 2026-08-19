@@ -161,6 +161,7 @@ const handleChatListEvent = async (e: any) => {
     const msg = e.message
     if (!msg) return
     if (msg.sender_type === "agent") return
+    if (msg.is_spam) return
     if (msg.shop_id && Array.isArray(myAgentShop) && !myAgentShop.includes(msg.shop_id)) {
         return
     }

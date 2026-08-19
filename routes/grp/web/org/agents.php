@@ -21,7 +21,9 @@ use App\Actions\Chat\ChatSession\ForceDeleteChatAgent;
 use App\Actions\Chat\ChatSession\ForwardChatMessageToSlack;
 use App\Actions\Chat\ChatSession\GetChatMessageSlackSettings;
 use App\Actions\Chat\ChatSession\GetChatSessionSlackSettings;
+use App\Actions\Chat\ChatSession\MarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\ReopenChatSession;
+use App\Actions\Chat\ChatSession\UnmarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\RestoreChatAgent;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatMessage;
@@ -51,6 +53,8 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::post('/messages/{chatMessage}/forward-slack', ForwardChatMessageToSlack::class)->name('messages.forward_slack');
     Route::patch('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
     Route::patch('/sessions/{chatSession:ulid}/reopen', ReopenChatSession::class)->name('sessions.reopen');
+    Route::patch('/sessions/{chatSession:ulid}/spam', MarkChatSessionAsSpam::class)->name('sessions.spam');
+    Route::patch('/sessions/{chatSession:ulid}/not-spam', UnmarkChatSessionAsSpam::class)->name('sessions.not_spam');
     Route::name('sessions.jira.')->prefix('sessions/{chatSession:ulid}/jira')->group(function () {
         Route::get('/projects', GetChatSessionJiraProjects::class)->name('projects');
         Route::get('/projects/{project}/issue-types', GetChatSessionJiraIssueTypes::class)->name('issue_types');

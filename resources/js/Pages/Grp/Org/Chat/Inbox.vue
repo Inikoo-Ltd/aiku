@@ -14,7 +14,8 @@ import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faFilter } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faFilter, faStoreAlt } from "@fal"
+import { faEllipsisVertical, faBan, faRotateLeft } from "@fortawesome/free-solid-svg-icons"
 import {
     Contact,
     SessionAPI,
@@ -41,6 +42,9 @@ const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 
 
 const contacts = ref<Contact[]>([])
 const activeTab = ref<"waiting" | "active" | "closed">("waiting")
+const spamView = ref(false)
+const openMenuUlid = ref<string | null>(null)
+const isSpamming = ref<Record<string, boolean>>({})
 const viewMode = ref<"my" | "team">("my")
 const searchQuery = ref("")
 const showSearch = ref(false)
@@ -107,6 +111,7 @@ const mapSession = (s: SessionAPI): Contact => ({
         : undefined,
     unread: s.unread_count,
     status: s.status,
+    is_spam: (s as any).is_spam ?? false,
     webUser: s.web_user,
     priority: s.priority,
     guest_profile: s.guest_profile,
@@ -119,7 +124,7 @@ const mapSession = (s: SessionAPI): Contact => ({
 const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
 
 const buildParams = (page: number) => ({
-    statuses: [activeTab.value],
+    ...(spamView.value ? { is_spam: 1 } : { statuses: [activeTab.value] }),
     assigned_to_me: myAgentId,
     organisation_id: props.organisation.id,
     page,
@@ -155,6 +160,43 @@ const loadMore = async () => {
     }
 }
 
+const toggleRowMenu = (ulid: string) => {
+    openMenuUlid.value = openMenuUlid.value === ulid ? null : ulid
+}
+
+const onSpamFromThread = () => {
+    const ulid = selectedSession.value?.ulid
+    if (ulid) {
+        contacts.value = contacts.value.filter((x) => x.ulid !== ulid)
+    }
+    selectedSession.value = null
+    messages.value = []
+    fetchInboxNotifications()
+}
+
+const markSpam = async (c: Contact, spam: boolean) => {
+    if (isSpamming.value[c.ulid]) return
+    openMenuUlid.value = null
+    isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
+    try {
+        const routeName = spam
+            ? "grp.org.chat.agents.sessions.spam"
+            : "grp.org.chat.agents.sessions.not_spam"
+        await axios.patch(route(routeName, [props.organisation.slug, c.ulid]), {}, { withCredentials: true })
+        // It moved to (or out of) the Spam tab — drop it from the current list.
+        contacts.value = contacts.value.filter((x) => x.ulid !== c.ulid)
+        if (selectedSession.value?.ulid === c.ulid) {
+            selectedSession.value = null
+            messages.value = []
+        }
+        fetchInboxNotifications()
+    } catch (e: any) {
+        errorPerContact.value[c.ulid] = e?.response?.data?.message ?? "Failed to update spam"
+    } finally {
+        isSpamming.value = { ...isSpamming.value, [c.ulid]: false }
+    }
+}
+
 const showAgentFilter = ref(false)
 const selectedAgentIds = ref<Array<number | string>>([])
 
@@ -183,7 +225,7 @@ const clearAgentFilter = () => {
 
 const filteredContacts = computed(() =>
     contacts.value.filter(
-        (c) => c.status === activeTab.value &&
+        (c) => (spamView.value ? true : c.status === activeTab.value) &&
             (!selectedShopId.value || c.shop?.id === selectedShopId.value) &&
             (!selectedAgentIds.value.length ||
                 (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
@@ -210,8 +252,19 @@ const shopAvatarStyle = (inbox: { id: number }) => {
 }
 
 const selectShop = (shopId: number) => {
-    if (selectedShopId.value === shopId) return
+    if (selectedShopId.value === shopId && !spamView.value) return
+    spamView.value = false
     selectedShopId.value = shopId
+    selectedSession.value = null
+    messages.value = []
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const selectSpam = () => {
+    if (spamView.value) return
+    spamView.value = true
+    selectedShopId.value = null
     selectedSession.value = null
     messages.value = []
     clearAgentFilter()
@@ -557,6 +610,21 @@ onUnmounted(() => {
                 </div>
             </div>
 
+            <!-- Spam -->
+            <div class="border-t border-gray-200 py-1">
+                <button type="button" @click="selectSpam"
+                    v-tooltip="inboxRailCollapsed ? trans('Spam') : undefined"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        spamView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="spamView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" />
+                    <span v-if="!inboxRailCollapsed">{{ trans("Spam") }}</span>
+                </button>
+            </div>
+
             <!-- Future: Highlighted (placeholder) -->
             <div class="border-t border-gray-200 py-1">
                 <button type="button" disabled v-tooltip="trans('Highlighted (coming soon)')"
@@ -574,9 +642,9 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ selectedInbox?.name ?? trans("Inbox") }}
+                        {{ spamView ? trans("Spam") : (selectedInbox?.name ?? trans("Inbox")) }}
                     </div>
-                    <div class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
+                    <div v-if="!spamView" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
                         <button type="button" class="px-2.5 py-1 rounded-md transition-all"
                             :class="viewMode === 'my' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'my'">
@@ -644,7 +712,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Status segmented tabs -->
-            <div class="px-3 py-2 border-b">
+            <div v-if="!spamView" class="px-3 py-2 border-b">
                 <div class="flex items-center bg-gray-100 rounded-lg p-1 text-xs">
                     <button v-if="viewMode === 'my'" type="button"
                         class="flex-1 py-1.5 rounded-md transition-all inline-flex items-center justify-center gap-1"
@@ -688,14 +756,38 @@ onUnmounted(() => {
                 </div>
 
                 <div v-else>
+                    <div v-if="openMenuUlid" class="fixed inset-0 z-20" @click="openMenuUlid = null"></div>
                     <div v-for="c in filteredContacts" :key="c.ulid">
-                        <div class="relative flex items-center gap-3 px-3 py-2 border-b cursor-pointer transition-colors"
+                        <div class="group relative flex items-center gap-3 px-3 py-2 border-b cursor-pointer transition-colors"
                             :class="selectedSession?.ulid === c.ulid ? '' : 'hover:bg-gray-50'"
                             :style="selectedSession?.ulid === c.ulid ? selectedItemStyle : {}"
-                            @click="handleClickContact(c)">
-                            <div v-if="isAssigning[c.ulid]"
+                            @click="handleClickContact(c)"
+                            @contextmenu.prevent="toggleRowMenu(c.ulid)">
+                            <div v-if="isAssigning[c.ulid] || isSpamming[c.ulid]"
                                 class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
                                 <LoadingIcon class="w-8 h-8 text-white" />
+                            </div>
+
+                            <button type="button"
+                                class="absolute top-1/2 right-2 -translate-y-1/2 z-30 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 shadow-md ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                                :class="{ '!opacity-100': openMenuUlid === c.ulid }"
+                                @click.stop="toggleRowMenu(c.ulid)">
+                                <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" />
+                            </button>
+
+                            <div v-if="openMenuUlid === c.ulid"
+                                class="absolute top-7 right-1 z-30 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1"
+                                @click.stop>
+                                <button v-if="!c.is_spam" type="button"
+                                    class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                                    @click="markSpam(c, true)">
+                                    <FontAwesomeIcon :icon="faBan" class="text-[10px]" /> {{ trans("Report spam") }}
+                                </button>
+                                <button v-else type="button"
+                                    class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                                    @click="markSpam(c, false)">
+                                    <FontAwesomeIcon :icon="faRotateLeft" class="text-[10px]" /> {{ trans("Not spam") }}
+                                </button>
                             </div>
 
                             <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
@@ -707,6 +799,10 @@ onUnmounted(() => {
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
                                     <span class="text-[10px] text-gray-400 shrink-0">{{ c.lastMessageTime }}</span>
+                                </div>
+                                <div v-if="spamView && c.shop?.name" class="flex items-center gap-1 text-[10px] text-gray-400 truncate">
+                                    <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
+                                    <span class="truncate">{{ c.shop.name }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span v-if="c.agent?.name" class="text-[10px] text-gray-400 truncate">
@@ -757,7 +853,8 @@ onUnmounted(() => {
                     @transfer-agent-success="onTransferAgentSuccess"
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
                     @open-jira-settings="onOpenJiraSettings"
-                    @open-slack-settings="onOpenSlackSettings" />
+                    @open-slack-settings="onOpenSlackSettings"
+                    @spam-success="onSpamFromThread" />
             </div>
         </div>
 

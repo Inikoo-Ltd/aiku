@@ -71,9 +71,21 @@ class ChatSession extends Model
         'closed_at' => 'datetime',
         'rating' => 'decimal:1',
         'metadata' => 'array',
+        'is_spam' => 'boolean',
+        'spam_at' => 'datetime',
     ];
 
     protected $guarded = [];
+
+    public function scopeNotSpam($query)
+    {
+        return $query->where('is_spam', false);
+    }
+
+    public function scopeSpam($query)
+    {
+        return $query->where('is_spam', true);
+    }
 
 
     public function webUser()

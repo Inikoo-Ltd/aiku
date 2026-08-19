@@ -31,10 +31,16 @@ enum ChatEventTypeEnum: string
 
     case GUEST_PROFILE = 'guest_profile';
 
+    case SPAM = 'spam';
+
+    case NOT_SPAM = 'not_spam';
+
     public static function labels(): array
     {
         return [
             'open' => __('Chat Opened'),
+            'spam' => __('Marked as Spam'),
+            'not_spam' => __('Marked as Not Spam'),
             'ai_reply' => __('AI Reply'),
             'transfer_request' => __('Transfer Request'),
             'transfer_accept' => __('Transfer Accepted'),

@@ -10,7 +10,7 @@ import {
     faEllipsisVertical,
     faTimesCircle,
     faMessage,
-    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight
+    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira, faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -57,6 +57,7 @@ const emit = defineEmits([
     "messages-read",
     "open-jira-settings",
     "open-slack-settings",
+    "spam-success",
 ])
 
 const layout: any = inject("layout", {})
@@ -113,6 +114,29 @@ const openSlackModal = () => {
 const onOpenSlackSettings = () => {
     isSlackModalOpen.value = false
     emit("open-slack-settings")
+}
+
+const isSpamMarking = ref(false)
+const markSpam = async (spam: boolean) => {
+    if (!props.session?.ulid || isSpamMarking.value) return
+    isMenuOpen.value = false
+    isSpamMarking.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const routeName = spam
+            ? "grp.org.chat.agents.sessions.spam"
+            : "grp.org.chat.agents.sessions.not_spam"
+        await axios.patch(route(routeName, [organisation, props.session.ulid]), {}, { withCredentials: true })
+        emit("spam-success")
+    } catch (e: any) {
+        notify({
+            title: trans("Error"),
+            text: e?.response?.data?.message ?? trans("Failed to update spam status"),
+            type: "error",
+        })
+    } finally {
+        isSpamMarking.value = false
+    }
 }
 
 const isAssigningSelf = ref(false)
@@ -799,6 +823,13 @@ const handleClickOutside = (e: MouseEvent) => {
 
                     <button class="menu-item" @click="openSlackModal">
                         <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ trans("Share to Slack") }}
+                    </button>
+
+                    <button v-if="!(session as any)?.is_spam" class="menu-item text-red-600" @click="markSpam(true)">
+                        <FontAwesomeIcon :icon="faBan" /> {{ trans("Report spam") }}
+                    </button>
+                    <button v-else class="menu-item" @click="markSpam(false)">
+                        <FontAwesomeIcon :icon="faRotateLeft" /> {{ trans("Not spam") }}
                     </button>
                 </div>
             </div>
