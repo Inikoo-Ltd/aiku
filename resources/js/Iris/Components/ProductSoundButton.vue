@@ -1,8 +1,22 @@
 <script setup lang="ts">
-import { ref, onBeforeUnmount } from "vue"
+import { ref, computed, inject, onBeforeUnmount } from "vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
 // ponytail: spectrum logic mirrors Components/Pure/AudioWaveform.vue; extract a composable if a third user appears
-const props = defineProps<{ src: string }>()
+const props = defineProps<{ src: string, topSeller?: number | null }>()
+
+const layout = inject('layout', retinaLayoutStructure)
+
+// Logged out cards show the "Login or Register" call to action under the image, which the
+// bottom-left button overlaps on narrow screens, so it moves to the top-left corner there.
+// The bestseller badge already sits at top-2 left-2, so drop below it when one is shown.
+const cornerClass = computed(() => {
+    if (layout?.iris?.is_logged_in) {
+        return 'left-2 bottom-2'
+    }
+
+    return props.topSeller ? 'left-2 top-11' : 'left-2 top-2'
+})
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const isPlaying = ref(false)
@@ -107,7 +121,8 @@ onBeforeUnmount(() => {
         <!-- Circular wave play/stop button -->
         <button
             @click.prevent.stop="togglePlay()"
-            class="absolute left-2 bottom-2 z-20 h-10 w-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center transition hover:scale-105"
+            class="absolute z-20 h-10 w-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center transition hover:scale-105"
+            :class="cornerClass"
             :title="isPlaying ? 'Stop sound sample' : 'Play sound sample'"
             aria-label="Sound sample"
         >

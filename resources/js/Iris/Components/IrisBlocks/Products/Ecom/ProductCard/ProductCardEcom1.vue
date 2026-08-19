@@ -225,7 +225,7 @@ defineExpose({
                     </slot>
                 </div>
 
-                <ProductSoundButton v-if="product.audio" :src="product.audio" />
+                <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
 
                 <!-- Section: Golden product, Favourite -->
                 <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"

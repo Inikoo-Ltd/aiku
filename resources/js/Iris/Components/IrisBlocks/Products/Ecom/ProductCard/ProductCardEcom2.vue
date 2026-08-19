@@ -154,7 +154,7 @@ defineExpose({
                          <DiscountByType :offers_data="product?.product_offers_data" template="max_discount" />
                     </div>
 
-                    <ProductSoundButton v-if="product.audio" :src="product.audio" />
+                    <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
 
                     <!-- GOLDEN PRODUCT + FAVOURITE -->
                     <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && !product.variant)"
