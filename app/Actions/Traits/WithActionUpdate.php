@@ -8,11 +8,15 @@
 
 namespace App\Actions\Traits;
 
+use App\Audits\Redactors\PasswordRedactor;
 use App\Transfers\AuroraCatalogueGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Events\AuditCustom;
 
 trait WithActionUpdate
 {
@@ -46,10 +50,33 @@ trait WithActionUpdate
             return $model;
         }
 
+        $auditOld = [];
+        $auditNew = [];
+        foreach (Arr::dot(Arr::only($modelData, $jsonFields)) as $dottedKey => $newValue) {
+            $oldValue = data_get($model, $dottedKey);
+            if (json_encode($oldValue) !== json_encode($newValue)) {
+                if (preg_match('/password|secret|token|api_key|access_key|private_key|pin/i', $dottedKey)) {
+                    $auditOld[$dottedKey] = $oldValue === null ? null : PasswordRedactor::redact($oldValue);
+                    $auditNew[$dottedKey] = $newValue === null ? null : PasswordRedactor::redact($newValue);
+                } else {
+                    $auditOld[$dottedKey] = $oldValue;
+                    $auditNew[$dottedKey] = $newValue;
+                }
+            }
+        }
+
         $model->update(
             Arr::except($modelData, $jsonFields)
         );
         $model->update($this->extractJson($modelData, $jsonFields));
+
+        if ($auditOld !== [] && $model instanceof Auditable) {
+            $model->auditEvent     = 'updated';
+            $model->isCustomEvent  = true;
+            $model->auditCustomOld = $auditOld;
+            $model->auditCustomNew = $auditNew;
+            Event::dispatch(new AuditCustom($model));
+        }
 
         return $model;
     }

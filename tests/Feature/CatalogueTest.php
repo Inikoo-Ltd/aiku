@@ -175,6 +175,15 @@ test('update shop', function (Shop $shop) {
         ->and($shop->organisation->catalogueStats->number_shops_state_open)->toBe(1);
 })->depends('create shop');
 
+test('update shop settings creates audit with dotted key', function (Shop $shop) {
+    $shop = UpdateShop::make()->action($shop, ['reviews' => true]);
+
+    $audit = $shop->audits()->latest('id')->first();
+
+    expect($audit)->not->toBeNull()
+        ->and($audit->new_values)->toHaveKey('settings.reviews.enabled');
+})->depends('create shop');
+
 test('seed shop permissions from command', function () {
     $this->artisan('shop:seed-permissions')->assertExitCode(0);
 })->depends('create shop by command');
