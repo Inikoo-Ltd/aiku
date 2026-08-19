@@ -36,6 +36,7 @@ const describeAgent = (userAgent?: string): string => {
 };
 
 const detailHistory = ref<any>(null);
+const isStaffApp = !String(route().current() ?? '').startsWith('retina.');
 
 defineProps<{
     data: object,
@@ -301,17 +302,17 @@ const getTradeUnitHistory = (oldData, newData) => {
                 <dd>{{ useFormatTime(detailHistory.datetime, { formatTime: 'hms' }) }}</dd>
                 <dt class="text-gray-400 text-right">{{ trans("Action") }}</dt>
                 <dd>{{ detailHistory.event?.replace(/_/g, ' ') }}</dd>
-                <template v-if="detailHistory.ip_address">
+                <template v-if="isStaffApp && detailHistory.ip_address">
                     <dt class="text-gray-400 text-right">{{ trans("IP address") }}</dt>
                     <dd>{{ detailHistory.ip_address }}</dd>
                 </template>
-                <template v-if="detailHistory.user_agent">
+                <template v-if="isStaffApp && detailHistory.user_agent">
                     <dt class="text-gray-400 text-right">{{ trans("Browser") }}</dt>
                     <dd>{{ describeAgent(detailHistory.user_agent) }}</dd>
                     <dt class="text-gray-400 text-right">{{ trans("User agent") }}</dt>
                     <dd class="break-words text-gray-500 text-xs">{{ detailHistory.user_agent }}</dd>
                 </template>
-                <template v-if="detailHistory.url">
+                <template v-if="isStaffApp && detailHistory.url">
                     <dt class="text-gray-400 text-right">{{ trans("URL") }}</dt>
                     <dd class="break-all text-gray-500 text-xs">{{ detailHistory.url }}</dd>
                 </template>
