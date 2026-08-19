@@ -125,7 +125,7 @@ const submitCategoryOffer = () => {
         resetForm();
         isOpenModal.value = false
 
-        if (createdSlugs.length === 1 && response.data.url) {
+        if (response.data.url) {
             router.visit(response.data.url)
             return
         }
