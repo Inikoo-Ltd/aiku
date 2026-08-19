@@ -173,7 +173,7 @@ beforeEach(function () {
 
     $this->stock = $stock;
 
-    $supplierProduct = SupplierProduct::first();
+    $supplierProduct = SupplierProduct::where('supplier_id', $this->supplier->id)->orderBy('id')->first();
     if (!$supplierProduct) {
         $storeData = SupplierProduct::factory()->definition();
         data_set($storeData, 'stock_id', $this->stock->id);
@@ -185,7 +185,7 @@ beforeEach(function () {
 
     $this->supplierProduct = $supplierProduct;
 
-    $orgSupplier = OrgSupplier::first();
+    $orgSupplier = OrgSupplier::where('supplier_id', $this->supplier->id)->orderBy('id')->first();
     if (!$orgSupplier) {
         $orgSupplier = StoreOrgSupplier::make()->action(
             $this->organisation,
@@ -195,7 +195,10 @@ beforeEach(function () {
 
     $this->orgSupplier = $orgSupplier;
 
-    $orgSupplierProduct = OrgSupplierProduct::first();
+    $orgSupplierProduct = OrgSupplierProduct::where('org_supplier_id', $this->orgSupplier->id)
+        ->where('supplier_product_id', $this->supplierProduct->id)
+        ->orderBy('id')
+        ->first();
     if (!$orgSupplierProduct) {
         $orgSupplierProduct = StoreOrgSupplierProduct::make()->action(
             $this->orgSupplier,
