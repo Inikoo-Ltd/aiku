@@ -35,6 +35,7 @@ import { ulid } from "ulid"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Popover from "primevue/popover"
+import Dialog from "primevue/dialog"
 import Checkbox from "primevue/checkbox"
 import TableRowSelectCheckbox from "@/Components/Table/TableRowSelectCheckbox.vue"
 
@@ -100,7 +101,7 @@ const onExport = (type: 'csv' | 'xlsx') => {
     window.open(exportUrl(type), '_blank')
 }
 
-const editingValues = shallowRef<Record<number, { price: number; rrp: number, rrp_per_unit: number, unit : string }>>({})
+const editingValues = shallowRef<Record<number, { price: number; rrp: number, rrp_per_unit: number, unit : string, name: string }>>({})
 const editingBackup = ref<Record<number, any>>({})
 const onEditOpen = ref<number[]>([])
 const loadingSave = ref([])
@@ -117,7 +118,8 @@ function onEdit(data) {
         price: item.price,
         rrp_per_unit: item.rrp_per_unit,
         rrp: item.rrp,
-        unit: item.unit
+        unit: item.unit,
+        name: item.name
     }
 
     if (!onEditOpen.value.includes(item.id)) {
@@ -138,7 +140,8 @@ function onSave(item) {
             price: updated.price,
             rrp: updated.rrp,
             rrp_per_unit: updated.rrp_per_unit,
-            unit: updated.unit
+            unit: updated.unit,
+            name: updated.name
         },
         {
             preserveScroll: true,
@@ -163,6 +166,46 @@ function onSave(item) {
             onFinish: () => {
                 loRemove(loadingSave.value, (id) => id === item.id)
             }
+        }
+    )
+}
+
+const descriptionModalProduct = ref<any>(null)
+const descriptionDraft = ref('')
+const isSavingDescription = ref(false)
+
+function openDescriptionModal(item) {
+    descriptionModalProduct.value = item
+    descriptionDraft.value = item.description ?? ''
+}
+
+function saveDescription() {
+    const item = descriptionModalProduct.value
+    if (!item) return
+
+    router.patch(
+        route("grp.models.product.update", { product: item.id }),
+        { description: descriptionDraft.value },
+        {
+            preserveScroll: true,
+            onStart: () => isSavingDescription.value = true,
+            onSuccess: () => {
+                item.description = descriptionDraft.value
+                descriptionModalProduct.value = null
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Description updated"),
+                    type: "success"
+                })
+            },
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error?.description || trans("Failed to update description"),
+                    type: "error"
+                })
+            },
+            onFinish: () => isSavingDescription.value = false
         }
     )
 }
@@ -740,7 +783,12 @@ const familyRoute = (item) => {
                     />
                 </div>
 
-                <div class="xtruncate">
+                <PureInput
+                    v-if="editable_table && onEditOpen.includes(product.id)"
+                    :key="product.id"
+                    v-model="editingValues[product.id].name"
+                />
+                <div v-else class="xtruncate">
                     <!-- <ProductUnitLabel
                         v-if="product?.units"
                         :units="product?.units"
@@ -755,6 +803,15 @@ const familyRoute = (item) => {
         <template #cell(unit)="{ item: product }">
                 <PureInput v-if="onEditOpen.includes(product.id)" :key="product.id" v-model="editingValues[product.id].unit"></PureInput>
                 <span v-else>{{ product.unit }}</span>
+        </template>
+
+        <template #cell(description)="{ item: product }">
+            <div class="flex items-center gap-2 max-w-xs">
+                <span class="truncate text-gray-500" v-tooltip="product.description">{{ product.description }}</span>
+                <button v-if="editable_table" class="shrink-0" @click="() => openDescriptionModal(product)" v-tooltip="trans('Edit description')">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="text-gray-500 hover:text-gray-700" aria-hidden="true" />
+                </button>
+            </div>
         </template>
 
         <template #cell(product_org_stocks)="{ item: product }">
@@ -1165,4 +1222,23 @@ const familyRoute = (item) => {
         </template>
 
     </Table>
+
+    <Dialog
+        :header="descriptionModalProduct ? `${descriptionModalProduct.code} — ${trans('Description')}` : ''"
+        :visible="!!descriptionModalProduct"
+        @update:visible="(val) => { if (!val) descriptionModalProduct = null }"
+        modal
+        closable
+        :style="{ width: '640px' }"
+    >
+        <textarea
+            v-model="descriptionDraft"
+            rows="10"
+            class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-indigo-500"
+        />
+        <div class="flex justify-end gap-2 mt-3">
+            <Button type="tertiary" :label="trans('Cancel')" @click="descriptionModalProduct = null" />
+            <Button type="save" :loading="isSavingDescription" @click="saveDescription" />
+        </div>
+    </Dialog>
 </template>

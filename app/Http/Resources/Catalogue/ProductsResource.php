@@ -111,6 +111,7 @@ class ProductsResource extends JsonResource
             // Only selected by the exclusive products index, absent everywhere else.
             'exclusive_customers'               => $this->exclusive_customers ?? null,
             'name'                              => $this->name,
+            'description'                       => $this->description ?? null,
             'state'                             => $state,
             'created_at'                        => Carbon::parse($this->created_at)->toDateTimeString(),
             'updated_at'                        => $this->updated_at,

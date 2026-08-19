@@ -916,3 +916,24 @@ test('repair command resyncs product ingredients and origin from trade units', f
     expect($product->marketing_ingredients)->toBe('Coconut Leaf')
         ->and($product->country_of_origin)->toBe('IDN');
 });
+
+test('bulk update product unit is scoped to shop', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    \App\Actions\Catalogue\Product\UpdateBulkProduct::make()->handle($shop, [
+        'products' => [
+            ['id' => $product->id, 'unit' => 'од.'],
+        ],
+    ]);
+    expect($product->refresh()->unit)->toBe('од.');
+
+    $otherShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    \App\Actions\Catalogue\Product\UpdateBulkProduct::make()->handle($otherShop, [
+        'products' => [
+            ['id' => $product->id, 'unit' => 'hacked'],
+        ],
+    ]);
+    expect($product->refresh()->unit)->toBe('од.');
+});
