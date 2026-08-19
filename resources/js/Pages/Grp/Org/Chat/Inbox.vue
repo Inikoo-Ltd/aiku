@@ -865,6 +865,7 @@ onUnmounted(() => {
             <div v-else class="h-full">
                 <WhatsappMessageAreaAgent v-if="selectedChannel === 'whatsapp'"
                     :messages="messages" :session="selectedSession"
+                    :organisation-slug="organisation.slug"
                     @back="selectedSession = null" @messages-read="onMessagesRead" />
                 <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
                     @back="selectedSession = null" @send-message="handleSendMessage"

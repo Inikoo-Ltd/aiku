@@ -1,8 +1,9 @@
 <?php
 
 /*
- * Author: Artha <artha@aw-advantage.com>
- * Copyright (c) 2026, Raul A Perusquia Flores
+ * Author: Eka Yudinata <ekayudinata@gmail.com>
+ * Created: Wed Aug 19 2026
+ * Copyright (c) 2026, Eka Yudinata
  */
 
 namespace App\Actions\Chat\MetaChatSession;
@@ -158,9 +159,30 @@ class SendMetaChatMessage
     /**
      * @throws \Throwable
      */
-    public function asController(MetaChatSession $metaChatSession, ActionRequest $request): array
+    public function asController(string $organisation, MetaChatSession $metaChatSession, ActionRequest $request): array
     {
-        $agent = Auth::id() ? ChatAgent::where('user_id', Auth::id())->first() : null;
+        $senderResult = $this->determineSenderData();
+
+        if (!$senderResult['ok']) {
+            return $senderResult;
+        }
+
+        return $this->handle($metaChatSession, $senderResult['data']['agent'], $request->validated());
+    }
+
+    protected function determineSenderData(): array
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return [
+                'ok'      => false,
+                'message' => __('Only authenticated agents can send chats'),
+                'code'    => 403,
+            ];
+        }
+
+        $agent = ChatAgent::where('user_id', $user->id)->first();
 
         if (!$agent) {
             return [
@@ -170,7 +192,14 @@ class SendMetaChatMessage
             ];
         }
 
-        return $this->handle($metaChatSession, $agent, $request->validated());
+        return [
+            'ok'   => true,
+            'data' => [
+                'sender_type' => ChatSenderTypeEnum::AGENT->value,
+                'sender_id'   => $agent->id,
+                'agent'       => $agent,
+            ],
+        ];
     }
 
     protected function templatePayload(string $to, string $name, string $language, array $parameters): array

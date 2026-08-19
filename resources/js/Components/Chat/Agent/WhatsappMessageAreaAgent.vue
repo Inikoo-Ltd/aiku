@@ -40,6 +40,7 @@ interface WhatsappTemplate {
 const props = defineProps<{
     messages: ChatMessage[]
     session: SessionAPI | null
+    organisationSlug: string
 }>()
 
 const emit = defineEmits(["back", "messages-read"])
@@ -218,7 +219,10 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
 
     try {
         const { data } = await axios.post(
-            `${baseUrl}/app/api/chats/meta/sessions/${chatSession.value!.ulid}/messages`,
+            route("grp.org.chat.agents.whatsapp.messages.send", [
+                props.organisationSlug,
+                chatSession.value!.ulid,
+            ]),
             formData,
             { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         )
