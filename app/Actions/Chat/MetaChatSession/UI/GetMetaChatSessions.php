@@ -56,6 +56,9 @@ class GetMetaChatSessions
             'messages' => function ($q) {
                 $q->latest()->limit(1);
             },
+            'lastVisitorMessage' => function ($q) {
+                $q->latest()->limit(1);
+            },
             'events' => function ($q) {
                 $q->where('event_type', ChatEventTypeEnum::GUEST_PROFILE)->latest()->limit(1);
             },

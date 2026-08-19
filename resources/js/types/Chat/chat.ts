@@ -46,6 +46,7 @@ export interface SessionAPI {
 		name: string
 	}
 	unread_count: number
+	can_send_non_template_message?: boolean
 	message_count: number
 	duration: string
 	ai_summary: {

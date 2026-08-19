@@ -3,6 +3,7 @@
 namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\CRM\WebUser;
@@ -101,6 +102,23 @@ class MetaChatSession extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(MetaChatMessage::class);
+    }
+
+    public function lastVisitorMessage(): HasMany
+    {
+        return $this->messages()->whereIn('sender_type', [
+            ChatSenderTypeEnum::GUEST->value,
+            ChatSenderTypeEnum::USER->value,
+        ]);
+    }
+
+    public function getCanSendNonTemplateMessageAttribute(): bool
+    {
+        $lastInboundAt = $this->relationLoaded('lastVisitorMessage')
+            ? $this->lastVisitorMessage->first()?->created_at
+            : $this->lastVisitorMessage()->latest()->first()?->created_at;
+
+        return $lastInboundAt !== null && $lastInboundAt->gt(now()->subDay());
     }
 
     public function assignments(): HasMany

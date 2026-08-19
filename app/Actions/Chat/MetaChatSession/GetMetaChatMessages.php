@@ -82,6 +82,7 @@ class GetMetaChatMessages
             'data'    => [
                 'session_ulid'   => $result['metaChatSession']->ulid,
                 'session_status' => $result['metaChatSession']->status->value,
+                'can_send_non_template_message' => $result['metaChatSession']->can_send_non_template_message,
                 'messages'       => MetaChatMessageResource::collection($result['messages']),
                 'pagination'     => $result['pagination'],
             ]

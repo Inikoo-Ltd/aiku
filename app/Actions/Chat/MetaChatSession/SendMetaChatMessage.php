@@ -84,6 +84,14 @@ class SendMetaChatMessage
         $templateName = $modelData['template_name'] ?? null;
         $upload       = $modelData['image'] ?? $modelData['file'] ?? null;
 
+        if (!$templateName && !$metaChatSession->can_send_non_template_message) {
+            return [
+                'ok'      => false,
+                'message' => __('The customer has not messaged in the last 24 hours. Only template messages can be sent.'),
+                'code'    => 422,
+            ];
+        }
+
         $metadata = [];
 
         if ($templateName) {

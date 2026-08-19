@@ -146,6 +146,8 @@ class MetaChatSessionListResource extends JsonResource
 
             'unread_count' => (int) ($this->unread_count ?? 0),
 
+            'can_send_non_template_message' => $this->resource->can_send_non_template_message,
+
             'message_count' => $this->relationLoaded('messages')
                 ? $this->messages->count()
                 : 0,

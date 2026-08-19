@@ -51,6 +51,9 @@ const baseUrl = layout?.appUrl ?? ""
 const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 
+const canSendNonTemplate = ref<boolean | undefined>(undefined)
+const templateOnly = computed(() => canSendNonTemplate.value === false)
+
 const messagesLocal = ref<LocalChatMessage[]>([])
 const newMessage = ref("")
 
@@ -178,6 +181,8 @@ const getMessages = async (loadMore = false) => {
             )
         }
 
+        canSendNonTemplate.value = data?.data?.can_send_non_template_message
+
         const page = data?.data?.pagination
         canLoadMore.value = !!page?.has_more
         nextCursor.value = page?.next_cursor ?? null
@@ -249,6 +254,15 @@ const sendMessage = async () => {
 
     if (hasTemplate.value) {
         await sendTemplateMessage()
+        return
+    }
+
+    if (templateOnly.value) {
+        notify({
+            title: trans("Error"),
+            text: trans("The customer has not messaged in the last 24 hours. Only template messages can be sent."),
+            type: "error",
+        })
         return
     }
 
@@ -397,6 +411,16 @@ const statusBadgeClass = computed(() => {
 })
 
 watch(
+    () => chatSession.value?.can_send_non_template_message,
+    (value: boolean | undefined) => {
+        if (value !== undefined) {
+            canSendNonTemplate.value = value
+        }
+    },
+    { immediate: true }
+)
+
+watch(
     () => chatSession.value?.ulid,
     async () => {
         messagesLocal.value = []
@@ -511,6 +535,12 @@ onMounted(() => {
                 @change="handleImageSelect" />
             <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
 
+            <div v-if="templateOnly && !hasTemplate"
+                class="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
+                <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" />
+                <span>{{ trans('The customer has not messaged in the last 24 hours. Only template messages can be sent.') }}</span>
+            </div>
+
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <div v-if="hasTemplate"
                     class="flex items-center gap-2 mx-3 mt-2 px-2 py-1 rounded-lg bg-green-50 text-green-700 text-[11px]">
@@ -536,16 +566,17 @@ onMounted(() => {
                 </div>
 
                 <textarea v-if="!hasTemplate" ref="messageInput" v-model="newMessage" @input="autoResize"
-                    @keydown.enter.exact.prevent="sendMessage" rows="1" :placeholder="trans('Type message...')"
-                    class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
+                    @keydown.enter.exact.prevent="sendMessage" rows="1" :disabled="templateOnly"
+                    :placeholder="templateOnly ? trans('24h window closed, send a template message') : trans('Type message...')"
+                    class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
-                        <button @click="imageInput?.click()" :disabled="hasTemplate"
+                        <button @click="imageInput?.click()" :disabled="hasTemplate || templateOnly"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="trans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" />
                         </button>
-                        <button @click="fileInput?.click()" :disabled="hasTemplate"
+                        <button @click="fileInput?.click()" :disabled="hasTemplate || templateOnly"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="trans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
                         </button>
@@ -554,7 +585,8 @@ onMounted(() => {
                             <FontAwesomeIcon :icon="faFileLines" class="text-sm" />
                         </button>
                     </div>
-                    <Button @click="sendMessage" :loading="isSending" :disabled="hasTemplate && !canSendTemplate"
+                    <Button @click="sendMessage" :loading="isSending"
+                        :disabled="hasTemplate ? !canSendTemplate : templateOnly"
                         :icon="faPaperPlane"></Button>
                 </div>
             </div>
