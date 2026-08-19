@@ -138,6 +138,7 @@ class ChatAgent extends Model
     {
         return $this->belongsToMany(Shop::class, 'shop_has_chat_agents')
             ->withPivot(['organisation_id'])
+            ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
 
@@ -145,6 +146,7 @@ class ChatAgent extends Model
     {
         return $this->belongsToMany(Organisation::class, 'shop_has_chat_agents')
             ->withPivot(['shop_id'])
+            ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
 
