@@ -37,6 +37,11 @@ trait HasImage
         return null;
     }
 
+    public function audio(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'audio_id');
+    }
+
     public function seoImage(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'seo_image_id');

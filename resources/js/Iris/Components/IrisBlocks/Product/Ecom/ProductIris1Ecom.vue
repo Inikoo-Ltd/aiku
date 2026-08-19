@@ -11,6 +11,7 @@ import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductConten
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
 
 import Image from "@common/Components/Image.vue"
+import ProductSoundButton from "@/Iris/Components/ProductSoundButton.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
@@ -255,8 +256,9 @@ onMounted(async () => {
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <!-- LEFT: Images -->
             <div class="col-span-7 bg-white" >
-                <div class="py-1 w-full">
+                <div class="py-1 w-full relative">
                     <ImageProducts :key="product.code" :images="validImages" :video="videoSetup?.url" />
+                    <ProductSoundButton v-if="product.audio" :src="product.audio" />
                 </div>
 
                 <!-- TAGS -->
@@ -548,7 +550,10 @@ onMounted(async () => {
         </div>
 
         <!-- MEDIA -->
-        <ImageProducts :images="validImages" :video="videoSetup?.url" />
+        <div class="relative">
+            <ImageProducts :images="validImages" :video="videoSetup?.url" />
+            <ProductSoundButton v-if="product.audio" :src="product.audio" />
+        </div>
         
 
         <!-- STOCK + FAVOURITE -->
