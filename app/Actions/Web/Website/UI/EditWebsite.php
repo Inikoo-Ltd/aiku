@@ -207,7 +207,13 @@ class EditWebsite extends OrgAction
                         'information'   => __('Toggle whether or not the price is shown when logged out on the webpage. This would not override individual webpage setting (if exists)'),
                         'label'         => __('Show Price on Webpage'),
                         'value'         => data_get($website->settings, 'webpage.show_price', false),
-                    ],
+                    ]
+                ]
+            ];
+            $blueprints[] = [
+                'label'  => __('Sound Player'),
+                'icon'   => 'fal fa-music',
+                'fields' => [
                     'sound_player_style' => [
                         'type'        => 'select',
                         'mode'        => 'single',
