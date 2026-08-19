@@ -49,6 +49,10 @@ class FetchAuroraStockDelivery extends FetchAurora
 
         $this->parsedData["org_parent"] = $orgParent;
 
+        if ($this->auroraModelData->{'Supplier Delivery Purchase Order Key'} > 0) {
+            $this->parsedData["purchase_order_source_id"] = $this->organisation->id.':'.$this->auroraModelData->{'Supplier Delivery Purchase Order Key'};
+        }
+
 
         //print ">>".$this->auroraModelData->{'Supplier Delivery State'}."\n";
         $state = match ($this->auroraModelData->{'Supplier Delivery State'}) {

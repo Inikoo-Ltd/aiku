@@ -973,6 +973,15 @@ test('create stock delivery from purchase order', function () {
         ->and(Arr::get($stockDelivery->data, 'estimated_dispatched_date'))->toBe('2026-07-27')
         ->and(Arr::get($stockDelivery->data, 'estimated_receiving_date'))->toBe('2026-08-31');
 
+    $this->withoutExceptionHandling();
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PurchaseOrder')
+            ->has('stock_delivery_timelines', 1)
+            ->where('stock_delivery_timelines.0.reference', $stockDelivery->reference)
+            ->where('stock_delivery_timelines.0.state', $stockDelivery->state->value)
+            ->has('stock_delivery_timelines.0.state_icon'));
+
     return $stockDelivery;
 });
 
