@@ -2,34 +2,31 @@
 
 /*
  * Author: Artha <artha@aw-advantage.com>
- * Created: Mon, 26 Aug 2024 14:04:18 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\Ebay\Product;
+namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
-use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class MatchBulkNewProductToCurrentEbay extends OrgAction
+class MatchRetinaBulkPortfoliosToPlatform extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
 
-    public string $jobQueue = 'dropshipping-long';
+    private CustomerSalesChannel $customerSalesChannel;
 
     /**
-     * @return array{matched: int, ignored: int}
-     *
      * @throws \Exception
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes = []): array
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        return MatchBulkPortfoliosToPlatform::run($customerSalesChannel, $attributes);
+        MatchBulkPortfoliosToPlatform::dispatch($customerSalesChannel, $attributes);
     }
 
     public function rules(): array
@@ -40,13 +37,19 @@ class MatchBulkNewProductToCurrentEbay extends OrgAction
         ];
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->customerSalesChannel->customer_id == $this->customer->id;
+    }
+
     /**
      * @throws \Exception
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
-        $this->initialisation($customerSalesChannel->organisation, $request);
+        $this->customerSalesChannel = $customerSalesChannel;
+        $this->initialisation($request);
 
-        MatchBulkPortfoliosToPlatform::dispatch($customerSalesChannel, $this->validatedData);
+        $this->handle($customerSalesChannel, $this->validatedData);
     }
 }
