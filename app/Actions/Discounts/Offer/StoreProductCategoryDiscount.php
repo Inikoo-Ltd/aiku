@@ -34,7 +34,7 @@ class StoreProductCategoryDiscount extends OrgAction
     /**
      * @throws \Throwable
      *
-     * @return array{offers: array<int, Offer>, skipped: array<int, string>}
+     * @return array<int, Offer>
      */
     public function handleMultiple(array $modelData): array
     {
@@ -42,27 +42,29 @@ class StoreProductCategoryDiscount extends OrgAction
             Arr::wrap(Arr::pull($modelData, 'product_category_ids') ?? Arr::pull($modelData, 'product_category_id'))
         );
 
-        $offers  = [];
-        $skipped = [];
+        $offers = [];
 
         foreach ($productCategoryIds as $productCategoryId) {
-            try {
-                $offer = $this->handle(array_merge($modelData, ['product_category_id' => $productCategoryId]));
-            } catch (ValidationException) {
-                $offer = null;
-            }
+            $offer = $this->storeSkippingDuplicate(array_merge($modelData, ['product_category_id' => $productCategoryId]));
 
             if ($offer) {
                 $offers[] = $offer;
-            } else {
-                $skipped[] = (string)ProductCategory::where('id', $productCategoryId)->value('name');
             }
         }
 
-        return [
-            'offers'  => $offers,
-            'skipped' => $skipped,
-        ];
+        return $offers;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    private function storeSkippingDuplicate(array $modelData): ?Offer
+    {
+        try {
+            return $this->handle($modelData);
+        } catch (ValidationException) {
+            return null;
+        }
     }
 
     /**
@@ -108,13 +110,14 @@ class StoreProductCategoryDiscount extends OrgAction
         $code = Str::lower($offerCampaign->code.'-'.$productCategory->code);
         data_set($modelData, 'code', $code, false);
 
-        $english = Language::where('code', 'en')->first();
-        data_set(
-            $modelData,
-            'name',
-            Translate::run('Category Discount', $english, $productCategory->shop->language, 'gpt-5-nano').' '.$productCategory->code,
-            false
-        );
+        if (!Arr::has($modelData, 'name')) {
+            $english = Language::where('code', 'en')->first();
+            data_set(
+                $modelData,
+                'name',
+                Translate::run('Category Discount', $english, $productCategory->shop->language, 'gpt-5-nano').' '.$productCategory->code
+            );
+        }
 
         data_set($modelData, 'trigger_type', 'ProductCategory');
         data_set($modelData, 'trigger_id', $productCategory->id);
@@ -163,7 +166,7 @@ class StoreProductCategoryDiscount extends OrgAction
 
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
-        ActivateOffer::run($offer, 30);
+        ActivateOffer::dispatch($offer, 30);
 
         return $offer;
     }
@@ -220,7 +223,7 @@ class StoreProductCategoryDiscount extends OrgAction
     /**
      * @throws \Throwable
      *
-     * @return array{offers: array<int, Offer>, skipped: array<int, string>}
+     * @return array<int, Offer>
      */
     public function asController(Shop $shop, ActionRequest $request): array
     {
@@ -230,22 +233,20 @@ class StoreProductCategoryDiscount extends OrgAction
     }
 
     /**
-     * @param array{offers: array<int, Offer>, skipped: array<int, string>} $result
+     * @param array<int, Offer> $offers
      */
-    public function jsonResponse(array $result): array
+    public function jsonResponse(array $offers): array
     {
-        /** @var Offer|null $firstOffer */
-        $firstOffer = Arr::first($result['offers']);
+        /** @var Offer|null $offer */
+        $offer = Arr::first($offers);
 
         return [
-            'slugs'   => Arr::map($result['offers'], fn (Offer $offer) => $offer->slug),
-            'url'     => $firstOffer ? route('grp.org.shops.show.discounts.campaigns.offer.show', [
-                'organisation'  => $firstOffer->organisation->slug,
-                'shop'          => $firstOffer->shop->slug,
-                'offerCampaign' => $firstOffer->offerCampaign->slug,
-                'offer'         => $firstOffer->slug,
+            'url' => $offer ? route('grp.org.shops.show.discounts.campaigns.offer.show', [
+                'organisation'  => $offer->organisation->slug,
+                'shop'          => $offer->shop->slug,
+                'offerCampaign' => $offer->offerCampaign->slug,
+                'offer'         => $offer->slug,
             ]) : null,
-            'skipped' => $result['skipped'],
         ];
     }
 
