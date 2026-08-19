@@ -118,7 +118,6 @@ const props = withDefaults(
     }>(),
     {}
 )
-console.log(props)
 const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
