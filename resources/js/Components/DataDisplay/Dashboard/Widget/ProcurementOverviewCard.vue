@@ -16,7 +16,7 @@ interface ProcurementCard {
 	label: string
 	description: string
 	icon: string | string[]
-	value: number
+	value: number | null
 	tone: "violet" | "emerald" | "amber" | "indigo" | "sky"
 	route: routeType
 	metrics: ProcurementMetric[]
@@ -96,12 +96,13 @@ const tone = toneClasses[props.card.tone]
 					aria-hidden="true" />
 			</div>
 
-			<div class="mt-3 flex items-baseline gap-2">
+			<div v-if="card.value !== null" class="mt-3 flex items-baseline gap-2">
 				<span class="text-2xl font-semibold tracking-tight text-gray-800 tabular-nums">{{
 					locale.number(card.value)
 				}}</span>
 				<span class="truncate text-xs text-gray-400">{{ card.description }}</span>
 			</div>
+			<p v-else class="mt-3 truncate text-xs text-gray-400">{{ card.description }}</p>
 		</Link>
 
 		<div

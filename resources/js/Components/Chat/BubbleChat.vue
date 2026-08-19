@@ -33,6 +33,7 @@ interface Message {
     } | null
     is_read?: boolean
     id?: number
+    sender_name?: string | null
     _status?: MessageStatus
     original?: Translation
     translations?: Translation[]
@@ -164,7 +165,7 @@ const showSenderLabel = computed(() =>
 
 const senderLabel = computed(() => {
     if (props.message.sender_type === "agent") {
-        return props.agentName ?? layout?.user?.contact_name ?? "Agent"
+        return props.message.sender_name ?? props.agentName ?? layout?.user?.contact_name ?? "Agent"
     }
     return props.contactName ?? "Customer"
 })

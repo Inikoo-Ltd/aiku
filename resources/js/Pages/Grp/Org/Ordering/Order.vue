@@ -1044,6 +1044,33 @@ const setShippingToAuto = (fieldSummary) => {
     )
 }
 
+const isLoadingChangeShipper = ref(false)
+const setOrderShipper = (shipperId: number) => {
+    router.patch(
+        route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters),
+        {
+            shipper_id: shipperId
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingChangeShipper.value = true
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: errors?.message || ctrans("Failed to change shipper"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingChangeShipper.value = false
+            },
+        }
+    )
+}
+
 const isOpenEditAllPercentageModal = ref(false)
 const editedAllPercentage = ref<number | null>(null)
 const isLoadingSubmitNetAmount = ref(false)
@@ -2178,6 +2205,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         :shipping_fields_update_route="note.shipping_fields_update_route"
                                         :shipments="note.shipments"
                                         :shipments_routes="note.shipments_routes"
+                                        :shipper_directive="note.shipper_directive"
                                         :address="note.shipping_fields.address"
                                         :currencyCode="box_stats?.currency?.data.code"
                                         :external_shop="box_stats?.external_shop"
@@ -2458,6 +2486,22 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information"
                                     class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
 
+                                <!-- Shipper selection (multi-shipper) -->
+                                <div v-if="fieldSummary.data?.shipper || fieldSummary.data?.shipping_options"
+                                    class="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                                    <select
+                                        v-if="routes.updateOrderRoute?.name && fieldSummary.data?.shipping_options?.length"
+                                        :value="fieldSummary.data?.shipper?.id"
+                                        :disabled="isLoadingChangeShipper"
+                                        @change="(e) => setOrderShipper(Number((e.target as HTMLSelectElement).value))"
+                                        class="text-xs border-none bg-transparent focus:ring-0 py-0 pr-6 cursor-pointer">
+                                        <option v-for="option in fieldSummary.data.shipping_options" :key="option.shipper_id"
+                                            :value="option.shipper_id">
+                                            {{ option.name }}
+                                        </option>
+                                    </select>
+                                    <span v-else-if="fieldSummary.data?.shipper">{{ fieldSummary.data.shipper.name }}</span>
+                                </div>
 
                                 <!-- Popover: Select shipping price method -->
                                 <PopoverPrimevue  ref="_shipping_price_method">

@@ -59,7 +59,21 @@ class DeletePicking extends OrgAction
 
             $picking->delete();
 
-            if ($deliveryNoteItem->state == DeliveryNoteItemStateEnum::HANDLING_BLOCKED && $quantity > 0) {
+            /**
+             * Recalculated before re-parking: the waiting clamp reads quantity_picked, which still
+             * counts the picking just deleted, so a line partly parked with CRM comes out with
+             * nothing outstanding and the abort kills the caller - the Faire resync died this way
+             * on a line the buyer had removed. With fresh totals the freed quantity is what goes
+             * back to waiting, and when the rest of the line is with CRM there is nothing to park.
+             */
+            CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem->refresh());
+            $deliveryNoteItem->refresh();
+
+            $outstanding = (float)$deliveryNoteItem->quantity_required
+                - (float)$deliveryNoteItem->quantity_picked
+                - (float)$deliveryNoteItem->quantity_waiting_crm;
+
+            if ($deliveryNoteItem->state == DeliveryNoteItemStateEnum::HANDLING_BLOCKED && $quantity > 0 && $outstanding > 0) {
                 SetAsWaitingWarehouse::make()->action(
                     $deliveryNoteItem,
                     $user,

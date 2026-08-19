@@ -411,6 +411,7 @@ const blockNotEditableVisible = [
 		"products-2",
 		"product-1",
 		"product-2",
+		"product-3",
 
 ]
 </script>

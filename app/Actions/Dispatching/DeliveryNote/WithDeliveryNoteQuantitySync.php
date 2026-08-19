@@ -12,7 +12,9 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
@@ -115,6 +117,17 @@ trait WithDeliveryNoteQuantitySync
                     'state'               => DeliveryNoteStateEnum::HANDLING->value,
                     'handling_blocked_at' => null,
                 ]);
+
+                /*
+                 * The order comes with it, for the reason StartHandlingDeliveryNote does the same:
+                 * a note released to handling under an order still reading blocked leaves the
+                 * warehouse picking something the ordering side holds, and nothing later puts the
+                 * two back in step - mxdpk8yece sat that way after Faire withdrew one of its lines.
+                 */
+                $order = $deliveryNote->orders->first();
+                if ($order && $order->state == OrderStateEnum::HANDLING_BLOCKED) {
+                    UpdateOrderStateToHandling::make()->action($order);
+                }
 
                 $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
                 $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);

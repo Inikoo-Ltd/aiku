@@ -37,16 +37,20 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
             $validator->errors()->add('state', __('Purchase order can only be submitted if it is in process'));
         }
 
-        if ($this->purchaseOrder->purchaseOrderTransactions()->count() === 0) {
+        if ($this->purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
+            ->doesntExist()) {
             $validator->errors()->add('transactions', __('Purchase order must have at least one item to be submitted'));
         }
     }
 
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        $purchaseOrder->purchaseOrderTransactions()->update([
-            'state' => PurchaseOrderTransactionStateEnum::SUBMITTED,
-        ]);
+        $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
+            ->update([
+                'state' => PurchaseOrderTransactionStateEnum::SUBMITTED,
+            ]);
 
         $updateData = [
             'state'        => PurchaseOrderStateEnum::SUBMITTED,
@@ -55,6 +59,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
         if ($purchaseOrder->estimated_delivery_days === null) {
             $deliveryDays = $purchaseOrder->purchaseOrderTransactions()
+                ->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::SUBMITTED)
                 ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
                 ->selectRaw("max((supplier_products.data->>'delivery_time')::int) as delivery_days")
                 ->value('delivery_days');

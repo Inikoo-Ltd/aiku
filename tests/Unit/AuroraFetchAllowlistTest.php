@@ -1,8 +1,13 @@
 <?php
 
+use App\Actions\Transfers\Aurora\FetchAuroraAction;
 use App\Actions\Transfers\Aurora\FetchAuroraArtefacts;
+use App\Actions\Transfers\Aurora\FetchAuroraClockingMachines;
 use App\Actions\Transfers\Aurora\FetchAuroraCustomers;
+use App\Actions\Transfers\Aurora\FetchAuroraDeletedEmployees;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedSuppliers;
+use App\Actions\Transfers\Aurora\FetchAuroraDeletedUsers;
+use App\Actions\Transfers\Aurora\FetchAuroraEmployees;
 use App\Actions\Transfers\Aurora\FetchAuroraDeliveryNotes;
 use App\Actions\Transfers\Aurora\FetchAuroraHistoricSupplierProducts;
 use App\Actions\Transfers\Aurora\FetchAuroraLocations;
@@ -14,6 +19,8 @@ use App\Actions\Transfers\Aurora\FetchAuroraPurchaseOrders;
 use App\Actions\Transfers\Aurora\FetchAuroraStockLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraSuppliers;
 use App\Actions\Transfers\Aurora\FetchAuroraTimesheets;
+use App\Actions\Transfers\Aurora\FetchAuroraUsers;
+use App\Actions\Transfers\Aurora\FetchAuroraWebUsers;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\AuroraCatalogueGuard;
 use App\Transfers\AuroraOrganisationService;
@@ -49,7 +56,7 @@ it('only lets a departed organisation keep the fetchers it has no aiku replaceme
     'artefacts still come from aurora'       => [FetchAuroraArtefacts::class, true],
     'raw materials still come from aurora'   => [FetchAuroraRawMaterials::class, true],
     'suppliers still come from aurora'       => [FetchAuroraSuppliers::class, true],
-    'timesheets are the clocking machine'    => [FetchAuroraTimesheets::class, true],
+    'timesheets are hr, aiku owned now'      => [FetchAuroraTimesheets::class, false],
     'customers are aiku owned now'           => [FetchAuroraCustomers::class, false],
     'stock locations are aroma only'         => [FetchAuroraStockLocations::class, false],
     'delivery notes are aiku owned now'      => [FetchAuroraDeliveryNotes::class, false],
@@ -88,6 +95,26 @@ it('lets a following organisation and a forced fetch through the on-miss gate', 
 
 it('returns null from run instead of fetching when the gate refuses', function () {
     expect(FetchAuroraLocations::run(auroraSourceFor('aw'), 1))->toBeNull();
+});
+
+it('forbids hr and sysadmin fetchers for every organisation, even following ones', function (string $fetcher) {
+    expect(FetchAuroraAction::fetcherForbidden($fetcher))->toBeTrue()
+        ->and(auroraStillFeeds($fetcher, organisationNamed('aroma')))->toBeFalse()
+        ->and(auroraStillFeeds($fetcher, organisationNamed('aw')))->toBeFalse()
+        ->and(auroraSourceFor('aroma')->allowsFetchOnMiss($fetcher))->toBeFalse()
+        ->and(auroraSourceFor('aroma', forced: true)->allowsFetchOnMiss($fetcher))->toBeFalse();
+})->with([
+    'employees'         => [FetchAuroraEmployees::class],
+    'deleted employees' => [FetchAuroraDeletedEmployees::class],
+    'users'             => [FetchAuroraUsers::class],
+    'deleted users'     => [FetchAuroraDeletedUsers::class],
+    'clocking machines' => [FetchAuroraClockingMachines::class],
+    'timesheets'        => [FetchAuroraTimesheets::class],
+]);
+
+it('does not forbid fetchers outside hr and sysadmin', function () {
+    expect(FetchAuroraAction::fetcherForbidden(FetchAuroraSuppliers::class))->toBeFalse()
+        ->and(FetchAuroraAction::fetcherForbidden(FetchAuroraWebUsers::class))->toBeFalse();
 });
 
 it('freezes every catalogue-tier model against aurora updates while a fetch runs', function (string $modelClass) {
