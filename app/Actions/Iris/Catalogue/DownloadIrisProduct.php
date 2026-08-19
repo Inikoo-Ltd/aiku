@@ -22,7 +22,10 @@ class DownloadIrisProduct extends IrisAction
 {
     public function handle(Shop|ProductCategory|Product|Collection $parent, ?string $type = null): BinaryFileResponse|Response
     {
-        return DownloadProduct::run($parent, $type ?? 'products_csv');
+        $response = DownloadProduct::run($parent, $type ?? 'products_csv');
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+
+        return $response;
     }
 
     public function asController(ActionRequest $request): BinaryFileResponse|Response
