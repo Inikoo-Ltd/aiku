@@ -35,11 +35,11 @@ class RepairWebpageBlogSubType
 
     public function asCommand(Command $command)
     {
-        $travelWebpages = Webpage::where('type', WebpageTypeEnum::BLOG)->where(fn ($q) => $q->where('sub_type', 'davids_travel_blog')->orWhereRaw("code ilike '%david-blog%'"))->get();
+        $travelWebpages = Webpage::where('type', WebpageTypeEnum::BLOG)->whereRaw("code ilike '%david-blog%'")->get();
 
         foreach ($travelWebpages as $webpage) {
             $command->info("Repairing $webpage->slug: Fixing Sub Type & Updating Canonical URL");
-            $this->handle($webpage, WebpageSubTypeEnum::DAVID_AW_NEWS);
+            $this->handle($webpage, WebpageSubTypeEnum::NEWSLETTERS);
         }
 
         $tipsWebpages = Webpage::where('type', WebpageTypeEnum::BLOG)->where('sub_type', 'tips')->get();
