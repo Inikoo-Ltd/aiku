@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $id
  * @property int $meta_channel_id
  * @property int|null $meta_chat_session_id
- * @property int|null $meta_chat_agent_id
+ * @property int|null $chat_agent_id
  * @property ChatAssignmentStatusEnum $status
  * @property ChatAssignmentAssignedByEnum $assigned_by
  * @property \Illuminate\Support\Carbon $assigned_at
@@ -53,8 +53,8 @@ class MetaChatAssignment extends Model
         return $this->belongsTo(MetaChatSession::class);
     }
 
-    public function metaChatAgent(): BelongsTo
+    public function chatAgent(): BelongsTo
     {
-        return $this->belongsTo(MetaChatAgent::class);
+        return $this->belongsTo(ChatAgent::class);
     }
 }

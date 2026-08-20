@@ -8,6 +8,7 @@
 namespace App\Http\Resources\CRM\Livechat;
 
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -36,6 +37,14 @@ class MetaChatSessionListResource extends JsonResource
             $activeAssignment = $isClosed
                 ? $filtered->sortByDesc('updated_at')->first()
                 : $filtered->first();
+        }
+
+        $hasActiveAssignment = $this->relationLoaded('assignments')
+            && $this->assignments->contains('status', ChatAssignmentStatusEnum::ACTIVE);
+
+        $status = $this->status;
+        if ($status !== ChatSessionStatusEnum::CLOSED && !$hasActiveAssignment) {
+            $status = ChatSessionStatusEnum::WAITING;
         }
 
         $guestProfile = null;
@@ -75,7 +84,7 @@ class MetaChatSessionListResource extends JsonResource
         return [
             'id' => $this->id,
             'ulid' => $this->ulid,
-            'status' => $this->status,
+            'status' => $status,
             'guest_identifier' => $this->guest_identifier ?? $this->phone_number,
             'phone_number' => $this->phone_number,
             'created_at' => $this->created_at,

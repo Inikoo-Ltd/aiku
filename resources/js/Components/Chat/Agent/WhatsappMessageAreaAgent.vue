@@ -43,13 +43,48 @@ const props = defineProps<{
     organisationSlug: string
 }>()
 
-const emit = defineEmits(["back", "messages-read"])
+const emit = defineEmits(["back", "messages-read", "assign-self-success"])
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
 const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
+const isWaiting = computed(() => !chatSession.value?.assigned_agent)
+const isMyChat = computed(() => {
+    if (!chatSession.value?.assigned_agent) return true
+    return String(chatSession.value.assigned_agent.user_id ?? "") === String(layout?.user?.id ?? "")
+})
+
+const isAssigningSelf = ref(false)
+const isTakingOver = ref(false)
+
+const claimChat = async (routeName: string, method: "post" | "patch", flag: { value: boolean }) => {
+    if (!chatSession.value?.ulid || flag.value) return
+    flag.value = true
+    try {
+        await axios[method](
+            route(routeName, [props.organisationSlug, chatSession.value.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        emit("assign-self-success")
+    } catch (e: any) {
+        notify({
+            title: trans("Error"),
+            text: e?.response?.data?.message ?? trans("Failed to assign chat"),
+            type: "error",
+        })
+    } finally {
+        flag.value = false
+    }
+}
+
+const assignSelf = () =>
+    claimChat("grp.org.chat.agents.whatsapp.assign.self", "post", isAssigningSelf)
+
+const takeoverChat = () =>
+    claimChat("grp.org.chat.agents.whatsapp.takeover", "patch", isTakingOver)
 
 const canSendNonTemplate = ref<boolean | undefined>(undefined)
 const templateOnly = computed(() => canSendNonTemplate.value === false)
@@ -526,6 +561,41 @@ onMounted(() => {
         <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
             <div class="px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-600 text-center">
                 {{ trans('This chat has been closed') }}
+            </div>
+        </footer>
+
+        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
+        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('Assign this chat to yourself to start the conversation') }}
+                </div>
+                <Button
+                    @click="assignSelf"
+                    :loading="isAssigningSelf"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Assign to me')"
+                    :icon="faUser"
+                />
+            </div>
+        </footer>
+
+        <!-- Footer: Takeover banner for team chats -->
+        <footer v-else-if="!isMyChat" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
+                <div class="text-xs text-indigo-600">
+                    <span class="font-semibold">{{ session?.assigned_agent?.name }}</span>
+                    {{ trans(' is handling this chat') }}
+                </div>
+                <Button
+                    @click="takeoverChat"
+                    :loading="isTakingOver"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Take Over')"
+                    :icon="faUser"
+                />
             </div>
         </footer>
 

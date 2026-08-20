@@ -866,7 +866,8 @@ onUnmounted(() => {
                 <WhatsappMessageAreaAgent v-if="selectedChannel === 'whatsapp'"
                     :messages="messages" :session="selectedSession"
                     :organisation-slug="organisation.slug"
-                    @back="selectedSession = null" @messages-read="onMessagesRead" />
+                    @back="selectedSession = null" @messages-read="onMessagesRead"
+                    @assign-self-success="onAssignSelfSuccess" />
                 <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"

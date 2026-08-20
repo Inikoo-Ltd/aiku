@@ -27,6 +27,7 @@ use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
+use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
 use App\Actions\Chat\MetaChatSession\SendMetaChatMessage;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,10 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('takeover');
     Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
     Route::post('/whatsapp/messages/{metaChatSession:ulid}/send', SendMetaChatMessage::class)->name('whatsapp.messages.send');
+    Route::post('/whatsapp/{metaChatSession:ulid}/assign-to-self', [AssignMetaChatToAgent::class, 'assignToSelf'])
+        ->name('whatsapp.assign.self');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/takeover', [AssignMetaChatToAgent::class, 'takeOver'])
+        ->name('whatsapp.takeover');
     Route::patch('/messages/{chatSession:ulid}/{chatMessage}/edit', UpdateChatMessage::class)->name('messages.update');
     Route::post('/messages/{chatMessage}/verify-image', VerifyChatImageMessage::class)->name('messages.verify_image');
     Route::get('/messages/{chatMessage}/slack-settings', GetChatMessageSlackSettings::class)->name('messages.slack_settings');

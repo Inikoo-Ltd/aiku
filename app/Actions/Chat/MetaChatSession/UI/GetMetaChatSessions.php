@@ -37,6 +37,8 @@ class GetMetaChatSessions
             ],
             'assigned_to_me' => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
+            'page'            => ['sometimes', 'integer', 'min:1'],
+            'channel'         => ['sometimes', 'string', 'max:50'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
             'search'          => ['sometimes', 'string', 'max:100'],
@@ -48,6 +50,33 @@ class GetMetaChatSessions
     public function asController(ActionRequest $request)
     {
         return $this->handle($request->validated());
+    }
+
+    /**
+     * Meta sessions never carry a `waiting` status: they are stored as `active` and stay there.
+     * Waiting means "nobody has picked it up yet", so it is derived from the absence of an
+     * active assignment. Only `closed` maps onto the status column.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  array<int, string>  $requestedStatuses
+     */
+    protected function applyStatusFilter($query, array $requestedStatuses): void
+    {
+        $query->where(function ($outer) use ($requestedStatuses) {
+            foreach ($requestedStatuses as $status) {
+                $outer->orWhere(function ($q) use ($status) {
+                    match ($status) {
+                        ChatSessionStatusEnum::WAITING->value => $q
+                            ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
+                            ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value)),
+                        ChatSessionStatusEnum::ACTIVE->value => $q
+                            ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
+                            ->whereHas('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value)),
+                        default => $q->where('status', $status),
+                    };
+                });
+            }
+        });
     }
 
     public function handle(array $filters = [])
@@ -77,12 +106,10 @@ class GetMetaChatSessions
             ])
             ->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) DESC');
 
-        if (isset($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
+        $requestedStatuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
 
-        if (isset($filters['statuses'])) {
-            $query->whereIn('status', $filters['statuses']);
+        if ($requestedStatuses) {
+            $this->applyStatusFilter($query, $requestedStatuses);
         }
 
         if (!empty($filters['assigned_to_me'])) {
@@ -97,9 +124,8 @@ class GetMetaChatSessions
                         $q->whereIn('shops.id', $shopIds);
                     })->where('id', '!=', $currentAgent->id)->pluck('id');
 
-                    $requestedStatuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
-                    $isClosed          = in_array('closed', $requestedStatuses);
-                    $assignmentStatus  = $isClosed
+                    $isClosed         = in_array('closed', $requestedStatuses);
+                    $assignmentStatus = $isClosed
                         ? ChatAssignmentStatusEnum::RESOLVED->value
                         : ChatAssignmentStatusEnum::ACTIVE->value;
 
