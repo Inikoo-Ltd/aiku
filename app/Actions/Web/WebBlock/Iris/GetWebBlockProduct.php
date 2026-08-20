@@ -10,6 +10,7 @@ namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
+use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
@@ -51,6 +52,12 @@ class GetWebBlockProduct
 
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
+        $tabs = [
+            'description'       => $product->description,
+            ...($product?->family ? WebBlockFamilyResource::getTabsData($webpage->model->family) : [])
+        ];
+        
+        data_set($webBlock, 'web_block.layout.data.fieldValue.tabs', $tabs);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
 
@@ -61,6 +68,7 @@ class GetWebBlockProduct
             data_set($variant, 'data.products', $excludedProducts);
             data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant);
         }
+        
 
         return [
            'type' => data_get($webBlock, 'type'),

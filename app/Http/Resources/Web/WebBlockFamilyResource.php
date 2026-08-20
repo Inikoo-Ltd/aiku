@@ -45,8 +45,15 @@ class WebBlockFamilyResource extends JsonResource
             'url'                       => $family->webpage->url,
             'offers_data'               => $family->offers_data,
             'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => $tag->name, 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
-            'faq'                       => $family->faq,
+            ...$this->getTabsData($family)
+        ];
+    }
+
+    public static function getTabsData(ProductCategory $family): array
+    {
+        return [
             'customize_option'          => FamilyCustomizeEnum::rows($family->customize_option),
+            'labeling_guide'            => $family->labelingGuide?->path,
             'storage_option'            => [
                 'storage_conditions'    => FamilyStorageConditionEnum::rows(data_get($family->storage_option, 'storage_conditions', [])),
                 'storage_temperature'   => data_get($family->storage_option, 'storage_temperature', ''),
@@ -59,6 +66,7 @@ class WebBlockFamilyResource extends JsonResource
                     'type'              => 'products_images'
                 ]
             ],
+            'faq'                       => $family->faq,
         ];
     }
 
