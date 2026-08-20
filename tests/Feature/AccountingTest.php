@@ -2729,3 +2729,40 @@ test('splitting an oversized excess payment settles the credit note and keeps th
         ->and((float) $payment->refresh()->amount)->toBe(-160.32)
         ->and(round($customer->refresh()->creditTransactions()->sum('amount'), 2))->toBe($balanceBefore);
 });
+
+test('repair command attaches order only payments to their invoice, and only when they add up', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $account  = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+
+    $storePayment = fn (float $amount, PaymentTypeEnum $type) => StorePayment::make()->action(
+        $customer,
+        $account,
+        [
+            'amount'    => $amount,
+            'reference' => 'ref-afr-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => $type,
+        ]
+    );
+
+    $settles = StoreOrder::make()->action($customer, []);
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $settles->id, 'total_amount' => 3433.49, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+    AttachPaymentToOrder::make()->action($settles, $storePayment(3560.12, PaymentTypeEnum::PAYMENT), []);
+    AttachPaymentToOrder::make()->action($settles, $storePayment(-126.63, PaymentTypeEnum::REFUND), []);
+
+    $short        = StoreOrder::make()->action($customer, []);
+    $shortInvoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $shortInvoice->update(['order_id' => $short->id, 'total_amount' => 500.00, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+    AttachPaymentToOrder::make()->action($short, $storePayment(499.99, PaymentTypeEnum::PAYMENT), []);
+
+    $this->artisan('repair:invoice_payments_not_attached --slug='.$invoice->slug.' --slug='.$shortInvoice->slug.' --apply')->assertOk();
+
+    expect($invoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and((float) $invoice->payment_amount)->toBe(3433.49)
+        ->and($shortInvoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::UNPAID)
+        ->and($shortInvoice->payments()->count())->toBe(0);
+});
