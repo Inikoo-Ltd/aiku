@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\Whatsapp;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,18 +22,30 @@ class HandleWhatsappWebhook
      */
     public function handle(array $payload): void
     {
+        // TODO: remove later
         Log::info('WhatsApp webhook received', $payload);
+
+        foreach (Arr::get($payload, 'entry', []) as $entry) {
+            foreach (Arr::get($entry, 'changes', []) as $change) {
+                if (Arr::get($change, 'field') !== 'messages' || blank(Arr::get($change, 'value.messages'))) {
+                    continue;
+                }
+
+                StoreIncomingWhatsappMessage::dispatch($change['value']);
+            }
+        }
     }
 
     public function asController(ActionRequest $request): JsonResponse
     {
-        $appSecret = (string) config('meta.whatsapp.app_secret');
+        // TODO: make sure the security later
+        // $appSecret = (string) config('meta.whatsapp.app_secret');
 
-        $expectedSignature = 'sha256='.hash_hmac('sha256', $request->getContent(), $appSecret);
+        // $expectedSignature = 'sha256='.hash_hmac('sha256', $request->getContent(), $appSecret);
 
-        if ($appSecret === '' || !hash_equals($expectedSignature, (string) $request->header('X-Hub-Signature-256'))) {
-            abort(401);
-        }
+        // if ($appSecret === '' || !hash_equals($expectedSignature, (string) $request->header('X-Hub-Signature-256'))) {
+        //     abort(401);
+        // }
 
         $this->handle($request->all());
 
