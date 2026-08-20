@@ -16,6 +16,7 @@ use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Events\BroadcastLowStockAudited;
+use App\Events\BroadcastLowStockAuditedStart;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
@@ -40,50 +41,58 @@ class AuditLocationOrgStock extends OrgAction
      */
     public function handle(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
     {
-        $locationOrgStock = DB::transaction(function () use ($locationOrgStock, $modelData) {
-            $currentStock = $locationOrgStock->quantity;
-            $newQuantity  = Arr::pull($modelData, 'quantity');
-            $reason       = Arr::pull($modelData, 'reason');
-            $note         = Arr::pull($modelData, 'note');
-            $stockDiff    = $newQuantity - $currentStock;
+        BroadcastLowStockAuditedStart::dispatch($locationOrgStock);
 
-            $costPerSku = $this->getLppPerSku($locationOrgStock->orgStock, Carbon::now());
+        try {
+            $locationOrgStock = DB::transaction(function () use ($locationOrgStock, $modelData) {
+                $currentStock = $locationOrgStock->quantity;
+                $newQuantity  = Arr::pull($modelData, 'quantity');
+                $reason       = Arr::pull($modelData, 'reason');
+                $note         = Arr::pull($modelData, 'note');
+                $stockDiff    = $newQuantity - $currentStock;
 
-            $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
+                $costPerSku = $this->getLppPerSku($locationOrgStock->orgStock, Carbon::now());
 
-            $storedData    = [
-                'quantity'         => $stockDiff,
-                'audited_quantity' => $newQuantity,
-                'date'             => now()->format('Y-m-d H:i:s.u'),
-                'type'             => Arr::pull($modelData, 'stock_movement_type', OrgStockMovementTypeEnum::AUDIT),
-                'cost_per_sku'     => $costPerSku,
-                'org_amount'       => $stockDiff * $costPerSku,
-                'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
-                'user_id'          => $this->user?->id,
-            ];
+                $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
 
-            if ($reason) {
-                data_set($storedData, 'reason', $reason);
-            }
+                $storedData    = [
+                    'quantity'         => $stockDiff,
+                    'audited_quantity' => $newQuantity,
+                    'date'             => now()->format('Y-m-d H:i:s.u'),
+                    'type'             => Arr::pull($modelData, 'stock_movement_type', OrgStockMovementTypeEnum::AUDIT),
+                    'cost_per_sku'     => $costPerSku,
+                    'org_amount'       => $stockDiff * $costPerSku,
+                    'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
+                    'user_id'          => $this->user?->id,
+                ];
 
-            if ($note) {
-                data_set($storedData, 'note', $note);
-            }
+                if ($reason) {
+                    data_set($storedData, 'reason', $reason);
+                }
 
-            StoreOrgStockMovement::make()->action(
-                $locationOrgStock->orgStock,
-                $locationOrgStock->location,
-                $storedData
-            );
-            // Update audited_at
-            $locationOrgStock->updateQuietly([
-                'audited_at'        => now(),
-                'is_low_stock_checked' => true
-            ]);
-            $locationOrgStock->refresh();
+                if ($note) {
+                    data_set($storedData, 'note', $note);
+                }
 
-            return $locationOrgStock;
-        });
+                StoreOrgStockMovement::make()->action(
+                    $locationOrgStock->orgStock,
+                    $locationOrgStock->location,
+                    $storedData
+                );
+                // Update audited_at
+                $locationOrgStock->updateQuietly([
+                    'audited_at'        => now(),
+                    'is_low_stock_checked' => true
+                ]);
+                $locationOrgStock->refresh();
+
+                return $locationOrgStock;
+            });
+        } catch (\Throwable $exception) {
+            BroadcastLowStockAudited::dispatch($locationOrgStock->refresh());
+
+            throw $exception;
+        }
 
         SetOrgStockPickingLocation::dispatch($locationOrgStock->org_stock_id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->org_stock_id)->delay(2);

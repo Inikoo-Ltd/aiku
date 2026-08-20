@@ -121,22 +121,30 @@ function reloadLowStockAudits() {
 
 const debouncedReload = debounce(reloadLowStockAudits, 600)
 
-useLowStockAuditBroadcast((event: LowStockAuditedEvent) => {
-    const rows = (props.data as any)?.data ?? []
-
-    const location = rows
+const findLocation = (locationOrgStockId: number): LowStockAuditLocation | undefined =>
+    ((props.data as any)?.data ?? [])
         .flatMap((row: LowStockAudit) => row.locations ?? [])
-        .find((row: LowStockAuditLocation) => row.id === event.location_org_stock_id)
+        .find((row: LowStockAuditLocation) => row.id === locationOrgStockId)
 
-    // Patch what is on screen straight away, then let the reload drop rows that are now done
-    if (location) {
-        location.quantity = event.quantity
-        location.audited_at = event.audited_at
-        location.is_low_stock_checked = event.is_low_stock_checked
-    }
+const { isLocked } = useLowStockAuditBroadcast({
+    onAudited: (event: LowStockAuditedEvent) => {
+        const location = findLocation(event.location_org_stock_id)
 
-    debouncedReload()
+        // Patch what is on screen straight away, then let the reload drop rows that are now done
+        if (location) {
+            location.quantity = event.quantity ?? location.quantity
+            location.audited_at = event.audited_at ?? location.audited_at
+            location.is_low_stock_checked =
+                event.is_low_stock_checked ?? location.is_low_stock_checked
+        }
+
+        debouncedReload()
+    },
 })
+
+// Locked by a broadcast from another tab, or by this tab's own request being in flight
+const isLocationBusy = (location: LowStockAuditLocation) =>
+    isLocked(location.id) || loadingLocations.value.includes(location.id)
 
 function submitNewQuantity(location: LowStockAuditLocation) {
     const quantity = newQuantities.value[location.id]
@@ -188,8 +196,12 @@ function submitNewQuantity(location: LowStockAuditLocation) {
                     </div>
 
                     <div
-                        v-if="loadingLocations.includes(location.id)"
-                        v-tooltip="trans('Setting as audited')"
+                        v-if="isLocationBusy(location)"
+                        v-tooltip="
+                            loadingLocations.includes(location.id)
+                                ? trans('Setting as audited')
+                                : trans('Being audited somewhere else')
+                        "
                         class="text-gray-400"
                     >
                         <LoadingIcon />
@@ -221,7 +233,7 @@ function submitNewQuantity(location: LowStockAuditLocation) {
                             :placeholder="trans('New qty')"
                             :min="0"
                             :step="1"
-                            :disabled="loadingLocations.includes(location.id)"
+                            :disabled="isLocationBusy(location)"
                             @keyup.enter="() => submitNewQuantity(location)"
                             size="small"
                             fluid
@@ -234,6 +246,7 @@ function submitNewQuantity(location: LowStockAuditLocation) {
                         v-tooltip="trans('Save the new quantity and mark as audited')"
                         :type="'save'"
                         :loading="loadingLocations.includes(location.id)"
+                        :disabled="isLocationBusy(location)"
                         @click="() => submitNewQuantity(location)"
                         size="xs"
                     />

@@ -53,21 +53,23 @@ const layout = inject('layout', layoutStructure)
 
 const reloadStocksManagement = debounce(() => router.reload({ only: ['showcase'] }), 600)
 
-useLowStockAuditBroadcast((event: LowStockAuditedEvent) => {
-    if (event.org_stock_id !== props.org_stock_id) {
-        return
-    }
+const { lockedLocationIds } = useLowStockAuditBroadcast({
+    onAudited: (event: LowStockAuditedEvent) => {
+        if (event.org_stock_id !== props.org_stock_id) {
+            return
+        }
 
-    const location = props.stocks_management.locations?.find(
-        (location: StockLocation) => location.id === event.location_org_stock_id
-    )
+        const location = props.stocks_management.locations?.find(
+            (location: StockLocation) => location.id === event.location_org_stock_id
+        )
 
-    if (location) {
-        location.quantity = event.quantity
-        location.audited_at = event.audited_at
-    }
+        if (location) {
+            location.quantity = event.quantity ?? location.quantity
+            location.audited_at = event.audited_at ?? location.audited_at
+        }
 
-    reloadStocksManagement()
+        reloadStocksManagement()
+    },
 })
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject('screenType', ref('desktop'))
@@ -508,6 +510,7 @@ const onAddLocationShow = () => {
                     @close="isStockCheckModalOpen = false"
                     :auditRoute="props.stocks_management?.routes?.audit_route"
                     :bulkAuditRoute="props.stocks_management?.routes?.bulk_audit_route"
+                    :lockedLocationIds
                     :reasons
                     :org_stock_id
                 />
