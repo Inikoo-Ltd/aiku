@@ -46,6 +46,8 @@ class RepairEscapedDescriptions
 
     public array $failed = [];
 
+    public ?string $driver = null;
+
     private array $languages = [];
 
     private ?array $englishShopIds = null;
@@ -129,7 +131,9 @@ class RepairEscapedDescriptions
             return null;
         }
 
-        $translated = Translate::run($source, $this->language('en'), $language, 'gpt-5-nano');
+        /* gpt-5-nano reasons before it writes, costing ~25s a call against ~4s for the configured
+           default. Translation needs no reasoning, so the default wins unless --driver says otherwise. */
+        $translated = Translate::run($source, $this->language('en'), $language, $this->driver ?? config('auto-translations.default_driver'));
 
         if (!self::isUsableTranslation($translated, $source, $language->code)) {
             $this->failed[] = $this->label($model, $label);
@@ -239,12 +243,13 @@ class RepairEscapedDescriptions
         ReindexWebpageLuigiData::dispatch($webpage->id)->delay(60);
     }
 
-    public string $commandSignature = 'repair:escaped_descriptions {--apply : Persist the changes, otherwise only report} {--retranslate : Regenerate fields that cannot be unpicked from their English source}';
+    public string $commandSignature = 'repair:escaped_descriptions {--apply : Persist the changes, otherwise only report} {--retranslate : Regenerate fields that cannot be unpicked from their English source} {--driver= : Translation driver, defaults to the configured default}';
 
     public function asCommand(Command $command): void
     {
-        $apply       = (bool)$command->option('apply');
-        $retranslate = (bool)$command->option('retranslate');
+        $apply        = (bool)$command->option('apply');
+        $retranslate  = (bool)$command->option('retranslate');
+        $this->driver = $command->option('driver') ?: null;
 
         foreach (self::MODELS as $modelClass) {
             $stripped = 0;
@@ -255,10 +260,14 @@ class RepairEscapedDescriptions
                     $query->orWhereRaw($field.' like ?', ['%\\\\%'])
                         ->orWhereRaw($field.'_i8n::text like ?', ['%\\\\\\\\%']);
                 }
-            })->orderBy('id')->chunkById(200, function (Collection $models) use ($apply, $retranslate, &$stripped) {
+            })->orderBy('id')->chunkById(200, function (Collection $models) use ($command, $apply, $retranslate, &$stripped) {
                 foreach ($models as $model) {
-                    if ($this->handle($model, $apply, $retranslate)) {
+                    $changes = $this->handle($model, $apply, $retranslate);
+                    if ($changes) {
                         $stripped++;
+                        /* A re-translating run spends seconds a field, so it reports as it goes
+                           rather than leaving the operator staring at nothing until the class ends. */
+                        $command->line('  '.$this->label($model, implode(', ', array_keys($changes))));
                     }
                 }
             });
