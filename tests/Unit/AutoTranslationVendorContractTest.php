@@ -74,3 +74,11 @@ it('strips nested json escaping and unicode escapes down to plain text', functio
         '<ul style=\\\\"padding: 0px\\\\"><li>Bag \\u2013 Nomad<\/li>all\\\'interno</ul>'
     ))->toBe('<ul style="padding: 0px"><li>Bag – Nomad</li>all\'interno</ul>');
 });
+
+it('never eats emoji surrogate pairs or null escapes', function () {
+    $strip = fn (string $text) => App\Actions\Helpers\Translations\Translate::stripJsonEscapes($text);
+
+    expect($strip('\\ud83d\\ude00 smile'))->toBe('\\ud83d\\ude00 smile')
+        ->and($strip('\\u0000null'))->toBe('\\u0000null')
+        ->and($strip('bullet \\u2022 here'))->toBe('bullet • here');
+});

@@ -83,7 +83,14 @@ class Translate extends OrgAction
         for ($pass = 0; $pass < 5; $pass++) {
             $stripped = preg_replace_callback(
                 '/\\\\u([0-9a-fA-F]{4})/',
-                fn (array $m) => mb_chr(hexdec($m[1]), 'UTF-8'),
+                function (array $m) {
+                    $codepoint = hexdec($m[1]);
+                    if ($codepoint === 0 || ($codepoint >= 0xD800 && $codepoint <= 0xDFFF)) {
+                        return $m[0];
+                    }
+
+                    return mb_chr($codepoint, 'UTF-8') ?: $m[0];
+                },
                 str_replace(['\\"', '\\/', "\\'"], ['"', '/', "'"], $text)
             );
 
