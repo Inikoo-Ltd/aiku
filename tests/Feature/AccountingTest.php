@@ -2809,3 +2809,40 @@ test('an invoice settled by two payments still records the date it was paid', fu
     expect($invoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
         ->and($invoice->paid_at)->not->toBeNull();
 });
+
+test('a payment already spoken for by one invoice is not offered to another on the same order', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $account  = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $this->shop->update(['migrated_to_aiku_on' => now()->addYear()]);
+
+    $pay = fn (float $amount) => StorePayment::make()->action($customer, $account, [
+        'amount'    => $amount,
+        'reference' => 'ref-multi-'.Str::ulid(),
+        'status'    => PaymentStatusEnum::SUCCESS->value,
+        'state'     => PaymentStateEnum::COMPLETED->value,
+        'type'      => PaymentTypeEnum::PAYMENT,
+    ]);
+
+    $order = StoreOrder::make()->action($customer, []);
+
+    $settled = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $settled->update(['order_id' => $order->id, 'total_amount' => 300.00, 'in_process' => false]);
+    $spokenFor = $pay(300.00);
+    AttachPaymentToOrder::make()->action($order, $spokenFor, []);
+    AttachPaymentToInvoice::make()->action($settled, $spokenFor, []);
+
+    $open = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $open->update(['order_id' => $order->id, 'total_amount' => 120.00, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+    AttachPaymentToOrder::make()->action($order, $pay(120.00), []);
+
+    $this->artisan('repair:invoice_payments_not_attached --slug='.$open->slug.' --apply')->assertOk();
+
+    // the 120.00 is the only payment left over, so it settles the open invoice and the
+    // 300.00 already sitting on the settled one is never double counted
+    expect($open->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and((float) $open->payment_amount)->toBe(120.00)
+        ->and($open->payments()->count())->toBe(1)
+        ->and((float) $settled->refresh()->payment_amount)->toBe(300.00);
+});

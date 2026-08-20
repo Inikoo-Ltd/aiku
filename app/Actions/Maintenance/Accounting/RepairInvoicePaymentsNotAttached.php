@@ -73,14 +73,20 @@ class RepairInvoicePaymentsNotAttached
         foreach ($query->with(['order', 'shop'])->cursor() as $invoice) {
             $order = $invoice->order;
 
-            if (!$order || $order->invoices()->count() !== 1) {
-                $skipped[] = [$invoice->reference, 'order carries '.($order ? $order->invoices()->count() : 0).' invoices', (float) $invoice->total_amount, ''];
+            if (!$order) {
+                $skipped[] = [$invoice->reference, 'no order', (float) $invoice->total_amount, ''];
                 continue;
             }
+
+            // An order can carry several invoices, and a payment already spoken for by one
+            // of them is not available to another. Only what is left over counts, which for
+            // an order holding a single invoice is simply all of its payments.
+            $siblingInvoiceIds = $order->invoices()->pluck('id');
 
             $payments = $order->payments()
                 ->where('payments.status', PaymentStatusEnum::SUCCESS)
                 ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+                ->whereDoesntHave('invoices', fn ($q) => $q->whereIn('invoices.id', $siblingInvoiceIds))
                 ->get();
 
             $paid = round($payments->sum('amount'), 2);
