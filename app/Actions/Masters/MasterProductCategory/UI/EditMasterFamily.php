@@ -241,6 +241,21 @@ class EditMasterFamily extends OrgAction
                             ],
                         ] : [],
                         $masterProductCategory->masterShop->slug == 'aroma' ? [
+                            'label'  => __('Labeling Guide'),
+                            'icon'   => 'fa-light fa-file-pdf',
+                            'fields' => [
+                                'labeling_guide_file' => [
+                                    'type'        => 'file_upload',
+                                    'label'       => __('Labeling guide'),
+                                    'placeholder' => __('Upload a PDF file'),
+                                    'required'    => false,
+                                    'accept'      => '.pdf,application/pdf',
+                                    'information' => __('Downloadable labeling & compliance guide shown on the family page.'),
+                                    'value'       => null,
+                                ],
+                            ],
+                        ] : [],
+                        $masterProductCategory->masterShop->slug == 'aroma' ? [
                             'label'  => __('Storage & Shelf Life'),
                             'icon'   => 'fa-light fa-temperature-low',
                             'fields' => [
