@@ -717,7 +717,7 @@ class ShowOrder extends OrgAction
         $symbol = $order->currency->symbol ?? $order->currency->code;
         $tilde  = $summary['is_estimated'] ? '~' : '';
 
-        $marginInfo = __('Margin').": {$tilde}{$summary['margin_pct']}% · {$symbol}".number_format($summary['profit_amount'], 2);
+        $marginInfo = __('Margin').": {$tilde}{$summary['margin_pct']}% · P: {$symbol}".number_format($summary['profit_amount'], 2);
         if ($summary['is_below_break_even']) {
             $marginInfo .= ' — '.__('below :pct% break-even', ['pct' => $summary['break_even_pct']]);
         }
@@ -725,18 +725,20 @@ class ShowOrder extends OrgAction
             $marginInfo .= ' — '.__(':count lines without cost excluded', ['count' => $summary['lines_without_cost']]);
         }
 
+        $marginTooltip = __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $symbol.number_format($summary['profit_amount'], 2)]);
+
         $discountInfo = null;
         if ($summary['before_discounts']) {
             $points       = round($summary['before_discounts']['margin_pct'] - $summary['margin_pct'], 1);
-            $profitCost   = round($summary['before_discounts']['profit_amount'] - $summary['profit_amount'], 2);
-            $discountInfo = __('Margin cost').": {$points}pts · {$symbol}".number_format($profitCost, 2);
+            $discountInfo = __('Margin cost').": {$points}pts";
         }
 
         foreach ($boxStats['order_summary'] ?? [] as $groupIndex => $group) {
             foreach ($group as $rowIndex => $row) {
                 $label = $row['label'] ?? null;
                 if (in_array($label, [__('Items net'), __('Items')])) {
-                    $boxStats['order_summary'][$groupIndex][$rowIndex]['information'] = $marginInfo;
+                    $boxStats['order_summary'][$groupIndex][$rowIndex]['information']      = $marginInfo;
+                    $boxStats['order_summary'][$groupIndex][$rowIndex]['information_icon'] = $marginTooltip;
                     if ($summary['is_below_break_even']) {
                         $boxStats['order_summary'][$groupIndex][$rowIndex]['label_class'] = 'text-red-600';
                     }

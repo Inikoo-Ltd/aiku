@@ -33,12 +33,15 @@ const locale = inject("locale", aikuLocaleStructure)
             v-tooltip="summary.is_below_break_even ? trans('Below the :pct% break-even margin set for this organisation, likely unprofitable after running costs', { pct: String(summary.break_even_pct) }) : undefined">
             <template v-if="summary.is_estimated">~</template>{{ summary.margin_pct }}%
         </span>
-        <span class="tabular-nums opacity-70">{{ locale.currencyFormat(summary.currency_code, summary.profit_amount) }}</span>
+        <span
+            class="tabular-nums opacity-70"
+            v-tooltip="trans(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', { amount: locale.currencyFormat(summary.currency_code, summary.profit_amount) })">
+            P: {{ locale.currencyFormat(summary.currency_code, summary.profit_amount) }}</span>
         <span
             v-if="summary.before_discounts"
             v-tooltip="trans('Margin before discounts')"
             class="text-xs opacity-60 tabular-nums">
-            ({{ trans("before discounts") }} {{ summary.before_discounts.margin_pct }}% · {{ locale.currencyFormat(summary.currency_code, summary.before_discounts.profit_amount) }})
+            ({{ trans("before discounts") }} {{ summary.before_discounts.margin_pct }}%)
         </span>
         <span
             v-if="summary.lines_without_cost > 0"
