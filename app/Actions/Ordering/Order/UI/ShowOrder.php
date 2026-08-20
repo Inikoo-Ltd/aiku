@@ -717,15 +717,15 @@ class ShowOrder extends OrgAction
         $symbol = $order->currency->symbol ?? $order->currency->code;
         $tilde  = $summary['is_estimated'] ? '~' : '';
 
-        $marginInfo = __('Margin').": {$tilde}{$summary['margin_pct']}% · P: {$symbol}".number_format($summary['profit_amount'], 2);
-        if ($summary['is_below_break_even']) {
-            $marginInfo .= ' — '.__('below :pct% break-even', ['pct' => $summary['break_even_pct']]);
-        }
-        if ($summary['lines_without_cost'] > 0) {
-            $marginInfo .= ' — '.__(':count lines without cost excluded', ['count' => $summary['lines_without_cost']]);
-        }
-
-        $marginTooltip = __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $symbol.number_format($summary['profit_amount'], 2)]);
+        $marginRow = [
+            'margin_label'  => __('Margin').": {$tilde}{$summary['margin_pct']}%",
+            'status'        => $summary['margin_status'],
+            'thin'          => $summary['margin_status'] === 'warning' ? __('thin margin, careful with further discounts') : null,
+            'profit_label'  => $symbol.number_format($summary['profit_amount'], 2),
+            'tooltip'       => __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $symbol.number_format($summary['profit_amount'], 2)]),
+            'below'         => $summary['is_below_break_even'] ? __('below :pct% break-even', ['pct' => $summary['break_even_pct']]) : null,
+            'without_cost'  => $summary['lines_without_cost'] > 0 ? __(':count lines without cost excluded', ['count' => $summary['lines_without_cost']]) : null,
+        ];
 
         $discountInfo = null;
         if ($summary['before_discounts']) {
@@ -737,8 +737,8 @@ class ShowOrder extends OrgAction
             foreach ($group as $rowIndex => $row) {
                 $label = $row['label'] ?? null;
                 if (in_array($label, [__('Items net'), __('Items')])) {
-                    $boxStats['order_summary'][$groupIndex][$rowIndex]['information']      = $marginInfo;
-                    $boxStats['order_summary'][$groupIndex][$rowIndex]['information_icon'] = $marginTooltip;
+                    $boxStats['order_summary'][$groupIndex][$rowIndex]['slot_name'] = 'items_margin';
+                    $boxStats['order_summary'][$groupIndex][$rowIndex]['margin']    = $marginRow;
                     if ($summary['is_below_break_even']) {
                         $boxStats['order_summary'][$groupIndex][$rowIndex]['label_class'] = 'text-red-600';
                     }

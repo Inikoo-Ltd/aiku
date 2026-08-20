@@ -2712,7 +2712,10 @@ describe('order margin data', function () {
         $belowBreakEven = $trait->aggregate([$exact], breakEvenPct: 70.0);
 
         expect($belowBreakEven['is_below_break_even'])->toBeTrue()
-            ->and($belowBreakEven['break_even_pct'])->toBe(70.0);
+            ->and($belowBreakEven['break_even_pct'])->toBe(70.0)
+            ->and($belowBreakEven['margin_status'])->toBe('danger')
+            ->and($trait->aggregate([$exact], breakEvenPct: 55.0)['margin_status'])->toBe('warning')
+            ->and($trait->aggregate([$exact], breakEvenPct: 40.0)['margin_status'])->toBe('ok');
 
         $gift = (object) ['net' => 0, 'org_net' => 0, 'gross' => 0, 'org_exchange' => 1, 'actual_cost' => 20, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
 

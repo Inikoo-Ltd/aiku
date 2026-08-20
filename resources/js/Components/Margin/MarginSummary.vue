@@ -5,8 +5,9 @@ import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle } from "@fas"
+import { faSackDollar } from "@fal"
 
-library.add(faExclamationTriangle)
+library.add(faExclamationTriangle, faSackDollar)
 
 defineProps<{
     summary: {
@@ -15,6 +16,7 @@ defineProps<{
         before_discounts: { margin_pct: number; profit_amount: number } | null
         break_even_pct: number
         is_below_break_even: boolean
+        margin_status: 'danger' | 'warning' | 'ok'
         is_estimated: boolean
         lines_without_cost: number
         currency_code: string
@@ -29,14 +31,14 @@ const locale = inject("locale", aikuLocaleStructure)
         <span class="opacity-70">{{ trans("Margin") }}:</span>
         <span
             class="font-medium tabular-nums"
-            :class="summary.is_below_break_even ? 'text-red-600' : ''"
-            v-tooltip="summary.is_below_break_even ? trans('Below the :pct% break-even margin set for this organisation, likely unprofitable after running costs', { pct: String(summary.break_even_pct) }) : undefined">
+            :class="{ 'text-red-600': summary.margin_status === 'danger', 'text-amber-600': summary.margin_status === 'warning' }"
+            v-tooltip="summary.margin_status === 'danger' ? trans('Below the :pct% break-even margin set for this organisation, likely unprofitable after running costs', { pct: String(summary.break_even_pct) }) : summary.margin_status === 'warning' ? trans('Thin margin, careful with further discounts') : undefined">
             <template v-if="summary.is_estimated">~</template>{{ summary.margin_pct }}%
         </span>
         <span
-            class="tabular-nums opacity-70"
+            class="tabular-nums opacity-70 cursor-help"
             v-tooltip="trans(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', { amount: locale.currencyFormat(summary.currency_code, summary.profit_amount) })">
-            P: {{ locale.currencyFormat(summary.currency_code, summary.profit_amount) }}</span>
+            <FontAwesomeIcon icon="fal fa-sack-dollar" fixed-width aria-hidden="true" class="mr-0.5" />{{ locale.currencyFormat(summary.currency_code, summary.profit_amount) }}</span>
         <span
             v-if="summary.before_discounts"
             v-tooltip="trans('Margin before discounts')"

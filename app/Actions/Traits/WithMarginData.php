@@ -263,6 +263,11 @@ trait WithMarginData
             'before_discounts'     => $beforeDiscounts,
             'break_even_pct'       => $breakEvenPct,
             'is_below_break_even'  => $marginPct < $breakEvenPct,
+            'margin_status'        => match (true) {
+                $marginPct < $breakEvenPct      => 'danger',
+                $marginPct < $breakEvenPct + 10 => 'warning',
+                default                         => 'ok',
+            },
             'is_estimated'         => $isEstimated,
             'lines_without_cost'   => $linesWithoutCost,
             'currency_code'        => $currencyCode,
