@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { inject, ref, onBeforeUnmount } from "vue"
+import { inject, ref } from "vue"
 import { debounce } from "lodash-es"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
@@ -177,6 +177,10 @@ const setTypingLock = (location: LowStockAuditLocation, isLocking: boolean) => {
         return
     }
 
+    if (isLocking && (isLocked(location.id) || isOrgStockLocked(orgStockId))) {
+        return
+    }
+
     typingLocks.value = isLocking
         ? [...typingLocks.value, location.id]
         : typingLocks.value.filter((id) => id !== location.id)
@@ -194,33 +198,13 @@ const releaseTypingLock = (location: LowStockAuditLocation) => setTypingLock(loc
 const hasQuantity = (quantity: unknown) =>
     quantity !== null && quantity !== undefined && quantity !== ""
 
-// One debounce per location: a shared one would let a second field cancel the first's release
-const releaseTimers: Record<number, ReturnType<typeof setTimeout>> = {}
-
-const scheduleReleaseIfEmpty = (location: LowStockAuditLocation) => {
-    clearTimeout(releaseTimers[location.id])
-
-    releaseTimers[location.id] = setTimeout(() => {
-        if (!hasQuantity(newQuantities.value[location.id])) {
-            releaseTypingLock(location)
-        }
-    }, 1500)
-}
-
-// The value comes off the event, not off newQuantities: PrimeVue fires input before v-model
-// has written the ref, so reading it here would miss the very first keystroke.
 const onQuantityTyping = (location: LowStockAuditLocation, value: unknown) => {
     setTypingLock(location, hasQuantity(value))
-    scheduleReleaseIfEmpty(location)
 }
 
 const onQuantityBlur = (location: LowStockAuditLocation) => {
     setTypingLock(location, hasQuantity(newQuantities.value[location.id]))
 }
-
-onBeforeUnmount(() => {
-    Object.values(releaseTimers).forEach((timer) => clearTimeout(timer))
-})
 
 function submitNewQuantity(location: LowStockAuditLocation) {
     const quantity = newQuantities.value[location.id]

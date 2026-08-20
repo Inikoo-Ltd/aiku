@@ -26,10 +26,6 @@ const START_EVENT = ".low_stock_audited_start"
 const DONE_EVENT = ".low_stock_audited"
 const LOCK_EVENT = ".low_stock_audit_lock"
 
-// A lock is only ever held while someone is actually counting. If the releasing broadcast is
-// lost, or a tab is closed mid edit, the controls would stay dead: every lock expires on its own.
-const LOCK_TIMEOUT_MS = 30000
-
 /**
  * An audit made in one view has to reach the other: the low stock list and the stock controller
  * both show the same counts, so whichever one is not counting has to be told.
@@ -49,7 +45,6 @@ export const useLowStockAuditBroadcast = (handlers: {
 
 	const lockedLocationIds = ref<number[]>([])
 	const lockedOrgStockIds = ref<number[]>([])
-	const lockTimers: Record<string, ReturnType<typeof setTimeout>> = {}
 
 	// What this tab is holding, so it can be handed back on unmount
 	const heldLocks = ref<
@@ -63,31 +58,19 @@ export const useLowStockAuditBroadcast = (handlers: {
 
 	const isOrgStockLocked = (orgStockId: number) => lockedOrgStockIds.value.includes(orgStockId)
 
-	const clearTimer = (key: string) => {
-		if (lockTimers[key]) {
-			clearTimeout(lockTimers[key])
-			delete lockTimers[key]
-		}
-	}
-
 	const release = (orgStockId: number, locationOrgStockId: number | null) => {
 		if (locationOrgStockId) {
 			lockedLocationIds.value = lockedLocationIds.value.filter(
 				(id) => id !== locationOrgStockId
 			)
-			clearTimer(`location-${locationOrgStockId}`)
+
 			return
 		}
 
 		lockedOrgStockIds.value = lockedOrgStockIds.value.filter((id) => id !== orgStockId)
-		clearTimer(`org-stock-${orgStockId}`)
 	}
 
 	const acquire = (orgStockId: number, locationOrgStockId: number | null) => {
-		const key = locationOrgStockId
-			? `location-${locationOrgStockId}`
-			: `org-stock-${orgStockId}`
-
 		if (locationOrgStockId) {
 			if (!isLocked(locationOrgStockId)) {
 				lockedLocationIds.value.push(locationOrgStockId)
@@ -95,9 +78,6 @@ export const useLowStockAuditBroadcast = (handlers: {
 		} else if (!isOrgStockLocked(orgStockId)) {
 			lockedOrgStockIds.value.push(orgStockId)
 		}
-
-		clearTimer(key)
-		lockTimers[key] = setTimeout(() => release(orgStockId, locationOrgStockId), LOCK_TIMEOUT_MS)
 	}
 
 	/**
@@ -183,8 +163,6 @@ export const useLowStockAuditBroadcast = (handlers: {
 	}
 
 	const unsubscribe = () => {
-		Object.keys(lockTimers).forEach((key) => clearTimer(key))
-
 		if (!channel) {
 			return
 		}

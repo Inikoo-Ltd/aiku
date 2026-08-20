@@ -425,6 +425,10 @@ const isEditLocationModalOpen = ref(false)
 const isAddLocationModalOpen = ref(false)
 const selectedLocationId = ref<number | null>(null)
 const openModal = (type: string, payload: number | null = null) => {
+    if (type === MODALS.STOCK_CHECK && isAuditLocked.value) {
+        return
+    }
+
     activeModal.value = type
 
     // For stock check modal we want to re-trigger focus even when the same location is selected again.
