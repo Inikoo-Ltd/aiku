@@ -35,7 +35,7 @@ class Translate extends OrgAction
             $cacheKey          = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
             $cachedTranslation = Cache::get($cacheKey);
             if ($cachedTranslation !== null) {
-                return $cachedTranslation;
+                return $this->unescapeJsonEchoes($text, $cachedTranslation);
             }
 
             if (app()->environment('local') && !config('app.sandbox.translate')) {
@@ -52,7 +52,7 @@ class Translate extends OrgAction
 
             $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, $translationDriver ?? config('auto-translations.default_driver'));
 
-            $text = Arr::get($translatedTexts, 'text_to_translate', $text);
+            $text = $this->unescapeJsonEchoes($text, Arr::get($translatedTexts, 'text_to_translate', $text));
 
             $cacheTtlHours = mb_strlen($text) < 32 ? 1440 : (mb_strlen($text) < 256 ? 480 : 72);
             Cache::put($cacheKey, $text, now()->addHours($cacheTtlHours));
@@ -63,6 +63,38 @@ class Translate extends OrgAction
 
             return $text;
         }
+    }
+
+    /**
+     * LLM translation drivers round-trip through a JSON payload and frequently echo the
+     * JSON escaping back as literal characters, storing style=\\" and <\\/strong> in the text.
+     */
+    public function unescapeJsonEchoes(string $original, string $translated): string
+    {
+        if (str_contains($original, '\\') || json_validate($original)) {
+            return $translated;
+        }
+
+        return self::stripJsonEscapes($translated);
+    }
+
+    public static function stripJsonEscapes(string $text): string
+    {
+        for ($pass = 0; $pass < 5; $pass++) {
+            $stripped = preg_replace_callback(
+                '/\\\\u([0-9a-fA-F]{4})/',
+                fn (array $m) => mb_chr(hexdec($m[1]), 'UTF-8'),
+                str_replace(['\\"', '\\/', "\\'"], ['"', '/', "'"], $text)
+            );
+
+            if ($stripped === $text) {
+                return $text;
+            }
+
+            $text = $stripped;
+        }
+
+        return $text;
     }
 
     public function getCommandSignature(): string
