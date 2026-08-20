@@ -231,7 +231,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: SubDepartment }">
-            <span class="tabular-nums">{{ locale.currencyFormat(SubDepartment.currency_code, SubDepartment.sales_grp_currency_external) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(SubDepartment.grp_currency_code ?? SubDepartment.currency_code, SubDepartment.sales_grp_currency_external) }}</span>
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">

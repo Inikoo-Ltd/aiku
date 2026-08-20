@@ -83,6 +83,19 @@ class ManufactureTask extends Model implements Auditable
         'data'     => '{}',
     ];
 
+    protected array $auditInclude = [
+        'code',
+        'name',
+        'status',
+        'task_lower_target',
+        'task_upper_target',
+        'operative_reward_terms',
+        'operative_reward_allowance_type',
+        'operative_reward_amount',
+        'standard_rate',
+        'target_override_reason',
+    ];
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

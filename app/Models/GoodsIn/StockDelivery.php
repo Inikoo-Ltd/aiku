@@ -176,6 +176,11 @@ class StockDelivery extends Model implements HasMedia, Auditable
 
     protected array $auditInclude = [
         'reference',
+        'state',
+        'cost_total',
+        'cost_items',
+        'cost_shipping',
+        'cost_duties',
     ];
 
     public function searchIndexShouldBeUpdated(): bool

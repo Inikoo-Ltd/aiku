@@ -341,6 +341,7 @@ onMounted(async () => {
                     <Product2Image :images="validImages" :video="videoSetup?.url" />
 
                     <a :href="marketingMaterialUrl"
+                        rel="nofollow"
                         class="
                         group
                         flex items-center gap-3
@@ -843,6 +844,7 @@ onMounted(async () => {
 
             <!-- DOWNLOAD -->
             <a :href="marketingMaterialUrl"
+                rel="nofollow"
                 class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-[#f9f8f5] ">
                 <FontAwesomeIcon :icon="faArrowToBottom" />
                 <span class="text-sm font-medium truncate">

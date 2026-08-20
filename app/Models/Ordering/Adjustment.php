@@ -10,9 +10,11 @@ namespace App\Models\Ordering;
 
 use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
 use App\Models\Helpers\Currency;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -41,9 +43,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment query()
  * @mixin \Eloquent
  */
-class Adjustment extends Model
+class Adjustment extends Model implements Auditable
 {
     use InShop;
+    use HasHistory;
 
     protected $guarded = [];
 
@@ -65,5 +68,15 @@ class Adjustment extends Model
         return $this->belongsTo(Currency::class);
     }
 
+    public function generateTags(): array
+    {
+        return ['ordering'];
+    }
+
+    protected array $auditInclude = [
+        'type',
+        'net_amount',
+        'tax_amount'
+    ];
 
 }

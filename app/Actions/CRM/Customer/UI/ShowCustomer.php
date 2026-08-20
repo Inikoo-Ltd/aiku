@@ -226,8 +226,8 @@ class ShowCustomer extends OrgAction
                     : Inertia::optional(fn () => GetCustomerJourney::run($customer)),
 
                 $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($customer))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($customer))),
+                    fn () => HistoryResource::collection(IndexHistory::run($customer, $tabs::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($customer, $tabs::HISTORY->value))),
                 $tabs::ATTACHMENTS->value         => $this->tab == $tabs::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($customer))
                     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($customer))),

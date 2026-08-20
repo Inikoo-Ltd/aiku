@@ -39,6 +39,7 @@ use Illuminate\Support\Arr;
  * @property mixed $is_description_reviewed
  * @property mixed $web_images
  * @property mixed $currency_code
+ * @property mixed $grp_currency_code
  * @property mixed $sales
  * @property mixed $sales_ly
  * @property mixed $invoices
@@ -85,6 +86,7 @@ class SubDepartmentsResource extends JsonResource
             'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
             'image_thumbnail'               => Arr::get($this->web_images, 'main.thumbnail'),
             'currency_code'                 => $this->currency_code ?? null,
+            'grp_currency_code'             => $this->grp_currency_code ?? null,
             'sales_grp_currency_external'   => $this->sales_grp_currency_external ?? null,
             'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? null,
             'sales_grp_currency_external_delta' => isset($this->sales_grp_currency_external, $this->sales_grp_currency_external_ly)

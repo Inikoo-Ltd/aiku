@@ -820,6 +820,13 @@ test('outbox hydrate', function () {
 
 test('email bulk runs', function () {
     $emailBulkRun = EmailBulkRun::first();
+    if (!$emailBulkRun) {
+        $outbox       = createOutboxDirectly($this->shop, OutboxCode::PRICE_CHANGE_NOTIFICATION);
+        $emailBulkRun = StoreEmailBulkRun::make()->action($outbox->emailOngoingRun, [
+            'subject' => 'Bulk run hydrate',
+            'state'   => \App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum::SENDING,
+        ], strict: false);
+    }
     HydrateEmailBulkRuns::run($emailBulkRun);
     $this->artisan('hydrate:email_bulk_runs --ids '.$emailBulkRun->id)->assertExitCode(0);
 });

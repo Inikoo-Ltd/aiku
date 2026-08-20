@@ -40,7 +40,7 @@ return [
             'retina',
             'pupil',
         ],
-        'resolver'     => OwenIt\Auditing\Resolvers\UserResolver::class
+        'resolver'     => \App\Audits\Resolvers\AuditUserResolver::class
     ],
 
     /*

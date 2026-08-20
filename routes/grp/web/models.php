@@ -147,6 +147,7 @@ use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Product\MatchBulkNewProductToCurrentEbay;
+use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\Dropshipping\Ebay\Product\MatchPortfolioToCurrentEbayProduct;
 use App\Actions\Dropshipping\Ebay\Product\StoreBulkNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
@@ -351,6 +352,7 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAssetImageAlt;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
 use App\Actions\Masters\MasterAsset\UpdateMultipleMasterProductsFamily;
+use App\Actions\Masters\MasterAsset\UploadAudioToMasterProduct;
 use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
@@ -674,6 +676,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
     Route::post('kill-all-rebels', KillAllMasterAssetRebelProducts::class)->name('kill_all_rebels');
     Route::patch('update-images', UpdateMasterProductImages::class)->name('update_images');
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
+    Route::post('upload-audio', UploadAudioToMasterProduct::class)->name('upload_audio');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
     Route::patch('media/{media:id}/alt', UpdateMasterAssetImageAlt::class)->name('update_image_alt')->withoutScopedBindings();
 });
@@ -949,6 +952,8 @@ Route::post('{customerSalesChannel:id}/revive', ReviveInActiveWooChannel::class)
 Route::post('{customerSalesChannel:id}/ebay-batch-upload', StoreBulkNewProductToCurrentEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/ebay-batch-all', StoreBulkNewProductToCurrentEbay::class)->name('ebay.batch_all')->withoutScopedBindings();
+
+Route::post('{customerSalesChannel:id}/batch-match', MatchBulkPortfoliosToPlatform::class)->name('platform.batch_match')->withoutScopedBindings();
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
 Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');

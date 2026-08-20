@@ -173,8 +173,8 @@ class ShowMasterDepartment extends OrgAction
                     : Inertia::optional(fn () => GetMasterProductCategoryImages::run($masterDepartment)),
 
                 MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))),
+                    fn () => HistoryResource::collection(IndexHistory::run($masterDepartment, MasterDepartmentTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment, MasterDepartmentTabsEnum::HISTORY->value))),
 
 
             ]

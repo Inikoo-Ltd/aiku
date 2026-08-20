@@ -139,6 +139,25 @@ class Review extends Model implements Auditable, HasMedia
         'web_images'        => '{}',
     ];
 
+    protected array $auditInclude = [
+        'state',
+        'is_online',
+        'is_public',
+        'message',
+        'rating_main',
+        'rating_a',
+        'rating_b',
+        'rating_c',
+        'rating_d',
+        'rating_e',
+        'review_status',
+        'approved',
+        'removed',
+        'removed_reason',
+        'replied',
+        'reply_message',
+    ];
+
     public function getRouteKeyName(): string
     {
         return 'id';

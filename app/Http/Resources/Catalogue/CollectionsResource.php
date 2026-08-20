@@ -43,6 +43,7 @@ use Illuminate\Support\Arr;
  * @property mixed $master_collection_id
  * @property mixed $web_images
  * @property mixed $currency_code
+ * @property mixed $grp_currency_code
  * @property mixed $sales
  * @property mixed $sales_ly
  * @property mixed $invoices
@@ -120,6 +121,7 @@ class CollectionsResource extends JsonResource
             'parents_data'            => $this->parseCollectionParentsData($this->parents_data),
             'image_thumbnail'         => Arr::get($this->web_images, 'main.thumbnail'),
             'currency_code'           => $this->currency_code ?? null,
+            'grp_currency_code'       => $this->grp_currency_code ?? null,
             'number_current_families'       => $this->number_current_families ?? 0,
             'number_current_products'       => $this->number_current_products ?? 0,
             'sales_grp_currency_external' => $this->sales_grp_currency_external ?? 0,

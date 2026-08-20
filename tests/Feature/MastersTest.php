@@ -3057,3 +3057,48 @@ test('creating a master asset queues its effective cost hydration', function (Ma
             && $job->getParameters()[0]->id === $masterAsset->id
     );
 })->depends("create master family");
+
+test('upload and delete sound sample on master asset', function () {
+    $masterDepartment = ensureMasterProductCategory();
+    $masterFamily     = StoreMasterProductCategory::make()->action($masterDepartment, [
+        'code' => 'SND-FAM-'.rand(100, 999),
+        'name' => 'sound family',
+        'type' => MasterProductCategoryTypeEnum::FAMILY
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'SOUND_SAMPLE_1',
+        'name'    => 'sound sample 1',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $media = \App\Actions\Masters\MasterAsset\UploadAudioToMasterProduct::make()->handle($masterAsset, [
+        'audio' => \Illuminate\Http\UploadedFile::fake()->create('bowl.mp3', 100, 'audio/mpeg'),
+    ]);
+
+    $masterAsset->refresh();
+
+    expect($masterAsset->audio_id)->toBe($media->id)
+        ->and($masterAsset->audio->id)->toBe($media->id)
+        ->and($masterAsset->images()->wherePivot('scope', 'audio')->count())->toBe(1)
+        ->and($masterAsset->images()->wherePivot('sub_scope', 'audio')->first()->id)->toBe($media->id);
+
+    $bucketImages = (new class () {
+        use \App\Actions\Traits\HasBucketImages;
+    })->getImagesData($masterAsset);
+    $audioBox = collect($bucketImages)->firstWhere('column_in_db', 'audio_id');
+    expect($audioBox['type'])->toBe('audio')
+        ->and($audioBox['audio']['url'])->toContain($media->ulid);
+
+    $audioResponse = \App\Actions\Helpers\Media\UI\ShowIrisAudio::make()->asController($media);
+    expect($audioResponse->headers->get('Content-Type'))->toBe($media->mime_type);
+
+    \App\Actions\Masters\MasterAsset\DeleteImageFromMasterProduct::make()->handle($masterAsset, $media);
+    $masterAsset->refresh();
+
+    expect($masterAsset->audio_id)->toBeNull()
+        ->and($masterAsset->images()->count())->toBe(0);
+});

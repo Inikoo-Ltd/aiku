@@ -197,6 +197,7 @@ class IndexRetinaPortfolios extends RetinaAction
         // Button: Brave mode
         $bulkUploadRoute = false;
         $bulkAllRoute    = false;
+        $bulkMatchRoute  = false;
         if ($platformUser) {
             $bulkUploadRoute = match ($this->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::SHOPIFY => [
@@ -271,6 +272,20 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 PlatformTypeEnum::ALLEGRO => [
                     'name'       => 'retina.models.dropshipping.allegro.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+                default => false
+            };
+
+            $bulkMatchRoute = match ($this->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::SHOPIFY,
+                PlatformTypeEnum::WOOCOMMERCE,
+                PlatformTypeEnum::EBAY,
+                PlatformTypeEnum::TIKTOK,
+                PlatformTypeEnum::ALLEGRO => [
+                    'name'       => 'retina.models.dropshipping.platform.batch_match',
                     'parameters' => [
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
@@ -372,6 +387,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         ]
                     ],
                     'batch_all'                   => $bulkAllRoute,
+                    'batch_match'                 => $bulkMatchRoute,
                     'fetch_products'              => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.woo_products'

@@ -98,8 +98,8 @@ class ShowBlogWebpage extends OrgAction
                     : Inertia::optional(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))),
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($webpage))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($webpage))),
+                    fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))),
             ]
         )->table(
             IndexWebpages::make()->tableStructure(parent: $webpage, prefix: 'webpages')

@@ -4,10 +4,12 @@ namespace App\Models\HumanResources;
 
 use App\Enums\HumanResources\Attendance\AttendanceAdjustmentStatusEnum;
 use App\Models\SysAdmin\User;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -46,11 +48,12 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceAdjustment withoutTrashed()
  * @mixin \Eloquent
  */
-class AttendanceAdjustment extends Model implements HasMedia
+class AttendanceAdjustment extends Model implements HasMedia, Auditable
 {
     use InOrganisation;
     use SoftDeletes;
     use InteractsWithMedia;
+    use HasHistory;
 
     protected $casts = [
         'date'               => 'date',
@@ -85,4 +88,21 @@ class AttendanceAdjustment extends Model implements HasMedia
         $this->addMediaCollection('attachments')
             ->acceptsMimeTypes(['application/pdf', 'image/jpeg', 'image/png']);
     }
+
+    public function generateTags(): array
+    {
+        return ['hr'];
+    }
+
+    protected array $auditInclude = [
+        'employee_name',
+        'date',
+        'original_start_at',
+        'original_end_at',
+        'requested_start_at',
+        'requested_end_at',
+        'reason',
+        'status',
+        'approval_comment'
+    ];
 }

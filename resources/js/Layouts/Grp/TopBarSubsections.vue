@@ -4,13 +4,13 @@ import { useLayoutStore } from "@/Stores/layout";
 import { capitalize } from "@/Composables/capitalize";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faDotCircle } from "@fas";
-import { faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut } from "@fal";
+import { faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { SubSection } from "@/types/Navigation";
 import { ref } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut);
+library.add(faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap);
 
 const layoutStore = useLayoutStore();
 

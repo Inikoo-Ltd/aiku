@@ -63,8 +63,8 @@ class ShowBrand extends OrgAction
                     : Inertia::optional(fn () => BrandResource::make($brand)),
 
                 BrandTabsEnum::HISTORY->value => $this->tab == BrandTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($brand))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($brand))),
+                    fn () => HistoryResource::collection(IndexHistory::run($brand, BrandTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($brand, BrandTabsEnum::HISTORY->value))),
             ]
         )
         ->table(IndexHistory::make()->tableStructure(BrandTabsEnum::HISTORY->value));

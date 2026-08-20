@@ -59,6 +59,11 @@ class ShipperAccount extends Model implements Auditable
     ];
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'code',
+        'status',
+    ];
+
     public function generateTags(): array
     {
         return [

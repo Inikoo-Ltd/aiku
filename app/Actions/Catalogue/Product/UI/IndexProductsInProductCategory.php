@@ -125,6 +125,7 @@ class IndexProductsInProductCategory extends OrgAction
             'products.id',
             'products.code',
             'products.name',
+            'products.description',
             'products.state',
             'products.price',
             'products.rrp',
@@ -139,6 +140,7 @@ class IndexProductsInProductCategory extends OrgAction
             'products.web_images',
             DB::raw('products.price / products.units as rrp_per_unit'),
             'currencies.code as currency_code',
+            DB::raw("'".group()->currency->code."' as grp_currency_code"),
             'variant.slug as variant_slug',
             'variant.code as variant_code',
             'products.is_variant_leader as is_variant_leader',
@@ -274,6 +276,16 @@ class IndexProductsInProductCategory extends OrgAction
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
+            } elseif ($prefix === ProductsTabsEnum::EDIT->value) {
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'unit', label: __('Unit'), canBeHidden: false)
+                    ->column(key: 'description', label: __('Description'), canBeHidden: false)
+                    ->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
+            } elseif ($prefix === ProductsTabsEnum::BULK_UNIT->value) {
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'unit', label: __('Unit'), canBeHidden: false);
             } else {
                 $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar');
@@ -299,13 +311,13 @@ class IndexProductsInProductCategory extends OrgAction
     {
         $productCategory = $this->parent;
 
-        $exception  = [ProductsTabsEnum::INDEX_ORDERING];
+        $exception  = [ProductsTabsEnum::INDEX_ORDERING, ProductsTabsEnum::EDIT, ProductsTabsEnum::BULK_UNIT];
 
         $subNavigation = null;
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $subNavigation = $this->getDepartmentSubNavigation($productCategory);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $exception     = [ProductsTabsEnum::SALES];
+            $exception     = $this->canEdit ? [ProductsTabsEnum::SALES] : [ProductsTabsEnum::SALES, ProductsTabsEnum::EDIT, ProductsTabsEnum::BULK_UNIT];
             $subNavigation = $this->getFamilySubNavigation($productCategory, $this->grandParent ?? $productCategory->shop, $request);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $subNavigation = $this->getSubDepartmentSubNavigation($productCategory);
@@ -442,9 +454,19 @@ class IndexProductsInProductCategory extends OrgAction
                     fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))
                     : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))),
 
+                ProductsTabsEnum::EDIT->value => $this->tab == ProductsTabsEnum::EDIT->value ?
+                    fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::EDIT->value))
+                    : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::EDIT->value))),
+
+                ProductsTabsEnum::BULK_UNIT->value => $this->tab == ProductsTabsEnum::BULK_UNIT->value ?
+                    fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::BULK_UNIT->value))
+                    : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::BULK_UNIT->value))),
+
             ]
         )
-        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value));
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::INDEX->value))
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::EDIT->value))
+        ->table($this->tableStructure(productCategory: $productCategory, prefix: ProductsTabsEnum::BULK_UNIT->value));
     }
 
 

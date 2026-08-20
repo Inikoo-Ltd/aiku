@@ -195,6 +195,17 @@ trait HasBucketImages
                     'height' => $model->art5Image->height ?? 0
                 ]
             ],
+            [
+                'label'        => __('Sound sample'),
+                'type'         => 'audio',
+                'information'  => __('Audio sample, e.g. for musical instruments or singing bowls'),
+                'column_in_db' => 'audio_id',
+                'id'           => $model->audio_id,
+                'audio'        => $model->audio ? [
+                    'url'  => route('grp.media.show', $model->audio->ulid),
+                    'name' => $model->audio->name,
+                ] : null,
+            ],
         ];
 
         if (!$withCaptions) {

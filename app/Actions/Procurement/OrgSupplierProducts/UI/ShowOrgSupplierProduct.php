@@ -98,8 +98,8 @@ class ShowOrgSupplierProduct extends OrgAction
                     : Inertia::optional(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgSupplierProduct))),
 
                 OrgSupplierProductTabsEnum::HISTORY->value => $this->tab == OrgSupplierProductTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct))),
+                    fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct, OrgSupplierProductTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct, OrgSupplierProductTabsEnum::HISTORY->value))),
             ],
         )->table(IndexPurchaseOrders::make()->tableStructure(parent: $orgSupplierProduct, prefix: OrgSupplierProductTabsEnum::PURCHASE_ORDERS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: OrgSupplierProductTabsEnum::HISTORY->value));

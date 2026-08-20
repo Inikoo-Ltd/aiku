@@ -15,6 +15,8 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -24,6 +26,8 @@ trait WithEbayApiRequest
     public int $timeOut = 30;
 
     public const int NEW_CONDITION_ID = 1000;
+
+    public const int OFFER_LOOKUP_CHUNK = 25;
 
     public function setTimeout(int $timeOut): void
     {
@@ -1175,6 +1179,80 @@ trait WithEbayApiRequest
 
             return ['error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * eBay only serves offers one SKU at a time, so a whole page of SKUs is looked up
+     * concurrently rather than in a chain of round trips.
+     *
+     * @param  array<int, string>  $skus
+     * @return array<string, array> offers keyed by SKU, SKUs without an offer are left out
+     */
+    public function getOffersForSkus(array $skus): array
+    {
+        if (blank($skus)) {
+            return [];
+        }
+
+        try {
+            $token       = $this->getEbayAccessToken();
+            $offersBySku = [];
+            $retried     = false;
+
+            foreach (array_chunk(array_values(array_unique($skus)), self::OFFER_LOOKUP_CHUNK) as $chunk) {
+                $responses = $this->poolOfferRequests($chunk, $token);
+
+                $unauthorised = collect($responses)->contains(
+                    fn ($response) => $response instanceof Response && $response->status() === 401
+                );
+
+                if ($unauthorised && !$retried) {
+                    $retried   = true;
+                    $token     = Arr::get($this->refreshEbayToken(), 'access_token');
+                    $responses = $this->poolOfferRequests($chunk, $token);
+                }
+
+                foreach ($chunk as $sku) {
+                    $response = $responses[$sku] ?? null;
+
+                    if (!$response instanceof Response || !$response->successful()) {
+                        continue;
+                    }
+
+                    $offers = Arr::get($response->json(), 'offers', []);
+
+                    if (filled($offers)) {
+                        $offersBySku[$sku] = $offers;
+                    }
+                }
+            }
+
+            return $offersBySku;
+        } catch (Exception $e) {
+            Log::error('Get eBay Offers For Skus Error: '.$e->getMessage());
+
+            return [];
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $skus
+     */
+    private function poolOfferRequests(array $skus, ?string $token): array
+    {
+        $url           = $this->getEbayBaseUrl().'/sell/inventory/v1/offer';
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
+        return Http::pool(fn (Pool $pool) => array_map(
+            fn ($sku) => $pool->as($sku)
+                ->withHeaders([
+                    'Authorization'           => 'Bearer '.$token,
+                    'Accept'                  => 'application/json',
+                    'X-EBAY-C-MARKETPLACE-ID' => $marketplaceId
+                ])
+                ->get($url, ['sku' => $sku]),
+            $skus
+        ));
     }
 
     /**

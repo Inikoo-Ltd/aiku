@@ -46,7 +46,7 @@
     "inertiajs/inertia-laravel": "^2.0",
     "jubaer/zoom-laravel": "^1.3",
     "kyon147/laravel-shopify": "^27.1",
-    "laravel/framework": "^12.0",
+    "laravel/framework": "^13.0",
     "laravel/horizon": "^5",
     "laravel/mcp": "^0.8",
     "laravel/octane": "^2.6",

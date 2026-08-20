@@ -179,8 +179,8 @@ class ShowDepartment extends OrgAction
                     : Inertia::optional(fn () => GetProductCategoryImages::run($department)),
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($department))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($department))),
+                    fn () => HistoryResource::collection(IndexHistory::run($department, DepartmentTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($department, DepartmentTabsEnum::HISTORY->value))),
 
                 DepartmentTabsEnum::OFFERS->value => $this->tab == DepartmentTabsEnum::OFFERS->value ?
                     fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))

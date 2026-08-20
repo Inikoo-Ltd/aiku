@@ -169,6 +169,9 @@ class Payment extends Model implements Auditable
         'status',
         'state',
         'amount',
+        'payment_account_id',
+        'with_refund',
+        'total_refund',
     ];
 
     protected static function booted(): void

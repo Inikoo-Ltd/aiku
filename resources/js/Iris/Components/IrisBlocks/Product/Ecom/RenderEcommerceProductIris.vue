@@ -195,6 +195,7 @@ const fetchUncachedProduct = async (product: ProductResource = selected_product.
 
     if (selected_product.value?.slug !== product.slug) return
 
+    console.log("Fetched uncached product data", response.data)
     uncachedProductData.value = response.data
     selected_product.value = { ...selected_product.value, ...response.data }
   } catch (error) {

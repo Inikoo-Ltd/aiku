@@ -150,6 +150,13 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
 
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'reference',
+        'state',
+        'delivery_state',
+        'notes',
+    ];
+
     public function getRouteKeyName(): string
     {
         return 'slug';
