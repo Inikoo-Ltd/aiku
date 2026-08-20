@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { inject, ref } from "vue"
+import { inject, ref, onBeforeUnmount } from "vue"
 import { debounce } from "lodash-es"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
@@ -93,6 +93,7 @@ function auditLocation(location: LowStockAuditLocation, quantity: number | null 
             },
             onSuccess: () => {
                 newQuantities.value[location.id] = null
+                releaseTypingLock(location)
                 notify({
                     title: trans("Success"),
                     text: trans("Successfully audited stock location (:xlocation)", {
@@ -126,25 +127,100 @@ const findLocation = (locationOrgStockId: number): LowStockAuditLocation | undef
         .flatMap((row: LowStockAudit) => row.locations ?? [])
         .find((row: LowStockAuditLocation) => row.id === locationOrgStockId)
 
-const { isLocked } = useLowStockAuditBroadcast({
-    onAudited: (event: LowStockAuditedEvent) => {
-        const location = findLocation(event.location_org_stock_id)
+const { isLocked, isOrgStockLocked, announceLock } =
+    useLowStockAuditBroadcast({
+        onAudited: (event: LowStockAuditedEvent) => {
+            const location = findLocation(event.location_org_stock_id)
 
-        // Patch what is on screen straight away, then let the reload drop rows that are now done
-        if (location) {
-            location.quantity = event.quantity ?? location.quantity
-            location.audited_at = event.audited_at ?? location.audited_at
-            location.is_low_stock_checked =
-                event.is_low_stock_checked ?? location.is_low_stock_checked
+            // Patch what is on screen straight away, then let the reload drop finished rows
+            if (location) {
+                location.quantity = event.quantity ?? location.quantity
+                location.audited_at = event.audited_at ?? location.audited_at
+                location.is_low_stock_checked =
+                    event.is_low_stock_checked ?? location.is_low_stock_checked
+            }
+
+            debouncedReload()
+        },
+    })
+
+const findOrgStockId = (locationOrgStockId: number): number | undefined =>
+    ((props.data as any)?.data ?? []).find((row: LowStockAudit) =>
+        (row.locations ?? []).some(
+            (location: LowStockAuditLocation) => location.id === locationOrgStockId
+        )
+    )?.id
+
+// Locked by another tab, by the audit modal being open on this SKO, or by this tab's own request
+const isLocationBusy = (location: LowStockAuditLocation) => {
+    const orgStockId = findOrgStockId(location.id)
+
+    return (
+        isLocked(location.id) ||
+        (orgStockId !== undefined && isOrgStockLocked(orgStockId)) ||
+        loadingLocations.value.includes(location.id)
+    )
+}
+
+// Typing a quantity is the intent to count, so the detail view is held shut from the first
+// keystroke rather than from the save. It is let go once the field is emptied or goes quiet.
+const typingLocks = ref<number[]>([])
+
+const setTypingLock = (location: LowStockAuditLocation, isLocking: boolean) => {
+    const orgStockId = findOrgStockId(location.id)
+
+    if (orgStockId === undefined) {
+        return
+    }
+
+    if (isLocking === typingLocks.value.includes(location.id)) {
+        return
+    }
+
+    typingLocks.value = isLocking
+        ? [...typingLocks.value, location.id]
+        : typingLocks.value.filter((id) => id !== location.id)
+
+    announceLock({
+        org_stock_id: orgStockId,
+        location_org_stock_id: location.id,
+        is_locked: isLocking,
+        source: "list",
+    })
+}
+
+const releaseTypingLock = (location: LowStockAuditLocation) => setTypingLock(location, false)
+
+const hasQuantity = (quantity: unknown) =>
+    quantity !== null && quantity !== undefined && quantity !== ""
+
+// One debounce per location: a shared one would let a second field cancel the first's release
+const releaseTimers: Record<number, ReturnType<typeof setTimeout>> = {}
+
+const scheduleReleaseIfEmpty = (location: LowStockAuditLocation) => {
+    clearTimeout(releaseTimers[location.id])
+
+    releaseTimers[location.id] = setTimeout(() => {
+        if (!hasQuantity(newQuantities.value[location.id])) {
+            releaseTypingLock(location)
         }
+    }, 1500)
+}
 
-        debouncedReload()
-    },
+// The value comes off the event, not off newQuantities: PrimeVue fires input before v-model
+// has written the ref, so reading it here would miss the very first keystroke.
+const onQuantityTyping = (location: LowStockAuditLocation, value: unknown) => {
+    setTypingLock(location, hasQuantity(value))
+    scheduleReleaseIfEmpty(location)
+}
+
+const onQuantityBlur = (location: LowStockAuditLocation) => {
+    setTypingLock(location, hasQuantity(newQuantities.value[location.id]))
+}
+
+onBeforeUnmount(() => {
+    Object.values(releaseTimers).forEach((timer) => clearTimeout(timer))
 })
-
-// Locked by a broadcast from another tab, or by this tab's own request being in flight
-const isLocationBusy = (location: LowStockAuditLocation) =>
-    isLocked(location.id) || loadingLocations.value.includes(location.id)
 
 function submitNewQuantity(location: LowStockAuditLocation) {
     const quantity = newQuantities.value[location.id]
@@ -234,6 +310,8 @@ function submitNewQuantity(location: LowStockAuditLocation) {
                             :min="0"
                             :step="1"
                             :disabled="isLocationBusy(location)"
+                            @input="(event: { value: any }) => onQuantityTyping(location, event?.value)"
+                            @blur="() => onQuantityBlur(location)"
                             @keyup.enter="() => submitNewQuantity(location)"
                             size="small"
                             fluid

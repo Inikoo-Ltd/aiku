@@ -41,7 +41,8 @@ class AuditLocationOrgStock extends OrgAction
      */
     public function handle(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
     {
-        BroadcastLowStockAuditedStart::dispatch($locationOrgStock);
+        // Only the other tabs need locking: this one is doing the counting and has the modal open
+        broadcast(new BroadcastLowStockAuditedStart($locationOrgStock))->toOthers();
 
         try {
             $locationOrgStock = DB::transaction(function () use ($locationOrgStock, $modelData) {
