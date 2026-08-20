@@ -22,6 +22,7 @@ use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
+use App\Actions\Traits\WithMarginData;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
@@ -71,6 +72,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowOrder extends OrgAction
 {
     use IsOrder;
+    use WithMarginData;
     use HasBasketDetails;
     use WithOrderingAuthorisation;
     use WithOrderForbiddenCountryCheck;
@@ -231,6 +233,8 @@ class ShowOrder extends OrgAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
+        $withMargins = $this->canSeeMargins($order->shop);
+
         $wrapped_actions = [];
         $finalTimeline   = $this->getOrderTimeline($order);
 
@@ -444,6 +448,7 @@ class ShowOrder extends OrgAction
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
                 'contact_address'             => $order->customer ? AddressResource::make($order->customer->address)->getArray() : null,
                 'box_stats'                   => $this->getOrderBoxStats($order),
+                'margin_summary'              => $this->getMarginSummary($order),
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
                 'charges'                     => [
                     'premium_dispatch' => $orderCharges['premium_dispatch'] ? ChargeResource::make($orderCharges['premium_dispatch'])->toArray(request()) : null,
@@ -600,8 +605,8 @@ class ShowOrder extends OrgAction
                 'allow_order_modification'          => $allowOrderModification,
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
-                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::optional(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value, withMargins: $withMargins))
+                    : Inertia::optional(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value, withMargins: $withMargins))),
 
                 OrderTabsEnum::MARKETING->value => $this->tab == OrderTabsEnum::MARKETING->value ?
                     fn () => GetOrderMarketingJourney::run($order)
@@ -641,7 +646,8 @@ class ShowOrder extends OrgAction
                 IndexTransactions::make()->tableStructure(
                     parent: $order,
                     tableRows: $nonProductItems,
-                    prefix: OrderTabsEnum::TRANSACTIONS->value
+                    prefix: OrderTabsEnum::TRANSACTIONS->value,
+                    withMargins: $withMargins
                 )
             )
             ->table(

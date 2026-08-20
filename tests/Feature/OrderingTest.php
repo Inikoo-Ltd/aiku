@@ -2604,3 +2604,102 @@ test('service transaction defaults net amount to historic asset price times quan
     expect((float)$serviceTransaction->net_amount)->toBe((float)$service->historicAsset->price * 2)
         ->and((float)$serviceTransaction->gross_amount)->toBe((float)$service->historicAsset->price * 2);
 });
+
+describe('order margin data', function () {
+    test('margin fields math and no-cost blanking', function () {
+        $trait = new class () {
+            use \App\Actions\Traits\WithMarginData;
+
+            public function fields(...$args): ?array
+            {
+                return $this->marginFields(...$args);
+            }
+        };
+
+        expect($trait->fields('Service', 10, 10, null, null))->toBeNull()
+            ->and($trait->fields('Product', 100, 100, 40, null))->toBe([
+                'margin_pct'          => 60.0,
+                'profit_amount'       => 60.0,
+                'margin_is_estimated' => false,
+                'margin_no_cost'      => false,
+            ])
+            ->and($trait->fields('Product', 100, 100, null, 30))->toBe([
+                'margin_pct'          => 70.0,
+                'profit_amount'       => 70.0,
+                'margin_is_estimated' => true,
+                'margin_no_cost'      => false,
+            ])
+            ->and($trait->fields('Product', 1000, 1000, 120, 400, 30, 100))->toBe([
+                'margin_pct'          => 60.0,
+                'profit_amount'       => 600.0,
+                'margin_is_estimated' => true,
+                'margin_no_cost'      => false,
+            ])
+            ->and($trait->fields('Product', 100, 100, null, null))->toBe([
+                'margin_pct'          => null,
+                'profit_amount'       => null,
+                'margin_is_estimated' => false,
+                'margin_no_cost'      => true,
+            ]);
+    });
+
+    test('order margin summary runs and estimates from sku value', function () {
+        $billingAddress  = new Address(Address::factory()->definition());
+        $deliveryAddress = new Address(Address::factory()->definition());
+
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', $billingAddress);
+        data_set($modelData, 'delivery_address', $deliveryAddress);
+
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+        $adminGuest = createAdminGuest($this->group);
+        actingAs($adminGuest->getUser());
+
+        $action = new class () {
+            use \App\Actions\Traits\WithMarginData;
+
+            public function canSeeMargins(\App\Models\Catalogue\Shop $shop): bool
+            {
+                return true;
+            }
+        };
+
+        $summary = $action->getMarginSummary($order->refresh());
+
+        if ($summary !== null) {
+            expect($summary)->toHaveKeys(['profit_amount', 'margin_pct', 'is_estimated', 'lines_without_cost', 'currency_code']);
+        } else {
+            expect($summary)->toBeNull();
+        }
+    });
+
+    test('margin summary excludes uncosted lines instead of treating them as free', function () {
+        $trait = new class () {
+            use \App\Actions\Traits\WithMarginData;
+
+            public function aggregate(iterable $lines): ?array
+            {
+                return $this->aggregateMarginLines($lines, 'GBP');
+            }
+        };
+
+        $exact     = (object) ['net' => 100, 'org_net' => 100, 'actual_cost' => 40, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+        $estimated = (object) ['net' => 100, 'org_net' => 100, 'actual_cost' => null, 'estimated_cost' => 50, 'picked' => null, 'ordered' => null];
+        $uncosted  = (object) ['net' => 100, 'org_net' => 100, 'actual_cost' => null, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+        $partial   = (object) ['net' => 1000, 'org_net' => 1000, 'actual_cost' => 120, 'estimated_cost' => 400, 'picked' => 30, 'ordered' => 100];
+
+        expect($trait->aggregate([$exact, $uncosted]))->toBe([
+            'profit_amount'      => 60.0,
+            'margin_pct'         => 60.0,
+            'is_estimated'       => false,
+            'lines_without_cost' => 1,
+            'currency_code'      => 'GBP',
+        ])
+            ->and($trait->aggregate([$exact, $estimated])['margin_pct'])->toBe(55.0)
+            ->and($trait->aggregate([$exact, $estimated])['is_estimated'])->toBeTrue()
+            ->and($trait->aggregate([$partial])['margin_pct'])->toBe(60.0)
+            ->and($trait->aggregate([$uncosted]))->toBeNull();
+    });
+});

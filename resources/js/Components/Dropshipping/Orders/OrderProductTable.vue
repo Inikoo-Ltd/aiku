@@ -29,6 +29,7 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
 import error from "@iris/Pages/Errors/Error.vue"
 import { ctrans } from "@/Composables/useTrans"
+import MarginCell from "@/Components/Margin/MarginCell.vue"
 
 library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode, faGift, faRepeat, faExclamationTriangle)
 
@@ -670,6 +671,10 @@ const isOffersData = (offersData: any): boolean => {
             </template>
 
             <!-- Column: Batch Codes -->
+            <template #cell(margin)="{ item }">
+                <MarginCell :margin="item.margin" :currencyCode="item.currency_code" />
+            </template>
+
             <template #cell(batch_codes)="{ item }">
                 <div v-if="item.batch_codes" class="flex flex-wrap gap-1">
                     <span

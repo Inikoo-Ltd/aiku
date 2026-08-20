@@ -38,6 +38,7 @@ import OrderProductTable from "@/Components/Dropshipping/Orders/OrderProductTabl
 import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
+import MarginSummary from "@/Components/Margin/MarginSummary.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -178,6 +179,7 @@ const props = defineProps<{
         address_update_route: routeType,
         address_modal_title: string
     }
+    margin_summary?: {}
     box_stats: {
         customer: {
             reference: string
@@ -2599,6 +2601,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             </div>
                         </template>
                     </OrderSummary>
+
+                    <MarginSummary v-if="margin_summary" :summary="margin_summary" class="mt-2" />
                 </section>
             </div>
         </BoxStatPallet>
