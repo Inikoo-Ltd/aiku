@@ -40,6 +40,8 @@ trait WithMarginData
             "shop-admin.{$shop->id}",
             "org-supervisor.{$shop->organisation_id}.accounting",
             "org-admin.{$shop->organisation_id}",
+            'masters.edit',
+            'masters.price_edit',
         ];
 
         if ($warehouseId) {
