@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, ref, inject, computed, watch, onMounted, nextTick } from "vue"
+import { ref, inject, computed, watch, onMounted, nextTick } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
@@ -42,8 +42,6 @@ import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOff
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductBadge.vue"
 import { Rating } from "primevue"
-
-const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
 
 // Register icons
 library.add(faCube, faLink, faPlus, faMinus)
@@ -258,8 +256,7 @@ onMounted(async () => {
             <!-- LEFT: Images -->
             <div class="col-span-7 bg-white" >
                 <div class="py-1 w-full relative">
-                    <ImageProducts :key="product.code" :images="validImages" :video="videoSetup?.url" />
-                    <ProductSoundButton v-if="product.audio" :src="product.audio" />
+                    <ImageProducts :key="product.code" :images="validImages" :video="videoSetup?.url" :audio="product.audio" />
                 </div>
 
                 <!-- TAGS -->
@@ -552,8 +549,7 @@ onMounted(async () => {
 
         <!-- MEDIA -->
         <div class="relative">
-            <ImageProducts :images="validImages" :video="videoSetup?.url" />
-            <ProductSoundButton v-if="product.audio" :src="product.audio" />
+            <ImageProducts :images="validImages" :video="videoSetup?.url" :audio="product.audio" />
         </div>
         
 

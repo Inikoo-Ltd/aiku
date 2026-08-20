@@ -285,7 +285,6 @@ class Customer extends Model implements HasMedia, Auditable
                 'contact_name',
                 'company_name',
                 'fiscal_name',
-                'eori',
                 'email',
                 'phone',
                 'contact_website',
@@ -317,8 +316,8 @@ class Customer extends Model implements HasMedia, Auditable
             'phone'                    => (string)$this->phone,
             'contact_website'          => (string)$this->contact_website,
             'identity_document_number' => (string)$this->identity_document_number,
-            'eori'                     => (string)$this->identity_document_number,
-            'ukims'                    => (string)$this->identity_document_number,
+            'eori'                     => (string)$this->eori,
+            'ukims'                    => (string)$this->ukims,
             'notes'                    => preg_replace('/\s+/', ' ', trim($this->internal_notes.' '.$this->warehouse_internal_notes.' '.$this->warehouse_public_notes)),
             'created_at'               => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];

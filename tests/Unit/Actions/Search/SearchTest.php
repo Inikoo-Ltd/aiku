@@ -19,6 +19,9 @@ use App\Actions\Search\StoreSearchLog;
 use App\Models\Helpers\SearchLog;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
+use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -195,4 +198,20 @@ it('does not cache results for queries longer than two characters', function () 
 
     $action->handle('sysadmin', 'abc');
     $action->handle('sysadmin', 'abc');
+});
+
+it('indexes eori and ukims from their own columns in Customer toSearchableArray', function () {
+    $customer = Customer::factory()->make([
+        'status'                   => CustomerStatusEnum::APPROVED,
+        'state'                    => CustomerStateEnum::ACTIVE,
+        'identity_document_number' => 'ID-123',
+        'eori'                     => 'GB123456789000',
+        'ukims'                    => 'XIUKIM12345',
+        'created_at'               => now(),
+    ]);
+
+    $searchable = $customer->toSearchableArray();
+
+    expect($searchable['eori'])->toBe('GB123456789000')
+        ->and($searchable['ukims'])->toBe('XIUKIM12345');
 });
