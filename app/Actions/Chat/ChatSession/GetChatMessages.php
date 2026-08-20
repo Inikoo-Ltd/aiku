@@ -10,11 +10,13 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Http\Resources\CRM\Livechat\ChatMessageResource;
+use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Collection;
 
 class GetChatMessages
 {
@@ -111,7 +113,38 @@ class GetChatMessages
 
         $limit = $filters['limit'] ?? 20;
 
-        return $query->limit($limit)->get()->sortBy('created_at')->values();
+        $messages = $query->limit($limit)->get()->sortBy('created_at')->values();
+
+        $this->attachAgentSenderNames($messages);
+
+        return $messages;
+    }
+
+    private function attachAgentSenderNames(Collection $messages): void
+    {
+        $agentIds = $messages
+            ->filter(fn ($message) => $message->sender_type === ChatSenderTypeEnum::AGENT && $message->sender_id)
+            ->pluck('sender_id')
+            ->unique()
+            ->all();
+
+        if (empty($agentIds)) {
+            return;
+        }
+
+        $names = ChatAgent::query()
+            ->whereIn('id', $agentIds)
+            ->with('user:id,contact_name,username')
+            ->get()
+            ->mapWithKeys(fn (ChatAgent $chatAgent) => [
+                $chatAgent->id => $chatAgent->user?->contact_name ?? $chatAgent->user?->username,
+            ]);
+
+        foreach ($messages as $message) {
+            if ($message->sender_type === ChatSenderTypeEnum::AGENT && $message->sender_id) {
+                $message->setAttribute('sender_name', $names[$message->sender_id] ?? null);
+            }
+        }
     }
 
 

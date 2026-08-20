@@ -82,6 +82,12 @@ class Artefact extends Model implements Auditable
 
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'code',
+        'name',
+        'description',
+        'state',
+    ];
 
     public function getRouteKeyName(): string
     {

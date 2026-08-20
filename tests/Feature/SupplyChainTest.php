@@ -21,6 +21,7 @@ use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\SupplyChain\SupplierProductImport;
@@ -75,7 +76,11 @@ test('create agent', function () {
 
 test('update agent', function (Agent $agent) {
     $modelData    = [
-        'name' => 'UpdatedName'
+        'name'          => 'UpdatedName',
+        'delivery_type' => 'parcel',
+        'delivery_time' => 45,
+        'payment_terms' => '50% upfront',
+        'image'         => \Illuminate\Http\UploadedFile::fake()->image('agent.jpg', 200, 200),
     ];
     $updatedAgent = UpdateAgent::make()->action(
         agent: $agent,
@@ -83,7 +88,11 @@ test('update agent', function (Agent $agent) {
     );
 
     expect($updatedAgent)->toBeInstanceOf(Agent::class)
-        ->and($updatedAgent->name)->toBe('UpdatedName');
+        ->and($updatedAgent->name)->toBe('UpdatedName')
+        ->and(Arr::get($updatedAgent->data, 'delivery_type'))->toBe('parcel')
+        ->and(Arr::get($updatedAgent->data, 'delivery_time'))->toBe(45)
+        ->and(Arr::get($updatedAgent->settings, 'payment_terms'))->toBe('50% upfront')
+        ->and($updatedAgent->image_id)->not->toBeNull();
 
     return $updatedAgent;
 })->depends('create agent');
@@ -119,7 +128,11 @@ test('create independent supplier', function () {
 
 test('update supplier', function (Supplier $supplier) {
     $modelData       = [
-        'contact_name' => 'UpdatedName'
+        'contact_name'  => 'UpdatedName',
+        'delivery_type' => 'parcel',
+        'delivery_time' => 45,
+        'payment_terms' => '50% upfront',
+        'image'         => \Illuminate\Http\UploadedFile::fake()->image('supplier.jpg', 200, 200),
     ];
     $updatedSupplier = UpdateSupplier::make()->action(
         supplier: $supplier,
@@ -127,7 +140,11 @@ test('update supplier', function (Supplier $supplier) {
     );
 
     expect($updatedSupplier)->toBeInstanceOf(Supplier::class)
-        ->and($updatedSupplier->contact_name)->toBe('UpdatedName');
+        ->and($updatedSupplier->contact_name)->toBe('UpdatedName')
+        ->and(Arr::get($updatedSupplier->data, 'delivery_type'))->toBe('parcel')
+        ->and(Arr::get($updatedSupplier->data, 'delivery_time'))->toBe(45)
+        ->and(Arr::get($updatedSupplier->settings, 'payment_terms'))->toBe('50% upfront')
+        ->and($updatedSupplier->image_id)->not->toBeNull();
 
     return $updatedSupplier;
 })->depends('create independent supplier');
@@ -376,26 +393,69 @@ test('UI Index suppliers', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('SupplyChain/Suppliers')
-            ->has('title')
+            ->where('title', 'Free Suppliers')
             ->has('pageHead')
             ->has('pageHead.actions', 1)
             ->where('pageHead.actions.0.route.name', 'grp.supply-chain.suppliers.create')
             ->has('data')
+            ->where('queryBuilderProps.default.elementGroups', [])
             ->has('breadcrumbs', 3);
     });
 });
 
-test('UI Index suppliers filtered by type', function (string $element) {
+test('UI Index agent suppliers', function () {
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.supply-chain.suppliers.index', ['elements[type]' => $element]));
+    $response = $this->get(route('grp.supply-chain.agent_suppliers.index'));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('SupplyChain/Suppliers')
+            ->component('SupplyChain/AgentSuppliers')
+            ->where('title', 'Agent Suppliers')
             ->has('data')
+            ->where('queryBuilderProps.default.elementGroups', [])
             ->has('breadcrumbs', 3);
     });
-})->with(['free', 'through_agent', 'archived']);
+});
+
+test('free and agent supplier routes return separate datasets', function () {
+    $freeCode = fake()->unique()->numerify('SPLIT-FREE-#####');
+    $freeSupplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: array_merge(Supplier::factory()->definition(), ['code' => $freeCode, 'status' => true]),
+    );
+
+    $agent = StoreAgent::make()->action(
+        group: $this->group,
+        modelData: Agent::factory()->definition(),
+    );
+    $agentCode = fake()->unique()->numerify('SPLIT-AGENT-#####');
+    $agentSupplier = StoreSupplier::make()->action(
+        parent: $agent,
+        modelData: array_merge(Supplier::factory()->definition(), ['code' => $agentCode, 'status' => true]),
+    );
+
+    $this->get(route('grp.supply-chain.suppliers.index', ['filter[global]' => $freeCode]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($suppliers) => collect($suppliers)->pluck('id')->contains($freeSupplier->id))
+            ->etc());
+    $this->get(route('grp.supply-chain.suppliers.index', ['filter[global]' => $agentCode]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($suppliers) => !collect($suppliers)->pluck('id')->contains($agentSupplier->id))
+            ->etc());
+    $this->get(route('grp.supply-chain.agent_suppliers.index', ['filter[global]' => $agentCode]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($suppliers) => collect($suppliers)->pluck('id')->contains($agentSupplier->id))
+            ->etc());
+    $this->get(route('grp.supply-chain.agent_suppliers.index', ['filter[global]' => $freeCode]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($suppliers) => !collect($suppliers)->pluck('id')->contains($freeSupplier->id))
+            ->etc());
+});
+
+test('legacy through agent supplier filter redirects to agent suppliers', function () {
+    $this->get(route('grp.supply-chain.suppliers.index', ['elements[type]' => 'through_agent']))
+        ->assertRedirect(route('grp.supply-chain.agent_suppliers.index', ['sort' => 'code']));
+});
 
 test('majordomo redirect supplier link', function () {
     $freeSupplier = StoreSupplier::make()->action(
@@ -515,9 +575,34 @@ test('UI supply chain dashboard', function () {
             ->component('SupplyChain/SupplyChainDashboard')
             ->has('title')
             ->has('pageHead')
-            ->has('flatTreeMaps')
+            ->has('dashboardCards', 6)
+            ->where('dashboardCards.0.route.name', 'grp.supply-chain.agents.index')
+            ->where('dashboardCards.1.route.name', 'grp.supply-chain.suppliers.index')
+            ->where('dashboardCards.1.metrics.0.route.name', 'grp.supply-chain.agent_suppliers.index')
+            ->missing('dashboardCards.1.route.parameters._query.elements[type]')
+            ->missing('dashboardCards.1.metrics.0.route.parameters._query.elements[type]')
+            ->where('dashboardCards.2.route.name', 'grp.supply-chain.supplier_products.index')
+            ->where('dashboardCards.3.route.name', 'grp.supply-chain.agent_supplier_purchase_orders.index')
+            ->where('dashboardCards.4.route.name', 'grp.supply-chain.control.dashboard')
+            ->where('dashboardCards.5.route.name', 'grp.supply-chain.shopping_list.board')
+            ->missing('search_demand')
             ->has('breadcrumbs', 2);
     });
+});
+
+test('supply chain navigation separates agent suppliers from free suppliers', function () {
+    $navigation = GetGroupNavigation::run($this->adminGuest->getUser());
+
+    expect(data_get($navigation, 'supply-chain.topMenu.subSections.2.route'))->toBe([
+        'name' => 'grp.supply-chain.agent_suppliers.index',
+    ])->and(data_get($navigation, 'supply-chain.topMenu.subSections.3.route'))->toBe([
+        'name'       => 'grp.supply-chain.suppliers.index',
+        'parameters' => [
+            '_query' => [
+                'sort' => 'code',
+            ],
+        ],
+    ]);
 });
 
 test('UI supply chain control', function () {
@@ -574,8 +659,11 @@ test('UI Index suppliers product in agent', function () {
     });
 });
 
-test('UI show supplier', function () {
-    $supplier = Supplier::first();
+test('UI show free supplier has direct procurement navigation', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition(),
+    );
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug]));
     $response->assertInertia(function (AssertableInertia $page) use ($supplier) {
@@ -587,10 +675,46 @@ test('UI show supplier', function () {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->where('title', $supplier->name)
+                    ->where('subNavigation.2.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
+                    ->where('subNavigation.3.route.name', 'grp.supply-chain.suppliers.stock_deliveries.index')
                     ->etc()
             )
+            ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
             ->has('tabs');
     });
+});
+
+test('UI show agent supplier has agent supplier purchase order navigation', function () {
+    $agent = StoreAgent::make()->action(
+        group: $this->group,
+        modelData: Agent::factory()->definition(),
+    );
+    $supplier = StoreSupplier::make()->action(
+        parent: $agent,
+        modelData: Supplier::factory()->definition(),
+    );
+
+    $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.subNavigation.2.route.name', 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index')
+            ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index')
+            ->etc());
+});
+
+test('UI index purchase orders in free supplier', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition(),
+    );
+    $this->withoutExceptionHandling();
+
+    $this->get(route('grp.supply-chain.suppliers.purchase_orders.index', [$supplier->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PurchaseOrders')
+            ->where('pageHead.subNavigation.2.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
+            ->has('title')
+            ->has('breadcrumbs')
+            ->has('data'));
 });
 
 test('UI index agent supplier purchase orders in supplier', function () {
@@ -729,7 +853,7 @@ test('UI Index agents', function () {
 });
 
 test('UI show agent', function () {
-    $agent = Agent::first();
+    $agent = Agent::first() ?? StoreAgent::make()->action($this->group, Agent::factory()->definition());
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.agents.show', [$agent->slug]));
     $response->assertInertia(function (AssertableInertia $page) use ($agent) {
@@ -743,7 +867,28 @@ test('UI show agent', function () {
                     ->where('title', $agent->organisation->name)
                     ->etc()
             )
+            ->has('pageHead.actions', 1)
+            ->where('pageHead.actions.0.style', 'edit')
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.agents.edit')
+            ->where('pageHead.actions.0.route.parameters.0', $agent->slug)
             ->has('tabs');
+    });
+});
+
+test('UI edit agent', function () {
+    $agent = Agent::first() ?? StoreAgent::make()->action($this->group, Agent::factory()->definition());
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agents.edit', [$agent->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($agent) {
+        $page
+            ->component('EditModel')
+            ->where('pageHead.actions.0.style', 'exitEdit')
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.agents.show')
+            ->where('formData.args.updateRoute.name', 'grp.models.agent.update')
+            ->where('formData.args.updateRoute.parameters', $agent->id)
+            ->has('formData.blueprint.0.fields.code')
+            ->has('formData.blueprint.1.fields.currency_id');
     });
 });
 

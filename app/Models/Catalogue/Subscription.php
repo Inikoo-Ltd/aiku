@@ -74,5 +74,15 @@ class Subscription extends Model implements Auditable
         'settings' => '{}',
     ];
 
+    protected array $auditInclude = [
+        'code',
+        'name',
+        'description',
+        'status',
+        'state',
+        'price',
+        'units',
+        'unit',
+    ];
 
 }

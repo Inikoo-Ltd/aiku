@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
+use App\Actions\SupplyChain\Supplier\UI\WithSupplierInfo;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetAgentShowcase
 {
     use AsObject;
+    use WithSupplierInfo;
 
     public function handle(Agent $agent): array
     {
@@ -22,15 +24,16 @@ class GetAgentShowcase
 
         return [
             'contactCard' => [
-                'created_at' => $agent->created_at,
-                'company'    => $organisation->name,
-                'contact'    => $organisation->contact_name,
-                'location'   => $organisation->location,
-                'email'      => $organisation->email,
-                'phone'      => $organisation->phone,
-                'currency'   => $agent->currency ?? $organisation->currency,
-                'address'    => AddressResource::make($organisation->address)->getArray(),
-                'photo'      => $organisation->imageSources(),
+                'created_at'   => $agent->created_at,
+                'company'      => $organisation->name,
+                'contact'      => $organisation->contact_name,
+                'location'     => $organisation->location,
+                'email'        => $organisation->email,
+                'phone'        => $organisation->phone,
+                'currency'     => $agent->currency ?? $organisation->currency,
+                'address'      => AddressResource::make($organisation->address)->getArray(),
+                'photo'        => $agent->imageSources(320, 320),
+                'supplierInfo' => $this->supplierInfo($agent),
             ],
             'stats'       => [
                 [

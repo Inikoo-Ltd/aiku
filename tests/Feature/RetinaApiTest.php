@@ -299,6 +299,26 @@ test('retina api dropshipping data feed csv', function () {
     $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
 });
 
+test('retina api data feed csv escapes quotes in descriptions', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina']);
+
+    UpdateProduct::make()->action($this->product, [
+        'description' => 'Bochník <span style=\\"font-family: Comfortaa, sans-serif;\\">mýdla</span> se "závěsem"',
+    ]);
+    \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
+        $this->dropshippingChannel,
+        $this->product,
+        []
+    );
+
+    $response = getJson(route('retina.api.dropshipping.data_feed.csv'));
+    $response->assertOk();
+
+    $lines = array_filter(explode("\n", trim($response->getContent())));
+    $columnCounts = array_map(fn (string $line) => count(str_getcsv($line, ',', '"', '')), $lines);
+    expect(array_unique($columnCounts))->toHaveCount(1);
+});
+
 // ---- Fulfilment: clients ----
 
 test('retina api fulfilment clients flow', function () {

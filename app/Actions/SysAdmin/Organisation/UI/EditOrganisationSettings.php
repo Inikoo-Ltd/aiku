@@ -12,9 +12,12 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
 use App\Support\Forms\SesConfigurationBlueprint;
 use Illuminate\Support\Arr;
@@ -26,6 +29,7 @@ use Carbon\Carbon;
 class EditOrganisationSettings extends OrgAction
 {
     use WithTokenPath;
+    use WithPreferredShipperResolver;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -125,6 +129,9 @@ class EditOrganisationSettings extends OrgAction
             'icon'  => 'fal fa-scanner',
             'value' => Arr::get($organisation->settings, 'orders.allow_scan_to_pack', false),
         ];
+        $preferredShippingRows = $organisation->preferredShippings()->with(['shipper', 'country'])->get();
+        $usedShipperIds        = $preferredShippingRows->pluck('shipper_id')->filter()->all();
+
         $routeParameters = request()->route()->originalParameters();
 
         return Inertia::render(
@@ -261,12 +268,42 @@ class EditOrganisationSettings extends OrgAction
                             'icon' => 'fa-light fa-dolly-flatbed-alt',
                             'fields' => $pickingFields,
                         ],
-                        // [
-                        //     'label' => __('Shipping'),
-                        //     'icon' => 'fa-light fa-truck',
-                        //     'fields' => [
-                        //     ],
-                        // ],
+                        [
+                            'label' => __('Preferred Shipping'),
+                            'icon' => 'fa-light fa-truck',
+                            'fields' => [
+                                'preferred_shipping' => [
+                                    'full'    => true,
+                                    'type'    => 'preferred_shipping',
+                                    'label'   => __('Preferred Shipping'),
+                                    'value'   => $preferredShippingRows->map(fn ($preferredShipping) => [
+                                        'id'           => $preferredShipping->id,
+                                        'shipper_id'   => $preferredShipping->shipper_id,
+                                        'shipper_name' => $preferredShipping->shipper?->name,
+                                        'country_id'   => $preferredShipping->country_id,
+                                        'country_name' => $preferredShipping->country?->name,
+                                        'postcode'     => $preferredShipping->postcode,
+                                        'important'    => $preferredShipping->important,
+                                        'trade_scope'  => $preferredShipping->trade_scope,
+                                    ])->all(),
+                                    'options' => [
+                                        'scope_shops' => $organisation->shops()
+                                            ->whereNot('state', ShopStateEnum::CLOSED)
+                                            ->orderBy('code')
+                                            ->get(['code', 'name', 'type'])
+                                            ->groupBy(fn ($shop) => $this->tradeScopeForShopType($shop->type))
+                                            ->map(fn ($shops) => $shops->map(fn ($shop) => ['code' => $shop->code, 'name' => $shop->name])->values()),
+                                        'shippers'  => Shipper::where('organisation_id', $organisation->id)
+                                            ->where(function ($query) use ($usedShipperIds) {
+                                                $query->where('status', true)->orWhereIn('id', $usedShipperIds);
+                                            })
+                                            ->orderBy('name')
+                                            ->get(['id', 'name', 'code', 'api_shipper']),
+                                        'countries' => GetCountriesOptions::run(),
+                                    ],
+                                ],
+                            ],
+                        ],
                         [
                             'label' => __('Banned Countries') . ' (' . __('territories') . ')',
                             'icon' => 'fa-light fa-ban',

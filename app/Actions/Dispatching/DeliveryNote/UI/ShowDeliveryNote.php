@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
@@ -71,6 +72,7 @@ class ShowDeliveryNote extends OrgAction
     use WithBucketNavigation;
     use WithOrderForbiddenCountryCheck;
     use WithDeliveryNoteHandler;
+    use WithPreferredShipperResolver;
     use WithDeliveryNoteItemPickingCounts;
 
     private Order|Shop|Warehouse|Customer $parent;
@@ -322,6 +324,14 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ]
         ];
+    }
+
+    public function canOverrideShipperLock(DeliveryNote $deliveryNote): bool
+    {
+        return (bool)request()->user()?->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ]);
     }
 
     public function wrappedActions(DeliveryNote $deliveryNote): array
@@ -824,6 +834,10 @@ class ShowDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ],
+            ],
+            'shipper_directive'            => [
+                ...$this->getShipperDirective($deliveryNote),
+                'can_override_lock' => $this->canOverrideShipperLock($deliveryNote),
             ],
             'shop_type'                    => $deliveryNote->shop->type,
             'shipping_fields'              => [

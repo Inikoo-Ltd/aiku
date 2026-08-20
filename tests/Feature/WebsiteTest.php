@@ -63,6 +63,7 @@ use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
+use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
@@ -84,6 +85,7 @@ use App\Models\Helpers\Snapshot;
 use App\Models\Helpers\SnapshotStats;
 use App\Models\Web\Announcement;
 use App\Models\Web\Banner;
+use App\Models\Web\Crawl;
 use App\Models\Web\ExternalLink;
 use App\Models\Web\Redirect;
 use App\Models\Web\WebBlock;
@@ -180,6 +182,16 @@ test('update website', function (Website $website) {
     $shop->refresh();
 
     expect($shop->name)->toBe('Test Website Updated');
+})->depends('create b2b website');
+
+test('update website sound player style', function (Website $website) {
+    $website = UpdateWebsite::make()->action($website, ['sound_player_style' => 'mono']);
+    $website->refresh();
+
+    expect(Arr::get($website->settings, 'sound_player_style'))->toBe('mono');
+
+    expect(fn () => UpdateWebsite::make()->action($website, ['sound_player_style' => 'disco']))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
 })->depends('create b2b website');
 
 test('create webpage', function (Website $website) {
@@ -1896,6 +1908,48 @@ describe('deployment crawling', function () {
             ->all();
 
         expect($commandDelays)->toBe([null, null, null]);
+    });
+
+    test('surge protection only lowers the assigned concurrency', function () {
+        $website = Website::factory()->create([
+            'shop_id'         => $this->shop->id,
+            'organisation_id' => $this->organisation->id,
+            'group_id'        => $this->organisation->group_id,
+            'code'            => 'crawl-surge',
+            'type'            => WebsiteTypeEnum::INFO,
+            'state'           => WebsiteStateEnum::LIVE,
+            'migrated'        => true,
+            'status'          => true,
+        ]);
+
+        $protectFromSurges = function (int $assigned) use ($website) {
+            $crawl = $website->crawls()->create([
+                'depth'       => 0,
+                'concurrency' => $assigned,
+                'trigger'     => CrawlTriggerEnum::DEPLOYMENT,
+                'type'        => CrawlTypeEnum::HTML,
+            ]);
+
+            $method = (new ReflectionClass(CrawlWebsite::class))->getMethod('protectFromSurges');
+            $method->setAccessible(true);
+
+            return $method->invoke(new CrawlWebsite(), $crawl)->concurrency;
+        };
+
+        Crawl::query()->update(['running' => false]);
+
+        expect($protectFromSurges(1))->toBe(1)
+            ->and($protectFromSurges(5))->toBe(5);
+
+        $website->crawls()->create([
+            'depth'       => 0,
+            'concurrency' => 7,
+            'running'     => true,
+            'trigger'     => CrawlTriggerEnum::DEPLOYMENT,
+            'type'        => CrawlTypeEnum::HTML,
+        ]);
+
+        expect($protectFromSurges(5))->toBe(1);
     });
 
     test('deployment stops active crawls before restarting SSR', function () {

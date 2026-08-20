@@ -38,6 +38,7 @@ class GetIrisBasketTransactions extends IrisAction
             'products.department_id',
             'products.sub_department_id',
             'products.family_id',
+            'products.is_golden_product',
         ]);
 
         return $query
@@ -51,6 +52,7 @@ class GetIrisBasketTransactions extends IrisAction
                     'department_id'         => $data->department_id,
                     'sub_department_id'     => $data->sub_department_id,
                     'family_id'             => $data->family_id,
+                    'is_golden_product'     => (bool)$data->is_golden_product,
                 ];
             })->toArray();
     }

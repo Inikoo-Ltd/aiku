@@ -125,7 +125,7 @@ async function onSaveQuantity(item: any, form: any) {
         )
         form.defaults()
         notify({ title: trans('Success'), text: trans('Quantity updated'), type: 'success' })
-        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
     } catch (error: any) {
         notify({
             title: trans('Something went wrong'),
@@ -161,7 +161,7 @@ async function onDeleteItem(item: any) {
     try {
         await axios.delete(route(item.deleteRoute.name, item.deleteRoute.parameters))
         notify({ title: trans('Success'), text: trans('Item removed'), type: 'success' })
-        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
     } catch (error: any) {
         notify({
             title: trans('Something went wrong'),
@@ -197,7 +197,7 @@ async function onCancelItem(item: any) {
     try {
         await axios.patch(route(item.cancelRoute.name, item.cancelRoute.parameters))
         notify({ title: trans('Success'), text: trans('Item cancelled'), type: 'success' })
-        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
     } catch (error: any) {
         notify({
             title: trans('Something went wrong'),

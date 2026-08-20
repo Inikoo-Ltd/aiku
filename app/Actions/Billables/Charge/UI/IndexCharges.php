@@ -88,6 +88,7 @@ class IndexCharges extends OrgAction
         return $queryBuilder
             ->defaultSort('charges.code')
             ->select([
+                'charges.id',
                 'charges.slug',
                 'charges.code',
                 'charges.name',
@@ -103,6 +104,7 @@ class IndexCharges extends OrgAction
                 DB::raw('COALESCE(charge_stats.number_customers, 0) as customers_invoiced'),
                 DB::raw('COALESCE(charge_stats.number_invoices, 0) as invoices'),
                 DB::raw('COALESCE(charge_stats.grp_amount, 0) as sales_grp_currency_external'),
+                DB::raw("EXISTS (SELECT 1 FROM transactions WHERE transactions.model_type = 'Charge' AND transactions.model_id = charges.id) as is_used"),
             ])
             ->allowedSorts(['code', 'name', 'shop_code', 'sales_grp_currency_external', 'customers_invoiced', 'invoices'])
             ->allowedFilters([$globalSearch])
@@ -156,6 +158,10 @@ class IndexCharges extends OrgAction
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
+
+            if ($canEdit && $parent instanceof Shop) {
+                $table->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
+            }
         };
     }
 
@@ -191,7 +197,7 @@ class IndexCharges extends OrgAction
                 ],
                 'data'        => ChargesResource::collection($charges),
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure($this->parent, canEdit: $this->canEdit));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array

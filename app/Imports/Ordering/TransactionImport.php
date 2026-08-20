@@ -63,7 +63,10 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         ]);
 
         /** @var Product $product */
-        $product = Product::where('shop_id', $this->scope->shop_id)->where('code', $validatedData['code'])->first();
+        $product = Product::where('shop_id', $this->scope->shop_id)->where('code', $validatedData['code'])
+            ->orderByRaw("case state when 'active' then 0 when 'discontinuing' then 1 else 2 end")
+            ->orderByDesc('id')
+            ->first();
 
         if (!$product) {
             $this->setRecordAsFailed($uploadRecord, [

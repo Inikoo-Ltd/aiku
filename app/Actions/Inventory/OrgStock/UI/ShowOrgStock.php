@@ -61,7 +61,7 @@ class ShowOrgStock extends OrgAction
         }
 
         $organisation = $orgStock->orgStockFamily->organisation;
-        
+
         return [
             'label' => $orgStock->orgStockFamily->name,
             'route' => [
@@ -98,7 +98,7 @@ class ShowOrgStock extends OrgAction
                 'icon'    => ['fal', 'fa-boxes-alt']
             ];
         }
-        
+
         $miniBreadcrumbs[] = [
             'label'   => $orgStock->code,
             'to'      => null,
@@ -184,8 +184,8 @@ class ShowOrgStock extends OrgAction
                     : Inertia::optional(fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))),
 
                 OrgStockTabsEnum::HISTORY->value => $this->tab == OrgStockTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgStock))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStock))),
+                    fn () => HistoryResource::collection(IndexHistory::run($orgStock, OrgStockTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStock, OrgStockTabsEnum::HISTORY->value))),
 
                 OrgStockTabsEnum::PURCHASE_ORDERS->value => $this->tab == OrgStockTabsEnum::PURCHASE_ORDERS->value ?
                     fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::PURCHASE_ORDERS->value))

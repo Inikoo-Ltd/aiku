@@ -18,8 +18,14 @@ class StoreWebsiteSearchLog
 {
     use AsAction;
 
-    public function handle(array $modelData): WebsiteSearchLog
+    public function handle(array $modelData): ?WebsiteSearchLog
     {
+        $query = trim((string) Arr::get($modelData, 'query'));
+
+        if ($query === '' || preg_match('/^[\d\s.,+\-]+$/u', $query) === 1) {
+            return null;
+        }
+
         $refined = $this->refinedLog($modelData);
         if ($refined) {
             $refined->update(Arr::only($modelData, [

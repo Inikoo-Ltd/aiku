@@ -15,6 +15,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetSupplierShowcase
 {
     use AsObject;
+    use WithSupplierInfo;
 
     public function handle(Supplier $supplier): array
     {
@@ -29,7 +30,8 @@ class GetSupplierShowcase
                 'phone'      => $supplier->phone,
                 'currency'   => $supplier->currency,
                 'address'    => AddressResource::make($supplier->address)->getArray(),
-                'image_id'   => $supplier->image_id,
+                'photo'      => $supplier->imageSources(320, 320),
+                'supplierInfo' => $this->supplierInfo($supplier),
             ],
             'stats'       => [
                 [
@@ -46,7 +48,9 @@ class GetSupplierShowcase
                     'icon'  => 'fal fa-clipboard-list',
                     'count' => $supplier->stats->number_purchase_orders,
                     'route' => [
-                        'name'       => 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index',
+                        'name'       => $supplier->agent_id
+                            ? 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index'
+                            : 'grp.supply-chain.suppliers.purchase_orders.index',
                         'parameters' => [$supplier->slug],
                     ],
                 ],

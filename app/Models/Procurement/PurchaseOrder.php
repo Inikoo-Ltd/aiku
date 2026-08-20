@@ -200,6 +200,12 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
 
     protected array $auditInclude = [
         'reference',
+        'state',
+        'notes',
+        'cost_total',
+        'cost_items',
+        'cost_shipping',
+        'cost_duties',
     ];
 
     public function searchIndexShouldBeUpdated(): bool

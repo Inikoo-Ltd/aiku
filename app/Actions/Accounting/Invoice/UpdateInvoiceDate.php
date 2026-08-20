@@ -36,7 +36,9 @@ class UpdateInvoiceDate extends OrgAction
 
 
         if ($oldDate->toDateString() !== $invoice->date->toDateString()) {
-            $invoice->invoiceTransactions()->update(['date' => $invoice->date]);
+            // removed: $invoice->invoiceTransactions()->update(['date' => $invoice->date]);
+            // a changed day always changes the date, so the isset($changes['date']) branch below
+            // already runs the very same update
             UpdateCustomerLastInvoicedDate::run($invoice->customer);
 
             RedoShopTimeSeries::dispatch(shopId: $invoice->shop_id, from: $oldDate->toDateString(), to: $oldDate->toDateString())->delay(900);

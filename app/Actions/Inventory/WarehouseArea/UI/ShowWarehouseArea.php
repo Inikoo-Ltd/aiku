@@ -127,8 +127,8 @@ class ShowWarehouseArea extends OrgAction
                     )),
 
                 WarehouseAreaTabsEnum::HISTORY->value => $this->tab == WarehouseAreaTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($warehouseArea))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($warehouseArea)))
+                    fn () => HistoryResource::collection(IndexHistory::run($warehouseArea, WarehouseAreaTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($warehouseArea, WarehouseAreaTabsEnum::HISTORY->value)))
 
             ]
         )->table(

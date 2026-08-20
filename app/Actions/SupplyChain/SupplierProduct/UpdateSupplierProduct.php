@@ -134,7 +134,9 @@ class UpdateSupplierProduct extends OrgAction
         $rules = array_merge($rules, $this->supplierProductJsonFieldRules());
 
         if (!$this->strict) {
-            $rules = $this->noStrictUpdateRules($rules);
+            $rules['data']     = ['sometimes', 'array'];
+            $rules['settings'] = ['sometimes', 'array'];
+            $rules             = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

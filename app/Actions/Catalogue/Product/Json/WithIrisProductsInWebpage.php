@@ -194,6 +194,8 @@ trait WithIrisProductsInWebpage
             'products.top_seller',
             'products.web_images',
             'products.is_on_demand',
+            'products.is_golden_product',
+            DB::raw("(SELECT media.ulid FROM media WHERE media.id = products.audio_id) as audio_ulid"),
             'webpages.url',
             'webpages.canonical_url',
             'webpages.website_id',

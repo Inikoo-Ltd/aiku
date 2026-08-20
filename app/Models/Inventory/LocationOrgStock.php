@@ -83,11 +83,6 @@ class LocationOrgStock extends Model implements Auditable
         'type',
         'picking_priority',
         'notes',
-        'data',
-        'settings',
-        'contact_website',
-        'identity_document_type',
-        'identity_document_number',
     ];
 
     public function orgStock(): BelongsTo

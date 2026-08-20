@@ -8,6 +8,7 @@
 
 namespace App\Models\Production;
 
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
@@ -34,12 +35,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $operative_reward_terms
  * @property string|null $operative_reward_allowance_type
  * @property numeric|null $operative_reward_amount
+ * @property int $break_minutes
+ * @property ManufactureTaskSessionActivityTypeEnum $activity_type
+ * @property string|null $non_productive_reason
+ * @property numeric|null $hours
+ * @property numeric|null $units_per_hour
+ * @property int|null $pay_band_id
+ * @property string|null $band_code
+ * @property numeric|null $hourly_rate
+ * @property numeric|null $pay
+ * @property numeric|null $bonus
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Employee|null $employee
  * @property-read Group|null $group
  * @property-read \App\Models\Production\JobOrderItemTask $jobOrderItemTask
  * @property-read \App\Models\Production\ManufactureTask|null $manufactureTask
+ * @property-read \App\Models\Production\ManufacturePayBand|null $payBand
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read User|null $user
@@ -53,9 +65,10 @@ class ManufactureTaskSession extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'state'      => ManufactureTaskSessionStateEnum::class,
-        'started_at' => 'datetime',
-        'ended_at'   => 'datetime',
+        'state'         => ManufactureTaskSessionStateEnum::class,
+        'activity_type' => ManufactureTaskSessionActivityTypeEnum::class,
+        'started_at'    => 'datetime',
+        'ended_at'      => 'datetime',
     ];
 
     public function organisation(): BelongsTo
@@ -71,6 +84,11 @@ class ManufactureTaskSession extends Model
     public function production(): BelongsTo
     {
         return $this->belongsTo(Production::class);
+    }
+
+    public function payBand(): BelongsTo
+    {
+        return $this->belongsTo(ManufacturePayBand::class, 'pay_band_id');
     }
 
     public function jobOrderItemTask(): BelongsTo

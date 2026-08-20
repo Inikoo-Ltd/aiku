@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithDispatchedEmailArchiveRead;
 use App\InertiaTable\InertiaTable;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Ordering\Order;
@@ -18,6 +19,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class IndexDispatchedEmailsInOrder extends OrgAction
 {
+    use WithDispatchedEmailArchiveRead;
+
     public function handle(Order $parent, $prefix = null): LengthAwarePaginator
     {
 
@@ -25,7 +28,12 @@ class IndexDispatchedEmailsInOrder extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(DispatchedEmail::class);
+        $connection = $this->dispatchedEmailReadConnection('model_has_dispatched_emails', [
+            'model_type' => class_basename($parent),
+            'model_id'   => $parent->id,
+        ]);
+
+        $queryBuilder = QueryBuilder::for(DispatchedEmail::on($connection));
         $queryBuilder->join('model_has_dispatched_emails', function ($join) use ($parent) {
             $join->on('dispatched_emails.id', '=', 'model_has_dispatched_emails.dispatched_email_id')
                 ->where('model_has_dispatched_emails.model_type', '=', class_basename($parent))

@@ -62,6 +62,7 @@ const onUpdateQuantity = async (newVal?: number) => {
             department_id: response.data?.department_id ?? null,
             sub_department_id: response.data?.sub_department_id ?? null,
             family_id: response.data?.family_id ?? null,
+            is_golden_product: response.data?.is_golden_product ?? false,
         })
 
         setStatus('success')

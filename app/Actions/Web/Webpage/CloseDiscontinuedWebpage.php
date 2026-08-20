@@ -47,6 +47,11 @@ class CloseDiscontinuedWebpage
         $model                = $webpage->model;
         $nearestParentWebpage = $this->resolveNearestLiveParent($model);
 
+        if (!$nearestParentWebpage) {
+            return [
+                'error' => 'no_live_redirect_target'
+            ];
+        }
 
         CloseWebpage::make()->action($webpage, [
             'redirect_type' => RedirectTypeEnum::PERMANENT,
@@ -58,7 +63,7 @@ class CloseDiscontinuedWebpage
         ];
     }
 
-    protected function resolveNearestLiveParent(ProductCategory|Product $target): Webpage
+    protected function resolveNearestLiveParent(ProductCategory|Product $target): ?Webpage
     {
         $parents = [];
 
@@ -82,8 +87,8 @@ class CloseDiscontinuedWebpage
             return $parent->webpage;
         }
 
-        // Fallsback to storefront
-        return $target->shop->website->storefront;
+        // Fallsback to storefront; a shop without a live website has nowhere to redirect to
+        return $target->shop->website?->storefront;
     }
 
 }

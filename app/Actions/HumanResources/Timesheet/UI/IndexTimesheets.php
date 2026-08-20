@@ -314,15 +314,12 @@ class IndexTimesheets extends OrgAction
         $noClockOut = (clone $baseQuery)->where('number_open_time_trackers', '>', 0)->count();
 
         $organisationId = null;
-        $shouldSubHour = false;
         if ($this->parent instanceof Organisation) {
             $organisationId = $this->parent->id;
             $timezone = $this->parent->timezone->name ?? 'UTC';
-            $shouldSubHour = $this->parent->code === 'SK';
         } elseif ($this->parent instanceof Employee) {
             $organisationId = $this->parent->organisation_id;
             $timezone = $this->parent->organisation->timezone->name ?? 'UTC';
-            $shouldSubHour = $this->parent->organisation?->code === 'SK';
         } else {
             $timezone = 'UTC';
         }
@@ -384,15 +381,9 @@ class IndexTimesheets extends OrgAction
                 continue;
             }
 
-            $startAt = $ts->start_at
-                ?->copy()
-                ->when($shouldSubHour, fn ($dt) => $dt->subHour())
-                ->setTimezone($timezone);
+            $startAt = $ts->start_at?->copy()->setTimezone($timezone);
 
-            $endAt = $ts->end_at
-                ?->copy()
-                ->when($shouldSubHour, fn ($dt) => $dt->subHour())
-                ->setTimezone($timezone);
+            $endAt = $ts->end_at?->copy()->setTimezone($timezone);
 
             $scheduledStart = null;
             $scheduledEnd = null;
@@ -854,14 +845,11 @@ class IndexTimesheets extends OrgAction
         }
 
         $organisationId = null;
-        $shouldSubHour = false;
 
         if ($parent instanceof Organisation) {
             $organisationId = $parent->id;
-            $shouldSubHour = $parent->code === 'SK';
         } elseif ($parent instanceof Employee) {
             $organisationId = $parent->organisation_id;
-            $shouldSubHour = $parent->organisation?->code === 'SK';
         }
 
         if (!$organisationId) {
@@ -900,15 +888,9 @@ class IndexTimesheets extends OrgAction
                 continue;
             }
 
-            $startAt = $ts->start_at
-                ?->copy()
-                ->when($shouldSubHour, fn ($dt) => $dt->subHour())
-                ->setTimezone($timezone);
+            $startAt = $ts->start_at?->copy()->setTimezone($timezone);
 
-            $endAt = $ts->end_at
-                ?->copy()
-                ->when($shouldSubHour, fn ($dt) => $dt->subHour())
-                ->setTimezone($timezone);
+            $endAt = $ts->end_at?->copy()->setTimezone($timezone);
 
             $scheduledStart = null;
             $scheduledEnd = null;

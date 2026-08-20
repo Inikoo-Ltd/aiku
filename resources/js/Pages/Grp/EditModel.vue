@@ -12,11 +12,12 @@ import { get as getLodash } from "lodash-es"
 import { capitalize } from "@/Composables/capitalize"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faGoogle } from "@fortawesome/free-brands-svg-icons"
+import { faGoogle, faFacebook } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { router } from "@inertiajs/vue3"
 import {
+    faMusic,
     faMicrophoneAltSlash,
     faImage,
     faTag,
@@ -72,7 +73,8 @@ import {
     faCalendarCheck,
     faPercent,
     faBusinessTime,
-    faChessClock
+    faChessClock,
+    faCameraRetro
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -83,6 +85,7 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faMusic,
     faShapes,
     faTags,
     faBiohazard,
@@ -122,6 +125,7 @@ library.add(
     faSlidersH,
     faCog,
     faGoogle,
+    faFacebook,
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
@@ -146,7 +150,8 @@ library.add(
     faCalendarCheck,
     faPercent,
     faBusinessTime,
-    faChessClock
+    faChessClock,
+    faCameraRetro
 )
 
 const props = defineProps<{

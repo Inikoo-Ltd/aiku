@@ -21,6 +21,7 @@ import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { useBundle } from "@/Composables/useBundle"
 import Button from "@/Iris/Components/IrisButton.vue"
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
+import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductBadge.vue"
 
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
@@ -42,6 +43,7 @@ interface ProductResource {
     units: number
     bestseller?: boolean
     is_favourite?: boolean
+    is_golden_product?: boolean
     exist_in_portfolios_channel: number[]
     is_exist_in_all_channel: boolean
 }
@@ -115,6 +117,7 @@ const openBundlePanel = (product:any) => {
             <div class="col-span-5 self-start">
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
+                        <GoldenProductBadge v-if="product.is_golden_product" class="mb-2" />
                         <h1 class="text-2xl font-bold text-gray-900">
                             <span class="">{{ product?.units }}x</span>
                             {{ product.name }}
@@ -262,6 +265,7 @@ const openBundlePanel = (product:any) => {
     <!-- Mobile Layout -->
     <div class="block sm:hidden px-4 py-6 text-gray-800">
         <div class="text-4xl font-bold mb-2">{{ product.name }}</div>
+        <GoldenProductBadge v-if="product.is_golden_product" class="mb-2" />
         <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
 
 

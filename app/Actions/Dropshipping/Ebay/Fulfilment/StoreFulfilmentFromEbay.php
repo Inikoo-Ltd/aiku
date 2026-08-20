@@ -12,7 +12,6 @@ namespace App\Actions\Dropshipping\Ebay\Fulfilment;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
-use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedEbayAddress;
 use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
@@ -81,7 +80,7 @@ class StoreFulfilmentFromEbay extends OrgAction
 
                 $palletStoredItem = $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
 
-                if(!$palletStoredItem) {
+                if (!$palletStoredItem) {
                     continue;
                 }
 

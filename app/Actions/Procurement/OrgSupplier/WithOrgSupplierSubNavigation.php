@@ -13,6 +13,22 @@ use App\Models\Procurement\OrgSupplier;
 
 trait WithOrgSupplierSubNavigation
 {
+    protected function getOrgSupplierPurchaseOrderAction(OrgSupplier $orgSupplier): array
+    {
+        return [
+            'label' => __('Purchase Order'),
+            'type'  => 'button',
+            'style' => 'create',
+            'route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.org-supplier.purchase-order.store',
+                'parameters' => [
+                    'orgSupplier' => $orgSupplier->id,
+                ],
+            ],
+        ];
+    }
+
     protected function getOrgSupplierNavigation(OrgSupplier $parent): array
     {
         $routeParameters = [$parent->organisation->slug, $parent->slug];
@@ -40,7 +56,7 @@ trait WithOrgSupplierSubNavigation
                     'icon'    => ['fal', 'fa-box-usd'],
                     'tooltip' => __('Products'),
                 ],
-                'number'   => $parent->stats->number_org_supplier_products,
+                'number'   => $parent->stats->number_current_org_supplier_products,
             ],
             [
                 'label'    => __('Purchase Orders'),

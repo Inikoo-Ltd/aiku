@@ -14,10 +14,13 @@ use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrderTransaction extends OrgAction
@@ -28,6 +31,11 @@ class UpdatePurchaseOrderTransaction extends OrgAction
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData): PurchaseOrderTransaction
     {
+        if (Arr::has($modelData, 'net_amount')) {
+            data_set($modelData, 'grp_net_amount', Arr::get($modelData, 'net_amount') * ($purchaseOrderTransaction->grp_exchange ?? 1), overwrite: false);
+            data_set($modelData, 'org_net_amount', Arr::get($modelData, 'net_amount') * ($purchaseOrderTransaction->org_exchange ?? 1), overwrite: false);
+        }
+
         if (Arr::has($modelData, 'quantity_ordered') && !Arr::has($modelData, 'net_amount')) {
             $unitCost = $purchaseOrderTransaction->supplierProduct?->cost;
 
@@ -54,6 +62,9 @@ class UpdatePurchaseOrderTransaction extends OrgAction
         ];
         if (! $this->strict) {
             $rules['agent_supplier_purchase_order_id'] = ['sometimes', 'nullable', 'integer', 'exists:agent_supplier_purchase_orders,id'];
+            $rules['net_amount'] = ['sometimes', 'numeric'];
+            $rules['state'] = ['sometimes', Rule::enum(PurchaseOrderTransactionStateEnum::class)];
+            $rules['delivery_state'] = ['sometimes', 'nullable', Rule::enum(PurchaseOrderTransactionDeliveryStateEnum::class)];
             $rules = $this->noStrictUpdateRules($rules);
         }
 

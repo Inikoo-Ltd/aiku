@@ -31,6 +31,8 @@ class ShowAgent extends OrgAction
 {
     use WithSupplyChainAuthorisation;
     use WithAgentSubNavigation;
+    use WithAgentEditAction;
+
     public function handle(Agent $agent): Agent
     {
         return $agent;
@@ -61,14 +63,20 @@ class ShowAgent extends OrgAction
                     'next'     => $this->getNext($agent, $request),
                 ],
                 'pageHead'                     => [
-                    'model'   => __('Agent'),
-                    'icon'    =>
+                    'model'         => __('Agent'),
+                    'icon'          =>
                         [
                             'icon'  => ['fal', 'people-arrows'],
                             'title' => __('Agent')
                         ],
                     'subNavigation' => $this->getAgentNavigation($agent),
-                    'title'   => $agent->organisation->name,
+                    'title'         => $agent->organisation->name,
+                    'actions'       => [
+                        $this->agentEditAction(
+                            'grp.supply-chain.agents.edit',
+                            $request->route()->originalParameters()
+                        ),
+                    ],
                 ],
                 'tabs'                         => [
                     'current'    => $this->tab,
@@ -98,8 +106,8 @@ class ShowAgent extends OrgAction
                 //     : Inertia::optional(fn () => SupplierProductsResource::collection(IndexSupplierProducts::run($agent))),
 
                 AgentTabsEnum::HISTORY->value => $this->tab == AgentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($agent))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($agent)))
+                    fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value)))
 
 
             ]
@@ -171,33 +179,32 @@ class ShowAgent extends OrgAction
     {
         $previous = Organisation::where('group_id', $agent->group_id)->where('type', OrganisationTypeEnum::AGENT)->where('code', '<', $agent->organisation->code)->orderBy('code', 'desc')->first();
 
-        return $this->getNavigation($previous?->agent, $request->route()->getName());
+        return $this->getNavigation($previous?->agent, $request);
     }
 
     public function getNext(Agent $agent, ActionRequest $request): ?array
     {
         $next = Organisation::where('group_id', $agent->group_id)->where('type', OrganisationTypeEnum::AGENT)->where('code', '>', $agent->organisation->code)->orderBy('code')->first();
 
-        return $this->getNavigation($next?->agent, $request->route()->getName());
+        return $this->getNavigation($next?->agent, $request);
     }
 
-    private function getNavigation(?Agent $agent, string $routeName): ?array
+    private function getNavigation(?Agent $agent, ActionRequest $request): ?array
     {
         if (!$agent) {
             return null;
         }
 
-        return match ($routeName) {
-            'grp.supply-chain.agents.show' => [
-                'label' => $agent->organisation->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'agent' => $agent->slug
-                    ]
-
-                ]
-            ]
-        };
+        return [
+            'label' => $agent->organisation->name,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => array_merge(
+                    $request->route()->originalParameters(),
+                    ['agent' => $agent->slug]
+                ),
+            ],
+        ];
     }
+
 }

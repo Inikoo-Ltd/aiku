@@ -21,6 +21,7 @@ use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOutbox extends OrgAction
@@ -95,6 +96,21 @@ class UpdateOutbox extends OrgAction
             'state'      => ['sometimes', 'required', Rule::enum(OutboxStateEnum::class)],
             'is_applicable' => ['sometimes', 'required', 'boolean'],
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $state = $this->get('state');
+        if (!$state instanceof OutboxStateEnum) {
+            $state = OutboxStateEnum::tryFrom((string) $state);
+        }
+
+        if ($state === OutboxStateEnum::ACTIVE
+            && $this->outbox->code->requiresDaysAfter()
+            && ($this->get('days_after') ?? $this->outbox->days_after) === null
+        ) {
+            $validator->errors()->add('days_after', __('Set "days after" before activating this outbox, otherwise it will never send.'));
+        }
     }
 
     /** @noinspection PhpUnusedParameterInspection */

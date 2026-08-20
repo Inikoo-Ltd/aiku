@@ -11,7 +11,6 @@ namespace App\Actions\Web\WebLayoutTemplate;
 
 use App\Actions\OrgAction;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
-use App\Http\Resources\Web\WebLayoutTemplateWebBlocksResource;
 use App\Models\Web\WebLayoutTemplate;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,7 +20,7 @@ class FetchWebLayoutTemplateDetail extends OrgAction
     public function handle(Webpage $webpage, WebLayoutTemplate $layoutTemplate)
     {
         $ignoredDynamicTemplate = WebBlockTemplateEnum::allTemplateCodes();
-        $parse = function ($item) use ($ignoredDynamicTemplate){
+        $parse = function ($item) use ($ignoredDynamicTemplate) {
 
             return [
                 'id'            => data_get($item, 'id'),

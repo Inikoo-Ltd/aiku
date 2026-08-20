@@ -16,6 +16,8 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionProductQuantityOrdered;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Ordering\Transaction;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -131,6 +133,33 @@ test('setting quantity to zero on a submitted order deletes the transaction and 
 
     expect(Transaction::find($transaction->id))->toBeNull()
         ->and($deliveryNote->deliveryNoteItems()->count())->toBe(0);
+});
+
+test('a line added after submission is born submitted and reaches the warehouse', function () {
+    [$order] = submittedOrderWithTransaction($this->customer, $this->product);
+
+    $lateTransaction = StoreTransaction::make()->action($order, $this->product->historicAsset, ['quantity_ordered' => 3], strict: false);
+
+    $lateTransaction->refresh();
+    expect($lateTransaction->state)->toEqual(TransactionStateEnum::SUBMITTED->value)
+        ->and($lateTransaction->status)->toEqual(TransactionStatusEnum::PROCESSING->value)
+        ->and((float)$lateTransaction->submitted_quantity_ordered)->toBe(3.0)
+        ->and($lateTransaction->submitted_at)->not->toBeNull();
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), []);
+
+    expect($deliveryNote->deliveryNoteItems()->where('transaction_id', $lateTransaction->id)->count())->toBeGreaterThan(0)
+        ->and($lateTransaction->refresh()->state)->toEqual(TransactionStateEnum::IN_WAREHOUSE->value);
+});
+
+test('stuck creating lines on a submitted order still get sent to warehouse', function () {
+    [$order, $transaction] = submittedOrderWithTransaction($this->customer, $this->product);
+    $transaction->updateQuietly(['state' => TransactionStateEnum::CREATING]);
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    expect($deliveryNote->deliveryNoteItems()->count())->toBeGreaterThan(0)
+        ->and($transaction->refresh()->state)->toEqual(TransactionStateEnum::IN_WAREHOUSE->value);
 });
 
 test('orders of external shops cannot be modified', function () {

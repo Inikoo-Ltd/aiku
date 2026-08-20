@@ -8,11 +8,11 @@
 
 namespace App\Actions\Web\Announcement;
 
-use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreAnnouncementSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Actions\Web\WebsiteHydrateAnnouncements;
 use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Enums\Announcement\AnnouncementStatusEnum;
@@ -132,7 +132,7 @@ class PublishAnnouncement extends OrgAction
         }
 
         $this->update($announcement, $updateData);
-        ClearCacheByWildcard::run("irisData:website:$announcement->website_id:*");
+        BreakWebsiteIrisCache::run($announcement->website);
         WebsiteHydrateAnnouncements::dispatch($announcement->website_id)->delay(2);
     }
 

@@ -350,6 +350,7 @@ class IndexOrders extends OrgAction
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
         $customerId    = null;
+        $customerName  = null;
         $navigation    = OrdersTabsEnum::navigation();
         $subNavigation = null;
 
@@ -416,7 +417,8 @@ class IndexOrders extends OrgAction
             $afterTitle = [
                 'label' => __('Orders')
             ];
-            $customerId = $this->parent->id;
+            $customerId   = $this->parent->id;
+            $customerName = $this->parent->name;
         }
 
         if ($this->parent instanceof Shop) {
@@ -445,12 +447,19 @@ class IndexOrders extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'           => OrdersResource::collection($orders),
-                'submitRoute'    => $customerId ? [
+                'submitRoute'    => [
                     'name'       => 'grp.models.customer.submitted_order.store',
                     'parameters' => [
                         'customer' => $customerId
                     ]
-                ] : null,
+                ],
+                'customerName'   => $customerName,
+                'customersRoute' => $customerId || !$shop ? null : [
+                    'name'       => 'grp.json.shop.customers',
+                    'parameters' => [
+                        'shop' => $shop->id
+                    ]
+                ],
                 'tabs'           => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,

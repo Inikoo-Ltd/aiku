@@ -65,6 +65,10 @@ trait WithIrisSearchEnrichedItems
             $item['units'] = $model->units;
             $item['unit']  = $model->unit;
 
+            if ($model instanceof Product) {
+                $item['is_golden_product'] = (bool)$model->is_golden_product;
+            }
+
             if ($showPrice) {
                 $item['price'] = $model->price;
 

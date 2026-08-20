@@ -44,7 +44,6 @@ class IndexProductsWithNoImage extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->orderBy('products.state');
 
         $queryBuilder->where('products.shop_id', $shop->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
@@ -102,7 +101,7 @@ class IndexProductsWithNoImage extends OrgAction
 
 
             $table
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);

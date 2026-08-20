@@ -226,7 +226,7 @@ class StoreInvoice extends OrgAction
         $invoice = CategoriseInvoice::run($invoice);
 
         if ($invoice->type == InvoiceTypeEnum::INVOICE) {
-            UpdateCustomerLastInvoicedDate::run($invoice->customer, $this->strict ? null : now());
+            UpdateCustomerLastInvoicedDate::run($invoice->customer);
         }
 
         RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);

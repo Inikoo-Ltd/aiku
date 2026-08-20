@@ -722,6 +722,31 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
+                    'label'       => __('Meta Ads'),
+                    'icon'        => 'fa-brands fa-facebook',
+                    'information' => __('Aiku pulls this shop\'s Facebook and Instagram spend nightly. Leave the token empty to use the system user token configured for the whole installation.'),
+                    'fields'      => [
+                        'meta_ads_ad_account_id'        => [
+                            'type'        => 'input',
+                            'label'       => __('Ad Account ID'),
+                            'placeholder' => __('Digits only, without the act_ prefix'),
+                            'value'       => Arr::get($shop->settings, 'meta_ads.ad_account_id', ''),
+                        ],
+                        'meta_ads_access_token'         => [
+                            'type'        => 'input',
+                            'label'       => __('Access Token'),
+                            'placeholder' => __('Only when this ad account belongs to another business manager'),
+                            'value'       => Arr::get($shop->settings, 'meta_ads.access_token', ''),
+                        ],
+                        'meta_ads_campaign_name_prefix' => [
+                            'type'        => 'input',
+                            'label'       => __('Campaign Name Prefix'),
+                            'placeholder' => __('Only when the ad account also advertises another shop'),
+                            'value'       => Arr::get($shop->settings, 'meta_ads.campaign_name_prefix', ''),
+                        ],
+                    ],
+                ],
+                [
                     'label'  => __('HELP Portal'),
                     'icon'   => 'fal fa-life-ring',
                     'fields' => $helpPortalFields,

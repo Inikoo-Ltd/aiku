@@ -88,7 +88,9 @@ class StoreRefundInvoiceTransaction extends OrgAction
         data_set($modelData, 'organisation_id', $invoiceTransaction->organisation_id);
         data_set($modelData, 'shop_id', $invoiceTransaction->shop_id);
         data_set($modelData, 'customer_id', $invoiceTransaction->customer_id);
-        data_set($modelData, 'date', now());
+        // was: data_set($modelData, 'date', now());
+        // it overwrote even an explicitly supplied date with the run time, HELP-2959
+        data_set($modelData, 'date', $refund->date ?? now());
 
 
         data_set($modelData, 'model_type', $invoiceTransaction->model_type);

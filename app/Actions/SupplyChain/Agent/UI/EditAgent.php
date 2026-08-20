@@ -8,12 +8,8 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Actions\Helpers\Country\UI\GetCountriesOptions;
-use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
-use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -23,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 class EditAgent extends OrgAction
 {
     use WithSupplyChainEditAuthorisation;
+    use WithAgentEditFields;
+
     public function handle(Agent $agent): Agent
     {
         return $agent;
@@ -65,76 +63,7 @@ class EditAgent extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
-
-
-                        [
-                            'title'  => __('ID/contact details'),
-                            'icon'   => ['fal', 'fa-address-book'],
-                            'fields' => [
-                                'code'         => [
-                                    'type'  => 'input',
-                                    'label' => __('Code'),
-                                    'value' => $agent->code
-                                ],
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Name'),
-                                    'value' => $agent->organisation->name
-                                ],
-                                'contact_name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Contact Name'),
-                                    'value' => $agent->organisation->contact_name
-                                ],
-                                'email'        => [
-                                    'type'    => 'input',
-                                    'label'   => __('Email'),
-                                    'value'   => $agent->organisation->email,
-                                    'options' => [
-                                        'inputType' => 'email'
-                                    ]
-                                ],
-                                'phone'        => [
-                                    'type'    => 'phone',
-                                    'label'   => __('phone'),
-                                    'value'   => $agent->organisation->phone,
-                                ],
-                                'address'      => [
-                                    'type'    => 'address',
-                                    'label'   => __('Address'),
-                                    'value'   => AddressResource::make($agent->organisation->address)->getArray(),
-                                    'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
-
-                                    ]
-                                ],
-                            ]
-                        ],
-                        [
-                            'title'  => __('settings'),
-                            'icon'   => 'fa-light fa-cog',
-                            'fields' => [
-
-                                'currency_id' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Currency'),
-                                    'placeholder' => __('Select a currency'),
-                                    'options'     => GetCurrenciesOptions::run(),
-                                    'required'    => true,
-                                    'mode'        => 'single'
-                                ],
-
-                                'default_product_country_origin' => [
-                                    'type'        => 'select',
-                                    'label'       => __("Asset's country of origin"),
-                                    'placeholder' => __('Select a country'),
-                                    'options'     => GetCountriesOptions::run(),
-                                    'mode'        => 'single'
-                                ],
-                            ]
-                        ],
-                    ],
+                    'blueprint' => $this->agentEditSections($agent),
 
                     'args' => [
                         'updateRoute' => [

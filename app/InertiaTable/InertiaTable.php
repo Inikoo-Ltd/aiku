@@ -28,6 +28,11 @@ class InertiaTable
 
     private array $title = [];
     private ?string $footerNote = null;
+
+    /**
+     * Optional link rendered next to the footer note, as ['label' => ..., 'href' => ...].
+     */
+    private ?array $footerNoteAction = null;
     private ?string $headerNote = null;
     private array $betweenDates = [];
     private ?array $offerFilter = null;
@@ -235,6 +240,7 @@ class InertiaTable
             'title'                           => $this->title,
             'footerRows'                      => $this->footerRows,
             'footerNote'                      => $this->footerNote,
+            'footerNoteAction'                => $this->footerNoteAction,
             'headerNote'                      => $this->headerNote,
             'betweenDates'                    => $this->betweenDates,
             'betweenDatesValue'               => StickyBetweenDates::resolve($this->betweenDates),
@@ -551,9 +557,10 @@ class InertiaTable
      * Small grey note under the table, for caveats that would otherwise clutter every
      * column header (currency of the figures, cut-off dates, valuation method, ...).
      */
-    public function withFooterNote(?string $footerNote): self
+    public function withFooterNote(?string $footerNote, ?array $footerNoteAction = null): self
     {
-        $this->footerNote = $footerNote;
+        $this->footerNote       = $footerNote;
+        $this->footerNoteAction = $footerNoteAction;
 
         return $this;
     }

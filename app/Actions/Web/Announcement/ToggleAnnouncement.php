@@ -8,9 +8,9 @@
 
 namespace App\Actions\Web\Announcement;
 
-use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Announcement;
@@ -26,7 +26,7 @@ class ToggleAnnouncement extends OrgAction
         $this->update($announcement, [
             'status' => $status
         ]);
-        ClearCacheByWildcard::run("irisData:website:$announcement->website_id:*");
+        BreakWebsiteIrisCache::run($announcement->website);
 
     }
 

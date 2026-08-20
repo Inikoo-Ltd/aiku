@@ -153,11 +153,7 @@ class IndexClockingEmployees extends OrgAction
                 ->where('subject_id', $this->employee->id)
                 ->with(['subject.jobPositions', 'organisation']);
 
-            if ($this->employee->organisation->code === "SK") {
-                $timezone = 'UTC';
-            } else {
-                $timezone = $this->employee->organisation->timezone->name ?? 'UTC';
-            }
+            $timezone = $this->employee->organisation->timezone->name ?? 'UTC';
 
             [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
 

@@ -13,6 +13,7 @@ use App\InertiaTable\InertiaTable;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use OwenIt\Auditing\Models\Audit;
@@ -31,9 +32,13 @@ class IndexHistory
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('user_type', $value)
-                    ->orWhereWith('user_type', $value)
-                    ->orWhereWith('url', $value);
+                $query->where('event', 'ILIKE', "%{$value}%")
+                    ->orWhereRaw('old_values::text ILIKE ?', ["%{$value}%"])
+                    ->orWhereRaw('new_values::text ILIKE ?', ["%{$value}%"])
+                    ->orWhere(function ($query) use ($value) {
+                        $query->where('user_type', 'User')
+                            ->whereIn('user_id', DB::table('users')->select('id')->where('contact_name', 'ILIKE', "%{$value}%"));
+                    });
             });
         });
 
@@ -98,11 +103,9 @@ class IndexHistory
             $table
                 ->withGlobalSearch()
                 ->withExportLinks($exportLinks)
-                ->column(key: 'expand', label: '', type: 'icon')
                 ->column(key: 'datetime', label: __('Date'), canBeHidden: false, sortable: true)
                 ->column(key: 'user_name', label: __('User'), canBeHidden: false, sortable: true)
-                ->column(key: 'values', label: __('Value'), canBeHidden: false, sortable: true)
-                ->column(key: 'event', label: __('Action'), canBeHidden: false, sortable: true)
+                ->column(key: 'values', label: '', canBeHidden: false)
                 ->defaultSort('ip_address');
         };
     }

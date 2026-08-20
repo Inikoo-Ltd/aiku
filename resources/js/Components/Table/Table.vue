@@ -1650,6 +1650,12 @@ const getSeverity = (type?: string) => {
                     <slot name="footerNote">
                         <div v-if="queryBuilderProps.footerNote" class="px-4 pt-2 text-right text-xs text-gray-400">
                             {{ queryBuilderProps.footerNote }}
+                            <Link v-if="queryBuilderProps.footerNoteAction"
+                                :href="queryBuilderProps.footerNoteAction.href"
+                                preserve-scroll
+                                class="ml-1 underline hover:text-gray-600">
+                                {{ queryBuilderProps.footerNoteAction.label }}
+                            </Link>
                         </div>
                     </slot>
 

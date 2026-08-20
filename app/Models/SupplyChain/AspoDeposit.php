@@ -49,6 +49,13 @@ class AspoDeposit extends Model implements Auditable
         'cancelled_at'          => 'datetime',
     ];
 
+    protected array $auditInclude = [
+        'reference',
+        'amount',
+        'state',
+        'notes',
+    ];
+
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);

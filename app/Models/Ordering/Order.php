@@ -25,6 +25,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\TrafficSource;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
@@ -251,6 +252,7 @@ class Order extends Model implements HasMedia, Auditable
         'services_amount'               => 'decimal:2',
         'charges_amount'                => 'decimal:2',
         'shipping_amount'               => 'decimal:2',
+        'is_shipper_locked'             => 'boolean',
         'insurance_amount'              => 'decimal:2',
         'net_amount'                    => 'decimal:2',
         'grp_net_amount'                => 'decimal:2',
@@ -523,6 +525,11 @@ class Order extends Model implements HasMedia, Auditable
     public function shippingZone(): BelongsTo
     {
         return $this->belongsTo(ShippingZone::class);
+    }
+
+    public function shipper(): BelongsTo
+    {
+        return $this->belongsTo(Shipper::class);
     }
 
     public function returnedDeliveryNote(): HasMany

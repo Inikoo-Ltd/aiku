@@ -9,13 +9,13 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
-use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Helpers\Media\SaveModelAttachment;
-use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Barcode;
+use Exception;
+use Throwable;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\Aurora\WithAuroraAttachments;
@@ -61,11 +61,49 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                 // used to be trusted for them via sk, which deleted and rewrote the whole
                 // trade_unit_has_ingredients set on each fetch.
 
-                if ($tradeUnit) {
-                    $this->fetchTradeUnitProductPropertiesInfo(
-                        $tradeUnit,
+                // Nothing else: dangerous-goods fill-null and attachment refresh used to
+                // run here, but even those are Aurora writing a trade unit staff maintain
+                // in aiku, so an existing trade unit is resolved and returned untouched.
+            } else {
+                // Create-only path for parts born in Aurora after the cutover: aiku has
+                // never seen this source_slug, so nothing staff maintain can be rewritten.
+                try {
+                    $tradeUnit = StoreTradeUnit::make()->action(
+                        group: $organisationSource->getOrganisation()->group,
+                        modelData: $tradeUnitData['trade_unit'],
+                        hydratorsDelay: $this->hydratorsDelay,
+                        strict: false,
+                        audit: false
                     );
+                    TradeUnit::enableAuditing();
+                    $this->saveMigrationHistory(
+                        $tradeUnit,
+                        Arr::except($tradeUnitData['trade_unit'], ['fetched_at', 'last_fetched_at', 'source_id'])
+                    );
+                    $this->recordNew($organisationSource);
+
+                    $this->updateTradeUnitSources($tradeUnit, $tradeUnitData['trade_unit']['source_id']);
+
+                    if (count(Arr::get($tradeUnitData, 'barcodes', [])) > 0) {
+                        $tradeUnit->barcodes()->sync($tradeUnitData['barcodes']);
+
+                        foreach ($tradeUnitData['barcodes'] as $barcodeKey => $barcodeData) {
+                            if ($barcodeData['status']) {
+                                $barcode = Barcode::find($barcodeKey);
+                                $tradeUnit->updateQuietly([
+                                    'barcode_id' => $barcode->id,
+                                    'barcode'    => $barcode->number,
+                                ]);
+                                break;
+                            }
+                        }
+                    }
+
                     $this->processFetchAttachments($tradeUnit, 'Part', $tradeUnitData['trade_unit']['source_id']);
+                } catch (Exception|Throwable $e) {
+                    $this->recordError($organisationSource, $e, $tradeUnitData['trade_unit'], 'TradeUnit', 'store');
+
+                    return null;
                 }
             }
 
@@ -90,102 +128,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             ]
         ]);
     }
-
-    public function fetchTradeUnitProductPropertiesInfo(TradeUnit $tradeUnit): void
-    {
-        foreach ($tradeUnit->products()->where('unit_relationship_type', ProductUnitRelationshipType::SINGLE)->where('products.organisation_id', $this->organisation->id)->get() as $product) {
-            if ($product->shop->state !== ShopStateEnum::OPEN) {
-                continue;
-            }
-
-            $dangerousGoodsInfo = $this->fetchAuroraProductPropertiesInfo($product);
-
-            // Fill gaps only, for every organisation. aw used to overwrite these
-            // outright, which is the one way Aurora could still rewrite a group level
-            // trade unit that staff had already corrected.
-            $filteredDangerousGoodsInfo = array_filter($dangerousGoodsInfo, function ($value) {
-                return !is_null($value);
-            });
-
-            $fieldsToUpdate = [];
-            foreach ($filteredDangerousGoodsInfo as $field => $value) {
-                if (is_null($tradeUnit->$field)) {
-                    $fieldsToUpdate[$field] = $value;
-                }
-            }
-
-            if (!empty($fieldsToUpdate)) {
-                UpdateTradeUnit::make()->action(
-                    tradeUnit: $tradeUnit,
-                    modelData: $fieldsToUpdate,
-                    hydratorsDelay: $this->hydratorsDelay,
-                    strict: false,
-                    audit: false
-                );
-            }
-        }
-    }
-
-    public function fetchAuroraProductPropertiesInfo(Product $product): array
-    {
-        $sourceData = $product->source_id;
-        if (!$sourceData) {
-            return [];
-        }
-        $sourceData = explode(':', $sourceData);
-
-        $productPropertiesInfo = DB::connection('aurora')->table('Product Dimension')
-            ->where('Product Id', $sourceData[1])
-            ->first();
-
-        if (!$productPropertiesInfo) {
-            return [];
-        }
-
-        $dutyRate = $productPropertiesInfo->{'Product Duty Rate'} ?? null;
-        // Clean the duty rate string to remove any non-ASCII characters or encoding issues
-        if ($dutyRate) {
-            // Convert to UTF-8 and remove any invalid characters
-            $dutyRate = mb_convert_encoding($dutyRate, 'UTF-8', 'UTF-8');
-            // Replace any remaining non-ASCII characters with their closest ASCII equivalent or remove them
-            $dutyRate = preg_replace('/[^\x20-\x7E]/', '', $dutyRate);
-        }
-
-
-        $data = [
-            'un_number'                    => $productPropertiesInfo->{'Product UN Number'} ?? null,
-            'un_class'                     => $productPropertiesInfo->{'Product UN Class'} ?? null,
-            'packing_group'                => $productPropertiesInfo->{'Product Packing Group'} ?? null,
-            'proper_shipping_name'         => $productPropertiesInfo->{'Product Proper Shipping Name'} ?? null,
-            'hazard_identification_number' => $productPropertiesInfo->{'Product Hazard Identification Number'} ?? null,
-            'gpsr_manufacturer'            => $productPropertiesInfo->{'Product GPSR Manufacturer'} ?? null,
-            'gpsr_eu_responsible'          => $productPropertiesInfo->{'Product GPSR EU Responsible'} ?? null,
-            'gpsr_warnings'                => $productPropertiesInfo->{'Product GPSR Warnings'} ?? null,
-            'gpsr_manual'                  => $productPropertiesInfo->{'Product GPSR Manual'} ?? null,
-            'gpsr_class_category_danger'   => $productPropertiesInfo->{'Product GPSR Class Category Danger'} ?? null,
-            'gpsr_class_languages'         => $productPropertiesInfo->{'Product GPSR Class Languages'} ?? null,
-            'pictogram_toxic'              => $productPropertiesInfo->{'Product Pictogram Toxic'} == 'Yes',
-            'pictogram_corrosive'          => $productPropertiesInfo->{'Product Pictogram Corrosive'} == 'Yes',
-            'pictogram_explosive'          => $productPropertiesInfo->{'Product Pictogram Explosive'} == 'Yes',
-            'pictogram_flammable'          => $productPropertiesInfo->{'Product Pictogram Flammable'} == 'Yes',
-            'pictogram_gas'                => $productPropertiesInfo->{'Product Pictogram Gas'} == 'Yes',
-            'pictogram_environment'        => $productPropertiesInfo->{'Product Pictogram Environment'} == 'Yes',
-            'pictogram_health'             => $productPropertiesInfo->{'Product Pictogram Health'} == 'Yes',
-            'pictogram_oxidising'          => $productPropertiesInfo->{'Product Pictogram Oxidising'} == 'Yes',
-            'pictogram_danger'             => $productPropertiesInfo->{'Product Pictogram Danger'} == 'Yes',
-            'cpnp_number'                  => $productPropertiesInfo->{'Product CPNP Number'} ?? null,
-            'tariff_code'                  => $productPropertiesInfo->{'Product Tariff Code'} ?? null,
-            'duty_rate'                    => $dutyRate,
-            'hts_us'                       => $productPropertiesInfo->{'Product HTSUS Code'} ?? null,
-        ];
-
-        if ($productPropertiesInfo->{'Product Origin Country Code'} != '') {
-            $data['origin_country_id'] = $this->parseCountryOrigin($productPropertiesInfo->{'Product Origin Country Code'});
-        }
-
-        return $data;
-    }
-
 
     public function parseCountryOrigin(?string $countryOrigin): ?int
     {

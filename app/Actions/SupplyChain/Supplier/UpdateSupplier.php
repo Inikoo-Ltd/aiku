@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Address\UpdateAddress;
+use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SupplyChain\SupplierResource;
@@ -18,6 +19,7 @@ use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateSupplier extends OrgAction
@@ -39,6 +41,14 @@ class UpdateSupplier extends OrgAction
             return true;
         }
 
+        if (!$this->supplier->agent_id) {
+            foreach ($this->supplier->orgSuppliers()->pluck('organisation_id') as $organisationId) {
+                if ($request->user()->authTo("procurement.{$organisationId}.edit")) {
+                    return true;
+                }
+            }
+        }
+
         return $request->user()->authTo('supply-chain.edit');
     }
 
@@ -52,6 +62,21 @@ class UpdateSupplier extends OrgAction
         }
 
         $modelData = $this->pullSupplierJsonColumns($modelData);
+
+        if (Arr::has($modelData, 'image')) {
+            $image = Arr::pull($modelData, 'image');
+            if ($image) {
+                $supplier = SaveModelImage::run(
+                    model: $supplier,
+                    imageData: [
+                        'path'         => $image->getPathName(),
+                        'originalName' => $image->getClientOriginalName(),
+                        'extension'    => $image->getClientOriginalExtension(),
+                    ],
+                    scope: 'photo'
+                );
+            }
+        }
 
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
@@ -111,6 +136,7 @@ class UpdateSupplier extends OrgAction
             'phone'           => ['sometimes', 'nullable', new Phone()],
             'address'         => ['sometimes', 'required', new ValidAddress()],
             'currency_id'     => ['sometimes', 'required', 'exists:currencies,id'],
+            'image'           => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
         ];
 
         $rules = array_merge($rules, $this->supplierJsonFieldRules());

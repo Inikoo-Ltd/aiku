@@ -89,6 +89,14 @@ class StoredItem extends Model implements Auditable
 
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'reference',
+        'name',
+        'state',
+        'notes',
+        'return_requested',
+    ];
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

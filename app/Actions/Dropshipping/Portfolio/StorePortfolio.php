@@ -37,6 +37,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StorePortfolio extends OrgAction
 {
     use WithNoStrictRules;
+    use WithPortfolioSKU;
 
     private Customer $customer;
 
@@ -136,32 +137,6 @@ class StorePortfolio extends OrgAction
         throw ValidationException::withMessages([
             'item_id' => __('Product :code belongs to another shop', ['code' => $item->code])
         ]);
-    }
-
-    public function getSKU(Product|StoredItem $item): ?string
-    {
-        if ($item instanceof Product) {
-            $product = $item;
-
-            $skuArray = [];
-            foreach ($product->orgStocks as $orgStock) {
-                $stock = $orgStock->stock;
-                if ($stock) {
-                    $skuArray[] = $stock->slug;
-                } else {
-                    $skuArray[] = $orgStock->slug;
-                }
-            }
-            if (!empty($skuArray)) {
-                $sku = implode('-', $skuArray);
-            } else {
-                $sku = null;
-            }
-
-            return $sku;
-        } else {
-            return $item->reference;
-        }
     }
 
     public function authorize(ActionRequest $request): bool

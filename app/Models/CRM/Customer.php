@@ -346,6 +346,13 @@ class Customer extends Model implements HasMedia, Auditable
         'contact_website',
         'identity_document_type',
         'identity_document_number',
+        'status',
+        'state',
+        'trade_state',
+        'balance',
+        'address_id',
+        'delivery_address_id',
+        'is_credit_customer',
     ];
 
     protected array $searchable_columns = [

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Shipment;
 
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
@@ -27,6 +28,8 @@ use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Validation\ValidationException;
@@ -35,12 +38,24 @@ class StoreShipment extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+    use WithPreferredShipperResolver;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
     {
+        if ($parent instanceof DeliveryNote) {
+            $order = $parent->orders->first();
+            if ($order?->is_shipper_locked && $order->shipper_id && $order->shipper_id != $shipper->id) {
+                throw ValidationException::withMessages([
+                    'shipper' => __('The customer chose a shipper for this order. Contact customer services to change it.')
+                ]);
+            }
+
+            $this->guardShipperLock($parent, $shipper);
+        }
+
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
@@ -116,6 +131,50 @@ class StoreShipment extends OrgAction
         ]);
 
         return $shipment;
+    }
+
+    /**
+     * The lock only ever lived in the UI, so both the block and the trail belong
+     * here: this is the one place an override cannot be faked by the client.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function guardShipperLock(DeliveryNote $deliveryNote, Shipper $shipper): void
+    {
+        $directive = $this->getShipperDirective($deliveryNote);
+
+        if (!$directive['locked_shipper_id'] || $directive['locked_shipper_id'] == $shipper->id) {
+            return;
+        }
+
+        $user = request()->user();
+
+        // No user means a system flow (console, queue, external sync), which the lock does not police
+        if ($user && !$user->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ])) {
+            throw ValidationException::withMessages([
+                'shipper' => __('This shipper is locked by the shipping rules. Ask a dispatch supervisor to change it.')
+            ]);
+        }
+
+        $lockedShipper = Shipper::find($directive['locked_shipper_id']);
+
+        $deliveryNote->auditEvent     = 'shipper_lock_override';
+        $deliveryNote->isCustomEvent  = true;
+        $deliveryNote->auditCustomOld = [
+            'shipper'      => $lockedShipper?->name,
+            'shipper_id'   => $directive['locked_shipper_id'],
+            'locked_by'    => $directive['locked_by'],
+            'locked_scope' => $directive['locked_scope'],
+        ];
+        $deliveryNote->auditCustomNew = [
+            'shipper'    => $shipper->name,
+            'shipper_id' => $shipper->id,
+        ];
+
+        Event::dispatch(new AuditCustom($deliveryNote));
     }
 
     public function rules(): array

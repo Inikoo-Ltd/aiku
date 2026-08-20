@@ -10,7 +10,6 @@ namespace App\Actions\Dropshipping\WooCommerce\Orders;
 
 use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\SubmitAndConfirmPalletReturn;
-use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedWooCommerceAddress;
 use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
@@ -24,6 +23,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
+
 use function Sentry\captureMessage;
 
 class StoreFulfilmentFromWooCommerce extends OrgAction
@@ -73,7 +73,7 @@ class StoreFulfilmentFromWooCommerce extends OrgAction
 
                 $palletStoredItem = $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
 
-                if(!$palletStoredItem) {
+                if (!$palletStoredItem) {
                     continue;
                 }
 

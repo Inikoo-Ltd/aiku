@@ -10309,43 +10309,7 @@ parameters:
 			path: app/Http/Resources/Mail/EmailAddressResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailAddressResource\:\:\$hard_bounced_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/EmailAddressResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailAddressResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/EmailAddressResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailAddressResource\:\:\$last_marketing_dispatch_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/EmailAddressResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailAddressResource\:\:\$last_transactional_dispatch_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/EmailAddressResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailAddressResource\:\:\$number_marketing_dispatches\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/EmailAddressResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailAddressResource\:\:\$number_transactional_dispatches\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/EmailAddressResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailAddressResource\:\:\$soft_bounced_at\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/Mail/EmailAddressResource.php

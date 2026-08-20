@@ -5,42 +5,53 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue'
+import { Deferred, Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
+import ProcurementOverviewCard from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewCard.vue"
+import SearchDemandOpportunities from "@/Components/DataDisplay/Dashboard/Widget/SearchDemandOpportunities.vue"
 
+import { library } from "@fortawesome/fontawesome-svg-core"
+import {
+    faPeopleArrows,
+    faBoxUsd,
+    faPersonDolly,
+    faClipboardList,
+    faArrowRight,
+    faRadar,
+    faShoppingBasket,
+} from "@fal"
 
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList } from '@fal'
-import Dashboard from '@/Components/DataDisplay/Dashboard/DashboardOld.vue'
-import SearchDemandOpportunities from '@/Components/DataDisplay/Dashboard/Widget/SearchDemandOpportunities.vue'
+library.add(
+    faPeopleArrows,
+    faBoxUsd,
+    faPersonDolly,
+    faClipboardList,
+    faArrowRight,
+    faRadar,
+    faShoppingBasket
+)
 
-library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList)
-
-
-const props = defineProps<{
-    title: string,
-    pageHead: {},
-    flatTreeMaps: any[]
-    dashboard_stats: {
-      widgets: {}
-    }
+defineProps<{
+    title: string
+    pageHead: object
+    dashboardCards: any[]
     search_demand?: any
 }>()
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
-    <!-- <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" /> -->
-    <div class="mx-4">
-      <Dashboard
-              :dashboard="dashboard_stats"
-      />
+    <PageHeading :data="pageHead" />
+    <div class="mx-4 mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <ProcurementOverviewCard v-for="card in dashboardCards" :key="card.label" :card="card" />
     </div>
-    <div class="mx-4 mt-4 max-w-3xl">
-      <SearchDemandOpportunities :demand="search_demand" />
+    <div class="mx-4 mt-6 max-w-3xl">
+        <Deferred data="search_demand">
+            <template #fallback>
+                <div class="h-48 animate-pulse rounded-lg border border-gray-200 bg-gray-100" />
+            </template>
+            <SearchDemandOpportunities :demand="search_demand" />
+        </Deferred>
     </div>
 </template>

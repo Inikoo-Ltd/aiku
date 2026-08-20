@@ -9,10 +9,12 @@
 namespace App\Actions\Masters\MasterAsset\Hydrators;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -23,7 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * is in stock anywhere. Per-org cost mirrors the product-creation math:
  * current_supplier_sku_cost / packed_in * trade unit quantity, org → group currency.
  */
-class MasterAssetHydrateEffectiveCost
+class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
 {
     use AsAction;
 
@@ -33,6 +35,33 @@ class MasterAssetHydrateEffectiveCost
 
     /** @var array<int, float|null> */
     private array $orgToGroupRate = [];
+
+    public function getJobUniqueId(MasterAsset $masterAsset): string
+    {
+        return (string) $masterAsset->id;
+    }
+
+    /**
+     * Any change to an org stock's cost inputs invalidates the effective cost of every
+     * master asset built from its trade units, so re-hydrate them instead of waiting
+     * for the nightly sweep.
+     */
+    public static function dispatchForOrgStock(OrgStock $orgStock): void
+    {
+        $tradeUnitIds = $orgStock->tradeUnits()->pluck('trade_units.id');
+
+        if ($tradeUnitIds->isEmpty()) {
+            return;
+        }
+
+        MasterAsset::where('status', true)
+            ->where('is_main', true)
+            ->whereIn('id', DB::table('model_has_trade_units')
+                ->where('model_type', 'MasterAsset')
+                ->whereIn('trade_unit_id', $tradeUnitIds)
+                ->pluck('model_id'))
+            ->each(fn (MasterAsset $masterAsset) => self::dispatch($masterAsset));
+    }
 
     public function handle(MasterAsset $masterAsset): void
     {

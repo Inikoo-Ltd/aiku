@@ -27,7 +27,7 @@ trait WithProformaInvoicePdf
             $totalNet = $totalItemsNet + $totalShipping;
 
 
-            $transactionModel = $order->transactions->where('model_type', 'Product');
+            $transactionModel = $order->transactions->whereIn('model_type', ['Product', 'Service']);
 
             /** A delivery note with shortfalls means the order will be invoiced on what was
              * actually picked, so the proforma shows picked quantities and amounts, not the

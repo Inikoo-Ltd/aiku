@@ -47,16 +47,10 @@ class IndexEmailAddress extends OrgAction
             ->select([
                 'email_addresses.id',
                 'email_addresses.email',
-                'email_addresses.number_marketing_dispatches',
-                'email_addresses.number_transactional_dispatches',
-                'email_addresses.last_marketing_dispatch_at',
-                'email_addresses.last_transactional_dispatch_at',
-                'email_addresses.soft_bounced_at',
-                'email_addresses.hard_bounced_at',
             ]);
 
         return $queryBuilder
-            ->allowedSorts(['email', 'marketing', 'transactional', 'last_marketing_dispatch', 'last_transactional_dispatch', 'soft_bounced', 'hard_bounced'])
+            ->allowedSorts(['email'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -99,13 +93,7 @@ class IndexEmailAddress extends OrgAction
                 );
 
             $table
-                ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_marketing_dispatches', label: __('Marketing'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_transactional_dispatches', label: __('Transactional'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'last_marketing_dispatch_at', label: __('Last Marketing Dispatch'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'last_transactional_dispatch_at', label: __('Last Transactional Dispatch'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'soft_bounced_at', label: __('Soft Bounced'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'hard_bounced_at', label: __('Hard Bounced'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 

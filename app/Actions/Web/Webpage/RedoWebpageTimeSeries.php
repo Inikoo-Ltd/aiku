@@ -36,6 +36,17 @@ class RedoWebpageTimeSeries implements ShouldBeUnique
         return "{$from}_$to";
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('website_page_views'),
+                'key'   => 'webpage_id',
+                'date'  => 'view_date',
+            ],
+        ];
+    }
+
     public function handle(?int $webpageId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$webpageId) {
@@ -49,15 +60,14 @@ class RedoWebpageTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $firstViewDate = DB::connection('aiku_no_sticky')->table('website_page_views')->where('webpage_id', $webpage->id)->min('view_date');
-            $lastViewDate  = DB::connection('aiku_no_sticky')->table('website_page_views')->where('webpage_id', $webpage->id)->max('view_date');
+            $dateRange = $this->getDateRange($webpage->id);
 
-            if (!$firstViewDate) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstViewDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastViewDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {

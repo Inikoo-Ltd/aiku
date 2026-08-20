@@ -36,6 +36,7 @@ use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachineQRCode;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
@@ -2013,6 +2014,192 @@ test('an employee that already has a user can not get a second one', function (E
     ]))->toThrow(HttpException::class);
 })->depends('can create a user from an employee');
 
+test('a user can scan a QR code of a clocking machine in another organisation', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'cross-org-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o' . substr(uniqid(), -5),
+                'name'  => 'Other Org ' . uniqid(),
+                'email' => 'org-' . uniqid() . '@example.com',
+            ]
+        ));
+
+    $workplace = StoreWorkplace::make()->action($otherOrganisation, [
+        'name' => 'Cross Org Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Cross Org QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Cross org entrance',
+    ]);
+
+    actingAs($user);
+
+    $result = ValidateClockingMachineQrCode::make()->handle($qrCode->hash);
+
+    expect($result['clocking']->subject_id)->toBe($employee->id)
+        ->and($result['clocking']->organisation_id)->toBe($otherOrganisation->id)
+        ->and($result['clocking']->clocking_machine_id)->toBe($clockingMachine->id);
+});
+
+test('a user without any employee record can not clock in by QR code', function () {
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'No Employee Workplace ' . uniqid(),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'No Employee QR Machine ' . uniqid(),
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'No employee entrance',
+    ]);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash))
+        ->toThrow(Exception::class, 'User is not associated with an employee record.');
+});
+
+test('a remote employee skips coordinate validation on a machine of another organisation', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'remote-cross-org-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    \App\Models\HumanResources\ClockingMachineCoordinatePolicy::create([
+        'organisation_id' => $this->organisation->id,
+        'scope_type'      => 'employee',
+        'scope_id'        => $employee->id,
+        'mode'            => \App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum::REMOTE,
+        'is_active'       => true,
+    ]);
+
+    $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o' . substr(uniqid(), -5),
+                'name'  => 'Other Org ' . uniqid(),
+                'email' => 'org-' . uniqid() . '@example.com',
+            ]
+        ));
+
+    $workplace = StoreWorkplace::make()->action($otherOrganisation, [
+        'name' => 'Remote Policy Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Remote Policy QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $clockingMachine->update([
+        'config' => [
+            'qr' => [
+                'enable'            => true,
+                'allow_coordinates' => true,
+                'coordinates'       => '53.401268237762125, -1.40775203704834',
+                'radius'            => 100,
+            ],
+        ],
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Remote policy entrance',
+    ]);
+
+    actingAs($user);
+
+    $result = ValidateClockingMachineQrCode::make()->handle($qrCode->hash);
+
+    expect($result['effective_mode'])->toBe(\App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum::REMOTE->value)
+        ->and($result['clocking']->subject_id)->toBe($employee->id);
+});
+
+test('an employee without a remote policy still gets coordinate validation on another organisation machine', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'onsite-cross-org-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o' . substr(uniqid(), -5),
+                'name'  => 'Other Org ' . uniqid(),
+                'email' => 'org-' . uniqid() . '@example.com',
+            ]
+        ));
+
+    $workplace = StoreWorkplace::make()->action($otherOrganisation, [
+        'name' => 'Onsite Policy Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Onsite Policy QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $clockingMachine->update([
+        'config' => [
+            'qr' => [
+                'enable'            => true,
+                'allow_coordinates' => true,
+                'coordinates'       => '53.401268237762125, -1.40775203704834',
+                'radius'            => 100,
+            ],
+        ],
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Onsite policy entrance',
+    ]);
+
+    actingAs($user);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash, 51.5, -0.12))
+        ->toThrow(Exception::class, 'Device is too far from the designated clocking location.');
+});
+
 test('get user current employee prefers active record over newer left record', function () {
     $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->organisation->group_id]);
 
@@ -2253,4 +2440,62 @@ describe('current employee across organisations', function () {
             ->and(GetUserCurrentEmployee::run($user, $unreachableOrganisationId)?->id)->toBe($active->id)
             ->and(GetUserCurrentEmployee::run($user)?->id)->toBe($active->id);
     });
+});
+
+test('a QR scan log records the resolved employee, not the scanning user', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'qr-' . uniqid() . '@example.com',
+        'worker_number'   => 'QR' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'scan-log-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Scan Log Workplace ' . $employee->id,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Scan Log QR Machine ' . $employee->id,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $clockingMachine->update([
+        'config' => [
+            'qr' => [
+                'enable'            => true,
+                'allow_coordinates' => true,
+                'coordinates'       => '53.401268237762125, -1.40775203704834',
+                'radius'            => 100,
+            ],
+        ],
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Scan log entrance',
+    ]);
+
+    actingAs($user);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash, 51.5, -0.12))
+        ->toThrow(Exception::class);
+
+    $log = \App\Models\HumanResources\QrScanLog::where('clocking_machine_id', $clockingMachine->id)
+        ->latest('id')
+        ->first();
+
+    expect($log->employee_id)->toBe($employee->id);
+
+    expect(fn () => ValidateClockingMachineQrCode::make()->handle('no-such-hash'))
+        ->toThrow(Exception::class, 'Invalid QR Code.');
+
+    $unresolvedLog = \App\Models\HumanResources\QrScanLog::latest('id')->first();
+
+    expect($unresolvedLog->employee_id)->toBeNull();
 });

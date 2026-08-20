@@ -62,18 +62,30 @@ class SearchCatalogue
             'id'    => (int)$document['id'],
             'code'  => $document['code'] ?? null,
             'name'  => $document['name'] ?? null,
+            'state' => $document['state'] ?? null,
             'image' => json_decode($document['image'] ?? 'null', true),
         ];
 
+        $results = array_map(
+            static fn (array $collectionHits) => array_map(
+                $mapCatalogueItem,
+                Arr::pluck($collectionHits, 'document')
+            ),
+            $hits
+        );
+
+        if (!empty($results['products'])) {
+            $availableQuantities = Product::whereIn('id', array_column($results['products'], 'id'))
+                ->pluck('available_quantity', 'id');
+            foreach ($results['products'] as &$product) {
+                $product['available_quantity'] = $availableQuantities[$product['id']] ?? null;
+            }
+            unset($product);
+        }
+
         return [
             'scope'       => 'catalogue',
-            'results'     => array_map(
-                static fn (array $collectionHits) => array_map(
-                    $mapCatalogueItem,
-                    Arr::pluck($collectionHits, 'document')
-                ),
-                $hits
-            ),
+            'results'     => $results,
             'arm_counts'  => $this->sumArmCounts(array_map(
                 fn (array $collectionHits) => $this->armCounts($collectionHits),
                 $hits

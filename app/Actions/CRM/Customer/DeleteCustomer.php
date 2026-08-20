@@ -72,24 +72,21 @@ class DeleteCustomer
 
         foreach ($customer->webUsers as $webUser) {
             DeleteWebUser::run(
-                webUser: $webUser,
-                skipHydrate: true,
-                deletedData: $dependantDeletedData
+                webUser: $webUser
             );
         }
 
         foreach ($customer->orders as $order) {
             DeleteOrder::run(
-                order: $order,
-                deletedData: $dependantDeletedData
+                order: $order
             );
         }
 
         foreach ($customer->products as $product) {
             DeleteProduct::run(
                 product: $product,
-                skipHydrate: true,
-                deletedData: $dependantDeletedData
+                deletedData: $dependantDeletedData,
+                skipHydrate: true
             );
         }
 
@@ -98,6 +95,8 @@ class DeleteCustomer
         //}
         // Todo delete portfolios
 
+
+        $customer->fulfilmentCustomer?->delete();
 
         $customer->delete();
         $customer = $this->update($customer, $deletedData, ['data']);

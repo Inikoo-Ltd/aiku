@@ -262,16 +262,16 @@ class IndexOrgStocks extends OrgAction
                 timeSeriesRecordsTable: 'org_stock_time_series_records',
                 foreignKey: 'org_stock_id',
                 aggregateColumns: [
-                    'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'cogs_grp_currency'           => 'cogs_grp_currency',
+                    'sales_org_currency_external' => 'sales_org_currency_external',
+                    'cogs_org_currency'           => 'cogs_org_currency',
                     'invoices'                    => 'invoices',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
             );
 
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_org_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_org_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
             $selects[] = $this->grossProfitSelect($timeSeriesData['alias']);
@@ -299,7 +299,7 @@ class IndexOrgStocks extends OrgAction
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
-            $allowedSorts[] = 'sales_grp_currency_external';
+            $allowedSorts[] = 'sales_org_currency_external';
             $allowedSorts[] = 'gross_profit';
             $allowedSorts[] = 'invoices';
         }
@@ -350,15 +350,15 @@ class IndexOrgStocks extends OrgAction
     protected function grossProfitSelect(string $alias): Expression
     {
         return DB::raw(
-            "COALESCE($alias.sales_grp_currency_external, 0) - COALESCE($alias.cogs_grp_currency, 0) as gross_profit"
+            "COALESCE($alias.sales_org_currency_external, 0) - COALESCE($alias.cogs_org_currency, 0) as gross_profit"
         );
     }
 
     protected function grossProfitPercentageSelect(string $alias): Expression
     {
         return DB::raw(
-            "CASE WHEN COALESCE($alias.sales_grp_currency_external, 0) <> 0"
-            ." THEN ROUND(((COALESCE($alias.sales_grp_currency_external, 0) - COALESCE($alias.cogs_grp_currency, 0)) / $alias.sales_grp_currency_external * 100)::numeric, 1)"
+            "CASE WHEN COALESCE($alias.sales_org_currency_external, 0) <> 0"
+            ." THEN ROUND(((COALESCE($alias.sales_org_currency_external, 0) - COALESCE($alias.cogs_org_currency, 0)) / $alias.sales_org_currency_external * 100)::numeric, 1)"
             .' ELSE NULL END as gross_profit_percentage'
         );
     }
@@ -409,8 +409,8 @@ class IndexOrgStocks extends OrgAction
                 $table->betweenDates(['date'])
                     ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), align: 'right')
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'sales_org_currency_external', label: __('Sales'), sortable: true, align: 'right')
+                    ->column(key: 'sales_org_currency_external_delta', label: __('Δ 1Y'), align: 'right')
                     ->column(key: 'gross_profit', label: __('Gross Profit'), sortable: true, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), sortable: true, type: 'icon');
             } else {

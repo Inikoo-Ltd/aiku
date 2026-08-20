@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplier\UI;
 
+use App\Actions\SupplyChain\Supplier\UI\WithSupplierInfo;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Procurement\OrgSupplier;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetOrgSupplierShowcase
 {
     use AsObject;
+    use WithSupplierInfo;
 
     public function handle(OrgSupplier $orgSupplier): array
     {
@@ -31,23 +33,36 @@ class GetOrgSupplierShowcase
                 'phone'      => $supplier->phone,
                 'currency'   => $supplier->currency,
                 'address'    => AddressResource::make($supplier->address)->getArray(),
-                'image_id'   => $supplier->image_id,
+                'photo'      => $supplier->imageSources(320, 320),
+                'supplierInfo' => $this->supplierInfo($supplier),
             ],
             'stats'       => [
                 [
                     'label' => __('Products'),
                     'icon'  => 'fal fa-box-usd',
-                    'count' => $orgSupplier->stats->number_org_supplier_products,
+                    'count' => $orgSupplier->stats->number_current_org_supplier_products,
+                    'route' => [
+                        'name'       => 'grp.org.procurement.org_suppliers.show.supplier_products.index',
+                        'parameters' => [$orgSupplier->organisation->slug, $orgSupplier->slug],
+                    ],
                 ],
                 [
                     'label' => __('Purchase Orders'),
                     'icon'  => 'fal fa-clipboard-list',
                     'count' => $orgSupplier->stats->number_purchase_orders,
+                    'route' => [
+                        'name'       => 'grp.org.procurement.org_suppliers.show.purchase_orders.index',
+                        'parameters' => [$orgSupplier->organisation->slug, $orgSupplier->slug],
+                    ],
                 ],
                 [
                     'label' => __('Deliveries'),
                     'icon'  => 'fal fa-truck-container',
                     'count' => $orgSupplier->stats->number_stock_deliveries,
+                    'route' => [
+                        'name'       => 'grp.org.procurement.org_suppliers.show.stock_deliveries.index',
+                        'parameters' => [$orgSupplier->organisation->slug, $orgSupplier->slug],
+                    ],
                 ],
             ],
         ];

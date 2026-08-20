@@ -10,10 +10,7 @@
 namespace App\Actions\Ordering\Transaction;
 
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNoteTotalAmounts;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote;
-use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
@@ -23,7 +20,6 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Events\BroadcastTransactionUpdated;
 use App\Models\Catalogue\Product;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
@@ -35,6 +31,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateTransactionProductQuantityOrdered extends OrgAction
 {
     use WithOrderingEditAuthorisation;
+    use WithDeliveryNoteQuantitySync;
 
     /**
      * @throws \Throwable
@@ -99,69 +96,6 @@ class UpdateTransactionProductQuantityOrdered extends OrgAction
         BroadcastTransactionUpdated::dispatch($transaction, $order);
 
         return $transaction;
-    }
-
-    protected function syncDeliveryNote(DeliveryNote $deliveryNote, Transaction $transaction, $orgStocks, User $user): void
-    {
-        $goBackToPicking = false;
-        $quantityLowered = false;
-
-        $deliveryNoteItems = $transaction
-            ->deliveryNoteItems()
-            ->where('delivery_note_id', $deliveryNote->id)
-            ->lockForUpdate()
-            ->get();
-
-        foreach ($deliveryNoteItems as $deliveryNoteItem) {
-            $orgStock = $orgStocks->get($deliveryNoteItem->org_stock_id);
-            if (!$orgStock) {
-                continue;
-            }
-
-            $quantity            = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
-            $oldRequiredQuantity = (float)$deliveryNoteItem->quantity_required;
-
-            if (abs($quantity - $oldRequiredQuantity) < 0.000001) {
-                continue;
-            }
-
-            $dataToBeUpdated = [
-                'quantity_required' => $quantity,
-                'is_dirty'          => true,
-            ];
-
-            if (!$deliveryNoteItem->original_quantity_required) {
-                $dataToBeUpdated['original_quantity_required'] = $oldRequiredQuantity;
-            }
-
-            $deliveryNoteItem->update($dataToBeUpdated);
-
-            if (abs($quantity - (float)$deliveryNoteItem->quantity_picked) > 0.000001) {
-                $goBackToPicking = true;
-            }
-            if ($quantity < $oldRequiredQuantity) {
-                $quantityLowered = true;
-            }
-
-            CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
-        }
-
-        if (!$goBackToPicking && !$quantityLowered) {
-            return;
-        }
-
-        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKED) {
-            $deliveryNote = UnpackDeliveryNote::make()->action($deliveryNote, $user);
-        }
-
-        if ($goBackToPicking) {
-            if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
-                $deliveryNote = UndoPackingDeliveryNote::make()->action($deliveryNote, $user);
-            }
-            if ($deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
-                UndoSetAsPickedDeliveryNote::make()->action($deliveryNote, $user);
-            }
-        }
     }
 
     protected function recordModification(Order $order, Transaction $transaction, array $modelData, User $user): void

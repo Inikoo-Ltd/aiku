@@ -218,6 +218,10 @@ class CustomerStats extends Model
 {
     protected $guarded = [];
 
+    protected $casts = [
+        'archived_dispatched_emails' => 'array',
+    ];
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);

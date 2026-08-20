@@ -38,6 +38,14 @@ class ManufacturePayrollExport implements FromArray, WithHeadings
             'Base pay',
             'Reward terms',
             'Reward amount per unit',
+            'Activity type',
+            'Break minutes',
+            'Hours',
+            'Units per hour',
+            'Band code',
+            'Hourly rate',
+            'Pay',
+            'Bonus',
         ];
     }
 
@@ -58,7 +66,10 @@ class ManufacturePayrollExport implements FromArray, WithHeadings
                 'manufacture_tasks.name',
                 'manufacture_task_sessions.task_work_cost',
                 'manufacture_task_sessions.operative_reward_terms',
-                'manufacture_task_sessions.operative_reward_amount'
+                'manufacture_task_sessions.operative_reward_amount',
+                'manufacture_task_sessions.activity_type',
+                'manufacture_task_sessions.band_code',
+                'manufacture_task_sessions.hourly_rate'
             )
             ->select(
                 'users.contact_name',
@@ -67,12 +78,20 @@ class ManufacturePayrollExport implements FromArray, WithHeadings
                 'manufacture_tasks.name as task_name',
                 'manufacture_task_sessions.task_work_cost',
                 'manufacture_task_sessions.operative_reward_terms',
-                'manufacture_task_sessions.operative_reward_amount'
+                'manufacture_task_sessions.operative_reward_amount',
+                'manufacture_task_sessions.activity_type',
+                'manufacture_task_sessions.band_code',
+                'manufacture_task_sessions.hourly_rate'
             )
             ->selectRaw('count(*) as number_sessions')
             ->selectRaw('sum(extract(epoch from (manufacture_task_sessions.ended_at - manufacture_task_sessions.started_at))) as seconds_worked')
             ->selectRaw('sum(manufacture_task_sessions.quantity_made) as quantity_made')
             ->selectRaw('sum(manufacture_task_sessions.quantity_rejected) as quantity_rejected')
+            ->selectRaw('sum(manufacture_task_sessions.break_minutes) as break_minutes')
+            ->selectRaw('sum(manufacture_task_sessions.hours) as sum_hours')
+            ->selectRaw('avg(manufacture_task_sessions.units_per_hour) as avg_units_per_hour')
+            ->selectRaw('sum(manufacture_task_sessions.pay) as sum_pay')
+            ->selectRaw('sum(manufacture_task_sessions.bonus) as sum_bonus')
             ->orderBy('users.username')
             ->orderBy('manufacture_tasks.code')
             ->get()
@@ -88,6 +107,14 @@ class ManufacturePayrollExport implements FromArray, WithHeadings
                 round($row->quantity_made * ($row->task_work_cost ?? 0), 2),
                 $row->operative_reward_terms,
                 (float)($row->operative_reward_amount ?? 0),
+                $row->activity_type?->value,
+                (int)$row->break_minutes,
+                $row->sum_hours !== null ? round((float)$row->sum_hours, 4) : null,
+                $row->avg_units_per_hour !== null ? round((float)$row->avg_units_per_hour, 2) : null,
+                $row->band_code,
+                $row->hourly_rate !== null ? (float)$row->hourly_rate : null,
+                $row->sum_pay !== null ? round((float)$row->sum_pay, 2) : null,
+                $row->sum_bonus !== null ? round((float)$row->sum_bonus, 2) : null,
             ])->all();
     }
 }

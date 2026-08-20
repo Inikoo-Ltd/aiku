@@ -32,7 +32,7 @@ class SubmitApiPalletReturn extends RetinaApiAction
 
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        if($palletReturn->transactions->count() == 0) {
+        if ($palletReturn->transactions->count() == 0) {
             throw ValidationException::withMessages(['message' => 'Please attach at least one transaction to the order.']);
         }
 

@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
+use App\Actions\Ordering\Order\CancelOrdersInClosedShop;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
@@ -160,63 +162,6 @@ class UpdateShop extends OrgAction
             }
         }
 
-        $sesFailoverAuditOld = [];
-        $sesFailoverAuditNew = [];
-
-        foreach ([
-                    'access_id' => 'aws_ses_failover_access_id',
-                    'access_key' => 'aws_ses_failover_access_key',
-                    'region' => 'aws_ses_failover_region'
-                ] as $field => $auditKey) {
-            if (!Arr::exists($modelData, $field)) {
-                continue;
-            }
-
-            $oldValue = Arr::get($shop->settings ?? [], "email.provider.failover.$field");
-            $newValue = Arr::get($modelData, $field);
-
-            if ($oldValue === $newValue) {
-                continue;
-            }
-
-            if ($field === 'region') {
-                $sesFailoverAuditOld[$auditKey] = $oldValue;
-                $sesFailoverAuditNew[$auditKey] = $newValue;
-
-                continue;
-            }
-
-            $sesFailoverAuditOld[$auditKey] = $oldValue;
-            $sesFailoverAuditNew[$auditKey] = $newValue;
-        }
-
-        foreach ([
-                    'customer_notification_access_id' => 'aws_ses_customer_notification_access_id',
-                    'customer_notification_access_key' => 'aws_ses_customer_notification_access_key',
-                    'customer_notification_region' => 'aws_ses_customer_notification_region'
-                ] as $field => $auditKey) {
-            if (!Arr::exists($modelData, $field)) {
-                continue;
-            }
-
-            $oldValue = Arr::get($shop->settings ?? [], "email.provider.customer_notification.$field");
-            $newValue = Arr::get($modelData, $field);
-
-            if ($oldValue === $newValue) {
-                continue;
-            }
-
-            if ($field === 'region') {
-                $sesFailoverAuditOld[$auditKey] = $oldValue;
-                $sesFailoverAuditNew[$auditKey] = $newValue;
-
-                continue;
-            }
-
-            $sesFailoverAuditOld[$auditKey] = $oldValue;
-            $sesFailoverAuditNew[$auditKey] = $newValue;
-        }
-
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -308,6 +253,9 @@ class UpdateShop extends OrgAction
                     'gads_customer_id' => 'settings.google_ads.customer_id',
                     'gads_login_customer_id' => 'settings.google_ads.login_customer_id',
                     'gads_user_list_id' => 'settings.google_ads.user_list_id',
+                    'meta_ads_ad_account_id' => 'settings.meta_ads.ad_account_id',
+                    'meta_ads_access_token' => 'settings.meta_ads.access_token',
+                    'meta_ads_campaign_name_prefix' => 'settings.meta_ads.campaign_name_prefix',
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
@@ -344,6 +292,9 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'gads_customer_id');
         data_forget($modelData, 'gads_login_customer_id');
         data_forget($modelData, 'gads_user_list_id');
+        data_forget($modelData, 'meta_ads_ad_account_id');
+        data_forget($modelData, 'meta_ads_access_token');
+        data_forget($modelData, 'meta_ads_campaign_name_prefix');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
         data_forget($modelData, 'review_rating_labels');
@@ -584,6 +535,11 @@ class UpdateShop extends OrgAction
             }
         }
 
+        if (Arr::has($changes, 'state') && $shop->state == ShopStateEnum::CLOSED) {
+            DiscontinueProductsInClosedShop::dispatch($shop)->delay($this->hydratorsDelay);
+            CancelOrdersInClosedShop::dispatch($shop)->delay($this->hydratorsDelay);
+        }
+
         if (Arr::hasAny($changes, ['master_shop_id'])) {
             if ($shop->master_shop_id) {
                 MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);
@@ -623,15 +579,6 @@ class UpdateShop extends OrgAction
             $shop->auditCustomNew = $newFlattened;
             $shop->auditEvent = 'update';
             $shop->isCustomEvent = true;
-            Event::dispatch(new AuditCustom($shop));
-        }
-
-        if ($sesFailoverAuditNew !== []) {
-            $shop->auditEvent = 'update';
-            $shop->isCustomEvent = true;
-            $shop->auditCustomOld = $sesFailoverAuditOld;
-            $shop->auditCustomNew = $sesFailoverAuditNew;
-
             Event::dispatch(new AuditCustom($shop));
         }
 
@@ -782,7 +729,9 @@ class UpdateShop extends OrgAction
             'timezone_id'                                             => ['sometimes', 'required', 'exists:timezones,id'],
             'address'                                                 => ['sometimes', 'required', new ValidAddress()],
             'collection_address'                                      => ['sometimes', 'required', new ValidAddress()],
-            'state'                                                   => ['sometimes', Rule::enum(ShopStateEnum::class)],
+            'state'                                                   => $this->asAction
+                ? ['sometimes', Rule::enum(ShopStateEnum::class)]
+                : ['prohibited'],
             'shopify_shop_name'                                       => ['sometimes', 'string'],
             'shopify_api_key'                                         => ['sometimes', 'string'],
             'shopify_api_secret'                                      => ['sometimes', 'string'],
@@ -802,6 +751,9 @@ class UpdateShop extends OrgAction
             'gads_customer_id'                                        => ['sometimes', 'nullable', 'string'],
             'gads_login_customer_id'                                  => ['sometimes', 'nullable', 'string'],
             'gads_user_list_id'                                       => ['sometimes', 'nullable', 'string'],
+            'meta_ads_ad_account_id'                                  => ['sometimes', 'nullable', 'string'],
+            'meta_ads_access_token'                                   => ['sometimes', 'nullable', 'string'],
+            'meta_ads_campaign_name_prefix'                           => ['sometimes', 'nullable', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],

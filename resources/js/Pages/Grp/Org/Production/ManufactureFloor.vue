@@ -35,6 +35,11 @@ const props = defineProps<{
         started_at: string
         task: FloorTask
         close_route: { name: string, parameters: object }
+        band_feedback: null | {
+            band0_hourly_rate: number
+            bands: { code: string, name: string | null, hourly_rate: number, target_units_per_hour: number }[]
+            session: { started_at: string, break_minutes: number, quantity_made: number }
+        }
     }
     tasks: FloorTask[]
     today: {

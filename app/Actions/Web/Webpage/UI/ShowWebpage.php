@@ -348,8 +348,8 @@ class ShowWebpage extends OrgAction
                     : Inertia::optional(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($webpage))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($webpage))),
+                    fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))),
 
                 WebpageTabsEnum::REDIRECTS->value => $this->tab == WebpageTabsEnum::REDIRECTS->value ?
                     fn () => RedirectsResource::collection(IndexRedirects::run($webpage))

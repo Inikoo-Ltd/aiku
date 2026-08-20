@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\Agent\UI\WithAgentEditAction;
 use App\Enums\UI\Procurement\OrgAgentTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
@@ -31,6 +32,7 @@ class ShowOrgAgent extends OrgAction
     use WithProcurementAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithAgentOrganisation;
+    use WithAgentEditAction;
 
     public function handle(OrgAgent $orgAgent): OrgAgent
     {
@@ -78,15 +80,10 @@ class ShowOrgAgent extends OrgAction
                     'subNavigation' => $this->getOrgAgentNavigation($orgAgent),
                     'title'         => $orgAgent->agent->organisation->name,
                     'actions'       => [
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Edit'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'show.edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
+                        $this->agentEditAction(
+                            'grp.org.procurement.org_agents.show.edit',
+                            $request->route()->originalParameters()
+                        ),
                     ],
                     'create_direct' => $this->canEdit ? [
                         'route' => [
@@ -134,8 +131,8 @@ class ShowOrgAgent extends OrgAction
                     : Inertia::optional(fn () => GetOrgAgentShowcase::run($orgAgent)),
 
                 OrgAgentTabsEnum::HISTORY->value => $this->tab == OrgAgentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgAgent))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgAgent)))
+                    fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value));
     }
@@ -205,14 +202,14 @@ class ShowOrgAgent extends OrgAction
     {
         $previous = $this->siblings($orgAgent)->where('slug', '<', $orgAgent->slug)->orderBy('slug', 'desc')->first();
 
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($previous, $request);
     }
 
     public function getNext(OrgAgent $orgAgent, ActionRequest $request): ?array
     {
         $next = $this->siblings($orgAgent)->where('slug', '>', $orgAgent->slug)->orderBy('slug')->first();
 
-        return $this->getNavigation($next, $request->route()->getName());
+        return $this->getNavigation($next, $request);
     }
 
     private function siblings(OrgAgent $orgAgent): Builder
@@ -220,26 +217,22 @@ class ShowOrgAgent extends OrgAction
         return OrgAgent::where('organisation_id', $orgAgent->organisation_id)->whereHas('agent');
     }
 
-    private function getNavigation(?OrgAgent $orgAgent, string $routeName): ?array
+    private function getNavigation(?OrgAgent $orgAgent, ActionRequest $request): ?array
     {
         if (!$orgAgent) {
             return null;
         }
 
-        return match ($routeName) {
-            'grp.org.procurement.org_agents.show' => [
-                'label' => $orgAgent->agent->organisation->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation' => $orgAgent->organisation->slug,
-                        'orgAgent'     => $orgAgent->slug
-                    ]
-
-                ]
+        return [
+            'label' => $orgAgent->agent->organisation->name,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => array_merge(
+                    $request->route()->originalParameters(),
+                    ['orgAgent' => $orgAgent->slug]
+                ),
             ],
-            default => null,
-        };
+        ];
     }
 
 }

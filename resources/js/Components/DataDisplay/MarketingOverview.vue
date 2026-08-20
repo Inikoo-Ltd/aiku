@@ -181,6 +181,11 @@ const hasDecimals = (values: number[]) => values.some(value => !Number.isInteger
 
 const unsubscribedHelp = trans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
 const pctOf = (part: number, whole: number) => whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
+
+/* Kept to two decimals: share-weighted orders against visits rounds to 0% below half a percent,
+   which reads as nobody having bought when somebody did. */
+const conversionRate = (orders: number, visits: number) =>
+    visits > 0 ? (orders / visits * 100).toFixed(2) + '%' : '—'
 const netRegistrations = (registrations: number, unsubscribed: number, decimals = false) =>
     count(registrations - unsubscribed, decimals).replace('-', '−')
 
@@ -421,7 +426,7 @@ const typeLabel: Record<string, string> = {
                                         <template v-if="group.visits > 0">{{ count(group.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
                                     </span>
                                     <span class="text-xs font-normal" :class="group.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                        <template v-if="group.visits > 0">{{ pctOf(group.orders, group.visits) }}</template>
+                                        <template v-if="group.visits > 0">{{ conversionRate(group.orders, group.visits) }}</template>
                                     </span>
                                 </span>
                             </td>
@@ -474,7 +479,7 @@ const typeLabel: Record<string, string> = {
                                         <template v-if="channel.visits > 0">{{ count(channel.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
                                     </span>
                                     <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : ''">
-                                        <template v-if="channel.visits > 0">{{ pctOf(channel.orders, channel.visits) }}</template>
+                                        <template v-if="channel.visits > 0">{{ conversionRate(channel.orders, channel.visits) }}</template>
                                     </span>
                                 </span>
                             </td>
@@ -495,7 +500,7 @@ const typeLabel: Record<string, string> = {
                                         <template v-else>{{ count(channel.registrations, decimalColumns.registrations) }}</template>
                                     </span>
                                     <span class="text-[#d03b3b]">
-                                        <template v-if="channel.unsubscribed > 0">−{{ locale.number(channel.unsubscribed) }}</template>
+                                        <template v-if="channel.unsubscribed > 0">−{{ count(channel.unsubscribed, true) }}</template>
                                     </span>
                                 </span>
                             </td>
@@ -521,7 +526,7 @@ const typeLabel: Record<string, string> = {
                                         {{ count(channelTotals.orders, decimalColumns.orders) }} {{ trans('bought') }}
                                     </span>
                                     <span class="text-xs font-normal" :class="channelTotals.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                        {{ pctOf(channelTotals.orders, channelTotals.visits) }}
+                                        {{ conversionRate(channelTotals.orders, channelTotals.visits) }}
                                     </span>
                                 </span>
                             </td>

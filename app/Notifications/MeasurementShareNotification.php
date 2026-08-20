@@ -8,7 +8,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Arr;
-use NotificationChannels\Fcm\FcmMessage;
 
 class MeasurementShareNotification extends Notification implements ShouldQueue
 {
@@ -50,22 +49,6 @@ class MeasurementShareNotification extends Notification implements ShouldQueue
                     ->action('Notification Action', url('/'))
                     ->line('Thank you for using our application!');
     }
-
-    public function toFcm($notifiable): FcmMessage
-    {
-        $measurement = $this->measurement;
-
-        return FcmMessage::create()
-            ->data([
-                'type' => 'measurement-share'
-            ])
-            ->notification(
-                \NotificationChannels\Fcm\Resources\Notification::create()
-                ->title($measurement['title'])
-                ->body($measurement['body'])
-            );
-    }
-
 
     /**
      * Get the array representation of the notification.

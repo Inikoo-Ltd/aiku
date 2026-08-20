@@ -107,6 +107,8 @@ class StoreAgent extends OrgAction
             $rules['fetched_at']  = ['sometimes', 'date'];
             $rules['created_at']  = ['sometimes', 'date'];
             $rules['deleted_at']  = ['sometimes', 'date'];
+            $rules['data']        = ['sometimes', 'array'];
+            $rules['settings']    = ['sometimes', 'array'];
         }
 
         return $rules;

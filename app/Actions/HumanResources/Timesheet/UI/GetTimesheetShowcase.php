@@ -22,11 +22,6 @@ class GetTimesheetShowcase
         $workStartAt = $timesheet->start_at;
         $workEndAt = $timesheet->end_at;
 
-        if ($timesheet->organisation?->code === 'SK') {
-            $workStartAt = $workStartAt?->copy()->subHour();
-            $workEndAt = $workEndAt?->copy()->subHour();
-        }
-
         $overtime = CalculateTimesheetOvertime::run($timesheet);
 
         return [

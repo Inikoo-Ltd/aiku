@@ -6,7 +6,6 @@ use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Transaction;
-use Illuminate\Support\Facades\DB;
 
 trait WithCalculateTransactionDiscount
 {
@@ -32,19 +31,6 @@ trait WithCalculateTransactionDiscount
         ];
 
         $transaction->update($transactionData);
-
-        // Reupdate based on Curent Discount Factor
-        if ($transaction->current_discount_factor) {
-            $percentageOff      = 1 - $transaction->current_discount_factor;
-            $discountedAmount   = round(bcmul($transaction->gross_amount, $percentageOff, 6), 2); // Had to use this. Round gets messed up sometimes due to Float pointer (HELP-2732)
-
-            DB::table('transactions')->where('id', $transaction->id)
-                ->update(
-                    [
-                        'net_amount'              => (float) $transaction->gross_amount - $discountedAmount,
-                    ]
-                );
-        }
 
         // Recalculate Order Total
         CalculateOrderTotalAmounts::run($transaction->order, false, false);

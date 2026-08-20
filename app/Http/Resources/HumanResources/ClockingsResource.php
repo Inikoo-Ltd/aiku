@@ -25,10 +25,6 @@ class ClockingsResource extends JsonResource
     {
         $clockedAt = $this->clocked_at;
 
-        if (($this->organisation_code ?? null) === 'SK') {
-            $clockedAt = $clockedAt?->copy()->subHour();
-        }
-
         return [
             'id'                       => $this->id,
             'type'                     => $this->type,

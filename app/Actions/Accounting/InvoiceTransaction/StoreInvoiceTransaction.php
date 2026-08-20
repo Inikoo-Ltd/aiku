@@ -28,7 +28,10 @@ class StoreInvoiceTransaction extends OrgAction
 
     public function handle(Invoice $invoice, Transaction|HistoricAsset $model, array $modelData): InvoiceTransaction
     {
-        data_set($modelData, 'date', now(), overwrite: false);
+        // was: data_set($modelData, 'date', now(), overwrite: false);
+        // defaulting to now() stamped historical transactions with the fetch time instead of the
+        // invoice date, which piled years of sales into the fetch window, HELP-2959
+        data_set($modelData, 'date', $invoice->date ?? now(), overwrite: false);
 
         if ($model instanceof Transaction) {
             data_set($modelData, 'model_type', $model->model_type);

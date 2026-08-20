@@ -18,6 +18,7 @@ trait WithSupplierProductJsonColumns
     private const DATA_FIELDS = [
         'minimum_carton_order',
         'delivery_time',
+        'unit_expense',
     ];
 
     private const NULLABLE_NUMERIC_FIELDS = [
@@ -25,6 +26,7 @@ trait WithSupplierProductJsonColumns
         'extra_costs',
         'minimum_carton_order',
         'delivery_time',
+        'unit_expense',
     ];
 
     /**
@@ -45,6 +47,7 @@ trait WithSupplierProductJsonColumns
         return [
             'minimum_carton_order' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'delivery_time'        => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'unit_expense'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];
     }
 

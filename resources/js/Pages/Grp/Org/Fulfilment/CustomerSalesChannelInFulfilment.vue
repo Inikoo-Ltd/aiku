@@ -2,6 +2,7 @@
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import CustomerShowcase from "@/Components/Showcases/Grp/CustomerShowcase.vue";
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { trans } from "laravel-vue-i18n";
@@ -25,6 +26,7 @@ const props = defineProps<{
       number_portfolios: number
     }
   }
+  history?: {}
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -32,7 +34,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
   const components: Component = {
-    showcase: CustomerShowcase
+    showcase: CustomerShowcase,
+    history: TableHistories
 
   };
 
@@ -46,8 +49,9 @@ const isModalAddress = ref(false);
   <PageHeading :data="pageHead" />
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
+  <component v-if="currentTab === 'history'" :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 
-  <div class="p-6">
+  <div v-else class="p-6">
     <div aria-label="trans('Statistic')" class="border border-gray-300 rounded-lg w-full sm:max-w-lg">
       <div v-if="route().params.platform !== 'manual'" class="py-3 px-2 flex items-center justify-between gap-x-4 w-full border-b border-gray-900/15">
         <dl v-if="true" class="flex-auto pl-3">

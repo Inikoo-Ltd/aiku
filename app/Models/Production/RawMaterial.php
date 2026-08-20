@@ -83,6 +83,16 @@ class RawMaterial extends Model implements Auditable
         'data' => '{}',
     ];
 
+    protected array $auditInclude = [
+        'code',
+        'description',
+        'type',
+        'state',
+        'unit',
+        'unit_cost',
+        'stock_status',
+    ];
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

@@ -28,6 +28,14 @@ const isSubSectionActive = (routeName: string) => {
 
 const isLoading = ref<string | boolean>(false)
 
+const getTooltip = (subSection: SubSection) => {
+    if (!subSection.tooltip || subSection.tooltip === subSection.label) {
+        return undefined
+    }
+
+    return capitalize(subSection.tooltip)
+}
+
 // Build color from theme with tailwind-safe fallback
 const mainColor = computed(() => {
     const raw = layoutStore.app.theme[0] || "#3B82F6" // default to Tailwind blue-500
@@ -48,7 +56,7 @@ const mainColor = computed(() => {
                     subSection.type == 'icon' 
                         ? `px-2 !ml-auto` 
                         : `gap-2 px-4`
-                ]" :title="capitalize(subSection.tooltip ?? subSection.label ?? '')"
+                ]" :title="getTooltip(subSection)"
                 @start="() => isLoading = 'subSection' + idxSubSec" @finish="() => isLoading = false">
                 <LoadingIcon v-if="isLoading === 'subSection' + idxSubSec" class="h-4 w-4" />
                 <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" fixed-width class="h-4 w-4"/>

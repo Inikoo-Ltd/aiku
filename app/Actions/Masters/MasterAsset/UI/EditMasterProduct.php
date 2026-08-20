@@ -14,6 +14,7 @@ use App\Actions\Masters\MasterAsset\TaxPresetBasketProgress;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
@@ -117,7 +118,6 @@ class EditMasterProduct extends OrgAction
                         ]
                     ]
                 ],
-
                 'formData' => [
                     'blueprint' => $this->getBlueprint($masterAsset),
                     'args'      => [
@@ -139,6 +139,8 @@ class EditMasterProduct extends OrgAction
      */
     public function getBlueprint(MasterAsset $masterProduct): array
     {
+        $masterShop = $masterProduct->masterShop;
+
         $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) {
             /** @var MorphPivot $pivot */
             $pivot = $tradeUnit->getRelationValue('pivot');
@@ -149,7 +151,7 @@ class EditMasterProduct extends OrgAction
             ];
         });
 
-        $currenciesRate = GetMasterShopCurrenciesRate::run($masterProduct->masterShop);
+        $currenciesRate = GetMasterShopCurrenciesRate::run($masterShop);
 
         $costs = null;
         if ($masterProduct->effective_cost !== null) {
@@ -364,7 +366,7 @@ class EditMasterProduct extends OrgAction
                         'fetchRoute' => [
                             'name'       => 'grp.json.master-family.all-master-family',
                             'parameters' => [
-                                'masterShop'                    => $masterProduct->masterShop->slug,
+                                'masterShop'                    => $masterShop->slug,
                                 'withMasterProductCategoryStat' => true,
                             ]
                         ],
@@ -396,7 +398,7 @@ class EditMasterProduct extends OrgAction
                         'route'        => [
                             'name'       => 'grp.masters.master_shops.show.master_products.composition',
                             'parameters' => [
-                                'masterShop'    => $masterProduct->masterShop->slug,
+                                'masterShop'    => $masterShop->slug,
                                 'masterProduct' => $masterProduct->slug,
                             ]
                         ],
@@ -433,8 +435,21 @@ class EditMasterProduct extends OrgAction
                     ],
                 ],
             ],
-
-
+            $masterShop->type == ShopTypeEnum::DROPSHIPPING ? [] : [
+                'label'  => __('Offer Details'),
+                'icon'   => 'fa-light fa-badge-percent',
+                'fields'        => [
+                    'is_golden_product' => [
+                        'type'          => 'toggle',
+                        'label'         => __('Golden Product'),
+                        'value'         => $masterProduct->is_golden_product,
+                        'information'   => __("Would mark the product as Golden Product, which would apply Gold Reward offer to all siblings in basket when a customer added it"),
+                        'warningText'   => __('Modifying this setting would mark the product as Golden Product, which would apply Gold Reward offer to all siblings in basket when a customer added it').'. '.__('Are you sure you want to do this?'),
+                        'noSaveButton'    => true,
+                        'submitOnConfirm' => true,
+                    ],
+                ]
+            ],
         ];
     }
 

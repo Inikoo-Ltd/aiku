@@ -67,8 +67,22 @@ class FetchAuroraPurchaseOrder extends FetchAurora
             "InProcess" => PurchaseOrderStateEnum::IN_PROCESS,
             "Submitted" => PurchaseOrderStateEnum::SUBMITTED,
             "Cancelled" => PurchaseOrderStateEnum::CANCELLED,
+            "Received", "Checked", "QC_Pass", "Placed", "Costing", "InvoiceChecked" => PurchaseOrderStateEnum::SETTLED,
+            "NoReceived" => PurchaseOrderStateEnum::NOT_RECEIVED,
             default => PurchaseOrderStateEnum::CONFIRMED,
         };
+
+        $settledAt    = null;
+        $notReceivedAt = null;
+        if ($state == PurchaseOrderStateEnum::SETTLED) {
+            $settledAt = $this->parseDatetime($this->auroraModelData->{'Purchase Order Consolidated Date'})
+                ?? $this->parseDatetime($this->auroraModelData->{'Purchase Order Checked Date'})
+                ?? $this->parseDatetime($this->auroraModelData->{'Purchase Order Received Date'});
+            $date = $settledAt ?? $confirmedAt ?? $date;
+        }
+        if ($state == PurchaseOrderStateEnum::NOT_RECEIVED) {
+            $notReceivedAt = $this->parseDatetime($this->auroraModelData->{'Purchase Order Cancelled Date'});
+        }
 
 
         if ($state == PurchaseOrderStateEnum::SUBMITTED) {
@@ -116,15 +130,23 @@ class FetchAuroraPurchaseOrder extends FetchAurora
         );
 
 
-        $data                               = [];
+        $estimatedReceivingDate = $this->parseDatetime($this->auroraModelData->{'Purchase Order Estimated Receiving Date'});
+
+        $data = array_filter([
+            'delivery_type'            => strtolower($this->auroraModelData->{'Purchase Order Type'} ?? ''),
+            'incoterm'                 => $this->parseIncoterm($this->auroraModelData->{'Purchase Order Incoterm'}),
+            'port_of_export'           => $this->auroraModelData->{'Purchase Order Port of Export'},
+            'port_of_import'           => $this->auroraModelData->{'Purchase Order Port of Import'},
+            'delivery_address'         => $this->auroraModelData->{'Purchase Order Warehouse Address'},
+            'terms_and_conditions'     => $this->auroraModelData->{'Purchase Order Terms and Conditions'},
+            'estimated_receiving_date' => $estimatedReceivingDate?->toDateString(),
+        ]);
         $this->parsedData["purchase_order"] = [
-            'date'         => $date,
-            'submitted_at' => $submittedAt,
-            'confirmed_at' => $confirmedAt,
-            //'manufactured_at' => $this->parseDatetime($this->auroraModelData->{'Purchase Order Manufactured Date'}),
-            //'received_at'     => $this->parseDatetime($this->auroraModelData->{'Purchase Order Received Date'}),
-            //'checked_at'      => $this->parseDatetime($this->auroraModelData->{'Purchase Order Checked Date'}),
-            //'settled_at'      => $this->parseDatetime($this->auroraModelData->{'Purchase Order Consolidated Date'}),
+            'date'            => $date,
+            'submitted_at'    => $submittedAt,
+            'confirmed_at'    => $confirmedAt,
+            'settled_at'      => $settledAt,
+            'not_received_at' => $notReceivedAt,
 
             'parent_code' => $this->auroraModelData->{'Purchase Order Parent Code'},
             'parent_name' => $this->auroraModelData->{'Purchase Order Parent Name'},
@@ -135,7 +157,11 @@ class FetchAuroraPurchaseOrder extends FetchAurora
 
             "cost_items"    => $this->auroraModelData->{'Purchase Order Items Net Amount'},
             "cost_shipping" => $this->auroraModelData->{'Purchase Order Shipping Net Amount'},
+            "cost_extra"    => $this->auroraModelData->{'Purchase Order Extra Cost Amount'},
+            "cost_tax"      => $this->auroraModelData->{'Purchase Order Total Tax Amount'},
             "cost_total"    => $this->auroraModelData->{'Purchase Order Total Amount'},
+
+            "estimated_received_at" => $estimatedReceivingDate,
 
             "source_id"       => $this->organisation->id.':'.$this->auroraModelData->{'Purchase Order Key'},
             "org_exchange"    => $org_exchange,

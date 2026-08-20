@@ -67,7 +67,7 @@ class GetProductForEbay
         $listings = [];
 
         foreach ($inventoryItems as $inventoryItem) {
-            $offers = Arr::get($offersBySku, (string) Arr::get($inventoryItem, 'sku'));
+            $offers = $offersBySku[(string) Arr::get($inventoryItem, 'sku')] ?? null;
 
             if (blank($offers)) {
                 continue;

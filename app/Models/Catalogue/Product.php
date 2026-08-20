@@ -398,6 +398,9 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_media',
         'not_follow_master_trade_units',
         'is_golden_product',
+        'barcode',
+        'is_for_sale',
+        'exclusive_for_customer_id',
     ];
 
     public function getRouteKeyName(): string

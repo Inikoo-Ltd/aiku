@@ -18,7 +18,7 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\UI\Procurement\OrgSupplierProductTabsEnum;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Procurement\PurchaseOrderResource;
+use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\Http\Resources\SupplyChain\SupplierProductResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
@@ -94,12 +94,12 @@ class ShowOrgSupplierProduct extends OrgAction
                     : Inertia::optional(fn () => GetOrgSupplierProductShowcase::run($orgSupplierProduct)),
 
                 OrgSupplierProductTabsEnum::PURCHASE_ORDERS->value => $this->tab == OrgSupplierProductTabsEnum::PURCHASE_ORDERS->value ?
-                    fn () => PurchaseOrderResource::collection(IndexPurchaseOrders::run($orgSupplierProduct))
-                    : Inertia::optional(fn () => PurchaseOrderResource::collection(IndexPurchaseOrders::run($orgSupplierProduct))),
+                    fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgSupplierProduct))
+                    : Inertia::optional(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgSupplierProduct))),
 
                 OrgSupplierProductTabsEnum::HISTORY->value => $this->tab == OrgSupplierProductTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct))),
+                    fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct, OrgSupplierProductTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct, OrgSupplierProductTabsEnum::HISTORY->value))),
             ],
         )->table(IndexPurchaseOrders::make()->tableStructure(parent: $orgSupplierProduct, prefix: OrgSupplierProductTabsEnum::PURCHASE_ORDERS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: OrgSupplierProductTabsEnum::HISTORY->value));

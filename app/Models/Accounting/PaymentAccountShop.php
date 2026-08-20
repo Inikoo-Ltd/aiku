@@ -71,6 +71,14 @@ class PaymentAccountShop extends Model implements Auditable
 
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'state',
+        'type',
+        'show_in_checkout',
+        'checkout_display_position',
+        'invoice_footer',
+    ];
+
     public function generateTags(): array
     {
         return [

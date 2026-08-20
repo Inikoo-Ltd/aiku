@@ -73,6 +73,7 @@ const workshopLoaders: Record<string, AsyncComponentLoader> = {
     'product-1': () => import('@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductWorkshop.vue'),
     'product-1@b2b': () => import('@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductWorkshop.vue'),
     'product-2': () => import('@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductWorkshop.vue'),
+    'product-3': () => import('@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductWorkshop.vue'),
 
     //product list
     'products-1': () => import('@/Components/CMS/Webpage/Products/Dropshipping/ListProductsWorkshop.vue'),
@@ -137,6 +138,7 @@ const translationLoaders: Record<string, AsyncComponentLoader> = {
 const productRenderB2bLoaders: Record<string, AsyncComponentLoader> = {
     'product-1': () => import('@/Components/CMS/Webpage/Product1/Ecommerce/Product1WorkshopEcom.vue'),
     'product-2': () => import('@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'),
+    'product-3': () => import('@/Components/CMS/Webpage/Product3/Product3WorkshopEcom.vue'),
 }
 
 const productRenderDropshippingLoaders: Record<string, AsyncComponentLoader> = {

@@ -122,9 +122,6 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
         };
     }
 
-    /**
-     * Portfolios already linked and live on the platform have nothing left to match
-     */
     private function getPortfoliosToMatch(CustomerSalesChannel $customerSalesChannel, array $modelData): HasMany
     {
         return $customerSalesChannel
@@ -136,17 +133,11 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
                     ->orWhere('platform_status', false);
             })
             ->when(
-                Arr::get($modelData, 'portfolios'),
-                fn ($query, $portfolioIds) => $query->whereIn('id', $portfolioIds)
+                Arr::has($modelData, 'portfolios'),
+                fn ($query) => $query->whereIn('id', Arr::get($modelData, 'portfolios', []))
             );
     }
 
-    /**
-     * Bundles go up to the platform under the product code rather than the portfolio SKU,
-     * so both are worth looking for.
-     *
-     * @param  array<string, string>  $listedSkus
-     */
     private function findPlatformProductId(Portfolio $portfolio, array $listedSkus): ?string
     {
         $candidateSkus = array_filter([

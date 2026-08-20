@@ -42,9 +42,12 @@ class DownloadProduct extends RetinaAction
 
         if ($type == 'products_images') {
             $filename .= '_images.zip';
-            return response()->streamDownload(function () use ($parent, $filename) {
-                ProductZipExport::make()->handle($parent, $filename);
-            }, $filename);
+
+            $zipPath = ProductZipExport::make()->handle($parent, $filename);
+
+            return response()->download($zipPath, $filename, [
+                'Content-Type' => 'application/zip',
+            ])->deleteFileAfterSend(true);
         } else {
             if ($parent instanceof Product) {
                 return Excel::download(new SingleProductExport($parent), $filename, null, [

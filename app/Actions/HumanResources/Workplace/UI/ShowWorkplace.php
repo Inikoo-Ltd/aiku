@@ -94,8 +94,8 @@ class ShowWorkplace extends OrgAction
 
 
                 WorkplaceTabsEnum::HISTORY->value => $this->tab == WorkplaceTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($workplace))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($workplace)))
+                    fn () => HistoryResource::collection(IndexHistory::run($workplace, WorkplaceTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($workplace, WorkplaceTabsEnum::HISTORY->value)))
             ]
         )->table(IndexHistory::make()->tableStructure(WorkplaceTabsEnum::HISTORY->value));
     }

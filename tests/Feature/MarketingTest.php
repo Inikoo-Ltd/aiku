@@ -1037,6 +1037,31 @@ describe('customer journey', function () {
         expect($journey['attribution_window_days'])->toBe(7)
             ->and($journey['events'][0]['in_window'])->toBeFalse();
     });
+
+    it('caps the timeline at the most recent events and reports how many were omitted', function () {
+        $cap    = GetCustomerJourney::MAX_EVENTS;
+        $extra  = 5;
+        $oldest = now()->subDays($cap + $extra + 1);
+
+        $touches = collect(range(0, $cap + $extra - 1))
+            ->map(fn (int $offset) => $oldest->copy()->addDays($offset)->timestamp.'a')
+            ->implode('|');
+
+        $customer = journeyCustomer($this->shop, $touches);
+
+        $journey = GetCustomerJourney::run($customer->refresh());
+
+        expect($journey['events'])->toHaveCount($cap)
+            ->and($journey['omitted_events'])->toBe($extra)
+            ->and($journey['events'][0]['datetime'])->toBe($oldest->copy()->addDays($extra)->toIso8601String())
+            ->and($journey['events'][$cap - 1]['datetime'])->toBe($oldest->copy()->addDays($cap + $extra - 1)->toIso8601String());
+    });
+
+    it('reports no omitted events for a short journey', function () {
+        $customer = journeyCustomer($this->shop, now()->subDays(2)->timestamp.'a');
+
+        expect(GetCustomerJourney::run($customer->refresh())['omitted_events'])->toBe(0);
+    });
 });
 
 describe('referral traffic sources', function () {
@@ -1907,6 +1932,16 @@ describe('the cost webhook', function () {
         postCosts($this->token, costPayload(['currency' => 'ZZZ']))->assertStatus(422);
 
         expect(TrafficSourceCost::where('shop_id', $this->shop->id)->count())->toBe(0);
+    });
+
+    it('revokes a token so it stops working', function () {
+        postCosts($this->token, costPayload())->assertOk();
+
+        $tokenId = explode('|', $this->token)[0];
+
+        expect(Artisan::call('traffic-source:cost-token', ['--revoke' => $tokenId]))->toBe(0);
+
+        postCosts($this->token, costPayload())->assertForbidden();
     });
 });
 
@@ -3687,6 +3722,17 @@ describe('order attribution', function () {
 
         expect($order->state)->toBe(OrderStateEnum::SUBMITTED);
         expect($order->trafficSources()->count())->toBe(1);
+    });
+
+    it('re-attributes instead of duplicating when an order is submitted again', function () {
+        createTrafficSource($this->shop, 'meta-ads', 'Meta Ads');
+
+        $this->customer->update(['traffic_sources' => '1700000000f']);
+
+        ProcessOrderTrafficSource::run($this->order->fresh());
+        ProcessOrderTrafficSource::run($this->order->fresh());
+
+        expect($this->order->trafficSources()->count())->toBe(1);
     });
 
     it('leaves the submit time attribution intact when an order without its own touch history is recalculated', function () {

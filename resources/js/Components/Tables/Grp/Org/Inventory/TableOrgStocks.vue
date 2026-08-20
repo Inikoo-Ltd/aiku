@@ -442,8 +442,8 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <span v-else class="text-gray-400">-</span>
         </template>
 
-        <template #cell(sales_grp_currency_external)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_grp_currency_external) }}</span>
+        <template #cell(sales_org_currency_external)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_org_currency_external) }}</span>
         </template>
 
         <template #cell(gross_profit)="{ item }">
@@ -454,15 +454,15 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             >{{ locale.currencyFormat(item.currency_code, item.gross_profit) }}</span>
         </template>
 
-        <template #cell(sales_grp_currency_external_delta)="{ item }">
-            <div v-if="item.sales_grp_currency_external_delta">
-                <span>{{ item.sales_grp_currency_external_delta.formatted }}</span>
+        <template #cell(sales_org_currency_external_delta)="{ item }">
+            <div v-if="item.sales_org_currency_external_delta">
+                <span>{{ item.sales_org_currency_external_delta.formatted }}</span>
                 <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive)?.icon"
+                    :icon="getIntervalChangesIcon(item.sales_org_currency_external_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[
-                        getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive).class,
-                        getIntervalStateColor(item.sales_grp_currency_external_delta.is_positive),
+                        getIntervalChangesIcon(item.sales_org_currency_external_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_org_currency_external_delta.is_positive),
                     ]"
                     fixed-width
                     aria-hidden="true"

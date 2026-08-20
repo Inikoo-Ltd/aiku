@@ -217,7 +217,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
   );
 };
 
-const debounceSaveWorkshop = (block, reload = false) => {
+const debounceSaveWorkshop = (block, reload = false, reloadIframe = false) => {
   // Clear any pending debounce timers for this block
   if (debounceTimers.value[block.id]) {
     clearTimeout(debounceTimers.value[block.id]);
@@ -270,7 +270,9 @@ const debounceSaveWorkshop = (block, reload = false) => {
         })
         /* router.reload({ only: ["webpage"] }) */
       }
-      /* sendToIframe({ key: "reload", value: {} }); */
+      if (reloadIframe) {
+        sendToIframe({ key: "reload", value: {} });
+      }
     } catch (error) {
       if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
         console.log(error)
@@ -329,15 +331,15 @@ const debouncedSaveSiteSettings = debounce(block => {
 
 const onSaveSiteSettings = block => debouncedSaveSiteSettings(block);
 
-const onSaveWorkshop = (block, sendChangeValue = true, reload = false) => {
+const onSaveWorkshop = (block, isFromSideEditor = true, reload = false) => {
   if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
-  if (sendChangeValue) {
+  if (isFromSideEditor) {
     sendToIframe({
       key: 'setWebpage',
       value: JSON.parse(JSON.stringify(data.value))
     });
   }
-  debounceSaveWorkshop(block, reload);
+  debounceSaveWorkshop(block, reload, isFromSideEditor);
 };
 
 const onSaveWorkshopFromId = (blockId, from) => {
@@ -350,7 +352,7 @@ const onSaveWorkshopFromId = (blockId, from) => {
     key: 'setWebpage',
     value: JSON.parse(JSON.stringify(data.value))
   });
-  if (block) debounceSaveWorkshop(block);
+  if (block) debounceSaveWorkshop(block, false, true);
 };
 
 provide('onSaveWorkshopFromId', onSaveWorkshopFromId);
@@ -661,6 +663,7 @@ const onApplyTemplate = (payload: {
       onSuccess: (newValue) => {
         data.value = newValue.props.webpage;
         sideKey.value++;
+        sendToIframe({ key: 'reload', value: {} });
       },
     });
 
@@ -1026,7 +1029,7 @@ console.log('props_workshop',props)
           <LoadingIcon class="w-16 h-16 text-5xl text-slate-400" />
           <span class="text-sm text-slate-400">{{ trans("Loading preview…") }}</span>
         </div>
-        <iframe ref="_iframe" :src="iframeSrc" :title="props.title" :key="sideKey"
+        <iframe ref="_iframe" :src="iframeSrc" :title="props.title"
           :class="[iframeClass, isIframeLoading ? 'invisible' : '', 'border-0 bg-white']"
           @load="isIframeLoading = false" allowfullscreen />
       </div>

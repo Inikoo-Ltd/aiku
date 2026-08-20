@@ -183,6 +183,7 @@ class IndexFamilies extends OrgAction
             'shops.code as shop_code',
             'shops.name as shop_name',
             'currencies.code as currency_code',
+            DB::raw("'".group()->currency->code."' as grp_currency_code"),
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
             'product_categories.master_product_category_id',

@@ -34,7 +34,7 @@ const ListProductsIris = async(() => import("@/Iris/Components/IrisBlocks/Produc
 const ProductRender = async(() => import("@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue"))
 const ListProductsEcomIris = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"))
 const ProductIris1 = async(() => import("@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue"))
-const ProductIris1Ecom = async(() => import("@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue"))
+const ProductIris1Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris1Ecom.vue"))
 const LuigiTrends1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue"))
 const LuigiLastSeen1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiLastSeen1Iris.vue"))
 const LuigiItemAlternatives1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiItemAlternatives1Iris.vue"))
@@ -48,23 +48,17 @@ const AnnouncementInformation2TransitionText = async(() => import("@/Iris/Compon
 const AnnouncementPromo3 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo3.vue"))
 const RenderDropshippingProduct = async(() => import("@/Iris/Components/IrisBlocks/Product/Ds/RenderDropshippingProductIris.vue"))
 const RenderEcommerceProduct = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/RenderEcommerceProductIris.vue"))
-
 const RecommendationCRB1Iris = async(() => import("@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue"))
-const ProductIris2Ecom = async(() => import("@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"))
-
+const ProductIris2Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris2Ecom.vue"))
+const ProductIris3Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris3Ecom.vue"))
 const AnnouncementInformational1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformational1Iris.vue"))
 const Products2Render = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"))
-
 const Header2Iris = async(() => import("@/Iris/Components/IrisBlocks/Header2Iris.vue"))
 const Header1Iris = async(() => import("@/Iris/Components/IrisBlocks/Header1Iris.vue"))
-
 const Topbar1FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1FulfilmentIris.vue"))
 const Topbar2FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"))
-
 const Topbar1Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1Iris.vue"))
 const Topbar2Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2Iris.vue"))
-
-
 const Menu1Workshop = async(() => import("@/Iris/Components/IrisBlocks/Menu1Iris.vue"))
 const Footer1Iris = async(() => import("@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"))
 const SeeAlso1Iris = async(() => import("@/Iris/Components/IrisBlocks/SeeAlso1Iris.vue"))
@@ -74,11 +68,9 @@ const family3Iris = async(() => import("@/Iris/Components/IrisBlocks/family3Iris
 const FamiliesIris1 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris1.vue"))
 const FamiliesIris2 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris2.vue"))
 const FamiliesIris3 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris3.vue"))
-
 const SubDepartment1Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris.vue"))
 const SubDepartment2Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris2.vue"))
 const SubDepartment3Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris3.vue"))
-
 const WowsbarBannerIris = async(() => import("@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"))
 const ImageIris = async(() => import("@/Iris/Components/IrisBlocks/ImageIris.vue"))
 const TextContentIris = async(() => import("@/Iris/Components/IrisBlocks/TextContentIris.vue"))
@@ -186,6 +178,8 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 
 		"product-2": RenderEcommerceProduct,
 
+		"product-3": RenderEcommerceProduct,
+
 		//product list
 		"products-1": shop_type === "b2b" ? ListProductsEcomIris : ListProductsIris,
 		"products-2": ListProductsEcomIris,
@@ -284,6 +278,7 @@ export const getProductRenderB2bComponent = (
 	const components: Record<string, any> = {
 		"product-1": ProductIris1Ecom,
 		"product-2": ProductIris2Ecom,
+		"product-3": ProductIris3Ecom,
 	}
 
 	return components[componentName] ?? null

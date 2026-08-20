@@ -33,6 +33,7 @@ enum OutboxCodeEnum: string
 
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
     case SEND_INVOICE_TO_CUSTOMER = 'send_invoice_to_customer';
+    // Retired Jul 2026, replaced by Gold reward reminder; cases kept because historic outboxes/dispatched_emails rows still hold these codes
     case REORDER_REMINDER = 'reorder_reminder';
     case REORDER_REMINDER_2ND = 'reorder_reminder_2nd';
     case REORDER_REMINDER_3RD = 'reorder_reminder_3rd';
@@ -355,9 +356,6 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_2,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_3,
-            OutboxCodeEnum::REORDER_REMINDER,
-            OutboxCodeEnum::REORDER_REMINDER_2ND,
-            OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
@@ -624,6 +622,26 @@ enum OutboxCodeEnum: string
             self::ABANDONED_CART_REMINDER_2,
             self::ABANDONED_CART_REMINDER_3,
             self::PRICE_CHANGE_NOTIFICATION => true,
+            default => false,
+        };
+    }
+
+    public function requiresDaysAfter(): bool
+    {
+        return match ($this) {
+            self::REVIEW_REMINDER,
+            self::REORDER_REMINDER,
+            self::REORDER_REMINDER_2ND,
+            self::REORDER_REMINDER_3RD,
+            self::GOLD_REWARD_REMINDER_1,
+            self::GOLD_REWARD_REMINDER_2,
+            self::GOLD_REWARD_REMINDER_3,
+            self::ABANDONED_CART_REMINDER_1,
+            self::ABANDONED_CART_REMINDER_2,
+            self::ABANDONED_CART_REMINDER_3,
+            self::PROSPECT_CONVERTION_1,
+            self::PROSPECT_CONVERTION_2,
+            self::PROSPECT_CONVERTION_3 => true,
             default => false,
         };
     }
