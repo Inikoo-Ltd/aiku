@@ -52,8 +52,6 @@ const setValue = (fieldData: any, value: any) => {
             [screenView.value]: value
         })
 
-        console.log('cloned after set:', cloned);
-
         emit("update:modelValue", cloned)
         return
     }
