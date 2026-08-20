@@ -10,7 +10,6 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
-use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Traits\TranslateJsonbField;
 use App\Events\MasterProductCategoryJsonbCascadeProgressEvent;
 use App\Models\Catalogue\ProductCategory;

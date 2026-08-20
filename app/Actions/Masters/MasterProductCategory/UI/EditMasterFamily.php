@@ -241,21 +241,6 @@ class EditMasterFamily extends OrgAction
                             ],
                         ] : [],
                         $masterProductCategory->masterShop->slug == 'aroma' ? [
-                            'label'  => __('Labeling Guide'),
-                            'icon'   => 'fa-light fa-file-pdf',
-                            'fields' => [
-                                'labeling_guide_file' => [
-                                    'type'        => 'file_upload',
-                                    'label'       => __('Labeling guide'),
-                                    'placeholder' => __('Upload a PDF file'),
-                                    'required'    => false,
-                                    'accept'      => '.pdf,application/pdf',
-                                    'information' => __('Downloadable labeling & compliance guide shown on the family page.'),
-                                    'value'       => null,
-                                ],
-                            ],
-                        ] : [],
-                        $masterProductCategory->masterShop->slug == 'aroma' ? [
                             'label'  => __('Storage & Shelf Life'),
                             'icon'   => 'fa-light fa-temperature-low',
                             'fields' => [
@@ -263,18 +248,18 @@ class EditMasterFamily extends OrgAction
                                     'type'    => 'family_storage_conditions',
                                     'label'   => __('Storage table'),
                                     'options' => FamilyStorageConditionEnum::valuesWithLabelsAndPlaceholders(),
-                                    'value'   => FamilyStorageConditionEnum::rows(),
+                                    'value'   => data_get($masterProductCategory->storage_option, 'storage_conditions', FamilyStorageConditionEnum::rows()),
                                 ],
                                 'storage_temperature' => [
                                     'type'        => 'input',
                                     'label'       => __('Storage temperature'),
                                     'placeholder' => __('e.g. 15°C - 25°C'),
-                                    'value'       => '',
+                                    'value'   => data_get($masterProductCategory->storage_option, 'storage_temperature', ''),
                                 ],
                                 'storage_guidelines'  => [
                                     'type'     => 'dynamic_list',
                                     'label'    => __('Storage guidelines'),
-                                    'value'    => [],
+                                    'value'   => data_get($masterProductCategory->storage_option, 'storage_guidelines', []),
                                     'fields'   => [
                                         ['key' => 'text', 'placeholder' => __('e.g. Keep products in their original packaging.')],
                                     ],

@@ -166,6 +166,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         'discontinued_at'   => 'datetime',
         'offers_data'       => 'array',
         'customize_option'  => 'array',
+        'storage_option'    => 'array',
     ];
 
     protected $attributes = [
@@ -174,6 +175,7 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         'offers_data'       => '{}',
         'web_images'        => '{}',
         'customize_option'  => '{}',
+        'storage_option'    => '{}',
     ];
 
     public function generateTags(): array

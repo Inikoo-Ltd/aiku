@@ -55,6 +55,24 @@ class UpdateProductCategory extends OrgAction
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+        if (Arr::hasAny($modelData, ['storage_conditions', 'storage_temperature', 'storage_guidelines'])) {
+            $storageOption = $productCategory->storage_option;
+
+            if (Arr::has($modelData, 'storage_conditions')) {
+                data_set($storageOption, 'storage_conditions', Arr::pull($modelData, 'storage_conditions'));
+            }
+
+            if (Arr::has($modelData, 'storage_temperature')) {
+                data_set($storageOption, 'storage_temperature', Arr::pull($modelData, 'storage_temperature'));
+            }
+            
+            if (Arr::has($modelData, 'storage_guidelines')) {
+                data_set($storageOption, 'storage_guidelines', Arr::pull($modelData, 'storage_guidelines'));
+            }
+
+            data_set($modelData, 'storage_option', $storageOption);
+        }
+
         $originalImageId = $productCategory->image_id;
         $oldState        = $productCategory->state;
 
@@ -196,6 +214,7 @@ class UpdateProductCategory extends OrgAction
             'description_i8n',
             'description_extra',
             'customize_option',
+            'storage_option',
         ])) {
             $this->productCategoryHydrators($productCategory);
 
@@ -320,6 +339,7 @@ class UpdateProductCategory extends OrgAction
             'faq.*.source_question'         => ['sometimes', 'nullable', 'string'],
             'faq.*.source_answer'           => ['sometimes', 'nullable', 'string'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
+            // customize_option
             'customize_option'              => ['sometimes', 'array'],
             'customize_option.*'            => ['sometimes', 'array'],
             'customize_option.*.key'        => ['sometimes', 'nullable', 'string'],
@@ -328,6 +348,14 @@ class UpdateProductCategory extends OrgAction
             'customize_option.*.available'  => ['sometimes', 'boolean'],
             'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
             'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', 'max:250'],
+            // storage_option               
+            'storage_conditions'            => ['sometimes', 'array'],
+            'storage_conditions.*.key'      => ['sometimes', 'nullable', 'string'],
+            'storage_conditions.*.label'    => ['sometimes', 'nullable', 'string'],
+            'storage_conditions.*.value'    => ['sometimes', 'nullable', 'string'],
+            'storage_temperature'           => ['sometimes', 'nullable', 'string'],
+            'storage_guidelines'            => ['sometimes', 'array'],
+            'storage_guidelines.*.text'     => ['sometimes', 'nullable', 'string', 'max:250'],
         ];
 
         if (!$this->strict) {

@@ -205,6 +205,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'mismatch_with_master_detected' => 'boolean',
         'not_follow_master_prices'      => 'boolean',
         'customize_option'              => 'array',
+        'storage_option'                => 'array',
     ];
 
     protected $attributes = [
@@ -213,6 +214,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'web_images'        => '{}',
         'offers_data'       => '{}',
         'customize_option'  => '{}',
+        'storage_option'    => '{}',
     ];
 
     public function toSearchableArray(): array

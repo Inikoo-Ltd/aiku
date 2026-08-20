@@ -40,6 +40,24 @@ class UpdateMasterProductCategory extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
+        if (Arr::hasAny($modelData, ['storage_conditions', 'storage_temperature', 'storage_guidelines'])) {
+            $storageOption = $masterProductCategory->storage_option;
+
+            if (Arr::has($modelData, 'storage_conditions')) {
+                data_set($storageOption, 'storage_conditions', Arr::pull($modelData, 'storage_conditions'));
+            }
+
+            if (Arr::has($modelData, 'storage_temperature')) {
+                data_set($storageOption, 'storage_temperature', Arr::pull($modelData, 'storage_temperature'));
+            }
+            
+            if (Arr::has($modelData, 'storage_guidelines')) {
+                data_set($storageOption, 'storage_guidelines', Arr::pull($modelData, 'storage_guidelines'));
+            }
+
+            data_set($modelData, 'storage_option', $storageOption);
+        }
+
         if ($masterProductCategory->type !== MasterProductCategoryTypeEnum::FAMILY) {
             Arr::pull($modelData, 'trade_unit_family_id'); // Safeguard so only family would have relationship with TradeUnitFamilyId
         }
@@ -162,6 +180,10 @@ class UpdateMasterProductCategory extends OrgAction
 
         if (Arr::has($changed, 'customize_option')) {
             CascadeMasterProductCategoryCustomizeOptionToChildren::run($masterProductCategory); // TODO: change to dispatch later
+        }
+
+        if (Arr::has($changed, 'storage_option')) {
+            CascadeMasterProductCategoryStorageOptionToChildren::run($masterProductCategory); // TODO: change to dispatch later
         }
 
         if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
@@ -313,15 +335,24 @@ class UpdateMasterProductCategory extends OrgAction
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
             'faq'                           => ['sometimes', 'array'],
             'faq.*.question'                => ['sometimes', 'nullable', 'string'],
-        'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],
-        'customize_option'              => ['sometimes', 'array'],
-        'customize_option.*'            => ['sometimes', 'array'],
-        'customize_option.*.key'        => ['sometimes', 'nullable', 'string'],
-        'customize_option.*.label'      => ['sometimes', 'nullable', 'string'],
-        'customize_option.*.icon'       => ['sometimes', 'nullable', 'string'],
-        'customize_option.*.available'  => ['sometimes', 'boolean'],
-        'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
-        'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', 'max:250'],
+            'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],
+            // customize_option
+            'customize_option'              => ['sometimes', 'array'],
+            'customize_option.*'            => ['sometimes', 'array'],
+            'customize_option.*.key'        => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.label'      => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.icon'       => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.available'  => ['sometimes', 'boolean'],
+            'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', 'max:250'],
+            // storage_option               
+            'storage_conditions'            => ['sometimes', 'array'],
+            'storage_conditions.*.key'      => ['sometimes', 'nullable', 'string'],
+            'storage_conditions.*.label'    => ['sometimes', 'nullable', 'string'],
+            'storage_conditions.*.value'    => ['sometimes', 'nullable', 'string'],
+            'storage_temperature'           => ['sometimes', 'nullable', 'string'],
+            'storage_guidelines'            => ['sometimes', 'array'],
+            'storage_guidelines.*.text'     => ['sometimes', 'nullable', 'string', 'max:250'],
         ];
 
         if (!$this->strict) {
