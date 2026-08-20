@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationCircle, faCheckCircle, faFile } from '@fas'
 import { faSpinnerThird, faArrowUp } from '@fad'
@@ -9,8 +9,25 @@ library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faArrowUp, faFil
 
 const props = defineProps(['form', 'fieldName', 'options', 'fieldData'])
 
-const fileName = ref<string>('')
 const isDragging = ref(false)
+
+const currentValue = computed(() => props.form[props.fieldName])
+
+const isPendingUpload = computed(() => currentValue.value instanceof File)
+
+const fileName = computed(() => {
+    if (isPendingUpload.value) {
+        return currentValue.value.name
+    }
+
+    return typeof currentValue.value === 'string' ? currentValue.value.trim() : ''
+})
+
+const hasError = computed(() => Boolean(props.form.errors[props.fieldName]))
+
+const hasFile = computed(() => fileName.value !== '' && !hasError.value)
+
+const previewUrl = computed(() => props.fieldData?.preview_url || props.fieldData?.url || '')
 
 const fileUploaded = (file: File | null) => {
     if (!file || !(file instanceof File)) {
@@ -18,7 +35,6 @@ const fileUploaded = (file: File | null) => {
     }
 
     props.form[props.fieldName] = file
-    fileName.value = file.name
 }
 
 const handleFileInput = (event: Event) => {
@@ -74,6 +90,7 @@ const handleDragLeave = () => {
                         {{ fileName || 'Upload a file' }}
                     </span>
                     <p v-if="!fileName" class="whitespace-nowrap">or drag and drop</p>
+                    <p v-else class="whitespace-nowrap">— click to replace</p>
                 </div>
 
                 <!-- File Type Info -->
@@ -85,13 +102,13 @@ const handleDragLeave = () => {
             <!-- Status Icons -->
             <div class="absolute top-2 right-2 flex items-center pointer-events-none">
                 <FontAwesomeIcon
-                    v-if="form.errors[fieldName]"
+                    v-if="hasError"
                     icon="fas fa-exclamation-circle"
                     class="h-5 w-5 text-red-500"
                     aria-hidden="true"
                 />
                 <FontAwesomeIcon
-                    v-if="form.recentlySuccessful"
+                    v-else-if="hasFile"
                     icon="fas fa-check-circle"
                     class="h-5 w-5 text-green-500"
                     aria-hidden="true"
@@ -113,22 +130,13 @@ const handleDragLeave = () => {
             {{ props.form.errors[props.fieldName] }}
         </div>
 
-        <!-- Success Message -->
-        <div v-if="fileName && !form.errors[fieldName]" class="mt-2 flex min-w-0 items-start gap-1 text-sm text-gray-600">
+        <!-- Selected / Uploaded File -->
+        <div v-if="hasFile" class="mt-2 flex w-[350px] items-start gap-1 truncate text-sm text-gray-600">
             <FontAwesomeIcon icon="fas fa-check-circle" class="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
-            <span class="min-w-0 break-all">File selected: <span class="font-medium">{{ fileName }}</span></span>
-        </div>
-
-        <!-- Existing File Preview -->
-        <div v-if="fieldData?.preview_url" class="mt-2 break-words text-sm">
-            <a
-                :href="fieldData.preview_url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-org-600 hover:text-org-500 underline"
-            >
-                {{ fieldData?.preview_label || 'Preview current file' }}
-            </a>
+            <span class="min-w-0 truncate" :title="fileName">
+                {{ isPendingUpload ? 'File selected:' : 'Uploaded:' }}
+                <span class="font-medium">{{ fileName }}</span>
+            </span>
         </div>
     </div>
 </template>
