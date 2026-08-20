@@ -17,6 +17,7 @@ import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { router } from "@inertiajs/vue3"
 import {
+    faMusic,
     faMicrophoneAltSlash,
     faImage,
     faTag,
@@ -84,6 +85,7 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faMusic,
     faShapes,
     faTags,
     faBiohazard,
@@ -149,7 +151,8 @@ library.add(
     faCalendarCheck,
     faPercent,
     faBusinessTime,
-    faChessClock
+    faChessClock,
+    faCameraRetro
 )
 
 const props = defineProps<{

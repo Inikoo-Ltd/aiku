@@ -84,8 +84,8 @@ class ShowFulfilmentLocation extends OrgAction
                     : Inertia::optional(fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),
 
                 FulfilmentLocationTabsEnum::HISTORY->value => $this->tab == FulfilmentLocationTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($location))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($location)))
+                    fn () => HistoryResource::collection(IndexHistory::run($location, FulfilmentLocationTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($location, FulfilmentLocationTabsEnum::HISTORY->value)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: FulfilmentLocationTabsEnum::HISTORY->value))->table(
             IndexPalletsInWarehouse::make()->tableStructure(

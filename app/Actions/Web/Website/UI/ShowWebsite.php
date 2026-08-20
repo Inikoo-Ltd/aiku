@@ -347,9 +347,9 @@ class ShowWebsite extends OrgAction
                     : Inertia::optional(fn () => CrawlsResource::collection(IndexCrawls::run($website))),
 
                 WebsiteTabsEnum::CHANGELOG->value => $this->tab == WebsiteTabsEnum::CHANGELOG->value ? fn () => HistoryResource::collection(
-                    IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published'])
+                    IndexHistory::run($website, prefix: WebsiteTabsEnum::CHANGELOG->value, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published'])
                 )
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($website, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($website, prefix: WebsiteTabsEnum::CHANGELOG->value, excludeEventScopeFilter: ['products_published', 'product_published', 'families_overview_published', 'family_published', 'sub_department_published']))),
 
                 WebsiteTabsEnum::EXTERNAL_LINKS->value => $this->tab == WebsiteTabsEnum::EXTERNAL_LINKS->value ? fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))
                     : Inertia::optional(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))),

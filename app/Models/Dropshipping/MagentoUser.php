@@ -11,9 +11,11 @@ namespace App\Models\Dropshipping;
 use App\Actions\Dropshipping\Magento\WithMagentoApiRequest;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -45,11 +47,12 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MagentoUser query()
  * @mixin \Eloquent
  */
-class MagentoUser extends Model
+class MagentoUser extends Model implements Auditable
 {
     use InCustomer;
     use HasSlug;
     use WithMagentoApiRequest;
+    use HasHistory;
 
     protected $guarded = [];
 
@@ -78,4 +81,15 @@ class MagentoUser extends Model
     {
         return $this->belongsTo(CustomerSalesChannel::class);
     }
+
+    public function generateTags(): array
+    {
+        return ['crm', 'websites'];
+    }
+
+    protected array $auditInclude = [
+        'name',
+        'status',
+        'state'
+    ];
 }

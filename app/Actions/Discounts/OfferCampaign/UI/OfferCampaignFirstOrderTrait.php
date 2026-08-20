@@ -9,6 +9,7 @@ namespace App\Actions\Discounts\OfferCampaign\UI;
 
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Discounts\OfferCampaignTabsEnum;
 use App\Http\Resources\Catalogue\OffersResource;
@@ -46,6 +47,14 @@ trait OfferCampaignFirstOrderTrait
                     'navigation' => OfferCampaignTabsEnum::navigationExcept([
                         OfferCampaignTabsEnum::GR_AMNESTY
                     ])
+                ],
+                'can_create_offer'                                   => !$offerCampaign->offers()->where('state', '!=', OfferStateEnum::FINISHED)->exists(),
+                'shop_data'                                          => [
+                    'id'            => $offerCampaign->shop_id,
+                    'slug'          => $offerCampaign->shop->slug,
+                    'currency_code' => $offerCampaign->shop->currency->code,
+                    'organisation'  => $offerCampaign->shop->organisation->slug,
+                    'offercampaign' => $offerCampaign->slug,
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)

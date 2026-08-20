@@ -184,6 +184,16 @@ test('update website', function (Website $website) {
     expect($shop->name)->toBe('Test Website Updated');
 })->depends('create b2b website');
 
+test('update website sound player style', function (Website $website) {
+    $website = UpdateWebsite::make()->action($website, ['sound_player_style' => 'mono']);
+    $website->refresh();
+
+    expect(Arr::get($website->settings, 'sound_player_style'))->toBe('mono');
+
+    expect(fn () => UpdateWebsite::make()->action($website, ['sound_player_style' => 'disco']))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+})->depends('create b2b website');
+
 test('create webpage', function (Website $website) {
     $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
 

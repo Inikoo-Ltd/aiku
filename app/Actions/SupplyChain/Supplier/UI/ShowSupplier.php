@@ -85,8 +85,8 @@ class ShowSupplier extends OrgAction
                     : Inertia::optional(fn () => GetSupplierShowcase::run($supplier)),
 
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($supplier))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplier))),
+                    fn () => HistoryResource::collection(IndexHistory::run($supplier, SupplierTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplier, SupplierTabsEnum::HISTORY->value))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
     }

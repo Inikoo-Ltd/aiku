@@ -19,6 +19,7 @@ enum IngredientTabsEnum: string
 
 
     case SHOWCASE           = 'showcase';
+    case HISTORY            = 'history';
 
 
 
@@ -28,6 +29,12 @@ enum IngredientTabsEnum: string
             IngredientTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            IngredientTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
         };
     }

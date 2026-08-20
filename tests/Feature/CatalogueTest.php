@@ -176,17 +176,13 @@ test('update shop', function (Shop $shop) {
         ->and($shop->organisation->catalogueStats->number_shops_state_open)->toBe(1);
 })->depends('create shop');
 
-test('update shop whatsapp settings independently', function (Shop $shop) {
-    $shop = UpdateShop::make()->action($shop, ['whatsapp_phone_number_id' => '1234567890']);
-    $shop->refresh();
+test('update shop settings creates audit with dotted key', function (Shop $shop) {
+    $shop = UpdateShop::make()->action($shop, ['reviews' => true]);
 
-    expect(Arr::get($shop->settings, 'whatsapp.phone_number_id'))->toBe('1234567890');
+    $audit = $shop->audits()->latest('id')->first();
 
-    $shop = UpdateShop::make()->action($shop, ['whatsapp_waba_id' => '9876543210']);
-    $shop->refresh();
-
-    expect(Arr::get($shop->settings, 'whatsapp.waba_id'))->toBe('9876543210')
-        ->and(Arr::get($shop->settings, 'whatsapp.phone_number_id'))->toBe('1234567890');
+    expect($audit)->not->toBeNull()
+        ->and($audit->new_values)->toHaveKey('settings.reviews.enabled');
 })->depends('create shop');
 
 test('seed shop permissions from command', function () {
@@ -929,4 +925,25 @@ test('repair command resyncs product ingredients and origin from trade units', f
     $product = Product::find($product->id);
     expect($product->marketing_ingredients)->toBe('Coconut Leaf')
         ->and($product->country_of_origin)->toBe('IDN');
+});
+
+test('bulk update product unit is scoped to shop', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    \App\Actions\Catalogue\Product\UpdateBulkProduct::make()->handle($shop, [
+        'products' => [
+            ['id' => $product->id, 'unit' => 'од.'],
+        ],
+    ]);
+    expect($product->refresh()->unit)->toBe('од.');
+
+    $otherShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    \App\Actions\Catalogue\Product\UpdateBulkProduct::make()->handle($otherShop, [
+        'products' => [
+            ['id' => $product->id, 'unit' => 'hacked'],
+        ],
+    ]);
+    expect($product->refresh()->unit)->toBe('од.');
 });

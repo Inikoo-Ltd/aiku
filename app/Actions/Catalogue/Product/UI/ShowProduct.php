@@ -370,8 +370,8 @@ class ShowProduct extends OrgAction
                 : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
             ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($product))
-                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($product))),
+                fn () => HistoryResource::collection(IndexHistory::run($product, ProductTabsEnum::HISTORY->value))
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($product, ProductTabsEnum::HISTORY->value))),
 
             ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run($product))

@@ -40,8 +40,10 @@ class StoreMediaFromFile
             ->usingFileName(hash('crc32b', $imageData['checksum']).'.'.$extension)
             ->toMediaCollection($collection);
 
-        UpdateIsAnimatedMedia::run($media, $imageData['path']);
-        MediaHydrateDimensions::run($media);
+        if ($type === 'image') {
+            UpdateIsAnimatedMedia::run($media, $imageData['path']);
+            MediaHydrateDimensions::run($media);
+        }
         return $media;
     }
 }

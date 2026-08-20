@@ -32,6 +32,7 @@ trait WithImageUpdate
             'art3_image_id' => 'art3',
             'art4_image_id' => 'art4',
             'art5_image_id' => 'art5',
+            'audio_id' => 'audio',
         ];
     }
 
@@ -86,6 +87,7 @@ trait WithImageUpdate
             'art3_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'art4_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'art5_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'audio_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'video_url' => ['sometimes', 'nullable'],
         ];
     }

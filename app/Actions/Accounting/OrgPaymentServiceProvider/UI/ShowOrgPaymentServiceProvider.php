@@ -156,8 +156,8 @@ class ShowOrgPaymentServiceProvider extends OrgAction
                     )),
 
                 OrgPaymentServiceProviderTabsEnum::HISTORY->value => $this->tab == OrgPaymentServiceProviderTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgPaymentServiceProvider))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgPaymentServiceProvider)))
+                    fn () => HistoryResource::collection(IndexHistory::run($orgPaymentServiceProvider, OrgPaymentServiceProviderTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgPaymentServiceProvider, OrgPaymentServiceProviderTabsEnum::HISTORY->value)))
             ]
         )
             ->table(

@@ -90,8 +90,8 @@ class ShowBarcode extends OrgAction
                 Inertia::optional(fn () => $this->jsonResponse($barcode)),
 
             BarcodeTabsEnum::HISTORY->value => $this->tab == BarcodeTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($barcode))
-                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($barcode))),
+                fn () => HistoryResource::collection(IndexHistory::run($barcode, BarcodeTabsEnum::HISTORY->value))
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($barcode, BarcodeTabsEnum::HISTORY->value))),
         ])
         ->table(IndexHistory::make()->tableStructure(prefix: BarcodeTabsEnum::HISTORY->value));
     }

@@ -270,6 +270,26 @@ test('update payment account shop', function (PaymentAccount $paymentAccount) {
     return $paymentAccount;
 })->depends('create payment account');
 
+test('retina bank transfer checkout data shows note only when set', function (PaymentAccount $paymentAccount) {
+    $paymentAccount->update(['data' => ['bank' => ['name' => 'Wise', 'iban' => 'BE89 9670 6463 3385', 'swift' => 'TRWIBEB1XXX', 'recipient' => 'Ancient Wisdom s.r.o.', 'account' => '']]]);
+    $paymentAccountShop = $paymentAccount->paymentAccountShops()->first();
+    $paymentAccountShop->update(['state' => PaymentAccountShopStateEnum::ACTIVE]);
+
+    $order        = new \App\Models\Ordering\Order();
+    $apiPoint     = new \App\Models\Accounting\OrderPaymentApiPoint();
+    $checkoutData = \App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->fresh(), $apiPoint);
+
+    expect($checkoutData['key'])->toBe('bank_transfer')
+        ->and($checkoutData['data'])->not->toHaveKeys(['note', 'swift', 'recipient']);
+
+    $paymentAccountShop->update(['data' => ['note' => 'Оплата здійснюється в євро (EUR).']]);
+    $checkoutData = \App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->fresh(), $apiPoint);
+
+    expect($checkoutData['data']['note'])->toBe('Оплата здійснюється в євро (EUR).')
+        ->and($checkoutData['data']['swift'])->toBe('TRWIBEB1XXX')
+        ->and($checkoutData['data']['recipient'])->toBe('Ancient Wisdom s.r.o.');
+})->depends('update payment account shop');
+
 test('update payment account', function ($paymentAccount) {
     $paymentAccount = UpdatePaymentAccount::make()->action(
         $paymentAccount,

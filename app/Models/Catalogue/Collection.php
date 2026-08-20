@@ -131,6 +131,17 @@ class Collection extends Model implements Auditable, HasMedia
         'offers_data' => '{}',
     ];
 
+    protected array $auditInclude = [
+        'code',
+        'name',
+        'description',
+        'description_title',
+        'description_extra',
+        'state',
+        'url',
+        'is_in_website',
+    ];
+
     public function toSearchableArray(): array
     {
         return [

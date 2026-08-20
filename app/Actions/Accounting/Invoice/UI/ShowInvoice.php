@@ -474,8 +474,8 @@ class ShowInvoice extends OrgAction
                     : Inertia::optional(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
 
                 InvoiceTabsEnum::HISTORY->value => $this->tab == InvoiceTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($invoice))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($invoice))),
+                    fn () => HistoryResource::collection(IndexHistory::run($invoice, InvoiceTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($invoice, InvoiceTabsEnum::HISTORY->value))),
 
                 InvoiceTabsEnum::ATTACHMENTS->value => $this->tab == InvoiceTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $invoice, prefix: InvoiceTabsEnum::ATTACHMENTS->value))

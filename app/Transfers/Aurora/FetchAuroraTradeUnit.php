@@ -181,7 +181,8 @@ class FetchAuroraTradeUnit extends FetchAurora
         }
 
         if (Arr::has($rawDimensions, 'type')) {
-            $dimensions['type'] = strtolower($rawDimensions['type']);
+            $type               = strtolower($rawDimensions['type']);
+            $dimensions['type'] = $type === 'cilinder' ? 'cylinder' : $type;
         } else {
             return null;
         }

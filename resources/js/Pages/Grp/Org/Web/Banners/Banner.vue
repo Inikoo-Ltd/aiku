@@ -16,6 +16,7 @@ import {capitalize} from "@/Composables/capitalize"
 import {faSign, faGlobe, faPencil, faSeedling, faPaste, faLayerGroup} from '@fal'
 import { faRocketLaunch } from '@far'
 import TableSnapshots from '@/Components/Tables/TableSnapshots.vue';
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import BannerShowcase from "@/Pages/Grp/Org/Web/Banners/BannerShowcase.vue";
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { trans } from 'laravel-vue-i18n'
@@ -32,6 +33,7 @@ const props = defineProps<{
     changelog?: object,
     showcase?: object,
     snapshots?: object,
+    history?: object,
 }>()
 
 let currentTab = ref(props.tabs.current);
@@ -43,6 +45,7 @@ const component = computed(() => {
         showcase: BannerShowcase,
         snapshots: TableSnapshots,
         details: ModelDetails,
+        history: TableHistories,
     };
     return components[currentTab.value];
 

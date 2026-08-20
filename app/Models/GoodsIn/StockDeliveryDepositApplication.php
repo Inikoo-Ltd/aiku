@@ -44,6 +44,10 @@ class StockDeliveryDepositApplication extends Model implements Auditable
         'amount' => 'decimal:2',
     ];
 
+    protected array $auditInclude = [
+        'amount',
+    ];
+
     public function aspoDeposit(): BelongsTo
     {
         return $this->belongsTo(AspoDeposit::class);

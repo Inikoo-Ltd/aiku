@@ -142,6 +142,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.iris_search_model", Arr::pull($modelData, "iris_search_model"));
         }
 
+        if (Arr::has($modelData, "sound_player_style")) {
+            data_set($modelData, "settings.sound_player_style", Arr::pull($modelData, "sound_player_style"));
+        }
+
         if (Arr::has($modelData, "return_policy")) {
             data_set($modelData, "settings.return_policy", Arr::pull($modelData, "return_policy"));
         }
@@ -273,6 +277,7 @@ class UpdateWebsite extends OrgAction
             'luigisbox_private_key'                      => ['sometimes', 'nullable', 'string'],
             'last_reindex_at'                            => ['sometimes', 'nullable', 'string'],
             'iris_search_model'                          => ['sometimes', 'string', Rule::in(['internal', 'luigi'])],
+            'sound_player_style'                         => ['sometimes', 'string', Rule::in(['rainbow', 'mono', 'wave', 'equalizer', 'minimal'])],
             'jira_help_desk_widget'                      => ['sometimes', 'nullable', 'string'],
             'return_policy'                              => ['sometimes', 'string'],
             'image'                                      => ['sometimes', 'nullable', File::image()->max(12 * 1024)],

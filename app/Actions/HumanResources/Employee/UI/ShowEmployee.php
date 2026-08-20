@@ -116,8 +116,8 @@ class ShowEmployee extends OrgAction
                     fn () => GetEmployeeShowcase::run($employee)
                     : Inertia::optional(fn () => GetEmployeeShowcase::run($employee)),
                 EmployeeTabsEnum::HISTORY->value => $this->tab == EmployeeTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($employee))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($employee))),
+                    fn () => HistoryResource::collection(IndexHistory::run($employee, EmployeeTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($employee, EmployeeTabsEnum::HISTORY->value))),
                 EmployeeTabsEnum::ATTACHMENTS->value => $this->tab == EmployeeTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($employee))
                     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($employee))),

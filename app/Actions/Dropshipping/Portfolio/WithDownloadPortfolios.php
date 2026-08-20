@@ -102,7 +102,7 @@ trait WithDownloadPortfolios
         $file     = fopen($tempFile, 'w');
 
         foreach ($csvData as $row) {
-            fputcsv($file, $row);
+            fputcsv($file, $row, ',', '"', '');
         }
 
         fclose($file);

@@ -83,6 +83,16 @@ class TaxNumber extends Model implements Auditable
 
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'country_code',
+        'number',
+        'type',
+        'status',
+        'valid',
+        'validation_type',
+        'manual_validation_notes',
+    ];
+
     /**
      * Every validity flip, whatever wrote it (online check, manual validation, number edit,
      * deletion), re-rates the owner's open orders. Invoiced orders are left alone: an issued
