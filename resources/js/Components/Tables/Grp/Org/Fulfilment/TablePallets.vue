@@ -16,6 +16,7 @@ import type { Meta, Links } from "@/types/Table"
 import { Pallet } from "@/types/Pallet"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
 
 library.add(faTrashAlt, faSignOutAlt, faSpellCheck, faCheck, faTimes, faCheckDouble, faCross, faFragile, faGhost, faBoxUp,
     faStickyNote
@@ -147,6 +148,14 @@ async function copyStoredItemValue(item: { name?: string; reference?: string; qu
                 :class="pallet.slug ? 'primaryLink' : ''">
                 {{ pallet.reference }}
             </component>
+            <Tag v-if="pallet.is_virtual" :theme="8" :closeButton="false" :label="trans('Virtual')" class="ml-1">
+                <template #label>
+                    <div class="whitespace-nowrap text-xs">
+                        <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
+                        {{ trans("Virtual") }}
+                    </div>
+                </template>
+            </Tag>
         </template>
 
 

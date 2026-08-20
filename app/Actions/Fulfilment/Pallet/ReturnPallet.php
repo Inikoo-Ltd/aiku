@@ -22,11 +22,17 @@ use Lorisleiva\Actions\ActionRequest;
 class ReturnPallet extends OrgAction
 {
     use WithActionUpdate;
+    use WithVirtualPalletGuard;
 
     private Pallet $pallet;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Pallet $pallet, bool $calculateParentTotals = true): Pallet
     {
+        $this->assertPalletIsPhysical($pallet);
+
         $pallet = UpdatePallet::run(
             pallet: $pallet,
             modelData: [

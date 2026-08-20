@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { faCheck, faTimes, faUndoAlt } from "@fal"
+import { faCheck, faTimes, faUndoAlt, faGhost } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import StoredItemsProperty from "@/Components/StoredItemsProperty.vue"
@@ -22,7 +22,7 @@ import { faCheckCircle as fasCheckCircle } from "@fas"
 import { RouteParams } from "@/types/route-params"
 
 
-library.add(faCheck, faTimes, fasCheckCircle, faEdit, faUndoAlt)
+library.add(faCheck, faTimes, fasCheckCircle, faEdit, faUndoAlt, faGhost)
 
 const props = defineProps<{
     data: {}
@@ -242,6 +242,12 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                  class="mt-1 space-x-1.5 whitespace-nowrap">
                 <span class="text-gray-400 text-sm">({{ pallet.customer_reference }})</span>
             </div>
+
+            <div v-if="pallet.is_virtual" v-tooltip="trans('This is a virtual pallet')"
+                 class="mt-1 whitespace-nowrap text-xs text-gray-400">
+                <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
+                {{ trans("Virtual") }}
+            </div>
         </template>
 
         <!-- Column: Location -->
@@ -317,7 +323,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                         <!-- <pre>{{ props.route_list?.stored_item_audit_delta?.store }}</pre>
                         <pre>{{ data }}</pre> -->
                         <div class="relative">
-                            <!-- <div 
+                            <!-- <div
                                 class="z-10 opacity-60 absolute w-full h-full top-0 left-0">
                                 <div class="skeleton h-full w-full"></div>
                             </div> -->

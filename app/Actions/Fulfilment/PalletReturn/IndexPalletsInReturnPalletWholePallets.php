@@ -66,6 +66,7 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
 
 
         $query->where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id);
+        $query->physical();
 
         $query->when(
             $palletReturn->state !== PalletReturnStateEnum::CANCEL,

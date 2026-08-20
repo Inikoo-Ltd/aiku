@@ -10,11 +10,13 @@ import { bucketQuery } from "@/Composables/bucketQuery"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link } from '@inertiajs/vue3'
 
-import { faTimes, faStickyNote } from '@fal'
+import { faTimes, faStickyNote, faGhost } from '@fal'
 import TagPallet from '@/Components/TagPallet.vue'
 import Tag from '@/Components/Tag.vue'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
 
-library.add(faTimes, faStickyNote)
+library.add(faTimes, faStickyNote, faGhost)
 
 defineProps<{
     data: {}
@@ -34,10 +36,15 @@ function palletHref(pallet: any) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: pallet }">
-          
+
             <Link :href="palletHref(pallet)" class="primaryLink">
                 {{ pallet.reference }}
             </Link>
+            <div v-if="pallet.is_virtual" v-tooltip="trans('This is a virtual pallet')"
+                class="mt-1 whitespace-nowrap text-xs text-gray-400">
+                <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
+                {{ trans("Virtual") }}
+            </div>
         </template>
 
         <template #cell(status)="{ item: pallet }">

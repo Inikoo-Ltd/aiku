@@ -19,6 +19,7 @@ class FindStoredPalletsAndAttachThemToNewRecurringBill extends OrgAction
     public function handle(RecurringBill $recurringBill): RecurringBill
     {
         $palletsInStoringState = $recurringBill->fulfilmentCustomer->pallets
+            ->where('is_virtual', false)
             ->whereIn('state', [
                 PalletStateEnum::RECEIVED,
                 PalletStateEnum::BOOKING_IN,

@@ -28,12 +28,18 @@ class UpdatePallet extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithVirtualPalletGuard;
 
 
     private Pallet $pallet;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Pallet $pallet, array $modelData, bool $hydrateParents = true): Pallet
     {
+        $this->assertVirtualPalletCanMoveLocation($pallet, Arr::get($modelData, 'location_id'));
+
         $originalType  = $pallet->type;
         $oldLocationId = $pallet->location_id;
 
