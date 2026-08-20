@@ -38,6 +38,14 @@ const image = computed(() => customisation.value?.image)
 
 const hasImage = computed(() => Boolean(image.value?.original))
 
+const familyOptions = computed(() => {
+	const source = props.fieldValue?.family?.customize_option
+
+	return Array.isArray(source) ? source : []
+})
+
+const hasFamilyOptions = computed(() => familyOptions.value.length > 0)
+
 const defaultIcons = [
 	{ key: "packaging", icon: "fal fa-box", label: ctrans("Packaging") },
 	{ key: "fragrance", icon: "fal fa-smoke", label: ctrans("Fragrance") },
@@ -48,13 +56,17 @@ const defaultIcons = [
 ]
 
 const highlights = computed(() => {
-	const source = customisation.value?.highlights
-
-	if (!Array.isArray(source) || source.length === 0) {
-		return defaultIcons
+	if (hasFamilyOptions.value) {
+		return familyOptions.value
+			.filter((option) => option.available)
+			.map((option) => ({
+				key: option.key,
+				icon: option.icon,
+				label: option.label,
+			}))
 	}
 
-	return source
+	return defaultIcons
 })
 
 const defaultRows = [
@@ -91,13 +103,16 @@ const defaultRows = [
 ]
 
 const rows = computed(() => {
-	const source = customisation.value?.options
-
-	if (!Array.isArray(source) || source.length === 0) {
-		return defaultRows
+	if (hasFamilyOptions.value) {
+		return familyOptions.value.map((option) => ({
+			option: option.label,
+			available: option.available,
+			moq: option.moq,
+			notes: option.notes,
+		}))
 	}
 
-	return source
+	return defaultRows
 })
 
 const columns = computed(() => ({
@@ -159,6 +174,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 		</div>
 
 		<div
+			v-if="highlights.length"
 			class="mt-8 grid gap-3 md:gap-4"
 			:class="isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-6'">
 			<div v-for="highlight in highlights" :key="highlight.key ?? highlight.label">

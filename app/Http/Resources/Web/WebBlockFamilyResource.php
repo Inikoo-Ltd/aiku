@@ -10,6 +10,7 @@ namespace App\Http\Resources\Web;
 
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
+use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -44,6 +45,7 @@ class WebBlockFamilyResource extends JsonResource
             'offers_data'               => $family->offers_data,
             'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => $tag->name, 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
             'faq'                       => $family->faq,
+            'customize_option'          => FamilyCustomizeEnum::rows($family->customize_option),
             'marketing_material_route'  => [
                 'name'          => 'iris.catalogue.feeds.product_category.download_img',
                 'parameters'    => [

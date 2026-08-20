@@ -22,11 +22,13 @@ use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -162,4 +164,70 @@ test('every webpage web block type renders through the iris pipeline', function 
 
     expect($failures)->toBeEmpty(implode("\n", $failures))
         ->and(array_unique($renderedTypes))->toHaveCount($webBlockTypes->count());
+});
+
+test('family extra description block exposes the family customize options', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+
+    UpdateProductCategory::make()->action($family, [
+        'customize_option' => [
+            [
+                'key'       => 'packaging',
+                'available' => true,
+                'moq'       => '£500+',
+                'notes'     => 'Multiple packaging formats and sizes.',
+            ],
+            [
+                'key'       => 'fragrance',
+                'available' => false,
+                'moq'       => '',
+                'notes'     => '',
+            ],
+        ],
+    ]);
+
+    $webpage       = StoreProductCategoryWebpage::make()->action($family);
+    $webBlockType  = $this->website->group->webBlockTypes()->where('code', 'family-2-extra-description')->firstOrFail();
+
+    StoreModelHasWebBlock::make()->action($webpage, [
+        'web_block_type_id' => $webBlockType->id,
+        'position'          => 0,
+    ]);
+
+    $webpage = PublishWebpage::make()->action($webpage, ['comment' => 'family customize option test']);
+
+    $renderer = new class () {
+        use WithIrisGetWebpageWebBlocks;
+    };
+
+    $publishedBlocks = collect(Arr::get($webpage->published_layout, 'web_blocks', []))
+        ->filter(fn ($block) => Arr::get($block, 'type') === 'family-2-extra-description')
+        ->all();
+
+    expect($publishedBlocks)->not->toBeEmpty();
+
+    $parsed = $renderer->getIrisWebBlocks($webpage, $publishedBlocks, false);
+
+    $customizeOptions = Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family.customize_option');
+
+    expect($customizeOptions)->toHaveCount(count(FamilyCustomizeEnum::cases()));
+
+    $rowsByKey = collect($customizeOptions)->keyBy('key');
+
+    expect($rowsByKey->get('packaging'))
+        ->toMatchArray([
+            'key'       => 'packaging',
+            'icon'      => 'fal fa-box',
+            'available' => true,
+            'moq'       => '£500+',
+            'notes'     => 'Multiple packaging formats and sizes.',
+        ])
+        ->and($rowsByKey->get('fragrance')['available'])->toBeFalse()
+        ->and($rowsByKey->get('colour'))
+        ->toMatchArray([
+            'available' => false,
+            'moq'       => '',
+            'notes'     => '',
+        ]);
 });

@@ -6,42 +6,6 @@ const TextItemBlueprint = [
 	},
 ]
 
-const HighlightBlueprint = [
-	{
-		key: ["icon"],
-		label: "Icon",
-		type: "icon-picker",
-	},
-	{
-		key: ["label"],
-		label: "Label",
-		type: "text",
-	},
-]
-
-const CustomisationOptionBlueprint = [
-	{
-		key: ["option"],
-		label: "Option",
-		type: "text",
-	},
-	{
-		key: ["available"],
-		label: "Available",
-		type: "switch",
-	},
-	{
-		key: ["moq"],
-		label: "MOQ",
-		type: "text",
-	},
-	{
-		key: ["notes"],
-		label: "Notes",
-		type: "editorhtml",
-	},
-]
-
 export default {
 	blueprint: [
 		/* {
@@ -312,22 +276,6 @@ export default {
 					],
 				},
 				{
-					key: ["highlights"],
-					name: "Highlights",
-					type: "array-data",
-					props_data: {
-						blueprint: HighlightBlueprint,
-						order_name: "highlight",
-						can_drag: true,
-						can_delete: true,
-						can_add: true,
-						new_value_data: {
-							icon: ["fal", "box"],
-							label: "New Highlight",
-						},
-					},
-				},
-				{
 					name: "Highlight Style",
 					key: ["highlight", "container", "properties"],
 					replaceForm: [
@@ -394,24 +342,6 @@ export default {
 							type: "text",
 						},
 					],
-				},
-				{
-					key: ["options"],
-					name: "Options",
-					type: "array-data",
-					props_data: {
-						blueprint: CustomisationOptionBlueprint,
-						order_name: "option",
-						can_drag: true,
-						can_delete: true,
-						can_add: true,
-						new_value_data: {
-							option: "New Option",
-							available: true,
-							moq: "",
-							notes: "",
-						},
-					},
 				},
 				{
 					name: "Contact",
