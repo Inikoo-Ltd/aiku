@@ -52,3 +52,25 @@ it('masks laravel placeholders so drivers never see them', function () {
     expect(FakeTranslationDriver::$seenTexts['text_to_translate'])->not->toContain(':name')
         ->and($translated['text_to_translate'])->toBe('hello :name [fr]');
 });
+
+it('strips json escaping echoed back by translation drivers', function () {
+    $translate = App\Actions\Helpers\Translations\Translate::make();
+
+    expect($translate->unescapeJsonEchoes(
+        '<p><strong>Hecate</strong><span style="color: #333333;">oil</span></p>',
+        '<p><strong>Hécate<\/strong><span style=\"color: #333333;\">huile</span></p>'
+    ))->toBe('<p><strong>Hécate</strong><span style="color: #333333;">huile</span></p>');
+});
+
+it('leaves translations alone when the source itself carries backslashes or json', function () {
+    $translate = App\Actions\Helpers\Translations\Translate::make();
+
+    expect($translate->unescapeJsonEchoes('C:\\path', 'C:\\chemin'))->toBe('C:\\chemin')
+        ->and($translate->unescapeJsonEchoes('{"q":"a"}', '{"q":"une"}'))->toBe('{"q":"une"}');
+});
+
+it('strips nested json escaping and unicode escapes down to plain text', function () {
+    expect(App\Actions\Helpers\Translations\Translate::stripJsonEscapes(
+        '<ul style=\\\\"padding: 0px\\\\"><li>Bag \\u2013 Nomad<\/li>all\\\'interno</ul>'
+    ))->toBe('<ul style="padding: 0px"><li>Bag – Nomad</li>all\'interno</ul>');
+});
