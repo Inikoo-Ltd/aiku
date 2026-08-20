@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted, computed, defineAsyncComponent } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -15,9 +15,12 @@ import { ulid } from 'ulid'
 import Image from '../../Common/Components/Image.vue'
 import Dialog from 'primevue/dialog'
 
+const ProductSoundButton = defineAsyncComponent(() => import('@/Iris/Components/ProductSoundButton.vue'))
+
 const props = defineProps<{
   images: { source: string; thumbnail: string; alt: string }[]
   video?: string
+  audio?: string
   breakpoints?: {
     [key: number]: { slidesPerView: number }
   }
@@ -108,43 +111,48 @@ const enableLoop = computed(() => totalSlides.value > 1)
 <template>
   <div class="w-full flex flex-col items-center relative isolate">
     <!-- Main Swiper -->
-    <Swiper :key="keySwiperMain" :slides-per-view="1"   :loop="enableLoop" :autoplay="false" :navigation="navigation"
-      :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
-      class="aspect-square w-full rounded-lg mb-4">
-      <!-- Shared Navigation Buttons -->
-      <div class="absolute inset-0 pointer-events-none z-50">
-        <div ref="prevEl"
-          class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-          <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" />
-        </div>
-        <div ref="nextEl"
-          class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
-          <FontAwesomeIcon fixed-width :icon="faChevronCircleRight" />
-        </div>
-      </div>
-
-      <!-- Image Slides -->
-      <SwiperSlide v-for="(image, index) in props.images" :key="`img-${index}`"
-        class="flex justify-center items-center">
-        <div
-          class=" w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
-          @click="openImageModal(index)">
-          <Image :src="image.source" :alt="image.alt" class="w-full h-full flex items-center justify-center"
-            :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
-        </div>
-      </SwiperSlide>
-
-      <!-- Video Slide -->
-      <SwiperSlide v-if="props.video" key="video">
-        <div class="w-full aspect-square flex items-center justify-center  rounded-lg overflow-hidden cursor-pointer"
-          @click="openVideoModal">
-          <div class="relative w-full h-full flex items-center justify-center">
-            <iframe class="w-full h-full  pointer-events-none" :src="props.video" frameborder="0"
-              allow="autoplay; fullscreen" allowfullscreen></iframe>
+    <div class="relative w-full mb-4">
+      <Swiper :key="keySwiperMain" :slides-per-view="1"   :loop="enableLoop" :autoplay="false" :navigation="navigation"
+        :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
+        class="aspect-square w-full rounded-lg">
+        <!-- Shared Navigation Buttons -->
+        <div class="absolute inset-0 pointer-events-none z-50">
+          <div ref="prevEl"
+            class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+            <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" />
+          </div>
+          <div ref="nextEl"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+            <FontAwesomeIcon fixed-width :icon="faChevronCircleRight" />
           </div>
         </div>
-      </SwiperSlide>
-    </Swiper>
+
+        <!-- Image Slides -->
+        <SwiperSlide v-for="(image, index) in props.images" :key="`img-${index}`"
+          class="flex justify-center items-center">
+          <div
+            class=" w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
+            @click="openImageModal(index)">
+            <Image :src="image.source" :alt="image.alt" class="w-full h-full flex items-center justify-center"
+              :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
+          </div>
+        </SwiperSlide>
+
+        <!-- Video Slide -->
+        <SwiperSlide v-if="props.video" key="video">
+          <div class="w-full aspect-square flex items-center justify-center  rounded-lg overflow-hidden cursor-pointer"
+            @click="openVideoModal">
+            <div class="relative w-full h-full flex items-center justify-center">
+              <iframe class="w-full h-full  pointer-events-none" :src="props.video" frameborder="0"
+                allow="autoplay; fullscreen" allowfullscreen></iframe>
+            </div>
+          </div>
+        </SwiperSlide>
+      </Swiper>
+
+      <!-- Sound sample, kept outside <Swiper> so it is not picked up as a slide -->
+      <ProductSoundButton v-if="props.audio" :src="props.audio" placement="bottom-left" />
+    </div>
 
     <!-- Thumbnail Swiper -->
     <div class="relative w-full" :class="isThumbLocked ? '' : 'px-8'">
