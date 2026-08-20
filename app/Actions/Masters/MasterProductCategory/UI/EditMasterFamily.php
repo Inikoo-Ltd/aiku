@@ -191,8 +191,6 @@ class EditMasterFamily extends OrgAction
                                     'labelProp'  => 'code',
                                     'value'      => $masterProductCategory->masterSubDepartment->id ?? $masterProductCategory->masterDepartment->id ?? null,
                                 ],
-
-
                             ],
 
                         ],
@@ -233,10 +231,11 @@ class EditMasterFamily extends OrgAction
                             'icon'   => 'fa-light fa-sliders-h',
                             'fields' => [
                                 'customize_option' => [
-                                    'type'    => 'family_customize',
-                                    'label'   => __('Customize'),
-                                    'options' => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
-                                    'value'   => !empty($masterProductCategory->customize_option) ? $masterProductCategory->customize_option : FamilyCustomizeEnum::rows(),
+                                    'type'                       => 'family_customize',
+                                    'label'                      => __('Customize'),
+                                    'options'                    => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
+                                    'value'                      => !empty($masterProductCategory->customize_option) ? $masterProductCategory->customize_option : FamilyCustomizeEnum::rows(),
+                                    'master_product_category_id' => $masterProductCategory->id,
                                 ],
                             ],
                         ] : [],
@@ -245,10 +244,11 @@ class EditMasterFamily extends OrgAction
                             'icon'   => 'fa-light fa-temperature-low',
                             'fields' => [
                                 'storage_conditions'  => [
-                                    'type'    => 'family_storage_conditions',
-                                    'label'   => __('Storage table'),
-                                    'options' => FamilyStorageConditionEnum::valuesWithLabelsAndPlaceholders(),
-                                    'value'   => data_get($masterProductCategory->storage_option, 'storage_conditions', FamilyStorageConditionEnum::rows()),
+                                    'type'                       => 'family_storage_conditions',
+                                    'label'                      => __('Storage table'),
+                                    'options'                    => FamilyStorageConditionEnum::valuesWithLabelsAndPlaceholders(),
+                                    'value'                      => data_get($masterProductCategory->storage_option, 'storage_conditions', FamilyStorageConditionEnum::rows()),
+                                    'master_product_category_id' => $masterProductCategory->id,
                                 ],
                                 'storage_temperature' => [
                                     'type'        => 'input',

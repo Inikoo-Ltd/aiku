@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue"
+import { computed, onMounted, onUnmounted } from "vue"
 import { trans } from "laravel-vue-i18n"
-import { get, set, isEqual } from "lodash-es"
+import { get } from "lodash-es"
+import { seedFormRows } from "./seedFormRows"
+import { useEchoMasterProductCategory } from "@/Stores/echo-master-product-category"
+import CascadeProgressIndicator from "./CascadeProgressIndicator.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 
 type StorageColumn = {
@@ -22,6 +25,7 @@ const props = defineProps<{
 	fieldName: string
 	fieldData?: {
 		options?: StorageColumn[]
+		master_product_category_id?: number
 		[key: string]: any
 	}
 }>()
@@ -64,15 +68,18 @@ const buildRows = (): StorageRow[] => {
 	})
 }
 
+const echoMasterProductCategory = useEchoMasterProductCategory()
+
+const cascadeProgress = computed(() => echoMasterProductCategory.cascadeProgress.storage_option)
+
 onMounted(() => {
-	const rebuilt = buildRows()
+	echoMasterProductCategory.subscribe(props.fieldData?.master_product_category_id)
 
-	if (isEqual(get(props.form, props.fieldName), rebuilt)) {
-		return
-	}
+	seedFormRows(props.form, props.fieldName, buildRows())
+})
 
-	props.form.defaults?.(props.fieldName, rebuilt)
-	set(props.form, props.fieldName, rebuilt)
+onUnmounted(() => {
+	echoMasterProductCategory.unsubscribe(props.fieldData?.master_product_category_id)
 })
 
 const rows = computed<StorageRow[]>(() => get(props.form, props.fieldName) ?? [])
@@ -82,6 +89,8 @@ const error = computed(() => get(props.form, ["errors", props.fieldName]))
 
 <template>
 	<div>
+		<CascadeProgressIndicator :progress="cascadeProgress" class="mb-2" />
+
 		<div class="grid gap-2 md:grid-cols-1">
 			<div v-for="row in rows" :key="row.key">
 				<label class="mb-1 block text-xs font-medium text-gray-500">

@@ -47,47 +47,37 @@ const handleDragLeave = () => {
 </script>
 
 <template>
-    <div class="w-full">
+    <div class="w-full min-w-0">
         <!-- File Upload Area -->
-        <div
+        <label
+            :for="`file-upload-${fieldName}`"
             @drop.prevent="handleDrop"
             @dragover.prevent="handleDragOver"
             @dragleave="handleDragLeave"
             :class="[
-                'relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-8 transition-colors',
+                'relative flex w-full min-w-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed px-4 py-6 transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-org-500 focus-within:ring-offset-2',
                 isDragging ? 'border-org-500 bg-org-50' : 'border-gray-300 hover:border-gray-400',
                 form.errors[fieldName] ? 'border-red-300 bg-red-50' : ''
             ]"
         >
-            <div class="flex flex-col items-center text-center space-y-2">
+            <div class="flex w-full min-w-0 flex-col items-center text-center space-y-2">
                 <!-- Icon -->
                 <FontAwesomeIcon
                     :icon="fileName ? ['fas', 'file'] : ['fad', 'arrow-up']"
-                    class="h-10 w-10 text-gray-400"
+                    class="h-10 w-10 shrink-0 text-gray-400"
                     aria-hidden="true"
                 />
 
                 <!-- Upload Text -->
-                <div class="flex text-sm text-gray-600">
-                    <label
-                        :for="`file-upload-${fieldName}`"
-                        class="relative cursor-pointer rounded-md font-medium text-org-600 hover:text-org-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-org-500 focus-within:ring-offset-2"
-                    >
-                        <span>{{ fileName || 'Upload a file' }}</span>
-                        <input
-                            :id="`file-upload-${fieldName}`"
-                            :name="fieldName"
-                            type="file"
-                            class="sr-only"
-                            @change="handleFileInput"
-                            :accept="fieldData?.accept"
-                        />
-                    </label>
-                    <p v-if="!fileName" class="pl-1">or drag and drop</p>
+                <div class="flex w-full min-w-0 flex-wrap items-baseline justify-center gap-x-1 text-sm text-gray-600">
+                    <span class="block min-w-0 max-w-full truncate font-medium text-org-600">
+                        {{ fileName || 'Upload a file' }}
+                    </span>
+                    <p v-if="!fileName" class="whitespace-nowrap">or drag and drop</p>
                 </div>
 
                 <!-- File Type Info -->
-                <p v-if="fieldData?.accept" class="text-xs text-gray-500">
+                <p v-if="fieldData?.accept" class="w-full break-words text-xs text-gray-500">
                     {{ fieldData.accept }}
                 </p>
             </div>
@@ -107,21 +97,30 @@ const handleDragLeave = () => {
                     aria-hidden="true"
                 />
             </div>
-        </div>
+
+            <input
+                :id="`file-upload-${fieldName}`"
+                :name="fieldName"
+                type="file"
+                class="sr-only"
+                @change="handleFileInput"
+                :accept="fieldData?.accept"
+            />
+        </label>
 
         <!-- Error Message -->
-        <div v-if="props.form.errors[props.fieldName]" class="mt-2 text-sm text-red-600">
+        <div v-if="props.form.errors[props.fieldName]" class="mt-2 break-words text-sm text-red-600">
             {{ props.form.errors[props.fieldName] }}
         </div>
 
         <!-- Success Message -->
-        <div v-if="fileName && !form.errors[fieldName]" class="mt-2 text-sm text-gray-600">
-            <FontAwesomeIcon icon="fas fa-check-circle" class="h-4 w-4 text-green-500 inline mr-1" />
-            File selected: <span class="font-medium">{{ fileName }}</span>
+        <div v-if="fileName && !form.errors[fieldName]" class="mt-2 flex min-w-0 items-start gap-1 text-sm text-gray-600">
+            <FontAwesomeIcon icon="fas fa-check-circle" class="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+            <span class="min-w-0 break-all">File selected: <span class="font-medium">{{ fileName }}</span></span>
         </div>
 
         <!-- Existing File Preview -->
-        <div v-if="fieldData?.preview_url" class="mt-2 text-sm">
+        <div v-if="fieldData?.preview_url" class="mt-2 break-words text-sm">
             <a
                 :href="fieldData.preview_url"
                 target="_blank"

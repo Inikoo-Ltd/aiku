@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue"
+import { computed, onMounted, onUnmounted } from "vue"
 import { trans } from "laravel-vue-i18n"
-import { get, set, isEqual } from "lodash-es"
+import { get } from "lodash-es"
+import { seedFormRows } from "./seedFormRows"
+import { useEchoMasterProductCategory } from "@/Stores/echo-master-product-category"
+import CascadeProgressIndicator from "./CascadeProgressIndicator.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBox, faSmoke, faTint, faFlask, faTags, faBoxOpen } from "@fal"
@@ -31,6 +34,7 @@ const props = defineProps<{
 	fieldName: string
 	fieldData?: {
 		options?: CustomizeOption[]
+		master_product_category_id?: number
 		[key: string]: any
 	}
 }>()
@@ -66,15 +70,18 @@ const buildRows = (): CustomizeRow[] => {
 	})
 }
 
+const echoMasterProductCategory = useEchoMasterProductCategory()
+
+const cascadeProgress = computed(() => echoMasterProductCategory.cascadeProgress.customize_option)
+
 onMounted(() => {
-	const rebuilt = buildRows()
+	echoMasterProductCategory.subscribe(props.fieldData?.master_product_category_id)
 
-	if (isEqual(get(props.form, props.fieldName), rebuilt)) {
-		return
-	}
+	seedFormRows(props.form, props.fieldName, buildRows())
+})
 
-	props.form.defaults?.(props.fieldName, rebuilt)
-	set(props.form, props.fieldName, rebuilt)
+onUnmounted(() => {
+	echoMasterProductCategory.unsubscribe(props.fieldData?.master_product_category_id)
 })
 
 const rows = computed<CustomizeRow[]>(() => get(props.form, props.fieldName) ?? [])
@@ -84,6 +91,8 @@ const error = computed(() => get(props.form, ["errors", props.fieldName]))
 
 <template>
 	<div class="space-y-3">
+		<CascadeProgressIndicator :progress="cascadeProgress" />
+
 		<div
 			v-for="row in rows"
 			:key="row.key"
