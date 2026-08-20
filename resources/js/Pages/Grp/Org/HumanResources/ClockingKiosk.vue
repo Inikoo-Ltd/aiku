@@ -115,6 +115,70 @@ const dismissResult = () => {
 	barcodeValue.value = ""
 }
 
+
+const voicePreference = ref<"female" | "male" | "default">("female")
+const availableVoices = ref<SpeechSynthesisVoice[]>([])
+
+const loadVoices = () => {
+	if (typeof window === "undefined" || !("speechSynthesis" in window)) return
+	availableVoices.value = window.speechSynthesis.getVoices()
+}
+
+const FEMALE_VOICE_HINTS = ["female", "samantha", "victoria", "karen", "moira", "tessa", "zira", "fiona", "serena", "google uk english female", "google us english"]
+const MALE_VOICE_HINTS = ["male", "daniel", "alex", "fred", "david", "google uk english male", "rishi"]
+
+const pickVoice = (): SpeechSynthesisVoice | null => {
+	const list = availableVoices.value
+	if (!list.length) return null
+
+	const english = list.filter((v) => v.lang?.toLowerCase().startsWith("en"))
+	const pool = english.length ? english : list
+
+	if (voicePreference.value === "default") return pool[0] ?? null
+
+	const hints = voicePreference.value === "male" ? MALE_VOICE_HINTS : FEMALE_VOICE_HINTS
+	const match = pool.find((v) => hints.some((h) => v.name.toLowerCase().includes(h)))
+
+	return match ?? pool[0] ?? null
+}
+
+const speakClockingResult = (actionType: string | null, name: string) => {
+	if (typeof window === "undefined" || !("speechSynthesis" in window)) return
+
+	let text = ""
+	if (actionType === "clock_in") {
+		text = trans("Welcome :name!, Have a good day!", { name })
+	} else if (actionType === "clock_out") {
+		text = trans("Thank you for your hard work :name!, Well done!", { name })
+	} else {
+		return
+	}
+
+	try {
+		window.speechSynthesis.cancel()
+		const utterance = new SpeechSynthesisUtterance(text)
+		const voice = pickVoice()
+		if (voice) {
+			utterance.voice = voice
+			utterance.lang = voice.lang
+		} else {
+			utterance.lang = "en-US"
+		}
+		utterance.rate = 1
+		utterance.pitch = 1
+		window.speechSynthesis.speak(utterance)
+	} catch {
+		// Speech synthesis unavailable on this device — fail silently.
+	}
+}
+
+onMounted(() => {
+	loadVoices()
+	if (typeof window !== "undefined" && "speechSynthesis" in window) {
+		window.speechSynthesis.onvoiceschanged = loadVoices
+	}
+})
+
 const applyResult = (data: any) => {
 	if (resultTimer) {
 		clearTimeout(resultTimer)
@@ -126,6 +190,8 @@ const applyResult = (data: any) => {
 		clockedAt: data.clocking.clocked_at,
 		isVisiting: data.employee.is_visiting ?? false,
 	}
+
+	speakClockingResult(data.clocking.type, data.employee.alias)
 
 	resultTimer = setTimeout(() => {
 		resultTimer = null
