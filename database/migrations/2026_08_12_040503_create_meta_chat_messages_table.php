@@ -13,6 +13,7 @@ return new class () extends Migration {
     {
         Schema::create('meta_chat_messages', function (Blueprint $table) {
             $table->id();
+            $table->string('meta_message_id')->nullable()->index()->comment('store message ID from the Meta API');
 
             $table->unsignedSmallInteger('meta_channel_id')->index();
             $table->foreign('meta_channel_id')->references('id')->on('meta_channels')->onUpdate('cascade')->onDelete('cascade');
