@@ -93,3 +93,14 @@ it('refuses to strip text whose backslashes are ambiguous', function () {
         ->and($safe('regex \\d+ digits'))->toBeFalse()
         ->and($safe('no backslash at all'))->toBeTrue();
 });
+
+it('never writes a repair translation back that is still escaped or is the untranslated source', function () {
+    $usable = fn (?string $translated, string $source, string $code) => App\Actions\Maintenance\Catalogue\RepairEscapedDescriptions::isUsableTranslation($translated, $source, $code);
+
+    expect($usable('<p>Hola<\\/p>', '<p>Hi</p>', 'es'))->toBeFalse()
+        ->and($usable('<p>Hi</p>', '<p>Hi</p>', 'es'))->toBeFalse()
+        ->and($usable('', '<p>Hi</p>', 'es'))->toBeFalse()
+        ->and($usable(null, '<p>Hi</p>', 'es'))->toBeFalse()
+        ->and($usable('<p>Hi</p>', '<p>Hi</p>', 'en-gb'))->toBeTrue()
+        ->and($usable('<p>Hola</p>', '<p>Hi</p>', 'es'))->toBeTrue();
+});
