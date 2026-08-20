@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp;
 
+use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -78,7 +79,7 @@ class StoreIncomingWhatsappMessage
             return;
         }
 
-        if (MetaChatMessage::whereJsonContains('metadata->wa_message_id', $waMessageId)->exists()) {
+        if (MetaChatMessage::where('meta_message_id', $waMessageId)->exists()) {
             return;
         }
 
@@ -114,23 +115,20 @@ class StoreIncomingWhatsappMessage
 
         $type = (string) Arr::get($message, 'type');
 
-        MetaChatMessage::create([
-            'meta_channel_id'      => $metaChatSession->meta_channel_id,
-            'meta_chat_session_id' => $metaChatSession->id,
-            'message_type'         => match ($type) {
+        StoreMetaChatMessage::run($metaChatSession, [
+            'meta_message_id' => $waMessageId,
+            'message_type'    => match ($type) {
                 'text'  => ChatMessageTypeEnum::TEXT,
                 'image' => ChatMessageTypeEnum::IMAGE,
                 default => ChatMessageTypeEnum::FILE,
             },
-            'sender_type'          => ChatSenderTypeEnum::GUEST,
-            'message_text'         => Arr::get($message, 'text.body'),
-            'is_read'              => false,
-            'metadata'             => [
-                'wa_message_id' => $waMessageId,
-                'wa_type'       => $type,
-                'profile_name'  => $profileName,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+            'message_text'    => Arr::get($message, 'text.body'),
+            'metadata'        => [
+                'wa_type'      => $type,
+                'profile_name' => $profileName,
                 // ponytail: raw node kept as-is; media (image/document/audio) is not downloaded yet
-                'wa_payload'    => $type !== 'text' ? Arr::get($message, $type) : null,
+                'wa_payload'   => $type !== 'text' ? Arr::get($message, $type) : null,
             ],
         ]);
 

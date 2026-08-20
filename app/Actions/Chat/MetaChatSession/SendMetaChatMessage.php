@@ -138,17 +138,15 @@ class SendMetaChatMessage
             ];
         }
 
-        $metadata['wa_message_id'] = Arr::get($response->json(), 'messages.0.id');
+        $metaMessageId = Arr::get($response->json(), 'messages.0.id');
 
-        $metaChatMessage = MetaChatMessage::create([
-            'meta_channel_id'      => $metaChatSession->meta_channel_id,
-            'meta_chat_session_id' => $metaChatSession->id,
-            'message_type'         => ChatMessageTypeEnum::TEXT,
-            'sender_type'          => ChatSenderTypeEnum::AGENT,
-            'sender_id'            => $agent->id,
-            'message_text'         => $messageText ?: null,
-            'is_read'              => false,
-            'metadata'             => $metadata,
+        $metaChatMessage = StoreMetaChatMessage::run($metaChatSession, [
+            'meta_message_id' => $metaMessageId,
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::AGENT,
+            'sender_id'       => $agent->id,
+            'message_text'    => $messageText ?: null,
+            'metadata'        => $metadata,
         ]);
 
         if ($upload instanceof UploadedFile) {
