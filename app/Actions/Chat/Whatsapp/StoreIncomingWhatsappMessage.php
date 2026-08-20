@@ -25,6 +25,7 @@ class StoreIncomingWhatsappMessage
 {
     use AsAction;
 
+    // TODO: make sure which queue is the best for this job, because this job is very important and urgent
     public string $jobQueue = 'urgent';
 
     /**

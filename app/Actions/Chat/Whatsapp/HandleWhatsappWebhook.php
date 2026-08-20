@@ -27,11 +27,17 @@ class HandleWhatsappWebhook
 
         foreach (Arr::get($payload, 'entry', []) as $entry) {
             foreach (Arr::get($entry, 'changes', []) as $change) {
-                if (Arr::get($change, 'field') !== 'messages' || blank(Arr::get($change, 'value.messages'))) {
+                if (Arr::get($change, 'field') !== 'messages') {
                     continue;
                 }
 
-                StoreIncomingWhatsappMessage::dispatch($change['value']);
+                if (filled(Arr::get($change, 'value.messages'))) {
+                    StoreIncomingWhatsappMessage::dispatch($change['value']);
+                }
+
+                if (filled(Arr::get($change, 'value.statuses'))) {
+                    UpdateWhatsappMessageStatus::dispatch($change['value']);
+                }
             }
         }
     }
