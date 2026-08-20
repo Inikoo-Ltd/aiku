@@ -18,7 +18,6 @@ class CustomerFactory extends Factory
         return [
             'contact_name'             => fake()->name,
             'company_name'             => fake()->company,
-            'eori'                     => fake()->bothify('??##########'),
             'email'                    => fake()->email,
             'identity_document_number' => fake('en_GB')->vat(),
             'website'                  => fake()->url,

@@ -124,18 +124,6 @@ class EditCustomer extends OrgAction
                     'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                     'country' => $customer->address->country_code,
                 ],
-                'eori'                     => [
-                    'type'   => 'input',
-                    'hidden' => $customer->shop->collectsIdentityDocumentAs('EORI'),
-                    'label'  => 'EORI',
-                    'value'  => $customer->eori
-                ],
-                'ukims'                    => [
-                    'type'   => 'input',
-                    'hidden' => $customer->shop->collectsIdentityDocumentAs('UKIMS'),
-                    'label'  => 'UKIMS',
-                    'value'  => $customer->ukims
-                ],
                 'is_re'                    => [
                     'type'   => 'toggle',
                     'hidden' => $this->organisation->country_id != $spain->id || $customer->address->country_id != $spain->id,
