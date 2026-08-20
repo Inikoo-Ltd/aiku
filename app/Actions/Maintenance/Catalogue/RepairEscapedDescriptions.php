@@ -46,6 +46,8 @@ class RepairEscapedDescriptions
 
     public array $failed = [];
 
+    public array $unstripped = [];
+
     public ?string $driver = null;
 
     private array $languages = [];
@@ -65,6 +67,8 @@ class RepairEscapedDescriptions
                 if (Translate::hasOnlyJsonEchoEscapes($scalar)) {
                     if (($clean = Translate::stripJsonEscapes($scalar)) !== $scalar) {
                         $changes[$field] = $clean;
+                    } else {
+                        $this->unstripped[] = $this->label($model, $field);
                     }
                 } elseif (($rewritten = $this->rewrite($model, $field, $source, $this->shopLanguage($model), $apply)) !== null) {
                     $changes[$field] = $rewritten;
@@ -90,6 +94,11 @@ class RepairEscapedDescriptions
 
                 if (Translate::hasOnlyJsonEchoEscapes($value)) {
                     $cleaned[$locale] = Translate::stripJsonEscapes($value);
+                    /* Escapes that pass the guard but survive the strip - a lone surrogate, a null -
+                       leave the row damaged. Without this they are reported by neither bucket. */
+                    if ($cleaned[$locale] === $value) {
+                        $this->unstripped[] = $this->label($model, $i8nField.'.'.$locale);
+                    }
                     continue;
                 }
 
@@ -282,7 +291,13 @@ class RepairEscapedDescriptions
             ));
         }
 
-        foreach (['failed' => 'translation gave nothing usable', 'skipped' => 'no clean English source, left untouched'] as $bucket => $reason) {
+        $buckets = [
+            'failed'     => 'translation gave nothing usable',
+            'unstripped' => 'escapes passed the guard but survived the strip, still damaged',
+            'skipped'    => 'no clean English source, left untouched',
+        ];
+
+        foreach ($buckets as $bucket => $reason) {
             if ($this->{$bucket}) {
                 $command->warn(count($this->{$bucket}).' field(s), '.$reason.':');
                 foreach (array_slice($this->{$bucket}, 0, 50) as $label) {

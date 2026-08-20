@@ -92,9 +92,18 @@ class Translate extends OrgAction
     {
         for ($pass = 0; $pass < 5; $pass++) {
             $stripped = preg_replace_callback(
-                '/\\\\u([0-9a-fA-F]{4})/',
+                '/\\\\u([dD][89abAB][0-9a-fA-F]{2})\\\\u([dD][c-fC-F][0-9a-fA-F]{2})|\\\\u([0-9a-fA-F]{4})/',
                 function (array $m) {
-                    $codepoint = hexdec($m[1]);
+                    /* A complete high/low pair can only ever have meant one emoji, so it decodes.
+                       A surrogate on its own cannot, and neither can a null: both stay as they are
+                       rather than becoming half a character. */
+                    if (($m[3] ?? '') === '') {
+                        $codepoint = 0x10000 + ((hexdec($m[1]) - 0xD800) << 10) + (hexdec($m[2]) - 0xDC00);
+
+                        return mb_chr($codepoint, 'UTF-8') ?: $m[0];
+                    }
+
+                    $codepoint = hexdec($m[3]);
                     if ($codepoint === 0 || ($codepoint >= 0xD800 && $codepoint <= 0xDFFF)) {
                         return $m[0];
                     }

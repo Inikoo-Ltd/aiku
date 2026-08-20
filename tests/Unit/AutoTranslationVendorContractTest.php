@@ -75,10 +75,13 @@ it('strips nested json escaping and unicode escapes down to plain text', functio
     ))->toBe('<ul style="padding: 0px"><li>Bag – Nomad</li>all\'interno</ul>');
 });
 
-it('never eats emoji surrogate pairs or null escapes', function () {
+it('decodes a complete surrogate pair but never half of one', function () {
     $strip = fn (string $text) => App\Actions\Helpers\Translations\Translate::stripJsonEscapes($text);
 
-    expect($strip('\\ud83d\\ude00 smile'))->toBe('\\ud83d\\ude00 smile')
+    expect($strip('\\ud83d\\ude00 smile'))->toBe('😀 smile')
+        ->and($strip('<p>\\ud83c\\udf0e</p>'))->toBe('<p>🌎</p>')
+        ->and($strip('lone \\ud83d half'))->toBe('lone \\ud83d half')
+        ->and($strip('trailing \\ude00 half'))->toBe('trailing \\ude00 half')
         ->and($strip('\\u0000null'))->toBe('\\u0000null')
         ->and($strip('bullet \\u2022 here'))->toBe('bullet • here');
 });
