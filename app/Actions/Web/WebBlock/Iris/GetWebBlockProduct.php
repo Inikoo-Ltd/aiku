@@ -54,9 +54,9 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
         $tabs = [
             'description'       => $product->description,
-            ...($product?->family ? WebBlockFamilyResource::getTabsData($webpage->model->family) : [])
+            ...($product?->family ? WebBlockFamilyResource::getTabsData($product->family) : [])
         ];
-        
+
         data_set($webBlock, 'web_block.layout.data.fieldValue.tabs', $tabs);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
@@ -68,7 +68,7 @@ class GetWebBlockProduct
             data_set($variant, 'data.products', $excludedProducts);
             data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant);
         }
-        
+
 
         return [
            'type' => data_get($webBlock, 'type'),

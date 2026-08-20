@@ -32,7 +32,8 @@ class StoreMediaFromFile
                         'checksum' => $imageData['checksum'],
                         'group_id' => group()->id,
                         'type'     => $type,
-                        'ulid'     => Str::ulid()
+                        'ulid'     => Str::ulid(),
+                        'media_scope'    => data_get($imageData, 'scope', null)
                     ],
                 )
             )

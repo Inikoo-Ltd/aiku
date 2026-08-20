@@ -136,8 +136,8 @@ class UpdateProductCategory extends OrgAction
 
         // Handle labeling_guide pdf file upload
         if (Arr::has($modelData, 'labeling_guide_file') && data_get($modelData, 'labeling_guide_file', null) instanceof \Illuminate\Http\UploadedFile) {
-            $file = Arr::pull($modelData, 'labeling_guide_file');
-            StoreLabelingGuide::make()->action($productCategory, $file, $this->user);
+            StoreLabelingGuide::make()->action($productCategory, Arr::only($modelData, 'labeling_guide_file'));
+            Arr::forget($modelData, 'labeling_guide_file');
         }
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);

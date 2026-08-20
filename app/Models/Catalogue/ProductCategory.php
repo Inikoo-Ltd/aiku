@@ -21,6 +21,7 @@ use App\Models\Reviews\ProductCategoryReviewStat;
 use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InShop;
@@ -42,6 +43,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
+use Illuminate\Support\Collection;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -176,6 +178,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasSearch;
+    use HasAttachments;
     protected static function booted(): void
     {
         static::saved(function (ProductCategory $productCategory) {
@@ -481,8 +484,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
     }
 
-    public function labelingGuide(): HasOne
+    public function labelingGuide(): Media
     {
-        return $this->hasOne(LabelingGuide::class, 'product_category_id');
+        return $this->attachments()->where('scope', 'labeling_guide')->first();
     }
 }

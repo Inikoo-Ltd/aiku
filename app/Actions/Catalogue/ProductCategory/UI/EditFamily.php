@@ -366,14 +366,14 @@ class EditFamily extends OrgAction
                                 'icon'   => 'fa-light fa-file-pdf',
                                 'fields' => [
                                     'labeling_guide_file' => [
-                                        'type'        => 'file_upload',
-                                        'label'       => __('Labeling guide'),
-                                        'placeholder' => __('Upload a PDF file'),
-                                        'required'    => false,
-                                        'value'       => $family->labelingGuide?->filename,
-                                        'accept'      => '.pdf,application/pdf',
-                                        'information' => __('Downloadable labeling & compliance guide shown on the family page.'),
-                                        'url'         => $family->labelingGuide?->path,
+                                        'type'              => 'file_upload',
+                                        'label'             => __('Labeling guide'),
+                                        'placeholder'       => __('Upload a PDF file'),
+                                        'required'          => false,
+                                        'value'             => $family->labelingGuide()?->name,
+                                        'accept'            => '.pdf,application/pdf',
+                                        'information'       => __('Downloadable labeling & compliance guide shown on the family page.'),
+                                        'media_ulid'        => $family->labelingGuide()?->ulid
                                     ],
                                 ],
                             ] : [],

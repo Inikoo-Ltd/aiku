@@ -59,7 +59,7 @@ class WebBlockProductResource extends JsonResource
         if (is_array($product->offers_data)) {
             $productOffersData = $product->offers_data;
         } else {
-            $productOffersData = json_decode($product->offers_data, true);
+            $productOffersData = json_decode($product->offers_data ?? '', true);
         }
 
 

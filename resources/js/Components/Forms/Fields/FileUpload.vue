@@ -60,6 +60,17 @@ const handleDragLeave = () => {
     isDragging.value = false
 }
 
+function mediaRoute(media_ulid: string ) {
+    const is_retina = route().current()?.includes("retina")
+
+    if (is_retina) {
+        return route("retina.models.attachment.download", { media: media_ulid })
+    } else {
+        return route("grp.media.download", { media: media_ulid })
+    }
+
+}
+
 </script>
 
 <template>
@@ -135,7 +146,14 @@ const handleDragLeave = () => {
             <FontAwesomeIcon icon="fas fa-check-circle" class="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
             <span class="min-w-0 truncate" :title="fileName">
                 {{ isPendingUpload ? 'File selected:' : 'Uploaded:' }}
-                <span class="font-medium">{{ fileName }}</span>
+                <span class="font-medium hover:underline cursor-pointer transition-all" v-if="fieldData.media_ulid">
+                    <a target="_blank" :href="mediaRoute(fieldData.media_ulid) || '#'">
+                        {{ fileName }}
+                    </a>
+                </span>
+                <span class="font-medium" v-else>
+                    {{ fileName }}
+                </span>
             </span>
         </div>
     </div>

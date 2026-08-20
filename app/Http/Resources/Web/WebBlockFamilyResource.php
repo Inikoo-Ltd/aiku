@@ -51,9 +51,19 @@ class WebBlockFamilyResource extends JsonResource
 
     public static function getTabsData(ProductCategory $family): array
     {
+        $labelingGuide = $family->labelingGuide();
+
         return [
             'customize_option'          => FamilyCustomizeEnum::rows($family->customize_option),
-            'labeling_guide'            => $family->labelingGuide?->path,
+            'labeling_guide'            => $labelingGuide ? [
+                'label' => $labelingGuide->name,
+                'route' => [
+                    'route_name'    => 'retina.models.attachment.download',
+                    'parameters'    => [
+                        'media'    => $labelingGuide?->ulid
+                    ],
+                ]
+            ] : [],
             'storage_option'            => [
                 'storage_conditions'    => FamilyStorageConditionEnum::rows(data_get($family->storage_option, 'storage_conditions', [])),
                 'storage_temperature'   => data_get($family->storage_option, 'storage_temperature', ''),
