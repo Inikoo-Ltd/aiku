@@ -3,7 +3,10 @@ import { ref, computed, inject, onBeforeUnmount } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
 // ponytail: spectrum logic mirrors Components/Pure/AudioWaveform.vue; extract a composable if a third user appears
-const props = defineProps<{ src: string, topSeller?: number | null }>()
+const props = withDefaults(
+    defineProps<{ src: string, topSeller?: number | null, placement?: 'auto' | 'bottom-left' }>(),
+    { placement: 'auto' }
+)
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -20,6 +23,10 @@ const MONO_COLOR = '#334155'
 // bottom-left button overlaps on narrow screens, so it moves to the top-left corner there.
 // The bestseller badge already sits at top-2 left-2, so drop below it when one is shown.
 const cornerClass = computed(() => {
+    if (props.placement === 'bottom-left') {
+        return 'left-2 bottom-2'
+    }
+
     if (layout?.iris?.is_logged_in) {
         return 'left-2 bottom-2'
     }
