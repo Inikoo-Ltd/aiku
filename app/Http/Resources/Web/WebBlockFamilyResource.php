@@ -42,7 +42,7 @@ class WebBlockFamilyResource extends JsonResource
             'description_image'         => collect(Arr::get($family->web_images, 'description', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
             'description_video'         => $family->desc_video_url,
             'extra_description_image'   => collect(Arr::get($family->web_images, 'extraDescription', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
-            'url'                       => $family->webpage->url,
+            'url'                       => $family->webpage?->url,
             'offers_data'               => $family->offers_data,
             'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => $tag->name, 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
             ...$this->getTabsData($family)

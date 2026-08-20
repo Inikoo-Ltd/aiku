@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
 import About from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/About.vue"
@@ -16,17 +16,62 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", {}) as any
+const hasContent = (html?: string | null) => {
+  if (!html) return false
+  
+  const text = html
+  .replace(/<[^>]*>/g, '') // remove html tags
+  .replace(/&nbsp;/g, ' ')
+  .trim()
+  
+  return text.length > 0
+}
 
-const tabs = computed(() => [
-  { key: "about", label: ctrans("About the Range") },
-  { key: "marketing", label: ctrans("Marketing Materials") },
-  { key: "faq", label: ctrans("FAQ") },
-  { key: "customisation", label: ctrans("Customisation") },
-  { key: "labeling guide", label: ctrans("Labeling Guide") },
-  { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
-])
+const isAromaOrganisation = computed(() =>
+  Boolean(props.fieldValue?.family?.is_aroma_organisation)
+)
 
-const activeTab = ref("about")
+const aromaOnlyTabs = ["customisation", "labeling guide", "storage_and_shelf_life"]
+
+const tabs = computed(() =>
+  [
+    { key: "about", label: ctrans("About the Range") },
+    { key: "marketing", label: ctrans("Marketing Materials") },
+    { key: "faq", label: ctrans("FAQ") },
+    { key: "customisation", label: ctrans("Customisation") },
+    { key: "labeling guide", label: ctrans("Labeling Guide") },
+    { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
+  ].filter(tab => {
+    if (tab.key === "about") {
+      return hasContent(props.fieldValue?.family?.description_extra)
+    }
+
+    if (tab.key === "marketing") {
+      return layout?.iris?.is_logged_in
+    }
+
+    if (tab.key === "faq") {
+      return (
+        Array.isArray(props.fieldValue?.family?.faq) &&
+        props.fieldValue.family.faq.length > 0
+      )
+    }
+
+    if (aromaOnlyTabs.includes(tab.key)) {
+      return isAromaOrganisation.value
+    }
+
+    return true
+  })
+)
+
+const activeTab = ref(tabs.value[0]?.key ?? "")
+
+watch(tabs, (visibleTabs) => {
+  if (!visibleTabs.some(tab => tab.key === activeTab.value)) {
+    activeTab.value = visibleTabs[0]?.key ?? ""
+  }
+})
 
 
 const containerStyle = computed(() => ({
@@ -71,7 +116,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 </script>
 
 <template>
-  <section class="w-full bg-[#D8D9DB]" :id="'family-2-extra-description'"   :style="sectionStyle">
+  <section v-if="tabs.length" class="w-full bg-[#D8D9DB]" :id="'family-2-extra-description'"   :style="sectionStyle">
     <div class="mx-auto w-full max-w-[1700px]  px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
       :style="containerStyle">
       <!-- TOP NAV -->

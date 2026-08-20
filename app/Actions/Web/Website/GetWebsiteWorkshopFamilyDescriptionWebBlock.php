@@ -56,6 +56,10 @@ class GetWebsiteWorkshopFamilyDescriptionWebBlock
             'update_sub_department_route' => [
                 'name' => 'grp.models.product_category.update',
                 'parameters' => []
+            ],
+            'route_get_selection' => [
+                'name' => 'grp.json.workshop.family_description_data',
+                'parameters' => []
             ]
         ];
     }

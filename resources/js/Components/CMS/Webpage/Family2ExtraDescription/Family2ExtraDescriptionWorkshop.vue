@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
@@ -34,16 +34,41 @@ const props = defineProps<{
 
 const layout = inject("layout", {}) as any
 
-const tabs = computed(() => [
-  { key: "about", label: ctrans("About the Range") },
-  { key: "marketing", label: ctrans("Marketing Materials") },
-  { key: "faq", label: ctrans("FAQ") },
-  { key: "customisation", label: ctrans("Customisation") },
-  { key: "labeling guide", label: ctrans("Labeling Guide") },
-  { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
-])
 
-const activeTab = ref("about")
+const isLoggedIn = computed(() => layout?.iris?.is_logged_in ?? true)
+
+const isAromaOrganisation = computed(() =>
+  Boolean(props.modelValue?.family?.is_aroma_organisation)
+)
+
+const aromaOnlyTabs = ["customisation", "labeling guide", "storage_and_shelf_life"]
+
+const tabs = computed(() =>
+  [
+    { key: "about", label: ctrans("About the Range") },
+    { key: "marketing", label: ctrans("Marketing Materials") },
+    { key: "faq", label: ctrans("FAQ") },
+    { key: "customisation", label: ctrans("Customisation") },
+    { key: "labeling guide", label: ctrans("Labeling Guide") },
+    { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
+  ].filter(tab => {
+
+
+    if (aromaOnlyTabs.includes(tab.key)) {
+      return isAromaOrganisation.value
+    }
+
+    return true
+  })
+)
+
+const activeTab = ref(tabs.value[0]?.key ?? "")
+
+watch(tabs, (visibleTabs) => {
+  if (!visibleTabs.some(tab => tab.key === activeTab.value)) {
+    activeTab.value = visibleTabs[0]?.key ?? ""
+  }
+})
 
 const sectionId = computed(
   () => props.modelValue?.id ?? `family-1-iris-${props.indexBlock}`
@@ -135,6 +160,7 @@ const sectionStyle = computed(() => {
 
 <template>
   <section
+    v-if="tabs.length"
     class="w-full bg-[#D8D9DB] "
     :id="sectionId"
      :style="sectionStyle"

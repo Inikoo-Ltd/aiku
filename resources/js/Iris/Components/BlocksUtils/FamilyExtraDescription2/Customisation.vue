@@ -6,7 +6,6 @@ import { faBox, faSmoke, faTint, faFlask, faTags, faBoxOpen } from "@fal"
 import { faCheckCircle } from "@fas"
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
-import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
 	fieldValue: any
@@ -23,7 +22,7 @@ const family = computed(() => props.fieldValue?.family ?? {})
 
 const containerStyle = computed(() => getStyles(customisation.value?.container?.properties))
 
-const title = computed(() => customisation.value?.title || ctrans("Customisations"))
+const title = computed(() => customisation.value?.title ?? "")
 
 const description = computed(() => customisation.value?.description ?? "")
 
@@ -31,11 +30,11 @@ const hasDescription = computed(() => hasText(description.value))
 
 const linkUrl = computed(() => String(customisation.value?.link?.url ?? "").trim())
 
-const linkLabel = computed(
-	() => customisation.value?.link?.text || ctrans("More about bespoke made products")
-)
+const linkLabel = computed(() => customisation.value?.link?.text ?? "")
 
-const hasLink = computed(() => hasText(linkUrl.value) && linkUrl.value !== "#")
+const hasLink = computed(
+	() => hasText(linkUrl.value) && linkUrl.value !== "#" && hasText(linkLabel.value)
+)
 
 const image = computed(() => {
 	const source = family.value?.extra_description_image
@@ -76,10 +75,10 @@ const rows = computed(() =>
 )
 
 const columns = computed(() => ({
-	option: customisation.value?.table?.option || ctrans("Option"),
-	available: customisation.value?.table?.available || ctrans("Available"),
-	moq: customisation.value?.table?.moq || ctrans("MOQ"),
-	notes: customisation.value?.table?.notes || ctrans("Notes"),
+	option: customisation.value?.table?.option ?? "",
+	available: customisation.value?.table?.available ?? "",
+	moq: customisation.value?.table?.moq ?? "",
+	notes: customisation.value?.table?.notes ?? "",
 }))
 
 const contactTitle = computed(() => String(customisation.value?.contact?.title ?? "").trim())
@@ -110,6 +109,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 		<div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
 			<div class="flex-1">
 				<h2
+					v-if="hasText(title)"
 					class="text-[26px] font-semibold leading-tight text-[#13294B] md:text-[30px] lg:text-[34px]">
 					{{ title }}
 				</h2>
@@ -151,7 +151,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 					<FontAwesomeIcon :icon="highlight.icon" class="text-[30px] md:text-[34px]" />
 				</div>
 
-				<p class="mt-4 text-center text-[12px]   leading-snug text-[#13294B] md:text-[16px]">
+				<p class="mt-4 text-center text-[12px] leading-snug text-[#13294B] md:text-[16px]">
 					{{ highlight.label }}
 				</p>
 			</div>

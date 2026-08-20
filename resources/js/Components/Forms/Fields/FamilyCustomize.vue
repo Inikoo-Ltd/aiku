@@ -9,7 +9,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBox, faSmoke, faTint, faFlask, faTags, faBoxOpen } from "@fal"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import { EditorContent } from "@tiptap/vue-3"
 import Toggle from "@/Components/Pure/Toggle.vue"
 
 library.add(faBox, faSmoke, faTint, faFlask, faTags, faBoxOpen)
@@ -111,7 +112,7 @@ const error = computed(() => get(props.form, ["errors", props.fieldName]))
 				<Toggle v-model="row.available" size="sm" />
 			</div>
 
-			<div v-if="row.available" class="mt-4 grid gap-3 md:grid-cols-[200px_1fr]">
+			<div v-if="row.available" class="mt-4 grid gap-3 md:grid-cols-1">
 				<div>
 					<label class="mb-1 block text-xs font-medium text-gray-500">
 						{{ trans("MOQ") }}
@@ -128,11 +129,16 @@ const error = computed(() => get(props.form, ["errors", props.fieldName]))
 						{{ trans("Notes") }}
 					</label>
 
-					<PureTextarea
+					<Editor
 						v-model="row.notes"
-						:rows="2"
-						:placeholder="trans('Describe what can be customised')"
-						:inputName="`${fieldName}_${row.key}_notes`" />
+						:placeholder="trans('Describe what can be customised')">
+						<template #editor-content="{ editor }">
+							<div
+								class="editor-wrapper rounded-lg border-2 border-gray-300 p-3 shadow-sm focus-within:border-[var(--theme-color-0)]">
+								<EditorContent :editor="editor" class="editor-content focus:outline-none" />
+							</div>
+						</template>
+					</Editor>
 				</div>
 			</div>
 		</div>
@@ -140,3 +146,19 @@ const error = computed(() => get(props.form, ["errors", props.fieldName]))
 		<p v-if="error" class="mt-2 text-sm text-red-600">{{ error }}</p>
 	</div>
 </template>
+
+<style scoped>
+.editor-wrapper {
+	transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.editor-content {
+	min-height: 80px;
+	font-size: 0.875rem;
+	line-height: 1.5;
+}
+
+:deep(.editor-class) {
+	min-height: 80px;
+}
+</style>
