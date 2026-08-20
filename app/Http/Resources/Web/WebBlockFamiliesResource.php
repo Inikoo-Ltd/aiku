@@ -50,9 +50,7 @@ class WebBlockFamiliesResource extends JsonResource
                     'original' => $this->getPictureFormats(Arr::get($webImages, 'main.original')),
                 ]
             ],
-            'offers_data'       => $this->offers_data,
-            'storage_option'    => $this->storage_option,
-            'customize_option'    => $this->customize_option,
+            'offers_data'       => $this->offers_data
         ];
     }
 }

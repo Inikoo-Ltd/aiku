@@ -234,7 +234,7 @@ class EditMasterFamily extends OrgAction
                                     'type'                       => 'family_customize',
                                     'label'                      => __('Customize'),
                                     'options'                    => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
-                                    'value'                      => !empty($masterProductCategory->customize_option) ? $masterProductCategory->customize_option : FamilyCustomizeEnum::rows(),
+                                    'value'                      => FamilyCustomizeEnum::rows($masterProductCategory->customize_option),
                                     'master_product_category_id' => $masterProductCategory->id,
                                 ],
                             ],
@@ -247,7 +247,7 @@ class EditMasterFamily extends OrgAction
                                     'type'                       => 'family_storage_conditions',
                                     'label'                      => __('Storage table'),
                                     'options'                    => FamilyStorageConditionEnum::valuesWithLabelsAndPlaceholders(),
-                                    'value'                      => data_get($masterProductCategory->storage_option, 'storage_conditions', FamilyStorageConditionEnum::rows()),
+                                    'value'                      => FamilyStorageConditionEnum::rows(data_get($masterProductCategory->storage_option, 'storage_conditions', [])),
                                     'master_product_category_id' => $masterProductCategory->id,
                                 ],
                                 'storage_temperature' => [

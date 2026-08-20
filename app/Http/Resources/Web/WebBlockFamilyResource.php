@@ -11,6 +11,7 @@ namespace App\Http\Resources\Web;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -46,6 +47,11 @@ class WebBlockFamilyResource extends JsonResource
             'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => $tag->name, 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
             'faq'                       => $family->faq,
             'customize_option'          => FamilyCustomizeEnum::rows($family->customize_option),
+            'storage_option'            => array_map(fn ($item) => [
+                'storage_conditions'    => FamilyStorageConditionEnum::rows(data_get($family->storage_option, 'storage_conditions', [])),
+                'storage_temperature'   => data_get($family->storage_option, 'storage_temperature', ''),
+                'storage_guidelines'    => data_get($family->storage_option, 'storage_guidelines', []),
+            ], $family->storage_option),
             'marketing_material_route'  => [
                 'name'          => 'iris.catalogue.feeds.product_category.download_img',
                 'parameters'    => [

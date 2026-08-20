@@ -357,7 +357,7 @@ class EditFamily extends OrgAction
                                         'type'    => 'family_customize',
                                         'label'   => __('Customize'),
                                         'options' => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
-                                        'value'   => !empty($family->customize_option) ? $family->customize_option : FamilyCustomizeEnum::rows(),
+                                        'value'   => FamilyCustomizeEnum::rows($family->customize_option),
                                     ],
                                 ],
                             ] : [],
@@ -384,7 +384,7 @@ class EditFamily extends OrgAction
                                         'type'    => 'family_storage_conditions',
                                         'label'   => __('Storage table'),
                                         'options' => FamilyStorageConditionEnum::valuesWithLabelsAndPlaceholders(),
-                                        'value'   => data_get($family->storage_option, 'storage_conditions', FamilyStorageConditionEnum::rows()),
+                                        'value'   => FamilyStorageConditionEnum::rows(data_get($family->storage_option, 'storage_conditions', [])),
                                     ],
                                     'storage_temperature' => [
                                         'type'        => 'input',
