@@ -107,6 +107,7 @@ import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceE
 import ContactOptionsPanel from '@/Components/Forms/Fields/ContactOptionPanel.vue'
 import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
+import FamilyCustomize from '@/Components/Forms/Fields/FamilyCustomize.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -166,6 +167,7 @@ export const componentsList: { [key: string]: Component } = {
     'input_translation': InputTranslation,
     'select_infinite': SelectInfiniteScroll,
     'ingredients': IngredientsField,
+    'family_customize': FamilyCustomize,
     'textEditor_translation': TextEditorTranslation,
     'pricing_zone': Pricing_zone,
     'pricing_zone_multi_shipper': PricingZoneMultiShipper,

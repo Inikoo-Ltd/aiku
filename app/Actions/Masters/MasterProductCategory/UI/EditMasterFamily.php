@@ -14,6 +14,7 @@ use App\Actions\Goods\TradeUnitFamily\GetTradeUnitFamilyForFamilies;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
@@ -223,6 +224,18 @@ class EditMasterFamily extends OrgAction
                                         'item_quantity'  => $masterProductCategory->gr_vol_discount_quantity,
                                         'percentage_off' => trimDecimalZeros($masterProductCategory->gr_vol_discount_percentage),
                                     ],
+                                ],
+                            ],
+                        ] : [],
+                        $masterProductCategory->masterShop->slug == 'aroma' ? [
+                            'label'  => __('Customize'),
+                            'icon'   => 'fa-light fa-sliders-h',
+                            'fields' => [
+                                'customize' => [
+                                    'type'    => 'family_customize',
+                                    'label'   => __('Customize'),
+                                    'options' => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
+                                    'value'   => FamilyCustomizeEnum::rows(),
                                 ],
                             ],
                         ] : [],
