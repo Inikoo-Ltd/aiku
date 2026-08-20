@@ -132,7 +132,7 @@ trait WithMarginData
      * excluded from both revenue and cost (not treated as free) and counted so the UI can
      * warn. Returns null when nothing can be costed: no number is better than a fake one.
      *
-     * @return array{profit_amount: float, margin_pct: float, is_estimated: bool, lines_without_cost: int, currency_code: string}|null
+     * @return array{profit_amount: float, margin_pct: float, before_discounts: array{margin_pct: float, profit_amount: float}|null, break_even_pct: float, is_below_break_even: bool, is_estimated: bool, lines_without_cost: int, currency_code: string}|null
      */
     public function getMarginSummary(Order|Invoice|DeliveryNote $parent): ?array
     {
@@ -167,13 +167,15 @@ trait WithMarginData
             ->selectRaw("
                 $table.net_amount as net,
                 $table.org_net_amount as org_net,
+                $table.gross_amount as gross,
+                $table.org_exchange as org_exchange,
                 ".($parent instanceof Order ? "$table.quantity_picked as picked, $table.quantity_ordered as ordered," : 'NULL as picked, NULL as ordered,')."
                 $actualSql as actual_cost,
                 $estimatedSql as estimated_cost
             ")
             ->get();
 
-        return $this->aggregateMarginLines($lines, $parent->currency->code);
+        return $this->aggregateMarginLines($lines, $parent->currency->code, $this->marginBreakEvenPct($parent->organisation));
     }
 
     private function deliveryNoteMarginSummary(DeliveryNote $deliveryNote): ?array
@@ -188,6 +190,7 @@ trait WithMarginData
             ->selectRaw("
                 transactions.net_amount * delivery_note_items.quantity_required / NULLIF(transactions.quantity_ordered, 0) as net,
                 transactions.org_net_amount * delivery_note_items.quantity_required / NULLIF(transactions.quantity_ordered, 0) as org_net,
+                NULL as gross, NULL as org_exchange,
                 NULL as picked, NULL as ordered,
                 (SELECT SUM(ABS(osm.org_amount))
                     FROM pickings pk
@@ -197,13 +200,21 @@ trait WithMarginData
             ")
             ->get();
 
-        return $this->aggregateMarginLines($lines, $deliveryNote->shop->currency->code);
+        return $this->aggregateMarginLines($lines, $deliveryNote->shop->currency->code, $this->marginBreakEvenPct($deliveryNote->organisation));
     }
 
-    private function aggregateMarginLines(iterable $lines, string $currencyCode): ?array
+    public function marginBreakEvenPct($organisation): float
+    {
+        return (float) \Illuminate\Support\Arr::get($organisation->settings ?? [], 'margins.break_even_pct', 30);
+    }
+
+    private function aggregateMarginLines(iterable $lines, string $currencyCode, float $breakEvenPct = 0.0): ?array
     {
         $net              = 0.0;
         $orgNet           = 0.0;
+        $gross            = 0.0;
+        $orgGross         = 0.0;
+        $grossComplete    = true;
         $cost             = 0.0;
         $isEstimated      = false;
         $linesWithoutCost = 0;
@@ -220,18 +231,39 @@ trait WithMarginData
             $orgNet += (float) $line->org_net;
             $cost   += $lineCost;
             $isEstimated = $isEstimated || $lineEstimated;
+
+            $exchange = (float) ($line->org_exchange ?? 0) ?: ((float) $line->net != 0.0 ? (float) $line->org_net / (float) $line->net : 0.0);
+            if ($line->gross !== null && $exchange > 0) {
+                $gross    += (float) $line->gross;
+                $orgGross += (float) $line->gross * $exchange;
+            } else {
+                $grossComplete = false;
+            }
         }
 
         if ($orgNet == 0.0) {
             return null;
         }
 
+        $marginPct = round(100 * ($orgNet - $cost) / $orgNet, 1);
+
+        $beforeDiscounts = null;
+        if ($grossComplete && $orgGross > 0 && round($orgGross, 2) != round($orgNet, 2)) {
+            $beforeDiscounts = [
+                'margin_pct'    => round(100 * ($orgGross - $cost) / $orgGross, 1),
+                'profit_amount' => round($gross * ($orgGross - $cost) / $orgGross, 2),
+            ];
+        }
+
         return [
-            'profit_amount'      => round($net * ($orgNet - $cost) / $orgNet, 2),
-            'margin_pct'         => round(100 * ($orgNet - $cost) / $orgNet, 1),
-            'is_estimated'       => $isEstimated,
-            'lines_without_cost' => $linesWithoutCost,
-            'currency_code'      => $currencyCode,
+            'profit_amount'        => round($net * ($orgNet - $cost) / $orgNet, 2),
+            'margin_pct'           => $marginPct,
+            'before_discounts'     => $beforeDiscounts,
+            'break_even_pct'       => $breakEvenPct,
+            'is_below_break_even'  => $marginPct < $breakEvenPct,
+            'is_estimated'         => $isEstimated,
+            'lines_without_cost'   => $linesWithoutCost,
+            'currency_code'        => $currencyCode,
         ];
     }
 }

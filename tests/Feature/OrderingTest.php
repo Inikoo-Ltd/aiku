@@ -2679,27 +2679,44 @@ describe('order margin data', function () {
         $trait = new class () {
             use \App\Actions\Traits\WithMarginData;
 
-            public function aggregate(iterable $lines): ?array
+            public function aggregate(iterable $lines, float $breakEvenPct = 0.0): ?array
             {
-                return $this->aggregateMarginLines($lines, 'GBP');
+                return $this->aggregateMarginLines($lines, 'GBP', $breakEvenPct);
             }
         };
 
-        $exact     = (object) ['net' => 100, 'org_net' => 100, 'actual_cost' => 40, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
-        $estimated = (object) ['net' => 100, 'org_net' => 100, 'actual_cost' => null, 'estimated_cost' => 50, 'picked' => null, 'ordered' => null];
-        $uncosted  = (object) ['net' => 100, 'org_net' => 100, 'actual_cost' => null, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
-        $partial   = (object) ['net' => 1000, 'org_net' => 1000, 'actual_cost' => 120, 'estimated_cost' => 400, 'picked' => 30, 'ordered' => 100];
+        $exact      = (object) ['net' => 100, 'org_net' => 100, 'gross' => 100, 'org_exchange' => 1, 'actual_cost' => 40, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+        $estimated  = (object) ['net' => 100, 'org_net' => 100, 'gross' => 100, 'org_exchange' => 1, 'actual_cost' => null, 'estimated_cost' => 50, 'picked' => null, 'ordered' => null];
+        $uncosted   = (object) ['net' => 100, 'org_net' => 100, 'gross' => 100, 'org_exchange' => 1, 'actual_cost' => null, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+        $partial    = (object) ['net' => 1000, 'org_net' => 1000, 'gross' => 1000, 'org_exchange' => 1, 'actual_cost' => 120, 'estimated_cost' => 400, 'picked' => 30, 'ordered' => 100];
+        $discounted = (object) ['net' => 180, 'org_net' => 180, 'gross' => 200, 'org_exchange' => 1, 'actual_cost' => 90, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
 
-        expect($trait->aggregate([$exact, $uncosted]))->toBe([
-            'profit_amount'      => 60.0,
-            'margin_pct'         => 60.0,
-            'is_estimated'       => false,
-            'lines_without_cost' => 1,
-            'currency_code'      => 'GBP',
-        ])
+        $exactPlusUncosted = $trait->aggregate([$exact, $uncosted]);
+
+        expect($exactPlusUncosted['profit_amount'])->toBe(60.0)
+            ->and($exactPlusUncosted['margin_pct'])->toBe(60.0)
+            ->and($exactPlusUncosted['before_discounts'])->toBeNull()
+            ->and($exactPlusUncosted['is_estimated'])->toBeFalse()
+            ->and($exactPlusUncosted['lines_without_cost'])->toBe(1)
             ->and($trait->aggregate([$exact, $estimated])['margin_pct'])->toBe(55.0)
             ->and($trait->aggregate([$exact, $estimated])['is_estimated'])->toBeTrue()
             ->and($trait->aggregate([$partial])['margin_pct'])->toBe(60.0)
             ->and($trait->aggregate([$uncosted]))->toBeNull();
+
+        $withDiscount = $trait->aggregate([$discounted]);
+
+        expect($withDiscount['margin_pct'])->toBe(50.0)
+            ->and($withDiscount['before_discounts'])->toBe(['margin_pct' => 55.0, 'profit_amount' => 110.0])
+            ->and($withDiscount['is_below_break_even'])->toBeFalse();
+
+        $belowBreakEven = $trait->aggregate([$exact], breakEvenPct: 70.0);
+
+        expect($belowBreakEven['is_below_break_even'])->toBeTrue()
+            ->and($belowBreakEven['break_even_pct'])->toBe(70.0);
+
+        $gift = (object) ['net' => 0, 'org_net' => 0, 'gross' => 0, 'org_exchange' => 1, 'actual_cost' => 20, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+
+        expect($trait->aggregate([$exact, $gift])['margin_pct'])->toBe(40.0)
+            ->and($trait->aggregate([$exact, $gift])['profit_amount'])->toBe(40.0);
     });
 });

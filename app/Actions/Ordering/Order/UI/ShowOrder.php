@@ -447,8 +447,7 @@ class ShowOrder extends OrgAction
                 ] : null,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
                 'contact_address'             => $order->customer ? AddressResource::make($order->customer->address)->getArray() : null,
-                'box_stats'                   => $this->getOrderBoxStats($order),
-                'margin_summary'              => $this->getMarginSummary($order),
+                'box_stats'                   => $this->getOrderBoxStatsWithMargins($order),
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
                 'charges'                     => [
                     'premium_dispatch' => $orderCharges['premium_dispatch'] ? ChargeResource::make($orderCharges['premium_dispatch'])->toArray(request()) : null,
@@ -697,6 +696,57 @@ class ShowOrder extends OrgAction
 
         $this->set('canEdit', $request->user()->authTo('hr.edit'));
         $this->set('canViewUsers', $request->user()->authTo('users.view'));
+    }
+
+    /**
+     * Attaches margin info to the order summary rows: the after-discount margin on the
+     * Items net row, and what the discount cost in margin on the Discounts row. Grp only,
+     * the shared retina getOrderBoxStats stays margin-free.
+     *
+     * @return array<string, mixed>
+     */
+    private function getOrderBoxStatsWithMargins(Order $order): array
+    {
+        $boxStats = $this->getOrderBoxStats($order);
+        $summary  = $this->getMarginSummary($order);
+
+        if (!$summary) {
+            return $boxStats;
+        }
+
+        $symbol = $order->currency->symbol ?? $order->currency->code;
+        $tilde  = $summary['is_estimated'] ? '~' : '';
+
+        $marginInfo = __('Margin').": {$tilde}{$summary['margin_pct']}% · {$symbol}".number_format($summary['profit_amount'], 2);
+        if ($summary['is_below_break_even']) {
+            $marginInfo .= ' — '.__('below :pct% break-even', ['pct' => $summary['break_even_pct']]);
+        }
+        if ($summary['lines_without_cost'] > 0) {
+            $marginInfo .= ' — '.__(':count lines without cost excluded', ['count' => $summary['lines_without_cost']]);
+        }
+
+        $discountInfo = null;
+        if ($summary['before_discounts']) {
+            $points       = round($summary['before_discounts']['margin_pct'] - $summary['margin_pct'], 1);
+            $profitCost   = round($summary['before_discounts']['profit_amount'] - $summary['profit_amount'], 2);
+            $discountInfo = __('Margin cost').": {$points}pts · {$symbol}".number_format($profitCost, 2);
+        }
+
+        foreach ($boxStats['order_summary'] ?? [] as $groupIndex => $group) {
+            foreach ($group as $rowIndex => $row) {
+                $label = $row['label'] ?? null;
+                if (in_array($label, [__('Items net'), __('Items')])) {
+                    $boxStats['order_summary'][$groupIndex][$rowIndex]['information'] = $marginInfo;
+                    if ($summary['is_below_break_even']) {
+                        $boxStats['order_summary'][$groupIndex][$rowIndex]['label_class'] = 'text-red-600';
+                    }
+                } elseif ($label === __('Discounts') && $discountInfo) {
+                    $boxStats['order_summary'][$groupIndex][$rowIndex]['information'] = $discountInfo;
+                }
+            }
+        }
+
+        return $boxStats;
     }
 
     public function jsonResponse(Order $order): OrderResource
