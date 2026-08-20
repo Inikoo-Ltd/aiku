@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
@@ -89,6 +90,9 @@ class DeletePicking extends OrgAction
 
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+
+        /** Reducing a pick can settle an over-picked line, which is one of the blocking reasons. */
+        AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote->refresh());
 
         return true;
     }
