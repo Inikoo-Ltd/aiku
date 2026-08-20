@@ -1262,11 +1262,16 @@ test('withdraw balance customer', function (Customer $customer) {
 
 test('Customer basket hydrator', function () {
     $customer = Customer::find(1);
+
+    $basketOrder = $customer->orders()->where('state', OrderStateEnum::CREATING->value)->first()
+        ?? StoreOrder::make()->action($customer, []);
+
     CustomerHydrateBasket::run($customer->id);
     $customer->refresh();
+
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and($customer->amount_in_basket)->toEqual(0)
-        ->and($customer->current_order_in_basket_id)->toBeNull();
+        ->and($customer->amount_in_basket)->toEqual($basketOrder->total_amount)
+        ->and($customer->current_order_in_basket_id)->toBe($basketOrder->id);
 });
 
 test('sync customers to google ads uploads hashed identifiers', function () {

@@ -1380,10 +1380,10 @@ test('delivery note state to picking handling blocked and unassigned', function 
 });
 
 test('delivery note finalise and dispatch', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
-    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
@@ -1451,7 +1451,7 @@ test('mixed order with service picks and invoices', function () {
     $deliveryNote = $deliveryNote->refresh();
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
-    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    StorePacking::make()->action($deliveryNoteItem->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SM'.Str::random(4), 'name' => 'Sm', 'trade_as' => 'sm']);
@@ -1484,11 +1484,11 @@ test('mixed order with service picks and invoices', function () {
 });
 
 test('delivery note finalise and dispatch combined and pick as employee', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
-    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
@@ -2122,10 +2122,10 @@ test('cancelling an order cancels its delivery note', function () {
 });
 
 test('UI show delivery note richer states and tabs', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
-    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SD'.Str::random(4), 'name' => 'Sd', 'trade_as' => 'sd']);
     StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'T'.Str::random(4)]);
