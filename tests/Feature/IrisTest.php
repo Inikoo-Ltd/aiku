@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareUrl;
 use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\DetectWebsite;
 use App\Models\Web\Website;
@@ -341,4 +342,24 @@ test('aiku own domains keep serving the aiku favicon at the root favicon.ico', f
 
     $response->assertOk()
         ->assertHeader('content-type', 'image/vnd.microsoft.icon');
+});
+
+test('it purges a url in cloudflare for both apex and www', function () {
+    $this->website->update([
+        'cloudflare_zone_id' => 'zone123',
+        'cloudflare_token'   => encrypt('token123'),
+    ]);
+
+    Http::fake([
+        'api.cloudflare.com/client/v4/zones/zone123/purge_cache' => Http::response(['success' => true]),
+    ]);
+
+    expect(PurgeCloudflareUrl::run($this->website, '/favicon.ico'))->toBeTrue();
+
+    Http::assertSent(function ($request) {
+        return $request['files'] === [
+            'https://'.$this->website->domain.'/favicon.ico',
+            'https://www.'.$this->website->domain.'/favicon.ico',
+        ];
+    });
 });
