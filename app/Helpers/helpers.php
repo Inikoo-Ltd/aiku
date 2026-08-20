@@ -990,3 +990,33 @@ if (!function_exists('paymentSettlementTolerance')) {
         return min(max((float)$tolerance, 0), 1);
     }
 }
+
+if (!function_exists('discountAmountOffGross')) {
+    /**
+     * The discount taken off a gross amount for a given discount factor, rounded half up to the
+     * cent.
+     *
+     * Done in integer units because the factor's complement is not representable in binary and
+     * lands on either side of the true value depending on the factor: 1 - 0.9 is a hair under a
+     * tenth, 1 - 0.7 a hair over three tenths. Multiplied by a gross that puts the discount on
+     * an exact half cent, the two round opposite ways, and the line is billed a cent away from
+     * the price the basket quoted and the customer paid. Nudging the float only moves which
+     * factors break, so there is no float here at all.
+     *
+     * The factor is taken to four decimals (a basis point); the gross keeps four decimals so a
+     * part picked line does not lose its sub cent before the discount comes off.
+     */
+    function discountAmountOffGross(float $grossAmount, ?float $discountFactor): float
+    {
+        $offBasisPoints = (int)round((1 - ($discountFactor ?? 1)) * 10000);
+
+        if ($offBasisPoints === 0) {
+            return 0.0;
+        }
+
+        $sign       = $grossAmount < 0 ? -1 : 1;
+        $grossUnits = (int)round(abs($grossAmount) * 10000);
+
+        return $sign * intdiv($grossUnits * $offBasisPoints + 500000, 1000000) / 100;
+    }
+}

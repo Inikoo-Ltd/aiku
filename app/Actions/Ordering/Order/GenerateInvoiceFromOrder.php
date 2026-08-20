@@ -271,19 +271,33 @@ class GenerateInvoiceFromOrder extends OrgAction
             $quantityPicked = ($transaction->quantity_ordered + $transaction->quantity_bonus) * $sumOfPickings;
         }
 
-        /**
-         * The discount comes from the line's own factor, read from the row rather than the model
-         * in hand, which may have been loaded before a discount recalculation committed. Deriving
-         * it as net/gross instead made a line that had already lost its discount keep losing it:
-         * the ratio reads as 1, the line is rewritten at full gross, and every later pick or pack
-         * writes it back the same way. Taken off the gross the way CalculateOrderDiscounts does
-         * it, so the two agree to the penny.
-         */
-        $discountFactor = (float)(DB::table('transactions')->where('id', $transaction->id)->value('current_discount_factor') ?? 1);
-
         $gross = $historicAsset->price * $quantityPicked;
-        $net   = $gross - round($gross * (1 - $discountFactor), 2);
 
+        /**
+         * A submitted line is not priced again, it is read back. Submission records the whole
+         * sale - quantity, gross, net and factor - so the net of what was picked is the unit net
+         * that was sold, times the units taken. No factor, no complement, no rounding shape, so
+         * no later change to pricing code can move the price of something already sold. Every
+         * penny incident on this path came from re-deriving a number that was already stored.
+         *
+         * A line re-priced on purpose after submission - a discretionary discount, a correction -
+         * has a factor that no longer matches the submitted one, and is calculated instead.
+         */
+        $sale = DB::table('transactions')->where('id', $transaction->id)->first([
+            'current_discount_factor',
+            'submitted_discount_factor',
+            'submitted_net_amount',
+            'submitted_quantity_ordered',
+        ]);
+
+        $submittedQuantity = (float)($sale?->submitted_quantity_ordered ?? 0);
+
+        if ($sale?->submitted_net_amount !== null && $submittedQuantity > 0
+            && (float)$sale->current_discount_factor === (float)$sale->submitted_discount_factor) {
+            $net = round((float)$sale->submitted_net_amount / $submittedQuantity * $quantityPicked, 2);
+        } else {
+            $net = $gross - discountAmountOffGross($gross, (float)($sale->current_discount_factor ?? 1));
+        }
 
         if ($transaction->is_gift) {
             $gross = 0;

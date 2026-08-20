@@ -2166,6 +2166,116 @@ test('invoice totals from a part picked order keep net plus tax equal to the tot
         ->and($totals['net_amount'] + $totals['tax_amount'])->toBe($totals['total_amount']);
 });
 
+test('a ten per cent line keeps the penny it was submitted at', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 61.95]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 1]
+    ));
+
+    // 61.95 off ten per cent: the discount is 6.195, which must round up to 6.20 like the
+    // basket did, not down to 6.19 because 1 - 0.9 is a hair under a tenth in binary.
+    $transaction->update([
+        'gross_amount'            => 61.95,
+        'net_amount'              => 55.75,
+        'quantity_bonus'          => 0,
+        'current_discount_factor' => 0.9,
+    ]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(55.75);
+});
+
+test('a part picked line bills the fraction of the price it was sold at', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 26.95]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 4]
+    ));
+    $transaction->update([
+        'gross_amount'            => 107.80,
+        'net_amount'              => 102.41,
+        'quantity_bonus'          => 0,
+        'current_discount_factor' => 0.95,
+    ]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    DB::table('delivery_note_items')->insert([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'shop_id'           => $order->shop_id,
+        'delivery_note_id'  => $deliveryNote->id,
+        'transaction_id'    => $transaction->id,
+        'state'             => 'picked',
+        'quantity_required' => 4,
+        'quantity_picked'   => 2,
+        'data'              => '{}',
+    ]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    // half of 102.41, not half of the gross discounted again
+    expect($totals['net_amount'])->toBe(51.21);
+});
+
+test('a line discounted after it was submitted is priced on its new factor', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 61.95]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 1]
+    ));
+    $transaction->update(['gross_amount' => 61.95, 'net_amount' => 61.95, 'quantity_bonus' => 0]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    // sold at full price, then given ten per cent off by hand afterwards
+    $transaction->update(['current_discount_factor' => 0.9, 'net_amount' => 55.75]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(55.75);
+});
+
 test('shipping zone with territories wins over a catch all zone placed above it', function () {
     $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'catch all on top schema',
