@@ -28,6 +28,8 @@ import AddLocations from './AddLocations.vue'
 import EditLocations from './EditLocations.vue'
 import { WINDOW } from '@sentry/vue'
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
+import { useLowStockAuditBroadcast, LowStockAuditedEvent } from '@/Composables/useLowStockAuditBroadcast'
+import { debounce } from 'lodash-es'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
 
 const props = defineProps<{
@@ -48,6 +50,25 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+
+const reloadStocksManagement = debounce(() => router.reload({ only: ['showcase'] }), 600)
+
+useLowStockAuditBroadcast((event: LowStockAuditedEvent) => {
+    if (event.org_stock_id !== props.org_stock_id) {
+        return
+    }
+
+    const location = props.stocks_management.locations?.find(
+        (location: StockLocation) => location.id === event.location_org_stock_id
+    )
+
+    if (location) {
+        location.quantity = event.quantity
+        location.audited_at = event.audited_at
+    }
+
+    reloadStocksManagement()
+})
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject('screenType', ref('desktop'))
 // Active picking location state
@@ -513,7 +534,7 @@ const onAddLocationShow = () => {
 
             <Dialog v-model:visible="isEditLocationModalOpen" modal :header="ctrans('Remove Locations')"
                 :dismissableMask="screenType === 'desktop'"
-                :style="{ width: '50vw' }"                
+                :style="{ width: '50vw' }"
                 :closeOnEscape="true"
                 :breakpoints="{
                     '1200px': '76vw',

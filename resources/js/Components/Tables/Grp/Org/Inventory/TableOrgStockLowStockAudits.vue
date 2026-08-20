@@ -8,6 +8,7 @@
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { inject, ref } from "vue"
+import { debounce } from "lodash-es"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
 import { routeType } from "@/types/route"
@@ -21,6 +22,10 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import {
+    useLowStockAuditBroadcast,
+    LowStockAuditedEvent,
+} from "@/Composables/useLowStockAuditBroadcast"
 
 library.add(faDotCircle, fasDotCircle)
 
@@ -109,6 +114,29 @@ function auditLocation(location: LowStockAuditLocation, quantity: number | null 
         }
     )
 }
+
+function reloadLowStockAudits() {
+    router.reload({ only: ["lowStockAudits"] })
+}
+
+const debouncedReload = debounce(reloadLowStockAudits, 600)
+
+useLowStockAuditBroadcast((event: LowStockAuditedEvent) => {
+    const rows = (props.data as any)?.data ?? []
+
+    const location = rows
+        .flatMap((row: LowStockAudit) => row.locations ?? [])
+        .find((row: LowStockAuditLocation) => row.id === event.location_org_stock_id)
+
+    // Patch what is on screen straight away, then let the reload drop rows that are now done
+    if (location) {
+        location.quantity = event.quantity
+        location.audited_at = event.audited_at
+        location.is_low_stock_checked = event.is_low_stock_checked
+    }
+
+    debouncedReload()
+})
 
 function submitNewQuantity(location: LowStockAuditLocation) {
     const quantity = newQuantities.value[location.id]

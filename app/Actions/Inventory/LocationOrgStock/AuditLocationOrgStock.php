@@ -15,6 +15,7 @@ use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Events\BroadcastLowStockAudited;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
@@ -87,6 +88,8 @@ class AuditLocationOrgStock extends OrgAction
         SetOrgStockPickingLocation::dispatch($locationOrgStock->org_stock_id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->org_stock_id)->delay(2);
 
+        BroadcastLowStockAudited::dispatch($locationOrgStock);
+
         return $locationOrgStock;
     }
 
@@ -101,10 +104,6 @@ class AuditLocationOrgStock extends OrgAction
     }
 
 
-    /**
-     * Auditing without touching the quantity is a recount that confirms what is already there,
-     * and so is auditing a new quantity straight off the shelf without picking a reason.
-     */
     public function prepareForValidation(): void
     {
         if (!$this->has('quantity')) {
