@@ -78,6 +78,16 @@ class Translate extends OrgAction
         return self::stripJsonEscapes($translated);
     }
 
+    /**
+     * True only when every backslash in the text is part of a JSON escape a translation driver
+     * could have echoed. Text carrying any other backslash is ambiguous - a literal one cannot be
+     * told apart from a double-escaped one - so callers without a clean source must leave it alone.
+     */
+    public static function hasOnlyJsonEchoEscapes(string $text): bool
+    {
+        return substr_count($text, '\\') === preg_match_all('/\\\\(?:["\\/\']|u[0-9a-fA-F]{4})/', $text);
+    }
+
     public static function stripJsonEscapes(string $text): string
     {
         for ($pass = 0; $pass < 5; $pass++) {

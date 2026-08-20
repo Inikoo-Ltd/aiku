@@ -82,3 +82,14 @@ it('never eats emoji surrogate pairs or null escapes', function () {
         ->and($strip('\\u0000null'))->toBe('\\u0000null')
         ->and($strip('bullet \\u2022 here'))->toBe('bullet • here');
 });
+
+it('refuses to strip text whose backslashes are ambiguous', function () {
+    $safe = fn (string $text) => App\Actions\Helpers\Translations\Translate::hasOnlyJsonEchoEscapes($text);
+
+    expect($safe('<p style=\\"color: red\\">a<\\/p>'))->toBeTrue()
+        ->and($safe('bullet \\u2022 here'))->toBeTrue()
+        ->and($safe('A\\\\/B'))->toBeFalse()
+        ->and($safe('C:\\path\\to'))->toBeFalse()
+        ->and($safe('regex \\d+ digits'))->toBeFalse()
+        ->and($safe('no backslash at all'))->toBeTrue();
+});

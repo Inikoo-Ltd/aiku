@@ -38,6 +38,8 @@ class RepairEscapedDescriptions
         CatalogueCollection::class,
     ];
 
+    public array $skipped = [];
+
     public function handle(Model $model, bool $apply): array
     {
         $attributes = $model->getAttributes();
@@ -45,8 +47,12 @@ class RepairEscapedDescriptions
 
         foreach (self::FIELDS as $field) {
             $scalar = $attributes[$field] ?? null;
-            if (is_string($scalar) && ($clean = Translate::stripJsonEscapes($scalar)) !== $scalar) {
-                $changes[$field] = $clean;
+            if (is_string($scalar) && str_contains($scalar, '\\')) {
+                if (!Translate::hasOnlyJsonEchoEscapes($scalar)) {
+                    $this->skipped[] = class_basename($model).' '.$model->getKey().' '.$field;
+                } elseif (($clean = Translate::stripJsonEscapes($scalar)) !== $scalar) {
+                    $changes[$field] = $clean;
+                }
             }
 
             $i8nField = $field.'_i8n';
@@ -60,10 +66,27 @@ class RepairEscapedDescriptions
                 continue;
             }
 
-            $cleaned = array_map(
-                fn ($value) => is_string($value) ? Translate::stripJsonEscapes($value) : $value,
+            $ambiguous = false;
+            $cleaned   = array_map(
+                function ($value) use (&$ambiguous) {
+                    if (!is_string($value) || !str_contains($value, '\\')) {
+                        return $value;
+                    }
+
+                    if (!Translate::hasOnlyJsonEchoEscapes($value)) {
+                        $ambiguous = true;
+
+                        return $value;
+                    }
+
+                    return Translate::stripJsonEscapes($value);
+                },
                 $translations
             );
+
+            if ($ambiguous) {
+                $this->skipped[] = class_basename($model).' '.$model->getKey().' '.$i8nField;
+            }
 
             if ($cleaned !== $translations) {
                 $changes[$i8nField] = json_encode($cleaned, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -120,6 +143,13 @@ class RepairEscapedDescriptions
             });
 
             $command->line(class_basename($modelClass).': '.$repaired.($apply ? ' repaired' : ' would be repaired'));
+        }
+
+        if ($this->skipped) {
+            $command->warn(count($this->skipped).' field(s) left untouched, their backslashes are not unambiguously JSON echoes:');
+            foreach (array_slice($this->skipped, 0, 50) as $skipped) {
+                $command->line('  '.$skipped);
+            }
         }
 
         if (!$apply) {
