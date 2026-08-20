@@ -84,7 +84,7 @@ const hasSide = computed(
 			">
 			<div
 				v-if="hasCard"
-				class="rounded-md  border border-[#747474] bg-[#dfdfdf] p-5 md:p-6 xl:p-[26px] 2xl:p-7">
+				class="rounded-md  border border-[#747474] bg-[#dcdcdcdc] p-5 md:p-6 xl:p-[26px] 2xl:p-7">
 				<div class="flex items-start gap-[18px]">
 					<div class="relative flex-shrink-0 leading-none text-black">
 						<FontAwesomeIcon
