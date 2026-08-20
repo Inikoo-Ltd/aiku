@@ -1007,7 +1007,7 @@ onUnmounted(() => {
                                     <FontAwesomeIcon :icon="faChevronRight" class="text-[8px] text-gray-400" />
                                 </span>
                             </button>
-                            <div class="absolute right-full top-0 hidden group-hover/prio:block w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1">
+                            <div class="absolute left-full top-0 hidden group-hover/prio:block w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1">
                                 <button v-for="p in PRIORITIES" :key="p.value" type="button"
                                     class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100"
                                     :class="menuContact.priority === p.value ? 'font-semibold text-gray-900' : 'text-gray-700'"
