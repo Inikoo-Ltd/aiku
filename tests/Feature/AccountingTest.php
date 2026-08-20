@@ -27,6 +27,7 @@ use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Accounting\OrgPaymentServiceProvider\UpdateOrgPaymentServiceProvider;
+use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\Payment\UpdatePayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
@@ -2780,4 +2781,31 @@ test('repair command attaches order only payments to their invoice, and only whe
 
     expect($nativeInvoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::UNPAID)
         ->and($nativeInvoice->payments()->count())->toBe(0);
+});
+
+test('an invoice settled by two payments still records the date it was paid', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $account  = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 372.72, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+
+    // taken from ACAi02240: 351.84 + 20.88 sums to 372.71999999999997 as a float,
+    // a hair under the total, so the >= test inside the loop never fires
+    foreach ([351.84, 20.88] as $amount) {
+        $payment = StorePayment::make()->action($customer, $account, [
+            'amount'    => $amount,
+            'reference' => 'ref-two-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::PAYMENT,
+        ]);
+        AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+    }
+
+    expect($invoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and($invoice->paid_at)->not->toBeNull();
 });
