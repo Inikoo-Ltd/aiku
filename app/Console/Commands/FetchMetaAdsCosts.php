@@ -32,6 +32,14 @@ use Illuminate\Support\Facades\Log;
  * account in the business, so one env value normally serves every shop. A shop is fetched only when
  * it has both, because an ad account with no token reachable is not a run that can succeed.
  *
+ * One ad account often advertises more than one shop - a retail brand and its dropship arm share a
+ * business and a payment method, and the campaigns are told apart only by how they are named. Such
+ * an account goes on every shop it serves, each with `shop.settings.meta_ads.campaign_name_prefix`
+ * naming the campaigns that belong to that shop, e.g. `AW UK` and `AWD UK`. A shop with no prefix
+ * takes the whole account, which is what a shop that owns its account alone wants. Spend left to
+ * another shop's prefix is counted and reported, because a day's total that silently comes back
+ * short reads exactly like an account that underspent.
+ *
  * Campaign references are Meta's numeric campaign ids. The touch history stores whatever the ad's
  * `utm_campaign` said, so campaign-level ROAS only lines up when the ads are tagged with Meta's
  * dynamic `utm_campaign={{campaign.id}}`. Untagged accounts still get correct source-level spend.
@@ -129,6 +137,7 @@ class FetchMetaAdsCosts extends Command
     {
         $accountId = (string) data_get($shop->settings, 'meta_ads.ad_account_id');
         $token     = $this->accessToken($shop);
+        $prefix    = trim((string) data_get($shop->settings, 'meta_ads.campaign_name_prefix'));
 
         $trafficSources = TrafficSource::where('shop_id', $shop->id)
             ->whereIn('type', [TrafficSourcesTypeEnum::META_ADS->value, TrafficSourcesTypeEnum::INSTAGRAM_ADS->value])
@@ -154,8 +163,9 @@ class FetchMetaAdsCosts extends Command
             'access_token'   => $token,
         ];
 
-        $rows = [];
-        $seen = [];
+        $rows    = [];
+        $seen    = [];
+        $skipped = 0;
 
         /* Insights paginates, and an account with hundreds of campaigns over a multi-day backfill
            needs every page or the day's total silently comes back short.
@@ -181,6 +191,14 @@ class FetchMetaAdsCosts extends Command
             }
 
             foreach ($response->json('data', []) as $row) {
+                if (!$this->belongsToShop($row, $prefix)) {
+                    if ((float) data_get($row, 'spend', 0) > 0) {
+                        $skipped++;
+                    }
+
+                    continue;
+                }
+
                 $this->collectRow($rows, $row);
             }
 
@@ -191,7 +209,26 @@ class FetchMetaAdsCosts extends Command
             Log::warning('Meta Ads pagination stopped on a repeated page', ['shop' => $shop->slug, 'url' => $url]);
         }
 
+        if ($skipped > 0) {
+            $this->line("  {$skipped} campaign-day(s) with spend left to another shop, outside the '{$prefix}' campaign name prefix.");
+        }
+
         return $this->store($trafficSources, $rows);
+    }
+
+    /**
+     * A shop with no prefix configured takes every campaign in the account.
+     */
+    private function belongsToShop(array $row, string $prefix): bool
+    {
+        if ($prefix === '') {
+            return true;
+        }
+
+        return str_starts_with(
+            strtolower(trim((string) data_get($row, 'campaign_name'))),
+            strtolower($prefix)
+        );
     }
 
     /**
