@@ -4,7 +4,7 @@ import { trans } from "laravel-vue-i18n"
 import RadioButton from "primevue/radiobutton"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import SelectQuery from "@/Components/SelectQuery.vue"
-import { set } from 'lodash-es'
+import { isPlainObject, set } from 'lodash-es'
 
 const props = withDefaults(defineProps<{
 	modelValue?: {
@@ -55,6 +55,16 @@ watch(() => props.modelValue, (value) => {
 
 const selectedType = computed(() => isCleared.value ? 'none' : localModel.value?.type)
 
+const emptyDestination = {
+	href: null,
+	url: null,
+	canonical_url: null,
+	id: null,
+	image_alt: null,
+	workshop: null,
+	data: {},
+}
+
 function changeType(value: string) {
 	if (value === 'none') {
 		isCleared.value = true
@@ -62,9 +72,19 @@ function changeType(value: string) {
 		return
 	}
 
+	const currentLink: Record<string, any> = isPlainObject(localModel.value) ? localModel.value : {}
+
+	if (!isCleared.value && currentLink.type === value) {
+		return
+	}
+
 	isCleared.value = false
-	set(localModel.value, 'type', value)
-	emit('update:modelValue', localModel.value)
+	emit('update:modelValue', {
+		...currentLink,
+		...emptyDestination,
+		target: currentLink.target ?? '_self',
+		type: value,
+	})
 }
 
 const targets = [
