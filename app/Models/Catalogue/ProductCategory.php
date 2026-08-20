@@ -480,4 +480,9 @@ class ProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
     }
+
+    public function labelingGuide(): HasOne
+    {
+        return $this->hasOne(LabelingGuide::class, 'product_category_id');
+    }
 }

@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
+use App\Actions\Catalogue\ProductCategory\LabelingGuide\StoreLabelingGuide;
 use App\Actions\Discounts\Offer\FinishOffer;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
@@ -32,6 +33,7 @@ use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
+use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -52,6 +54,7 @@ class UpdateProductCategory extends OrgAction
     use SanitizeInputs;
 
     private ProductCategory $productCategory;
+    private ?User $user = null;
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
@@ -65,7 +68,7 @@ class UpdateProductCategory extends OrgAction
             if (Arr::has($modelData, 'storage_temperature')) {
                 data_set($storageOption, 'storage_temperature', Arr::pull($modelData, 'storage_temperature'));
             }
-            
+
             if (Arr::has($modelData, 'storage_guidelines')) {
                 data_set($storageOption, 'storage_guidelines', Arr::pull($modelData, 'storage_guidelines'));
             }
@@ -129,6 +132,12 @@ class UpdateProductCategory extends OrgAction
             } else {
                 $this->finishFamilyGrOffer($productCategory);
             }
+        }
+
+        // Handle labeling_guide pdf file upload
+        if (Arr::has($modelData, 'labeling_guide_file') && data_get($modelData, 'labeling_guide_file', null) instanceof \Illuminate\Http\UploadedFile) {
+            $file = Arr::pull($modelData, 'labeling_guide_file');
+            StoreLabelingGuide::make()->action($productCategory, $file, $this->user);
         }
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
@@ -348,7 +357,7 @@ class UpdateProductCategory extends OrgAction
             'customize_option.*.available'  => ['sometimes', 'boolean'],
             'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
             'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', 'max:250'],
-            // storage_option               
+            // storage_option
             'storage_conditions'            => ['sometimes', 'array'],
             'storage_conditions.*.key'      => ['sometimes', 'nullable', 'string'],
             'storage_conditions.*.label'    => ['sometimes', 'nullable', 'string'],
@@ -356,6 +365,8 @@ class UpdateProductCategory extends OrgAction
             'storage_temperature'           => ['sometimes', 'nullable', 'string'],
             'storage_guidelines'            => ['sometimes', 'array'],
             'storage_guidelines.*.text'     => ['sometimes', 'nullable', 'string', 'max:250'],
+            // labeling_guide_file
+            'labeling_guide_file'           => ['sometimes', 'nullable', File::types(['pdf'])->max(64000)], // 64mb max, following server max (prod on php.ini max file size upload)
         ];
 
         if (!$this->strict) {
@@ -513,6 +524,7 @@ class UpdateProductCategory extends OrgAction
     public function asController(ProductCategory $productCategory, ActionRequest $request): ProductCategory
     {
         $this->productCategory = $productCategory;
+        $this->user = $request->user();
 
         $this->initialisationFromShop($productCategory->shop, $request);
 
