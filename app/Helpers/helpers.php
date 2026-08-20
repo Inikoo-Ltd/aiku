@@ -648,17 +648,24 @@ if (!function_exists('riseDivisor')) {
             return $input;
         }
 
-        $whole = $input[0];
+        $numerator = ($input[0] * $divisor + $input[1][0]) * $raiser;
 
-        $dividend = round($input[1][0] * ($raiser / $divisor));
+        $whole     = intdiv((int)$numerator, (int)$divisor);
+        $remainder = $numerator - $whole * $divisor;
 
-        if (abs($dividend) >= abs($raiser)) {
-            $carry     = intdiv((int)$dividend, (int)$raiser);
-            $whole     += $carry;
-            $dividend  -= $carry * $raiser;
+        if ($remainder == round($remainder) && $divisor == round($divisor)) {
+            $a = (int)abs($remainder);
+            $b = (int)$divisor;
+            while ($a) {
+                [$a, $b] = [$b % $a, $a];
+            }
+            if ($b > 1) {
+                $remainder /= $b;
+                $divisor   /= $b;
+            }
         }
 
-        return [$whole, [$dividend, $raiser]];
+        return [$whole, [$remainder, $divisor]];
     }
 }
 

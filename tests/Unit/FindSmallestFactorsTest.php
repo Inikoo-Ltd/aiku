@@ -122,3 +122,36 @@ test('findSmallestFactors handles edge cases', function () {
     $result = findSmallestFactors(2.0001);
     expect($result)->toBe([2.0, 1]);
 });
+
+describe('riseDivisor expresses a quantity of org stocks as a count of packs', function () {
+    test('a fraction of an outer becomes a whole number of packs', function () {
+        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.25)), 4))->toBe([1, [0, 1]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.16666667)), 6))->toBe([1, [0, 1]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.5)), 4))->toBe([2, [0, 1]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.75)), 4))->toBe([3, [0, 1]]);
+    });
+
+    test('an unpacked stock keeps its fraction so fractional units survive', function () {
+        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.25)), 1))->toBe([0, [1, 4]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(0.5)), 1))->toBe([0, [1, 2]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(1 / 3)), 1))->toBe([0, [1, 3]]);
+    });
+
+    test('whole quantities scale by the packing', function () {
+        expect(riseDivisor(divideWithRemainder(findSmallestFactors(1.0)), 4))->toBe([4, [0, 1]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(2.5)), 4))->toBe([10, [0, 1]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(3.0)), 1))->toBe([3, [0, 1]]);
+    });
+
+    test('partial packs keep a reduced fraction, negatives included', function () {
+        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.3)), 4))->toBe([1, [1, 5]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(4.33)), 6))->toBe([25, [49, 50]])
+            ->and(riseDivisor(divideWithRemainder(findSmallestFactors(-0.3)), 4))->toBe([-1, [-1, 5]]);
+    });
+
+    test('zero and unknown packing are left alone', function () {
+        expect(riseDivisor(divideWithRemainder(findSmallestFactors(0.0)), 4))->toBe([0, [0, 1]])
+            ->and(riseDivisor([0, [1, 4]], null))->toBe([0, [1, 4]])
+            ->and(riseDivisor([0, [1, 4]], 0))->toBe([0, [1, 4]]);
+    });
+});
