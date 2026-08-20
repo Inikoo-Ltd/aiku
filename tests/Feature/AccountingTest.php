@@ -2748,6 +2748,8 @@ test('repair command attaches order only payments to their invoice, and only whe
         ]
     );
 
+    $this->shop->update(['migrated_to_aiku_on' => now()->addYear()]);
+
     $settles = StoreOrder::make()->action($customer, []);
     $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
     $invoice->update(['order_id' => $settles->id, 'total_amount' => 3433.49, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
@@ -2759,10 +2761,23 @@ test('repair command attaches order only payments to their invoice, and only whe
     $shortInvoice->update(['order_id' => $short->id, 'total_amount' => 500.00, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
     AttachPaymentToOrder::make()->action($short, $storePayment(499.99, PaymentTypeEnum::PAYMENT), []);
 
+    $native        = StoreOrder::make()->action($customer, []);
+    $nativeInvoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $nativeInvoice->update(['order_id' => $native->id, 'total_amount' => 210.00, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+    AttachPaymentToOrder::make()->action($native, $storePayment(210.00, PaymentTypeEnum::PAYMENT), []);
+
     $this->artisan('repair:invoice_payments_not_attached --slug='.$invoice->slug.' --slug='.$shortInvoice->slug.' --apply')->assertOk();
 
     expect($invoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
         ->and((float) $invoice->payment_amount)->toBe(3433.49)
         ->and($shortInvoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::UNPAID)
         ->and($shortInvoice->payments()->count())->toBe(0);
+
+    // dated after the shop moved to aiku, and paid by a payment raised in aiku rather
+    // than imported from aurora, so the command must not decide this one on its own
+    $this->shop->update(['migrated_to_aiku_on' => now()->subYear()]);
+    $this->artisan('repair:invoice_payments_not_attached --slug='.$nativeInvoice->slug.' --apply')->assertOk();
+
+    expect($nativeInvoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::UNPAID)
+        ->and($nativeInvoice->payments()->count())->toBe(0);
 });

@@ -30,7 +30,7 @@ class RepairInvoicePaymentsNotAttached
 {
     use AsAction;
 
-    public string $commandSignature = 'repair:invoice_payments_not_attached {--S|shop= : Shop slug} {--s|slug=* : Invoice slugs} {--apply}';
+    public string $commandSignature = 'repair:invoice_payments_not_attached {--S|shop= : Shop slug} {--s|slug=* : Invoice slugs} {--B|before-migration : Only invoices dated before the shop moved to aiku} {--apply}';
 
     public function handle(Invoice $invoice, Collection $payments): void
     {
@@ -61,7 +61,16 @@ class RepairInvoicePaymentsNotAttached
             $query->whereIn('slug', $slugs);
         }
 
-        foreach ($query->with('order')->cursor() as $invoice) {
+        // Before the shop moved over, aurora was the book of record and aiku only mirrored
+        // it, so a payment state corrected here was never the figure anyone reported on.
+        if ($command->option('before-migration')) {
+            $query->whereHas('shop', function ($q) {
+                $q->whereNotNull('shops.migrated_to_aiku_on')
+                    ->whereColumn('invoices.date', '<', 'shops.migrated_to_aiku_on');
+            });
+        }
+
+        foreach ($query->with(['order', 'shop'])->cursor() as $invoice) {
             $order = $invoice->order;
 
             if (!$order || $order->invoices()->count() !== 1) {
@@ -78,6 +87,19 @@ class RepairInvoicePaymentsNotAttached
 
             if ($payments->isEmpty() || $paid != round($invoice->total_amount, 2)) {
                 $skipped[] = [$invoice->reference, 'payments do not sum to the total', (float) $invoice->total_amount, $paid];
+                continue;
+            }
+
+            // Before the shop moved over, aurora was the book of record and aiku only
+            // mirrored it, so an unlinked payment there is import damage and nothing else.
+            // After it, aiku owns the data: an aurora sourced payment is still the old
+            // damage arriving late, but one raised in aiku may be sitting off the invoice
+            // for a reason this command cannot see. Leave those for a human.
+            $migratedOn  = $invoice->shop->migrated_to_aiku_on;
+            $preMigration = $migratedOn && $invoice->date < $migratedOn;
+
+            if (!$preMigration && $payments->contains(fn ($payment) => blank($payment->source_id))) {
+                $skipped[] = [$invoice->reference, 'payment raised in aiku, not aurora', (float) $invoice->total_amount, $paid];
                 continue;
             }
 
