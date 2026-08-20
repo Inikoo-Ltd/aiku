@@ -28,6 +28,8 @@ use App\Actions\Chat\ChatSession\UpdateChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
 use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
+use App\Actions\Chat\MetaChatSession\CloseMetaChatSession;
+use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SendMetaChatMessage;
 use Illuminate\Support\Facades\Route;
 
@@ -52,6 +54,10 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('whatsapp.assign.self');
     Route::patch('/whatsapp/{metaChatSession:ulid}/takeover', [AssignMetaChatToAgent::class, 'takeOver'])
         ->name('whatsapp.takeover');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/close', CloseMetaChatSession::class)
+        ->name('whatsapp.sessions.close');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/reopen', ReopenMetaChatSession::class)
+        ->name('whatsapp.sessions.reopen');
     Route::patch('/messages/{chatSession:ulid}/{chatMessage}/edit', UpdateChatMessage::class)->name('messages.update');
     Route::post('/messages/{chatMessage}/verify-image', VerifyChatImageMessage::class)->name('messages.verify_image');
     Route::get('/messages/{chatMessage}/slack-settings', GetChatMessageSlackSettings::class)->name('messages.slack_settings');

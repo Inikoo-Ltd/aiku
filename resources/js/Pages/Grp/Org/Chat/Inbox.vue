@@ -867,7 +867,8 @@ onUnmounted(() => {
                     :messages="messages" :session="selectedSession"
                     :organisation-slug="organisation.slug"
                     @back="selectedSession = null" @messages-read="onMessagesRead"
-                    @assign-self-success="onAssignSelfSuccess" />
+                    @assign-self-success="onAssignSelfSuccess"
+                    @close-session="closeSession" />
                 <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"

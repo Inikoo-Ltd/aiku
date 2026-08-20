@@ -11,6 +11,8 @@ import {
     faXmark,
     faFilePdf,
     faFileLines,
+    faTimesCircle,
+    faRotateRight,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -18,6 +20,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { Dialog } from "primevue"
 
@@ -43,7 +46,7 @@ const props = defineProps<{
     organisationSlug: string
 }>()
 
-const emit = defineEmits(["back", "messages-read", "assign-self-success"])
+const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session"])
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
@@ -58,8 +61,14 @@ const isMyChat = computed(() => {
 
 const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)
+const isReopening = ref(false)
 
-const claimChat = async (routeName: string, method: "post" | "patch", flag: { value: boolean }) => {
+const claimChat = async (
+    routeName: string,
+    method: "post" | "patch",
+    flag: { value: boolean },
+    errorText: string
+) => {
     if (!chatSession.value?.ulid || flag.value) return
     flag.value = true
     try {
@@ -72,7 +81,7 @@ const claimChat = async (routeName: string, method: "post" | "patch", flag: { va
     } catch (e: any) {
         notify({
             title: trans("Error"),
-            text: e?.response?.data?.message ?? trans("Failed to assign chat"),
+            text: e?.response?.data?.message ?? errorText,
             type: "error",
         })
     } finally {
@@ -81,10 +90,28 @@ const claimChat = async (routeName: string, method: "post" | "patch", flag: { va
 }
 
 const assignSelf = () =>
-    claimChat("grp.org.chat.agents.whatsapp.assign.self", "post", isAssigningSelf)
+    claimChat(
+        "grp.org.chat.agents.whatsapp.assign.self",
+        "post",
+        isAssigningSelf,
+        trans("Failed to assign chat")
+    )
 
 const takeoverChat = () =>
-    claimChat("grp.org.chat.agents.whatsapp.takeover", "patch", isTakingOver)
+    claimChat(
+        "grp.org.chat.agents.whatsapp.takeover",
+        "patch",
+        isTakingOver,
+        trans("Failed to assign chat")
+    )
+
+const reopenChat = () =>
+    claimChat(
+        "grp.org.chat.agents.whatsapp.sessions.reopen",
+        "patch",
+        isReopening,
+        trans("Failed to reopen chat")
+    )
 
 const canSendNonTemplate = ref<boolean | undefined>(undefined)
 const templateOnly = computed(() => canSendNonTemplate.value === false)
@@ -504,6 +531,25 @@ onMounted(() => {
                     </span>
                 </div>
             </div>
+
+            <ModalConfirmationDelete v-if="!isClosed" :routeDelete="{
+                name: 'grp.org.chat.agents.whatsapp.sessions.close',
+                parameters: [organisationSlug, session?.ulid],
+                method: 'patch',
+            }" :title="trans('Are you sure you want to end this chat?')"
+                :noLabel="trans('End chat')"
+                :noIcon="faTimesCircle"
+                :description="trans('This will close the chat session. The conversation history will be preserved.')"
+                @success="$emit('close-session')">
+                <template #default="{ changeModel }">
+                    <button @click="changeModel"
+                        class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
+                        :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
+                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
+                        {{ trans("End chat") }}
+                    </button>
+                </template>
+            </ModalConfirmationDelete>
         </header>
 
         <!-- Messages -->
@@ -559,8 +605,18 @@ onMounted(() => {
 
         <!-- Footer: closed banner -->
         <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
-            <div class="px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-600 text-center">
-                {{ trans('This chat has been closed') }}
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('This chat has been closed') }}
+                </div>
+                <Button
+                    @click="reopenChat"
+                    :loading="isReopening"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Reopen')"
+                    :icon="faRotateRight"
+                />
             </div>
         </footer>
 
