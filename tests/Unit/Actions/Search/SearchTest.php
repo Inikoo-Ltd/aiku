@@ -200,18 +200,17 @@ it('does not cache results for queries longer than two characters', function () 
     $action->handle('sysadmin', 'abc');
 });
 
-it('indexes eori and ukims from their own columns in Customer toSearchableArray', function () {
+it('indexes the identity document number and no longer the retired eori and ukims columns', function () {
     $customer = Customer::factory()->make([
         'status'                   => CustomerStatusEnum::APPROVED,
         'state'                    => CustomerStateEnum::ACTIVE,
         'identity_document_number' => 'ID-123',
-        'eori'                     => 'GB123456789000',
-        'ukims'                    => 'XIUKIM12345',
         'created_at'               => now(),
     ]);
 
     $searchable = $customer->toSearchableArray();
 
-    expect($searchable['eori'])->toBe('GB123456789000')
-        ->and($searchable['ukims'])->toBe('XIUKIM12345');
+    expect($searchable['identity_document_number'])->toBe('ID-123')
+        ->and($searchable)->not->toHaveKey('eori')
+        ->and($searchable)->not->toHaveKey('ukims');
 });

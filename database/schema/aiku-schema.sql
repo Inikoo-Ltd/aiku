@@ -5474,8 +5474,6 @@ CREATE TABLE public.customers (
     accounting_reference character varying(255),
     external_id character varying(255),
     searchable_text text,
-    eori character varying(20),
-    ukims character varying(255),
     identity_document_number_alt character varying(255),
     fiscal_name character varying(255)
 );
