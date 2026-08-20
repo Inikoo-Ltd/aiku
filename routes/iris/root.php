@@ -16,6 +16,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
 use App\Actions\Accounting\Invoice\IrisPdfInvoice;
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
+use App\Actions\Web\Webpage\Iris\ShowIrisFavicon;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\Helpers\Media\UI\DownloadAttachment;
 use App\Actions\Web\Webpage\Iris\ShowIrisSubSitemap;
@@ -34,6 +35,8 @@ use App\Actions\Iris\Reviews\ShowIrisReviews;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
+
+Route::get('favicon.ico', ShowIrisFavicon::class)->name('iris_favicon');
 
 Route::get('{path}', function () {
     return redirect('/image_not_found.png');

@@ -329,3 +329,16 @@ test('it advances the fetch cursor so re-running does not re-query the same even
     expect(Carbon::parse($secondSince[1]))->toEqual(Carbon::parse('2026-07-01 10:00:00')->subMinutes(15))
         ->and(Carbon::parse($secondSince[1]))->toBeGreaterThan(Carbon::parse($firstSince[1]));
 });
+
+test('iris serves the website favicon at the root favicon.ico', function () {
+    $response = $this->get('http://'.$this->website->domain.'/favicon.ico');
+
+    $response->assertRedirect(url('favicons/iris-favicon.ico'));
+});
+
+test('aiku own domains keep serving the aiku favicon at the root favicon.ico', function () {
+    $response = $this->get('http://app.'.config('app.domain').'/favicon.ico');
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'image/vnd.microsoft.icon');
+});
