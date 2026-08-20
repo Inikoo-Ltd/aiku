@@ -110,19 +110,19 @@ const isMobile = computed(() => props.screenType === "mobile")
 			<div class="flex-1">
 				<h2
 					v-if="hasText(title)"
-					class="text-[26px] font-semibold leading-tight text-[#13294B] md:text-[30px] lg:text-[34px]">
+					class="text-[26px] font-semibold leading-tight md:text-[30px] lg:text-[34px]">
 					{{ title }}
 				</h2>
 
 				<div
 					v-if="hasDescription"
-					class="mt-3 max-w-2xl text-[13px] leading-[1.75] text-[#334155] md:text-[14px]"
+					class="mt-3 max-w-2xl text-[13px] leading-[1.75] md:text-[14px]"
 					v-html="description" />
 
 				<a
 					v-if="hasLink"
 					:href="linkUrl"
-					class="mt-4 inline-block text-[13px] font-medium text-[#13294B] underline underline-offset-4 transition hover:text-[#C0899B] md:text-[14px]">
+					class="mt-4 inline-block text-[13px] font-medium underline underline-offset-4 transition hover:text-[#C0899B] md:text-[14px]">
 					{{ linkLabel }}
 				</a>
 			</div>
@@ -151,7 +151,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 					<FontAwesomeIcon :icon="highlight.icon" class="text-[30px] md:text-[34px]" />
 				</div>
 
-				<p class="mt-4 text-center text-[12px] leading-snug text-[#13294B] md:text-[16px]">
+				<p class="mt-4 text-center text-[12px] leading-snug md:text-[16px]">
 					{{ highlight.label }}
 				</p>
 			</div>
@@ -232,13 +232,13 @@ const isMobile = computed(() => props.screenType === "mobile")
 			</div>
 
 			<div v-if="hasContact">
-				<h3 v-if="contactTitle" class="text-xl font-semibold text-[#13294B] md:text-2xl">
+				<h3 v-if="contactTitle" class="text-xl font-semibold md:text-2xl">
 					{{ contactTitle }}
 				</h3>
 
 				<div
 					v-if="contactDescription"
-					class="mt-3 text-[12px] leading-[1.8] text-[#334155] md:text-[13px]"
+					class="mt-3 text-[12px] leading-[1.8] md:text-[13px]"
 					v-html="contactDescription" />
 
 				<a
@@ -298,7 +298,6 @@ const isMobile = computed(() => props.screenType === "mobile")
 	font-size: 13px !important;
 	font-weight: 600 !important;
 	line-height: 1.5 !important;
-	color: #13294b !important;
 	text-align: left !important;
 	vertical-align: middle !important;
 	white-space: nowrap !important;
@@ -322,7 +321,6 @@ const isMobile = computed(() => props.screenType === "mobile")
 	font-size: 13px !important;
 	font-weight: 400 !important;
 	line-height: 1.7 !important;
-	color: #334155 !important;
 	text-align: left !important;
 	vertical-align: top !important;
 }
@@ -381,19 +379,16 @@ const isMobile = computed(() => props.screenType === "mobile")
 	margin-top: 8px;
 	margin-bottom: 0;
 	font-size: 12px;
-	color: #334155;
 }
 
 .customisation-card__moq span {
 	font-weight: 500;
-	color: #13294b;
 }
 
 .customisation-card__notes {
 	margin-top: 4px;
 	font-size: 12px;
 	line-height: 1.7;
-	color: #334155;
 }
 
 .customisation-table :deep(p),
