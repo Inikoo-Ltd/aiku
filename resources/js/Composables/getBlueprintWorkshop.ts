@@ -116,8 +116,8 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'family-3': FamilyBluprint3.blueprint,
 
 		// family-extra-description
-		'family-2-extra-description' : Family2ExtraDescriptionBlueprint.blueprint, 
-		'family-3-extra-description' : Family2ExtraDescriptionBlueprint.blueprint,
+		'family-2-extra-description' : () => Family2ExtraDescriptionBlueprint(data).blueprint,
+		'family-3-extra-description' : () => Family2ExtraDescriptionBlueprint(data).blueprint,
 
 		// families list
 		"families-1-overview": Families1Overview.blueprint,

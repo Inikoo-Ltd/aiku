@@ -33,17 +33,17 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", {}) as any
-const activeTab = ref("about")
 
-const tabs = computed(() =>
-  [
-    { key: "about", label: ctrans("About the Range") },
-    { key: "marketing", label: ctrans("Marketing Materials") },
-    { key: "faq", label: ctrans("FAQ") },
-    { key: "customisation", label: ctrans("Customisation") },
-    { key: "labeling guide", label: ctrans("Labeling Guide") },
-    { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
-  ])
+const tabs = computed(() => [
+  { key: "about", label: ctrans("About the Range") },
+  { key: "marketing", label: ctrans("Marketing Materials") },
+  { key: "faq", label: ctrans("FAQ") },
+  { key: "customisation", label: ctrans("Customisation") },
+  { key: "labeling guide", label: ctrans("Labeling Guide") },
+  { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
+])
+
+const activeTab = ref("about")
 
 const sectionId = computed(
   () => props.modelValue?.id ?? `family-1-iris-${props.indexBlock}`

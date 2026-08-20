@@ -32,6 +32,10 @@ class GetWebsiteWorkshopFamilyDescriptionWebBlock
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
+            'organisation'    => [
+                'id'   => $website->organisation->id,
+                'slug' => $website->organisation->slug,
+            ],
             'family'    => WorkshopFamiliesResource::collection(
                 $website
                 ->shop

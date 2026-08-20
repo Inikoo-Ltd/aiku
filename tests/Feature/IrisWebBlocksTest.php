@@ -29,6 +29,7 @@ use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -230,4 +231,93 @@ test('family extra description block exposes the family customize options', func
             'moq'       => '',
             'notes'     => '',
         ]);
+});
+
+test('family extra description block flags families of the aroma organisation', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+
+    $webpage      = StoreProductCategoryWebpage::make()->action($family);
+    $webBlockType = $this->website->group->webBlockTypes()->where('code', 'family-2-extra-description')->firstOrFail();
+
+    StoreModelHasWebBlock::make()->action($webpage, [
+        'web_block_type_id' => $webBlockType->id,
+        'position'          => 0,
+    ]);
+
+    $webpage = PublishWebpage::make()->action($webpage, ['comment' => 'aroma organisation flag test']);
+
+    $renderer = new class () {
+        use WithIrisGetWebpageWebBlocks;
+    };
+
+    $renderFamilyBlock = function () use ($renderer, $webpage) {
+        $publishedBlocks = collect(Arr::get($webpage->published_layout, 'web_blocks', []))
+            ->filter(fn ($block) => Arr::get($block, 'type') === 'family-2-extra-description')
+            ->all();
+
+        $parsed = $renderer->getIrisWebBlocks($webpage->fresh(), $publishedBlocks, true);
+
+        return Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family');
+    };
+
+    expect(Arr::get($renderFamilyBlock(), 'is_aroma_organisation'))->toBeFalse();
+
+    $family->organisation->update(['slug' => 'aroma']);
+
+    expect(Arr::get($renderFamilyBlock(), 'is_aroma_organisation'))->toBeTrue();
+});
+
+test('family extra description block exposes the family storage options', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+
+    UpdateProductCategory::make()->action($family, [
+        'storage_conditions'  => [
+            ['key' => 'storage', 'value' => 'Store in a cool, dry place.'],
+            ['key' => 'shelf_life', 'value' => '24 months from manufacture.'],
+        ],
+        'storage_temperature' => '15°C - 25°C',
+        'storage_guidelines'  => [
+            ['text' => 'Keep products in their original packaging.'],
+            ['text' => 'Protect from heat and sunlight.'],
+        ],
+    ]);
+
+    $webpage      = StoreProductCategoryWebpage::make()->action($family);
+    $webBlockType = $this->website->group->webBlockTypes()->where('code', 'family-2-extra-description')->firstOrFail();
+
+    StoreModelHasWebBlock::make()->action($webpage, [
+        'web_block_type_id' => $webBlockType->id,
+        'position'          => 0,
+    ]);
+
+    $webpage = PublishWebpage::make()->action($webpage, ['comment' => 'family storage option test']);
+
+    $renderer = new class () {
+        use WithIrisGetWebpageWebBlocks;
+    };
+
+    $publishedBlocks = collect(Arr::get($webpage->published_layout, 'web_blocks', []))
+        ->filter(fn ($block) => Arr::get($block, 'type') === 'family-2-extra-description')
+        ->all();
+
+    $parsed        = $renderer->getIrisWebBlocks($webpage, $publishedBlocks, true);
+    $storageOption = Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family.storage_option');
+
+    expect(Arr::get($storageOption, 'storage_temperature'))->toBe('15°C - 25°C')
+        ->and(Arr::get($storageOption, 'storage_guidelines'))->toHaveCount(2)
+        ->and(Arr::get($storageOption, 'storage_conditions'))
+        ->toHaveCount(count(FamilyStorageConditionEnum::cases()));
+
+    $conditionsByKey = collect(Arr::get($storageOption, 'storage_conditions'))->keyBy('key');
+
+    expect($conditionsByKey->get('storage'))
+        ->toMatchArray([
+            'key'   => 'storage',
+            'label' => 'Storage',
+            'value' => 'Store in a cool, dry place.',
+        ])
+        ->and($conditionsByKey->get('shelf_life')['value'])->toBe('24 months from manufacture.')
+        ->and($conditionsByKey->get('after_opening')['value'])->toBe('');
 });

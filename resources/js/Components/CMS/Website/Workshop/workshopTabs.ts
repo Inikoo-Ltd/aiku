@@ -160,7 +160,8 @@ export const WORKSHOP_TABS: Record<string, WorkshopTabConfig> = {
     sidebarProps: (ctx) => ({
       data: ctx.layoutState,
       webBlockTypes: ctx.data.web_block_types,
-      selectedBlock: ctx.selectedBlock
+      selectedBlock: ctx.selectedBlock,
+      organisation: ctx.data.organisation
     }),
     layoutShape: 'blocks',
     screenView: true,

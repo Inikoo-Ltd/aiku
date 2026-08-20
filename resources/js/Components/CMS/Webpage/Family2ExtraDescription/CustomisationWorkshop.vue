@@ -2,7 +2,8 @@
 import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBox, faSmoke, faTint, faFlask, faTags, faBoxOpen, faCheck } from "@fal"
+import { faBox, faSmoke, faTint, faFlask, faTags, faBoxOpen } from "@fal"
+import { faCheckCircle } from "@fas"
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
@@ -12,106 +13,67 @@ const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 
-library.add(faBox, faSmoke, faTint, faFlask, faTags, faBoxOpen, faCheck)
+library.add(faBox, faSmoke, faTint, faFlask, faTags, faBoxOpen, faCheckCircle)
+
+const hasText = (value: unknown) => String(value ?? "").trim() !== ""
 
 const customisation = computed(() => props.fieldValue?.customisation ?? {})
+
+const family = computed(() => props.fieldValue?.family ?? {})
 
 const containerStyle = computed(() => getStyles(customisation.value?.container?.properties))
 
 const title = computed(() => customisation.value?.title || ctrans("Customisations"))
 
-const description = computed(
-	() =>
-		customisation.value?.description ||
-		ctrans(
-			"Create a product that represents your brand. Our white label range can be tailored to your brand and market."
-		)
-)
+const description = computed(() => customisation.value?.description ?? "")
+
+const hasDescription = computed(() => hasText(description.value))
+
+const linkUrl = computed(() => String(customisation.value?.link?.url ?? "").trim())
 
 const linkLabel = computed(
 	() => customisation.value?.link?.text || ctrans("More about bespoke made products")
 )
 
-const image = computed(() => customisation.value?.image)
+const hasLink = computed(() => hasText(linkUrl.value) && linkUrl.value !== "#")
 
-const hasImage = computed(() => Boolean(image.value?.original))
+const image = computed(() => {
+	const source = family.value?.extra_description_image
+	const values = Array.isArray(source) ? source : Object.values(source ?? {})
+
+	return values.filter((value: any) => hasText(value?.original))[0] ?? null
+})
+
+const hasImage = computed(() => Boolean(image.value))
 
 const familyOptions = computed(() => {
-	const source = props.fieldValue?.family?.customize_option
+	const source = family.value?.customize_option
 
 	return Array.isArray(source) ? source : []
 })
 
-const hasFamilyOptions = computed(() => familyOptions.value.length > 0)
+const hasOptionData = (option: any) =>
+	Boolean(option?.available) || hasText(option?.moq) || hasText(option?.notes)
 
-const defaultIcons = [
-	{ key: "packaging", icon: "fal fa-box", label: ctrans("Packaging") },
-	{ key: "fragrance", icon: "fal fa-smoke", label: ctrans("Fragrance") },
-	{ key: "colour", icon: "fal fa-tint", label: ctrans("Colour") },
-	{ key: "formulation", icon: "fal fa-flask", label: ctrans("Formulation") },
-	{ key: "labeling", icon: "fal fa-tags", label: ctrans("Labeling") },
-	{ key: "pack_sizes", icon: "fal fa-box-open", label: ctrans("Pack Sizes") },
-]
-
-const highlights = computed(() => {
-	if (hasFamilyOptions.value) {
-		return familyOptions.value
-			.filter((option) => option.available)
-			.map((option) => ({
-				key: option.key,
-				icon: option.icon,
-				label: option.label,
-			}))
-	}
-
-	return defaultIcons
-})
-
-const defaultRows = [
-	{
-		option: ctrans("Packaging"),
-		available: true,
-		moq: "£500+",
-		notes: ctrans("Multiple Packaging format and sizes, see our packaging options."),
-	},
-	{
-		option: ctrans("Labeling"),
-		available: true,
-		moq: "£500+",
-		notes: ctrans("Customer supplied or printed by us."),
-	},
-	{
-		option: ctrans("Fragrance"),
-		available: true,
-		moq: "£1000 - £1500",
-		notes: ctrans("Choose from our fragrance department or create your own."),
-	},
-	{
-		option: ctrans("Formulation"),
-		available: true,
-		moq: "£1000 - £1500",
-		notes: ctrans("Speak to our team to explore the formulation options available."),
-	},
-	{
-		option: ctrans("Outer Packaging"),
-		available: true,
-		moq: "£500+",
-		notes: ctrans("Multiple Packaging format and sizes."),
-	},
-]
-
-const rows = computed(() => {
-	if (hasFamilyOptions.value) {
-		return familyOptions.value.map((option) => ({
-			option: option.label,
-			available: option.available,
-			moq: option.moq,
-			notes: option.notes,
+const highlights = computed(() =>
+	familyOptions.value
+		.filter((option: any) => option?.available)
+		.map((option: any) => ({
+			key: option.key,
+			icon: option.icon,
+			label: option.label,
 		}))
-	}
+)
 
-	return defaultRows
-})
+const rows = computed(() =>
+	familyOptions.value.filter(hasOptionData).map((option: any) => ({
+		key: option.key,
+		option: option.label,
+		available: Boolean(option.available),
+		moq: String(option.moq ?? "").trim(),
+		notes: String(option.notes ?? "").trim(),
+	}))
+)
 
 const columns = computed(() => ({
 	option: customisation.value?.table?.option || ctrans("Option"),
@@ -120,20 +82,24 @@ const columns = computed(() => ({
 	notes: customisation.value?.table?.notes || ctrans("Notes"),
 }))
 
-const contactTitle = computed(
-	() => customisation.value?.contact?.title || ctrans("Have Project in mind?")
+const contactTitle = computed(() => String(customisation.value?.contact?.title ?? "").trim())
+
+const contactDescription = computed(() => customisation.value?.contact?.description ?? "")
+
+const contactButtonLabel = computed(() =>
+	String(customisation.value?.contact?.button?.text ?? "").trim()
 )
 
-const contactDescription = computed(
-	() =>
-		customisation.value?.contact?.description ||
-		ctrans(
-			"Looking for something we don't currently offer? Speak to our team. We can help you explore the development of a new product, even if there is nothing similar in our existing range."
-		)
+const contactButtonUrl = computed(() =>
+	String(customisation.value?.contact?.button?.url ?? "").trim()
 )
 
-const contactButtonLabel = computed(
-	() => customisation.value?.contact?.button?.text || ctrans("Contact Us")
+const hasContactButton = computed(
+	() => hasText(contactButtonLabel.value) && hasText(contactButtonUrl.value)
+)
+
+const hasContact = computed(
+	() => hasText(contactTitle.value) || hasText(contactDescription.value) || hasContactButton.value
 )
 
 const isMobile = computed(() => props.screenType === "mobile")
@@ -141,116 +107,306 @@ const isMobile = computed(() => props.screenType === "mobile")
 
 <template>
 	<div class="w-full py-6 md:py-8 lg:py-10" :style="containerStyle">
-		<div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
+		<div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
 			<div class="flex-1">
-				<h2 class="text-2xl font-semibold text-[#13294B] md:text-[28px] lg:text-[32px]">
+				<h2
+					class="text-[26px] font-semibold leading-tight text-[#13294B] md:text-[30px] lg:text-[34px]">
 					{{ title }}
 				</h2>
 
 				<div
-					class="mt-3 max-w-xl text-[13px] leading-[1.7] text-[#334155] md:text-[14px]"
+					v-if="hasDescription"
+					class="mt-3 max-w-2xl text-[13px] leading-[1.75] text-[#334155] md:text-[14px]"
 					v-html="description" />
 
-				<span
-					class="mt-4 inline-block text-[13px] text-[#13294B] underline underline-offset-4 md:text-[14px]">
+				<a
+					v-if="hasLink"
+					:href="linkUrl"
+					class="mt-4 inline-block text-[13px] font-medium text-[#13294B] underline underline-offset-4 transition hover:text-[#C0899B] md:text-[14px]">
 					{{ linkLabel }}
-				</span>
+				</a>
 			</div>
 
-			<div v-if="hasImage" class="w-full max-w-[260px] shrink-0 self-center lg:self-start">
+			<div
+				v-if="hasImage"
+				class="w-full max-w-[240px] shrink-0 self-center overflow-hidden rounded-[8px] lg:max-w-[280px] lg:self-start">
 				<Image
-					:src="image"
+					:src="image?.original"
 					:srcset="image?.srcset"
-					sizes="(min-width: 1024px) 260px, 60vw"
+					sizes="(min-width: 1024px) 280px, 60vw"
 					:image-cover="false"
 					class="h-auto w-full object-contain"
-					:alt="title" />
+					:alt="family?.name || title" />
 			</div>
 		</div>
 
 		<div
 			v-if="highlights.length"
-			class="mt-8 grid gap-3 md:gap-4"
+			class="mt-8 grid gap-3 sm:gap-4"
 			:class="isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-6'">
 			<div v-for="highlight in highlights" :key="highlight.key ?? highlight.label">
 				<div
-					class="flex h-[52px] items-center justify-center rounded-[6px] bg-[#C0899B] text-white md:h-[58px]"
+					class="flex h-[72px] items-center justify-center rounded-[8px] bg-[#C0899B] text-white md:h-[80px] mb-4"
 					:style="getStyles(customisation?.highlight?.container?.properties)">
-					<FontAwesomeIcon :icon="highlight.icon" class="text-xl md:text-2xl" />
+					<FontAwesomeIcon :icon="highlight.icon" class="text-[30px] md:text-[34px]" />
 				</div>
 
-				<p class="mt-2 text-center text-[12px] text-[#13294B] md:text-[13px]">
+				<p class="mt-4 text-center text-[12px]   leading-snug text-[#13294B] md:text-[16px]">
 					{{ highlight.label }}
 				</p>
 			</div>
 		</div>
 
-		<div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1.7fr_1fr] lg:gap-12">
-			<div class="overflow-x-auto">
-				<table class="w-full min-w-[520px] border-collapse text-left">
-					<thead>
-						<tr class="bg-[#EDEDED] text-[12px] font-semibold text-[#13294B] md:text-[13px]">
-							<th class="border border-[#DADADA] px-3 py-2">{{ columns.option }}</th>
-							<th class="border border-[#DADADA] px-3 py-2 text-center">
-								{{ columns.available }}
-							</th>
-							<th class="border border-[#DADADA] px-3 py-2 text-center">
-								{{ columns.moq }}
-							</th>
-							<th class="border border-[#DADADA] px-3 py-2">{{ columns.notes }}</th>
-						</tr>
-					</thead>
+		<div
+			v-if="rows.length || hasContact"
+			class="mt-8 grid grid-cols-1 gap-8 lg:gap-12"
+			:class="rows.length && hasContact ? 'lg:grid-cols-[1.7fr_1fr]' : 'lg:grid-cols-1'">
+			<div v-if="rows.length">
+				<div v-if="isMobile" class="customisation-cards">
+					<div v-for="row in rows" :key="row.key" class="customisation-card">
+						<div class="customisation-card__head">
+							<p class="customisation-card__title">{{ row.option }}</p>
 
-					<tbody>
-						<tr
-							v-for="(row, index) in rows"
-							:key="index"
-							class="text-[11px] text-[#334155] md:text-[12px]">
-							<td class="border border-[#DADADA] px-3 py-2 text-[#C0899B]">
-								{{ row.option }}
-							</td>
+							<FontAwesomeIcon
+								v-if="row.available"
+								icon="fas fa-check-circle"
+								class="customisation-check" />
 
-							<td class="border border-[#DADADA] px-3 py-2 text-center">
-								<span
-									v-if="row.available"
-									class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#C0899B] text-[10px] text-white">
-									<FontAwesomeIcon icon="fal fa-check" />
-								</span>
+							<span v-else class="customisation-dash">—</span>
+						</div>
 
-								<span v-else class="text-[#9a9a9a]">—</span>
-							</td>
+						<p v-if="row.moq" class="customisation-card__moq">
+							<span>{{ columns.moq }}:</span> {{ row.moq }}
+						</p>
 
-							<td class="border border-[#DADADA] px-3 py-2 text-center">
-								{{ row.moq }}
-							</td>
+						<div
+							v-if="row.notes"
+							class="customisation-card__notes"
+							v-html="row.notes" />
+					</div>
+				</div>
 
-							<td class="border border-[#DADADA] px-3 py-2" v-html="row.notes" />
-						</tr>
-					</tbody>
-				</table>
+				<div
+					v-else
+					class="customisation-table-wrapper"
+					:class="{ 'customisation-table-wrapper--solo': !hasContact }">
+					<table class="customisation-table">
+						<thead>
+							<tr>
+								<th class="customisation-table__th">{{ columns.option }}</th>
+								<th
+									class="customisation-table__th customisation-table__th--available">
+									{{ columns.available }}
+								</th>
+								<th class="customisation-table__th customisation-table__th--moq">
+									{{ columns.moq }}
+								</th>
+								<th class="customisation-table__th">{{ columns.notes }}</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<tr v-for="row in rows" :key="row.key">
+								<td class="customisation-table__td customisation-table__td--option">
+									{{ row.option }}
+								</td>
+
+								<td class="customisation-table__td customisation-table__td--center">
+									<FontAwesomeIcon
+										v-if="row.available"
+										icon="fas fa-check-circle"
+										class="customisation-check" />
+
+									<span v-else class="customisation-dash">—</span>
+								</td>
+
+								<td class="customisation-table__td customisation-table__td--center">
+									{{ row.moq }}
+								</td>
+
+								<td class="customisation-table__td" v-html="row.notes" />
+							</tr>
+						</tbody>
+					</table>
+				</div>
 			</div>
 
-			<div>
-				<h3 class="text-xl font-semibold text-[#13294B] md:text-2xl">
+			<div v-if="hasContact">
+				<h3 v-if="contactTitle" class="text-xl font-semibold text-[#13294B] md:text-2xl">
 					{{ contactTitle }}
 				</h3>
 
 				<div
+					v-if="contactDescription"
 					class="mt-3 text-[12px] leading-[1.8] text-[#334155] md:text-[13px]"
 					v-html="contactDescription" />
 
-				<button
-					class="mt-5 inline-flex w-full items-center justify-between gap-6 rounded-[6px] bg-[#0F1E2E] px-5 py-3 text-[14px] text-white transition hover:bg-[#1c2f43] md:w-auto md:text-[15px]"
-					:style="getStyles(customisation?.contact?.button?.container?.properties)">
-					<span>{{ contactButtonLabel }}</span>
-					<span class="text-lg">›</span>
-				</button>
+				<a
+					v-if="hasContactButton"
+					:href="contactButtonUrl"
+					class="mt-5 inline-block w-full md:w-auto">
+					<button
+						class="inline-flex w-full items-center justify-between gap-6 rounded-[6px] bg-[#0F1E2E] px-5 py-3 text-[14px] text-white transition hover:bg-[#1c2f43] md:w-auto md:text-[15px]"
+						:style="getStyles(customisation?.contact?.button?.container?.properties)">
+						<span>{{ contactButtonLabel }}</span>
+						<span class="text-lg">›</span>
+					</button>
+				</a>
 			</div>
 		</div>
 	</div>
 </template>
 
 <style scoped>
+.customisation-table-wrapper {
+	width: 100%;
+	overflow-x: auto;
+}
+
+.customisation-table-wrapper--solo {
+	max-width: 980px;
+}
+
+.customisation-table {
+	width: 100% !important;
+	min-width: 520px !important;
+	border-collapse: collapse !important;
+	border-spacing: 0 !important;
+	table-layout: auto !important;
+	background-color: transparent !important;
+	text-align: left !important;
+	margin: 0 !important;
+	font-family: inherit !important;
+}
+
+.customisation-table thead tr,
+.customisation-table thead th {
+	background-color: #ededed !important;
+	background-image: none !important;
+}
+
+.customisation-table tbody tr,
+.customisation-table tbody tr:nth-child(even),
+.customisation-table tbody tr:nth-child(odd) {
+	background-color: transparent !important;
+	background-image: none !important;
+}
+
+.customisation-table th.customisation-table__th {
+	border: 1px solid #dadada !important;
+	padding: 10px 12px !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	line-height: 1.5 !important;
+	color: #13294b !important;
+	text-align: left !important;
+	vertical-align: middle !important;
+	white-space: nowrap !important;
+	text-transform: none !important;
+	letter-spacing: normal !important;
+}
+
+.customisation-table th.customisation-table__th--available {
+	width: 96px !important;
+	text-align: center !important;
+}
+
+.customisation-table th.customisation-table__th--moq {
+	width: 136px !important;
+	text-align: center !important;
+}
+
+.customisation-table td.customisation-table__td {
+	border: 1px solid #dadada !important;
+	padding: 10px 12px !important;
+	font-size: 13px !important;
+	font-weight: 400 !important;
+	line-height: 1.7 !important;
+	color: #334155 !important;
+	text-align: left !important;
+	vertical-align: top !important;
+}
+
+.customisation-table td.customisation-table__td--option {
+	white-space: nowrap !important;
+}
+
+.customisation-table td.customisation-table__td--center {
+	text-align: center !important;
+	vertical-align: middle !important;
+}
+
+.customisation-check {
+	display: inline-block !important;
+	flex-shrink: 0 !important;
+	vertical-align: middle !important;
+	font-size: 22px !important;
+	line-height: 1 !important;
+	color: #c0899b !important;
+	background-color: transparent !important;
+}
+
+.customisation-dash {
+	color: #9a9a9a !important;
+}
+
+.customisation-cards {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.customisation-card {
+	border: 1px solid #dadada;
+	border-radius: 8px;
+	background-color: rgba(255, 255, 255, 0.6);
+	padding: 16px;
+}
+
+.customisation-card__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.customisation-card__title {
+	font-size: 13px;
+	font-weight: 600;
+	color: #c0899b;
+	margin-bottom: 0;
+}
+
+.customisation-card__moq {
+	margin-top: 8px;
+	margin-bottom: 0;
+	font-size: 12px;
+	color: #334155;
+}
+
+.customisation-card__moq span {
+	font-weight: 500;
+	color: #13294b;
+}
+
+.customisation-card__notes {
+	margin-top: 4px;
+	font-size: 12px;
+	line-height: 1.7;
+	color: #334155;
+}
+
+.customisation-table :deep(p),
+.customisation-card__notes :deep(p) {
+	margin-bottom: 0;
+}
+
+.customisation-table :deep(a) {
+	color: #c0899b;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
 :deep(a) {
 	color: #c0899b;
 	text-decoration: underline;

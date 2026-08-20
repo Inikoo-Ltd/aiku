@@ -6,7 +6,17 @@ const TextItemBlueprint = [
 	},
 ]
 
-export default {
+const AROMA_ORGANISATION_SLUG = "aroma"
+
+const AROMA_ONLY_SECTIONS = ["customisation", "labeling_guide", "storage"]
+
+const showsAromaSections = (data?: any) => {
+	const slug = data?.organisation?.slug
+
+	return slug === undefined || slug === AROMA_ORGANISATION_SLUG
+}
+
+export default (data?: any) => ({
 	blueprint: [
 		/* {
 			label: "Responsive Visibility",
@@ -253,11 +263,6 @@ export default {
 					key: ["description"],
 					label: "Description",
 					type: "editorhtml",
-				},
-				{
-					key: ["image"],
-					label: "Image",
-					type: "upload_image",
 				},
 				{
 					name: "Link",
@@ -615,59 +620,12 @@ export default {
 					type: "editorhtml",
 				},
 				{
-					name: "Table Headers",
-					key: ["table"],
-					replaceForm: [
-						{
-							key: ["storage"],
-							label: "Storage",
-							type: "text",
-						},
-						{
-							key: ["shelf_life"],
-							label: "Shelf Life",
-							type: "text",
-						},
-						{
-							key: ["after_opening"],
-							label: "After Opening",
-							type: "text",
-						},
-					],
-				},
-				{
-					name: "Conditions",
-					key: ["conditions"],
-					replaceForm: [
-						{
-							key: ["storage"],
-							label: "Storage",
-							type: "text",
-						},
-						{
-							key: ["shelf_life"],
-							label: "Shelf Life",
-							type: "text",
-						},
-						{
-							key: ["after_opening"],
-							label: "After Opening",
-							type: "text",
-						},
-					],
-				},
-				{
 					name: "Temperature",
 					key: ["temperature"],
 					replaceForm: [
 						{
 							key: ["label"],
 							label: "Label",
-							type: "text",
-						},
-						{
-							key: ["value"],
-							label: "Value",
 							type: "text",
 						},
 					],
@@ -680,21 +638,6 @@ export default {
 							key: ["title"],
 							label: "Title",
 							type: "text",
-						},
-						{
-							key: ["items"],
-							name: "Items",
-							type: "array-data",
-							props_data: {
-								blueprint: TextItemBlueprint,
-								order_name: "guideline",
-								can_drag: true,
-								can_delete: true,
-								can_add: true,
-								new_value_data: {
-									text: "New Guideline",
-								},
-							},
 						},
 					],
 				},
@@ -766,5 +709,8 @@ export default {
 				},
 			],
 		},
-	],
-}
+	].filter(
+		(section: any) =>
+			!AROMA_ONLY_SECTIONS.includes(section?.key?.[0]) || showsAromaSections(data)
+	),
+})

@@ -27,31 +27,55 @@ const description = computed(
 		)
 )
 
-const columns = computed(() => ({
-	storage: storage.value?.table?.storage || ctrans("Storage"),
-	shelfLife: storage.value?.table?.shelf_life || ctrans("Shelf Life"),
-	afterOpening: storage.value?.table?.after_opening || ctrans("POA (After Opening)"),
-}))
+const hasText = (value: unknown) => String(value ?? "").trim() !== ""
 
-const values = computed(() => ({
-	storage:
-		storage.value?.conditions?.storage ||
-		ctrans("Store in a cool, dry place away from direct sunlight and heat."),
-	shelfLife:
-		storage.value?.conditions?.shelf_life ||
-		ctrans("24 months from date of manufacture | See Batch number."),
-	afterOpening:
-		storage.value?.conditions?.after_opening ||
-		ctrans("Use within 12 Months of opening."),
-}))
+const familyStorage = computed(() => props.fieldValue?.family?.storage_option ?? {})
+
+const hasFamilyStorage = computed(() => Array.isArray(familyStorage.value?.storage_conditions))
+
+const defaultConditions = [
+	{
+		key: "storage",
+		label: ctrans("Storage"),
+		value: ctrans("Store in a cool, dry place away from direct sunlight and heat."),
+	},
+	{
+		key: "shelf_life",
+		label: ctrans("Shelf Life"),
+		value: ctrans("24 months from date of manufacture | See Batch number."),
+	},
+	{
+		key: "after_opening",
+		label: ctrans("POA (After Opening)"),
+		value: ctrans("Use within 12 Months of opening."),
+	},
+]
+
+const conditions = computed(() => {
+	if (!hasFamilyStorage.value) {
+		return defaultConditions
+	}
+
+	return familyStorage.value.storage_conditions
+		.filter((condition: any) => hasText(condition?.value))
+		.map((condition: any) => ({
+			key: condition.key,
+			label: condition.label,
+			value: condition.value,
+		}))
+})
 
 const temperatureLabel = computed(
 	() => storage.value?.temperature?.label || ctrans("Storage Temperature")
 )
 
-const temperatureValue = computed(() => storage.value?.temperature?.value || "15°C – 25°C")
+const temperatureValue = computed(() =>
+	hasFamilyStorage.value
+		? String(familyStorage.value?.storage_temperature ?? "").trim()
+		: "15°C – 25°C"
+)
 
-const hasTemperature = computed(() => Boolean(temperatureValue.value))
+const hasTemperature = computed(() => hasText(temperatureValue.value))
 
 const defaultGuidelines = [
 	ctrans("Keep products in their original packaging."),
@@ -65,19 +89,24 @@ const guidelinesTitle = computed(
 )
 
 const guidelines = computed(() => {
-	const source = storage.value?.guidelines?.items
-
-	if (!Array.isArray(source) || source.length === 0) {
+	if (!hasFamilyStorage.value) {
 		return defaultGuidelines
 	}
 
-	return source
+	const source = familyStorage.value?.storage_guidelines
+
+	if (!Array.isArray(source)) {
+		return []
+	}
+
+	return source.filter((guideline: any) => hasText(guideline?.text))
 })
 </script>
 
 <template>
 	<div
-		class="grid w-full grid-cols-1 gap-8 py-6 md:py-8 lg:grid-cols-[1.6fr_1fr] lg:gap-14 lg:py-10"
+		class="grid w-full grid-cols-1 gap-8 py-6 md:py-8 lg:py-10"
+		:class="guidelines.length ? 'lg:grid-cols-[1.6fr_1fr] lg:gap-14' : 'lg:grid-cols-1'"
 		:style="containerStyle">
 		<div>
 			<h2 class="text-2xl font-semibold text-[#13294B] md:text-[28px] lg:text-[30px]">
@@ -88,21 +117,27 @@ const guidelines = computed(() => {
 				class="mt-3 max-w-2xl text-[13px] leading-[1.8] text-[#13294B] md:text-[14px]"
 				v-html="description" />
 
-			<div class="mt-6 overflow-x-auto">
+			<div v-if="conditions.length" class="mt-6 overflow-x-auto">
 				<table class="w-full min-w-[520px] border-collapse text-left align-top">
 					<thead>
 						<tr class="bg-[#EDEDED] text-[13px] font-semibold text-[#13294B] md:text-[14px]">
-							<th class="px-4 py-3">{{ columns.storage }}</th>
-							<th class="px-4 py-3">{{ columns.shelfLife }}</th>
-							<th class="px-4 py-3">{{ columns.afterOpening }}</th>
+							<th
+								v-for="condition in conditions"
+								:key="condition.key"
+								class="px-4 py-3">
+								{{ condition.label }}
+							</th>
 						</tr>
 					</thead>
 
 					<tbody>
 						<tr class="align-top text-[11px] leading-[1.7] text-[#334155] md:text-[12px]">
-							<td class="px-4 py-3">{{ values.storage }}</td>
-							<td class="px-4 py-3">{{ values.shelfLife }}</td>
-							<td class="px-4 py-3">{{ values.afterOpening }}</td>
+							<td
+								v-for="condition in conditions"
+								:key="condition.key"
+								class="px-4 py-3">
+								{{ condition.value }}
+							</td>
 						</tr>
 					</tbody>
 				</table>
@@ -119,7 +154,7 @@ const guidelines = computed(() => {
 			</div>
 		</div>
 
-		<div>
+		<div v-if="guidelines.length">
 			<h3 class="text-lg font-semibold text-[#13294B] md:text-xl">
 				{{ guidelinesTitle }}
 			</h3>

@@ -59,6 +59,7 @@ class WebBlockFamilyResource extends JsonResource
                 'storage_temperature'   => data_get($family->storage_option, 'storage_temperature', ''),
                 'storage_guidelines'    => data_get($family->storage_option, 'storage_guidelines', []),
             ],
+            'is_aroma_organisation'     => $family->organisation?->slug === 'aroma',
             'marketing_material_route'  => [
                 'name'          => 'iris.catalogue.feeds.product_category.download_img',
                 'parameters'    => [
