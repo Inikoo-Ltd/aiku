@@ -155,23 +155,25 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'            => 'array',
-        'faq'             => 'array',
-        'web_images'      => 'array',
-        'type'            => MasterProductCategoryTypeEnum::class,
-        'health_rank'     => HealthRankEnum::class,
-        'status'          => 'boolean',
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime',
-        'discontinued_at' => 'datetime',
-        'offers_data'     => 'array',
+        'data'              => 'array',
+        'faq'               => 'array',
+        'web_images'        => 'array',
+        'type'              => MasterProductCategoryTypeEnum::class,
+        'health_rank'       => HealthRankEnum::class,
+        'status'            => 'boolean',
+        'fetched_at'        => 'datetime',
+        'last_fetched_at'   => 'datetime',
+        'discontinued_at'   => 'datetime',
+        'offers_data'       => 'array',
+        'customize_option'  => 'array',
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'faq'         => '{}',
-        'offers_data' => '{}',
-        'web_images'  => '{}',
+        'data'              => '{}',
+        'faq'               => '{}',
+        'offers_data'       => '{}',
+        'web_images'        => '{}',
+        'customize_option'  => '{}',
     ];
 
     public function generateTags(): array

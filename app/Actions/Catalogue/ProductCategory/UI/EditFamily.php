@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
@@ -347,6 +348,18 @@ class EditFamily extends OrgAction
                                     ...$departmentIdFormData
                                 ]
                             ],
+                            $family->shop->masterShop->slug == 'aroma' ? [
+                            'label'  => __('Customize'),
+                            'icon'   => 'fa-light fa-sliders-h',
+                            'fields' => [
+                                'customize_option' => [
+                                    'type'    => 'family_customize',
+                                    'label'   => __('Customize'),
+                                    'options' => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
+                                    'value'   => !empty($family->customize_option) ? $family->customize_option : FamilyCustomizeEnum::rows(),
+                                ],
+                            ],
+                        ] : [],
                             [
                                 'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                                 'icon'   => 'fa-light fa-folder-tree',

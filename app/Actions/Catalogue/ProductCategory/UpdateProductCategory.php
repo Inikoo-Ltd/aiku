@@ -195,6 +195,7 @@ class UpdateProductCategory extends OrgAction
             'description',
             'description_i8n',
             'description_extra',
+            'customize_option',
         ])) {
             $this->productCategoryHydrators($productCategory);
 
@@ -319,6 +320,14 @@ class UpdateProductCategory extends OrgAction
             'faq.*.source_question'         => ['sometimes', 'nullable', 'string'],
             'faq.*.source_answer'           => ['sometimes', 'nullable', 'string'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
+            'customize_option'              => ['sometimes', 'array'],
+            'customize_option.*'            => ['sometimes', 'array'],
+            'customize_option.*.key'        => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.label'      => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.icon'       => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.available'  => ['sometimes', 'boolean'],
+            'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', 'max:250'],
         ];
 
         if (!$this->strict) {

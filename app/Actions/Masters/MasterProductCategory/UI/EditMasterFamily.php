@@ -232,11 +232,11 @@ class EditMasterFamily extends OrgAction
                             'label'  => __('Customize'),
                             'icon'   => 'fa-light fa-sliders-h',
                             'fields' => [
-                                'customize' => [
+                                'customize_option' => [
                                     'type'    => 'family_customize',
                                     'label'   => __('Customize'),
                                     'options' => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
-                                    'value'   => FamilyCustomizeEnum::rows(),
+                                    'value'   => !empty($masterProductCategory->customize_option) ? $masterProductCategory->customize_option : FamilyCustomizeEnum::rows(),
                                 ],
                             ],
                         ] : [],

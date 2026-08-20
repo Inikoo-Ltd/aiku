@@ -160,6 +160,10 @@ class UpdateMasterProductCategory extends OrgAction
             CascadeMasterProductCategoryFaqToChildren::dispatch($masterProductCategory);
         }
 
+        if (Arr::has($changed, 'customize_option')) {
+            CascadeMasterProductCategoryCustomizeOptionToChildren::run($masterProductCategory); // TODO: change to dispatch later
+        }
+
         if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
 
             $english      = Language::where('code', 'en')->first();
@@ -309,7 +313,15 @@ class UpdateMasterProductCategory extends OrgAction
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
             'faq'                           => ['sometimes', 'array'],
             'faq.*.question'                => ['sometimes', 'nullable', 'string'],
-            'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],
+        'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],
+        'customize_option'              => ['sometimes', 'array'],
+        'customize_option.*'            => ['sometimes', 'array'],
+        'customize_option.*.key'        => ['sometimes', 'nullable', 'string'],
+        'customize_option.*.label'      => ['sometimes', 'nullable', 'string'],
+        'customize_option.*.icon'       => ['sometimes', 'nullable', 'string'],
+        'customize_option.*.available'  => ['sometimes', 'boolean'],
+        'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
+        'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', 'max:250'],
         ];
 
         if (!$this->strict) {

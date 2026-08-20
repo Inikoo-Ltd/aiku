@@ -1,10 +1,11 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 29 Jul 2026 12:00:00 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
- */
+ * Author Louis Perez
+ * Created on 20-08-2026-10h-26m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
 
 namespace App\Actions\Masters\MasterProductCategory;
 
@@ -18,14 +19,14 @@ use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Cascades a master product category's FAQ to the child product categories whose shop
+ * Cascades a master product category's Customize Option to the child product categories whose shop
  * follows the master, translating it into each shop's language on the way, and
  * broadcasting progress so the edit UI can show "n/total shops updated" live.
  *
  * Always queued: each non-english child costs a translation round trip, so a master with
  * a handful of shops would otherwise hold the save request open for tens of seconds.
  */
-class CascadeMasterProductCategoryFaqToChildren
+class CascadeMasterProductCategoryCustomizeOptionToChildren
 {
     use AsAction;
     use TranslateJsonbField;
@@ -51,12 +52,12 @@ class CascadeMasterProductCategoryFaqToChildren
             'done'  => 0,
             'total' => $total,
         ],
-        'faq-cascade-progress');
+        'customize-option-cascade-progress');
 
         /** @var ProductCategory $productCategory */
         foreach ($productCategories as $index => $productCategory) {
             UpdateProductCategory::make()->action($productCategory, [
-                'faq' => $this->getJsonbForShopLanguage($masterProductCategory, $productCategory, $english, 'faq'),
+                'customize_option' => $this->getJsonbForShopLanguage($masterProductCategory, $productCategory, $english, 'customize_option'),
             ]);
 
             MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
@@ -64,7 +65,7 @@ class CascadeMasterProductCategoryFaqToChildren
                 'done'  => $index + 1,
                 'total' => $total,
             ],
-            'faq-cascade-progress');
+            'customize-option-cascade-progress');
         }
 
         MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
@@ -72,6 +73,6 @@ class CascadeMasterProductCategoryFaqToChildren
             'done'  => $total,
             'total' => $total,
         ],
-        'faq-cascade-progress');
+        'customize-option-cascade-progress');
     }
 }
