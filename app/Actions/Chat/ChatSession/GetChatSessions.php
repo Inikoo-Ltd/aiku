@@ -38,6 +38,7 @@ class GetChatSessions
             'assigned_to_me' => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
             'is_spam'         => ['sometimes', 'boolean'],
+            'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
             'search'          => ['sometimes', 'string', 'max:100'],
@@ -80,8 +81,21 @@ class GetChatSessions
             $query->whereIn('status', $filters['statuses']);
         }
 
-        $isSpamView = !empty($filters['is_spam']);
-        $query->where('is_spam', $isSpamView);
+        $isTrashView = !empty($filters['trashed']);
+        $isSpamView  = !empty($filters['is_spam']) && !$isTrashView;
+
+        // Trash view: only soft-deleted sessions, scoped to the agent's shops.
+        if ($isTrashView) {
+            $query->onlyTrashed();
+
+            $trashAgent = !empty($filters['assigned_to_me'])
+                ? $this->getCurrentAgent((int) $filters['assigned_to_me'])
+                : null;
+
+            $query->whereIn('shop_id', $trashAgent ? $trashAgent->shops()->pluck('shops.id')->all() : []);
+        } else {
+            $query->where('is_spam', $isSpamView);
+        }
 
         if ($isSpamView) {
             $spamAgent = !empty($filters['assigned_to_me'])
@@ -91,7 +105,7 @@ class GetChatSessions
             $query->whereIn('shop_id', $spamAgent ? $spamAgent->shops()->pluck('shops.id')->all() : []);
         }
 
-        if (!$isSpamView && !empty($filters['assigned_to_me'])) {
+        if (!$isSpamView && !$isTrashView && !empty($filters['assigned_to_me'])) {
             $userId       = (int) $filters['assigned_to_me'];
             $currentAgent = $this->getCurrentAgent($userId);
 

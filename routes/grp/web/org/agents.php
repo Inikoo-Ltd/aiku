@@ -20,9 +20,13 @@ use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\ForceDeleteChatAgent;
 use App\Actions\Chat\ChatSession\ForwardChatMessageToSlack;
 use App\Actions\Chat\ChatSession\GetChatMessageSlackSettings;
+use App\Actions\Chat\ChatSession\DeleteChatSessionPermanently;
 use App\Actions\Chat\ChatSession\GetChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\ReopenChatSession;
+use App\Actions\Chat\ChatSession\RestoreChatSession;
+use App\Actions\Chat\ChatSession\SetChatSessionPriority;
+use App\Actions\Chat\ChatSession\TrashChatSession;
 use App\Actions\Chat\ChatSession\UnmarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\RestoreChatAgent;
 use App\Actions\Chat\ChatSession\SendChatMessage;
@@ -55,6 +59,10 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('/sessions/{chatSession:ulid}/reopen', ReopenChatSession::class)->name('sessions.reopen');
     Route::patch('/sessions/{chatSession:ulid}/spam', MarkChatSessionAsSpam::class)->name('sessions.spam');
     Route::patch('/sessions/{chatSession:ulid}/not-spam', UnmarkChatSessionAsSpam::class)->name('sessions.not_spam');
+    Route::patch('/sessions/{chatSession:ulid}/priority', SetChatSessionPriority::class)->name('sessions.priority');
+    Route::delete('/sessions/{chatSession:ulid}/trash', TrashChatSession::class)->name('sessions.trash');
+    Route::patch('/sessions/{chatSession:ulid}/restore', RestoreChatSession::class)->name('sessions.restore')->withTrashed();
+    Route::delete('/sessions/{chatSession:ulid}/force', DeleteChatSessionPermanently::class)->name('sessions.force_delete')->withTrashed();
     Route::name('sessions.jira.')->prefix('sessions/{chatSession:ulid}/jira')->group(function () {
         Route::get('/projects', GetChatSessionJiraProjects::class)->name('projects');
         Route::get('/projects/{project}/issue-types', GetChatSessionJiraIssueTypes::class)->name('issue_types');
