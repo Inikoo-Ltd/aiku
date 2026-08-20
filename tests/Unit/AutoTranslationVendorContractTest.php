@@ -107,3 +107,14 @@ it('never writes a repair translation back that is still escaped or is the untra
         ->and($usable('<p>Hi</p>', '<p>Hi</p>', 'en-gb'))->toBeTrue()
         ->and($usable('<p>Hola</p>', '<p>Hi</p>', 'es'))->toBeTrue();
 });
+
+it('strips an echoed newline only when the source proves it cannot be a literal', function () {
+    $translate = App\Actions\Helpers\Translations\Translate::make();
+
+    expect($translate->unescapeJsonEchoes('18 cm<br>25 cm', '18 cm<br>\n25 cm'))->toBe("18 cm<br>\n25 cm")
+        ->and($translate->unescapeJsonEchoes('C:\\path', 'C:\\chemin\nx'))->toBe('C:\\chemin\nx');
+
+    /* Stored text is a different matter: there a backslash-n may always have been a literal, so the
+       guard that gates the historic repair must keep refusing it. */
+    expect(App\Actions\Helpers\Translations\Translate::hasOnlyJsonEchoEscapes('line\nbreak'))->toBeFalse();
+});

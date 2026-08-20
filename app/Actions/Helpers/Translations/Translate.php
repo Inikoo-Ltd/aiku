@@ -82,6 +82,10 @@ class Translate extends OrgAction
      * True only when every backslash in the text is part of a JSON escape a translation driver
      * could have echoed. Text carrying any other backslash is ambiguous - a literal one cannot be
      * told apart from a double-escaped one - so callers without a clean source must leave it alone.
+     *
+     * Deliberately narrower than what stripJsonEscapes can undo: \n is excluded because in stored
+     * text it may always have been a literal, while stripJsonEscapes only ever sees it behind a
+     * source known to carry no backslash at all, where it can only be an echo.
      */
     public static function hasOnlyJsonEchoEscapes(string $text): bool
     {
@@ -110,7 +114,11 @@ class Translate extends OrgAction
 
                     return mb_chr($codepoint, 'UTF-8') ?: $m[0];
                 },
-                str_replace(['\\"', '\\/', "\\'"], ['"', '/', "'"], $text)
+                str_replace(
+                    ['\\"', '\\/', "\\'", '\\n', '\\r', '\\t'],
+                    ['"', '/', "'", "\n", "\r", "\t"],
+                    $text
+                )
             );
 
             if ($stripped === $text) {
