@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
@@ -236,6 +237,33 @@ class EditMasterFamily extends OrgAction
                                     'label'   => __('Customize'),
                                     'options' => FamilyCustomizeEnum::valuesWithLabelsAndIcons(),
                                     'value'   => FamilyCustomizeEnum::rows(),
+                                ],
+                            ],
+                        ] : [],
+                        $masterProductCategory->masterShop->slug == 'aroma' ? [
+                            'label'  => __('Storage & Shelf Life'),
+                            'icon'   => 'fa-light fa-temperature-low',
+                            'fields' => [
+                                'storage_conditions'  => [
+                                    'type'    => 'family_storage_conditions',
+                                    'label'   => __('Storage table'),
+                                    'options' => FamilyStorageConditionEnum::valuesWithLabelsAndPlaceholders(),
+                                    'value'   => FamilyStorageConditionEnum::rows(),
+                                ],
+                                'storage_temperature' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Storage temperature'),
+                                    'placeholder' => __('e.g. 15°C - 25°C'),
+                                    'value'       => '',
+                                ],
+                                'storage_guidelines'  => [
+                                    'type'     => 'dynamic_list',
+                                    'label'    => __('Storage guidelines'),
+                                    'value'    => [],
+                                    'fields'   => [
+                                        ['key' => 'text', 'placeholder' => __('e.g. Keep products in their original packaging.')],
+                                    ],
+                                    'addLabel' => __('Add guideline'),
                                 ],
                             ],
                         ] : [],

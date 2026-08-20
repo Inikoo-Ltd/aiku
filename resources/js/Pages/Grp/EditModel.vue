@@ -73,7 +73,8 @@ import {
     faPercent,
     faBusinessTime,
     faChessClock,
-    faCameraRetro
+    faCameraRetro,
+    faTemperatureLow
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -84,6 +85,7 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faTemperatureLow,
     faShapes,
     faTags,
     faBiohazard,

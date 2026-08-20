@@ -108,6 +108,7 @@ import ContactOptionsPanel from '@/Components/Forms/Fields/ContactOptionPanel.vu
 import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
 import FamilyCustomize from '@/Components/Forms/Fields/FamilyCustomize.vue'
+import FamilyStorageConditions from '@/Components/Forms/Fields/FamilyStorageConditions.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -168,6 +169,7 @@ export const componentsList: { [key: string]: Component } = {
     'select_infinite': SelectInfiniteScroll,
     'ingredients': IngredientsField,
     'family_customize': FamilyCustomize,
+    'family_storage_conditions': FamilyStorageConditions,
     'textEditor_translation': TextEditorTranslation,
     'pricing_zone': Pricing_zone,
     'pricing_zone_multi_shipper': PricingZoneMultiShipper,
