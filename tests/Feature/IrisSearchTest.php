@@ -445,3 +445,23 @@ test('discontinued family drops out of the storefront search', function () {
     $response->assertOk();
     expect($response->json('results.product_categories'))->toBe([]);
 });
+
+test('a family created empty is out of the website until its first product arrives', function () {
+    [, $product] = createProduct($this->shop);
+
+    $familyData = \App\Models\Catalogue\ProductCategory::factory()->definition();
+    data_set($familyData, 'type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value);
+    data_set($familyData, 'state', \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::IN_PROCESS->value);
+    $family = \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($product->department, $familyData);
+
+    $webpage = StoreProductCategoryWebpage::make()->action($family);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
+    expect((bool) $family->refresh()->is_in_website)->toBeFalse();
+
+    \App\Actions\Catalogue\Product\UpdateProductFamily::make()->action($product, ['family_id' => $family->id]);
+    \App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts::run($family->refresh());
+
+    expect($family->refresh()->state)->toBe(\App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE)
+        ->and((bool) $family->is_in_website)->toBeTrue();
+});
