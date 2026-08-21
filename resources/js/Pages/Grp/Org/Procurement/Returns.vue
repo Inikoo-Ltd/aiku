@@ -100,10 +100,8 @@ const onCreateReturn = () => {
         <template #other>
         </template>
         <template #button-create-return="{ action }">
-            <Button v-if="layout.app.environment === 'local'" :type="action.type" :style="action.style" :label="action.label" :icon="action.icon"
+            <Button :type="action.type" :style="action.style" :label="action.label" :icon="action.icon"
             @click="() => onOpenModal()" />
-            <div v-else>
-            </div>
         </template>
     </PageHeading>
     <TableDeliveryNotes :data="data" />
