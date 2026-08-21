@@ -138,6 +138,7 @@ use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
 use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -3368,4 +3369,58 @@ test('a short picked line still has to be packed before the note is done', funct
 
     expect($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED)
         ->and((float)$short->fresh()->quantity_packed)->toEqual(0.0);
+});
+
+test('repair stuck finalised delivery note dispatches it backdated without touching the order', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'ST'.Str::random(4), 'name' => 'St', 'trade_as' => 'st']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::FINALISED);
+
+    $order = $deliveryNote->orders->first();
+    \App\Actions\Ordering\Order\UpdateState\DispatchOrder::make()->action($order, null);
+    $order->refresh();
+    $orderDispatchedAt = $order->dispatched_at;
+
+    $deliveryNote = \App\Actions\Maintenance\Dispatching\RepairStuckFinalisedDeliveryNotes::make()->handle($deliveryNote->refresh());
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and($deliveryNote->dispatched_at->toDateTimeString())->toBe(\Carbon\Carbon::parse($deliveryNote->finalised_at)->toDateTimeString())
+        ->and($order->refresh()->dispatched_at->toDateTimeString())->toBe($orderDispatchedAt->toDateTimeString());
+});
+
+test('repair dispatches an order left stuck in finalised, backdated and silent', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SO'.Str::random(4), 'name' => 'So', 'trade_as' => 'so']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh());
+    $order        = $deliveryNote->orders->first();
+    expect($order->state)->toBe(OrderStateEnum::FINALISED);
+
+    Queue::fake();
+    $backdate     = '2024-03-04 10:00:00';
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote->refresh(), $backdate, true);
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and($deliveryNote->dispatched_at->toDateTimeString())->toBe($backdate)
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::DISPATCHED)
+        ->and($order->dispatched_at->toDateTimeString())->toBe($backdate);
+
+    Queue::assertNotPushed(\App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer::class);
+    Queue::assertNotPushed(\App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers::class);
 });
