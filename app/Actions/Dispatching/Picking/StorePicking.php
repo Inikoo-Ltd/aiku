@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
@@ -115,11 +116,6 @@ class StorePicking extends OrgAction
 
 
         $deliveryNoteItem->refresh();
-        if ($deliveryNoteItem->is_dirty && $deliveryNoteItem->quantity_picked >= $deliveryNoteItem->quantity_required) {
-            $deliveryNoteItem->updateQuietly([
-                'is_dirty' => false,
-            ]);
-        }
         $newPickingQuantity = (int)$deliveryNoteItem->quantity_picked;
 
         $productCode = $deliveryNoteItem->orgStock?->code ?? 'Unknown Item';
@@ -136,6 +132,9 @@ class StorePicking extends OrgAction
         );
 
         $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
+
+        /** This pick may have settled the last thing keeping the note blocked. */
+        AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote->refresh());
 
         return $picking;
     }

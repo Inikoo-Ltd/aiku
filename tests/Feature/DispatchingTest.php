@@ -1380,10 +1380,10 @@ test('delivery note state to picking handling blocked and unassigned', function 
 });
 
 test('delivery note finalise and dispatch', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
-    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
@@ -1451,7 +1451,7 @@ test('mixed order with service picks and invoices', function () {
     $deliveryNote = $deliveryNote->refresh();
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
-    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    StorePacking::make()->action($deliveryNoteItem->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SM'.Str::random(4), 'name' => 'Sm', 'trade_as' => 'sm']);
@@ -1484,11 +1484,11 @@ test('mixed order with service picks and invoices', function () {
 });
 
 test('delivery note finalise and dispatch combined and pick as employee', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
-    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
@@ -2122,10 +2122,10 @@ test('cancelling an order cancels its delivery note', function () {
 });
 
 test('UI show delivery note richer states and tabs', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
-    StorePacking::make()->action($deliveryNote->deliveryNoteItems->first(), $this->user, []);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SD'.Str::random(4), 'name' => 'Sd', 'trade_as' => 'sd']);
     StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'T'.Str::random(4)]);
@@ -3182,4 +3182,140 @@ test('picking from waiting keeps the line at its discounted price', function () 
     /** Priced the way CalculateOrderDiscounts prices: the discount taken off the gross. */
     expect((float)$transaction->net_amount)
         ->toBe(round((float)$transaction->gross_amount - round((float)$transaction->gross_amount * 0.1, 2), 2));
+});
+
+/**
+ * Earlier tests leave org stocks attached to the shared product, so a note built afterwards can
+ * carry extra auto-created lines. They are not what these tests are about, so they are settled.
+ */
+function settleSiblingDeliveryNoteItems(DeliveryNote $deliveryNote, DeliveryNoteItem $item): void
+{
+    $deliveryNote->deliveryNoteItems()
+        ->whereKeyNot($item->id)
+        ->update([
+            'is_handled'      => true,
+            'is_dirty'        => false,
+            'quantity_picked' => DB::raw('quantity_required'),
+        ]);
+}
+
+test('a blocked delivery note is released once its dirty line is re-picked', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    settleSiblingDeliveryNoteItems($deliveryNote, $item);
+
+    $item->update(['is_dirty' => true, 'quantity_required' => (float)$item->quantity_picked + 1]);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    $locationOrgStock = $item->orgStock->locationOrgStocks()->first();
+    StorePicking::make()->action($item->refresh(), $this->user, [
+        'quantity'              => 1,
+        'location_org_stock_id' => $locationOrgStock->id,
+        'picker_user_id'        => $this->user->id,
+    ]);
+
+    expect($item->fresh()->is_dirty)->toBeFalse()
+        ->and($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
+test('editing the existing pick to cover a raised quantity clears the dirty flag', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    settleSiblingDeliveryNoteItems($deliveryNote, $item);
+
+    /** Faire raises the quantity under the picker, who covers it by editing the pick already there. */
+    $item->update(['is_dirty' => true, 'quantity_required' => 15]);
+    \App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked::run($item->refresh());
+    expect($item->fresh()->is_dirty)->toBeTrue();
+
+    $picking = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    \App\Actions\Dispatching\Picking\UpdatePicking::run($picking, ['quantity' => 15], $this->user);
+
+    expect((float)$item->fresh()->quantity_picked)->toEqual(15.0)
+        ->and($item->fresh()->is_dirty)->toBeFalse();
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
+test('a quantity lowered to what is already picked does not leave the note blocked', function () {
+    /*
+     * mxdpk8yece: Faire lowered a line from 8 to 7 when 7 was already in the tote. The line went
+     * dirty with nothing left for anyone to do, and because the quantity only went down the
+     * walk-back never releases a blocked note, so it re-blocked on every attempt to finish.
+     */
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    settleSiblingDeliveryNoteItems($deliveryNote, $item);
+
+    $item->update(['quantity_required' => 15, 'is_dirty' => true]);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    $transaction = $item->transaction;
+    $product     = $transaction->model;
+    $product->orgStocks()->syncWithoutDetaching([$item->org_stock_id => ['quantity' => 10]]);
+    $transaction->update(['quantity_ordered' => 1, 'quantity_bonus' => 0]);
+
+    $syncer = new class () {
+        use \App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
+
+        public int $hydratorsDelay = 0;
+
+        public function sync($deliveryNote, $transaction, $orgStocks): void
+        {
+            $this->syncDeliveryNote($deliveryNote, $transaction, $orgStocks, null);
+        }
+    };
+
+    $syncer->sync($deliveryNote, $transaction->refresh(), $product->fresh()->orgStocks->keyBy('id'));
+
+    expect((float)$item->fresh()->quantity_required)->toEqual(10.0)
+        ->and($item->fresh()->is_dirty)->toBeFalse()
+        ->and($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+});
+
+test('deleting the last blocking line releases the delivery note', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    settleSiblingDeliveryNoteItems($deliveryNote, $item);
+
+    $extra = $item->replicate();
+    $extra->is_dirty = true;
+    $extra->quantity_picked = 0;
+    $extra->quantity_packed = null;
+    $extra->is_handled = true;
+    $extra->save();
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\DeleteDeliveryNoteItem::run($extra->refresh());
+
+    expect($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
+test('a short picked line still has to be packed before the note is done', function () {
+    /*
+     * The picked units of a short-picked line were excused from packing entirely, so scanning the
+     * last whole item promoted the note and swept them in as auto_packed - nobody ever confirmed
+     * them at the bench, and the parcel could leave without them.
+     */
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    settleSiblingDeliveryNoteItems($deliveryNote, $item);
+
+    $short                     = $item->replicate();
+    $short->quantity_required  = 15;
+    $short->quantity_picked    = 10;
+    $short->quantity_not_picked = 5;
+    $short->quantity_packed    = null;
+    $short->is_handled         = true;
+    $short->is_dirty           = false;
+    $short->save();
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking::make()->action($item->refresh(), $this->user);
+
+    expect($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED)
+        ->and((float)$short->fresh()->quantity_packed)->toEqual(0.0);
 });

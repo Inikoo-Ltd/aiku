@@ -358,8 +358,6 @@ class UpdateCustomer extends OrgAction
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
-            'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
-            'ukims'                                                 => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_vip'                                                => ['sometimes', 'boolean'],

@@ -57,6 +57,7 @@ class OrderResource extends JsonResource
             'is_collection'       => (bool) $order->collection_address_id,
             'is_shipping_by_external'       => $order->is_shipping_by_external,
             'platform_milestones'         => data_get($order->data, 'platform_milestones'),
+            'platform_order_id' => $order->platform_order_id
         ];
     }
 }

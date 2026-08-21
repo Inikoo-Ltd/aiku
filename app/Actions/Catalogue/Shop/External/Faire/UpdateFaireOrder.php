@@ -379,8 +379,20 @@ class UpdateFaireOrder extends OrgAction
         $faireShops = Shop::where('type', ShopTypeEnum::EXTERNAL)
             ->where('engine', ShopEngineEnum::FAIRE)->pluck('id')->toArray();
 
+        /*
+         * Only orders still in play. Run with no argument this walks every Faire order ever, and
+         * re-deriving quantity_ordered from today's units against a sale made months ago rewrote
+         * 348 dispatched delivery note lines and 34 already-issued invoices on 16 Aug 2026.
+         */
+        $orders = Order::whereIn('shop_id', $faireShops)
+            ->whereNotIn('state', [
+                OrderStateEnum::DISPATCHED,
+                OrderStateEnum::FINALISED,
+                OrderStateEnum::CANCELLED,
+            ]);
+
         /** @var Order $order */
-        foreach (Order::whereIn('shop_id', $faireShops)->get() as $order) {
+        foreach ($orders->get() as $order) {
             $command->info("Updating order {$order->shop->slug} $order->slug");
             $this->handle($order);
         }

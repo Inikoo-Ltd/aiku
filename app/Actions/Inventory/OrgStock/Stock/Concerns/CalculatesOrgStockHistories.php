@@ -56,12 +56,16 @@ trait CalculatesOrgStockHistories
     /**
      * The official per-SKU valuation used for sku_value, margins, product cost and dashboards.
      * FIFO is the chosen method; change it here (and the UI legends) if the official method ever changes.
+     *
+     * @param array{wac: ?float, fifo: ?float}|null $valuation already computed for the same stock and date
      */
-    public function getOfficialPerSku(OrgStock $orgStock, Carbon $date): float
+    public function getOfficialPerSku(OrgStock $orgStock, Carbon $date, ?array $valuation = null): float
     {
+        $valuation ??= $this->getValuationPerSku($orgStock, $date);
+
         $officialPerSku = match (OrgStockValuationMethodEnum::official()) {
-            OrgStockValuationMethodEnum::FIFO => $this->getFifoPerSku($orgStock, $date),
-            OrgStockValuationMethodEnum::WAC  => $this->getWacPerSku($orgStock, $date),
+            OrgStockValuationMethodEnum::FIFO => $valuation['fifo'],
+            OrgStockValuationMethodEnum::WAC  => $valuation['wac'],
             OrgStockValuationMethodEnum::LPP  => $this->getLppPerSku($orgStock, $date),
         };
 
@@ -79,17 +83,22 @@ trait CalculatesOrgStockHistories
     }
 
     /**
-     * @return array{wac: ?float, fifo: ?float}
+     * The replayed valuation state at $date, or null when the organisation has no WAC
+     * start date (no valuation basis). One full movement walk: callers that need both a
+     * pre-movement cost and post-movement running values should walk once with this and
+     * apply the new movement to the returned state instead of walking twice.
+     *
+     * @return array{onHand: float, wac: ?float, layers: array<int, array{0: float, 1: float}>}|null
      */
-    public function getValuationPerSku(OrgStock $orgStock, Carbon $date): array
+    public function getValuationState(OrgStock $orgStock, Carbon $date): ?array
     {
         $wacStartDate = $orgStock->organisation->wac_calculations_start_date;
         if (!$wacStartDate) {
-            return ['wac' => null, 'fifo' => null];
+            return null;
         }
         $wacStartDate = Carbon::parse($wacStartDate);
         if ($date->copy()->endOfDay()->lt($wacStartDate)) {
-            return ['wac' => null, 'fifo' => null];
+            return null;
         }
 
         $state = $this->initValuationState($orgStock, $wacStartDate);
@@ -107,6 +116,18 @@ trait CalculatesOrgStockHistories
             $this->applyMovementToValuation($state, $movement, $orgStock);
         }
 
+        return $state;
+    }
+
+    /**
+     * @return array{wac: ?float, fifo: ?float}
+     */
+    public function valuationFromState(?array $state, OrgStock $orgStock, Carbon $date): array
+    {
+        if ($state === null) {
+            return ['wac' => null, 'fifo' => null];
+        }
+
         $wac  = $state['wac'];
         $fifo = $this->fifoPerSkuFromLayers($state['layers']);
         if ($wac === null || $fifo === null) {
@@ -117,6 +138,14 @@ trait CalculatesOrgStockHistories
             'wac'  => $wac ?? $lastPurchasePrice,
             'fifo' => $fifo ?? $lastPurchasePrice,
         ];
+    }
+
+    /**
+     * @return array{wac: ?float, fifo: ?float}
+     */
+    public function getValuationPerSku(OrgStock $orgStock, Carbon $date): array
+    {
+        return $this->valuationFromState($this->getValuationState($orgStock, $date), $orgStock, $date);
     }
 
     /**

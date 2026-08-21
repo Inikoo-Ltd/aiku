@@ -44,6 +44,7 @@ use App\Actions\CRM\Prospect\UpdateProspectEmailSent;
 use App\Actions\CRM\Prospect\UpdateProspectEmailSoftBounced;
 use App\Actions\CRM\Prospect\UpdateProspectEmailUndoUnsubscribed;
 use App\Actions\CRM\Prospect\UpdateProspectEmailUnsubscribed;
+use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\HydrateWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -207,6 +208,34 @@ test('customer email change follows web user with matching email', function (Cus
 
     expect($matchingWebUser->refresh()->email)->toBe('new-email@mail.com')
         ->and($rootWebUser->email)->toBe('example@mail.com');
+})->depends('create web user');
+
+test('soft deleted web user does not block its email and username', function (Customer $customer) {
+    $webUser = StoreWebUser::make()->action(
+        $customer,
+        [
+            'email'    => 'reusable@mail.com',
+            'username' => 'reusable',
+            'password' => 'password',
+            'is_root'  => false,
+        ]
+    );
+
+    DeleteWebUser::run($webUser);
+    expect($webUser->refresh()->deleted_at)->not->toBeNull();
+
+    $newWebUser = StoreWebUser::make()->action(
+        $customer,
+        [
+            'email'    => 'reusable@mail.com',
+            'username' => 'reusable',
+            'password' => 'password',
+            'is_root'  => false,
+        ]
+    );
+
+    expect($newWebUser)->toBeInstanceOf(WebUser::class)
+        ->and($newWebUser->id)->not->toBe($webUser->id);
 })->depends('create web user');
 
 
@@ -1262,11 +1291,16 @@ test('withdraw balance customer', function (Customer $customer) {
 
 test('Customer basket hydrator', function () {
     $customer = Customer::find(1);
+
+    $basketOrder = $customer->orders()->where('state', OrderStateEnum::CREATING->value)->first()
+        ?? StoreOrder::make()->action($customer, []);
+
     CustomerHydrateBasket::run($customer->id);
     $customer->refresh();
+
     expect($customer)->toBeInstanceOf(Customer::class)
-        ->and($customer->amount_in_basket)->toEqual(0)
-        ->and($customer->current_order_in_basket_id)->toBeNull();
+        ->and($customer->amount_in_basket)->toEqual($basketOrder->total_amount)
+        ->and($customer->current_order_in_basket_id)->toBe($basketOrder->id);
 });
 
 test('sync customers to google ads uploads hashed identifiers', function () {

@@ -109,16 +109,6 @@ class ShowRetinaAccountManagement extends RetinaAction
                                             'address'            => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
                                         ],
                                     ],
-                                    'eori'             => [
-                                        'type'  => 'input',
-                                        'label' => 'EORI',
-                                        'value' => $customer->eori,
-                                    ],
-                                    'ukims'                    => [
-                                        'type'  => 'input',
-                                        'label' => 'UKIMS',
-                                        'value' => $customer->ukims
-                                    ],
                                     'tax_number'       => [
                                         'type'          => 'tax_number',
                                         'label'         => __('Tax number'),

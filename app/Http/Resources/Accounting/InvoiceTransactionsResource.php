@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Accounting;
 
+use App\Actions\Traits\WithMarginData;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -24,6 +25,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class InvoiceTransactionsResource extends JsonResource
 {
+    use WithMarginData;
+
     public function toArray($request): array
     {
         $description = $this->description;
@@ -48,6 +51,10 @@ class InvoiceTransactionsResource extends JsonResource
             'description'   => $description,
             'quantity'      => $this->quantity,
             'net_amount'    => $this->net_amount,
+            'margin'        => $this->when(
+                array_key_exists('margin_actual_cost', $this->resource->getAttributes()),
+                fn () => $this->marginFields($this->model_type, $this->net_amount, $this->org_net_amount, $this->margin_actual_cost, $this->margin_estimated_cost)
+            ),
             'currency_code' => $this->currency_code,
             'asset_id'      => $this->asset_id,
             'is_gift'       => $this->is_gift,

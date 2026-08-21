@@ -109,6 +109,18 @@ class EditOrganisation extends OrgAction
                             ],
                         ],
                     ],
+                    [
+                        "label"  => __("Margins"),
+                        "icon"   => "fal fa-percent",
+                        "fields" => [
+                            "margin_break_even_pct" => [
+                                "type"        => "input",
+                                "label"       => __("Break-even margin (%)"),
+                                "information" => __("Orders with a margin below this are flagged as unprofitable once staff, rent and other running costs are counted. Industry guideline for this kind of shop is around 30%."),
+                                "value"       => Arr::get($organisation->settings, 'margins.break_even_pct', 30),
+                            ],
+                        ],
+                    ],
                 ],
                 "args" => [
                     "updateRoute" => [
