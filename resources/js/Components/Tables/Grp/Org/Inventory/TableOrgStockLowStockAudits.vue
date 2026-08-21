@@ -166,7 +166,7 @@ const isLocationBusy = (location: LowStockAuditLocation) => {
 // keystroke rather than from the save. It is let go once the field is emptied or goes quiet.
 const typingLocks = ref<number[]>([])
 
-const setTypingLock = (location: LowStockAuditLocation, isLocking: boolean) => {
+const setTypingLock = async (location: LowStockAuditLocation, isLocking: boolean) => {
     const orgStockId = findOrgStockId(location.id)
 
     if (orgStockId === undefined) {
@@ -177,20 +177,34 @@ const setTypingLock = (location: LowStockAuditLocation, isLocking: boolean) => {
         return
     }
 
-    if (isLocking && (isLocked(location.id) || isOrgStockLocked(orgStockId))) {
+   if (isLocking && (isLocked(location.id) || isOrgStockLocked(orgStockId))) {
+        return
+    }
+
+    const granted = await announceLock({
+        org_stock_id: orgStockId,
+        location_org_stock_id: location.id,
+        is_locked: isLocking,
+        source: "list",
+    })
+
+    if (isLocking && !granted) {
+        newQuantities.value[location.id] = null
+
+        notify({
+            title: trans("Being audited somewhere else"),
+            text: trans("Location :location is already being counted", {
+                location: location.code,
+            }),
+            type: "warning",
+        })
+
         return
     }
 
     typingLocks.value = isLocking
         ? [...typingLocks.value, location.id]
         : typingLocks.value.filter((id) => id !== location.id)
-
-    announceLock({
-        org_stock_id: orgStockId,
-        location_org_stock_id: location.id,
-        is_locked: isLocking,
-        source: "list",
-    })
 }
 
 const releaseTypingLock = (location: LowStockAuditLocation) => setTypingLock(location, false)

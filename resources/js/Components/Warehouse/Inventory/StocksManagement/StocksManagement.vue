@@ -419,19 +419,34 @@ const actionGridClass = computed(() => {
 
 const isStockCheckModalOpen = ref(false)
 
-watch(isStockCheckModalOpen, (isOpen) => announceAuditModalLock(isOpen))
+watch(isStockCheckModalOpen, (isOpen) => {
+    if (!isOpen) {
+        announceAuditModalLock(false)
+    }
+})
 const isMoveStockModalOpen = ref(false)
 const isEditLocationModalOpen = ref(false)
 const isAddLocationModalOpen = ref(false)
 const selectedLocationId = ref<number | null>(null)
-const openModal = (type: string, payload: number | null = null) => {
-    if (type === MODALS.STOCK_CHECK && isAuditLocked.value) {
-        return
+const openModal = async (type: string, payload: number | null = null) => {
+    if (type === MODALS.STOCK_CHECK) {
+        if (isAuditLocked.value) {
+            return
+        }
+
+        if (!(await announceAuditModalLock(true))) {
+            notify({
+                title: trans('Being audited somewhere else'),
+                text: trans('This stock is already being counted'),
+                type: 'warning',
+            })
+
+            return
+        }
     }
 
     activeModal.value = type
 
-    // For stock check modal we want to re-trigger focus even when the same location is selected again.
     if (type === MODALS.STOCK_CHECK) {
         selectedLocationId.value = null
         nextTick(() => {

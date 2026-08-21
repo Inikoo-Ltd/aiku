@@ -1,5 +1,6 @@
 import { onBeforeUnmount, onMounted, ref } from "vue"
 import axios from "axios"
+import { ulid } from "ulid"
 
 export interface LowStockAuditedEvent {
 	org_stock_id: number
@@ -26,14 +27,6 @@ const START_EVENT = ".low_stock_audited_start"
 const DONE_EVENT = ".low_stock_audited"
 const LOCK_EVENT = ".low_stock_audit_lock"
 
-/**
- * An audit made in one view has to reach the other: the low stock list and the stock controller
- * both show the same counts, so whichever one is not counting has to be told.
- *
- * Two things lock: an audit being written (start until done), and someone merely intending to
- * count, which is a quantity being typed in the list or the audit modal being opened. The
- * intent lock is announced by the tab that holds it and released when it lets go.
- */
 export const useLowStockAuditBroadcast = (handlers: {
 	onAudited: (event: LowStockAuditedEvent) => void
 	onAuditStart?: (event: LowStockAuditedEvent) => void
@@ -50,6 +43,9 @@ export const useLowStockAuditBroadcast = (handlers: {
 	const heldLocks = ref<
 		{ org_stock_id: number; location_org_stock_id: number | null; source: "list" | "detail" }[]
 	>([])
+
+	// Identifies this tab to the server: nothing else may hand back what it holds
+	const holderToken = ulid()
 
 	let channel: any = null
 
@@ -80,49 +76,58 @@ export const useLowStockAuditBroadcast = (handlers: {
 		}
 	}
 
-	/**
-	 * Tell the other view that this tab is counting, or has stopped.
-	 */
-	const announceLock = (payload: {
+	const announceLock = async (payload: {
 		org_stock_id: number
 		location_org_stock_id?: number | null
 		is_locked: boolean
 		source: "list" | "detail"
-	}) => {
+	}): Promise<boolean> => {
 		if (!organisation || !warehouse) {
-			return
+			return false
 		}
 
 		const locationOrgStockId = payload.location_org_stock_id ?? null
 
-		heldLocks.value = heldLocks.value.filter(
-			(held) =>
-				!(
-					held.org_stock_id === payload.org_stock_id &&
-					held.location_org_stock_id === locationOrgStockId
-				)
-		)
+		try {
+			const { data } = await axios.post(
+				route("grp.json.warehouse.low_stock_audit_lock", { warehouse }),
+				{
+					org_stock_id: payload.org_stock_id,
+					location_org_stock_id: locationOrgStockId,
+					is_locked: payload.is_locked,
+					source: payload.source,
+					holder: holderToken,
+				}
+			)
 
-		if (payload.is_locked) {
-			heldLocks.value.push({
-				org_stock_id: payload.org_stock_id,
-				location_org_stock_id: locationOrgStockId,
-				source: payload.source,
-			})
+			const granted = data?.granted === true
+
+			heldLocks.value = heldLocks.value.filter(
+				(held) =>
+					!(
+						held.org_stock_id === payload.org_stock_id &&
+						held.location_org_stock_id === locationOrgStockId
+					)
+			)
+
+			if (payload.is_locked && granted) {
+				heldLocks.value.push({
+					org_stock_id: payload.org_stock_id,
+					location_org_stock_id: locationOrgStockId,
+					source: payload.source,
+				})
+			}
+
+			if (payload.is_locked && !granted) {
+				acquire(payload.org_stock_id, null)
+			}
+
+			return payload.is_locked ? granted : false
+		} catch (error) {
+			console.error("Failed to announce low stock audit lock", error)
+
+			return false
 		}
-
-		return axios
-			.post(route("grp.json.warehouse.low_stock_audit_lock", { warehouse }), {
-				org_stock_id: payload.org_stock_id,
-				location_org_stock_id: locationOrgStockId,
-				is_locked: payload.is_locked,
-				source: payload.source,
-			})
-			.catch((error) => {
-				// Not worth interrupting the user over, but a lock that never reaches the other
-				// view fails silently otherwise, which is very hard to spot
-				console.error("Failed to announce low stock audit lock", error)
-			})
 	}
 
 	const releaseHeldLocks = () => {
@@ -137,7 +142,6 @@ export const useLowStockAuditBroadcast = (handlers: {
 	}
 
 	const subscribe = () => {
-		// Pages outside a warehouse, such as the group level stock page, have nothing to listen to
 		if (!window.Echo || !organisation || !warehouse) {
 			return
 		}
@@ -174,8 +178,33 @@ export const useLowStockAuditBroadcast = (handlers: {
 		channel = null
 	}
 
-	onMounted(subscribe)
+	const releaseOnUnload = () => {
+		heldLocks.value.forEach((held) => {
+			navigator.sendBeacon?.(
+				route("grp.json.warehouse.low_stock_audit_lock", { warehouse }),
+				new Blob(
+					[
+						JSON.stringify({
+							org_stock_id: held.org_stock_id,
+							location_org_stock_id: held.location_org_stock_id,
+							is_locked: false,
+							source: held.source,
+							holder: holderToken,
+						}),
+					],
+					{ type: "application/json" }
+				)
+			)
+		})
+	}
+
+	onMounted(() => {
+		subscribe()
+		window.addEventListener("beforeunload", releaseOnUnload)
+	})
+
 	onBeforeUnmount(() => {
+		window.removeEventListener("beforeunload", releaseOnUnload)
 		releaseHeldLocks()
 		unsubscribe()
 	})
