@@ -104,7 +104,9 @@ use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
+use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Imports\Dispatching\BatchCodeImport;
+use App\InertiaTable\InertiaTable;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
@@ -130,7 +132,10 @@ use App\Models\Inventory\Location;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\PickingSession;
 use App\Models\Ordering\Transaction;
+use App\Models\SysAdmin\User;
 use Config;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
@@ -138,7 +143,6 @@ use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
 use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -3484,6 +3488,46 @@ test('repair stuck finalised delivery note dispatches it backdated without touch
         ->and($deliveryNote->dispatched_at->toDateTimeString())->toBe(\Carbon\Carbon::parse($deliveryNote->finalised_at)->toDateTimeString())
         ->and($order->refresh()->dispatched_at->toDateTimeString())->toBe($orderDispatchedAt->toDateTimeString());
 });
+
+test('the packer can still set a batch code once picking is over', function (DeliveryNoteStateEnum $state) {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    StoreBatchCode::make()->action($this->warehouse, [
+        'code'         => 'BC-'.Str::random(6),
+        'org_stock_id' => $deliveryNoteItem->org_stock_id,
+        'expiry_date'  => now()->addYear(),
+    ]);
+
+    $packer = User::factory()->create(['group_id' => $this->organisation->group_id]);
+
+    $deliveryNote->update([
+        'state'          => $state,
+        'packer_user_id' => $packer->id,
+    ]);
+    $deliveryNote->refresh();
+
+    actingAs($packer);
+    session()->forget('temp_handling_delivery_note');
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    request()->setUserResolver(fn () => $packer);
+
+    $table = new InertiaTable(request());
+    IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, isEditable: true)($table);
+
+    $columns = (new \ReflectionProperty(InertiaTable::class, 'columns'))->getValue($table);
+
+    expect($columns->pluck('key'))->toContain('picking_locations');
+
+    $item = IndexDeliveryNoteItems::run($deliveryNote)->firstWhere('id', $deliveryNoteItem->id);
+    $picking = Arr::first(DeliveryNoteItemsResource::make($item)->toArray(request())['picking_locations']);
+
+    expect($picking['show_batch_code_ui'])->toBeTrue()
+        ->and($picking['batch_code_id'])->toBeNull();
+})->with([
+    DeliveryNoteStateEnum::PACKING,
+    DeliveryNoteStateEnum::PACKED,
+    DeliveryNoteStateEnum::FINALISED,
+]);
 
 test('repair dispatches an order left stuck in finalised, backdated and silent', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
