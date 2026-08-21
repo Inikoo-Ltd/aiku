@@ -8,6 +8,10 @@ import Faq from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Faq.vue"
 import Customisation from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Customisation.vue"
 import Storage from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Storage.vue"
 import LabelingGuide from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/LabelingGuide.vue"
+import {
+  isTabVisible,
+  type FamilyExtraDescriptionTabKey,
+} from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
 
 const props = defineProps<{
   fieldValue: any
@@ -16,22 +20,10 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", {}) as any
-const hasContent = (html?: string | null) => {
-  if (!html) return false
-  
-  const text = html
-  .replace(/<[^>]*>/g, '') // remove html tags
-  .replace(/&nbsp;/g, ' ')
-  .trim()
-  
-  return text.length > 0
-}
 
-const isAromaOrganisation = computed(() =>
-  Boolean(props.fieldValue?.family?.is_aroma_organisation)
-)
+const family = computed(() => props.fieldValue?.family ?? {})
 
-const aromaOnlyTabs = ["customisation", "labeling guide", "storage_and_shelf_life"]
+const isLoggedIn = computed(() => Boolean(layout?.iris?.is_logged_in))
 
 const tabs = computed(() =>
   [
@@ -41,28 +33,9 @@ const tabs = computed(() =>
     { key: "customisation", label: ctrans("Customisation") },
     { key: "labeling guide", label: ctrans("Labeling Guide") },
     { key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
-  ].filter(tab => {
-    if (tab.key === "about") {
-      return hasContent(props.fieldValue?.family?.description_extra)
-    }
-
-    if (tab.key === "marketing") {
-      return layout?.iris?.is_logged_in
-    }
-
-    if (tab.key === "faq") {
-      return (
-        Array.isArray(props.fieldValue?.family?.faq) &&
-        props.fieldValue.family.faq.length > 0
-      )
-    }
-
-    if (aromaOnlyTabs.includes(tab.key)) {
-      return isAromaOrganisation.value
-    }
-
-    return true
-  })
+  ].filter(tab =>
+    isTabVisible(tab.key as FamilyExtraDescriptionTabKey, family.value, isLoggedIn.value)
+  )
 )
 
 const activeTab = ref(tabs.value[0]?.key ?? "")
