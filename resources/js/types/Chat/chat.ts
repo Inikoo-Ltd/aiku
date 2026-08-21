@@ -36,6 +36,8 @@ export interface SessionAPI {
 	contact_name: string | null
 	created_at: string
 	priority: string
+	is_spam?: boolean
+	is_trashed?: boolean
 	customer: boolean
 	image?: string
 	shop?: ChatInboxShop | null

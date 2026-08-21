@@ -435,9 +435,20 @@ const openChat = (c: Contact) => {
         shop: c.shop,
         organisation: c.organisation,
         ai_summary: c.ai_summary ?? null,
+        is_trashed: trashView.value,
     } as SessionAPI
     messages.value = c.messages ?? []
     updateUrl(String(c.ulid))
+}
+
+const onRestoreFromThread = () => {
+    const ulid = selectedSession.value?.ulid
+    if (ulid) {
+        contacts.value = contacts.value.filter((x) => x.ulid !== ulid)
+    }
+    selectedSession.value = null
+    messages.value = []
+    fetchInboxNotifications()
 }
 
 const handleClickContact = (c: Contact) => {
@@ -964,7 +975,8 @@ onUnmounted(() => {
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
                     @open-jira-settings="onOpenJiraSettings"
                     @open-slack-settings="onOpenSlackSettings"
-                    @spam-success="onSpamFromThread" />
+                    @spam-success="onSpamFromThread"
+                    @restore-success="onRestoreFromThread" />
             </div>
         </div>
 

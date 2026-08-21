@@ -58,6 +58,7 @@ const emit = defineEmits([
     "open-jira-settings",
     "open-slack-settings",
     "spam-success",
+    "restore-success",
 ])
 
 const layout: any = inject("layout", {})
@@ -163,6 +164,25 @@ const assignSelf = async () => {
     }
 }
 
+const isRestoring = ref(false)
+const restoreChat = async () => {
+    if (!props.session?.ulid || isRestoring.value) return
+    isRestoring.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.patch(
+            route("grp.org.chat.agents.sessions.restore", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        emit("restore-success")
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to restore chat"), type: "error" })
+    } finally {
+        isRestoring.value = false
+    }
+}
+
 const isReopening = ref(false)
 const reopenChat = async () => {
     if (!props.session?.ulid || isReopening.value) return
@@ -251,6 +271,7 @@ const canLoadMore = ref(false)
 const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
+const isTrashed = computed(() => !!(chatSession.value as any)?.is_trashed)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => chatSession.value?.status === "waiting")
 const menuRef = ref<HTMLElement | null>(null)
@@ -775,7 +796,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
 
-            <ModalConfirmationDelete v-if="!isClosed && isMyChat" :routeDelete="{
+            <ModalConfirmationDelete v-if="!isClosed && !isTrashed && isMyChat" :routeDelete="{
                 name: 'grp.org.chat.agents.sessions.close',
                 parameters: [session?.organisation.id, session?.ulid],
                 method: 'patch',
@@ -807,7 +828,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
                 </button>
 
-                <div v-if="isMenuOpen && !isClosed"
+                <div v-if="isMenuOpen && !isClosed && !isTrashed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <button class="menu-item" @click="onViewUserProfile">
                         <FontAwesomeIcon :icon="faUser" /> {{ trans("View Profile") }}
@@ -906,8 +927,25 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
         </div>
 
+        <!-- Footer: Restore banner for trashed chats -->
+        <footer v-if="isTrashed" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('This chat is in trash') }}
+                </div>
+                <Button
+                    @click="restoreChat"
+                    :loading="isRestoring"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Restore')"
+                    :icon="faRotateRight"
+                />
+            </div>
+        </footer>
+
         <!-- Footer: Reopen banner for closed chats -->
-        <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
+        <footer v-else-if="isClosed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ trans('This chat has been closed') }}
