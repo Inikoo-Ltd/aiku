@@ -142,6 +142,14 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
         'settings'  => '{}'
     ];
 
+    protected array $auditInclude = [
+        'reference',
+        'name',
+        'status',
+        'state',
+        'connection_status',
+    ];
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
-use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -536,16 +535,16 @@ class ShowPurchaseOrder extends OrgAction
         return $purchaseOrder->stockDeliveries()
             ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
             ->get()->map(fn (StockDelivery $stockDelivery) => [
-            'reference' => $stockDelivery->reference,
-            'state'     => $stockDelivery->state->value,
-            'route'     => [
+            'reference'  => $stockDelivery->reference,
+            'state'      => $stockDelivery->state->value,
+            'state_icon' => StockDeliveryStateEnum::stateIcon()[$stockDelivery->state->value],
+            'route'      => [
                 'name'       => 'grp.org.procurement.stock_deliveries.show',
                 'parameters' => [
                     'organisation'  => $purchaseOrder->organisation->slug,
                     'stockDelivery' => $stockDelivery->slug,
                 ],
             ],
-            'timeline'  => ShowStockDelivery::make()->getTimeline($stockDelivery, false),
         ])->all();
     }
 

@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\WooCommerce\Orders;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\WithSanitizedPhone;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -35,6 +36,7 @@ class StoreOrderFromWooCommerce extends OrgAction
     use WithActionUpdate;
     use WithGeneratedWooCommerceAddress;
     use WithPayAndSubmitOrder;
+    use WithSanitizedPhone;
 
     /**
      * @throws \Throwable
@@ -103,7 +105,7 @@ class StoreOrderFromWooCommerce extends OrgAction
                 'company_name' => Arr::get($wooOrderData, 'shipping.company'),
                 'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'shipping.phone')),
                 'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
-            ]);
+            ], strict: false);
         } else {
             $customerClient = CustomerClient::find($customerClientID->id);
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
@@ -113,21 +115,13 @@ class StoreOrderFromWooCommerce extends OrgAction
                 'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'shipping.phone')),
                 'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
 
-            ]);
+            ], strict: false);
         }
 
 
         return $customerClient;
     }
 
-    private function sanitizePhone($phone): array|string|null
-    {
-        // Extract only digits
-        $digits = preg_replace('/[^0-9]/', '', $phone);
-
-        // Ensure minimum 10 digits
-        return strlen($digits) >= 10 ? $digits : str_pad($digits, 10, '0', STR_PAD_RIGHT);
-    }
 
     public function digestWooAddress($wooOrderData): Address
     {
@@ -174,6 +168,4 @@ class StoreOrderFromWooCommerce extends OrgAction
 
         return $orderedProducts;
     }
-
-
 }

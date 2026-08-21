@@ -168,8 +168,8 @@ class ShowCraftsDashboard extends OrgAction
 
 
                 ProductionTabsEnum::HISTORY->value => $this->tab == ProductionTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($production))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($production)))
+                    fn () => HistoryResource::collection(IndexHistory::run($production, ProductionTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($production, ProductionTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));

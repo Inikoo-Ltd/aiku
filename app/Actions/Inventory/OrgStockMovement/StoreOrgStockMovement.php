@@ -51,9 +51,13 @@ class StoreOrgStockMovement extends OrgAction
         data_set($modelData, 'date', now(), overwrite: false);
 
 
+        $valuationState = null;
         if (!Arr::has($modelData, 'org_amount') && Arr::has($modelData, 'quantity')) {
-            $orgAmount = $modelData['quantity'] * $orgStock->value_in_locations;
-            data_set($modelData, 'org_amount', $orgAmount);
+            $valuationState = $this->getValuationState($orgStock, now());
+            $valuation      = $this->valuationFromState($valuationState, $orgStock, now());
+
+            $orgAmount = $modelData['quantity'] * $this->getOfficialPerSku($orgStock, now(), $valuation);
+            data_set($modelData, 'org_amount', round($orgAmount, 3));
         }
 
         data_set($modelData, 'grp_amount', Arr::get($modelData, 'org_amount') * GetCurrencyExchange::run($orgStock->organisation->currency, $orgStock->group->currency), overwrite: false);
@@ -121,8 +125,14 @@ class StoreOrgStockMovement extends OrgAction
                     ->where('org_stock_id', $orgStock->id)->sum('quantity');
 
 
-                $lppPerSku  = $this->getLppPerSku($orgStock, now());
-                $valuation  = $this->getValuationPerSku($orgStock, now());
+                $lppPerSku = $this->getLppPerSku($orgStock, now());
+
+                if ($valuationState !== null) {
+                    $this->applyMovementToValuation($valuationState, $orgStockMovement, $orgStock);
+                    $valuation = $this->valuationFromState($valuationState, $orgStock, now());
+                } else {
+                    $valuation = $this->getValuationPerSku($orgStock, now());
+                }
 
                 $orgStockMovement->update([
                     'running_quantity'           => $runningQuantity,

@@ -68,7 +68,7 @@ class UpdateTransaction extends OrgAction
             $historicAsset = $transaction->historicAsset;
 
             $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-            $net   = round($gross * ($transaction->current_discount_factor ?? 1), 2);
+            $net   = $gross - discountAmountOffGross($gross, $transaction->current_discount_factor);
 
             data_set($modelData, 'gross_amount', $gross);
             data_set($modelData, 'net_amount', $net);

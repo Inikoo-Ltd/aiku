@@ -109,16 +109,6 @@ class ShowRetinaAccountManagement extends RetinaAction
                                             'address'            => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
                                         ],
                                     ],
-                                    'eori'             => [
-                                        'type'  => 'input',
-                                        'label' => 'EORI',
-                                        'value' => $customer->eori,
-                                    ],
-                                    'ukims'                    => [
-                                        'type'  => 'input',
-                                        'label' => 'UKIMS',
-                                        'value' => $customer->ukims
-                                    ],
                                     'tax_number'       => [
                                         'type'          => 'tax_number',
                                         'label'         => __('Tax number'),
@@ -149,6 +139,18 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'value'         => $customer->identity_document_number_alt
                                     ],
                                 ]
+                            ],
+                            [
+                                'title'  => __('Order preferences'),
+                                'label'  => __('Preferences'),
+                                'icon'   => 'fa-light fa-gift',
+                                'fields' => [
+                                    'is_gift_opted_out' => [
+                                        'type'  => 'toggle',
+                                        'label' => __('Opt out of free gifts'),
+                                        'value' => (bool) data_get($customer->settings, 'is_gift_opted_out', false),
+                                    ],
+                                ],
                             ],
                              ...($showInterests ? [[
                             'title'  => __('Interest'),

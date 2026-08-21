@@ -10,12 +10,14 @@
 
 namespace App\Actions\CRM\Poll\UI;
 
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Http\Resources\CRM\PollOptionsResource;
 use App\Http\Resources\CRM\PollResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
 use App\Models\SysAdmin\Organisation;
@@ -94,6 +96,10 @@ class ShowPoll extends OrgAction
 
             'data'        => PollResource::make($poll)->toarray($request),
 
+            PollsTabsEnum::HISTORY->value => $this->tab == PollsTabsEnum::HISTORY->value ?
+                fn () => HistoryResource::collection(IndexHistory::run($poll, PollsTabsEnum::HISTORY->value))
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($poll, PollsTabsEnum::HISTORY->value))),
+
         ];
 
         if ($poll->type != PollTypeEnum::OPEN_QUESTION) {
@@ -109,6 +115,8 @@ class ShowPoll extends OrgAction
                 IndexPollOptions::make()->tableStructure($poll, [], PollsTabsEnum::POLL_OPTIONS->value)
             );
         }
+
+        $response->table(IndexHistory::make()->tableStructure(PollsTabsEnum::HISTORY->value));
 
         return $response;
     }

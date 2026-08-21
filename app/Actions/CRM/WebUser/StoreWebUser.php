@@ -109,7 +109,8 @@ class StoreWebUser extends OrgAction
                 new IUnique(
                     table: 'web_users',
                     extraConditions: [
-                        ['column' => 'website_id', 'value' => $this->shop->website->id]
+                        ['column' => 'website_id', 'value' => $this->shop->website->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -136,7 +137,8 @@ class StoreWebUser extends OrgAction
             new IUnique(
                 table: 'web_users',
                 extraConditions: [
-                    ['column' => 'website_id', 'value' => $this->shop->website->id]
+                    ['column' => 'website_id', 'value' => $this->shop->website->id],
+                    ['column' => 'deleted_at', 'operator' => 'null'],
                 ]
             ),
         ];

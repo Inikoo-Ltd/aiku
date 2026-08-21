@@ -1114,6 +1114,26 @@ test('employee job position in another organisation', function () {
     return $employee;
 });
 
+test('update job positions in the organisation where the user is an employee', function (Employee $employee) {
+    $user         = $employee->getUser();
+    $organisation = $employee->organisation;
+    $jobPosition  = $organisation->jobPositions()->where('code', 'hr-c')->first();
+
+    UpdateUserOrganisationPseudoJobPositions::make()->action(
+        $user,
+        $organisation,
+        [
+            'permissions' => [
+                $jobPosition->code => []
+            ]
+        ]
+    );
+    $employee->refresh();
+
+    expect($employee->jobPositions()->where('job_positions.id', $jobPosition->id)->count())->toBe(1)
+        ->and($user->pseudoJobPositions()->wherePivot('organisation_id', $organisation->id)->count())->toBe(0);
+})->depends('employee job position in another organisation');
+
 test('can show hr dashboard', function () {
     actingAs(User::first());
 

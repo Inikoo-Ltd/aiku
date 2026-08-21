@@ -96,6 +96,12 @@ class RouteServiceProvider extends ServiceProvider
             ->name('analytics.')
             ->group(base_path('routes/analytics/analytics.php'));
 
+        foreach ([config('app.domain'), 'app.'.config('app.domain'), 'pupil.'.config('app.domain')] as $aikuDomain) {
+            Route::domain($aikuDomain)->get('favicon.ico', function () {
+                return response()->file(public_path('favicons/aiku-favicon.ico'));
+            });
+        }
+
         Route::middleware('iris')
             ->name('iris.')
             ->group(base_path('routes/iris/root.php'));

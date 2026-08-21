@@ -94,7 +94,8 @@ class StoreRetinaWebUser extends RetinaAction
                 new IUnique(
                     table: 'web_users',
                     extraConditions: [
-                        ['column' => 'website_id', 'value' => $this->webUser->website->id]
+                        ['column' => 'website_id', 'value' => $this->webUser->website->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -111,7 +112,8 @@ class StoreRetinaWebUser extends RetinaAction
                 new IUnique(
                     table: 'web_users',
                     extraConditions: [
-                        ['column' => 'website_id', 'value' => $this->webUser->website->id]
+                        ['column' => 'website_id', 'value' => $this->webUser->website->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],

@@ -575,6 +575,24 @@ test('store shop offer', function () {
         ->and($offer->type)->toBe('Shop Ordered');
 });
 
+test('store first order bonus', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    $offer = \App\Actions\Discounts\Offer\StoreFirstOrderBonus::make()->handle($shop, [
+        'trigger_data_min_amount' => 50,
+        'percentage_off'          => 0.1,
+        'end_at'                  => null,
+    ]);
+
+    $offer->refresh();
+    expect($offer)->toBeInstanceOf(Offer::class)
+        ->and($offer->trigger_type)->toBe('Customer')
+        ->and($offer->trigger_data)->toBe(['min_amount' => 50, 'order_number' => 1]);
+});
+
 test('store discount shipping', function () {
     $shop = $this->shop;
     if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::SHIPPING)->exists()) {
@@ -754,8 +772,13 @@ test('force delete offer', function () {
 
 test('create first order bonus', function () {
     $shop = $this->shop;
-    if (!$shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
         SeedShopOfferCampaigns::run($shop);
+    }
+
+    $firstOrderCampaign = $shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::FIRST_ORDER)->first();
+    foreach ($firstOrderCampaign->offers()->where('state', '!=', OfferStateEnum::FINISHED)->get() as $liveOffer) {
+        DeleteOffer::make()->action($liveOffer, true);
     }
 
     $this->artisan('offer:create_first_order_bonus', [

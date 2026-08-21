@@ -3,9 +3,11 @@
 namespace App\Models\Dropshipping;
 
 use App\Actions\Dropshipping\Allegro\Traits\WithAllegroApiServices;
+use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -37,9 +39,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser query()
  * @mixin \Eloquent
  */
-class AllegroUser extends Model
+class AllegroUser extends Model implements Auditable
 {
     use WithAllegroApiServices;
+    use HasHistory;
 
     protected $guarded = [];
 
@@ -62,4 +65,15 @@ class AllegroUser extends Model
     {
         return $this->morphMany(DebugWebhooks::class, 'model');
     }
+
+    public function generateTags(): array
+    {
+        return ['crm', 'websites'];
+    }
+
+    protected array $auditInclude = [
+        'name',
+        'status',
+        'state'
+    ];
 }

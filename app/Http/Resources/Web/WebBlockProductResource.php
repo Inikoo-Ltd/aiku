@@ -114,6 +114,7 @@ class WebBlockProductResource extends JsonResource
             'units'             => $units,
             'unit'              => $product->unit,
             'web_images'        => $product->web_images,
+            'audio'             => $product->audio ? '/audio/'.$product->audio->ulid : null,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
             'images'            => $product->bucket_images ? $this->getImagesData($product, true, 800) : $this->getResizedMediaImages($product, 800),

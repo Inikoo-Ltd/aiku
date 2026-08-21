@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
+use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
@@ -31,6 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexSuppliers extends OrgAction
 {
+    use WithParentSiblingsNavigation;
     use WithAgentSubNavigation;
     use WithSupplyChainAuthorisation;
 
@@ -355,6 +357,7 @@ class IndexSuppliers extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,

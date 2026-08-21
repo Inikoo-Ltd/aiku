@@ -169,7 +169,7 @@ const idxSlideLoading = ref<null | number>(null)
                   <LinkIris
                     :href="data?.button?.link?.href"
                     :canonical_url="data?.button?.link?.canonical_url"
-                    :target="data?.button?.link?.taget"
+                    :target="data?.button?.link?.target"
                     typeof="button"
                     :type="data?.button?.link?.type"
                >

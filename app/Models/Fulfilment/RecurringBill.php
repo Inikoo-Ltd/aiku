@@ -107,6 +107,10 @@ class RecurringBill extends Model implements Auditable
         'status',
         'start_date',
         'end_date',
+        'total_amount',
+        'net_amount',
+        'tax_amount',
+        'gross_amount',
     ];
 
     public function getRouteKeyName(): string

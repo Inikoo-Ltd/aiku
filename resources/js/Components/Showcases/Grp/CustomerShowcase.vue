@@ -94,8 +94,6 @@ interface Customer {
     number_current_customer_clients: number | null
     address: Address
     contact_website?: string | null
-    eori?: string | null
-    ukims?: string | null
     is_dropshipping: boolean
     email_subscriptions?: {
         update_route: {
@@ -651,28 +649,6 @@ const submitNote = async () => {
                             </button>
                         </div>
 
-                        <div v-if="data?.customer?.eori" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="'Economic Operators Registration and Identification (EORI) number'" class="flex-none">
-                                <span class="sr-only">EORI</span>
-                                <FontAwesomeIcon icon="fal fa-globe-europe" class="text-gray-400" fixed-width aria-hidden="true" />
-                            </dt>
-                            <dd class="text-gray-500">
-                                {{ data?.customer?.eori }}
-                                <span class="text-xs text-gray-400">EORI</span>
-                            </dd>
-                        </div>
-
-                        <div v-if="data?.customer?.ukims" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="'UK Internal Market Scheme (UKIMS) number'" class="flex-none">
-                                <span class="sr-only">UKIMS</span>
-                                <FontAwesomeIcon icon="fal fa-island-tropical" class="text-gray-400" fixed-width aria-hidden="true" />
-                            </dt>
-                            <dd class="text-gray-500">
-                                {{ data?.customer?.ukims }}
-                                <span class="text-xs text-gray-400">UKIMS</span>
-                            </dd>
-                        </div>
-
                         <!-- Field: Address -->
                         <div v-if="data?.customer?.address"
                              class="relative flex items-start w-full flex-none gap-x-4 px-6">
@@ -728,9 +704,8 @@ const submitNote = async () => {
 
 
 
-                    <!-- Field: Gift opt-out (shown when shop has GR gifts) -->
                     <div class="w-full flex gap-y-2 py-2 border-t">
-                        <div v-if="gr_data.shop_has_gr && gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
+                        <div v-if="gr_data.route_gift_opt_out" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="localGiftOptedOut ? ctrans('Customer has opted out of eligible gifts and will not receive any') + '.' : ctrans('Customers will receive a gift if they are eligible and select the item. Customer can opted-out by themself in the basket page') + '.'" class="flex-none">
                                 <FontAwesomeIcon icon="fal fa-gift" :class="localGiftOptedOut ? 'text-gray-300' : 'text-gray-400'" fixed-width aria-hidden="true" />
                             </dt>

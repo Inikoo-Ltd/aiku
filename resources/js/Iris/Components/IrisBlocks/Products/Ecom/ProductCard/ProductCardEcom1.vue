@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Image from "@common/Components/Image.vue";
-import { inject, ref, computed } from 'vue'
+import { defineAsyncComponent, inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -22,6 +22,8 @@ import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductB
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 import { routeType } from '@/types/route'
+
+const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -223,6 +225,8 @@ defineExpose({
 
                     </slot>
                 </div>
+
+                <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
 
                 <!-- Section: Golden product, Favourite -->
                 <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"

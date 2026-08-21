@@ -211,6 +211,26 @@ class EditWebsite extends OrgAction
                 ]
             ];
             $blueprints[] = [
+                'label'  => __('Sound Player'),
+                'icon'   => 'fal fa-music',
+                'fields' => [
+                    'sound_player_style' => [
+                        'type'        => 'select',
+                        'mode'        => 'single',
+                        'information' => __('Look of the sound sample player shown on products with an audio sample'),
+                        'label'       => __('Sound player style'),
+                        'options'     => [
+                            ['value' => 'rainbow', 'label' => __('Rainbow bars (animated)')],
+                            ['value' => 'mono', 'label' => __('Monochrome bars (animated)')],
+                            ['value' => 'wave', 'label' => __('Soft wave (animated)')],
+                            ['value' => 'equalizer', 'label' => __('Bottom equalizer (animated)')],
+                            ['value' => 'minimal', 'label' => __('Minimal (no animation)')],
+                        ],
+                        'value'       => data_get($website->settings, 'sound_player_style', 'rainbow'),
+                    ]
+                ]
+            ];
+            $blueprints[] = [
                 'label'  => __('Related Products Web Block'),
                 'icon'   => 'fad fa-th',
                 'fields' => [

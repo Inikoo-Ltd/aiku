@@ -55,6 +55,7 @@ const marketingMaterialUrl = computed(() => {
                 </h2>
 
                 <a :href="marketingMaterialUrl"
+                    rel="nofollow noopener"
                     target="_blank">
                      <button
                          :style="{

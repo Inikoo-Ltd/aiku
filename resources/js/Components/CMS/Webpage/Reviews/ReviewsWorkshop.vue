@@ -32,7 +32,7 @@ const reviews = [
   },
   {
     id: 4,
-    name: "David P***",
+    name: "Daniel P***",
     rating: 5,
     message: "Very fast delivery and customer support was fantastic.",
     date: "Posted 2 weeks ago",

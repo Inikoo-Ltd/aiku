@@ -150,6 +150,10 @@ Broadcast::channel("grp.{organisation}.stock_movement", function () {
     return true;
 });
 
+Broadcast::channel("grp.{organisation}.warehouse.{warehouse}.low_stock_audit", function () {
+    return true;
+});
+
 Broadcast::channel("grp.{order}.transaction_update", function (User $user) {
     return true;
 });

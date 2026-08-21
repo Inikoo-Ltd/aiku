@@ -150,8 +150,8 @@ class ShowArtefact extends OrgAction
                 //     )),
 
                 ArtefactTabsEnum::HISTORY->value => $this->tab == ArtefactTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($artefact))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($artefact)))
+                    fn () => HistoryResource::collection(IndexHistory::run($artefact, ArtefactTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($artefact, ArtefactTabsEnum::HISTORY->value)))
 
             ]
             // )->table(

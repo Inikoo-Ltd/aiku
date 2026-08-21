@@ -2,6 +2,7 @@
 
 namespace App\Actions\Procurement\OrgSupplier\UI;
 
+use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
@@ -25,6 +26,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgAgentSuppliers extends OrgAction
 {
+    use WithParentSiblingsNavigation;
     use WithOrgAgentSubNavigation;
     use WithProcurementAuthorisation;
 
@@ -164,6 +166,7 @@ class IndexOrgAgentSuppliers extends OrgAction
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Agent Suppliers'),
+                'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => __('Agent Suppliers'),
                     'icon'          => [

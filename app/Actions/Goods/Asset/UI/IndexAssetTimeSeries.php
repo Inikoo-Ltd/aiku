@@ -51,6 +51,7 @@ class IndexAssetTimeSeries extends OrgAction
                 'delivery_notes',
                 'customers_invoiced',
             ])
+            ->selectRaw('? as currency_code', [$asset->shop->currency->code])
             ->defaultSort('-from')
             ->allowedSorts(['from', 'to', 'sales_external', 'invoices', 'refunds', 'customers_invoiced'])
             ->allowedFilters([])
