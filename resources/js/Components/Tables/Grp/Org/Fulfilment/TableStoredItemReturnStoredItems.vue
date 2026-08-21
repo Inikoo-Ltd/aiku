@@ -557,14 +557,20 @@ function getRequestedPalletStoredItems(item: any) {
                                 >
                                     [{{ pallet_stored_item.location?.code }}]
                                 </span>
-                                <span
+                                <Tag
                                     v-if="pallet_stored_item.is_virtual"
-                                    v-tooltip="trans('This is a virtual pallet')"
-                                    class="text-gray-400 whitespace-nowrap"
+                                    :theme="11"
+                                    size="xs"
+                                    noHoverColor
+                                    :closeButton="false"
                                 >
-                                    <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
-                                    {{ trans("Virtual") }}
-                                </span>
+                                    <template #label>
+                                        <div class="whitespace-nowrap">
+                                            <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
+                                            {{ trans("Virtual pallet") }}
+                                        </div>
+                                    </template>
+                                </Tag>
                                 <div  v-if="pallet_stored_item.selected_quantity && palletReturn.state === 'in_process'" v-tooltip="trans('Will be picked')" class="pl-1 pb-1 inline" >
                                     <FontAwesomeIcon icon='fas fa-circle' class='text-[7px] text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
                                 </div>

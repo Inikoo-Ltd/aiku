@@ -40,11 +40,15 @@ function palletHref(pallet: any) {
             <Link :href="palletHref(pallet)" class="primaryLink">
                 {{ pallet.reference }}
             </Link>
-            <div v-if="pallet.is_virtual" v-tooltip="trans('This is a virtual pallet')"
-                class="mt-1 whitespace-nowrap text-xs text-gray-400">
-                <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
-                {{ trans("Virtual") }}
-            </div>
+            <Tag v-if="pallet.is_virtual" :theme="11" size="xs" noHoverColor :closeButton="false"
+               class="mt-1">
+                <template #label>
+                    <div class="whitespace-nowrap">
+                        <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
+                        {{ trans("Virtual pallet") }}
+                    </div>
+                </template>
+            </Tag>
         </template>
 
         <template #cell(status)="{ item: pallet }">

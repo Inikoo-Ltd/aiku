@@ -148,11 +148,12 @@ async function copyStoredItemValue(item: { name?: string; reference?: string; qu
                 :class="pallet.slug ? 'primaryLink' : ''">
                 {{ pallet.reference }}
             </component>
-            <Tag v-if="pallet.is_virtual" :theme="8" :closeButton="false" :label="trans('Virtual')" class="ml-1">
+            <Tag v-if="pallet.is_virtual" :theme="11" size="xs" noHoverColor :closeButton="false"
+                 v-tooltip="trans('This is a virtual pallet')" class="ml-1">
                 <template #label>
-                    <div class="whitespace-nowrap text-xs">
+                    <div class="whitespace-nowrap">
                         <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
-                        {{ trans("Virtual") }}
+                        {{ trans("Virtual pallet") }}
                     </div>
                 </template>
             </Tag>
