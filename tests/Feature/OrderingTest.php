@@ -9,6 +9,10 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
+use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInProcessInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
@@ -1352,6 +1356,91 @@ test('Pay order attaches payment to invoice when invoice exists', function () {
     $invoice->refresh();
 
     expect($payment->invoices()->where('invoices.id', $invoice->id)->exists())->toBeTrue();
+});
+
+describe('COD invoice paid email', function () {
+    function payCodOrder(string $paymentAccountType): array
+    {
+        $billingAddress  = new Address(Address::factory()->definition());
+        $deliveryAddress = new Address(Address::factory()->definition());
+
+        $orderData = Order::factory()->definition();
+        data_set($orderData, 'billing_address', $billingAddress);
+        data_set($orderData, 'delivery_address', $deliveryAddress);
+        data_set($orderData, 'to_be_paid_by', OrderToBePaidByEnum::CASH_ON_DELIVERY);
+
+        $order = StoreOrder::make()->action(test()->customer, $orderData);
+
+        $invoice = StoreInvoice::make()->action($order, [
+            'type'                 => InvoiceTypeEnum::INVOICE,
+            'currency_id'          => test()->shop->currency_id,
+            'net_amount'           => 10,
+            'total_amount'         => 10,
+            'gross_amount'         => 10,
+            'tax_amount'           => 0,
+        ]);
+
+        $invoice->update(['is_cash_on_delivery' => true]);
+
+        $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+            test()->organisation,
+            PaymentServiceProvider::where('type', $paymentAccountType)->first(),
+            [
+                'code' => 'ACC'.mt_rand(1000, 9999),
+                'name' => 'Account '.mt_rand(1000, 9999),
+            ]
+        );
+
+        Queue::fake();
+
+        PayOrder::make()->action($order, $paymentAccount, [
+            'amount' => 10.00,
+            'status' => PaymentStatusEnum::SUCCESS,
+            'state'  => PaymentStateEnum::COMPLETED,
+        ]);
+
+        return [$order, $invoice->refresh()];
+    }
+
+    test('paying a COD order notifies the customer', function () {
+        payCodOrder(PaymentServiceProviderTypeEnum::CASH->value);
+
+        Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessInvoicePaidNotification::class);
+    });
+
+    test('a COD order settled through a non cash account still notifies the customer', function () {
+        [, $invoice] = payCodOrder(PaymentServiceProviderTypeEnum::BANK->value);
+
+        expect($invoice->pay_status)->toBe(InvoicePayStatusEnum::PAID);
+
+        Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessInvoicePaidNotification::class);
+    });
+
+    test('the invoice email goes out only once the invoice reads as paid', function () {
+        [, $invoice] = payCodOrder(PaymentServiceProviderTypeEnum::CASH->value);
+
+        Queue::fake();
+        ProcessInvoicePaidNotification::make()->handle($invoice->id);
+        Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === SendInvoicePaidEmailToCustomer::class);
+
+        $unpaidInvoice = StoreInvoice::make()->action($this->customer, array_merge(
+            Invoice::factory()->definition(),
+            ['total_amount' => 10, 'net_amount' => 10, 'gross_amount' => 10, 'tax_amount' => 0]
+        ));
+
+        Queue::fake();
+        ProcessInvoicePaidNotification::make()->handle($unpaidInvoice->id);
+        Queue::assertNotPushed(JobDecorator::class, fn ($job) => $job->displayName() === SendInvoicePaidEmailToCustomer::class);
+    });
+
+    test('a paid invoice that is not cash on delivery is left alone', function () {
+        [, $invoice] = payCodOrder(PaymentServiceProviderTypeEnum::CASH->value);
+        $invoice->update(['is_cash_on_delivery' => false]);
+
+        Queue::fake();
+        ProcessInvoicePaidNotification::make()->handle($invoice->id);
+        Queue::assertNotPushed(JobDecorator::class, fn ($job) => $job->displayName() === SendInvoicePaidEmailToCustomer::class);
+    });
 });
 
 test('invoice from overpaid order credits excess to customer balance', function () {
