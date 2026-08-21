@@ -3320,6 +3320,16 @@ test('a dirty line with no work left on it does not strand the delivery note', f
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
 });
 
+test('raising the required quantity through UpdateDeliveryNoteItem re-derives is_handled', function () {
+    /** The composition syncs change the quantity this way; the line must not keep describing the old one. */
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    expect($item->is_handled)->toBeTrue();
+
+    \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem::make()->action($item, ['quantity_required' => 15], strict: false);
+
+    expect($item->fresh()->is_handled)->toBeFalse();
+});
+
 test('deleting the last blocking line releases the delivery note', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     settleSiblingDeliveryNoteItems($deliveryNote, $item);
