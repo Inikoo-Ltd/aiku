@@ -199,6 +199,30 @@ const addNewBlock = async ({ block, type }) => {
   );
 };
 
+const renameDuplicatedRevealKeys = () => {
+  const blocks = data.value.layout.web_blocks;
+  const usedKeys = new Set(blocks.map(block => block?.web_block?.layout?.reveal?.key).filter(Boolean));
+  const seenKeys = new Set();
+
+  blocks.forEach(block => {
+    const reveal = block?.web_block?.layout?.reveal;
+    if (!reveal?.key) return;
+
+    if (!seenKeys.has(reveal.key)) {
+      seenKeys.add(reveal.key);
+      return;
+    }
+
+    let suffix = 2;
+    while (usedKeys.has(`${reveal.key}-${suffix}`)) suffix++;
+
+    reveal.key = `${reveal.key}-${suffix}`;
+    usedKeys.add(reveal.key);
+    seenKeys.add(reveal.key);
+    onSaveWorkshop(block, false);
+  });
+};
+
 const duplicateBlock = async (modelHasWebBlock = Number) => {
   router.post(
     route('grp.models.webpage.web_block.duplicate', {
@@ -217,6 +241,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        renameDuplicatedRevealKeys();
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
