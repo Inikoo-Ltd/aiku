@@ -2507,3 +2507,30 @@ test('merging a duplicate stock moves its links to the stocked twin and retires 
         ->and($held->slug)->toBe('arttt-merge')
         ->and($empty->refresh()->slug)->not->toBe('arttt-merge');
 });
+
+describe('product available quantity resync', function () {
+    test('hydrator resyncs an out-of-sync product even when quantity_available does not change', function () {
+        list(, , $shop) = createShop();
+        list(, $product) = createProduct($shop);
+
+        $orgStock = $product->orgStocks()->first();
+        if (!$orgStock) {
+            $orgStock = OrgStock::first();
+            $product->orgStocks()->attach($orgStock->id, ['quantity' => 1, 'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        $location         = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 50]);
+
+        OrgStockHydrateQuantityInLocations::run($orgStock->id);
+        $expected = (int) floor($orgStock->refresh()->quantity_available);
+        expect($expected)->toBeGreaterThan(0);
+
+        DB::table('products')->where('id', $product->id)->update(['available_quantity' => $expected + 7]);
+
+        OrgStockHydrateQuantityInLocations::run($orgStock->id);
+
+        expect($product->refresh()->available_quantity)->toBe($expected);
+    });
+});

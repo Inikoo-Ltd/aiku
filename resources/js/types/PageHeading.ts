@@ -19,6 +19,7 @@ export interface PageHeadingTypes {
     platform?:{
         icon: string | string[],
         title: string,
+        order_id: string
     }
     container: {
         icon: string | string[]

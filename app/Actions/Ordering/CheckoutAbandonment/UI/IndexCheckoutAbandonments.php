@@ -289,7 +289,13 @@ class IndexCheckoutAbandonments extends OrgAction
         $title         = __('Abandoned checkouts');
         $subNavigation = null;
 
-        $outboxStateActive = (bool) $this->shop?->outboxes()
+        $shop = match (true) {
+            $this->parent instanceof Shop     => $this->parent,
+            $this->parent instanceof Customer => $this->parent->shop,
+            default                           => null,
+        };
+
+        $outboxStateActive = (bool) $shop?->outboxes()
             ->where('code', OutboxCodeEnum::ABANDONED_CART_REMINDER_1)
             ->where('state', OutboxStateEnum::ACTIVE)
             ->where('is_applicable', true)

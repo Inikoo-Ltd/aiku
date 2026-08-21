@@ -28,35 +28,48 @@ class HandleOrderIncomingTiktok
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(array $modelData)
+    /**
+     * Deliberately not wrapped in a transaction: ValidateIncomingTiktokOrder takes a lock per
+     * order, and a lock held inside a transaction is handed back before the transaction commits,
+     * which would let the next delivery through while this order is still uncommitted. It also
+     * keeps the TikTok API call from holding a database connection open across the network.
+     */
+    public function handle(array $modelData): void
     {
-        DB::transaction(function () use ($modelData) {
-            $shopId = Arr::get($modelData, 'shop_id');
-            $tiktokUser = TiktokUser::where('tiktok_shop_id', $shopId)->firstOrFail();
+        $shopId     = Arr::get($modelData, 'shop_id');
+        $tiktokUser = TiktokUser::where('tiktok_shop_id', $shopId)->firstOrFail();
 
-            $payload = Arr::get($modelData, 'data');
-            $orderId = Arr::get($payload, 'order_id');
+        $payload = Arr::get($modelData, 'data');
+        $orderId = Arr::get($payload, 'order_id');
 
-            $orders = ShowTiktokOrderApi::run($tiktokUser, $orderId);
+        $orders = ShowTiktokOrderApi::run($tiktokUser, $orderId);
 
-            foreach (Arr::get($orders, 'data.orders', []) as $order) {
-                if (Arr::get($order, 'status') === 'AWAITING_SHIPMENT') {
-                    ValidateIncomingTiktokOrder::run($tiktokUser, $order);
-                } elseif (Arr::get($order, 'status') === 'CANCELLED') {
-                    $orderToBeCancel = Order::where('customer_id', $tiktokUser->customer_id)
-                        ->whereNot('state', OrderStateEnum::CANCELLED)
-                        ->where('platform_order_id', Arr::get($order, 'id'))
-                        ->first();
+        foreach (Arr::get($orders, 'data.orders', []) as $order) {
+            match (Arr::get($order, 'status')) {
+                'AWAITING_SHIPMENT' => ValidateIncomingTiktokOrder::run($tiktokUser, $order),
+                'CANCELLED' => $this->cancelOrder($tiktokUser, $order),
+                default => null
+            };
+        }
+    }
 
-                    if ($orderToBeCancel) {
-                        UpdateOrder::make()->action($orderToBeCancel, [
-                            'internal_notes' => __('Order cancelled by Tiktok'),
-                        ]);
+    private function cancelOrder(TiktokUser $tiktokUser, array $order): void
+    {
+        DB::transaction(function () use ($tiktokUser, $order) {
+            $orderToBeCancel = Order::where('customer_id', $tiktokUser->customer_id)
+                ->whereNot('state', OrderStateEnum::CANCELLED)
+                ->where('platform_order_id', Arr::get($order, 'id'))
+                ->first();
 
-                        CancelOrder::make()->action($orderToBeCancel);
-                    }
-                }
+            if (!$orderToBeCancel) {
+                return;
             }
+
+            UpdateOrder::make()->action($orderToBeCancel, [
+                'internal_notes' => __('Order cancelled by Tiktok'),
+            ]);
+
+            CancelOrder::make()->action($orderToBeCancel);
         });
     }
 
