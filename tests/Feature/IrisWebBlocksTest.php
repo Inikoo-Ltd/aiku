@@ -29,6 +29,7 @@ use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct as IrisGetWebBlockProduct;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct as WorkshopGetWebBlockProduct;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
@@ -453,4 +454,97 @@ test('website product workshop layout exposes the description tabs', function ()
     expect($tabs)->not->toBeNull()
         ->and(Arr::get($tabs, 'description'))->toBe($product->description)
         ->and(Arr::get($workshop, 'layout.data.fieldValue.product.id'))->toBe($product->id);
+});
+
+test('product web blocks expose the family extra description layout as the description tabs style', function () {
+    [, $product] = createProduct($this->shop);
+
+    $this->website->update([
+        'published_layout' => [
+            'product' => [
+                'data' => [
+                    'fieldValue' => [
+                        'setting' => ['product_specs' => true],
+                    ],
+                ],
+            ],
+            'family_description' => [
+                'family-2' => [
+                    'fieldValue' => ['container' => ['properties' => ['background' => ['color' => '#ffffff']]]],
+                ],
+                'family-2-extra-description' => [
+                    'fieldValue' => [
+                        'storage'   => ['title' => 'Storage & Shelf Life'],
+                        'container' => ['properties' => ['background' => ['color' => '#f4f4f4']]],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    $workshopFieldValue = Arr::get(WorkshopGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'web_block.layout.data.fieldValue');
+    $irisFieldValue     = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'web_block.layout.data.fieldValue');
+
+    foreach ([$workshopFieldValue, $irisFieldValue] as $fieldValue) {
+        expect(Arr::get($fieldValue, 'setting.product_specs'))->toBeTrue()
+            ->and(Arr::get($fieldValue, 'tabs.description'))->toBe($product->description)
+            ->and(Arr::get($fieldValue, 'tabs_style.storage.title'))->toBe('Storage & Shelf Life')
+            ->and(Arr::get($fieldValue, 'tabs_style.container.properties.background.color'))->toBe('#f4f4f4');
+    }
+});
+
+test('product web blocks return a null description tabs style when no family extra description is published', function () {
+    [, $product] = createProduct($this->shop);
+
+    $this->website->update([
+        'published_layout' => [
+            'family_description' => [
+                'family-1' => [
+                    'fieldValue' => ['container' => ['properties' => null]],
+                ],
+            ],
+        ],
+    ]);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    $fieldValue = Arr::get(WorkshopGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'web_block.layout.data.fieldValue');
+
+    expect($fieldValue)->toHaveKey('tabs_style')
+        ->and(Arr::get($fieldValue, 'tabs_style'))->toBeNull();
+});
+
+test('website product workshop layout exposes the family extra description style', function () {
+    [, $product] = createProduct($this->shop);
+
+    $snapshot = StoreWebsiteSnapshot::make()->action($this->website, [
+        'scope'  => SnapshotScopeEnum::PRODUCT,
+        'layout' => [
+            'product' => [
+                'code' => 'product-3',
+                'data' => [
+                    'fieldValue' => [
+                        'setting' => ['product_specs' => true],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $this->website->update([
+        'unpublished_product_snapshot_id' => $snapshot->id,
+        'published_layout'                => [
+            'family_description' => [
+                'family-2-extra-description' => [
+                    'fieldValue' => ['storage' => ['title' => 'Storage & Shelf Life']],
+                ],
+            ],
+        ],
+    ]);
+
+    $workshop = GetWebsiteWorkshopProduct::run($this->website->fresh(), $product);
+
+    expect(Arr::get($workshop, 'layout.data.fieldValue.tabs_style.storage.title'))->toBe('Storage & Shelf Life');
 });

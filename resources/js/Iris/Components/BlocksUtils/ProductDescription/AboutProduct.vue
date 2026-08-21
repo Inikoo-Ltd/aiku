@@ -87,7 +87,7 @@ const richTextClass = "text-[13px] md:text-[14px] 2xl:text-[16px] leading-[1.8] 
 					:href="appointment?.link?.href"
 					:type="appointment?.link?.type">
 					<div
-						class="group mt-6 flex w-full items-center gap-3 rounded-lg border bg-[#F4F4F4] px-4 py-2 transition hover:border-gray-300 hover:bg-gray-100">
+						class="group mt-6 flex w-fit items-center gap-3 rounded-lg border bg-[#F4F4F4] px-4 py-2 transition hover:border-gray-300 hover:bg-gray-100">
 						<FontAwesomeIcon
 							:icon="faMapMarkerAlt"
 							class="shrink-0 text-gray-600 transition group-hover:text-gray-800" />

@@ -24,6 +24,8 @@ const layout = inject("layout", {}) as any
 
 const tabsData = computed(() => props.fieldValue?.tabs ?? {})
 
+const tabsStyle = computed(() => props.fieldValue?.tabs_style ?? {})
+
 const productData = computed(() => props.fieldValue?.product ?? {})
 
 const isLoggedIn = computed(() => layout?.iris?.is_logged_in ?? true)
@@ -55,6 +57,7 @@ watch(tabs, visibleTabs => {
 })
 
 const childFieldValue = computed(() => ({
+	...tabsStyle.value,
 	...props.fieldValue,
 	family: {
 		...tabsData.value,
@@ -62,9 +65,15 @@ const childFieldValue = computed(() => ({
 	},
 }))
 
+const tabsContainerProperties = computed(
+	() =>
+		tabsStyle.value?.container?.properties ??
+		props.fieldValue?.description_tabs?.container?.properties
+)
+
 const containerStyle = computed(() => ({
 	...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-	...getStyles(props.fieldValue?.description_tabs?.container?.properties),
+	...getStyles(tabsContainerProperties.value),
 	width: "auto",
 }))
 
@@ -88,8 +97,7 @@ const component = (tab: string) => {
 }
 
 const sectionStyle = computed(() => {
-	const bg =
-		props.fieldValue?.description_tabs?.container?.properties?.background?.[props.screenType]
+	const bg = tabsContainerProperties.value?.background?.[props.screenType]
 
 	return {
 		backgroundColor: bg?.color || undefined,
@@ -109,7 +117,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 		:id="'product-description-' + indexBlock"
 		:style="sectionStyle">
 		<div
-			class="mw-full max-w-[1700px] px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
+			class="mx-auto mw-full"
 			:style="containerStyle">
 			<!-- TOP NAV -->
 			<div class="border-b border-[#9a9a9a] bg-[#fbfaf9]">

@@ -26,6 +26,7 @@ const async = (loader: () => Promise<any>): Component =>
 //Department
 const DepartmentDescriptionIris = async(() => import("@/Iris/Components/IrisBlocks/DepartmentDescriptionIris.vue"))
 const DepartmentDescriptionIris2 = async(() => import("@/Iris/Components/IrisBlocks/DepartmentDescriptionIris2.vue"))
+const DepartmentDescriptionIris3 = async(() => import("@/Iris/Components/IrisBlocks/DepartmentDescriptionIris3.vue"))
 
 // Sub-department
 const SubDepartmentDescriptionIris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentDescriptionIris.vue"))

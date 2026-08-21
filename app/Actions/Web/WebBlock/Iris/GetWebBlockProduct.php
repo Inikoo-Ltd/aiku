@@ -54,11 +54,8 @@ class GetWebBlockProduct
         $variant     = $product->is_variant_leader ? Variant::where('leader_id', $product->id)->first() : null;
 
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
-        
-        $website = $webpage->website;
-        $webPublishedLayout = $website->published_layout;
-        $webBlockType = data_get(array_keys(data_get($webPublishedLayout, 'family_description',[])), 1, null);
+
+        $webPublishedLayout = $webpage->website->published_layout;
 
         $tabs = [
             'description'       => $product->description,
@@ -73,7 +70,7 @@ class GetWebBlockProduct
 
         data_set($webBlock, 'web_block.layout.data.fieldValue', data_get($webPublishedLayout, 'product.data.fieldValue', []));
         data_set($webBlock, 'web_block.layout.data.fieldValue.tabs', $tabs);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.tabs_style', $webBlockType ? $this->getWebBlockLayoutData($webPublishedLayout, $webBlockType, 'family_description') : null);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.tabs_style', $this->getFamilyExtraDescriptionLayoutData($webPublishedLayout));
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
 

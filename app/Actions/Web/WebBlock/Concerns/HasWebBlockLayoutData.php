@@ -29,4 +29,16 @@ trait HasWebBlockLayoutData
     {
         return data_get($webPublishedLayout, "$layoutKey.$webBlockType.fieldValue", []);
     }
+
+    protected function getFamilyExtraDescriptionLayoutData(array $webPublishedLayout): ?array
+    {
+        $webBlockType = collect(array_keys(data_get($webPublishedLayout, 'family_description', [])))
+            ->first(fn ($code) => str_ends_with($code, '-extra-description'));
+
+        if (!$webBlockType) {
+            return null;
+        }
+
+        return $this->getWebBlockLayoutData($webPublishedLayout, $webBlockType, 'family_description');
+    }
 }
