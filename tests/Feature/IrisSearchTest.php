@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -414,4 +415,33 @@ test('the typo tuning reaches every search sent to typesense', function () {
 
         return true;
     });
+});
+
+test('discontinued family drops out of the storefront search', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+    StoreProductCategoryWebpage::make()->action($family);
+    $family->webpage->update(['state' => WebpageStateEnum::LIVE]);
+    \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
+    expect((bool) $family->refresh()->is_in_website)->toBeTrue();
+
+    Search::shouldRun()->andReturn([
+        'scope'   => 'catalogue',
+        'results' => [
+            'products'           => [],
+            'product_categories' => [['id' => $family->id, 'code' => $family->code, 'name' => $family->name, 'image' => null]],
+            'collections'        => [],
+        ],
+    ]);
+
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$family->code);
+    $response->assertOk();
+    expect($response->json('results.product_categories'))->toHaveCount(1);
+
+    $family->update(['state' => \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::DISCONTINUED]);
+    expect((bool) $family->refresh()->is_in_website)->toBeFalse();
+
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$family->code.'&v=2');
+    $response->assertOk();
+    expect($response->json('results.product_categories'))->toBe([]);
 });
