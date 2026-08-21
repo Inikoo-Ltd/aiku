@@ -67,16 +67,10 @@ export const isTabVisible = (
 			return Array.isArray(family?.faq) && family.faq.length > 0
 
 		case "customisation":
-			return (
-				Boolean(family?.is_aroma_organisation) &&
-				(hasCustomisationOptions(family) || isLoggedIn)
-			)
+			return Boolean(family?.is_aroma_organisation) && hasCustomisationOptions(family)
 
 		case "labeling guide":
-			return (
-				Boolean(family?.is_aroma_organisation) &&
-				(hasLabelingGuideFile(family) || isLoggedIn)
-			)
+			return Boolean(family?.is_aroma_organisation) && hasLabelingGuideFile(family)
 
 		case "storage_and_shelf_life":
 			return Boolean(family?.is_aroma_organisation) && hasStorageOptions(family)

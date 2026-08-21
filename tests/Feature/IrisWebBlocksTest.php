@@ -360,3 +360,32 @@ test('family extra description block exposes the labeling guide download route',
         ->and(route(Arr::get($labelingGuide, 'route.name'), Arr::get($labelingGuide, 'route.parameters')))
         ->toContain($media->ulid);
 });
+
+test('family extra description block returns a null labeling guide when no file is attached', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+
+    $webpage      = StoreProductCategoryWebpage::make()->action($family);
+    $webBlockType = $this->website->group->webBlockTypes()->where('code', 'family-2-extra-description')->firstOrFail();
+
+    StoreModelHasWebBlock::make()->action($webpage, [
+        'web_block_type_id' => $webBlockType->id,
+        'position'          => 0,
+    ]);
+
+    $webpage = PublishWebpage::make()->action($webpage, ['comment' => 'labeling guide null test']);
+
+    $renderer = new class () {
+        use WithIrisGetWebpageWebBlocks;
+    };
+
+    $publishedBlocks = collect(Arr::get($webpage->published_layout, 'web_blocks', []))
+        ->filter(fn ($block) => Arr::get($block, 'type') === 'family-2-extra-description')
+        ->all();
+
+    $parsed = $renderer->getIrisWebBlocks($webpage, $publishedBlocks, true);
+    $family = Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family');
+
+    expect($family)->toHaveKey('labeling_guide')
+        ->and(Arr::get($family, 'labeling_guide'))->toBeNull();
+});

@@ -37,7 +37,7 @@ const tabs = computed(() =>
     isTabVisible(tab.key as FamilyExtraDescriptionTabKey, family.value, isLoggedIn.value)
   )
 )
-
+console.log('ddd',tabs.value, props)
 const activeTab = ref(tabs.value[0]?.key ?? "")
 
 watch(tabs, (visibleTabs) => {

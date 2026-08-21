@@ -63,7 +63,7 @@ class WebBlockFamilyResource extends JsonResource
                         'media'    => $labelingGuide->ulid
                     ],
                 ]
-            ] : [],
+            ] : null,
             'storage_option'            => [
                 'storage_conditions'    => FamilyStorageConditionEnum::rows(data_get($family->storage_option, 'storage_conditions', [])),
                 'storage_temperature'   => data_get($family->storage_option, 'storage_temperature', ''),
