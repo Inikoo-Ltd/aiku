@@ -58,9 +58,9 @@ class WebBlockFamilyResource extends JsonResource
             'labeling_guide'            => $labelingGuide ? [
                 'label' => $labelingGuide->name,
                 'route' => [
-                    'route_name'    => 'retina.models.attachment.download',
+                    'name'          => 'iris.attach.download',
                     'parameters'    => [
-                        'media'    => $labelingGuide?->ulid
+                        'media'    => $labelingGuide->ulid
                     ],
                 ]
             ] : [],

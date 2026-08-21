@@ -279,10 +279,12 @@ const isMobile = computed(() => props.screenType === "mobile")
 	font-family: inherit !important;
 }
 
+.customisation-table thead,
 .customisation-table thead tr,
 .customisation-table thead th {
-	background-color: #ededed !important;
+	background-color: #e6e6e6 !important;
 	background-image: none !important;
+	border: none !important;
 }
 
 .customisation-table tbody tr,
@@ -293,7 +295,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 }
 
 .customisation-table th.customisation-table__th {
-	border: 1px solid #dadada !important;
+	border: none !important;
 	padding: 10px 12px !important;
 	font-size: 13px !important;
 	font-weight: 600 !important;
@@ -316,7 +318,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 }
 
 .customisation-table td.customisation-table__td {
-	border: 1px solid #dadada !important;
+	border: 3px solid #e6e6e6 !important;
 	padding: 10px 12px !important;
 	font-size: 13px !important;
 	font-weight: 400 !important;
@@ -345,7 +347,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 }
 
 .customisation-dash {
-	color: #9a9a9a !important;
+	color: #e6e6e6 !important;
 }
 
 .customisation-cards {
@@ -355,7 +357,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 }
 
 .customisation-card {
-	border: 1px solid #dadada;
+	border: 3px solid #e6e6e6;
 	border-radius: 8px;
 	background-color: rgba(255, 255, 255, 0.6);
 	padding: 16px;

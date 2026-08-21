@@ -484,7 +484,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
     }
 
-    public function labelingGuide(): Media
+    public function labelingGuide(): ?Media
     {
         return $this->attachments()->where('scope', 'labeling_guide')->first();
     }

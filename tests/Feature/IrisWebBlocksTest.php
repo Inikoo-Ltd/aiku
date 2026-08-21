@@ -33,6 +33,7 @@ use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 
 const PRODUCT_WEBPAGE_BLOCKS = [
@@ -320,4 +321,42 @@ test('family extra description block exposes the family storage options', functi
         ])
         ->and($conditionsByKey->get('shelf_life')['value'])->toBe('24 months from manufacture.')
         ->and($conditionsByKey->get('after_opening')['value'])->toBe('');
+});
+
+test('family extra description block exposes the labeling guide download route', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+
+    UpdateProductCategory::make()->action($family, [
+        'labeling_guide_file' => UploadedFile::fake()->create('labeling-guide.pdf', 12, 'application/pdf'),
+    ]);
+
+    $webpage      = StoreProductCategoryWebpage::make()->action($family);
+    $webBlockType = $this->website->group->webBlockTypes()->where('code', 'family-2-extra-description')->firstOrFail();
+
+    StoreModelHasWebBlock::make()->action($webpage, [
+        'web_block_type_id' => $webBlockType->id,
+        'position'          => 0,
+    ]);
+
+    $webpage = PublishWebpage::make()->action($webpage, ['comment' => 'labeling guide test']);
+
+    $renderer = new class () {
+        use WithIrisGetWebpageWebBlocks;
+    };
+
+    $publishedBlocks = collect(Arr::get($webpage->published_layout, 'web_blocks', []))
+        ->filter(fn ($block) => Arr::get($block, 'type') === 'family-2-extra-description')
+        ->all();
+
+    $parsed        = $renderer->getIrisWebBlocks($webpage, $publishedBlocks, true);
+    $labelingGuide = Arr::get(Arr::first($parsed), 'web_block.layout.data.fieldValue.family.labeling_guide');
+
+    $media = $family->labelingGuide();
+
+    expect($media)->not->toBeNull()
+        ->and(Arr::get($labelingGuide, 'route.name'))->toBe('iris.attach.download')
+        ->and(Arr::get($labelingGuide, 'route.parameters.media'))->toBe($media->ulid)
+        ->and(route(Arr::get($labelingGuide, 'route.name'), Arr::get($labelingGuide, 'route.parameters')))
+        ->toContain($media->ulid);
 });

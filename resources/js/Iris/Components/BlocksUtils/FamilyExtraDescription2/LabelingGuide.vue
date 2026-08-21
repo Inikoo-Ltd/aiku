@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, inject } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faFileDownload, faDownload } from "@fal"
@@ -32,9 +32,29 @@ const cardDescription = computed(() => labelingGuide.value?.card?.description ??
 
 const buttonLabel = computed(() => labelingGuide.value?.card?.button?.text ?? "")
 
-const buttonUrl = computed(() => String(labelingGuide.value?.card?.button?.url ?? "").trim())
+const resolveRoute = inject<((name: string, params?: object) => string) | null>("route", null)
 
-const hasButton = computed(() => hasText(buttonLabel.value))
+const downloadRoute = computed(() => props.fieldValue?.family?.labeling_guide?.route)
+
+const downloadUrl = computed(() => {
+	const route = downloadRoute.value
+
+	if (!route?.name || !resolveRoute) {
+		return ""
+	}
+
+	try {
+		return resolveRoute(route.name, route.parameters)
+	} catch {
+		return ""
+	}
+})
+
+const buttonUrl = computed(
+	() => downloadUrl.value || String(labelingGuide.value?.card?.button?.url ?? "").trim()
+)
+
+const hasButton = computed(() => hasText(buttonLabel.value) && hasText(buttonUrl.value))
 
 const hasCard = computed(
 	() => hasText(cardTitle.value) || hasText(cardDescription.value) || hasButton.value
@@ -84,7 +104,7 @@ const hasSide = computed(
 			">
 			<div
 				v-if="hasCard"
-				class="rounded-md  border border-[#747474] bg-[#dcdcdcdc] p-5 md:p-6 xl:p-[26px] 2xl:p-7">
+				class="rounded-md border border-[#747474] bg-[#dcdcdcdc] p-5 md:p-6 xl:p-[26px] 2xl:p-7">
 				<div class="flex items-start gap-[18px]">
 					<div class="relative flex-shrink-0 leading-none text-black">
 						<FontAwesomeIcon
@@ -155,7 +175,7 @@ const hasSide = computed(
 
 				<div
 					v-if="hasText(note)"
-					class="mt-7 rounded-md border border-[#C0899B] bg-[#C0899B]/10 px-[14px] py-[10px] text-[12px] leading-[1.6] md:text-[13px] xl:text-[14px] 2xl:text-[15px]"
+					class="mt-7 rounded-md border font-semibold border-[#C0899B] bg-[#C0899B]/10 px-[14px] py-[10px] text-[12px] leading-[1.6] md:text-[13px] xl:text-[14px] 2xl:text-[15px]"
 					:class="richTextClass"
 					v-html="note" />
 			</div>

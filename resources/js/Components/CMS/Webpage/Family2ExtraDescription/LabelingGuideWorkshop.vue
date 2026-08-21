@@ -32,6 +32,8 @@ const cardDescription = computed(() => labelingGuide.value?.card?.description ??
 
 const buttonLabel = computed(() => labelingGuide.value?.card?.button?.text ?? "")
 
+const buttonUrl = computed(() => String(labelingGuide.value?.card?.button?.url ?? "").trim())
+
 const hasButton = computed(() => hasText(buttonLabel.value))
 
 const hasCard = computed(
@@ -108,16 +110,23 @@ const hasSide = computed(
 							:class="richTextClass"
 							v-html="cardDescription" />
 
-						<button
+						<a
 							v-if="hasButton"
-							class="mt-[18px] inline-flex cursor-pointer items-center gap-6 rounded-md border-0 bg-black px-[18px] py-[10px] text-[13px] leading-[1.2] text-white transition-colors duration-200 hover:bg-neutral-800 md:text-[14px] xl:px-5 xl:py-[11px] xl:text-[15px] 2xl:px-[22px] 2xl:py-3 2xl:text-[16px]"
-							:style="getStyles(labelingGuide?.card?.button?.container?.properties)">
-							<span>{{ buttonLabel }}</span>
+							:href="buttonUrl || undefined"
+							target="_blank"
+							class="inline-block !no-underline">
+							<button
+								class="mt-[18px] inline-flex cursor-pointer items-center gap-6 rounded-md border-0 bg-black px-[18px] py-[10px] text-[13px] leading-[1.2] text-white transition-colors duration-200 hover:bg-neutral-800 md:text-[14px] xl:px-5 xl:py-[11px] xl:text-[15px] 2xl:px-[22px] 2xl:py-3 2xl:text-[16px]"
+								:style="
+									getStyles(labelingGuide?.card?.button?.container?.properties)
+								">
+								<span>{{ buttonLabel }}</span>
 
-							<FontAwesomeIcon
-								icon="fal fa-download"
-								class="!text-[14px] !text-white xl:!text-[15px] 2xl:!text-[16px]" />
-						</button>
+								<FontAwesomeIcon
+									icon="fal fa-download"
+									class="!text-[14px] !text-white xl:!text-[15px] 2xl:!text-[16px]" />
+							</button>
+						</a>
 					</div>
 				</div>
 			</div>
@@ -146,7 +155,7 @@ const hasSide = computed(
 
 				<div
 					v-if="hasText(note)"
-					class="mt-7 rounded-md border border-[#C0899B] bg-[#C0899B]/10 px-[14px] py-[10px] text-[12px] leading-[1.6] md:text-[13px] xl:text-[14px] 2xl:text-[15px]"
+					class="mt-7 rounded-md border font-semibold border-[#C0899B] bg-[#C0899B]/10 px-[14px] py-[10px] text-[12px] leading-[1.6] md:text-[13px] xl:text-[14px] 2xl:text-[15px]"
 					:class="richTextClass"
 					v-html="note" />
 			</div>
