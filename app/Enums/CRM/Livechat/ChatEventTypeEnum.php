@@ -148,6 +148,16 @@ enum ChatEventTypeEnum: string
                 'icon' => 'fab fa-jira',
                 'class' => 'text-blue-600',
             ],
+            'spam' => [
+                'tooltip' => __('Marked as Spam'),
+                'icon' => 'fas fa-ban',
+                'class' => 'text-red-500',
+            ],
+            'not_spam' => [
+                'tooltip' => __('Marked as Not Spam'),
+                'icon' => 'fas fa-rotate-left',
+                'class' => 'text-gray-500',
+            ],
 
         ];
     }

@@ -37,8 +37,9 @@ class SetChatSessionPriority
             actorId: $agent?->id,
             payload: [
                 'action_type'       => 'priority',
-                'previous_priority' => $previous,
-                'new_priority'      => $priority,
+                'values'            => ['priority' => $priority],
+                'priority_previous' => $previous,
+                'priority_current'  => $priority,
             ]
         );
 
