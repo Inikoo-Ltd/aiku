@@ -79,3 +79,16 @@ export const isTabVisible = (
 			return true
 	}
 }
+
+/**
+ * Product webpages expose the same tab data under `fieldValue.tabs`,
+ * where the about tab is driven by the product description.
+ */
+export const isProductTabVisible = (
+	tabKey: FamilyExtraDescriptionTabKey,
+	tabs: any,
+	isLoggedIn: boolean
+): boolean =>
+	tabKey === "about"
+		? hasRichTextContent(tabs?.description)
+		: isTabVisible(tabKey, tabs, isLoggedIn)
