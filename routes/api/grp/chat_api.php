@@ -35,7 +35,6 @@ Route::get('/ping', function () {
 })->name('ping');
 
 
-
 Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
 Route::post('/sessions', StoreChatSession::class)->name('sessions.store');
 Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-message.store');
@@ -48,10 +47,10 @@ Route::put('/sessions/{chatSession:ulid}/close', [CloseChatSession::class, 'asAp
 Route::post('/sessions/{chatSession:ulid}/typing', HandleChatTyping::class)
     ->name('sessions.typing');
 
-Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity');
-Route::get('/sessions/{chatSession:ulid}/customer-profile', GetChatCustomerProfile::class)->name('sessions.customer_profile');
-Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline');
-Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages');
+Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity')->withTrashed();
+Route::get('/sessions/{chatSession:ulid}/customer-profile', GetChatCustomerProfile::class)->name('sessions.customer_profile')->withTrashed();
+Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline')->withTrashed();
+Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages')->withTrashed();
 
 Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::class)
     ->name('sessions.guest_profile');
