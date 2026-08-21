@@ -21,8 +21,8 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('shop_id')->nullable()->index();
             $table->foreign('shop_id')->references('id')->on('shops')->onUpdate('cascade');
 
-            $table->unsignedInteger('web_user_id')->index()->nullable();
-            $table->foreign('web_user_id')->references('id')->on('web_users')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedInteger('customer_id')->index()->nullable();
+            $table->foreign('customer_id')->references('id')->on('customers')->onUpdate('cascade')->onDelete('cascade');
 
             $table->string('phone_number', 50)->nullable()->index();
 
