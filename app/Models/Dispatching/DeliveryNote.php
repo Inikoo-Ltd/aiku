@@ -10,6 +10,7 @@ namespace App\Models\Dispatching;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Helpers\NaturalLanguage;
 use App\Models\Catalogue\Shop;
@@ -321,6 +322,34 @@ class DeliveryNote extends Model implements Auditable
     public function deliveryNoteItems(): HasMany
     {
         return $this->hasMany(DeliveryNoteItem::class);
+    }
+
+    /**
+     * The one answer to "is something on this note still holding it", asked the same way by every
+     * transition and every screen. A line blocks while it waits on the warehouse or on CRM, or
+     * while a quantity that moved under the picker still has work outstanding on it. A line over
+     * picked is not blocking: the trim at the end of picking settles that one. A line finished, or
+     * finished short, is not blocking either, whatever flags it still carries: what blocks is work,
+     * never a flag on its own.
+     */
+    public function blockingItems(): HasMany
+    {
+        return $this->deliveryNoteItems()
+            ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+            ->where(function ($query) {
+                $query->where('has_waiting_warehouse', true)
+                    ->orWhere('has_waiting_crm', true)
+                    ->orWhere(function ($query) {
+                        $query->where('is_dirty', true)
+                            ->where('is_handled', false)
+                            ->whereColumn('quantity_picked', '<=', 'quantity_required');
+                    });
+            });
+    }
+
+    public function hasBlockingItems(): bool
+    {
+        return $this->blockingItems()->exists();
     }
 
     public function warehouse(): BelongsTo

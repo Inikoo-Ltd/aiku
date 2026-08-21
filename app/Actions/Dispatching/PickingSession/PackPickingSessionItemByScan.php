@@ -183,9 +183,7 @@ class PackPickingSessionItemByScan extends OrgAction
      */
     protected function hasWaitingItems(DeliveryNote $deliveryNote, Collection $sessionItems): bool
     {
-        return $sessionItems
-            ->where('delivery_note_id', $deliveryNote->id)
-            ->contains(fn (DeliveryNoteItem $item) => $item->has_waiting_warehouse || $item->has_waiting_crm);
+        return $deliveryNote->hasBlockingItems();
     }
 
     /**

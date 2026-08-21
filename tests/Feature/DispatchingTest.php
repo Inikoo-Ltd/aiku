@@ -1371,10 +1371,13 @@ test('delivery note undo picked and undo packing', function () {
 });
 
 test('delivery note state to picking handling blocked and unassigned', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
+    /** Blocked is a fact about the lines: one has to be waiting before the note can be. */
+    $item->update(['quantity_waiting_warehouse' => 1]);
     $dn = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked::make()->action($deliveryNote);
     expect($dn->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+    $item->update(['quantity_waiting_warehouse' => 0]);
 
     $dn = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned::make()->action($deliveryNote);
     expect($dn->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED);
@@ -1630,6 +1633,9 @@ test('lowering a quantity on a packed delivery note unpacks it', function () {
 
     $syncer = new class () {
         use \App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
+
+        /** Undoing the packing can find a dirty sibling line blocking, and releasing it dispatches the handling hydrators. */
+        public int $hydratorsDelay = 0;
 
         public function sync($deliveryNote, $transaction, $orgStocks): void
         {
@@ -3328,6 +3334,25 @@ test('raising the required quantity through UpdateDeliveryNoteItem re-derives is
     \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem::make()->action($item, ['quantity_required' => 15], strict: false);
 
     expect($item->fresh()->is_handled)->toBeFalse();
+});
+
+test('packing cannot start while a line blocks the delivery note', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    settleSiblingDeliveryNoteItems($deliveryNote, $item);
+    $item->update(['quantity_waiting_warehouse' => 2]);
+
+    expect($item->fresh()->has_waiting_warehouse)->toBeTrue()
+        ->and(fn () => \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+});
+
+test('a delivery note cannot be put into handling blocked with nothing blocking it', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    settleSiblingDeliveryNoteItems($deliveryNote, $item);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked::make()->action($deliveryNote);
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING);
 });
 
 test('deleting the last blocking line releases the delivery note', function () {

@@ -17,7 +17,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
-use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
 
@@ -35,37 +34,12 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
     private static array $inProgress = [];
 
     /**
-     * The one answer to "is something on this note still holding it". Asking it in two places with
-     * two slightly different sets of conditions is what produced notes that could be released and
-     * then immediately re-blocked, so the release path reads it from here too.
-     *
-     * A dirty line holding MORE than is now wanted is deliberately not blocking: the trim below is
-     * what settles that one, and calling it blocking would refuse to start the very repair.
-     *
-     * What blocks is outstanding work, never the flag on its own. DES016959 had its line taken to
-     * zero after the picker had already recorded it as not picked: nothing was left for anybody to
-     * do, yet the flag stayed on and no pick, edit or sync was ever going to run again to take it
-     * off. Asking is_handled as well is what stops a flag nobody can clear from stranding a note
-     * for good - a line finished, or finished short, is not a line still holding the warehouse up.
-     *
-     * A note whose picking is finished with a line nobody could pick is picked-and-short, not
-     * blocked. Only the spontaneous release in AutoFinishWaitingDeliveryNote cares about work left
-     * unfinished by a human, and it asks that question separately.
+     * Kept as the name the transitions call; the predicate itself lives on the model so that every
+     * screen and every transition asks exactly the same question.
      */
     public static function isBlocked(DeliveryNote $deliveryNote): bool
     {
-        return $deliveryNote->deliveryNoteItems()
-            ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
-            ->where(function ($query) {
-                $query->where('has_waiting_warehouse', true)
-                    ->orWhere('has_waiting_crm', true)
-                    ->orWhere(function ($query) {
-                        $query->where('is_dirty', true)
-                            ->where('is_handled', false)
-                            ->whereColumn('quantity_picked', '<=', 'quantity_required');
-                    });
-            })
-            ->exists();
+        return $deliveryNote->hasBlockingItems();
     }
 
     /**

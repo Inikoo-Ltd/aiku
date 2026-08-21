@@ -217,14 +217,7 @@ class ShowDeliveryNote extends OrgAction
      */
     public function getHandlingBlockedActions(DeliveryNote $deliveryNote): array
     {
-        $stillWaiting = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
-            ->where(function ($query) {
-                $query->where('has_waiting_crm', true)
-                    ->orWhere('has_waiting_warehouse', true);
-            })
-            ->exists();
-
-        if ($stillWaiting) {
+        if ($deliveryNote->hasBlockingItems()) {
             return [];
         }
 
