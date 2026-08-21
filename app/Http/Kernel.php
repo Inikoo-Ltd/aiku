@@ -69,6 +69,7 @@ use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Osiset\ShopifyApp\Http\Middleware\VerifyShopify;
+use App\Http\Middleware\ElevateWebsiteChatStateful;
 
 class Kernel extends HttpKernel
 {
@@ -123,6 +124,7 @@ class Kernel extends HttpKernel
         ],
 
         'grp-api' => [
+            ElevateWebsiteChatStateful::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,

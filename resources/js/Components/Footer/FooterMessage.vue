@@ -248,6 +248,9 @@ const handleChatListEvent = async (e: any) => {
 
     if (msg.sender_type === "agent") return
 
+    // Spam chats never ring; they are hidden from the normal inbox anyway.
+    if (msg.is_spam) return
+
     // Assigned chats only notify their assigned agent; unassigned (waiting)
     // chats have no assigned_user_id and notify every agent of the shop.
     if (msg.assigned_user_id && msg.assigned_user_id !== myAgentId) return
