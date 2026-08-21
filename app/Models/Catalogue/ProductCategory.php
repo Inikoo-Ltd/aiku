@@ -43,7 +43,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
-use Illuminate\Support\Collection;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -179,6 +178,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasTranslations;
     use HasSearch;
     use HasAttachments;
+    
     protected static function booted(): void
     {
         static::saved(function (ProductCategory $productCategory) {
