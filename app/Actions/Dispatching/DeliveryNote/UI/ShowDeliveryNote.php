@@ -253,10 +253,7 @@ class ShowDeliveryNote extends OrgAction
         }
 
         $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
-            ->where(function ($q) {
-                $q->where('is_handled', false)
-                ->orWhere('is_dirty', true);
-            })
+            ->where('is_handled', false)
             ->exists();
 
         $actions = [];

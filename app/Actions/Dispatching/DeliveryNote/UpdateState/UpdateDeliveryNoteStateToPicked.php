@@ -42,10 +42,15 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
      * A dirty line holding MORE than is now wanted is deliberately not blocking: the trim below is
      * what settles that one, and calling it blocking would refuse to start the very repair.
      *
-     * Note this asks nothing about is_handled. A note whose picking is finished with a line nobody
-     * could pick is picked-and-short, not blocked, and marking it blocked would strand it. Only
-     * the spontaneous release in AutoFinishWaitingDeliveryNote cares about unfinished work, and it
-     * asks that question separately.
+     * What blocks is outstanding work, never the flag on its own. DES016959 had its line taken to
+     * zero after the picker had already recorded it as not picked: nothing was left for anybody to
+     * do, yet the flag stayed on and no pick, edit or sync was ever going to run again to take it
+     * off. Asking is_handled as well is what stops a flag nobody can clear from stranding a note
+     * for good - a line finished, or finished short, is not a line still holding the warehouse up.
+     *
+     * A note whose picking is finished with a line nobody could pick is picked-and-short, not
+     * blocked. Only the spontaneous release in AutoFinishWaitingDeliveryNote cares about work left
+     * unfinished by a human, and it asks that question separately.
      */
     public static function isBlocked(DeliveryNote $deliveryNote): bool
     {
@@ -56,6 +61,7 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
                     ->orWhere('has_waiting_crm', true)
                     ->orWhere(function ($query) {
                         $query->where('is_dirty', true)
+                            ->where('is_handled', false)
                             ->whereColumn('quantity_picked', '<=', 'quantity_required');
                     });
             })

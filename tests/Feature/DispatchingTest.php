@@ -3203,7 +3203,7 @@ test('a blocked delivery note is released once its dirty line is re-picked', fun
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     settleSiblingDeliveryNoteItems($deliveryNote, $item);
 
-    $item->update(['is_dirty' => true, 'quantity_required' => (float)$item->quantity_picked + 1]);
+    $item->update(['is_dirty' => true, 'is_handled' => false, 'quantity_required' => (float)$item->quantity_picked + 1]);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
 
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
@@ -3247,7 +3247,7 @@ test('a quantity lowered to what is already picked does not leave the note block
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     settleSiblingDeliveryNoteItems($deliveryNote, $item);
 
-    $item->update(['quantity_required' => 15, 'is_dirty' => true]);
+    $item->update(['quantity_required' => 15, 'is_dirty' => true, 'is_handled' => false]);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
 
@@ -3274,6 +3274,25 @@ test('a quantity lowered to what is already picked does not leave the note block
         ->and($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
 });
 
+test('a dirty line with no work left on it does not strand the delivery note', function () {
+    /*
+     * DES016959: the picker recorded the line as not picked, the shop then took the quantity to
+     * zero, and the line was left flagged dirty with nothing anybody could ever pick against it.
+     * No pick, edit or sync was going to run again to take the flag off, so the note kept the
+     * warehouse out with no button to press and no reason given.
+     */
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    settleSiblingDeliveryNoteItems($deliveryNote, $item);
+
+    StoreNotPickPicking::run($item->refresh(), $this->user, ['quantity' => 10]);
+    $item->update(['quantity_required' => 0, 'quantity_picked' => 0, 'is_dirty' => true, 'is_handled' => true]);
+
+    expect(\App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::isBlocked($deliveryNote))->toBeFalse();
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
 test('deleting the last blocking line releases the delivery note', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     settleSiblingDeliveryNoteItems($deliveryNote, $item);
@@ -3282,7 +3301,7 @@ test('deleting the last blocking line releases the delivery note', function () {
     $extra->is_dirty = true;
     $extra->quantity_picked = 0;
     $extra->quantity_packed = null;
-    $extra->is_handled = true;
+    $extra->is_handled = false;
     $extra->save();
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
