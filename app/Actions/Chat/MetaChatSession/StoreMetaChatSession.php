@@ -32,7 +32,14 @@ class StoreMetaChatSession
      */
     public function asController(ActionRequest $request): MetaChatSession
     {
-        return $this->handle($request->validated());
+        $metaChatSession = $this->handle($request->validated());
+
+        // TODO: Udpate this to assign the chat to an agent based on the shop's routing rules, not just the agent who started the chat.
+        if ($agent = $request->user()?->chatAgent) {
+            AssignMetaChatToAgent::run($metaChatSession, $agent, 'Assigned to agent who started the chat');
+        }
+
+        return $metaChatSession;
     }
 
     /**
@@ -116,7 +123,7 @@ class StoreMetaChatSession
         return [
             'ulid'             => $metaChatSession->ulid,
             'status'           => $metaChatSession->status->value,
-            'priority'         => $metaChatSession->priority->value,
+            'priority'         => $metaChatSession->priority,
             'contact_name'     => $metaChatSession->guest_identifier,
             'guest_identifier' => $metaChatSession->guest_identifier,
             'phone_number'     => $metaChatSession->phone_number,
