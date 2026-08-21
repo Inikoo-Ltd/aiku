@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -118,20 +119,26 @@ class IndexCheckoutAbandonments extends OrgAction
             default                     => null,
         };
 
+        $abandonedInformation        = __('Checkouts reached but not completed within :hours hours, the basket is still open.', ['hours' => RunCheckoutAbandonmentScan::THRESHOLD_HOURS]);
+        $recoveredInformation        = __('Abandoned checkouts where the customer came back and submitted the order.');
+        $recoveryRateInformation     = __('Recovered checkouts divided by all tracked checkouts (abandoned + recovered).');
+        $lostRevenueInformation      = __('Basket value still sitting in the abandoned checkouts.');
+        $recoveredRevenueInformation = __('Basket value of the checkouts that ended up being ordered.');
+
         if ($currency) {
             return [
-                ['label' => __('Abandoned'), 'value' => $abandonedCount],
-                ['label' => __('Lost revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->revenue ?? 0), 2)],
-                ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%'],
-                ['label' => __('Recovered'), 'value' => $recoveredCount],
-                ['label' => __('Recovered revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->revenue ?? 0), 2)],
+                ['label' => __('Abandoned'), 'value' => $abandonedCount, 'information' => $abandonedInformation],
+                ['label' => __('Lost revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->revenue ?? 0), 2), 'information' => $lostRevenueInformation],
+                ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%', 'information' => $recoveryRateInformation],
+                ['label' => __('Recovered'), 'value' => $recoveredCount, 'information' => $recoveredInformation],
+                ['label' => __('Recovered revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->revenue ?? 0), 2), 'information' => $recoveredRevenueInformation],
             ];
         }
 
         return [
-            ['label' => __('Abandoned'), 'value' => $abandonedCount],
-            ['label' => __('Recovered'), 'value' => $recoveredCount],
-            ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%'],
+            ['label' => __('Abandoned'), 'value' => $abandonedCount, 'information' => $abandonedInformation],
+            ['label' => __('Recovered'), 'value' => $recoveredCount, 'information' => $recoveredInformation],
+            ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%', 'information' => $recoveryRateInformation],
         ];
     }
 
