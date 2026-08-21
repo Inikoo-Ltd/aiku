@@ -6,6 +6,7 @@ use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\Chat\MetaChannel;
 use App\Models\Chat\MetaChatSession;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -19,8 +20,10 @@ class StoreMetaChatSession
     public function rules(): array
     {
         return [
-            'shop_id'     => ['required', 'exists:shops,id'],
-            'customer_id' => ['required', 'exists:customers,id'],
+            'shop_id'      => ['required', 'exists:shops,id'],
+            'customer_id'  => ['nullable', 'exists:customers,id'],
+            'phone_number' => ['required_without:customer_id', 'nullable', 'string', 'max:50'],
+            'name'         => ['nullable', 'string'],
         ];
     }
 
@@ -45,18 +48,22 @@ class StoreMetaChatSession
             ]);
         }
 
-        $customer = Customer::findOrFail($modelData['customer_id']);
+        $customer = isset($modelData['customer_id']) ? Customer::findOrFail($modelData['customer_id']) : null;
 
-        if (blank($customer->phone)) {
+        $phoneNumber = $customer?->phone ?? Arr::get($modelData, 'phone_number');
+
+        if (blank($phoneNumber)) {
             throw ValidationException::withMessages([
-                'customer_id' => __('This customer has no phone number.'),
+                'phone_number' => __('No phone number available for this chat session.'),
             ]);
         }
 
-        return DB::transaction(function () use ($metaChannel, $customer, $modelData) {
+        $name = $customer?->contact_name ?? $customer?->name ?? Arr::get($modelData, 'name');
+
+        return DB::transaction(function () use ($metaChannel, $customer, $modelData, $phoneNumber, $name) {
             $existing = MetaChatSession::where('meta_channel_id', $metaChannel->id)
                 ->where('shop_id', $modelData['shop_id'])
-                ->where('phone_number', $customer->phone)
+                ->where('phone_number', $phoneNumber)
                 ->where('status', '!=', ChatSessionStatusEnum::CLOSED)
                 ->first();
 
@@ -67,15 +74,15 @@ class StoreMetaChatSession
             return MetaChatSession::create([
                 'meta_channel_id'  => $metaChannel->id,
                 'shop_id'          => $modelData['shop_id'],
-                'customer_id'      => $customer->id,
-                'phone_number'     => $customer->phone,
+                'customer_id'      => $customer?->id,
+                'phone_number'     => $phoneNumber,
                 'ulid'             => Str::ulid(),
                 'status'           => ChatSessionStatusEnum::ACTIVE,
-                'guest_identifier' => $customer->contact_name ?? $customer->name,
+                'guest_identifier' => $name,
                 'metadata'         => [
-                    'customer_id' => $customer->id,
-                    'name'        => $customer->contact_name ?? $customer->name,
-                    'phone'       => $customer->phone,
+                    'customer_id' => $customer?->id,
+                    'name'        => $name,
+                    'phone'       => $phoneNumber,
                 ],
             ]);
         });

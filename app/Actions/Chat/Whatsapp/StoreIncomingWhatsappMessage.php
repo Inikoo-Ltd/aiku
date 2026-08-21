@@ -96,21 +96,11 @@ class StoreIncomingWhatsappMessage
         if (!$metaChatSession) {
             $customer = $this->findCustomer($shop, $digits);
 
-            if (!$customer) {
-                Log::info('WhatsApp message from unknown phone', [
-                    'from'         => $digits,
-                    'profile_name' => $profileName,
-                    'shop_id'      => $shop->id,
-                    'type'         => Arr::get($message, 'type'),
-                    'message_text' => Arr::get($message, 'text.body'),
-                ]);
-
-                return;
-            }
-
             $metaChatSession = StoreMetaChatSession::run([
-                'shop_id'     => $shop->id,
-                'customer_id' => $customer->id,
+                'shop_id'      => $shop->id,
+                'customer_id'  => $customer?->id,
+                'phone_number' => '+'.$digits,
+                'name'         => $profileName,
             ]);
         }
 
