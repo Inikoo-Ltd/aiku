@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareUrl;
 use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\DetectWebsite;
 use App\Models\Web\Website;
@@ -328,4 +329,37 @@ test('it advances the fetch cursor so re-running does not re-query the same even
 
     expect(Carbon::parse($secondSince[1]))->toEqual(Carbon::parse('2026-07-01 10:00:00')->subMinutes(15))
         ->and(Carbon::parse($secondSince[1]))->toBeGreaterThan(Carbon::parse($firstSince[1]));
+});
+
+test('iris serves the website favicon at the root favicon.ico', function () {
+    $response = $this->get('http://'.$this->website->domain.'/favicon.ico');
+
+    $response->assertRedirect(url('favicons/iris-favicon.ico'));
+});
+
+test('aiku own domains keep serving the aiku favicon at the root favicon.ico', function () {
+    $response = $this->get('http://app.'.config('app.domain').'/favicon.ico');
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'image/vnd.microsoft.icon');
+});
+
+test('it purges a url in cloudflare for both apex and www', function () {
+    $this->website->update([
+        'cloudflare_zone_id' => 'zone123',
+        'cloudflare_token'   => encrypt('token123'),
+    ]);
+
+    Http::fake([
+        'api.cloudflare.com/client/v4/zones/zone123/purge_cache' => Http::response(['success' => true]),
+    ]);
+
+    expect(PurgeCloudflareUrl::run($this->website, '/favicon.ico'))->toBeTrue();
+
+    Http::assertSent(function ($request) {
+        return $request['files'] === [
+            'https://'.$this->website->domain.'/favicon.ico',
+            'https://www.'.$this->website->domain.'/favicon.ico',
+        ];
+    });
 });

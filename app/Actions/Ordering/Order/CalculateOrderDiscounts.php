@@ -257,8 +257,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         ) {
             DB::table('transaction_has_offer_allowances')->where('is_gift', false)->where('transaction_id', $transactionWithSubmittedDiscount->id)->delete();
 
-            $percentageOff    = 1 - $transactionWithSubmittedDiscount->submitted_discount_factor;
-            $discountedAmount = round((float)$transactionWithSubmittedDiscount->gross_amount * $percentageOff, 2);
+            $percentageOff    = round(1 - $transactionWithSubmittedDiscount->submitted_discount_factor, 4);
+            $discountedAmount = discountAmountOffGross((float)$transactionWithSubmittedDiscount->gross_amount, $transactionWithSubmittedDiscount->submitted_discount_factor);
 
             $offerAllowancePivots[] = $this->updateTransactionDiscount(
                 $order,
@@ -992,7 +992,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         ?string $subTrigger = null,
         ?int $subTriggerOfferId = null
     ): void {
-        $discountedAmount = round((float)$transaction->gross_amount * $percentageOff, 2);
+        $discountedAmount = discountAmountOffGross((float)$transaction->gross_amount, 1 - $percentageOff);
 
         $transaction->with_offer            = true;
         $transaction->discounted_percentage = $percentageOff;

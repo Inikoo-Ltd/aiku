@@ -25,6 +25,7 @@ use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithMarginData;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Actions\UI\WithInertia;
@@ -68,6 +69,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowDeliveryNote extends OrgAction
 {
     use WithInertia;
+    use WithMarginData;
     use GetPlatformLogo;
     use WithBucketNavigation;
     use WithOrderForbiddenCountryCheck;
@@ -1137,6 +1139,7 @@ class ShowDeliveryNote extends OrgAction
             'allowActions'        => $allowAction,
             'timelines'           => $this->getTimeline($deliveryNote),
             'box_stats'           => $this->getBoxStats($deliveryNote),
+            'margin_summary'      => $this->getMarginSummary($deliveryNote),
             'shop_type'           => $deliveryNote->shop->type,
             'notes'               => $this->getDeliveryNoteNotes($deliveryNote),
             'quick_pickers'       => $this->quickGetPickers(),

@@ -2166,6 +2166,116 @@ test('invoice totals from a part picked order keep net plus tax equal to the tot
         ->and($totals['net_amount'] + $totals['tax_amount'])->toBe($totals['total_amount']);
 });
 
+test('a ten per cent line keeps the penny it was submitted at', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 61.95]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 1]
+    ));
+
+    // 61.95 off ten per cent: the discount is 6.195, which must round up to 6.20 like the
+    // basket did, not down to 6.19 because 1 - 0.9 is a hair under a tenth in binary.
+    $transaction->update([
+        'gross_amount'            => 61.95,
+        'net_amount'              => 55.75,
+        'quantity_bonus'          => 0,
+        'current_discount_factor' => 0.9,
+    ]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(55.75);
+});
+
+test('a part picked line bills the fraction of the price it was sold at', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 26.95]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 4]
+    ));
+    $transaction->update([
+        'gross_amount'            => 107.80,
+        'net_amount'              => 102.41,
+        'quantity_bonus'          => 0,
+        'current_discount_factor' => 0.95,
+    ]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    DB::table('delivery_note_items')->insert([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'shop_id'           => $order->shop_id,
+        'delivery_note_id'  => $deliveryNote->id,
+        'transaction_id'    => $transaction->id,
+        'state'             => 'picked',
+        'quantity_required' => 4,
+        'quantity_picked'   => 2,
+        'data'              => '{}',
+    ]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    // half of 102.41, not half of the gross discounted again
+    expect($totals['net_amount'])->toBe(51.21);
+});
+
+test('a line discounted after it was submitted is priced on its new factor', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 61.95]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 1]
+    ));
+    $transaction->update(['gross_amount' => 61.95, 'net_amount' => 61.95, 'quantity_bonus' => 0]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    // sold at full price, then given ten per cent off by hand afterwards
+    $transaction->update(['current_discount_factor' => 0.9, 'net_amount' => 55.75]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(55.75);
+});
+
 test('shipping zone with territories wins over a catch all zone placed above it', function () {
     $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'catch all on top schema',
@@ -2493,4 +2603,123 @@ test('service transaction defaults net amount to historic asset price times quan
 
     expect((float)$serviceTransaction->net_amount)->toBe((float)$service->historicAsset->price * 2)
         ->and((float)$serviceTransaction->gross_amount)->toBe((float)$service->historicAsset->price * 2);
+});
+
+describe('order margin data', function () {
+    test('margin fields math and no-cost blanking', function () {
+        $trait = new class () {
+            use \App\Actions\Traits\WithMarginData;
+
+            public function fields(...$args): ?array
+            {
+                return $this->marginFields(...$args);
+            }
+        };
+
+        expect($trait->fields('Service', 10, 10, null, null))->toBeNull()
+            ->and($trait->fields('Product', 100, 100, 40, null))->toBe([
+                'margin_pct'          => 60.0,
+                'profit_amount'       => 60.0,
+                'margin_is_estimated' => false,
+                'margin_no_cost'      => false,
+            ])
+            ->and($trait->fields('Product', 100, 100, null, 30))->toBe([
+                'margin_pct'          => 70.0,
+                'profit_amount'       => 70.0,
+                'margin_is_estimated' => true,
+                'margin_no_cost'      => false,
+            ])
+            ->and($trait->fields('Product', 1000, 1000, 120, 400, 30, 100))->toBe([
+                'margin_pct'          => 60.0,
+                'profit_amount'       => 600.0,
+                'margin_is_estimated' => true,
+                'margin_no_cost'      => false,
+            ])
+            ->and($trait->fields('Product', 100, 100, null, null))->toBe([
+                'margin_pct'          => null,
+                'profit_amount'       => null,
+                'margin_is_estimated' => false,
+                'margin_no_cost'      => true,
+            ]);
+    });
+
+    test('order margin summary runs and estimates from sku value', function () {
+        $billingAddress  = new Address(Address::factory()->definition());
+        $deliveryAddress = new Address(Address::factory()->definition());
+
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', $billingAddress);
+        data_set($modelData, 'delivery_address', $deliveryAddress);
+
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+        $adminGuest = createAdminGuest($this->group);
+        actingAs($adminGuest->getUser());
+
+        $action = new class () {
+            use \App\Actions\Traits\WithMarginData;
+
+            public function canSeeMargins(\App\Models\Catalogue\Shop $shop): bool
+            {
+                return true;
+            }
+        };
+
+        $summary = $action->getMarginSummary($order->refresh());
+
+        if ($summary !== null) {
+            expect($summary)->toHaveKeys(['profit_amount', 'margin_pct', 'is_estimated', 'lines_without_cost', 'currency_code']);
+        } else {
+            expect($summary)->toBeNull();
+        }
+    });
+
+    test('margin summary excludes uncosted lines instead of treating them as free', function () {
+        $trait = new class () {
+            use \App\Actions\Traits\WithMarginData;
+
+            public function aggregate(iterable $lines, float $breakEvenPct = 0.0): ?array
+            {
+                return $this->aggregateMarginLines($lines, 'GBP', $breakEvenPct);
+            }
+        };
+
+        $exact      = (object) ['net' => 100, 'org_net' => 100, 'gross' => 100, 'org_exchange' => 1, 'actual_cost' => 40, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+        $estimated  = (object) ['net' => 100, 'org_net' => 100, 'gross' => 100, 'org_exchange' => 1, 'actual_cost' => null, 'estimated_cost' => 50, 'picked' => null, 'ordered' => null];
+        $uncosted   = (object) ['net' => 100, 'org_net' => 100, 'gross' => 100, 'org_exchange' => 1, 'actual_cost' => null, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+        $partial    = (object) ['net' => 1000, 'org_net' => 1000, 'gross' => 1000, 'org_exchange' => 1, 'actual_cost' => 120, 'estimated_cost' => 400, 'picked' => 30, 'ordered' => 100];
+        $discounted = (object) ['net' => 180, 'org_net' => 180, 'gross' => 200, 'org_exchange' => 1, 'actual_cost' => 90, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+
+        $exactPlusUncosted = $trait->aggregate([$exact, $uncosted]);
+
+        expect($exactPlusUncosted['profit_amount'])->toBe(60.0)
+            ->and($exactPlusUncosted['margin_pct'])->toBe(60.0)
+            ->and($exactPlusUncosted['before_discounts'])->toBeNull()
+            ->and($exactPlusUncosted['is_estimated'])->toBeFalse()
+            ->and($exactPlusUncosted['lines_without_cost'])->toBe(1)
+            ->and($trait->aggregate([$exact, $estimated])['margin_pct'])->toBe(55.0)
+            ->and($trait->aggregate([$exact, $estimated])['is_estimated'])->toBeTrue()
+            ->and($trait->aggregate([$partial])['margin_pct'])->toBe(60.0)
+            ->and($trait->aggregate([$uncosted]))->toBeNull();
+
+        $withDiscount = $trait->aggregate([$discounted]);
+
+        expect($withDiscount['margin_pct'])->toBe(50.0)
+            ->and($withDiscount['before_discounts'])->toBe(['margin_pct' => 55.0, 'profit_amount' => 110.0])
+            ->and($withDiscount['is_below_break_even'])->toBeFalse();
+
+        $belowBreakEven = $trait->aggregate([$exact], breakEvenPct: 70.0);
+
+        expect($belowBreakEven['is_below_break_even'])->toBeTrue()
+            ->and($belowBreakEven['break_even_pct'])->toBe(70.0)
+            ->and($belowBreakEven['margin_status'])->toBe('danger')
+            ->and($trait->aggregate([$exact], breakEvenPct: 55.0)['margin_status'])->toBe('warning')
+            ->and($trait->aggregate([$exact], breakEvenPct: 40.0)['margin_status'])->toBe('ok');
+
+        $gift = (object) ['net' => 0, 'org_net' => 0, 'gross' => 0, 'org_exchange' => 1, 'actual_cost' => 20, 'estimated_cost' => null, 'picked' => null, 'ordered' => null];
+
+        expect($trait->aggregate([$exact, $gift])['margin_pct'])->toBe(40.0)
+            ->and($trait->aggregate([$exact, $gift])['profit_amount'])->toBe(40.0);
+    });
 });

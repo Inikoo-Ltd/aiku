@@ -24,7 +24,7 @@ class UpdateInvoicePaymentState extends OrgAction
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'invoices:update_payment_state {organisations?*} {--S|shop= shop slug} {--s|slug=}';
+    public string $commandSignature = 'invoices:update_payment_state {organisations?*} {--S|shop= shop slug} {--s|slug=} {--ids= : Comma separated invoice ids}';
 
 
     public function __construct()
@@ -51,7 +51,11 @@ class UpdateInvoicePaymentState extends OrgAction
             $payments as $payment
         ) {
             $runningPaymentsAmount += $payment->amount;
-            if (abs($runningPaymentsAmount) >= abs($invoice->total_amount) && $paymentAt === null) {
+
+            // Rounded before comparing: the running total is an unrounded float, so two
+            // payments of 186.36 against a 372.72 invoice sum to 372.71999999999997 and
+            // the invoice settles without ever taking a payment date.
+            if (abs(round($runningPaymentsAmount, 2)) >= abs($invoice->total_amount) && $paymentAt === null) {
                 $paymentAt = $payment->date;
             }
         }

@@ -63,6 +63,7 @@ use App\Actions\Inventory\OrgStockFamily\UpdateOrgStockFamily;
 use App\Actions\Inventory\OrgStockMovement\CalculateRunningQuantityOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
+use App\Actions\Maintenance\Inventory\OrgStockMovement\RepairPickedOrgStockMovementCost;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
 use App\Actions\Inventory\Warehouse\DeleteWarehouse;
 use App\Actions\Inventory\Warehouse\HydrateWarehouse;
@@ -1514,6 +1515,106 @@ test('wac per sku calculation', function () {
         ->and((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0);
 
     expect($calculator->getValuationPerSku($orgStock, now()))->toBe(['wac' => 3.0, 'fifo' => 4.0]);
+});
+
+test('movement org amount uses the per sku cost, not the total stock value', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'COGS-WH', 'name' => 'Cogs WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'COGS-AR', 'name' => 'Cogs Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'COGS-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+    $orgStock->unsetRelation('organisation');
+
+    $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 100,
+    ]);
+    $purchase->update(['cost_per_sku' => 2, 'date' => now()->subDays(3)]);
+
+    $orgStock->update(['sku_value' => 2, 'quantity_in_locations' => 100, 'value_in_locations' => 200]);
+    $orgStock->refresh();
+
+    $picked = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -5,
+    ]);
+
+    expect((float) $picked->org_amount)->toBe(-10.0);
+});
+
+test('repair picked org stock movement cost zeroes corrupt values', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'RPC-WH', 'name' => 'Rpc WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'RPC-AR', 'name' => 'Rpc Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'RPC-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $corrupt = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -5,
+    ]);
+    DB::table('org_stock_movements')->where('id', $corrupt->id)->update([
+        'date'       => '2026-07-15',
+        'org_amount' => -1000,
+        'grp_amount' => -2000,
+    ]);
+
+    $untouched = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 5,
+    ]);
+    DB::table('org_stock_movements')->where('id', $untouched->id)->update([
+        'date'       => '2026-07-15',
+        'org_amount' => 100,
+    ]);
+
+    $result = RepairPickedOrgStockMovementCost::make()->handle('2026-07-01', 2000, false);
+
+    expect($result['zeroed'])->toBeGreaterThanOrEqual(1)
+        ->and((float) $corrupt->refresh()->org_amount)->toBe(0.0)
+        ->and((float) $corrupt->grp_amount)->toBe(0.0)
+        ->and((float) $untouched->refresh()->org_amount)->toBe(100.0);
+});
+
+test('backfill picked org stock movement cost from fifo walk', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'BF-WH', 'name' => 'Bf WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'BF-AR', 'name' => 'Bf Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'BF-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $this->organisation->update(['wac_calculations_start_date' => '2025-01-01']);
+    $orgStock->unsetRelation('organisation');
+
+    $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    DB::table('org_stock_movements')->where('id', $purchase->id)->update(['cost_per_sku' => 3, 'date' => '2025-02-01']);
+
+    $historicPick = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PICKED->value,
+        'quantity' => -4,
+    ]);
+    DB::table('org_stock_movements')->where('id', $historicPick->id)->update(['org_amount' => 0, 'grp_amount' => 0, 'date' => '2025-03-01']);
+
+    $result = \App\Actions\Maintenance\Inventory\OrgStockMovement\BackfillPickedOrgStockMovementCost::make()
+        ->handle($orgStock, '2026-07-01', false);
+
+    expect($result['filled'])->toBe(1)
+        ->and($result['skipped_no_cost'])->toBe(0)
+        ->and((float) $historicPick->refresh()->org_amount)->toBe(-12.0);
 });
 
 test('sync org stock locations creates, updates and removes links', function () {
