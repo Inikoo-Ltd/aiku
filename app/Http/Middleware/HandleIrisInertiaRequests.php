@@ -108,30 +108,58 @@ class HandleIrisInertiaRequests extends Middleware
     {
         $cacheKey = "irisData:website:$website->id:announcements";
 
-        return Cache::remember(
-            $cacheKey,
-            now()->addMinutes(120),
-            function () use ($website) {
-                $announcements = [];
-                /** @var Announcement $announcement */
-                foreach ($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get() as $announcement) {
-                    $extractedSettings = $announcement->extractSettings($announcement->settings);
+        $announcements = Cache::get($cacheKey);
+        if ($announcements !== null) {
+            return $announcements;
+        }
 
-                    $announcements[] = [
-                        'name'                 => $announcement->name,
-                        'show_pages'           => $extractedSettings['show_pages'],
-                        'hide_pages'           => $extractedSettings['hide_pages'],
-                        'container_properties' => $announcement->container_properties,
-                        'fields'               => $announcement->fields,
-                        'schedule_at'          => $announcement->schedule_at,
-                        'schedule_finish_at'   => $announcement->schedule_finish_at,
-                        'settings'             => $announcement->settings,
-                        'template_code'        => $announcement->template_code,
-                    ];
-                }
+        $announcements = [];
+        /** @var Announcement $announcement */
+        foreach ($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get() as $announcement) {
+            $extractedSettings = $announcement->extractSettings($announcement->settings);
 
-                return $announcements;
-            }
-        );
+            $announcements[] = [
+                'name'                 => $announcement->name,
+                'show_pages'           => $extractedSettings['show_pages'],
+                'hide_pages'           => $extractedSettings['hide_pages'],
+                'container_properties' => $announcement->container_properties,
+                'fields'               => $announcement->fields,
+                'schedule_at'          => $announcement->schedule_at,
+                'schedule_finish_at'   => $announcement->schedule_finish_at,
+                'settings'             => $announcement->settings,
+                'template_code'        => $announcement->template_code,
+            ];
+        }
+
+        Cache::put($cacheKey, $announcements, $this->getAnnouncementsCacheTtl($website));
+
+        return $announcements;
+    }
+
+    /**
+     * Seconds until the next moment an announcement starts, finishes or comes back, so a
+     * scheduled change shows up on time instead of whenever the cache happens to expire.
+     */
+    public function getAnnouncementsCacheTtl(Website $website): int
+    {
+        $now = now();
+
+        $next = $website->announcements()
+            ->where(
+                fn ($query) => $query
+                    ->where('schedule_at', '>', $now)
+                    ->orWhere('schedule_finish_at', '>', $now)
+                    ->orWhere('paused_until', '>', $now)
+            )
+            ->get(['schedule_at', 'schedule_finish_at', 'paused_until'])
+            ->flatMap(fn (Announcement $announcement) => [$announcement->schedule_at, $announcement->schedule_finish_at, $announcement->paused_until])
+            ->filter(fn ($moment) => $moment and $moment->gt($now))
+            ->min();
+
+        if (!$next) {
+            return 7200;
+        }
+
+        return max(60, min(7200, (int)$now->diffInSeconds($next, false)));
     }
 }

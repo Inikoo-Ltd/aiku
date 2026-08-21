@@ -24,7 +24,9 @@ class ToggleAnnouncement extends OrgAction
     public function handle(Announcement $announcement, ?string $status = null): void
     {
         $this->update($announcement, [
-            'status' => $status
+            'status'                    => $status,
+            'paused_by_announcement_id' => null,
+            'paused_until'              => null,
         ]);
         BreakWebsiteIrisCache::run($announcement->website);
 

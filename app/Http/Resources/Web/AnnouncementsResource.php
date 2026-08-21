@@ -31,7 +31,24 @@ class AnnouncementsResource extends JsonResource
             'show_pages'     => $extractedSettings['show_pages'],
             'hide_pages'     => $extractedSettings['hide_pages'],
             'publisher_name' => $announcement->liveSnapshot?->publisher?->contact_name,
-            'position'       => $announcement->settings['position'] ?? 'top-bar'
+            'position'       => $announcement->getPosition(),
+            'paused_note'    => $this->getPausedNote($announcement)
         ];
+    }
+
+    protected function getPausedNote(Announcement $announcement): ?string
+    {
+        if (!$announcement->paused_by_announcement_id) {
+            return null;
+        }
+
+        if (!$announcement->paused_until) {
+            return __('Paused by :name, turn it back on when you want it', ['name' => $announcement->pausedBy?->name]);
+        }
+
+        return __('Paused by :name, back on :date', [
+            'name' => $announcement->pausedBy?->name,
+            'date' => $announcement->paused_until->format('d M Y H:i')
+        ]);
     }
 }
