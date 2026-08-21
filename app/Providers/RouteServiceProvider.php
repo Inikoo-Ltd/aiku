@@ -98,7 +98,7 @@ class RouteServiceProvider extends ServiceProvider
 
         foreach ([config('app.domain'), 'app.'.config('app.domain'), 'pupil.'.config('app.domain')] as $aikuDomain) {
             Route::domain($aikuDomain)->get('favicon.ico', function () {
-                return response()->file(public_path('favicons/aiku-favicon.ico'));
+                return response()->file(public_path('favicon.png'));
             });
         }
 

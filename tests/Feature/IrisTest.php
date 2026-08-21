@@ -334,14 +334,14 @@ test('it advances the fetch cursor so re-running does not re-query the same even
 test('iris serves the website favicon at the root favicon.ico', function () {
     $response = $this->get('http://'.$this->website->domain.'/favicon.ico');
 
-    $response->assertRedirect(url('favicons/iris-favicon.ico'));
+    $response->assertRedirect(url('favicons/iris-favicon-48x48.png'));
 });
 
 test('aiku own domains keep serving the aiku favicon at the root favicon.ico', function () {
     $response = $this->get('http://app.'.config('app.domain').'/favicon.ico');
 
     $response->assertOk()
-        ->assertHeader('content-type', 'image/vnd.microsoft.icon');
+        ->assertHeader('content-type', 'image/png');
 });
 
 test('it purges a url in cloudflare for both apex and www', function () {
