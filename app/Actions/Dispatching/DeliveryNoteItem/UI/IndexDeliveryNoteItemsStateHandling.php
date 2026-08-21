@@ -66,14 +66,8 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 ->orWhere('delivery_note_items.is_dirty', true);
         });
 
-        if ($isHandled === true) {
-            $query->where('delivery_note_items.is_handled', true)
-                ->where('delivery_note_items.is_dirty', false);
-        } elseif ($isHandled === false) {
-            $query->where(function ($q) {
-                $q->where('delivery_note_items.is_handled', false)
-                    ->orWhere('delivery_note_items.is_dirty', true);
-            });
+        if (!is_null($isHandled)) {
+            $query->where('delivery_note_items.is_handled', $isHandled);
         }
 
         return $query
