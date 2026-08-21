@@ -67,6 +67,7 @@ class StoreMetaChatSession
             return MetaChatSession::create([
                 'meta_channel_id'  => $metaChannel->id,
                 'shop_id'          => $modelData['shop_id'],
+                'customer_id'      => $customer->id,
                 'phone_number'     => $customer->phone,
                 'ulid'             => Str::ulid(),
                 'status'           => ChatSessionStatusEnum::ACTIVE,
