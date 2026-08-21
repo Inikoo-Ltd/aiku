@@ -24,9 +24,23 @@ return new class () extends Migration {
             $table->dropColumn(['has_waiting_warehouse', 'has_waiting_crm']);
         });
 
-        Schema::table('delivery_note_items', function (Blueprint $table) {
-            $table->boolean('has_waiting_warehouse')->storedAs('quantity_waiting_warehouse > 0');
-            $table->boolean('has_waiting_crm')->storedAs('quantity_waiting_crm > 0');
+        /*
+         * A stored generated column rewrites the table and every index (13.4M rows, ~6 minutes,
+         * exclusive lock). PostgreSQL 18 can compute it on read instead, a metadata-only change.
+         * Neither is indexed, so reads are the same either way. The quantities are not null with
+         * a default of 0, so the expression is never null; nullable only keeps the NOT NULL
+         * constraint, which virtual columns do not take, off the definition.
+         */
+        $virtual = (int)DB::selectOne('show server_version_num')->server_version_num >= 180000;
+
+        Schema::table('delivery_note_items', function (Blueprint $table) use ($virtual) {
+            if ($virtual) {
+                $table->boolean('has_waiting_warehouse')->nullable()->virtualAs('quantity_waiting_warehouse > 0');
+                $table->boolean('has_waiting_crm')->nullable()->virtualAs('quantity_waiting_crm > 0');
+            } else {
+                $table->boolean('has_waiting_warehouse')->storedAs('quantity_waiting_warehouse > 0');
+                $table->boolean('has_waiting_crm')->storedAs('quantity_waiting_crm > 0');
+            }
         });
     }
 
