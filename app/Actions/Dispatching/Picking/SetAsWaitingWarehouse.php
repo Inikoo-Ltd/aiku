@@ -50,7 +50,6 @@ class SetAsWaitingWarehouse extends OrgAction
         $dataToUpdate = [
             'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
             'quantity_waiting_warehouse' => $quantityToMove,
-            'has_waiting_warehouse'      => true,
         ];
         if (Arr::has($modelData, 'note')) {
             $dataToUpdate['notes'] = $modelData['note'];

@@ -61,7 +61,6 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
 
             $deliveryNoteItem->update([
                 'quantity_waiting_crm' => $remainingQuantity,
-                'has_waiting_crm'      => $remainingQuantity > 0,
             ]);
             DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
@@ -126,7 +125,6 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                             $replacementDeliveryNoteItem->update([
                                 'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
                                 'quantity_waiting_warehouse' => $quantity,
-                                'has_waiting_warehouse'      => true,
                             ]);
                             DeliveryNoteHydrateWaitingItems::run($replacementDeliveryNoteItem->delivery_note_id);
                             CalculateDeliveryNoteItemTotalPicked::run($replacementDeliveryNoteItem);

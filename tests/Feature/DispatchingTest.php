@@ -574,12 +574,12 @@ test('packing blocked while an item waits for warehouse or crm', function (Picki
     $deliveryNote     = $picking->deliveryNote;
     $deliveryNoteItem = $picking->deliveryNoteItem;
 
-    $deliveryNoteItem->update(['has_waiting_warehouse' => true]);
+    $deliveryNoteItem->update(['quantity_waiting_warehouse' => 1]);
 
     expect(fn () => UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $this->user))
         ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 
-    $deliveryNoteItem->update(['has_waiting_warehouse' => false]);
+    $deliveryNoteItem->update(['quantity_waiting_warehouse' => 0]);
     expect($deliveryNote->refresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED);
 })->depends('set remaining quantity to not picked (2nd picking)');
 
@@ -1387,7 +1387,7 @@ test('short pick keeps submitted order amounts until the note is picked', functi
     $submittedNet = (float) $transaction->net_amount;
     expect($submittedNet)->toBeGreaterThan(0);
 
-    $item->update(['quantity_waiting_warehouse' => 6, 'has_waiting_warehouse' => true]);
+    $item->update(['quantity_waiting_warehouse' => 6]);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
     $order->refresh();
@@ -1398,7 +1398,7 @@ test('short pick keeps submitted order amounts until the note is picked', functi
         ->and((float) $order->net_amount)->toBe($submittedNet)
         ->and((float) $transaction->quantity_picked)->toBe(round(((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus) * 0.4, 2));
 
-    $item->update(['quantity_waiting_warehouse' => 0, 'has_waiting_warehouse' => false]);
+    $item->update(['quantity_waiting_warehouse' => 0]);
     StoreNotPickPicking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
@@ -1573,9 +1573,7 @@ test('delivery note item delete and fetch', function () {
     expect($fetched)->toBeInstanceOf(DeliveryNoteItem::class);
 
     $item->update([
-        'has_waiting_crm'            => true,
         'quantity_waiting_crm'       => 1,
-        'has_waiting_warehouse'      => true,
         'quantity_waiting_warehouse' => 1,
     ]);
     DeliveryNoteHydrateWaitingItems::run($deliveryNote->id);
@@ -1824,13 +1822,13 @@ test('picking waiting warehouse and crm flow', function () {
 
     \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
 
-    $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2]);
+    $item->update(['quantity_waiting_warehouse' => 2]);
     \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run($item->refresh(), $this->user, [
         'quantity'              => 1,
         'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
     ]);
 
-    $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2, 'locked_at' => null]);
+    $item->update(['quantity_waiting_warehouse' => 2, 'locked_at' => null]);
     $undone = \App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse::run($item->refresh());
     expect($undone->has_waiting_warehouse)->toBeFalse();
 
@@ -1842,7 +1840,7 @@ test('picking waiting warehouse and crm flow', function () {
 
     \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingCrm::run($item->refresh(), $this->user, ['quantity' => 1]);
 
-    $item->update(['has_waiting_crm' => true, 'quantity_waiting_crm' => 2]);
+    $item->update(['quantity_waiting_crm' => 2]);
     $sentBack = \App\Actions\Dispatching\Picking\SendBackWaitingWarehouse::make()->action($item->refresh(), $this->user, []);
     expect($sentBack->has_waiting_crm)->toBeFalse();
 });
@@ -1858,7 +1856,6 @@ test('delete picking on blocked line partly waiting with crm does not abort', fu
     $item->update([
         'state'                => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
         'quantity_required'    => 13,
-        'has_waiting_crm'      => true,
         'quantity_waiting_crm' => 3,
     ]);
 
@@ -1878,13 +1875,12 @@ test('picking upsert from waiting warehouse and magic place', function () {
 
     [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
     // Helper already picked 10 of 10, so give the waiting quantity real headroom.
-    $item->update(['quantity_required' => 15, 'has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
+    $item->update(['quantity_required' => 15, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
 
     \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1, 'location_org_stock_id' => $los->id]);
     expect($item->refresh()->pickings()->exists())->toBeTrue();
 
     $item->update([
-        'has_waiting_warehouse'      => false,
         'quantity_waiting_warehouse' => 0,
         'quantity_required'          => 20,
         'quantity_picked'            => 5,
@@ -3167,7 +3163,6 @@ test('replacing a waiting gift keeps the replacement free', function () {
         'net_amount'       => 0,
     ]);
     $item->update([
-        'has_waiting_crm'      => true,
         'quantity_waiting_crm' => 1,
         'quantity_picked'      => 0,
         'locked_at'            => null,
@@ -3192,7 +3187,7 @@ test('picking from waiting keeps the line at its discounted price', function () 
     $this->organisation->update(['settings' => $settings]);
 
     [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
-    $item->update(['quantity_required' => 15, 'has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
+    $item->update(['quantity_required' => 15, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
 
     $item = $item->refresh();
     $item->load('transaction');
@@ -3329,7 +3324,7 @@ test('deleting the last blocking line releases the delivery note', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     settleSiblingDeliveryNoteItems($deliveryNote, $item);
 
-    $extra = $item->replicate();
+    $extra = $item->replicate(['has_waiting_warehouse', 'has_waiting_crm']);
     $extra->is_dirty = true;
     $extra->quantity_picked = 0;
     $extra->quantity_packed = null;
@@ -3353,7 +3348,7 @@ test('a short picked line still has to be packed before the note is done', funct
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     settleSiblingDeliveryNoteItems($deliveryNote, $item);
 
-    $short                     = $item->replicate();
+    $short                     = $item->replicate(['has_waiting_warehouse', 'has_waiting_crm']);
     $short->quantity_required  = 15;
     $short->quantity_picked    = 10;
     $short->quantity_not_picked = 5;
