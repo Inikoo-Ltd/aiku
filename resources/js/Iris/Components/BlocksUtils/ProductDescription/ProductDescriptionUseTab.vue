@@ -12,6 +12,7 @@ import {
 	isProductTabVisible,
 	type FamilyExtraDescriptionTabKey,
 } from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
+import { productMarketingMaterialRoute } from "@/Iris/Components/BlocksUtils/ProductDescription/marketingMaterialRoute"
 
 const props = defineProps<{
 	fieldValue: any
@@ -55,7 +56,10 @@ watch(tabs, visibleTabs => {
 
 const childFieldValue = computed(() => ({
 	...props.fieldValue,
-	family: tabsData.value,
+	family: {
+		...tabsData.value,
+		marketing_material_route: productMarketingMaterialRoute(tabsData.value, productData.value),
+	},
 }))
 
 const containerStyle = computed(() => ({
