@@ -29,7 +29,21 @@ class DuplicateModelHasWebBlock extends OrgAction
     public function handle(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
     {
         $position = $webpage->modelHasWebBlocks()->max('position') + 1;
-        
+        // $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
+
+        // if (!$webBlocks->isEmpty()) {
+        //     $positions = [];
+
+        //     /** @var ModelHasWebBlocks $block */
+        //     foreach ($webBlocks as $block) {
+        //         if ($block->position >= $position) {
+        //             $positions[$block->webBlock->id] = ['position' => $block->position + 1];
+        //         } else {
+        //             $positions[$block->webBlock->id] = ['position' => $block->position];
+        //         }
+        //     }
+        //     ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
+        // }
         $webBlockType = WebBlockType::find($modelHasWebBlocks->webBlock->web_block_type_id);
 
         $webBlock = StoreWebBlock::run($webBlockType, [
