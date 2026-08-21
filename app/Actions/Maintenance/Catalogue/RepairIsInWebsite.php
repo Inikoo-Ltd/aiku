@@ -42,7 +42,7 @@ class RepairIsInWebsite
 
         foreach (['product_categories', 'collections'] as $tableName) {
             $stateRule = $tableName === 'product_categories'
-                ? " and t.state <> '".ProductCategoryStateEnum::DISCONTINUED->value."'"
+                ? " and t.state in ('".ProductCategoryStateEnum::ACTIVE->value."', '".ProductCategoryStateEnum::DISCONTINUING->value."')"
                 : '';
 
             $updated = DB::update("
