@@ -349,7 +349,7 @@
         <td>{{ $order->currency->symbol . $order->net_amount }}</td>
     </tr>
 
-    @include('invoices.templates.pdf.tax-rows', ['document' => $order, 'taxBreakdownOverride' => $taxBreakdownOverride])
+    @include('invoices.templates.pdf.tax-rows', ['document' => $order, 'taxBreakdownOverride' => null])
 
     <tr class="total">
         <td style="border:none" colspan="4"></td>

@@ -1305,7 +1305,7 @@ function freshSubmittedOrder($ctx)
     return SubmitOrder::make()->action($order);
 }
 
-function handlingDeliveryNoteWithPicking($ctx): array
+function handlingDeliveryNoteWithPicking($ctx, int $pickedQuantity = 10): array
 {
     $order        = freshSubmittedOrder($ctx);
     $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $ctx->warehouse->id]);
@@ -1336,7 +1336,7 @@ function handlingDeliveryNoteWithPicking($ctx): array
     StorePicking::make()->action($deliveryNoteItem, $ctx->user, [
         'picker_user_id'        => $ctx->user->id,
         'location_org_stock_id' => $locationOrgStock->id,
-        'quantity'              => 10,
+        'quantity'              => $pickedQuantity,
     ]);
 
     return [$deliveryNote->refresh(), $deliveryNoteItem->refresh()];
@@ -1377,6 +1377,37 @@ test('delivery note state to picking handling blocked and unassigned', function 
 
     $dn = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned::make()->action($deliveryNote);
     expect($dn->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED);
+});
+
+test('short pick keeps submitted order amounts until the note is picked', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 4);
+    $order        = $deliveryNote->orders()->first();
+    $transaction  = $order->transactions()->first();
+    $submittedNet = (float) $transaction->net_amount;
+    expect($submittedNet)->toBeGreaterThan(0);
+
+    $item->update(['quantity_waiting_warehouse' => 6, 'has_waiting_warehouse' => true]);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+    $order->refresh();
+    $transaction->refresh();
+
+    expect($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::HANDLING_BLOCKED)
+        ->and((float) $transaction->net_amount)->toBe($submittedNet)
+        ->and((float) $order->net_amount)->toBe($submittedNet)
+        ->and((float) $transaction->quantity_picked)->toBe(round(((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus) * 0.4, 2));
+
+    $item->update(['quantity_waiting_warehouse' => 0, 'has_waiting_warehouse' => false]);
+    StoreNotPickPicking::make()->action($item->refresh(), $this->user, []);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
+    $order->refresh();
+    $transaction->refresh();
+
+    expect($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::PICKED)
+        ->and((float) $transaction->net_amount)->toBeLessThan($submittedNet)
+        ->and((float) $transaction->net_amount)->toBe(round($submittedNet / (float) $transaction->quantity_ordered * (float) $transaction->quantity_picked, 2))
+        ->and((float) $order->net_amount)->toBe((float) $transaction->net_amount);
 });
 
 test('delivery note finalise and dispatch', function () {

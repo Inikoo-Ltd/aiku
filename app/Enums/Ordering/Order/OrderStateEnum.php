@@ -32,6 +32,11 @@ enum OrderStateEnum: string
     case DISPATCHED = 'dispatched';
     case CANCELLED = 'cancelled';
 
+    public function isPickedOrLater(): bool
+    {
+        return in_array($this, [self::PICKED, self::PACKING, self::PACKED, self::FINALISED, self::DISPATCHED], true);
+    }
+
     public static function labels(): array
     {
         return [
