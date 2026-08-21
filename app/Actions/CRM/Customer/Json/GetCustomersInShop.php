@@ -22,11 +22,20 @@ class GetCustomersInShop extends OrgAction
     public function handle(Shop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
+            $digits = preg_replace('/\D/', '', (string) $value);
+
+            $query->where(function ($query) use ($value, $digits) {
                 $query->whereAnyWordStartWith('customers.name', $value)
                     ->orWhereStartWith('customers.reference', $value)
                     ->orWhereStartWith('customers.email', $value)
                     ->orWhereStartWith('customers.phone', $value);
+
+                if ($digits !== '') {
+                    $query->orWhereRaw(
+                        "regexp_replace(customers.phone, '\\D', '', 'g') like ?",
+                        [$digits.'%']
+                    );
+                }
             });
         });
 
@@ -37,11 +46,18 @@ class GetCustomersInShop extends OrgAction
             }
         });
 
+        $phoneFilter = AllowedFilter::callback('phone', function ($query, $value) {
+            $query->whereRaw(
+                "regexp_replace(customers.phone, '\\D', '', 'g') = ?",
+                [preg_replace('/\D/', '', (string) $value)]
+            );
+        });
+
         $queryBuilder = QueryBuilder::for(Customer::class);
         $queryBuilder->where('customers.shop_id', $parent->id);
 
         return $queryBuilder->defaultSort('-id')
-            ->allowedFilters([$globalSearch, $hasPhoneFilter])
+            ->allowedFilters([$globalSearch, $hasPhoneFilter, $phoneFilter])
             ->withPaginator($prefix)
             ->withQueryString();
     }

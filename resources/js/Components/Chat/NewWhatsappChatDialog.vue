@@ -23,6 +23,41 @@ const selectedCustomer = ref<any | null>(null)
 const submitting = ref(false)
 const error = ref("")
 
+const searchTerm = ref("")
+const contactName = ref("")
+const noResults = ref(false)
+
+const looksLikePhone = computed(() => /^[+\d][\d\s\-().]*$/.test(searchTerm.value.trim()))
+
+const normalisedPhone = computed(() => {
+    const value = searchTerm.value.trim()
+    return value.startsWith("+") ? "+" + value.replace(/\D/g, "") : value
+})
+
+const phoneError = computed(() => {
+    const value = searchTerm.value.trim()
+    if (!value || !looksLikePhone.value) return ""
+    if (!value.startsWith("+")) {
+        return trans("Phone number must start with '+' and the country code")
+    }
+    if (!/^\+[1-9]\d{7,14}$/.test(normalisedPhone.value)) {
+        return trans("Enter a valid phone number")
+    }
+    return ""
+})
+
+const isPhoneValid = computed(
+    () => looksLikePhone.value && !!searchTerm.value.trim() && !phoneError.value
+)
+
+const showNewContact = computed(
+    () => !selectedCustomer.value && noResults.value && isPhoneValid.value
+)
+
+const canStart = computed(() =>
+    submitting.value ? false : !!selectedCustomer.value?.phone || isPhoneValid.value
+)
+
 const fetchRoute = computed(() => ({
     name: "grp.json.shop.customers",
     parameters: {
@@ -34,17 +69,40 @@ const fetchRoute = computed(() => ({
 const onSelectCustomer = (customer: any) => {
     selectedCustomer.value = customer ?? null
     error.value = ""
+
+    if (selectedCustomer.value) {
+        noResults.value = false
+        contactName.value = ""
+    }
+}
+
+const onOptionsList = (options: any[]) => {
+    noResults.value = !!searchTerm.value.trim() && options.length === 0
+}
+
+const onSearchChange = (query: string) => {
+    searchTerm.value = query ?? ""
+    if (!searchTerm.value.trim()) {
+        noResults.value = false
+        contactName.value = ""
+    }
 }
 
 const startChat = async () => {
-    if (!props.shopId || !customerId.value || submitting.value) return
+    if (!props.shopId || !canStart.value) return
     submitting.value = true
     error.value = ""
     try {
-        const res = await axios.post(`${baseUrl}/app/api/chats/meta/sessions`, {
-            shop_id: props.shopId,
-            customer_id: customerId.value,
-        })
+        const payload: Record<string, any> = { shop_id: props.shopId }
+
+        if (selectedCustomer.value) {
+            payload.customer_id = selectedCustomer.value.id
+        } else {
+            payload.phone_number = normalisedPhone.value
+            payload.name = contactName.value.trim() || normalisedPhone.value
+        }
+
+        const res = await axios.post(`${baseUrl}/app/api/chats/meta/sessions`, payload)
         emits("created", res.data.data ?? res.data)
         visible.value = false
     } catch (e: any) {
@@ -58,6 +116,9 @@ watch(visible, (isVisible) => {
     if (!isVisible) {
         customerId.value = null
         selectedCustomer.value = null
+        searchTerm.value = ""
+        contactName.value = ""
+        noResults.value = false
         error.value = ""
     }
 })
@@ -68,12 +129,13 @@ watch(visible, (isVisible) => {
         :style="{ width: '90vw', maxWidth: '440px' }" :breakpoints="{ '640px': '95vw' }">
         <div class="flex flex-col gap-3">
             <div class="flex flex-col gap-1">
-                <label class="text-xs font-medium text-gray-600">{{ trans("Customer") }}</label>
+                <label class="text-xs font-medium text-gray-600">{{ trans("Customer / Phone number") }}</label>
                 <PureMultiselectInfiniteScroll :key="shopId" v-model="customerId" :fetchRoute="fetchRoute"
                     valueProp="id" labelProp="name" labelAdditionalProp="reference"
-                    :placeholder="trans('Search customer')"
-                    :noOptionsText="trans('No customers with a phone number')"
-                    @selectedObject="onSelectCustomer">
+                    :placeholder="trans('Search customer or type +phone number')"
+                    :noOptionsText="trans('No customer found')"
+                    @selectedObject="onSelectCustomer" @optionsList="onOptionsList"
+                    @searchChange="onSearchChange">
                     <template #singlelabel="{ value }">
                         <div class="w-full text-left pl-4 leading-4 truncate mr-2">
                             {{ value.name }}
@@ -94,12 +156,15 @@ watch(visible, (isVisible) => {
                 </PureMultiselectInfiniteScroll>
             </div>
 
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-medium text-gray-600">{{ trans("Phone number") }}</label>
-                <div class="w-full text-sm border rounded-lg px-3 py-1.5 bg-gray-50"
-                    :class="selectedCustomer?.phone ? 'text-gray-700' : 'text-gray-400'">
-                    {{ selectedCustomer?.phone || trans("Select a customer") }}
-                </div>
+            <p v-if="phoneError" class="text-xs text-red-500 leading-snug">{{ phoneError }}</p>
+
+            <div v-if="showNewContact" class="flex flex-col gap-1">
+                <p class="text-xs text-gray-500 leading-snug">
+                    {{ trans("No customer found with this number. A new contact will be created.") }}
+                </p>
+                <label class="text-xs font-medium text-gray-600">{{ trans("Contact name") }}</label>
+                <input v-model="contactName" type="text" :placeholder="trans('Optional')"
+                    class="w-full text-sm border border-gray-300 rounded-lg px-3 py-1.5 text-gray-700" />
             </div>
 
             <p class="text-xs text-gray-400 leading-snug">
@@ -113,11 +178,9 @@ watch(visible, (isVisible) => {
                     @click="visible = false">
                     {{ trans("Cancel") }}
                 </button>
-                <button type="button" :disabled="!selectedCustomer?.phone || submitting" @click="startChat"
+                <button type="button" :disabled="!canStart" @click="startChat"
                     class="px-3 py-1.5 text-sm text-white rounded-lg"
-                    :class="!selectedCustomer?.phone || submitting
-                        ? 'bg-gray-300 cursor-not-allowed'
-                        : 'bg-green-600 hover:bg-green-700'">
+                    :class="!canStart ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'">
                     {{ submitting ? trans("Starting...") : trans("Start chat") }}
                 </button>
             </div>

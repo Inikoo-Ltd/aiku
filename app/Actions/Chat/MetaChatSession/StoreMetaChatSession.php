@@ -22,7 +22,7 @@ class StoreMetaChatSession
         return [
             'shop_id'      => ['required', 'exists:shops,id'],
             'customer_id'  => ['nullable', 'exists:customers,id'],
-            'phone_number' => ['required_without:customer_id', 'nullable', 'string', 'max:50'],
+            'phone_number' => ['required_without:customer_id', 'nullable', 'string', 'max:50', 'regex:/^\+[1-9][\d\s\-().]{6,20}$/'],
             'name'         => ['nullable', 'string'],
         ];
     }
@@ -50,11 +50,17 @@ class StoreMetaChatSession
 
         $customer = isset($modelData['customer_id']) ? Customer::findOrFail($modelData['customer_id']) : null;
 
-        $phoneNumber = $customer?->phone ?? Arr::get($modelData, 'phone_number');
+        $phoneNumber = $this->normalisePhoneNumber($customer?->phone ?? Arr::get($modelData, 'phone_number'));
 
         if (blank($phoneNumber)) {
             throw ValidationException::withMessages([
                 'phone_number' => __('No phone number available for this chat session.'),
+            ]);
+        }
+
+        if (str_starts_with($phoneNumber, '+') && !preg_match('/^\+[1-9]\d{7,14}$/', $phoneNumber)) {
+            throw ValidationException::withMessages([
+                'phone_number' => __('Enter a valid phone number.'),
             ]);
         }
 
@@ -80,12 +86,29 @@ class StoreMetaChatSession
                 'status'           => ChatSessionStatusEnum::ACTIVE,
                 'guest_identifier' => $name,
                 'metadata'         => [
-                    'customer_id' => $customer?->id,
-                    'name'        => $name,
-                    'phone'       => $phoneNumber,
+                    'customer_id'    => $customer?->id,
+                    'name'           => $name,
+                    'phone'          => $phoneNumber,
+                    'is_new_contact' => $customer === null,
                 ],
             ]);
         });
+    }
+
+    /**
+     * Strips separators from E.164 numbers so they match the form the WhatsApp
+     * webhook stores. National formats are left untouched, guessing a country
+     * code would be worse than keeping what was given.
+     */
+    protected function normalisePhoneNumber(?string $phoneNumber): ?string
+    {
+        $phoneNumber = trim((string) $phoneNumber);
+
+        if (!str_starts_with($phoneNumber, '+')) {
+            return $phoneNumber === '' ? null : $phoneNumber;
+        }
+
+        return '+'.preg_replace('/\D/', '', $phoneNumber);
     }
 
     public function jsonResponse(MetaChatSession $metaChatSession): array
