@@ -7,9 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
-use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
-use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Chat\ChatAgent;
@@ -31,27 +29,13 @@ class MarkChatSessionAsSpam
     public function handle(ChatSession $chatSession, ChatAgent $agent): ChatSession
     {
         return DB::transaction(function () use ($chatSession, $agent) {
+            // Only hide the chat (is_spam). Status and any assignment are left intact
+            // so un-marking restores the exact previous state (waiting/active/closed).
             $chatSession->update([
                 'is_spam'             => true,
                 'spam_at'             => now(),
                 'spammed_by_agent_id' => $agent->id,
             ]);
-
-            $activeAssignments = $chatSession->assignments()
-                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
-                ->get();
-
-            foreach ($activeAssignments as $assignment) {
-                $assignment->update([
-                    'status'      => ChatAssignmentStatusEnum::RESOLVED->value,
-                    'resolved_at' => now(),
-                ]);
-
-                $assignedAgent = ChatAgent::find($assignment->chat_agent_id);
-                if ($assignedAgent) {
-                    ChatAgentHydrateChats::run($assignedAgent);
-                }
-            }
 
             StoreChatEvent::make()->handle(
                 chatSession: $chatSession,

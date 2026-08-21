@@ -7,7 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
-use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Chat\ChatAgent;
@@ -24,28 +24,25 @@ class TrashChatSession
     use AsAction;
 
     /**
-     * Soft-delete the session (moves it to Trash). SoftDeletes hides it from every
+     * Soft-delete the session (moves it to Trash). The chat is closed first so a
+     * trashed — and any later restored — session is left in a clean, ended state
+     * rather than lingering as active/waiting. SoftDeletes then hides it from every
      * normal query; it can be restored or permanently deleted from the Trash view.
      *
      * @throws \Throwable
      */
-    public function handle(ChatSession $chatSession): ChatSession
+    public function handle(ChatSession $chatSession, ?int $actorId = null): ChatSession
     {
-        return DB::transaction(function () use ($chatSession) {
-            $activeAssignments = $chatSession->assignments()
+        return DB::transaction(function () use ($chatSession, $actorId) {
+            $hasActiveAgent = $chatSession->assignments()
                 ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
-                ->get();
+                ->exists();
 
-            foreach ($activeAssignments as $assignment) {
-                $assignment->update([
-                    'status'      => ChatAssignmentStatusEnum::RESOLVED->value,
-                    'resolved_at' => now(),
-                ]);
-
-                $agent = ChatAgent::find($assignment->chat_agent_id);
-                if ($agent) {
-                    ChatAgentHydrateChats::run($agent);
-                }
+            // Only close a chat that an agent is actually handling, so it stays Closed
+            // when restored. A waiting chat (no agent yet) is trashed as-is and returns
+            // to the Waiting queue on restore.
+            if ($hasActiveAgent && !$chatSession->isClosed()) {
+                CloseChatSession::run($chatSession, $actorId, ChatActorTypeEnum::AGENT);
             }
 
             BroadcastChatListEvent::dispatch(null, $chatSession);
@@ -59,12 +56,14 @@ class TrashChatSession
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession, ActionRequest $request): JsonResponse
     {
-        if (!Auth::user()?->chatAgent) {
+        $agent = Auth::user()?->chatAgent;
+
+        if (!$agent instanceof ChatAgent) {
             return response()->json(['success' => false, 'message' => 'Only authenticated agents can trash chats'], 403);
         }
 
         try {
-            $chatSession = $this->handle($chatSession);
+            $chatSession = $this->handle($chatSession, $agent->id);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }

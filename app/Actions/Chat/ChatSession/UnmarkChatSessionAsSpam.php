@@ -8,9 +8,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
-use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
-use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
@@ -32,22 +30,13 @@ class UnmarkChatSessionAsSpam
     public function handle(ChatSession $chatSession, ChatAgent $agent): ChatSession
     {
         return DB::transaction(function () use ($chatSession, $agent) {
-            $updateData = [
+            // Marking spam never changed the status or assignment, so clearing the
+            // flag alone restores the exact previous state (waiting/active/closed).
+            $chatSession->update([
                 'is_spam'             => false,
                 'spam_at'             => null,
                 'spammed_by_agent_id' => null,
-            ];
-
-
-            $hasActiveAssignment = $chatSession->assignments()
-                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
-                ->exists();
-
-            if (!$hasActiveAssignment && $chatSession->status !== ChatSessionStatusEnum::CLOSED) {
-                $updateData['status'] = ChatSessionStatusEnum::WAITING->value;
-            }
-
-            $chatSession->update($updateData);
+            ]);
 
             StoreChatEvent::make()->handle(
                 chatSession: $chatSession,

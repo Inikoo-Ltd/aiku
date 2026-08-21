@@ -17,6 +17,7 @@ use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Models\CRM\WebUser;
 
 class GetChatSessions
 {
@@ -50,6 +51,15 @@ class GetChatSessions
     public function asController(ActionRequest $request)
     {
         $filters = $request->validated();
+        $user    = $request->user();
+
+        if ($user instanceof WebUser) {
+            $filters['web_user_id'] = $user->id;
+            $filters['include_spam'] = true;
+            unset($filters['assigned_to_me'], $filters['view_team'], $filters['is_spam'], $filters['trashed']);
+        } elseif ($user && !empty($filters['assigned_to_me'])) {
+            $filters['assigned_to_me'] = $user->id;
+        }
 
         return $this->handle($filters);
     }
@@ -83,6 +93,7 @@ class GetChatSessions
 
         $isTrashView = !empty($filters['trashed']);
         $isSpamView  = !empty($filters['is_spam']) && !$isTrashView;
+        $includeSpam = !empty($filters['include_spam']);
 
         // Trash view: only soft-deleted sessions, scoped to the agent's shops.
         if ($isTrashView) {
@@ -93,7 +104,7 @@ class GetChatSessions
                 : null;
 
             $query->whereIn('shop_id', $trashAgent ? $trashAgent->shops()->pluck('shops.id')->all() : []);
-        } else {
+        } elseif (!$includeSpam) {
             $query->where('is_spam', $isSpamView);
         }
 
