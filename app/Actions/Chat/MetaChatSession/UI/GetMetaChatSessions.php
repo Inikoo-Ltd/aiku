@@ -137,7 +137,8 @@ class GetMetaChatSessions
                     $query->where(function ($q) use ($currentAgent, $shopIds) {
                         $q->where(function ($sub) use ($shopIds) {
                             $sub->whereIn('shop_id', $shopIds)
-                                ->whereIn('status', [ChatSessionStatusEnum::WAITING, ChatSessionStatusEnum::ACTIVE]);
+                                ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
+                                ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value));
                         })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent) {
                             $assignmentQ->where('chat_agent_id', $currentAgent->id);
                         });
