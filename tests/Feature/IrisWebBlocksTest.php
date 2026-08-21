@@ -23,14 +23,18 @@ use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct as WorkshopGetWebBlockProduct;
+use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
 use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Http\UploadedFile;
@@ -388,4 +392,65 @@ test('family extra description block returns a null labeling guide when no file 
 
     expect($family)->toHaveKey('labeling_guide')
         ->and(Arr::get($family, 'labeling_guide'))->toBeNull();
+});
+
+test('workshop product web block keeps the description tabs alongside the website product layout', function () {
+    [, $product] = createProduct($this->shop);
+
+    $this->website->update([
+        'published_layout' => [
+            'product' => [
+                'data' => [
+                    'fieldValue' => [
+                        'setting' => ['product_specs' => true],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    $parsed = WorkshopGetWebBlockProduct::run($webpage, ['type' => 'product-3']);
+
+    $fieldValue = Arr::get($parsed, 'web_block.layout.data.fieldValue');
+
+    expect(Arr::get($fieldValue, 'setting.product_specs'))->toBeTrue()
+        ->and(Arr::get($fieldValue, 'tabs.description'))->toBe($product->description)
+        ->and(Arr::get($fieldValue, 'tabs'))->toHaveKeys([
+            'customize_option',
+            'labeling_guide',
+            'storage_option',
+            'is_aroma_organisation',
+            'marketing_material_route',
+            'faq',
+        ]);
+});
+
+test('website product workshop layout exposes the description tabs', function () {
+    [, $product] = createProduct($this->shop);
+
+    $snapshot = StoreWebsiteSnapshot::make()->action($this->website, [
+        'scope'  => SnapshotScopeEnum::PRODUCT,
+        'layout' => [
+            'product' => [
+                'code' => 'product-3',
+                'data' => [
+                    'fieldValue' => [
+                        'setting' => ['product_specs' => true],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $this->website->update(['unpublished_product_snapshot_id' => $snapshot->id]);
+
+    $workshop = GetWebsiteWorkshopProduct::run($this->website->fresh(), $product);
+
+    $tabs = Arr::get($workshop, 'layout.data.fieldValue.tabs');
+
+    expect($tabs)->not->toBeNull()
+        ->and(Arr::get($tabs, 'description'))->toBe($product->description)
+        ->and(Arr::get($workshop, 'layout.data.fieldValue.product.id'))->toBe($product->id);
 });

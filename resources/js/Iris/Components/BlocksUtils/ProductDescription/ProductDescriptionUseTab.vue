@@ -23,18 +23,25 @@ const layout = inject("layout", {}) as any
 
 const tabsData = computed(() => props.fieldValue?.tabs ?? {})
 
-const isLoggedIn = computed(() => Boolean(layout?.iris?.is_logged_in))
+const productData = computed(() => props.fieldValue?.product ?? {})
+
+const isLoggedIn = computed(() => layout?.iris?.is_logged_in ?? true)
 
 const tabs = computed(() =>
 	[
-		{ key: "about", label: ctrans("Description") },
-		{ key: "marketing", label: ctrans("Marketing Materials") },
-		{ key: "faq", label: ctrans("FAQ") },
+		{ key: "about", label: ctrans("About the Product") },
 		{ key: "customisation", label: ctrans("Customisation") },
 		{ key: "labeling guide", label: ctrans("Labeling Guide") },
 		{ key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
+		{ key: "marketing", label: ctrans("Marketing Materials") },
+		{ key: "faq", label: ctrans("FAQ") },
 	].filter(tab =>
-		isProductTabVisible(tab.key as FamilyExtraDescriptionTabKey, tabsData.value, isLoggedIn.value)
+		isProductTabVisible(
+			tab.key as FamilyExtraDescriptionTabKey,
+			tabsData.value,
+			productData.value,
+			isLoggedIn.value
+		)
 	)
 )
 
@@ -53,7 +60,7 @@ const childFieldValue = computed(() => ({
 
 const containerStyle = computed(() => ({
 	...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-	...getStyles(props.fieldValue?.container?.properties),
+	...getStyles(props.fieldValue?.description_tabs?.container?.properties),
 	width: "auto",
 }))
 
@@ -77,7 +84,8 @@ const component = (tab: string) => {
 }
 
 const sectionStyle = computed(() => {
-	const bg = props.fieldValue?.container?.properties?.background?.[props.screenType]
+	const bg =
+		props.fieldValue?.description_tabs?.container?.properties?.background?.[props.screenType]
 
 	return {
 		backgroundColor: bg?.color || undefined,
@@ -93,14 +101,14 @@ const isMobile = computed(() => props.screenType === "mobile")
 <template>
 	<section
 		v-if="tabs.length"
-		class="w-full bg-[#D8D9DB]"
+		class="w-full"
 		:id="'product-description-' + indexBlock"
 		:style="sectionStyle">
 		<div
-			class="mx-auto w-full max-w-[1700px] px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
+			class="mw-full max-w-[1700px] px-4 py-4 sm:px-8 xl:px-14 2xl:max-w-[1800px] 2xl:px-14"
 			:style="containerStyle">
 			<!-- TOP NAV -->
-			<div class="border-b border-[#9a9a9a]">
+			<div class="border-b border-[#9a9a9a] bg-[#fbfaf9]">
 				<!-- Mobile -->
 				<div v-if="isMobile" class="py-3">
 					<select

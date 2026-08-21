@@ -136,7 +136,7 @@ onBeforeUnmount(() => {
         class="flex justify-center items-center"
       >
         <div
-          class="bg-gray-100 w-full aspect-square overflow-hidden rounded-lg cursor-pointer"
+          class="w-full aspect-square overflow-hidden rounded-lg cursor-pointer"
           @click="openImageModal(index)"
         >
           <Image

@@ -376,6 +376,7 @@ defineExpose({ setQuantity })
                 icon="fas fa-plus" 
                 :label="ctrans('Add to basket')" 
                 type="primary" 
+                :injectStyle="buttonStyle" 
                 size="lg"
                 :loading="isLoadingSubmitQuantityProduct" 
                 @click="onAddToBasket(product, 1)" 

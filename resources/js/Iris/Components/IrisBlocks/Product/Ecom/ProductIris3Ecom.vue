@@ -791,7 +791,8 @@ onMounted(async () => {
 
             <template v-if="layout?.iris?.is_logged_in">
                 <EcomAddToBasketv2 v-if="product.stock > 0" ref="_mobileAddToBasket" v-model:product="product"
-                    :customerData="customerData" :key="keyCustomer" class="button-basket w-full" />
+                    :customerData="customerData" :key="keyCustomer"
+                    :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket w-full" />
                 <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
             </template>
 
@@ -903,11 +904,13 @@ onMounted(async () => {
         </div>
     </div>
 
+  
+  </div>
     <ProductDescriptionUseTab
         :fieldValue
         :screenType
-        :indexBlock />
-  </div>
+        :indexBlock 
+    />
 </template>
 
 <style scoped>

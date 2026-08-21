@@ -3,6 +3,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
+use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Http\Resources\Web\WebpageProductWorkshopResource;
 use App\Models\Catalogue\Product;
@@ -23,6 +24,10 @@ class GetWebsiteWorkshopProduct
 
         if ($layout) {
             data_set($layout, 'data.fieldValue.product', WebpageProductWorkshopResource::make($product)->toArray(request()));
+            data_set($layout, 'data.fieldValue.tabs', [
+                'description' => $product->description,
+                ...($product->family ? WebBlockFamilyResource::getTabsData($product->family) : [])
+            ]);
         }
 
         $propsValue = [
