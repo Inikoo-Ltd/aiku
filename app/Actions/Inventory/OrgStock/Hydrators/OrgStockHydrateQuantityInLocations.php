@@ -89,6 +89,17 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             }
 
             OrgStockHydrateStockValue::dispatch($orgStock);
+        } elseif (!$orgStock->is_on_demand) {
+            $outOfSyncProducts = $orgStock->products()
+                ->where('product_has_org_stocks.quantity', '>', 0)
+                ->whereRaw(
+                    'products.available_quantity is distinct from floor(?::numeric / product_has_org_stocks.quantity)',
+                    [$quantityAvailable]
+                )->get();
+
+            foreach ($outOfSyncProducts as $product) {
+                ProductHydrateAvailableQuantity::dispatch($product);
+            }
         }
 
         if ($orgStock->wasChanged('quantity_in_locations')) {
