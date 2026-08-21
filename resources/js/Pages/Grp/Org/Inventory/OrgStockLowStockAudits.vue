@@ -10,16 +10,23 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableOrgStockLowStockAudits from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockLowStockAudits.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import { routeType } from "@/types/route"
 
 defineProps<{
     title: string
     pageHead: PageHeadingTypes
     lowStockAudits: {}
+    auditRoute: routeType
 }>()
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <TableOrgStockLowStockAudits :data="lowStockAudits" tab="low_stock_audits" class="mt-5" />
+    <TableOrgStockLowStockAudits
+        :data="lowStockAudits"
+        :auditRoute="auditRoute"
+        tab="low_stock_audits"
+        class="mt-5"
+    />
 </template>
