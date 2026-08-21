@@ -9,6 +9,7 @@
 
 namespace App\Actions\Maintenance\Dispatching;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -25,7 +26,7 @@ class RepairStuckFinalisedDeliveryNotes
 {
     use AsAction;
 
-    public string $commandSignature = 'delivery_note:repair_stuck_finalised {organisation?} {--warehouse=} {--before=2026-01-01 : Cut-off for shops with no migrated_to_aiku_on} {--with-stuck-orders : Also dispatch orders left stuck in finalised, backdated} {--exclude= : Comma separated delivery note references to leave alone} {--commit : Apply the changes, otherwise dry run}';
+    public string $commandSignature = 'delivery_note:repair_stuck_finalised {organisation?} {--warehouse=} {--before=2026-01-01 : Cut-off for shops with no migrated_to_aiku_on} {--with-stuck-orders : Also dispatch orders left stuck in finalised or packed, backdated} {--with-cancelled-orders : Also cancel delivery notes whose order was cancelled} {--exclude= : Comma separated delivery note references to leave alone} {--commit : Apply the changes, otherwise dry run}';
 
     public function handle(DeliveryNote $deliveryNote, ?string $dispatchedAt = null): DeliveryNote
     {
@@ -39,7 +40,7 @@ class RepairStuckFinalisedDeliveryNotes
         }
 
         return (bool)$command->option('with-stuck-orders')
-            && $order->state == OrderStateEnum::FINALISED
+            && in_array($order->state, [OrderStateEnum::FINALISED, OrderStateEnum::PACKED])
             && $order->invoices()->count() > 0;
     }
 
@@ -90,8 +91,9 @@ class RepairStuckFinalisedDeliveryNotes
 
         $exclude = array_filter(explode(',', (string)$command->option('exclude')));
 
-        $repaired = 0;
-        $skipped  = 0;
+        $repaired  = 0;
+        $cancelled = 0;
+        $skipped   = 0;
 
         foreach ($organisations as $organisation) {
             (new AuroraOrganisationService())->initialisation($organisation);
@@ -104,6 +106,22 @@ class RepairStuckFinalisedDeliveryNotes
 
                 $order = $deliveryNote->orders->first();
                 $where = $organisation->slug.'/'.($deliveryNote->warehouse?->slug ?? '-');
+
+                if ($order && $order->source_id && $order->state == OrderStateEnum::CANCELLED && $command->option('with-cancelled-orders')) {
+                    $cancelledAt = ($order->cancelled_at ?? $this->finalisedAt($deliveryNote))->toDateTimeString();
+                    $command->line(($commit ? 'CANCELLING ' : 'WOULD CANCEL ')."$where $deliveryNote->reference at $cancelledAt — order $order->reference is cancelled");
+
+                    if ($commit) {
+                        try {
+                            CancelDeliveryNote::make()->action($deliveryNote, null, false, true, $cancelledAt);
+                        } catch (Throwable $e) {
+                            $command->error("FAILED $deliveryNote->reference: ".$e->getMessage());
+                            continue;
+                        }
+                    }
+                    $cancelled++;
+                    continue;
+                }
 
                 if (!$order || !$order->source_id || !$this->isRepairable($order, $command)) {
                     $skipped++;
@@ -133,7 +151,7 @@ class RepairStuckFinalisedDeliveryNotes
             }
         }
 
-        $command->info(($commit ? 'Dispatched' : 'Would dispatch').": $repaired delivery notes, $skipped left for review");
+        $command->info(($commit ? 'Dispatched' : 'Would dispatch').": $repaired delivery notes, ".($commit ? 'cancelled' : 'would cancel').": $cancelled, $skipped left for review");
 
         return 0;
     }

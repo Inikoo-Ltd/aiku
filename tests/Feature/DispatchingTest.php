@@ -3556,3 +3556,24 @@ test('repair dispatches an order left stuck in finalised, backdated and silent',
     Queue::assertNotPushed(\App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer::class);
     Queue::assertNotPushed(\App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers::class);
 });
+
+test('repair cancel leaves the old pickings and their stock alone', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    $pickings = $deliveryNote->pickings()->count();
+    expect($pickings)->toBeGreaterThan(0);
+
+    $cancelledAt  = '2023-05-06 09:00:00';
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote->refresh(), null, false, true, $cancelledAt);
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::CANCELLED)
+        ->and($deliveryNote->cancelled_at->toDateTimeString())->toBe($cancelledAt)
+        ->and($deliveryNote->pickings()->count())->toBe($pickings)
+        ->and($deliveryNote->deliveryNoteItems()->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED->value)->count())->toBe(0);
+});
