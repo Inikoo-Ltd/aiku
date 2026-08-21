@@ -17,13 +17,38 @@ use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ValidateIncomingTiktokOrder extends RetinaAction
 {
     use WithActionUpdate;
 
+    private const int LOCK_SECONDS = 120;
+
+    private const int LOCK_WAIT_SECONDS = 15;
+
     public function handle(TiktokUser $tiktokUser, $order = []): void
+    {
+        $platformOrderId = Arr::get($order, 'id');
+
+        if (blank($platformOrderId)) {
+            return;
+        }
+
+        $lock = Cache::lock('tiktok_order_'.$tiktokUser->id.'_'.$platformOrderId, self::LOCK_SECONDS);
+
+        try {
+            $lock->block(self::LOCK_WAIT_SECONDS, function () use ($tiktokUser, $order) {
+                $this->processOrder($tiktokUser, $order);
+            });
+        } catch (LockTimeoutException) {
+            return;
+        }
+    }
+
+    private function processOrder(TiktokUser $tiktokUser, array $order): void
     {
         $tiktokUser->debugWebhooks()->create([
             'data' => $order
