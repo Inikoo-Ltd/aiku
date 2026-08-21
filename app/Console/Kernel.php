@@ -10,6 +10,7 @@ namespace App\Console;
 
 use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
 use App\Actions\Accounting\Payment\CheckoutCom\SweepStuckCheckoutComPaymentApiPoints;
+use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
@@ -118,6 +119,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'SweepStuckCheckoutComPaymentApiPoints',
                 ),
                 name: 'SweepStuckCheckoutComPaymentApiPoints',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(SweepStrandedDeliveryNotes::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SweepStrandedDeliveryNotes',
+                ),
+                name: 'SweepStrandedDeliveryNotes',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

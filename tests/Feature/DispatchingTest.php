@@ -3355,6 +3355,22 @@ test('a delivery note cannot be put into handling blocked with nothing blocking 
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING);
 });
 
+test('the stranded sweep releases a blocked note whose flags outlived their reason', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    /** The sweep re-derives every line from its pickings, so fake-settled siblings cannot stay. */
+    DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)->whereKeyNot($item->id)->delete();
+
+    $item->update(['is_dirty' => true]);
+    DeliveryNote::whereKey($deliveryNote->id)->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED->value, 'updated_at' => now()->subHour()]);
+
+    $stats = \App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes::run();
+
+    expect($stats['stranded'])->toContain($deliveryNote->reference)
+        ->and($stats['released'])->toContain($deliveryNote->reference)
+        ->and($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($item->fresh()->is_dirty)->toBeFalse();
+});
+
 test('deleting the last blocking line releases the delivery note', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     settleSiblingDeliveryNoteItems($deliveryNote, $item);
