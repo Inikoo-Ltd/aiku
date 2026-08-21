@@ -67,6 +67,7 @@ class TaxNumber extends Model implements Auditable
         'audited_at'         => 'datetime',
         'checked_at'         => 'datetime',
         'invalid_checked_at' => 'datetime',
+        'rechecks_scheduled_at' => 'datetime',
         'validation_type'    => TaxNumberValidationTypeEnum::class,
         'status'             => TaxNumberStatusEnum::class,
         'type'               => TaxNumberTypeEnum::class,
