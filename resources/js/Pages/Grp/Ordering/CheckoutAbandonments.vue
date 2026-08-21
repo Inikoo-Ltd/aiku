@@ -16,7 +16,7 @@ defineProps<{
     data: object
     title: string
     pageHead: object
-    stats: { label: string; value: number | string }[]
+    stats: { label: string; value: number | string; information?: string }[]
     outbox_state_active: boolean
 }>()
 

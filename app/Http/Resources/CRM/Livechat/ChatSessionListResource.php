@@ -67,6 +67,7 @@ class ChatSessionListResource extends JsonResource
         return [
             'ulid' => $this->ulid,
             'status' => $this->status,
+            'is_spam' => (bool) $this->is_spam,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
             'priority' => $this->priority,

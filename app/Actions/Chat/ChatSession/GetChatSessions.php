@@ -17,6 +17,7 @@ use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Models\CRM\WebUser;
 
 class GetChatSessions
 {
@@ -37,6 +38,8 @@ class GetChatSessions
             ],
             'assigned_to_me' => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
+            'is_spam'         => ['sometimes', 'boolean'],
+            'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
             'search'          => ['sometimes', 'string', 'max:100'],
@@ -48,6 +51,15 @@ class GetChatSessions
     public function asController(ActionRequest $request)
     {
         $filters = $request->validated();
+        $user    = $request->user();
+
+        if ($user instanceof WebUser) {
+            $filters['web_user_id'] = $user->id;
+            $filters['include_spam'] = true;
+            unset($filters['assigned_to_me'], $filters['view_team'], $filters['is_spam'], $filters['trashed']);
+        } elseif ($user && !empty($filters['assigned_to_me'])) {
+            $filters['assigned_to_me'] = $user->id;
+        }
 
         return $this->handle($filters);
     }
@@ -79,7 +91,32 @@ class GetChatSessions
             $query->whereIn('status', $filters['statuses']);
         }
 
-        if (!empty($filters['assigned_to_me'])) {
+        $isTrashView = !empty($filters['trashed']);
+        $isSpamView  = !empty($filters['is_spam']) && !$isTrashView;
+        $includeSpam = !empty($filters['include_spam']);
+
+        // Trash view: only soft-deleted sessions, scoped to the agent's shops.
+        if ($isTrashView) {
+            $query->onlyTrashed();
+
+            $trashAgent = !empty($filters['assigned_to_me'])
+                ? $this->getCurrentAgent((int) $filters['assigned_to_me'])
+                : null;
+
+            $query->whereIn('shop_id', $trashAgent ? $trashAgent->shops()->pluck('shops.id')->all() : []);
+        } elseif (!$includeSpam) {
+            $query->where('is_spam', $isSpamView);
+        }
+
+        if ($isSpamView) {
+            $spamAgent = !empty($filters['assigned_to_me'])
+                ? $this->getCurrentAgent((int) $filters['assigned_to_me'])
+                : null;
+
+            $query->whereIn('shop_id', $spamAgent ? $spamAgent->shops()->pluck('shops.id')->all() : []);
+        }
+
+        if (!$isSpamView && !$isTrashView && !empty($filters['assigned_to_me'])) {
             $userId       = (int) $filters['assigned_to_me'];
             $currentAgent = $this->getCurrentAgent($userId);
 

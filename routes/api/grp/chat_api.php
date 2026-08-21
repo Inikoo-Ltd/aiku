@@ -39,8 +39,6 @@ Route::get('/ping', function () {
 })->name('ping');
 
 
-
-Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
 Route::post('/sessions', StoreChatSession::class)->name('sessions.store');
 Route::get('/meta/sessions', GetMetaChatSessions::class)->name('meta.sessions.index');
 Route::post('/meta/sessions', StoreMetaChatSession::class)->name('meta.sessions.store');
@@ -48,50 +46,34 @@ Route::get('/meta/sessions/{metaChatSession:ulid}/messages', GetMetaChatMessages
 Route::get('/meta/templates', GetMetaMessageTemplates::class)->name('meta.templates.index');
 Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-message.store');
 Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
-Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
-    ->name('sessions.update');
-Route::put('/sessions/{chatSession:ulid}/close', [CloseChatSession::class, 'asApiController'])
-    ->name('sessions.close');
-
-Route::post('/sessions/{chatSession:ulid}/typing', HandleChatTyping::class)
-    ->name('sessions.typing');
-
-Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity');
-Route::get('/sessions/{chatSession:ulid}/customer-profile', GetChatCustomerProfile::class)->name('sessions.customer_profile');
-Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline');
-Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages');
-
-Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::class)
-    ->name('sessions.guest_profile');
-
-Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail::class)
-    ->name('sessions.sync_by_email');
-
-Route::post('/sessions/{chatSession:ulid}/share-to-slack', [ShareChatSessionToSlack::class, 'asController'])
-    ->name('sessions.share_to_slack');
-
-Route::get('agents', GetChatAgents::class)->name('agents.index');
-Route::get('/agents/specializations', GetChatAgentSpecializations::class)->name('agent.specializations');
-Route::get('/users/{id}/unread-messages', GetAgentUnreadMessagesSummary::class)->name('user.unread-messages');
-Route::get('/users/{id}/agent-notifications', GetAgentChatNotifications::class)->name('agent.notifications');
-
-Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
-    ->name('agents.store');
-
-Route::put('/agents/{id}/update', UpdateChatAgent::class)->name('agents.update');
-
-Route::get('/agents/{id}', GetChatAgentByUserId::class)->name('agent.show');
-
-Route::post('/typing', HandleChatTyping::class, 'typing')
-    ->name('typing');
-
-Route::post('/read', HandleChatRead::class, 'read')
-    ->name('read');
+Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)->name('sessions.update');
+Route::put('/sessions/{chatSession:ulid}/close', [CloseChatSession::class, 'asApiController'])->name('sessions.close');
+Route::post('/sessions/{chatSession:ulid}/typing', HandleChatTyping::class)->name('sessions.typing');
+Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages')->withTrashed();
+Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::class)->name('sessions.guest_profile');
+Route::post('/typing', HandleChatTyping::class)->name('typing');
+Route::post('/read', HandleChatRead::class)->name('read');
 Route::get('/status', GetChatStatus::class)->name('status');
-
-Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)
-    ->name('chat.attachment.download');
-
+Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)->name('chat.attachment.download');
 Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
 Route::post('/messages/{chatMessage}/translate', TranslateSingleMessage::class)->name('messages.translate');
 Route::post('/sessions/{chatSession:ulid}/translate', TranslateSessionMessages::class)->name('sessions.translate');
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
+    Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity')->withTrashed();
+    Route::get('/sessions/{chatSession:ulid}/customer-profile', GetChatCustomerProfile::class)->name('sessions.customer_profile')->withTrashed();
+    Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline')->withTrashed();
+    Route::post('/sessions/{chatSession:ulid}/share-to-slack', [ShareChatSessionToSlack::class, 'asController'])->name('sessions.share_to_slack');
+    Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail::class)->name('sessions.sync_by_email');
+
+    Route::get('/agents', GetChatAgents::class)->name('agents.index');
+    Route::get('/agents/specializations', GetChatAgentSpecializations::class)->name('agent.specializations');
+    Route::post('/agents/store', StoreChatAgent::class)->name('agents.store');
+    Route::put('/agents/{id}/update', UpdateChatAgent::class)->name('agents.update');
+    Route::get('/agents/{id}', GetChatAgentByUserId::class)->name('agent.show');
+
+    Route::get('/users/{id}/unread-messages', GetAgentUnreadMessagesSummary::class)->name('user.unread-messages');
+    Route::get('/users/{id}/agent-notifications', GetAgentChatNotifications::class)->name('agent.notifications');
+});
