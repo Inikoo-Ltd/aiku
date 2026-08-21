@@ -25,11 +25,22 @@ class RepairStuckFinalisedDeliveryNotes
 {
     use AsAction;
 
-    public string $commandSignature = 'delivery_note:repair_stuck_finalised {organisation?} {--warehouse=} {--before=2026-01-01 : Cut-off for shops with no migrated_to_aiku_on} {--commit : Apply the changes, otherwise dry run}';
+    public string $commandSignature = 'delivery_note:repair_stuck_finalised {organisation?} {--warehouse=} {--before=2026-01-01 : Cut-off for shops with no migrated_to_aiku_on} {--with-stuck-orders : Also dispatch orders left stuck in finalised, backdated} {--exclude= : Comma separated delivery note references to leave alone} {--commit : Apply the changes, otherwise dry run}';
 
     public function handle(DeliveryNote $deliveryNote, ?string $dispatchedAt = null): DeliveryNote
     {
         return DispatchDeliveryNote::make()->action($deliveryNote, $dispatchedAt ?? $this->fallbackDate($deliveryNote), true);
+    }
+
+    protected function isRepairable($order, Command $command): bool
+    {
+        if ($order->state == OrderStateEnum::DISPATCHED) {
+            return true;
+        }
+
+        return (bool)$command->option('with-stuck-orders')
+            && $order->state == OrderStateEnum::FINALISED
+            && $order->invoices()->count() > 0;
     }
 
     protected function fallbackDate(DeliveryNote $deliveryNote): string
@@ -77,6 +88,8 @@ class RepairStuckFinalisedDeliveryNotes
             ->when($command->argument('organisation'), fn ($q) => $q->where('slug', $command->argument('organisation')))
             ->get();
 
+        $exclude = array_filter(explode(',', (string)$command->option('exclude')));
+
         $repaired = 0;
         $skipped  = 0;
 
@@ -84,10 +97,15 @@ class RepairStuckFinalisedDeliveryNotes
             (new AuroraOrganisationService())->initialisation($organisation);
 
             foreach ($this->query($organisation, $command->option('warehouse'), $before)->get() as $deliveryNote) {
+                if (in_array($deliveryNote->reference, $exclude)) {
+                    $command->warn("EXCLUDED $deliveryNote->reference");
+                    continue;
+                }
+
                 $order = $deliveryNote->orders->first();
                 $where = $organisation->slug.'/'.($deliveryNote->warehouse?->slug ?? '-');
 
-                if (!$order || !$order->source_id || $order->state != OrderStateEnum::DISPATCHED) {
+                if (!$order || !$order->source_id || !$this->isRepairable($order, $command)) {
                     $skipped++;
                     $command->warn("NEEDS REVIEW $where $deliveryNote->reference: order ".($order?->reference ?? 'none').' is '.($order?->state->value ?? 'missing').', finalised '.$this->fallbackDate($deliveryNote));
                     continue;
@@ -97,7 +115,11 @@ class RepairStuckFinalisedDeliveryNotes
                 $dispatchedAt = $auroraDate ?? $this->fallbackDate($deliveryNote);
                 $source       = $auroraDate ? 'aurora' : 'aiku';
 
-                $command->line(($commit ? 'DISPATCHING ' : 'WOULD DISPATCH ')."$where $deliveryNote->reference ({$deliveryNote->type->value}) at $dispatchedAt [$source] — order $order->reference already dispatched");
+                $orderNote = $order->state == OrderStateEnum::DISPATCHED
+                    ? "order $order->reference already dispatched"
+                    : "order $order->reference dispatched too, backdated";
+
+                $command->line(($commit ? 'DISPATCHING ' : 'WOULD DISPATCH ')."$where $deliveryNote->reference ({$deliveryNote->type->value}) at $dispatchedAt [$source] — $orderNote");
 
                 if ($commit) {
                     try {

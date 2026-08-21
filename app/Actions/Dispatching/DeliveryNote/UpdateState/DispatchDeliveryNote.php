@@ -55,7 +55,7 @@ class DispatchDeliveryNote extends OrgAction
                     if ($repair && $order->state == OrderStateEnum::DISPATCHED) {
                         continue;
                     }
-                    DispatchOrderFromDeliveryNote::make()->action($order, $deliveryNote);
+                    DispatchOrderFromDeliveryNote::make()->action($order, $deliveryNote, $repair ? $dispatchedAt : null, $repair);
                 }
             } elseif (!$repair) {
                 SendDispatchedReplacementOrderEmailToCustomer::dispatch($deliveryNote);
