@@ -71,6 +71,7 @@ import {
     faReceipt,
     faTrash,
     faPercentage,
+    faSackDollar,
     faUndo as falUndo
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
@@ -101,7 +102,7 @@ import { Icon as IconTS } from "@/types/Utils/Icon"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar)
 
 interface OrderCharge {
     name: string
@@ -2435,6 +2436,26 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </div>
 
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code">
+                        <template #cell_items_margin_1="{ fieldSummary }">
+                            <dt class="col-span-3 flex flex-col">
+                                <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                    <span>{{ fieldSummary.label }}</span>
+                                </div>
+                                <span v-if="fieldSummary.margin" class="text-xs text-gray-400 flex items-center gap-1">
+                                    <span
+                                        :class="{ 'text-red-600': fieldSummary.margin.status === 'danger', 'text-amber-600': fieldSummary.margin.status === 'warning' }"
+                                        v-tooltip="fieldSummary.margin.thin">{{ fieldSummary.margin.margin_label }}</span>
+                                    <span>·</span>
+                                    <span v-tooltip="fieldSummary.margin.tooltip" class="flex items-center gap-0.5 cursor-help">
+                                        <FontAwesomeIcon icon="fal fa-sack-dollar" fixed-width aria-hidden="true" />
+                                        {{ fieldSummary.margin.profit_label }}
+                                    </span>
+                                    <span v-if="fieldSummary.margin.below" class="text-red-600">— {{ fieldSummary.margin.below }}</span>
+                                    <span v-if="fieldSummary.margin.without_cost" class="text-yellow-600">— {{ fieldSummary.margin.without_cost }}</span>
+                                </span>
+                            </dt>
+                        </template>
+
                         <template #cell_charges_1="{ fieldSummary }">
                             <dt class="col-span-3 flex flex-col">
                                 <div class="flex items-center leading-none" :class="fieldSummary.label_class">

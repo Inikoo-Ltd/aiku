@@ -139,8 +139,6 @@ class CustomerResource extends JsonResource
             'state'                         => $customer->state,
             'status'                        => $customer->status,
             'currency_code'                 => $shop?->currency?->code,
-            'eori'                          => $customer->eori,
-            'ukims'                         => $customer->ukims,
             'identity_document_number'      => $customer->identity_document_number ? [
                 'label'     => data_get($shop?->settings, 'customer.identity_document_number') ?? __('Identity document number'),
                 'number'    => $customer->identity_document_number,

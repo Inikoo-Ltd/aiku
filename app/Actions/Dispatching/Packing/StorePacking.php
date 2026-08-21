@@ -78,7 +78,7 @@ class StorePacking extends OrgAction
             $this->set('packer_user_id', $this->user->id);
         }
         if (!$this->has('quantity')) {
-            $this->set('quantity', $this->deliveryNoteItem->quantity_picked);
+            $this->set('quantity', $this->deliveryNoteItem->quantity_picked ?? 0);
         }
     }
 

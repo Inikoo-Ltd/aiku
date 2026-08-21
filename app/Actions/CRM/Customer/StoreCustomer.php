@@ -308,7 +308,6 @@ class StoreCustomer extends OrgAction
             'traffic_sources'                                       => ['sometimes', 'nullable'],
             'tax_number'                                            => ['sometimes', 'nullable', 'array'],
             'is_re'                                                 => ['sometimes', 'boolean'],
-            'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
 
 
             'password' =>

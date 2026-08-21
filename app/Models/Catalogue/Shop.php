@@ -377,14 +377,6 @@ class Shop extends Model implements HasMedia, Auditable
         ])->toArray();
     }
 
-    public function collectsIdentityDocumentAs(string $label): bool
-    {
-        $labels = data_get($this->settings, 'customer.identity_document_number').' '
-            .data_get($this->settings, 'customer.identity_document_number_alt');
-
-        return str_contains(strtolower($labels), strtolower($label));
-    }
-
     public function crmStats(): HasOne
     {
         return $this->hasOne(ShopCRMStats::class);

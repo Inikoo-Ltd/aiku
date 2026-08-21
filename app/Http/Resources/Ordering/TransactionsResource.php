@@ -13,6 +13,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
+use App\Actions\Traits\WithMarginData;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -58,6 +59,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class TransactionsResource extends JsonResource
 {
+    use WithMarginData;
+
     public function toArray($request): array
     {
         $quantityOrdered = $this->quantity_ordered;
@@ -151,6 +154,10 @@ class TransactionsResource extends JsonResource
             'is_gift'                        => $this->is_gift,
             'is_follow_on'                   => $this->is_follow_on,
             'batch_codes'                    => $this->batch_codes,
+            'margin'                         => $this->when(
+                array_key_exists('margin_actual_cost', $this->resource->getAttributes()),
+                fn () => $this->marginFields($this->model_type, $this->net_amount, $this->org_net_amount, $this->margin_actual_cost, $this->margin_estimated_cost, $this->margin_quantity_picked, $this->margin_quantity_ordered)
+            ),
             'upcoming_transaction_type'          => $this->upcoming_transaction_type,
             'upcoming_transaction_private_notes' => $this->upcoming_transaction_private_notes,
             'upcoming_transaction_public_notes'  => $this->upcoming_transaction_public_notes,

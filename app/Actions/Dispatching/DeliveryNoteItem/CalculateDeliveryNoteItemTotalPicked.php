@@ -73,6 +73,20 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
             'estimated_picked_weight' => $pickedWeight
         ];
 
+        /*
+         * A line goes dirty when its quantity changes under the picker, and a dirty line blocks the
+         * whole note. The flag is set on any change, including one that asks for nothing: Faire
+         * lowered mxdpk8yece from 8 to 7 with 7 already in the tote, and because a lowering never
+         * walks the note back to picking, it sat blocked with no work left to do and re-blocked on
+         * every attempt to finish. Clearing it belongs here rather than in StorePicking because
+         * this is the one place every path ends up - a pick added, edited or deleted, the rest
+         * marked as not picked, or the quantity synced from the marketplace. An over-picked line
+         * stays dirty: the trim at the end of picking is what settles that one.
+         */
+        if ($deliveryNoteItem->is_dirty && $isCompleted && $outstanding >= -self::QUANTITY_TOLERANCE) {
+            $dataToUpdate['is_dirty'] = false;
+        }
+
         /** Handle waiting routes only clear the quantities but don't update the state. This will help. */
         if ($deliveryNoteItem->state == DeliveryNoteItemStateEnum::HANDLING_BLOCKED && $totalWaiting == 0) {
             $dataToUpdate['state'] = DeliveryNoteItemStateEnum::HANDLING;

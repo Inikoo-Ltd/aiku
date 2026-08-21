@@ -772,8 +772,13 @@ test('force delete offer', function () {
 
 test('create first order bonus', function () {
     $shop = $this->shop;
-    if (!$shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::FIRST_ORDER)->exists()) {
         SeedShopOfferCampaigns::run($shop);
+    }
+
+    $firstOrderCampaign = $shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::FIRST_ORDER)->first();
+    foreach ($firstOrderCampaign->offers()->where('state', '!=', OfferStateEnum::FINISHED)->get() as $liveOffer) {
+        DeleteOffer::make()->action($liveOffer, true);
     }
 
     $this->artisan('offer:create_first_order_bonus', [

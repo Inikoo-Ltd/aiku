@@ -218,6 +218,7 @@ trait WithRetinaRegistration
                         table: 'web_users',
                         extraConditions: [
                             ['column' => 'website_id', 'value' => $this->shop->website->id],
+                            ['column' => 'deleted_at', 'operator' => 'null'],
                         ],
                         message: __('This email is already registered.')
                     ),
@@ -226,6 +227,7 @@ trait WithRetinaRegistration
                         column: 'username',
                         extraConditions: [
                             ['column' => 'website_id', 'value' => $this->shop->website->id],
+                            ['column' => 'deleted_at', 'operator' => 'null'],
                         ],
                         message: __('This email is already registered.')
                     ),
