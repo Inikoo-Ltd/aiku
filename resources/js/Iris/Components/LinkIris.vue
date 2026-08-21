@@ -15,7 +15,7 @@ const props = withDefaults(
     style?: Record<string, any>
     label?: string
     target?: string
-    type?: "internal" | "external"
+    type?: "internal" | "external" | "reveal"
     canonical_url?: string
     id?: number | string
   }>(),
@@ -42,11 +42,13 @@ defineSlots<{
   default?: (props: { isLoading: boolean }) => any
 }>()
 
+const isRevealLink = computed(() => props.type === "reveal")
+
 /**
  * Normalize raw input
  */
 const computedHref = computed<string | null>(() => {
-  let raw = props.type === "external" ? props.href : (props.canonical_url ?? props.href)
+  let raw = props.type === "external" || isRevealLink.value ? props.href : (props.canonical_url ?? props.href)
 
   if (typeof raw !== "string") return null
 
@@ -142,6 +144,10 @@ const isAnchor = computed(() => {
   return !!href && href.startsWith("#")
 })
 
+const revealTarget = computed<string | null>(() =>
+  isRevealLink.value ? (resolvedHref.value?.replace(/^#/, "") ?? null) : null
+)
+
 const opensOutsideCurrentTab = computed(
   () => !!props.target && props.target !== "_self"
 )
@@ -202,6 +208,7 @@ const handleClick = (event: MouseEvent) => {
     :style="style"
     :target="target"
     :id="id"
+    :data-reveal-target="revealTarget"
     rel="noopener noreferrer"
     @click="handleClick"
   >

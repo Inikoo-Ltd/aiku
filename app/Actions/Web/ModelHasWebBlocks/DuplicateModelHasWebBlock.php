@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\WebBlock\StoreWebBlock;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Actions\Web\Webpage\WithWebBlockReveal;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
@@ -24,6 +25,7 @@ class DuplicateModelHasWebBlock extends OrgAction
 {
     use WithWebAuthorisation;
     use WithActionUpdate;
+    use WithWebBlockReveal;
 
 
     public function handle(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
@@ -47,7 +49,7 @@ class DuplicateModelHasWebBlock extends OrgAction
         $webBlockType = WebBlockType::find($modelHasWebBlocks->webBlock->web_block_type_id);
 
         $webBlock = StoreWebBlock::run($webBlockType, [
-            'layout' => $modelHasWebBlocks->webBlock->layout,
+            'layout' => $this->getDuplicatedLayout($webpage, $modelHasWebBlocks),
         ]);
         /** @var ModelHasWebBlocks $modelHasWebBlockCopy */
         $modelHasWebBlockCopy = $webpage->modelHasWebBlocks()->create(
@@ -69,6 +71,18 @@ class DuplicateModelHasWebBlock extends OrgAction
         UpdateWebpageContent::run($webpage->refresh());
 
         return $modelHasWebBlockCopy;
+    }
+
+    private function getDuplicatedLayout(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks): object|array
+    {
+        $layout    = $modelHasWebBlocks->webBlock->layout;
+        $revealKey = data_get($layout, 'reveal.key');
+
+        if ($revealKey) {
+            data_set($layout, 'reveal.key', $this->getUniqueRevealKey($webpage, $revealKey));
+        }
+
+        return $layout;
     }
 
     public function asController(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlock, ActionRequest $request): void

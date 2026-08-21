@@ -15,6 +15,7 @@ use Illuminate\Support\Arr;
 trait WithIrisGetWebpageWebBlocks
 {
     use WithFillIrisWebBlocks;
+    use WithWebBlockReveal;
 
     public function getIrisWebBlocks(Webpage $webpage, array $webBlocks, bool $isLoggedIn): array
     {
@@ -41,6 +42,14 @@ trait WithIrisGetWebpageWebBlocks
             }
 
             $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock);
+
+            $reveal = $this->getWebBlockReveal(
+                Arr::get($webBlock, 'reveal') ?? Arr::get($webBlock, 'web_block.layout.reveal')
+            );
+
+            if ($reveal && Arr::exists($parsedWebBlocks, $key)) {
+                data_set($parsedWebBlocks[$key], 'reveal', $reveal);
+            }
         }
 
         return $parsedWebBlocks;

@@ -19,7 +19,7 @@ import { trans } from "laravel-vue-i18n";
 import { useConfirm } from "primevue/useconfirm";
 import { useLiveUsers } from "@/Stores/active-users";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
-import { setIframeView } from "@/Composables/Workshop";
+import { getRevealSetting, setIframeView } from "@/Composables/Workshop";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
@@ -131,6 +131,17 @@ const WEBPAGE_TYPES_WITHOUT_TEMPLATE = ['storefront', 'blog'];
 const canUseTemplate = computed(() => !WEBPAGE_TYPES_WITHOUT_TEMPLATE.includes(props.webpage.type));
 
 console.log('layout',layout)
+
+const revealBlockOptions = computed(() =>
+  (data.value?.layout?.web_blocks ?? [])
+    .filter(block => getRevealSetting(block))
+    .map(block => ({
+      key: getRevealSetting(block).key,
+      label: block.web_block.layout.data?.fieldValue?.blocks?.name || block.type,
+    }))
+);
+
+provide('revealBlockOptions', revealBlockOptions);
 
 provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);

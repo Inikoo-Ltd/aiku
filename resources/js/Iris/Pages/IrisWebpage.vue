@@ -12,6 +12,7 @@ import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
 import IrisBlockRenderer from "@/Iris/Components/IrisBlockRenderer.vue"
 import { useStructuredData } from "@/Iris/Composables/useStructuredData"
+import { useRevealBlocks } from "@/Iris/Composables/useRevealBlocks"
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 library.add(faCheck, faPlus, faMinus)
 
@@ -55,6 +56,7 @@ const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
 const currentUrl = ref("")
 const structuredDataScript = ref<HTMLScriptElement | null>(null)
 const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
+const { isBlockVisible } = useRevealBlocks(() => props.web_blocks)
 
 provide('webpage_data', props.webpage_data)
 provide('webpage_id', props.webpage_id)
@@ -129,8 +131,9 @@ onBeforeUnmount(() => {
             <div
                 v-for="(web_block_data, index) in props.web_blocks"
                 :key="'block-' + web_block_data.id"
+                v-show="isBlockVisible(web_block_data)"
                 class="w-full"
-                :id="`v-${web_block_data.type}-${index}`"
+                :id="web_block_data.reveal?.key || `v-${web_block_data.type}-${index}`"
             >
                 <IrisBlockRenderer
                     :type="web_block_data.type"

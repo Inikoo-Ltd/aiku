@@ -19,6 +19,7 @@ class UpdateWebpageContent extends OrgAction
     use WithActionUpdate;
     use WithWebEditAuthorisation;
     use WebpageContentManagement;
+    use WithWebBlockReveal;
 
 
     public function handle(Webpage $webpage): Webpage
@@ -29,6 +30,8 @@ class UpdateWebpageContent extends OrgAction
 
         $fingerprintData = '';
         foreach ($webpage->webBlocks as $webBlock) {
+            $reveal = $this->getWebBlockReveal(data_get($webBlock->layout, 'reveal'));
+
             $fingerprintData .= hash(
                 'sha256',
                 serialize(
@@ -49,6 +52,7 @@ class UpdateWebpageContent extends OrgAction
                 'show'       => $webBlock->pivot->show,
                 'type'       => $webBlock->webBlockType->code,
                 'visibility' => ['in' => $webBlock->pivot->show_logged_in, 'out' => $webBlock->pivot->show_logged_out],
+                'reveal'     => $reveal,
                 'web_block'  => WebBlockResource::make($webBlock)->getArray(),
 
             ];
