@@ -249,6 +249,7 @@ const setError = (e) => {
 								class="h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none"
 								:alt="data.platform.type"
 								v-tooltip="data.platform.title || data.platform.name" />
+                            <span v-tooltip="'platform order id'" v-if="data.platform.order_id" class="text-light font-sm">{{ data.platform?.order_id }}</span>
 						</slot>
 
 						<slot name="afterTitle2" />

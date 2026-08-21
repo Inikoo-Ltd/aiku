@@ -1474,7 +1474,7 @@ const recalculateVat = async () => {
 
 // Section: Get shipment from Faire/Tiktok
 const getShipmentFromPlatform = (deliveryNote: {}) => {
-    
+
     const faire = {
         label: ctrans('Get shipment from Faire'),
         routeShipment: {
@@ -1494,7 +1494,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             }
         }
     }
-    
+
     if (props.external_shop?.engine_value === 'faire') {
         return faire
     } else if (props.external_shop?.engine_value === 'tiktok') {
@@ -1851,7 +1851,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
-                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 rounded min-w-52" 
+                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 rounded min-w-52"
                             :class="is_forbidden_billing ? 'bg-red-50 ring-red-300' : 'ring-gray-300'"
                         >
                             <div v-html="box_stats?.customer.addresses.billing.formatted_address"></div>
@@ -2041,7 +2041,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <Button @click="() => onClickPayRefund()" :label="ctrans('Refund money')"
                                         type="secondary" size="xxs" />
                                 </div>
-                                
+
 
                                 <div v-if="Number(box_stats.products.payment.pay_amount) > 0"
                                     class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
@@ -2279,7 +2279,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     <div class="font-semibold xmb-2 text-base">
                         {{ ctrans("Summary") }}
                     </div>
-                    
+
                     <div class="flex flex-col sm:flex-row items-center gap-2">
                         <div v-if="props.box_stats?.voucher"
                             class="flex items-center gap-x-1.5 rounded bg-indigo-50 px-2 py-1 text-xs text-indigo-700">
@@ -2611,8 +2611,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                                 'w-20 !px-1.5 !py-0 !text-sm !rounded !text-right',
                                                 ['dispatched'].some((item) => item == props.state) ? '!text-gray-500 !border-none' : ''
                                             ]"
-                                            :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null" 
-                                            :min="0" 
+                                            :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null"
+                                            :min="0"
                                             :readonly="['dispatched'].some((item) => item == props.state)"
                                         />
                                     </div>
