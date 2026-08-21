@@ -3187,6 +3187,48 @@ test('replacing a waiting gift keeps the replacement free', function () {
         ->and((float)$replacement->quantity_bonus)->toBe(1.0);
 });
 
+test('a replacement added while the note is being picked is just another line to pick', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_waiting_crm' => 1, 'quantity_picked' => 0, 'locked_at' => null]);
+    $this->product2->orgStocks()->syncWithoutDetaching([$item->org_stock_id => ['quantity' => 1]]);
+
+    \App\Actions\Ordering\WaitingCrmItem\ReplaceWaitingCrmItemProduct::run($item->refresh(), $this->user, [
+        'quantity' => 1,
+        'products' => [['id' => $this->product2->id, 'quantity' => 1]],
+    ]);
+
+    $replacement = $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->orderByDesc('id')->first();
+
+    expect($replacement->state)->toBe(DeliveryNoteItemStateEnum::HANDLING)
+        ->and((float)$replacement->quantity_waiting_warehouse)->toBe(0.0)
+        ->and($replacement->has_waiting_warehouse)->toBeFalse();
+});
+
+test('a replacement added to a note nobody is picking waits for the warehouse', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_waiting_crm' => 1, 'quantity_picked' => 0, 'locked_at' => null]);
+    $this->product2->orgStocks()->syncWithoutDetaching([$item->org_stock_id => ['quantity' => 1]]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+
+    \App\Actions\Ordering\WaitingCrmItem\ReplaceWaitingCrmItemProduct::run($item->refresh(), $this->user, [
+        'quantity' => 1,
+        'products' => [['id' => $this->product2->id, 'quantity' => 1]],
+    ]);
+
+    $replacement = $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->orderByDesc('id')->first();
+
+    expect($replacement->state)->toBe(DeliveryNoteItemStateEnum::HANDLING_BLOCKED)
+        ->and($replacement->has_waiting_warehouse)->toBeTrue();
+});
+
 test('picking from waiting keeps the line at its discounted price', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
