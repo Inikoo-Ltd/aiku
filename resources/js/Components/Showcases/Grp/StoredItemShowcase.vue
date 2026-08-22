@@ -14,6 +14,7 @@ import JsBarcode from 'jsbarcode'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from 'chart.js'
 import { routeType } from "@/types/route";
 import Icon from '@/Components/Icon.vue'
+import Tag from '@/Components/Tag.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { printBarcode } from '@/Composables/printBarcode'
@@ -260,6 +261,15 @@ onMounted(() => {
                                 <Icon :data="pallet.state_icon" />
                                 <span class="truncate font-medium text-gray-700">{{ pallet.reference || trans('To be delivered') }}</span>
                                 <span v-if="pallet.location?.code" class="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{{ pallet.location.code }}</span>
+                                <Tag v-if="pallet.is_virtual" :theme="11" size="xs" noHoverColor :closeButton="false"
+                                    v-tooltip="trans('This is a virtual pallet')" class="shrink-0">
+                                    <template #label>
+                                        <div class="whitespace-nowrap">
+                                            <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
+                                            {{ trans("Virtual pallet") }}
+                                        </div>
+                                    </template>
+                                </Tag>
                             </div>
                             <div class="flex shrink-0 items-center gap-x-3">
                                 <span class="text-xs text-gray-400">{{ pallet.state_label }}</span>

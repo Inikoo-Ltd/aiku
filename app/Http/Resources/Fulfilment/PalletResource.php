@@ -69,6 +69,7 @@ class PalletResource extends JsonResource
                 ] : null,
             'state'                 => $this->state,
             'status'                => $this->status,
+            'is_virtual'            => $pallet->is_virtual,
             'notes'                 => $this->notes ?? '',
             'rental_id'             => $this->rental_id,
             'status_label'          => $pallet->status->labels()[$pallet->status->value],

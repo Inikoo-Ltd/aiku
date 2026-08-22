@@ -118,6 +118,7 @@ class ShowRetinaPallet extends RetinaAction
             'Storage/RetinaPallet',
             [
                 'title'                         => __('Goods'),
+                'is_virtual'                    => (bool) $pallet->is_virtual,
                 'breadcrumbs'                   => $this->getBreadcrumbs(
                     $pallet,
                 ),
