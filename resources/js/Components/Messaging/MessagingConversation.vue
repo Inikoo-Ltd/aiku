@@ -146,6 +146,14 @@ watch(
     }
 )
 
+watch(
+    () => store.notesByUlid[props.conversation.ulid],
+    () => {
+        if (isNearBottom) scrollBottom()
+    },
+    { deep: true }
+)
+
 onMounted(scrollBottom)
 
 let typingTimeout: ReturnType<typeof setTimeout> | null = null
@@ -290,6 +298,14 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 </div>
 
                 <div class="text-xxs text-gray-400 mt-0.5">{{ useFormatTime(message.created_at, { formatTime: 'hm' }) }}</div>
+            </div>
+
+            <div
+                v-for="note in store.notesByUlid[conversation.ulid]"
+                :key="note.id"
+                class="text-center text-xxs text-gray-500 italic py-1 opacity-60"
+            >
+                {{ note.text }}
             </div>
         </div>
 

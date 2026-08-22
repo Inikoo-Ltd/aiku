@@ -7,6 +7,7 @@
 import { defineStore } from "pinia"
 import axios from "axios"
 import { usePage } from "@inertiajs/vue3"
+import { trans } from "laravel-vue-i18n"
 import { useLayoutStore } from "@/Stores/layout"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
 
@@ -62,12 +63,19 @@ interface WindowState {
     y: number | null
 }
 
+interface ArchivedNote {
+    id: string
+    text: string
+    created_at: string
+}
+
 const bubblePositionKey = (ulid: string) => `staff-chat-bubble-${ulid}`
 
 export const useStaffMessaging = defineStore("staff-messaging", {
     state: () => ({
         conversations: [] as StaffConversation[],
         messagesByUlid: {} as Record<string, StaffMessage[]>,
+        notesByUlid: {} as Record<string, ArchivedNote[]>,
         openWindows: [] as WindowState[],
         typingByUlid: {} as Record<string, { user_name: string; expiresAt: number }>,
         loadingMessages: {} as Record<string, boolean>,
@@ -288,6 +296,18 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                     delete this.typingByUlid[payload.conversation_ulid]
                 }
             }, 3000)
+        },
+
+        handleArchivedByOther(e: { conversation_ulid: string; user_id: number; user_name: string }) {
+            const note: ArchivedNote = {
+                id: 'note-' + Date.now(),
+                text: e.user_name + ' ' + trans('has closed the chat for now'),
+                created_at: new Date().toISOString(),
+            }
+            if (!this.notesByUlid[e.conversation_ulid]) {
+                this.notesByUlid[e.conversation_ulid] = []
+            }
+            this.notesByUlid[e.conversation_ulid].push(note)
         },
     },
 })
