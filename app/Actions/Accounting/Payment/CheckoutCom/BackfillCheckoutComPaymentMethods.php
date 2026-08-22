@@ -14,6 +14,7 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\Accounting\PaymentGatewayLog;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\Aurora\FetchAuroraPayment;
@@ -105,13 +106,23 @@ class BackfillCheckoutComPaymentMethods
 
         ksort($byMethod);
         $command->table(['method', 'payments'], collect($byMethod)->map(fn ($n, $m) => [$m, $n])->values()->all());
-        $command->info(($commit ? 'Updated' : 'Would update')." {$counts['updated']}, unchanged {$counts['unchanged']}, errors {$counts['error']}");
+        $command->info(($commit ? 'Updated' : 'Would update')." {$counts['updated']}, unchanged {$counts['unchanged']}, errors {$counts['error']}".($aurora ? '' : ", {$this->fromWebhookLog} sources taken from stored webhooks instead of the API"));
 
         return 0;
     }
 
     private function sourceFromCheckoutCom(Payment $payment, array &$accountShops, Command $command): ?array
     {
+        $loggedSource = PaymentGatewayLog::where('gateway_payment_id', $payment->reference)
+            ->whereNotNull('payload->data->source->type')
+            ->latest('id')
+            ->value('payload');
+        if ($loggedSource) {
+            $this->fromWebhookLog++;
+
+            return Arr::get($loggedSource, 'data.source');
+        }
+
         $paymentAccountShop = $this->paymentAccountShopFor($payment, $accountShops);
         if (!$paymentAccountShop) {
             $command->warn("Payment {$payment->id}: no active checkout.com account shop");
@@ -149,6 +160,8 @@ class BackfillCheckoutComPaymentMethods
     private ?int $auroraOrganisationId = null;
 
     private int $sleepMicroseconds = 250000;
+
+    private int $fromWebhookLog = 0;
 
     private function paymentAccountShopFor(Payment $payment, array &$cache): ?PaymentAccountShop
     {
