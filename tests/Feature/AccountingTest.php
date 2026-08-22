@@ -2868,6 +2868,7 @@ describe('payment method from checkout.com source', function () {
             ->and(StorePayment::methodFromSource(['type' => 'paypal'], $checkout))->toBe(['method' => 'paypal', 'sub_method' => null])
             ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'VISA'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'visa'])
             ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'American Express'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'american express'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'AMEX'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'american express'])
             ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'VISA', 'card_wallet_type' => 'applepay'], $checkout))->toBe(['method' => 'applepay', 'sub_method' => 'visa'])
             ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => ''], $checkout))->toBe(['method' => 'card', 'sub_method' => null])
             ->and(StorePayment::methodFromSource([], $checkout))->toBe(['method' => 'checkout', 'sub_method' => null])

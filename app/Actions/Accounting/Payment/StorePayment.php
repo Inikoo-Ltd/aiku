@@ -73,9 +73,11 @@ class StorePayment extends OrgAction
         $method    = Arr::get($source, 'card_wallet_type') ?: Arr::get($source, 'type') ?: $paymentAccount->type->value;
         $subMethod = Arr::get($source, 'scheme') ?: null;
 
+        $subMethod = $subMethod ? strtolower(trim($subMethod)) : null;
+
         return [
             'method'     => strtolower(trim($method)),
-            'sub_method' => $subMethod ? strtolower(trim($subMethod)) : null,
+            'sub_method' => $subMethod === 'amex' ? 'american express' : $subMethod,
         ];
     }
 
