@@ -61,11 +61,8 @@ const showEmojiPicker = ref(false)
 const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
 
 const quickReplies = [
-    trans("On my way"),
     trans("Done"),
-    trans("Please check"),
-    trans("Can you help?"),
-    trans("Where is it?"),
+    trans("Help?"),
     trans("Call me"),
     trans("OK"),
     trans("Thanks"),
