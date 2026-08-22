@@ -134,9 +134,6 @@ onUnmounted(() => {
 
         <!-- COLLAPSED: avatar rail -->
         <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center gap-y-2 pt-3 overflow-y-auto custom-hide-scrollbar">
-            <button class="h-9 w-9 rounded-full flex items-center justify-center text-[#6272a4] hover:bg-[#44475a] hover:text-[#f8f8f2]" @click="openSearch" v-tooltip="trans('Search')">
-                <FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
-            </button>
             <button
                 v-for="coworker in onlineCoworkers"
                 :key="'rail-on-' + coworker.id"
