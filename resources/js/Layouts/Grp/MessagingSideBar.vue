@@ -93,6 +93,13 @@ const closeSearch = () => {
 
 const isOnline = (id: number) => !!useLiveUsers().liveUsers[id]
 
+const getCurrentPage = (coworkerId: number) => useLiveUsers().liveUsers[coworkerId]?.current_page
+
+const getTooltipName = (name: string, coworkerId: number) => {
+    const page = getCurrentPage(coworkerId)
+    return page?.label ? `${name} · ${page.label}` : name
+}
+
 const byName = (a: StaffCoworker, b: StaffCoworker) => a.name.localeCompare(b.name)
 
 const teamCoworkers = computed(() => {
@@ -342,7 +349,8 @@ onUnmounted(() => {
                 :key="'rail-' + item.coworker.id"
                 class="relative h-7 w-7 rounded-full overflow-hidden bg-[#44475a] shrink-0"
                 :class="item.online ? '' : 'opacity-40'"
-                v-tooltip="item.coworker.name"
+                :title="getTooltipName(item.coworker.name, item.coworker.id)"
+                v-tooltip
                 @click="openUser(item.coworker.id)">
                 <Image v-if="item.coworker.avatar" :src="item.coworker.avatar" :alt="item.coworker.name" image-cover />
                 <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
@@ -397,7 +405,17 @@ onUnmounted(() => {
                         <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
                         <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="[presence(coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
                     </div>
-                    <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                    <div class="flex-1 flex flex-col min-w-0">
+                        <span class="text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                        <template v-if="getCurrentPage(coworker.id)?.label">
+                            <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[#8b91ad] truncate hover:underline">
+                                {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
+                            </a>
+                            <span v-else class="text-xxs text-[#8b91ad] truncate">
+                                {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
+                            </span>
+                        </template>
+                    </div>
                     <span role="button" tabindex="0" class="shrink-0" @click="toggleTeam(coworker, $event)" v-tooltip="coworker.in_team ? trans('In my team') : trans('Add to my team')">
                         <FontAwesomeIcon :icon="coworker.in_team ? 'fas fa-star' : 'fal fa-star'" :class="coworker.in_team ? 'text-[#f1fa8c]' : 'text-[#6272a4]'" fixed-width aria-hidden="true" />
                     </span>
@@ -423,7 +441,17 @@ onUnmounted(() => {
                     <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
                     <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="[presence(coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
                 </div>
-                <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                <div class="flex-1 flex flex-col min-w-0">
+                    <span class="text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                    <template v-if="getCurrentPage(coworker.id)?.label">
+                        <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[#8b91ad] truncate hover:underline">
+                            {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
+                        </a>
+                        <span v-else class="text-xxs text-[#8b91ad] truncate">
+                            {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
+                        </span>
+                    </template>
+                </div>
                 <span v-if="unreadForUser(coworker.id) > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
                 <span role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click.stop="store.openWithUser(coworker.id)" v-tooltip="trans('Message')">
                     <FontAwesomeIcon icon="fal fa-comment" class="text-[#6272a4] hover:text-[#f8f8f2]" fixed-width aria-hidden="true" />
@@ -478,7 +506,17 @@ onUnmounted(() => {
                     <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
                     <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="[presence(coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
                 </div>
-                <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                <div class="flex-1 flex flex-col min-w-0">
+                    <span class="text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                    <template v-if="getCurrentPage(coworker.id)?.label">
+                        <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[#8b91ad] truncate hover:underline">
+                            {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
+                        </a>
+                        <span v-else class="text-xxs text-[#8b91ad] truncate">
+                            {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
+                        </span>
+                    </template>
+                </div>
                 <span v-if="unreadForUser(coworker.id) > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
                 <span class="shrink-0" @click.stop="store.openWithUser(coworker.id)" v-tooltip="trans('Message')">
                     <FontAwesomeIcon icon="fal fa-comment" class="text-[#6272a4] hover:text-[#f8f8f2]" fixed-width aria-hidden="true" />
