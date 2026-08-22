@@ -151,7 +151,7 @@ const filteredPeopleList = computed(() => {
 const peopleFilterHeader = computed(() => {
     if (peopleFilter.value === "all") return `${trans('Online now')} (${filteredPeopleList.value.length})`
     if (peopleFilter.value === "org") return `${trans('Online in my organisation')} (${filteredPeopleList.value.length})`
-    if (peopleFilter.value === "team") return `${trans('My team')} (${teamOnlineCount.value} ${trans('online')})`
+    if (peopleFilter.value === "team") return `${trans('My team')} (${teamOnlineCount.value}/${teamCoworkers.value.length} ${trans('online')})`
     return ""
 })
 
@@ -351,7 +351,7 @@ onUnmounted(() => {
 
             <template v-else-if="!peopleFilter">
             <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6272a4]">
-                <span>{{ trans('My team') }} ({{ teamOnlineCount }} {{ trans('online') }})</span>
+                <span>{{ trans('My team') }} ({{ teamOnlineCount }}/{{ teamCoworkers.length }} {{ trans('online') }})</span>
                 <button class="shrink-0 text-[#bd93f9] hover:text-[#f8f8f2]" @click="isManageTeamOpen = true" v-tooltip="trans('Manage my team')">
                     <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
                 </button>
