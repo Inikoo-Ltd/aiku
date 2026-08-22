@@ -40,6 +40,8 @@ const props = defineProps<{
 	registration_settings: {
 		marketing_opt_in_label: string
 		marketing_opt_in_default: boolean
+		whatsapp_newsletter_label: string
+		whatsapp_newsletter_default: boolean
 		company_name_label: string,
         company_name_placeholder: string,
         tax_number_is_required: boolean
@@ -65,6 +67,7 @@ const form = useForm({
 	contact_address: {},
 	poll_replies: initialPollReplies,
 	is_opt_in: props.registration_settings.marketing_opt_in_default,
+	is_whatsapp_newsletter_opt_in: props.registration_settings.whatsapp_newsletter_default ?? false,
 	interest: [],
     tax_number: ''
 
@@ -288,7 +291,15 @@ const isUserInputPassed = (dataToCheck: {}) => {
 									{{ registration_settings?.marketing_opt_in_label ?? trans("Opt in to our newsletter for updates and offers.") }}
 								</label>
 							</div>
-							
+
+							<!-- Opt in WhatsApp newsletter -->
+							<div class="flex xitems-center gap-2 sm:col-span-6">
+								<Checkbox v-model="form.is_whatsapp_newsletter_opt_in" inputId="opt_in_whatsapp_newsletter" name="opt_in_whatsapp_newsletter" binary class="mt-0.5" />
+								<label for="opt_in_whatsapp_newsletter">
+									{{ registration_settings?.whatsapp_newsletter_label ?? trans("Opt in to receive our newsletter and offers via WhatsApp.") }}
+								</label>
+							</div>
+
 							<!-- Opt in newsletter -->
 							<div class="flex xitems-center gap-2 sm:col-span-6" :class="is_error_tnc ? 'errorShake' : ''">
 								<Checkbox v-model="is_agree_tnc" @update:model-value="() => is_error_tnc = false" inputId="is_agree_tnc" name="is_agree_tnc" binary class="mt-0.5" />

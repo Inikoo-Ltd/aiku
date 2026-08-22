@@ -7,6 +7,8 @@ use App\Actions\Chat\ChatSession\UI\ShowOrgChatConversation;
 use App\Actions\Chat\ChatSession\UI\ShowOrgChatInbox;
 use App\Actions\Chat\ChatSession\UI\ShowShopChatConversations;
 use App\Actions\Chat\ChatSession\UI\ShowShopChatDashboard;
+use App\Actions\Chat\Whatsapp\Templates\SyncWhatsappMessageTemplates;
+use App\Actions\Chat\Whatsapp\Templates\UI\IndexWhatsappMessageTemplates;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowShopChatDashboard::class)->name('dashboard');
@@ -16,3 +18,5 @@ Route::get('/agents', ShowShopAgents::class)->name('agents.show');
 Route::get('/conversations/export', [ExportChatConversations::class, 'inShop'])->name('conversations.export');
 Route::get('/conversations', ShowShopChatConversations::class)->name('conversations.show');
 Route::get('/conversations/{chatSession}', [ShowOrgChatConversation::class, 'inShop'])->name('conversations.detail');
+Route::get('/whatsapp-templates', [IndexWhatsappMessageTemplates::class, 'inShop'])->name('whatsapp_templates.index');
+Route::post('/whatsapp-templates/sync', SyncWhatsappMessageTemplates::class)->name('whatsapp_templates.sync');

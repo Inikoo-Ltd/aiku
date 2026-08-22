@@ -49,6 +49,10 @@ class RegisterCustomer extends OrgAction
             data_set($modelData, 'email_subscriptions.is_subscribed_to_marketing', true);
         }
 
+        if (Arr::pull($modelData, 'is_whatsapp_newsletter_opt_in', false)) {
+            data_set($modelData, 'email_subscriptions.is_subscribed_to_whatsapp_newsletter', true);
+        }
+
         list($customer, $webUser) = DB::transaction(function () use ($shop, $modelData, $password) {
             $customer = StoreCustomer::make()->action($shop, $modelData);
             $webUser  = StoreWebUser::make()->action($customer, [
