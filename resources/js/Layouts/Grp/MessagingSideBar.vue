@@ -230,6 +230,21 @@ onUnmounted(() => {
             <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span> {{ trans('team') }}</span>
         </div>
 
+        <!-- Internal chats trigger -->
+        <div
+            class="cursor-pointer mb-1"
+            @click="openInternalChats">
+            <div v-if="layout.messagingSidebar.show" class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left">
+                <FontAwesomeIcon icon="fal fa-comments" class="text-[#6272a4]" fixed-width aria-hidden="true" />
+                <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ trans('Internal chats') }}</span>
+                <span v-if="store.totalUnread > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ store.totalUnread > 99 ? '99+' : store.totalUnread }}</span>
+            </div>
+            <div v-else class="relative h-9 w-9 mx-auto rounded flex items-center justify-center text-[#6272a4] hover:text-[#f8f8f2]">
+                <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
+                <span v-if="store.totalUnread > 0" class="absolute -top-0.5 -right-0.5 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ store.totalUnread > 99 ? '99+' : store.totalUnread }}</span>
+            </div>
+        </div>
+
         <!-- COLLAPSED: avatar rail -->
         <div v-if="!layout.messagingSidebar.show" class="flex-1 flex flex-col items-center gap-y-3 pt-4 overflow-y-auto custom-hide-scrollbar">
             <button
@@ -395,22 +410,8 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <!-- Bottom-pinned: internal + customer chats triggers -->
+        <!-- Bottom-pinned: customer chats trigger -->
         <div class="mt-auto shrink-0 border-t border-[#44475a] pt-3 pb-8">
-            <div
-                class="cursor-pointer mb-1"
-                @click="openInternalChats">
-                <div v-if="layout.messagingSidebar.show" class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left">
-                    <FontAwesomeIcon icon="fal fa-comments" class="text-[#6272a4]" fixed-width aria-hidden="true" />
-                    <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ trans('Internal chats') }}</span>
-                    <span v-if="store.totalUnread > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ store.totalUnread > 99 ? '99+' : store.totalUnread }}</span>
-                </div>
-                <div v-else class="relative h-9 w-9 mx-auto rounded flex items-center justify-center text-[#6272a4] hover:text-[#f8f8f2]">
-                    <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
-                    <span v-if="store.totalUnread > 0" class="absolute -top-0.5 -right-0.5 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ store.totalUnread > 99 ? '99+' : store.totalUnread }}</span>
-                </div>
-            </div>
-
             <FooterMessage v-if="layout?.user?.is_agent" in-rail />
         </div>
     </div>
