@@ -79,7 +79,7 @@ onMounted(() => {
             @input="onSearchInput" />
 
         <div class="text-xs text-gray-400 mb-1">{{ trans('In my team') }} ({{ teamMembers.length }})</div>
-        <div class="max-h-52 overflow-y-auto mb-4 divide-y divide-gray-100">
+        <div class="h-32 overflow-y-auto mb-4 divide-y divide-gray-100">
             <div v-for="coworker in teamMembers" :key="'team-' + coworker.id" class="flex items-center gap-x-2 py-2">
                 <div class="relative h-6 w-6 rounded-full overflow-hidden bg-gray-100 shrink-0">
                     <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
@@ -95,7 +95,7 @@ onMounted(() => {
         </div>
 
         <div class="text-xs text-gray-400 mb-1">{{ trans('Coworkers') }}</div>
-        <div class="max-h-52 overflow-y-auto divide-y divide-gray-100">
+        <div class="h-64 overflow-y-auto divide-y divide-gray-100">
             <div v-for="coworker in otherCoworkers" :key="'other-' + coworker.id" class="flex items-center gap-x-2 py-2">
                 <div class="relative h-6 w-6 rounded-full overflow-hidden bg-gray-100 shrink-0">
                     <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
