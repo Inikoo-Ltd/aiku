@@ -146,27 +146,22 @@ const onCheckActiveAnnouncements = async () => {
             route(
                 props.routes_list.fetch_active_announcements_route.name,
                 props.routes_list.fetch_active_announcements_route.parameters
-            )
+            ),
+            {
+                params: {
+                    position: announcementDataSettings.value.position,
+                    schedule_at: announcementData.schedule_at || undefined,
+                    schedule_finish_at: announcementData.schedule_finish_at || undefined,
+                    exclude: announcementData.ulid
+                }
+            }
         )
-        if (response.status !== 200) {
-            
-        }
-        console.log('Response axio qqqqs:', response.data)
         listActiveAnnouncements.value = (response.data.data || []).filter(
             (item: any) => item.ulid !== announcementData.ulid
         )
 
-        if (listActiveAnnouncements.value.find((item) =>  item.position === announcementDataSettings.value.position)) {
-            notify({
-                title: trans("Something went wrong"),
-                text: trans("Unable to publish, you have active announcements running."),
-                type: "error",
-            })
-        } else {
-            // Proceed to publish
-            if (props.onPublish) {
-                props.onPublish({ bodyToSend: { published_message: publishMessage.value } })
-            }
+        if (!canPublish.value && props.onPublish) {
+            props.onPublish({ bodyToSend: { published_message: publishMessage.value } })
         }
     } catch (error: any) {
         notify({
@@ -181,7 +176,7 @@ const onCheckActiveAnnouncements = async () => {
 const onPublishAnyway = () => {
     if (props.onPublish) {
         listActiveAnnouncements.value = []
-        props.onPublish({ bodyToSend: { published_message: publishMessage.value } })
+        props.onPublish({ bodyToSend: { published_message: publishMessage.value, supersede: true } })
     }
 }
 
@@ -561,7 +556,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                 <FontAwesomeIcon v-tooltip="trans('Warning')" icon="fas fa-exclamation-triangle" class="text-amber-700/50 absolute top-3 right-3 text-lg" fixed-width aria-hidden="true" />
 
                 <div class="font-medium">
-                    {{ trans("You have current :_count active announcements:", { _count: listActiveAnnouncements.length }) }}
+                    {{ trans("This spot is already taken during those dates by:") }}
                 </div>
 
                 <ul class="list-disc list-inside">
@@ -574,7 +569,11 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                 </ul>
 
                 <div class="mt-2 italic opacity-80 text-xs">
-                    {{ trans("If you want to publish anyway, those active announcements will be set to inactive") }}. <span @click="onPublishAnyway" class="cursor-pointer underline font-medium opacity-80 hover:opacity-100">Publish anyway</span>
+                    {{ announcementData.schedule_finish_at
+                        ? trans("You can pause it and let it come back by itself on :date.", { date: useFormatTime(announcementData.schedule_finish_at, { formatTime: 'hm' }) })
+                        : trans("You can pause it, but as your announcement has no finish date you will have to turn the other one back on yourself.") }}
+                    <span @click="onPublishAnyway" class="cursor-pointer underline font-medium opacity-80 hover:opacity-100">{{ trans("Pause it and publish mine") }}</span>
+                    {{ trans("or change your dates and publish again.") }}
                 </div>
             </div>
 

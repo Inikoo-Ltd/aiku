@@ -7,10 +7,12 @@ use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Snapshot;
 use App\Models\Traits\HasImage;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
@@ -36,6 +38,8 @@ use Spatie\MediaLibrary\HasMedia;
  * @property \Illuminate\Support\Carbon|null $schedule_at
  * @property \Illuminate\Support\Carbon|null $schedule_finish_at
  * @property AnnouncementStatusEnum $status
+ * @property int|null $paused_by_announcement_id
+ * @property \Illuminate\Support\Carbon|null $paused_until
  * @property array<array-key, mixed> $settings
  * @property string|null $compiled_layout
  * @property string|null $text
@@ -78,6 +82,7 @@ class Announcement extends Model implements HasMedia
         "closed_at"            => "datetime",
         "schedule_at"          => "datetime",
         "schedule_finish_at"   => "datetime",
+        "paused_until"         => "datetime",
         'state'                => AnnouncementStateEnum::class,
         'status'               => AnnouncementStatusEnum::class
     ];
@@ -88,6 +93,39 @@ class Announcement extends Model implements HasMedia
         'settings'               => '{}',
         'published_settings'     => '{}'
     ];
+
+    public function getPosition(): string
+    {
+        return $this->settings['position'] ?? 'top-bar';
+    }
+
+    /**
+     * Active announcements of the same website sharing this position whose live window overlaps
+     * the given one. A null $until means the window never ends.
+     */
+    public function scopeClashingWith(Builder $query, int $websiteId, string $position, Carbon $from, ?Carbon $until): Builder
+    {
+        $query
+            ->where('website_id', $websiteId)
+            ->where('status', AnnouncementStatusEnum::ACTIVE)
+            ->whereRaw("coalesce(settings->>'position', 'top-bar') = ?", [$position])
+            ->where(
+                fn ($query) => $query
+                    ->whereNull('schedule_finish_at')
+                    ->orWhere('schedule_finish_at', '>', $from)
+            );
+
+        if ($until) {
+            $query->whereRaw('coalesce(schedule_at, live_at, created_at) < ?', [$until]);
+        }
+
+        return $query;
+    }
+
+    public function pausedBy(): BelongsTo
+    {
+        return $this->belongsTo(Announcement::class, 'paused_by_announcement_id');
+    }
 
     public function extractSettings(array $data): array
     {
