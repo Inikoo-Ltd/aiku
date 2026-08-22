@@ -166,7 +166,7 @@ task('deploy:restart-owl', function () {
     // an unchanged process. Its own VersionDriftWatcher warns if this ever misses.
     $checksum = function (string $path): string {
         $cmd = 'find '.$path.'/vendor/nightowl/agent '.$path.'/config/nightowl.php'
-            .' -type f -exec sha1sum {} + 2>/dev/null | sort | sha1sum';
+            .' -type f -exec sha1sum {} + 2>/dev/null | cut -d" " -f1 | sort | sha1sum';
 
         try {
             return trim(run("bash -c '".$cmd."'"));
