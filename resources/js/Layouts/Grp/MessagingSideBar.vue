@@ -269,9 +269,6 @@ onUnmounted(() => {
                 <FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span>
             </div>
-            <button class="mt-1 text-[#6272a4] hover:text-[#f8f8f2]" v-tooltip="trans('Open messaging')" @click="openFullMessaging">
-                <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
-            </button>
         </div>
 
         <!-- EXPANDED: three counters -->
@@ -279,8 +276,18 @@ onUnmounted(() => {
             <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'all' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('all')"><FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('all') }}</span></span>
             <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'org' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('org')"><FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('org') }}</span></span>
             <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'team' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('team')"><FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('team') }}</span></span>
-            <button class="ml-auto text-[#6272a4] hover:text-[#f8f8f2]" v-tooltip="trans('Open messaging')" @click="openFullMessaging">
-                <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
+        </div>
+
+        <!-- Messaging button -->
+        <div v-if="!layout.messagingSidebar.show" class="py-2 border-b border-[#44475a] flex justify-center items-center">
+            <button class="h-9 w-9 flex items-center justify-center text-[#6272a4] hover:text-[#f8f8f2]" v-tooltip="trans('Open messaging')" @click="openFullMessaging">
+                <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
+            </button>
+        </div>
+        <div v-else class="py-2 border-b border-[#44475a] px-3">
+            <button class="w-full flex items-center gap-x-3 text-[#6272a4] hover:text-[#f8f8f2]" @click="openFullMessaging">
+                <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
+                <span class="text-xs text-[#f8f8f2]">{{ trans('Messaging') }}</span>
             </button>
         </div>
 
