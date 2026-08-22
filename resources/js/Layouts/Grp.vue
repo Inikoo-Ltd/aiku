@@ -265,7 +265,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
                 class="fixed top-[2.7rem] transition-all duration-200 ease-in-out"
                 :class="[
                     Object.values(layout.rightSidebar).some((value) => value.show)
-                        ? 'right-0 lg:w-[30%] xl:w-[20%]'
+                        ? (layout.messagingSidebar.show ? 'right-0 md:right-56' : 'right-0 md:right-12') + ' lg:w-[30%] xl:w-[20%]'
                         : '-right-44',
                 ]" />
         </Teleport>
