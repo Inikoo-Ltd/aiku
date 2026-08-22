@@ -1,0 +1,350 @@
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Fri, 22 Aug 2026 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2026, Raul A Perusquia Flores
+  -->
+
+<script setup lang="ts">
+import { computed, nextTick, onMounted, ref, watch } from "vue"
+import { usePage } from "@inertiajs/vue3"
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import Image from "@/Common/Components/Image.vue"
+import { useLiveUsers } from "@/Stores/active-users"
+import { useStaffMessaging, type StaffConversation, type StaffMessage } from "@/Stores/staff-messaging"
+import { useFormatTime } from "@/Composables/useFormatTime"
+
+library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip)
+
+const props = defineProps<{
+    conversation: StaffConversation
+    fullScreen?: boolean
+}>()
+
+const emit = defineEmits<{
+    close: []
+    minimise: []
+}>()
+
+const store = useStaffMessaging()
+const myId = computed(() => usePage().props?.auth?.user?.id)
+const myLanguageId = computed(() => usePage().props?.auth?.user?.language_id ?? null)
+
+const messages = computed(() => store.messagesByUlid[props.conversation.ulid] ?? [])
+const isOnline = computed(() =>
+    props.conversation.participants.some((p) => p.id !== myId.value && !!useLiveUsers().liveUsers[p.id])
+)
+const typingUser = computed(() => store.typingByUlid[props.conversation.ulid]?.user_name ?? null)
+
+const otherParticipants = computed(() => props.conversation.participants.filter((p) => p.id !== myId.value))
+const displayName = computed(() => props.conversation.name || otherParticipants.value.map((p) => p.name).join(", "))
+const displayAvatar = computed(() => otherParticipants.value[0]?.avatar ?? null)
+
+const newMessage = ref("")
+const pendingImage = ref<File | null>(null)
+const pendingImagePreview = ref<string | null>(null)
+const imageInput = ref<HTMLInputElement | null>(null)
+const parentMessage = ref<StaffMessage | null>(null)
+const showOriginal = ref<Record<number, boolean>>({})
+const messagesContainer = ref<HTMLElement | null>(null)
+const textarea = ref<HTMLTextAreaElement | null>(null)
+const activeReactionFor = ref<number | null>(null)
+const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
+
+const quickReplies = [
+    trans("On my way"),
+    trans("Done"),
+    trans("Please check"),
+    trans("Can you help?"),
+    trans("Where is it?"),
+    trans("Call me"),
+    trans("OK"),
+    trans("Thanks"),
+]
+
+const scrollBottom = () =>
+    nextTick(() => {
+        if (messagesContainer.value) {
+            messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+        }
+    })
+
+const autoResize = () => {
+    const el = textarea.value
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = Math.min(el.scrollHeight, 120) + "px"
+}
+
+const parentById = (id: number | null) => (id ? messages.value.find((m) => m.id === id) : null)
+
+const pickImage = () => imageInput.value?.click()
+
+const setPendingImage = (file: File | null) => {
+    if (pendingImagePreview.value) URL.revokeObjectURL(pendingImagePreview.value)
+    pendingImage.value = file
+    pendingImagePreview.value = file ? URL.createObjectURL(file) : null
+}
+
+const onImageSelect = (event: Event) => {
+    const file = (event.target as HTMLInputElement)?.files?.[0]
+    if (file) setPendingImage(file)
+    if (imageInput.value) imageInput.value.value = ""
+}
+
+const clearPendingImage = () => setPendingImage(null)
+
+const onPaste = (event: ClipboardEvent) => {
+    const file = Array.from(event.clipboardData?.files ?? []).find((f) => f.type.startsWith("image/"))
+    if (file) {
+        event.preventDefault()
+        setPendingImage(file)
+    }
+}
+
+const messageText = (message: StaffMessage) => {
+    if (!showOriginal.value[message.id] && myLanguageId.value && message.translations?.[myLanguageId.value]) {
+        return message.translations[myLanguageId.value]
+    }
+    return message.body
+}
+
+const hasTranslation = (message: StaffMessage) =>
+    !!(myLanguageId.value && message.translations?.[myLanguageId.value] && message.translations[myLanguageId.value] !== message.body)
+
+let isNearBottom = true
+const onScroll = () => {
+    const el = messagesContainer.value
+    if (!el) return
+    isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    if (el.scrollTop < 40) {
+        loadOlder()
+    }
+}
+
+let isLoadingOlder = false
+const loadOlder = async () => {
+    if (isLoadingOlder || !messages.value.length) return
+    isLoadingOlder = true
+    const el = messagesContainer.value
+    const prevHeight = el?.scrollHeight ?? 0
+    await store.loadMessages(props.conversation.ulid, messages.value[0].id)
+    nextTick(() => {
+        if (el) el.scrollTop = el.scrollHeight - prevHeight
+    })
+    isLoadingOlder = false
+}
+
+watch(
+    () => messages.value.length,
+    () => {
+        if (isNearBottom) scrollBottom()
+    }
+)
+
+onMounted(scrollBottom)
+
+let typingTimeout: ReturnType<typeof setTimeout> | null = null
+const handleTypingInput = () => {
+    autoResize()
+    if (typingTimeout) return
+    window.Echo.join("grp.live.users").whisper("staffTyping", {
+        conversation_ulid: props.conversation.ulid,
+        user_id: myId.value,
+        user_name: usePage().props?.auth?.user?.username,
+    })
+    typingTimeout = setTimeout(() => {
+        typingTimeout = null
+    }, 2000)
+}
+
+const setReply = (message: StaffMessage) => {
+    parentMessage.value = message
+    textarea.value?.focus()
+}
+
+const clearReply = () => {
+    parentMessage.value = null
+}
+
+const sendCurrent = async () => {
+    const body = newMessage.value.trim()
+    if (!body && !pendingImage.value) return
+    newMessage.value = ""
+    const image = pendingImage.value
+    clearPendingImage()
+    nextTick(autoResize)
+    await store.send(props.conversation.ulid, body, parentMessage.value?.id ?? null, image)
+    parentMessage.value = null
+}
+
+const sendQuickReply = async (text: string) => {
+    await store.send(props.conversation.ulid, text, parentMessage.value?.id ?? null)
+    parentMessage.value = null
+}
+
+const onEnter = (event: KeyboardEvent) => {
+    if (event.shiftKey) return
+    event.preventDefault()
+    sendCurrent()
+}
+
+const toggleReaction = async (message: StaffMessage, emoji: string) => {
+    activeReactionFor.value = null
+    await store.toggleReaction(message.id, emoji)
+}
+
+const reactionEntries = (message: StaffMessage) => Object.entries(message.reactions ?? {})
+const hasMyReaction = (message: StaffMessage, emoji: string) =>
+    (message.reactions?.[emoji] ?? []).includes(myId.value)
+</script>
+
+<template>
+    <div class="flex flex-col bg-white text-gray-900 text-left h-full" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
+        <!-- Header -->
+        <div class="flex items-center gap-x-2 px-3 py-2 border-b border-gray-200 bg-gray-50" :class="fullScreen ? 'shrink-0' : 'rounded-t-lg'">
+            <button v-if="fullScreen" class="p-2 -ml-2 text-gray-600" @click="emit('close')">
+                <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
+            </button>
+            <div class="relative h-7 w-7 rounded-full overflow-hidden bg-gray-200 shrink-0">
+                <Image v-if="displayAvatar" :src="displayAvatar" :alt="displayName" image-cover />
+                <span v-else class="flex items-center justify-center h-full text-xs text-gray-600">{{ displayName?.[0] }}</span>
+                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-white" :class="isOnline ? 'bg-green-500' : 'bg-gray-400'" />
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium truncate">{{ displayName }}</div>
+                <div class="text-xs text-gray-500 h-4">
+                    <span v-if="typingUser">{{ typingUser }} {{ trans('is typing…') }}</span>
+                </div>
+            </div>
+            <button v-if="!fullScreen" class="p-2 text-gray-500 hover:text-gray-800" @click="emit('minimise')">
+                <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
+            </button>
+            <button class="p-2 text-gray-500 hover:text-gray-800" @click="emit('close')">
+                <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+            </button>
+        </div>
+
+        <!-- Messages -->
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-2" @scroll="onScroll">
+            <div
+                v-for="message in messages"
+                :key="message.id"
+                class="group flex flex-col"
+                :class="message.user_id === myId ? 'items-end' : 'items-start'"
+            >
+                <div v-if="parentById(message.parent_id)" class="max-w-[80%] mb-0.5 px-2 py-1 rounded bg-gray-100 text-xxs text-gray-500 border-l-2 border-gray-300">
+                    <FontAwesomeIcon icon="fal fa-quote-left" class="mr-1" fixed-width aria-hidden="true" />
+                    {{ parentById(message.parent_id)?.body }}
+                </div>
+
+                <div class="flex items-end gap-x-1" :class="message.user_id === myId ? 'flex-row-reverse' : ''">
+                    <div
+                        class="relative max-w-[80%] px-3 py-2 rounded-lg text-sm"
+                        :class="message.user_id === myId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'"
+                        @mouseenter="!fullScreen && (activeReactionFor = message.id)"
+                        @mouseleave="!fullScreen && (activeReactionFor = null)"
+                        @click="fullScreen && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
+                    >
+                        <div v-if="conversation.type === 'group' && message.user_id !== myId" class="text-xxs opacity-70 mb-0.5">
+                            {{ message.user_name }}
+                        </div>
+                        <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
+                        <div v-if="messageText(message)" class="whitespace-pre-wrap break-words">{{ messageText(message) }}</div>
+                        <button
+                            v-if="hasTranslation(message)"
+                            class="text-xxs underline opacity-70 mt-1"
+                            :class="message.user_id === myId ? 'text-indigo-100' : 'text-gray-500'"
+                            @click="showOriginal[message.id] = !showOriginal[message.id]"
+                        >
+                            {{ showOriginal[message.id] ? trans('translated') : trans('original') }}
+                        </button>
+
+                        <div v-if="activeReactionFor === message.id" class="absolute -top-9 flex gap-x-1 bg-white border border-gray-200 rounded-full shadow px-2 py-1 z-10" :class="message.user_id === myId ? 'right-0' : 'left-0'">
+                            <button v-for="emoji in REACTION_EMOJIS" :key="emoji" class="text-base leading-none p-1" @click="toggleReaction(message, emoji)">
+                                {{ emoji }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <button class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="setReply(message)">
+                        {{ trans('reply') }}
+                    </button>
+                </div>
+
+                <div v-if="reactionEntries(message).length" class="flex gap-x-1 mt-0.5">
+                    <span
+                        v-for="[emoji, userIds] in reactionEntries(message)"
+                        :key="emoji"
+                        class="text-xxs px-1.5 py-0.5 rounded-full border flex items-center gap-x-0.5"
+                        :class="hasMyReaction(message, emoji) ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50 border-gray-200'"
+                    >
+                        {{ emoji }} {{ (userIds as number[]).length }}
+                    </span>
+                </div>
+
+                <div class="text-xxs text-gray-400 mt-0.5">{{ useFormatTime(message.created_at, { formatTime: 'hm' }) }}</div>
+            </div>
+        </div>
+
+        <!-- Composer -->
+        <div class="border-t border-gray-200 px-2 pt-2 shrink-0" :style="fullScreen ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}">
+            <div v-if="parentMessage" class="flex items-center justify-between px-2 py-1 mb-1 rounded bg-gray-100 text-xs text-gray-600">
+                <span class="truncate">{{ trans('Replying to') }}: {{ parentMessage.body }}</span>
+                <button class="ml-2 shrink-0" @click="clearReply">
+                    <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+
+            <div class="flex gap-x-1.5 overflow-x-auto pb-1.5 -mx-1 px-1">
+                <button
+                    v-for="reply in quickReplies"
+                    :key="reply"
+                    class="shrink-0 px-3 py-1.5 rounded-full border border-gray-300 text-xs text-gray-700 hover:bg-gray-100 whitespace-nowrap"
+                    @click="sendQuickReply(reply)"
+                >
+                    {{ reply }}
+                </button>
+            </div>
+
+            <div v-if="pendingImagePreview" class="relative inline-block mb-1.5">
+                <img :src="pendingImagePreview" class="h-16 w-16 object-cover rounded border border-gray-200" />
+                <button class="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-gray-800 text-white flex items-center justify-center" @click="clearPendingImage">
+                    <FontAwesomeIcon icon="fal fa-times" size="xs" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+
+            <div class="flex items-end gap-x-2 pb-2">
+                <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
+                <button
+                    class="shrink-0 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                    :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
+                    @click="pickImage"
+                >
+                    <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+                </button>
+                <textarea
+                    ref="textarea"
+                    v-model="newMessage"
+                    rows="1"
+                    class="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    :class="fullScreen ? 'min-h-[44px] text-base' : 'text-sm'"
+                    :placeholder="trans('Write a message…')"
+                    @input="handleTypingInput"
+                    @keydown.enter="onEnter"
+                    @paste="onPaste"
+                />
+                <button
+                    class="shrink-0 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 disabled:opacity-40"
+                    :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
+                    :disabled="!newMessage.trim() && !pendingImage"
+                    @click="sendCurrent"
+                >
+                    <FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+        </div>
+    </div>
+</template>

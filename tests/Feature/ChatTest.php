@@ -2197,3 +2197,78 @@ it('can render chat session detail', function () {
             ->has('messages');
     });
 });
+
+describe('staff messaging', function () {
+    beforeEach(function () {
+        $this->otherUser = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+        if ($this->otherUser->group_id !== $this->user->group_id) {
+            $this->otherUser->update(['group_id' => $this->user->group_id]);
+        }
+    });
+
+    test('dm is created once and reused', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        $first  = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        $second = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->otherUser, ['user_ids' => [$this->user->id]]);
+
+        expect($first->id)->toBe($second->id)
+            ->and($first->type)->toBe('dm')
+            ->and($first->participants()->count())->toBe(2);
+    });
+
+    test('message is sent, counted unread for the other participant, then read', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => '<b>hello</b> there']);
+
+        Event::assertDispatched(\App\Events\StaffMessageSent::class);
+        expect($conversation->messages()->first()->body)->toBe('hello there');
+
+        $mine   = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id);
+        $theirs = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->otherUser)->firstWhere('id', $conversation->id);
+        expect((int) $mine->unread_count)->toBe(0)->and((int) $theirs->unread_count)->toBe(1);
+
+        \App\Actions\Chat\Staff\MarkStaffConversationRead::run($conversation, $this->otherUser);
+        $theirs = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->otherUser)->firstWhere('id', $conversation->id);
+        expect((int) $theirs->unread_count)->toBe(0);
+    });
+
+    test('reaction toggles on and off', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'react']);
+
+        \App\Actions\Chat\Staff\ToggleStaffMessageReaction::run($message, $this->otherUser, '👍');
+        expect($message->reactions()->count())->toBe(1);
+        \App\Actions\Chat\Staff\ToggleStaffMessageReaction::run($message, $this->otherUser, '👍');
+        expect($message->reactions()->count())->toBe(0);
+    });
+
+    test('image only message stores media', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+
+        $response = actingAs($this->user)
+            ->post(route('grp.chat.staff.conversations.messages.store', $conversation), [
+                'image' => \Illuminate\Http\UploadedFile::fake()->image('screenshot.png', 40, 40),
+            ]);
+        $response->assertSuccessful();
+        expect($response->json('data.image'))->not->toBeNull()
+            ->and($response->json('data.body'))->toBe('');
+    });
+
+    test('non participant is rejected by the message endpoint', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        $stranger     = User::factory()->create(['group_id' => $this->user->group_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+
+        actingAs($stranger)
+            ->postJson(route('grp.chat.staff.conversations.messages.store', $conversation), ['body' => 'intrude'])
+            ->assertForbidden();
+    });
+});

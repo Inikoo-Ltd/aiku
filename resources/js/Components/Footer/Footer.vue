@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import FooterActiveUsers from '@/Components/Footer/FooterActiveUsers.vue'
+import MessagingDock from '@/Components/Messaging/MessagingDock.vue'
 import FooterLanguage from '@/Components/Footer/FooterLanguage.vue'
 import FooterCurrency from '@/Components/Footer/FooterCurrency.vue'
 import { faHeart, faComputerClassic } from '@fas'
@@ -77,7 +77,7 @@ const deploymentTooltip = computed(() => {
                 </div>
                <!--  <FooterCurrency /> -->
                 <FooterLanguage />
-                <FooterActiveUsers />
+                <MessagingDock />
                 <FooterMessage v-if="layout?.user?.is_agent" />
             </div>
         </div>

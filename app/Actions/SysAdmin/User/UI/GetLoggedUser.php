@@ -35,6 +35,7 @@ class GetLoggedUser
             'id'           => $user->id,
             'username'     => $user->username,
             'contact_name' => (string) $user->contact_name,
+            'language_id'  => $user->language_id,
             'email'        => $user->email,
             'is_agent'     => $isAgent,
             'agent_id'     => $user->chatAgent?->id,

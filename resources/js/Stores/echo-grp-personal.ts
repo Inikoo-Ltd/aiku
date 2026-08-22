@@ -8,6 +8,7 @@ import { useMilisecondToTime } from "@/Composables/useFormatTime"
 import { differenceInMilliseconds } from 'date-fns'
 import { defineStore } from "pinia";
 import { useLayoutStore } from "@/Stores/layout"
+import { useStaffMessaging } from "@/Stores/staff-messaging"
 
 interface ProgressBar {
     [key: string]: {
@@ -136,6 +137,15 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                     isFinished: eventData.done_families >= eventData.pending_families
                         && eventData.done_products >= eventData.pending_products
                 }
+            })
+            .listen('.staff-message', (message) => {
+                useStaffMessaging().handleIncoming(message)
+            })
+            .listen('.staff-message-translated', (message) => {
+                useStaffMessaging().replaceMessage(message)
+            })
+            .listen('.staff-message-reaction', (message) => {
+                useStaffMessaging().replaceMessage(message)
             })
         },
 
