@@ -72,6 +72,7 @@ class GetStaffCoworkers
         $orgIds   = $this->organisationIdsByUser($users->pluck('id')->push($me->id)->all());
         $myOrgIds = $orgIds[$me->id] ?? [];
         $teamIds  = DB::table('user_has_team_members')->where('user_id', $me->id)->pluck('member_user_id')->all();
+        $lastActive = Cache::many($users->map(fn (User $user) => 'staff-last-active:'.$user->id)->all());
 
         $data = $users
             ->map(fn (User $user) => [
@@ -82,6 +83,7 @@ class GetStaffCoworkers
                     : null,
                 'is_close' => count(array_intersect($orgIds[$user->id] ?? [], $myOrgIds)) > 0,
                 'in_team'  => in_array($user->id, $teamIds),
+                'last_active_at' => $lastActive['staff-last-active:'.$user->id] ?? null,
             ])
             ->sortBy([['in_team', 'desc'], ['is_close', 'desc'], ['name', 'asc']])
             ->values();

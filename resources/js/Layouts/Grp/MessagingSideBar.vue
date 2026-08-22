@@ -42,8 +42,14 @@ const search = ref("")
 const coworkers = ref<StaffCoworker[]>([])
 const searchResults = ref<StaffCoworker[]>([])
 const plusOpened = ref(false)
+const nowTick = ref(0)
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 let refreshInterval: ReturnType<typeof setInterval> | null = null
+let tickInterval: ReturnType<typeof setInterval> | null = null
+
+const ACTIVE_WINDOW = 15 * 60
+const isActive = (c: StaffCoworker) => !!c.last_active_at && (Date.now() / 1000 - c.last_active_at) < ACTIVE_WINDOW
+const presence = (c: StaffCoworker) => isOnline(c.id) ? (isActive(c) ? 'online' : 'idle') : 'offline'
 
 const fetchCoworkers = async (q: string) => {
     const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params: q ? { q } : {} })
@@ -89,17 +95,25 @@ const isOnline = (id: number) => !!useLiveUsers().liveUsers[id]
 
 const byName = (a: StaffCoworker, b: StaffCoworker) => a.name.localeCompare(b.name)
 
-const teamCoworkers = computed(() =>
-    coworkers.value.filter((c) => c.in_team).sort((a, b) => (isOnline(a.id) === isOnline(b.id) ? 0 : isOnline(a.id) ? -1 : 1) || byName(a, b))
-)
-const teamOnlineCoworkers = computed(() => teamCoworkers.value.filter((c) => isOnline(c.id)))
+const teamCoworkers = computed(() => {
+    const presenceOrder = { 'online': 0, 'idle': 1, 'offline': 2 }
+    return coworkers.value.filter((c) => c.in_team).sort((a, b) => {
+        const presA = presence(a)
+        const presB = presence(b)
+        if (presenceOrder[presA as keyof typeof presenceOrder] !== presenceOrder[presB as keyof typeof presenceOrder]) {
+            return presenceOrder[presA as keyof typeof presenceOrder] - presenceOrder[presB as keyof typeof presenceOrder]
+        }
+        return byName(a, b)
+    })
+})
+const teamOnlineCoworkers = computed(() => teamCoworkers.value.filter((c) => presence(c) === 'online'))
 const onlineCoworkers = computed(() =>
-    coworkers.value.filter((c) => isOnline(c.id) && !c.in_team).sort(byName)
+    coworkers.value.filter((c) => presence(c) === 'online' && !c.in_team).sort(byName)
 )
 
-const allOnlineCount = computed(() => useLiveUsers().count)
-const orgOnlineCount = computed(() => coworkers.value.filter((c) => c.is_close && isOnline(c.id)).length)
-const teamOnlineCount = computed(() => teamOnlineCoworkers.value.length)
+const allOnlineCount = computed(() => (nowTick.value, coworkers.value.filter((c) => presence(c) === 'online').length))
+const orgOnlineCount = computed(() => (nowTick.value, coworkers.value.filter((c) => c.is_close && presence(c) === 'online').length))
+const teamOnlineCount = computed(() => (nowTick.value, teamOnlineCoworkers.value.length))
 
 const showInput = computed(() => plusOpened.value)
 const searchPlaceholder = computed(() => trans('Find a coworker…'))
@@ -109,9 +123,17 @@ const filteredTeamCoworkers = computed(() =>
     clientFilterActive.value ? teamCoworkers.value.filter((c) => c.name.toLowerCase().includes(query.value)) : teamCoworkers.value
 )
 const showSearchResults = computed(() => plusOpened.value && query.value.length > 0)
-const sortedSearchResults = computed(() =>
-    [...searchResults.value].sort((a, b) => (isOnline(a.id) === isOnline(b.id) ? 0 : isOnline(a.id) ? -1 : 1) || a.name.localeCompare(b.name))
-)
+const sortedSearchResults = computed(() => {
+    const presenceOrder = { 'online': 0, 'idle': 1, 'offline': 2 }
+    return [...searchResults.value].sort((a, b) => {
+        const presA = presence(a)
+        const presB = presence(b)
+        if (presenceOrder[presA as keyof typeof presenceOrder] !== presenceOrder[presB as keyof typeof presenceOrder]) {
+            return presenceOrder[presA as keyof typeof presenceOrder] - presenceOrder[presB as keyof typeof presenceOrder]
+        }
+        return a.name.localeCompare(b.name)
+    })
+})
 
 const openSearchResult = (coworker: StaffCoworker) => {
     store.openWithUser(coworker.id)
@@ -148,10 +170,10 @@ const teamOfflineCoworkers = computed(() => teamCoworkers.value.filter((c) => !i
 
 const filteredPeopleList = computed(() => {
     if (peopleFilter.value === "all") {
-        return coworkers.value.filter((c) => isOnline(c.id) && c.id !== myId.value).sort(byName)
+        return coworkers.value.filter((c) => presence(c) === 'online' && c.id !== myId.value).sort(byName)
     }
     if (peopleFilter.value === "org") {
-        return coworkers.value.filter((c) => c.is_close && isOnline(c.id) && c.id !== myId.value).sort(byName)
+        return coworkers.value.filter((c) => c.is_close && presence(c) === 'online' && c.id !== myId.value).sort(byName)
     }
     if (peopleFilter.value === "team") {
         return teamCoworkers.value
@@ -176,17 +198,18 @@ const conversationUserIds = computed(() => new Set(
 ))
 
 const railOfflineWithConversation = computed(() => {
-    return coworkers.value.filter((c) => !c.in_team && !isOnline(c.id) && conversationUserIds.value.has(c.id))
+    return coworkers.value.filter((c) => !c.in_team && presence(c) === 'offline' && conversationUserIds.value.has(c.id))
 })
 
 const railOnlineWithConversation = computed(() => {
-    return onlineCoworkers.value.filter((c) => conversationUserIds.value.has(c.id))
+    return coworkers.value.filter((c) => !c.in_team && presence(c) === 'online' && conversationUserIds.value.has(c.id))
 })
 
+const getPresenceBool = (c: StaffCoworker) => presence(c) !== 'offline'
 const railCandidates = computed(() => [
-    ...teamOnlineCoworkers.value.map((coworker) => ({ coworker, online: true })),
+    ...teamOnlineCoworkers.value.map((coworker) => ({ coworker, online: getPresenceBool(coworker) })),
     ...teamOfflineCoworkers.value.map((coworker) => ({ coworker, online: false })),
-    ...railOnlineWithConversation.value.map((coworker) => ({ coworker, online: true })),
+    ...railOnlineWithConversation.value.map((coworker) => ({ coworker, online: getPresenceBool(coworker) })),
     ...railOfflineWithConversation.value.map((coworker) => ({ coworker, online: false })),
 ])
 
@@ -233,10 +256,12 @@ onMounted(() => {
     fetchCoworkers("")
     store.fetchConversations()
     refreshInterval = setInterval(() => fetchCoworkers(search.value), 60000)
+    tickInterval = setInterval(() => { nowTick.value++ }, 60000)
 })
 
 onUnmounted(() => {
     if (refreshInterval) clearInterval(refreshInterval)
+    if (tickInterval) clearInterval(tickInterval)
     if (searchTimeout) clearTimeout(searchTimeout)
 })
 </script>
@@ -321,7 +346,7 @@ onUnmounted(() => {
                 @click="openUser(item.coworker.id)">
                 <Image v-if="item.coworker.avatar" :src="item.coworker.avatar" :alt="item.coworker.name" image-cover />
                 <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-[#282a36]" :class="item.online ? 'bg-[#50fa7b]' : 'bg-[#6272a4]'" />
+                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-[#282a36]" :class="[presence(item.coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(item.coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(item.coworker) === 'idle' ? trans('Idle') : ''" />
                 <span v-if="unreadForUser(item.coworker.id) > 0" class="absolute -top-1 -right-1 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(item.coworker.id) }}</span>
             </button>
             <button
@@ -365,12 +390,12 @@ onUnmounted(() => {
                     :key="'search-' + coworker.id"
                     role="button" tabindex="0"
                     class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left cursor-pointer"
-                    :class="isOnline(coworker.id) ? '' : 'opacity-40'"
+                    :class="presence(coworker) !== 'offline' ? '' : 'opacity-40'"
                     @click="openSearchResult(coworker)">
                     <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[#44475a] shrink-0">
                         <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
                         <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                        <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="isOnline(coworker.id) ? 'bg-[#50fa7b]' : 'bg-[#6272a4]'" />
+                        <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="[presence(coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
                     </div>
                     <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
                     <span role="button" tabindex="0" class="shrink-0" @click="toggleTeam(coworker, $event)" v-tooltip="coworker.in_team ? trans('In my team') : trans('Add to my team')">
@@ -391,12 +416,12 @@ onUnmounted(() => {
                 :key="'exp-team-' + coworker.id"
                 role="button" tabindex="0"
                 class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left cursor-pointer"
-                :class="isOnline(coworker.id) ? '' : 'opacity-40'"
+                :class="presence(coworker) !== 'offline' ? '' : 'opacity-40'"
                 @click="openUser(coworker.id)">
                 <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[#44475a] shrink-0">
                     <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
                     <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="isOnline(coworker.id) ? 'bg-[#50fa7b]' : 'bg-[#6272a4]'" />
+                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="[presence(coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
                 </div>
                 <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
                 <span v-if="unreadForUser(coworker.id) > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
@@ -446,12 +471,12 @@ onUnmounted(() => {
                 :key="'filter-' + coworker.id"
                 role="button" tabindex="0"
                 class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left cursor-pointer"
-                :class="isOnline(coworker.id) ? '' : 'opacity-40'"
+                :class="presence(coworker) !== 'offline' ? '' : 'opacity-40'"
                 @click="openUser(coworker.id)">
                 <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[#44475a] shrink-0">
                     <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
                     <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="isOnline(coworker.id) ? 'bg-[#50fa7b]' : 'bg-[#6272a4]'" />
+                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="[presence(coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
                 </div>
                 <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
                 <span v-if="unreadForUser(coworker.id) > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>

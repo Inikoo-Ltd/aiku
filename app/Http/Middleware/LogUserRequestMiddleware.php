@@ -9,6 +9,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\SysAdmin\UserRequest\ProcessUserRequest;
+use Illuminate\Support\Facades\Cache;
 use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\Request;
@@ -37,6 +38,10 @@ class LogUserRequestMiddleware
 
         /* @var User $user */
         $user = $request->user();
+
+        if ($user) {
+            Cache::put('staff-last-active:'.$user->id, now()->timestamp, now()->addHours(2));
+        }
 
         if (!app()->runningUnitTests() && $user) {
             \Sentry\traceMetrics()->count(

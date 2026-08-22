@@ -55,6 +55,7 @@ export interface StaffCoworker {
     avatar: any
     is_close: boolean
     in_team: boolean
+    last_active_at?: number | null
 }
 
 interface WindowState {
