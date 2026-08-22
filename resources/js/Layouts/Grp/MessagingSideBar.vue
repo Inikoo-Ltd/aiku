@@ -238,9 +238,9 @@ onUnmounted(() => {
 
         <!-- EXPANDED: three counters -->
         <div v-else class="px-3 py-2 flex items-center gap-x-3 border-b border-[#44475a] text-xxs cursor-pointer" @click="focusTeamSection">
-            <span class="flex items-center gap-x-1" v-tooltip="trans('Everyone online')"><FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span> {{ trans('all') }}</span>
-            <span class="flex items-center gap-x-1" v-tooltip="trans('Online in my organisation')"><FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span> {{ trans('org') }}</span>
-            <span class="flex items-center gap-x-1 cursor-pointer" v-tooltip="trans('Online in my team')" @click="focusTeamSection"><FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span> {{ trans('team') }}</span>
+            <span class="flex items-center gap-x-1" v-tooltip="trans('Everyone online')"><FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums">{{ allOnlineCount }}</span><span class="text-[#bfc4d8]">{{ trans('all') }}</span></span>
+            <span class="flex items-center gap-x-1" v-tooltip="trans('Online in my organisation')"><FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums">{{ orgOnlineCount }}</span><span class="text-[#bfc4d8]">{{ trans('org') }}</span></span>
+            <span class="flex items-center gap-x-1 cursor-pointer" v-tooltip="trans('Online in my team')" @click="focusTeamSection"><FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums">{{ teamOnlineCount }}</span><span class="text-[#bfc4d8]">{{ trans('team') }}</span></span>
         </div>
 
         <!-- Unread chats chip -->
