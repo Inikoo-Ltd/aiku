@@ -1317,6 +1317,41 @@ describe('showing a traffic source', function () {
 
         expect($customers->pluck('id'))->not->toContain($this->customer->id);
     });
+
+    it('lists an attributed revenue that adds up to the channel total', function () {
+        $this->customer->update(['traffic_sources' => '1700000000b|1700000100a']);
+        RecalculateTrafficSourceAttribution::run($this->customer->fresh());
+
+        journeyInvoice($this->customer, '2023-12-01', 100);
+        TrafficSourceHydrateCustomers::run($this->googleAds);
+
+        fakeRouteForCustomers();
+
+        $row = IndexCustomers::make()->handle($this->googleAds, TrafficSourceTabsEnum::CUSTOMERS->value)
+            ->firstWhere('id', $this->customer->id);
+
+        expect(round((float) $row->attributed_revenue, 2))->toBe(50.0)
+            ->and(round((float) $row->attributed_revenue, 2))
+            ->toBe(round((float) $this->googleAds->refresh()->stats->total_customer_revenue, 2));
+    });
+
+    it('leaves trade placed before the touch out of the attributed revenue', function () {
+        $this->customer->update(['traffic_sources' => '1700000000b']);
+        RecalculateTrafficSourceAttribution::run($this->customer->fresh());
+
+        fakeRouteForCustomers();
+
+        $attributedRevenue = fn () => (float) IndexCustomers::make()
+            ->handle($this->googleAds, TrafficSourceTabsEnum::CUSTOMERS->value)
+            ->firstWhere('id', $this->customer->id)
+            ->attributed_revenue;
+
+        $before = $attributedRevenue();
+
+        journeyInvoice($this->customer, '2020-01-01', 500);
+
+        expect(round($attributedRevenue(), 2))->toBe(round($before, 2));
+    });
 });
 
 describe('campaign stats', function () {
