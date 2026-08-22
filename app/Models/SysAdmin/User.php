@@ -51,6 +51,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $password
  * @property UserAuthTypeEnum $auth_type
  * @property string|null $contact_name no-normalised depends on parent
+ * @property string|null $nickname
  * @property string|null $email
  * @property string|null $about
  * @property int $number_models
@@ -190,6 +191,11 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     public function getPasskeyDisplayName(): string
     {
         return $this->contact_name ?? $this->username;
+    }
+
+    public function chatName(): string
+    {
+        return $this->nickname ?: ($this->contact_name ?: $this->username);
     }
 
     public function searchIndexShouldBeUpdated(): bool

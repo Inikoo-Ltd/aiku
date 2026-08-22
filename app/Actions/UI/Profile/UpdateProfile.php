@@ -18,6 +18,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,6 +30,11 @@ class UpdateProfile extends OrgAction
 
     public function handle(User $user, array $modelData): User
     {
+        if (Arr::exists($modelData, 'nickname')) {
+            $nickname               = trim((string) $modelData['nickname']);
+            $modelData['nickname'] = $nickname === '' ? null : $nickname;
+        }
+
         if (Arr::exists($modelData, 'hide_logo')) {
             $hideLogo                           = Arr::pull($modelData, 'hide_logo');
             $modelData['settings']['hide_logo'] = $hideLogo;
@@ -95,6 +101,7 @@ class UpdateProfile extends OrgAction
             'password'          => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)],
             'email'             => 'sometimes|required|email|unique:App\Models\SysAdmin\User,email,'.request()->user()->id,
             'about'             => ['sometimes', 'nullable', 'string', 'max:255'],
+            'nickname'          => ['sometimes', 'nullable', 'string', 'min:2', 'max:24', 'regex:/^[\pL\pN ._-]+$/u', Rule::unique('users', 'nickname')->ignore(request()->user()->id)],
             'language_id'       => ['sometimes', 'required', 'exists:languages,id'],
             'app_theme'         => ['sometimes', 'required'],
             'hide_logo'         => ['sometimes', 'boolean'],

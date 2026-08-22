@@ -45,7 +45,7 @@ class StaffConversationArchived implements ShouldBroadcastNow
         return [
             'conversation_ulid' => $this->conversation->ulid,
             'user_id'           => $this->user->id,
-            'user_name'         => $this->user->contact_name ?: $this->user->username,
+            'user_name'         => $this->user->chatName(),
         ];
     }
 }

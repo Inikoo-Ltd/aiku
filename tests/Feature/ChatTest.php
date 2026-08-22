@@ -2382,3 +2382,36 @@ describe('staff messaging gifs', function () {
             ->assertJsonPath('next', 2);
     });
 });
+
+describe('staff messaging nickname', function () {
+    test('user sets a nickname and it appears in profile update and messages', function () {
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['nickname' => 'Raulito'])
+            ->assertOk();
+
+        expect($this->user->fresh()->nickname)->toBe('Raulito');
+
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $other        = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'hi']);
+
+        $resource = (new \App\Http\Resources\Chat\StaffMessageResource($message->load(['user', 'translations', 'reactions', 'conversation'])))->resolve();
+        expect($resource['user_name'])->toBe('Raulito');
+    });
+
+    test('nickname must be unique', function () {
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['nickname' => 'SharedNick'])
+            ->assertOk();
+
+        actingAs($other)
+            ->patchJson(route('grp.models.profile.update'), ['nickname' => 'SharedNick'])
+            ->assertStatus(422);
+    });
+});

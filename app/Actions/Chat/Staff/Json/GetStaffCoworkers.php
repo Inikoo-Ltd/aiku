@@ -65,9 +65,10 @@ class GetStaffCoworkers
             ->where('status', true)
             ->when($query !== '', fn ($builder) => $builder->where(function ($builder) use ($query) {
                 $builder->whereRaw('lower(contact_name) like ?', ['%'.$query.'%'])
-                    ->orWhereRaw('lower(username) like ?', ['%'.$query.'%']);
+                    ->orWhereRaw('lower(username) like ?', ['%'.$query.'%'])
+                    ->orWhereRaw('lower(nickname) like ?', ['%'.$query.'%']);
             }))
-            ->get(['id', 'username', 'contact_name', 'image_id', 'language_id']);
+            ->get(['id', 'username', 'contact_name', 'nickname', 'image_id', 'language_id']);
 
         $orgIds   = $this->organisationIdsByUser($users->pluck('id')->push($me->id)->all());
         $myOrgIds = $orgIds[$me->id] ?? [];
@@ -77,7 +78,7 @@ class GetStaffCoworkers
         $data = $users
             ->map(fn (User $user) => [
                 'id'       => $user->id,
-                'name'     => $user->contact_name ?: $user->username,
+                'name'     => $user->chatName(),
                 'avatar'   => $user->image_id
                     ? Cache::remember('staff-avatar:'.$user->id.':'.$user->image_id, now()->addDay(), fn () => $user->imageSources(0, 48))
                     : null,

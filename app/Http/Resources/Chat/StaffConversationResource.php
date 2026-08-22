@@ -37,7 +37,7 @@ class StaffConversationResource extends JsonResource
     {
         $participants = $this->participants->map(fn (User $user) => [
             'id'     => $user->id,
-            'name'   => $user->contact_name ?: $user->username,
+            'name'   => $user->chatName(),
             'avatar' => $user->image_id ? $user->imageSources(0, 48) : null,
             'last_seen_at' => Cache::remember('staff-last-seen:'.$user->id, 120, fn () => UserRequest::where('user_id', $user->id)->max('date')),
         ])->values();

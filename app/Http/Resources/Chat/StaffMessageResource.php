@@ -37,7 +37,7 @@ class StaffMessageResource extends JsonResource
             'id'                => $this->id,
             'conversation_ulid' => $this->conversation->ulid,
             'user_id'           => $this->user_id,
-            'user_name'         => $this->user->contact_name ?: $this->user->username,
+            'user_name'         => $this->user->chatName(),
             'parent_id'         => $this->parent_id,
             'body'              => $this->body,
             'language_id'       => $this->language_id,
