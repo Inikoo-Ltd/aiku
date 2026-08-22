@@ -176,7 +176,7 @@ onUnmounted(() => {
                         </div>
                         <span v-if="conversation.unread_count > 0" class="bg-indigo-600 text-white rounded-full h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
                     </button>
-                    <div v-if="!filteredConversations.length" class="px-3 py-6 text-center text-xs text-gray-400">{{ trans('No conversations yet') }}</div>
+                    <div v-if="!filteredConversations.length" class="px-3 py-6 text-center text-xs text-gray-400">{{ trans('No messages yet') }}</div>
                 </template>
             </div>
         </div>
