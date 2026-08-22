@@ -19,7 +19,7 @@ import { trans } from "laravel-vue-i18n";
 import { useConfirm } from "primevue/useconfirm";
 import { useLiveUsers } from "@/Stores/active-users";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
-import { setIframeView } from "@/Composables/Workshop";
+import { getRevealSetting, setIframeView } from "@/Composables/Workshop";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
@@ -132,6 +132,17 @@ const canUseTemplate = computed(() => !WEBPAGE_TYPES_WITHOUT_TEMPLATE.includes(p
 
 console.log('layout',layout)
 
+const revealBlockOptions = computed(() =>
+  (data.value?.layout?.web_blocks ?? [])
+    .filter(block => getRevealSetting(block))
+    .map(block => ({
+      key: getRevealSetting(block).key,
+      label: block.web_block.layout.data?.fieldValue?.blocks?.name || block.type,
+    }))
+);
+
+provide('revealBlockOptions', revealBlockOptions);
+
 provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
@@ -188,6 +199,30 @@ const addNewBlock = async ({ block, type }) => {
   );
 };
 
+const renameDuplicatedRevealKeys = () => {
+  const blocks = data.value.layout.web_blocks;
+  const usedKeys = new Set(blocks.map(block => block?.web_block?.layout?.reveal?.key).filter(Boolean));
+  const seenKeys = new Set();
+
+  blocks.forEach(block => {
+    const reveal = block?.web_block?.layout?.reveal;
+    if (!reveal?.key) return;
+
+    if (!seenKeys.has(reveal.key)) {
+      seenKeys.add(reveal.key);
+      return;
+    }
+
+    let suffix = 2;
+    while (usedKeys.has(`${reveal.key}-${suffix}`)) suffix++;
+
+    reveal.key = `${reveal.key}-${suffix}`;
+    usedKeys.add(reveal.key);
+    seenKeys.add(reveal.key);
+    onSaveWorkshop(block, false);
+  });
+};
+
 const duplicateBlock = async (modelHasWebBlock = Number) => {
   router.post(
     route('grp.models.webpage.web_block.duplicate', {
@@ -206,6 +241,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        renameDuplicatedRevealKeys();
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({

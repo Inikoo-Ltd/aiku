@@ -8,7 +8,7 @@ import { trans } from "laravel-vue-i18n"
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
-import { sendMessageToParent } from "@/Composables/Workshop"
+import { getRevealSetting, sendMessageToParent } from "@/Composables/Workshop"
 import { faTimes } from "@fal"
 import {debounce} from "lodash-es"
 
@@ -193,6 +193,12 @@ watch(filterBlock, updateIrisLayout, { immediate: true })
                     <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
                   </div>
                 </div>
+              </div>
+
+              <div v-if="getRevealSetting(block)"
+                class="absolute top-0 right-0 z-10 px-2 py-0.5 text-[10px] font-medium bg-indigo-600 text-white rounded-bl"
+                v-tooltip="trans('Hidden on the live page until this link is clicked')">
+                #{{ getRevealSetting(block).key }}
               </div>
 
               <!-- Dynamic Block -->
