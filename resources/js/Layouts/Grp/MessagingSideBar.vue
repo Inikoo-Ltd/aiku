@@ -495,8 +495,8 @@ onUnmounted(() => {
         </div>
 
         <!-- Bottom-pinned: customer chats trigger -->
-        <div class="mt-auto shrink-0 border-t border-[#44475a] pt-2 pb-7">
-            <FooterMessage v-if="layout?.user?.is_agent" in-rail />
+        <div v-if="layout?.user?.is_agent" class="mt-auto shrink-0 border-t border-[#44475a] pt-2 pb-7">
+            <FooterMessage in-rail />
         </div>
     </div>
 
