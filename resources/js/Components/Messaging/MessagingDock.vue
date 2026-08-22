@@ -215,7 +215,7 @@ onUnmounted(() => {
         <!-- Desktop: mini windows stacked right-to-left -->
         <template v-else>
             <div class="fixed bottom-6 z-[30] flex flex-row-reverse items-end gap-x-3 text-gray-900" :class="desktopAnchor">
-                <div v-for="(w, index) in store.openWindowsVisible" :key="w.ulid" class="w-80 h-96">
+                <div v-for="(w, index) in store.openWindowsVisible" :key="w.ulid" class="w-96 h-[32rem]">
                     <MessagingConversation
                         :conversation="store.conversationByUlid(w.ulid)!"
                         @close="store.closeConversation(w.ulid)"
