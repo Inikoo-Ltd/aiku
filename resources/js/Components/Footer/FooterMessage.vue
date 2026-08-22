@@ -323,7 +323,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div v-if="inRail" class="relative w-full border-t border-[#44475a]">
+    <div v-if="inRail" class="relative w-full mb-1">
         <!-- Trigger: rail -->
         <div ref="railTrigger" class="cursor-pointer" @click="togglePopover">
             <div v-if="layout?.messagingSidebar?.show" class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left">
