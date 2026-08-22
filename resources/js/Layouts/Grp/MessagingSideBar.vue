@@ -234,10 +234,6 @@ onUnmounted(() => {
                 <span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span>
             </div>
-            <div class="flex items-center gap-x-1" v-tooltip="trans('Unread chats')">
-                <FontAwesomeIcon icon="fal fa-comments" class="text-[7px]" :class="store.totalUnread > 0 ? 'text-[#6272a4]' : 'text-[#6272a4] opacity-50'" fixed-width aria-hidden="true" />
-                <span class="text-xxs tabular-nums" :class="store.totalUnread > 0 ? 'text-[#f8f8f2]' : 'text-[#6272a4]'">{{ store.totalUnread }}</span>
-            </div>
         </div>
 
         <!-- EXPANDED: three counters -->
@@ -245,10 +241,17 @@ onUnmounted(() => {
             <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#50fa7b]" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span> {{ trans('all') }}</span>
             <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#8be9fd]" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span> {{ trans('org') }}</span>
             <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span> {{ trans('team') }}</span>
-            <span class="flex items-center gap-x-1" v-tooltip="trans('Unread chats')">
-                <FontAwesomeIcon icon="fal fa-comments" :class="store.totalUnread > 0 ? 'text-[#6272a4]' : 'text-[#6272a4] opacity-50'" fixed-width aria-hidden="true" />
-                <span class="tabular-nums" :class="store.totalUnread > 0 ? 'text-[#f8f8f2]' : 'text-[#6272a4]'">{{ store.totalUnread }}</span>
-            </span>
+        </div>
+
+        <!-- Unread chats chip -->
+        <div v-if="store.totalUnread > 0" class="border-b border-[#44475a] py-2 flex justify-center items-center" :class="layout.messagingSidebar.show ? 'gap-2' : ''">
+            <div
+                class="bg-[#ff5555] text-white rounded-md min-w-[2rem] h-7 px-2 flex items-center justify-center text-xs font-medium tabular-nums cursor-pointer"
+                v-tooltip="trans('Unread chats')"
+                @click="!layout.messagingSidebar.show && handleToggle()">
+                {{ store.totalUnread > 99 ? '99+' : store.totalUnread }}
+            </div>
+            <span v-if="layout.messagingSidebar.show" class="text-[#f8f8f2] text-xs">{{ trans('unread') }}</span>
         </div>
 
         <!-- COLLAPSED: avatar rail -->
