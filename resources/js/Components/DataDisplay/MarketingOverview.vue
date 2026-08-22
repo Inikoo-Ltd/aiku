@@ -55,7 +55,7 @@ const props = defineProps<{
         to: string | null
         referrers: {
             host: string
-            kind: 'site' | 'search'
+            kind: 'site' | 'search' | 'ai'
             visitors: number
             registrations: number
             revenue: number
@@ -644,6 +644,7 @@ const typeLabel: Record<string, string> = {
                         <td class="py-2 pr-2 text-gray-700 truncate max-w-[18rem]">
                             {{ referrer.host }}
                             <span v-if="referrer.kind === 'search'" class="text-gray-400">{{ trans('search') }}</span>
+                            <span v-else-if="referrer.kind === 'ai'" class="text-gray-400">{{ trans('AI') }}</span>
                         </td>
                         <td class="text-right px-2 tabular-nums">{{ count(referrer.visitors, decimalColumns.referrerVisitors) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(referrer.registrations, decimalColumns.referrerRegistrations) }}</td>

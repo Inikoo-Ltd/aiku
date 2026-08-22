@@ -27,6 +27,7 @@ use App\Actions\CRM\TrafficSource\GetShopEmailMarketingPerformance;
 use App\Actions\CRM\TrafficSource\GetShopMarketingOverview;
 use App\Actions\CRM\TrafficSource\GetShopOfferPerformance;
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromRefererHeader;
+use App\Actions\CRM\TrafficSource\ReclassifyAiTrafficSourceTouches;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceCampaignHydrateStats;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCosts;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
@@ -1210,6 +1211,53 @@ describe('referral traffic sources', function () {
         expect(GetTrafficSourceFromRefererHeader::run('https://nm20.abv.bg/mail/1'))->toBeNull()
             ->and(GetTrafficSourceFromRefererHeader::run('https://abv.bg/'))->toBeNull()
             ->and(GetTrafficSourceFromRefererHeader::run('https://mail.ru/inbox'))->toBeNull();
+    });
+
+    it('reclassifies the AI touches recorded before the channel existed', function () {
+        $ai       = createTrafficSource($this->shop, TrafficSourcesTypeEnum::AI->value, 'AI Assistants');
+        $recorded = now()->subDay()->timestamp;
+
+        $customer = StoreCustomer::make()->action(
+            $this->shop,
+            array_merge(Customer::factory()->definition(), [
+                'traffic_sources' => $recorded.'qchatgpt.com|'.$recorded.'qesources.co.uk',
+            ])
+        );
+
+        ReclassifyAiTrafficSourceTouches::run();
+
+        $aiAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
+
+        expect($customer->refresh()->traffic_sources)
+            ->toBe($recorded.$aiAbbr.'chatgpt.com|'.$recorded.'qesources.co.uk')
+            ->and(TrafficSourceCampaign::where('reference', 'chatgpt.com')->value('traffic_source_id'))->toBe($ai->id)
+            ->and($customer->trafficSources()->pluck('type')->all())
+            ->toContain(TrafficSourcesTypeEnum::AI->value)
+            ->and(TrafficSourceCampaign::where('reference', 'esources.co.uk')->value('traffic_source_id'))
+            ->toBe($this->referral->id);
+    });
+
+    it('records an arrival from an AI assistant as AI traffic, named by the assistant', function () {
+        $aiAbbr = TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value];
+
+        expect(GetTrafficSourceFromRefererHeader::run('https://chatgpt.com/c/abc'))->toBe($aiAbbr.'chatgpt.com')
+            ->and(GetTrafficSourceFromRefererHeader::run('https://claude.ai/chat/1'))->toBe($aiAbbr.'claude.ai')
+            ->and(GetTrafficSourceFromRefererHeader::run('https://www.perplexity.ai/search/x'))->toBe($aiAbbr.'perplexity.ai')
+            ->and(GetTrafficSourceFromRefererHeader::run('https://copilot.microsoft.com/chats/1'))->toBe($aiAbbr.'copilot.microsoft.com');
+    });
+
+    it('keeps Gemini out of organic Google', function () {
+        expect(GetTrafficSourceFromRefererHeader::run('https://gemini.google.com/app/1'))
+            ->toBe(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::AI->value].'gemini.google.com')
+            ->and(GetTrafficSourceFromRefererHeader::run('https://www.google.com/search?q=x'))
+            ->toBe(TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_GOOGLE->value]);
+    });
+
+    it('groups AI traffic as its own channel group', function () {
+        expect(TrafficSourcesTypeEnum::AI->group()['key'])->toBe('ai')
+            ->and(TrafficSourcesTypeEnum::REFERRAL->group()['key'])->toBe('other')
+            ->and(TrafficSourcesTypeEnum::hostReferenced())->toContain(TrafficSourcesTypeEnum::AI)
+            ->and(TrafficSourcesTypeEnum::referrerKind(TrafficSourcesTypeEnum::AI->value))->toBe('ai');
     });
 
     it('keeps a search engine matched before the webmail rules can reject it', function () {
