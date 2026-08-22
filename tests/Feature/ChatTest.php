@@ -2354,26 +2354,31 @@ describe('staff messaging archive', function () {
 });
 
 describe('staff messaging gifs', function () {
-    test('search returns mapped tenor results', function () {
+    test('search returns mapped klipy results', function () {
         \Illuminate\Support\Facades\Http::fake([
-            'tenor.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([
-                'results' => [
-                    [
-                        'id'            => '1',
-                        'media_formats' => [
-                            'tinygif' => ['url' => 'https://media.tenor.com/a/b.gif', 'dims' => [100, 80]],
-                            'gif'     => ['url' => 'https://media.tenor.com/a/c.gif', 'dims' => [200, 160]],
+            'api.klipy.com/*' => \Illuminate\Support\Facades\Http::response([
+                'result' => true,
+                'data'   => [
+                    'data'     => [
+                        [
+                            'id'    => '1',
+                            'file'  => [
+                                'sm' => ['gif' => ['url' => 'https://static.klipy.com/a/sm.gif', 'width' => 100, 'height' => 80]],
+                                'md' => ['gif' => ['url' => 'https://static.klipy.com/a/md.gif', 'width' => 200, 'height' => 160]],
+                            ],
                         ],
                     ],
+                    'has_next'     => true,
+                    'current_page' => 1,
                 ],
-                'next' => 'x',
             ]),
         ]);
-        config(['services.tenor.key' => 'k']);
+        config(['services.klipy.key' => 'k']);
 
         actingAs($this->user)
-            ->getJson(route('grp.chat.staff.gifs.search', ['q' => 'cat']))
+            ->getJson(route('grp.chat.staff.gifs.search', ['q' => 'cat', 'page' => 1]))
             ->assertOk()
-            ->assertJsonPath('data.0.url', 'https://media.tenor.com/a/c.gif');
+            ->assertJsonPath('data.0.url', 'https://static.klipy.com/a/md.gif')
+            ->assertJsonPath('next', 2);
     });
 });

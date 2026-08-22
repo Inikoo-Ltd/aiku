@@ -28,6 +28,11 @@ class StaffMessageResource extends JsonResource
             $reactions[$reaction->emoji][] = $reaction->user_id;
         }
 
+        $gifUrl = null;
+        if (preg_match('#^https://\S+\.(gif|webp)$#i', (string) $this->body)) {
+            $gifUrl = $this->body;
+        }
+
         return [
             'id'                => $this->id,
             'conversation_ulid' => $this->conversation->ulid,
@@ -39,7 +44,7 @@ class StaffMessageResource extends JsonResource
             'translations'      => $translations,
             'reactions'         => $reactions,
             'image'             => $this->media_id ? $this->imageSources(0, 0, 'attachment') : null,
-            'gif_url'           => preg_match('#^https://media\.tenor\.com/\S+\.gif$#', (string) $this->body) ? $this->body : null,
+            'gif_url'           => $gifUrl,
             'created_at'        => $this->created_at,
         ];
     }

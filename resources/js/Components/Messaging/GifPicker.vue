@@ -22,18 +22,21 @@ interface Gif {
 
 const query = ref("")
 const gifs = ref<Gif[]>([])
-const nextPos = ref<string | null>(null)
+const nextPage = ref<number | null>(null)
 const loading = ref(false)
+const currentPage = ref(1)
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const fetchGifs = async (append = false) => {
     loading.value = true
+    const pageToFetch = append ? nextPage.value : 1
     const { data } = await axios.get(route("grp.chat.staff.gifs.search"), {
-        params: { q: query.value || undefined, pos: append ? nextPos.value ?? undefined : undefined },
+        params: { q: query.value || undefined, page: pageToFetch },
     })
     gifs.value = append ? [...gifs.value, ...data.data] : data.data
-    nextPos.value = data.next
+    nextPage.value = data.next
+    currentPage.value = pageToFetch || 1
     loading.value = false
 }
 
@@ -71,12 +74,15 @@ onMounted(() => fetchGifs(false))
                 </button>
             </div>
             <button
-                v-if="nextPos"
+                v-if="nextPage"
                 class="w-full mt-2 text-xs text-indigo-600 hover:underline py-1"
                 @click="fetchGifs(true)"
             >
                 {{ trans('Load more') }}
             </button>
+        </div>
+        <div class="text-xxs text-gray-400 text-right px-2 pb-1 shrink-0">
+            Powered by KLIPY
         </div>
     </div>
 </template>

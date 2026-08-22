@@ -128,8 +128,7 @@ return [
         'token' => env('GITHUB_TOKEN'),
         'repo' => env('GITHUB_REPO', 'Inikoo-Ltd/aiku'),
     ],
-    'tenor' => [
-        'key' => env('TENOR_API_KEY'),
-        'client_key' => env('TENOR_CLIENT_KEY', 'aiku'),
+    'klipy' => [
+        'key' => env('KLIPY_API_KEY'),
     ],
 ];

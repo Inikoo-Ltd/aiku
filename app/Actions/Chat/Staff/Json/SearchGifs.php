@@ -20,32 +20,34 @@ class SearchGifs
     public function rules(): array
     {
         return [
-            'q'   => ['sometimes', 'nullable', 'string', 'max:64'],
-            'pos' => ['sometimes', 'nullable', 'string'],
+            'q'    => ['sometimes', 'nullable', 'string', 'max:64'],
+            'page' => ['sometimes', 'integer', 'min:1'],
         ];
     }
 
     /**
-     * @return array{data: array<int, array{id: string, preview: string, url: string, width: int, height: int}>, next: string|null}
+     * @return array{data: array<int, array{id: string, preview: string, url: string, width: int, height: int}>, next: int|null}
      */
-    public function handle(?string $q, ?string $pos): array
+    public function handle(?string $q, ?int $page): array
     {
-        $key = config('services.tenor.key');
+        $key = config('services.klipy.key');
         if (!$key) {
             return ['data' => [], 'next' => null];
         }
 
-        return Cache::remember("tenor-search:{$q}:{$pos}", now()->addMinutes(10), function () use ($key, $q, $pos) {
+        $page ??= 1;
+
+        return Cache::remember("klipy-search:{$q}:{$page}", now()->addMinutes(10), function () use ($key, $q, $page) {
             try {
-                $endpoint = $q ? 'https://tenor.googleapis.com/v2/search' : 'https://tenor.googleapis.com/v2/featured';
+                $endpoint = $q ? 'https://api.klipy.com/api/v1/{key}/gifs/search' : 'https://api.klipy.com/api/v1/{key}/gifs/trending';
+                $endpoint = str_replace('{key}', $key, $endpoint);
+
                 $response = Http::timeout(5)->get($endpoint, [
-                    'key'           => $key,
-                    'client_key'    => config('services.tenor.client_key'),
-                    'q'             => $q,
-                    'limit'         => 24,
-                    'media_filter'  => 'tinygif,gif',
-                    'contentfilter' => 'medium',
-                    'pos'           => $pos,
+                    'q'        => $q,
+                    'page'     => $page,
+                    'per_page' => 24,
+                    'rating'   => 'pg-13',
+                    'locale'   => 'en',
                 ]);
 
                 $json = $response->json() ?? [];
@@ -53,24 +55,51 @@ class SearchGifs
                 return ['data' => [], 'next' => null];
             }
 
-            $data = collect($json['results'] ?? [])->map(function (array $result) {
-                $tiny = $result['media_formats']['tinygif'] ?? [];
+            $data = collect($json['data']['data'] ?? [])->map(function (array $item) {
+                $files = $item['file'] ?? $item['files'] ?? [];
+                $previewData = $this->pick($files, ['sm', 'xs', 'md', 'hd'], ['webp', 'gif']);
+                $urlData = $this->pick($files, ['md', 'hd', 'sm'], ['gif', 'webp']);
+
+                if (!$urlData) {
+                    return null;
+                }
 
                 return [
-                    'id'      => $result['id'],
-                    'preview' => $tiny['url'] ?? null,
-                    'url'     => $result['media_formats']['gif']['url'] ?? null,
-                    'width'   => $tiny['dims'][0] ?? 0,
-                    'height'  => $tiny['dims'][1] ?? 0,
+                    'id'      => $item['id'] ?? $item['slug'] ?? $urlData['url'],
+                    'preview' => $previewData['url'] ?? null,
+                    'url'     => $urlData['url'],
+                    'width'   => $previewData['width'] ?? 0,
+                    'height'  => $previewData['height'] ?? 0,
                 ];
-            })->values()->all();
+            })->filter()->values()->all();
 
-            return ['data' => $data, 'next' => $json['next'] ?? null];
+            $next = ($json['data']['has_next'] ?? false) ? $page + 1 : null;
+
+            return ['data' => $data, 'next' => $next];
         });
+    }
+
+    private function pick(array $files, array $sizes, array $formats): ?array
+    {
+        foreach ($sizes as $size) {
+            if (!isset($files[$size])) {
+                continue;
+            }
+            foreach ($formats as $format) {
+                if (isset($files[$size][$format]['url'])) {
+                    return [
+                        'url' => $files[$size][$format]['url'],
+                        'width' => $files[$size][$format]['width'] ?? 0,
+                        'height' => $files[$size][$format]['height'] ?? 0,
+                    ];
+                }
+            }
+        }
+        return null;
     }
 
     public function asController(ActionRequest $request): array
     {
-        return $this->handle($request->get('q'), $request->get('pos'));
+        return $this->handle($request->get('q'), $request->get('page') ? (int) $request->get('page') : null);
     }
 }
