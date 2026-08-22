@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'enabled' => env('NIGHTWATCH_ENABLED', true) && env('NIGHTWATCH_TOKEN') !== null,
+    'enabled' => env('NIGHTWATCH_ENABLED', true) && env('NIGHTOWL_TOKEN') !== null,
 ];
