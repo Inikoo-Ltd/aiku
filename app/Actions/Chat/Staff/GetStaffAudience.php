@@ -14,9 +14,11 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetStaffAudience
@@ -24,6 +26,8 @@ class GetStaffAudience
     use AsAction;
 
     public const AUDIENCES = ['crm', 'warehouse'];
+
+    public const ACTIVE_WITHIN_MINUTES = 15;
 
     public static function label(string $audience): string
     {
@@ -33,20 +37,35 @@ class GetStaffAudience
         };
     }
 
+    public static function isActive(int $userId): bool
+    {
+        $lastActive = Cache::get("staff-last-active:{$userId}");
+
+        return $lastActive && $lastActive >= now()->subMinutes(self::ACTIVE_WITHIN_MINUTES)->timestamp;
+    }
+
     /**
-     * ponytail: audience = holders of the scoped spatie roles; refine per job position when management asks
-     *
      * @return Collection<int, User>
      */
     public function handle(string $audience, DeliveryNote|Order|PickingSession $context): Collection
     {
-        $configuredUserIds = Arr::get(
-            \App\Models\SysAdmin\Organisation::find($context->organisation_id)?->settings ?? [],
-            "staff_chat.{$audience}_user_ids",
-            []
+        foreach ($this->shopScopes($context) as $shop) {
+            $users = $this->pickFromLists(
+                Arr::get($shop->settings ?? [], "staff_chat.{$audience}_user_ids", []),
+                Arr::get($shop->settings ?? [], "staff_chat.{$audience}_backup_user_ids", []),
+            );
+            if ($users->isNotEmpty()) {
+                return $users;
+            }
+        }
+
+        $organisation = Organisation::find($context->organisation_id);
+        $users        = $this->pickFromLists(
+            Arr::get($organisation?->settings ?? [], "staff_chat.{$audience}_user_ids", []),
+            Arr::get($organisation?->settings ?? [], "staff_chat.{$audience}_backup_user_ids", []),
         );
-        if (!empty($configuredUserIds)) {
-            return User::whereIn('id', $configuredUserIds)->where('status', true)->get();
+        if ($users->isNotEmpty()) {
+            return $users;
         }
 
         if ($context instanceof PickingSession) {
@@ -70,6 +89,44 @@ class GetStaffAudience
         return User::where('status', true)
             ->whereHas('roles', fn ($query) => $query->whereIn('name', $roleNames))
             ->get();
+    }
+
+    /**
+     * @return array<int, Shop>
+     */
+    private function shopScopes(DeliveryNote|Order|PickingSession $context): array
+    {
+        if ($context instanceof PickingSession) {
+            return Shop::whereIn('id', $context->deliveryNotes()->pluck('shop_id')->unique())->get()->all();
+        }
+
+        $shop = Shop::find($context->shop_id);
+
+        return $shop ? [$shop] : [];
+    }
+
+    private function pickFromLists(array $primaryIds, array $backupIds): Collection
+    {
+        if (!empty($primaryIds)) {
+            $activePrimary = User::whereIn('id', $primaryIds)->where('status', true)->get()->filter(fn (User $user) => self::isActive($user->id));
+            if ($activePrimary->isNotEmpty()) {
+                return $activePrimary->values();
+            }
+        }
+
+        if (!empty($backupIds)) {
+            $activeBackup = User::whereIn('id', $backupIds)->where('status', true)->get()->filter(fn (User $user) => self::isActive($user->id));
+            if ($activeBackup->isNotEmpty()) {
+                return $activeBackup->values();
+            }
+        }
+
+        $allIds = array_unique(array_merge($primaryIds, $backupIds));
+        if (empty($allIds)) {
+            return new Collection();
+        }
+
+        return User::whereIn('id', $allIds)->where('status', true)->get();
     }
 
     private function handlePickingSession(string $audience, PickingSession $context): Collection

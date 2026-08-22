@@ -162,6 +162,14 @@ class UpdateShop extends OrgAction
             }
         }
 
+        if (Arr::has($modelData, 'staff_chat_crm_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_crm_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -683,6 +691,10 @@ class UpdateShop extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'staff_chat_crm_user_ids'        => ['sometimes', 'array'],
+            'staff_chat_crm_user_ids.*'      => ['integer', 'exists:users,id'],
+            'staff_chat_crm_backup_user_ids'   => ['sometimes', 'array'],
+            'staff_chat_crm_backup_user_ids.*' => ['integer', 'exists:users,id'],
             'invoice_serial_references'   => ['sometimes', 'array'],
             'registration_needs_approval' => ['sometimes', 'boolean'],
             'stand_alone_invoice_numbers' => ['sometimes', 'boolean'],

@@ -2358,6 +2358,45 @@ describe('staff messaging audience mapping', function () {
     });
 });
 
+describe('staff messaging routing', function () {
+    test('shop primary wins over org', function () {
+        $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+        $a       = User::factory()->create(['group_id' => $this->user->group_id]);
+
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$a->id]]])]);
+        \Illuminate\Support\Facades\Cache::put('staff-last-active:'.$a->id, now()->timestamp);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->toBe([$a->id]);
+    });
+
+    test('inactive primary falls back to active backup', function () {
+        $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+        $a       = User::factory()->create(['group_id' => $this->user->group_id]);
+        $b       = User::factory()->create(['group_id' => $this->user->group_id]);
+
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$a->id], 'crm_backup_user_ids' => [$b->id]]])]);
+        \Illuminate\Support\Facades\Cache::forget('staff-last-active:'.$a->id);
+        \Illuminate\Support\Facades\Cache::put('staff-last-active:'.$b->id, now()->timestamp);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->toBe([$b->id]);
+    });
+
+    test('nobody active returns primary and backup together', function () {
+        $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+        $a       = User::factory()->create(['group_id' => $this->user->group_id]);
+        $b       = User::factory()->create(['group_id' => $this->user->group_id]);
+
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$a->id], 'crm_backup_user_ids' => [$b->id]]])]);
+        \Illuminate\Support\Facades\Cache::forget('staff-last-active:'.$a->id);
+        \Illuminate\Support\Facades\Cache::forget('staff-last-active:'.$b->id);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->sort()->values()->all())->toBe(collect([$a->id, $b->id])->sort()->values()->all());
+    });
+});
+
 describe('staff messaging picking session', function () {
     test('ask CRM on a picking session opens one group conversation with the shop CRM role holders', function () {
         $pickingSession = \App\Models\Inventory\PickingSession::first();

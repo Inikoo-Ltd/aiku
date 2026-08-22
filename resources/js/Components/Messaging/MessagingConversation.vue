@@ -137,13 +137,16 @@ const showGifPicker = ref(false)
 const showEmojiPicker = ref(false)
 const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
 
-const quickReplies = [
-    trans("Done"),
-    trans("Help!"),
-    trans("Call me"),
-    trans("OK"),
-    trans("Thanks"),
-]
+const quickReplies = computed(
+    () =>
+        usePage().props?.layout?.staff_chat?.quick_replies ?? [
+            trans("Done"),
+            trans("Help!"),
+            trans("Call me"),
+            trans("OK"),
+            trans("Thanks"),
+        ]
+)
 
 const scrollBottom = () =>
     nextTick(() => {
