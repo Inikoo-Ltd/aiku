@@ -2274,6 +2274,25 @@ describe('staff messaging', function () {
     });
 });
 
+describe('staff messaging page', function () {
+    beforeEach(function () {
+        $this->otherUser = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+    });
+
+    test('index renders the messaging page', function () {
+        actingAs($this->user)->get(route('grp.chat.staff.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffMessaging'));
+    });
+
+    test('show renders the messaging page for a participant', function () {
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+
+        actingAs($this->user)->get(route('grp.chat.staff.show', $conversation))
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffMessaging'));
+    });
+});
+
 describe('staff messaging context shortcuts', function () {
     test('ask CRM on an order opens one group conversation with the shop CRM role holders', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);

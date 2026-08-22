@@ -212,7 +212,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 </script>
 
 <template>
-    <div class="flex flex-col bg-white text-gray-900 text-left h-full" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
+    <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
         <!-- Header -->
         <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? 'shrink-0 border-gray-200 bg-gray-50' : 'rounded-t-lg border-[#44475a] bg-[#282a36]'">
             <button v-if="fullScreen" class="p-2 -ml-2 text-gray-600" @click="emit('close')">

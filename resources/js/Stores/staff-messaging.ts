@@ -77,6 +77,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         messagesByUlid: {} as Record<string, StaffMessage[]>,
         notesByUlid: {} as Record<string, ArchivedNote[]>,
         openWindows: [] as WindowState[],
+        fullViewUlid: null as string | null,
         typingByUlid: {} as Record<string, { user_name: string; expiresAt: number }>,
         loadingMessages: {} as Record<string, boolean>,
         fetched: false,
@@ -255,7 +256,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
         handleIncoming(message: StaffMessage) {
             const ulid = message.conversation_ulid
-            const isOpen = this.openWindows.some((w) => w.ulid === ulid && !w.minimised)
+            const isOpen = this.openWindows.some((w) => w.ulid === ulid && !w.minimised) || this.fullViewUlid === ulid
             const myId = usePage().props?.auth?.user?.id
 
             let conversation = this.conversationByUlid(ulid)

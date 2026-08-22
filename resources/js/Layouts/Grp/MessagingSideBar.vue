@@ -9,9 +9,10 @@ import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart } from "@fal"
+import { faChevronLeft, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt } from "@fal"
 import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { router } from "@inertiajs/vue3"
 import Image from "@/Common/Components/Image.vue"
 import RailControls from "@/Layouts/Grp/RailControls.vue"
 import FooterMessage from "@/Components/Footer/FooterMessage.vue"
@@ -21,7 +22,9 @@ import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faChevronLeft, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart)
+library.add(faChevronLeft, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt)
+
+const openFullMessaging = () => router.visit(route("grp.chat.staff.index"))
 
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
@@ -266,6 +269,9 @@ onUnmounted(() => {
                 <FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span>
             </div>
+            <button class="mt-1 text-[#6272a4] hover:text-[#f8f8f2]" v-tooltip="trans('Open messaging')" @click="openFullMessaging">
+                <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
+            </button>
         </div>
 
         <!-- EXPANDED: three counters -->
@@ -273,6 +279,9 @@ onUnmounted(() => {
             <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'all' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('all')"><FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('all') }}</span></span>
             <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'org' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('org')"><FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('org') }}</span></span>
             <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'team' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('team')"><FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('team') }}</span></span>
+            <button class="ml-auto text-[#6272a4] hover:text-[#f8f8f2]" v-tooltip="trans('Open messaging')" @click="openFullMessaging">
+                <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
+            </button>
         </div>
 
         <!-- Unread chats chip -->

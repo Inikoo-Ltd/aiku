@@ -20,6 +20,8 @@ Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');
 Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
 
 Route::prefix('staff')->name('staff.')->group(function () {
+    Route::get('/', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('index');
+    Route::get('/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('show');
     Route::get('/conversations', \App\Actions\Chat\Staff\Json\GetStaffConversations::class)->name('conversations.index');
     Route::post('/conversations', \App\Actions\Chat\Staff\StoreStaffConversation::class)->name('conversations.store');
     Route::get('/conversations/{staffConversation}/messages', \App\Actions\Chat\Staff\Json\GetStaffMessages::class)->name('conversations.messages.index');
