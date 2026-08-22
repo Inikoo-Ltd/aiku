@@ -35,13 +35,14 @@ class BackfillCheckoutComPaymentMethods
     use AsAction;
     use WithCheckoutCom;
 
-    public string $commandSignature = 'payments:backfill_checkout_com_methods {--commit} {--aurora : repair Aurora-fetched payments from Payment Metadata instead of the checkout.com API} {--shop=} {--limit=0}';
+    public string $commandSignature = 'payments:backfill_checkout_com_methods {--commit} {--aurora : repair Aurora-fetched payments from Payment Metadata instead of the checkout.com API} {--shop=} {--limit=0} {--sleep=250 : milliseconds between checkout.com calls, keeps the backfill well under the API rate limit}';
 
     public function asCommand(Command $command): int
     {
         $commit = (bool) $command->option('commit');
         $limit  = (int) $command->option('limit');
         $aurora = (bool) $command->option('aurora');
+        $this->sleepMicroseconds = max(0, (int) $command->option('sleep')) * 1000;
 
         $query = Payment::query()
             ->join('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
@@ -118,6 +119,7 @@ class BackfillCheckoutComPaymentMethods
             return null;
         }
 
+        usleep($this->sleepMicroseconds);
         $checkoutComPayment = $this->getCheckOutPayment($paymentAccountShop, $payment->reference);
         if (Arr::get($checkoutComPayment, 'error')) {
             $command->warn("Payment {$payment->id} ({$payment->reference}): ".json_encode(Arr::only($checkoutComPayment, ['http_status_code', 'message'])));
@@ -145,6 +147,8 @@ class BackfillCheckoutComPaymentMethods
     }
 
     private ?int $auroraOrganisationId = null;
+
+    private int $sleepMicroseconds = 250000;
 
     private function paymentAccountShopFor(Payment $payment, array &$cache): ?PaymentAccountShop
     {
