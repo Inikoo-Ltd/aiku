@@ -230,6 +230,15 @@ onUnmounted(() => {
                 </button>
             </div>
         </div>
+
+        <div
+            class="mt-auto shrink-0 border-t border-[#44475a] flex items-center justify-center gap-x-1.5 py-2 text-[#6272a4]"
+            :class="layout.messagingSidebar.show ? 'px-3 text-xs' : 'flex-col gap-y-0.5 text-xxs'"
+            v-tooltip="trans('Active users')">
+            <span class="h-2 w-2 rounded-full bg-[#50fa7b] shrink-0" />
+            <span class="tabular-nums text-[#f8f8f2]">{{ useLiveUsers().count ?? 0 }}</span>
+            <span v-if="layout.messagingSidebar.show">{{ trans('online') }}</span>
+        </div>
     </div>
 </template>
 
