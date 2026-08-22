@@ -482,7 +482,7 @@ onUnmounted(() => {
                         <div class="text-xs truncate text-[var(--chat-text)]">{{ conversationTitle(conversation) }}</div>
                         <div class="text-xxs text-[var(--chat-muted)] truncate">{{ useTruncate(conversation.last_message ?? '', 26) }}</div>
                     </div>
-                    <span v-if="conversation.unread_count > 0" class="bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
+                    <span v-if="conversation.unread_count > 0" class="text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0" :class="conversation.has_mention ? 'bg-[var(--chat-accent)]' : 'bg-[var(--chat-red)]'">{{ conversation.unread_count }}</span>
                 </button>
             </div>
             </template>

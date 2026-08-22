@@ -27,11 +27,14 @@ class SendStaffMessage
      */
     public function handle(StaffConversation $conversation, User $sender, array $modelData): StaffMessage
     {
+        $body = trim(strip_tags($modelData['body'] ?? ''));
+
         $message = $conversation->messages()->create([
             'user_id'     => $sender->id,
             'parent_id'   => $modelData['parent_id'] ?? null,
-            'body'        => trim(strip_tags($modelData['body'] ?? '')),
+            'body'        => $body,
             'language_id' => $sender->language_id,
+            'mentions'    => $this->resolveMentions($conversation, $body),
         ]);
 
         if (($modelData['image'] ?? null) instanceof UploadedFile) {
@@ -52,6 +55,31 @@ class SendStaffMessage
         TranslateStaffMessage::dispatch($message->id);
 
         return $message;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function resolveMentions(StaffConversation $conversation, string $body): array
+    {
+        if (!preg_match_all('/@([\pL\pN._-]+)/u', $body, $matches)) {
+            return [];
+        }
+
+        $participants = $conversation->participants;
+        $mentions     = [];
+
+        foreach ($matches[1] as $token) {
+            $participant = $participants->first(
+                fn (User $user) => strcasecmp($user->nickname ?? '', $token) === 0 || strcasecmp($user->username ?? '', $token) === 0
+            );
+
+            if ($participant) {
+                $mentions[$participant->id] = $participant->id;
+            }
+        }
+
+        return array_values($mentions);
     }
 
     public function authorize(ActionRequest $request): bool

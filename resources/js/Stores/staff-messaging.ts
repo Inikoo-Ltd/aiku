@@ -22,6 +22,8 @@ export interface StaffMessage {
     user_name: string
     parent_id: number | null
     body: string
+    mentions?: number[]
+    mentioned_me?: boolean
     language_id: number | null
     translations: Record<string, string>
     reactions: StaffMessageReactions
@@ -33,6 +35,7 @@ export interface StaffMessage {
 export interface StaffParticipant {
     id: number
     name: string
+    handle: string | null
     avatar: any
     last_seen_at?: string | null
 }
@@ -45,6 +48,7 @@ export interface StaffConversation {
     last_message_at: string | null
     last_message: string | null
     unread_count: number
+    has_mention: boolean
     context_label?: string | null
     context_url?: string | null
 }
@@ -234,6 +238,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             const conversation = this.conversationByUlid(ulid)
             if (conversation) {
                 conversation.unread_count = 0
+                conversation.has_mention = false
             }
             try {
                 await axios.post(route("grp.chat.staff.conversations.read", ulid))
@@ -280,11 +285,16 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             this.bumpConversation(ulid, message)
 
             if (message.user_id !== myId) {
+                const isMentioned = !!message.mentions?.includes(myId)
+
                 if (!isOpen) {
                     conversation.unread_count = (conversation.unread_count || 0) + 1
                 }
+                if (isMentioned) {
+                    conversation.has_mention = true
+                }
 
-                if (document.hidden || !isOpen) {
+                if (document.hidden || !isOpen || isMentioned) {
                     const layout: any = useLayoutStore()
                     playNotificationSoundFile(buildStorageUrl("sound/notification.mp3", layout?.appUrl)).catch(() => { })
                 }

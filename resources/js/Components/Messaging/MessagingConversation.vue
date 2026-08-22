@@ -48,6 +48,83 @@ const displayAvatar = computed(() => otherParticipants.value[0]?.avatar ?? null)
 const lastSeenAt = computed(() => props.conversation.type === "dm" && otherParticipants.value[0]?.last_seen_at ? otherParticipants.value[0].last_seen_at : null)
 
 const newMessage = ref("")
+const mentionQuery = ref<string | null>(null)
+const mentionActiveIndex = ref(0)
+const mentionMatches = computed(() => {
+    if (mentionQuery.value === null) return []
+    const q = mentionQuery.value.toLowerCase()
+    return props.conversation.participants
+        .filter((p) => p.id !== myId.value && (p.name?.toLowerCase().startsWith(q) || p.handle?.toLowerCase().startsWith(q)))
+        .slice(0, 6)
+})
+const showMentionPopup = computed(() => mentionMatches.value.length > 0)
+
+const updateMentionQuery = () => {
+    const el = textarea.value
+    if (!el) {
+        mentionQuery.value = null
+        return
+    }
+    const caret = el.selectionStart ?? newMessage.value.length
+    const uptoCaret = newMessage.value.slice(0, caret)
+    const match = uptoCaret.match(/(?:^|\s)@([\p{L}\p{N}._-]*)$/u)
+    mentionQuery.value = match ? match[1] : null
+    mentionActiveIndex.value = 0
+}
+
+const selectMention = (participant: StaffConversation["participants"][number]) => {
+    const el = textarea.value
+    const handle = participant.handle ?? participant.name
+    if (!el) return
+    const caret = el.selectionStart ?? newMessage.value.length
+    const uptoCaret = newMessage.value.slice(0, caret)
+    const replaced = uptoCaret.replace(/@([\p{L}\p{N}._-]*)$/u, `@${handle} `)
+    newMessage.value = replaced + newMessage.value.slice(caret)
+    mentionQuery.value = null
+    nextTick(() => {
+        el.focus()
+        const pos = replaced.length
+        el.setSelectionRange(pos, pos)
+    })
+}
+
+const onMentionKeydown = (event: KeyboardEvent) => {
+    if (!showMentionPopup.value) return false
+    if (event.key === "ArrowDown") {
+        event.preventDefault()
+        mentionActiveIndex.value = (mentionActiveIndex.value + 1) % mentionMatches.value.length
+        return true
+    }
+    if (event.key === "ArrowUp") {
+        event.preventDefault()
+        mentionActiveIndex.value = (mentionActiveIndex.value - 1 + mentionMatches.value.length) % mentionMatches.value.length
+        return true
+    }
+    if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault()
+        selectMention(mentionMatches.value[mentionActiveIndex.value])
+        return true
+    }
+    if (event.key === "Escape") {
+        mentionQuery.value = null
+        return true
+    }
+    return false
+}
+
+const escapeHtml = (text: string) =>
+    text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+const renderBody = (message: StaffMessage, text: string) => {
+    const handles = new Set(
+        props.conversation.participants.map((p) => p.handle).filter((h): h is string => !!h)
+    )
+    const own = message.user_id === myId.value
+    const cls = own ? "text-yellow-200" : "text-indigo-600"
+    return escapeHtml(text).replace(/@([\p{L}\p{N}._-]+)/gu, (full, handle) =>
+        handles.has(handle) ? `<span class="font-medium ${cls}">@${escapeHtml(handle)}</span>` : full
+    )
+}
 const pendingImage = ref<File | null>(null)
 const pendingImagePreview = ref<string | null>(null)
 const imageInput = ref<HTMLInputElement | null>(null)
@@ -192,6 +269,7 @@ onUnmounted(() => {
 let typingTimeout: ReturnType<typeof setTimeout> | null = null
 const handleTypingInput = () => {
     autoResize()
+    updateMentionQuery()
     if (typingTimeout) return
     window.Echo.join("grp.live.users").whisper("staffTyping", {
         conversation_ulid: props.conversation.ulid,
@@ -249,6 +327,11 @@ const onEnter = (event: KeyboardEvent) => {
     if (event.shiftKey) return
     event.preventDefault()
     sendCurrent()
+}
+
+const onTextareaKeydown = (event: KeyboardEvent) => {
+    if (onMentionKeydown(event)) return
+    if (event.key === "Enter") onEnter(event)
 }
 
 const toggleReaction = async (message: StaffMessage, emoji: string) => {
@@ -318,7 +401,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                         </div>
                         <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
                         <img v-if="message.gif_url" :src="message.gif_url" loading="lazy" class="max-w-full rounded max-h-[240px]" />
-                        <div v-else-if="messageText(message)" class="whitespace-pre-wrap break-words">{{ messageText(message) }}</div>
+                        <div v-else-if="messageText(message)" class="whitespace-pre-wrap break-words" v-html="renderBody(message, messageText(message))" />
                         <button
                             v-if="!message.gif_url && hasTranslation(message)"
                             class="text-xxs underline opacity-70 mt-1"
@@ -426,6 +509,20 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div v-if="showEmojiPicker" ref="emojiPickerContainer" class="absolute bottom-full left-0 mb-1 z-20">
                     <EmojiPicker @pick="pickEmoji" />
                 </div>
+                <div v-if="showMentionPopup" class="absolute bottom-full left-0 mb-1 z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-56 max-h-48 overflow-y-auto">
+                    <button
+                        v-for="(participant, index) in mentionMatches"
+                        :key="participant.id"
+                        class="w-full flex items-center gap-x-2 px-2 py-1 text-left text-sm"
+                        :class="index === mentionActiveIndex ? 'bg-indigo-50' : 'hover:bg-gray-50'"
+                        @mousedown.prevent="selectMention(participant)"
+                    >
+                        <div class="h-5 w-5 rounded-full overflow-hidden bg-gray-200 shrink-0">
+                            <Image v-if="participant.avatar" :src="participant.avatar" :alt="participant.name" image-cover />
+                        </div>
+                        <span class="truncate">{{ participant.name }}</span>
+                    </button>
+                </div>
                 <textarea
                     ref="textarea"
                     v-model="newMessage"
@@ -434,7 +531,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     :class="fullScreen ? 'min-h-[44px] text-base' : 'text-sm'"
                     :placeholder="trans('Write a message…')"
                     @input="handleTypingInput"
-                    @keydown.enter="onEnter"
+                    @keydown="onTextareaKeydown"
                     @paste="onPaste"
                 />
                 <button

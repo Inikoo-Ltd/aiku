@@ -39,6 +39,11 @@ class GetStaffConversations
                     ->whereColumn('staff_conversation_id', 'staff_conversations.id')
                     ->latest('id')
                     ->limit(1),
+                'has_mention' => StaffMessage::selectRaw('count(*) > 0')
+                    ->whereColumn('staff_conversation_id', 'staff_conversations.id')
+                    ->where('user_id', '!=', $user->id)
+                    ->whereRaw('staff_messages.created_at > coalesce(me.last_read_at, ?)', ['1970-01-01'])
+                    ->whereRaw('mentions @> ?', [json_encode([$user->id])]),
             ])
             ->with('participants')
             ->orderByRaw('staff_conversations.last_message_at desc nulls last')

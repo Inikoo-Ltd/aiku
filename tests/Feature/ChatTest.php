@@ -2275,6 +2275,26 @@ describe('staff messaging', function () {
     });
 });
 
+describe('staff messaging mentions', function () {
+    test('mention resolves to participant and flags unread for them', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+        $other->update(['nickname' => 'adamm']);
+
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'hey @adamm check this']);
+
+        expect($message->mentions)->toBe([$other->id]);
+
+        $theirs = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($other)->firstWhere('id', $conversation->id);
+        $mine   = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id);
+        expect($theirs->has_mention)->toBeTruthy()
+            ->and($mine->has_mention)->toBeFalsy();
+    });
+});
+
 describe('staff messaging page', function () {
     beforeEach(function () {
         $this->otherUser = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
@@ -2318,6 +2338,41 @@ describe('staff messaging context shortcuts', function () {
         $resource = (new \App\Http\Resources\Chat\StaffConversationResource($first->load('participants')))->resolve();
         expect($resource['context_label'])->toBe($order->reference)
             ->and($resource['context_url'])->toContain($order->slug);
+    });
+});
+
+describe('staff messaging audience mapping', function () {
+    test('configured recipients override role fallback', function () {
+        $product = Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+        $other   = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+
+        $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['staff_chat' => ['crm_user_ids' => [$other->id]]])]);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->toBe([$other->id]);
+
+        $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['staff_chat' => ['crm_user_ids' => []]])]);
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id')->all())->not->toBe([$other->id]);
+    });
+});
+
+describe('staff messaging picking session', function () {
+    test('ask CRM on a picking session opens one group conversation with the shop CRM role holders', function () {
+        $pickingSession = \App\Models\Inventory\PickingSession::first();
+        if (!$pickingSession) {
+            $this->markTestSkipped('no picking session available');
+        }
+
+        $first  = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $pickingSession, 'crm');
+        $second = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $pickingSession, 'crm');
+
+        expect($first->id)->toBe($second->id)
+            ->and($first->context_type)->toBe('PickingSession');
+
+        $resource = (new \App\Http\Resources\Chat\StaffConversationResource($first->load('participants')))->resolve();
+        expect($resource['context_url'])->toContain($pickingSession->slug);
     });
 });
 

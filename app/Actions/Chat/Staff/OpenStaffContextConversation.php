@@ -11,6 +11,7 @@ namespace App\Actions\Chat\Staff;
 use App\Http\Resources\Chat\StaffConversationResource;
 use App\Models\Chat\StaffConversation;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Inventory\PickingSession;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class OpenStaffContextConversation
 {
     use AsAction;
 
-    public function handle(User $user, DeliveryNote|Order $context, string $audience): StaffConversation
+    public function handle(User $user, DeliveryNote|Order|PickingSession $context, string $audience): StaffConversation
     {
         $key = 'ctx:'.class_basename($context).':'.$context->id.':'.$audience;
 
@@ -50,7 +51,7 @@ class OpenStaffContextConversation
     public function rules(): array
     {
         return [
-            'context_type' => ['required', Rule::in(['DeliveryNote', 'Order'])],
+            'context_type' => ['required', Rule::in(['DeliveryNote', 'Order', 'PickingSession'])],
             'context_id'   => ['required', 'integer'],
             'audience'     => ['required', Rule::in(GetStaffAudience::AUDIENCES)],
         ];
@@ -59,9 +60,11 @@ class OpenStaffContextConversation
     public function asController(ActionRequest $request): StaffConversationResource
     {
         $validated = $request->validated();
-        $context   = $validated['context_type'] === 'DeliveryNote'
-            ? DeliveryNote::findOrFail($validated['context_id'])
-            : Order::findOrFail($validated['context_id']);
+        $context   = match ($validated['context_type']) {
+            'DeliveryNote'   => DeliveryNote::findOrFail($validated['context_id']),
+            'PickingSession' => PickingSession::findOrFail($validated['context_id']),
+            default          => Order::findOrFail($validated['context_id']),
+        };
         abort_unless($context->group_id === $request->user()->group_id, 403);
 
         $conversation = $this->handle($request->user(), $context, $validated['audience']);

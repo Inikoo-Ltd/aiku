@@ -40,6 +40,8 @@ class StaffMessageResource extends JsonResource
             'user_name'         => $this->user->chatName(),
             'parent_id'         => $this->parent_id,
             'body'              => $this->body,
+            'mentions'          => $this->mentions ?? [],
+            'mentioned_me'      => in_array($request?->user()?->id ?? auth()->id(), $this->mentions ?? []),
             'language_id'       => $this->language_id,
             'translations'      => $translations,
             'reactions'         => $reactions,

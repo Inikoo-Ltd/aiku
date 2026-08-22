@@ -33,6 +33,13 @@ class StaffMessage extends Model implements HasMedia
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'mentions' => 'array',
+        ];
+    }
+
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(StaffConversation::class, 'staff_conversation_id');
