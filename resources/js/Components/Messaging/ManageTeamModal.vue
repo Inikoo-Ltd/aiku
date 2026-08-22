@@ -30,6 +30,7 @@ const emit = defineEmits<{
 const search = ref("")
 const searchInput = ref<HTMLInputElement | null>(null)
 const coworkers = ref<StaffCoworker[]>([])
+const teamMembers = ref<StaffCoworker[]>([])
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isOnline = (id: number) => !!useLiveUsers().liveUsers[id]
@@ -37,6 +38,7 @@ const isOnline = (id: number) => !!useLiveUsers().liveUsers[id]
 const fetchCoworkers = async (q: string) => {
     const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params: q ? { q } : {} })
     coworkers.value = data.data
+    if (!q) teamMembers.value = data.data.filter((c: StaffCoworker) => c.in_team)
 }
 
 const onSearchInput = () => {
@@ -44,12 +46,16 @@ const onSearchInput = () => {
     searchTimeout = setTimeout(() => fetchCoworkers(search.value), 300)
 }
 
-const teamMembers = computed(() => coworkers.value.filter((c) => c.in_team))
 const otherCoworkers = computed(() => coworkers.value.filter((c) => !c.in_team).slice(0, 20))
 
 const toggleTeam = async (coworker: StaffCoworker) => {
     const { data } = await axios.post(route("grp.chat.staff.team.toggle"), { user_id: coworker.id })
     coworker.in_team = data.in_team
+    const listed = coworkers.value.find((c) => c.id === coworker.id)
+    if (listed) listed.in_team = data.in_team
+    teamMembers.value = data.in_team
+        ? [...teamMembers.value.filter((c) => c.id !== coworker.id), coworker]
+        : teamMembers.value.filter((c) => c.id !== coworker.id)
     emit("changed")
 }
 
