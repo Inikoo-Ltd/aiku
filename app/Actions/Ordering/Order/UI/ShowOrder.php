@@ -361,6 +361,11 @@ class ShowOrder extends OrgAction
                     'previous' => $this->getPrevious($order, $request),
                     'next'     => $this->getNext($order, $request),
                 ],
+                'staff_chat'  => [
+                    'context_type' => 'Order',
+                    'context_id'   => $order->id,
+                    'audiences'    => [['key' => 'warehouse', 'label' => __('Ask warehouse')], ['key' => 'crm', 'label' => __('Ask CRM')]],
+                ],
                 'pageHead'    => [
                     'title'           => $order->reference,
                     'model'           => __('Order'),

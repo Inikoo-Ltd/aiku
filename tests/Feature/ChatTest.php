@@ -71,6 +71,7 @@ use App\Models\Chat\ChatEvent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\ShopHasChatAgent;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
@@ -2270,5 +2271,32 @@ describe('staff messaging', function () {
         actingAs($stranger)
             ->postJson(route('grp.chat.staff.conversations.messages.store', $conversation), ['body' => 'intrude'])
             ->assertForbidden();
+    });
+});
+
+describe('staff messaging context shortcuts', function () {
+    test('ask CRM on an order opens one group conversation with the shop CRM role holders', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        $product = Product::where("shop_id", $this->shop->id)->first() ?? createProduct($this->shop)[1];
+        $order   = createOrder($this->customer, $product);
+
+        $crmUser = User::factory()->create(['group_id' => $this->user->group_id]);
+        setPermissionsTeamId($this->user->group_id);
+        $crmUser->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+        expect(\App\Actions\Chat\Staff\GetStaffAudience::run('crm', $order)->pluck('id'))->toContain($crmUser->id);
+
+        $first  = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $order, 'crm');
+        $second = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $order, 'crm');
+
+        expect($first->id)->toBe($second->id)
+            ->and($first->type)->toBe('group')
+            ->and($first->context_type)->toBe('Order')
+            ->and($first->context_id)->toBe($order->id)
+            ->and($first->participants()->pluck('users.id'))->toContain($crmUser->id, $this->user->id);
+
+        $resource = (new \App\Http\Resources\Chat\StaffConversationResource($first->load('participants')))->resolve();
+        expect($resource['context_label'])->toBe($order->reference)
+            ->and($resource['context_url'])->toContain($order->slug);
     });
 });

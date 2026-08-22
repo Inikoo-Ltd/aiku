@@ -42,6 +42,8 @@ export interface StaffConversation {
     last_message_at: string | null
     last_message: string | null
     unread_count: number
+    context_label?: string | null
+    context_url?: string | null
 }
 
 export interface StaffCoworker {
@@ -86,6 +88,18 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
         async openWithUser(userId: number) {
             const { data } = await axios.post(route("grp.chat.staff.conversations.store"), { user_ids: [userId] })
+            const conversation: StaffConversation = data.data
+            const existingIndex = this.conversations.findIndex((c) => c.ulid === conversation.ulid)
+            if (existingIndex === -1) {
+                this.conversations.unshift(conversation)
+            } else {
+                this.conversations[existingIndex] = conversation
+            }
+            this.openConversation(conversation.ulid)
+        },
+
+        async openContext(contextType: string, contextId: number, audience: string) {
+            const { data } = await axios.post(route("grp.chat.staff.context.open"), { context_type: contextType, context_id: contextId, audience })
             const conversation: StaffConversation = data.data
             const existingIndex = this.conversations.findIndex((c) => c.ulid === conversation.ulid)
             if (existingIndex === -1) {

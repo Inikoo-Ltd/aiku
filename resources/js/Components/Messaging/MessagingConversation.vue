@@ -217,6 +217,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div class="text-sm font-medium truncate">{{ displayName }}</div>
                 <div class="text-xs text-gray-500 h-4">
                     <span v-if="typingUser">{{ typingUser }} {{ trans('is typing…') }}</span>
+                    <a v-else-if="conversation.context_url" :href="conversation.context_url" class="text-indigo-600 hover:underline">{{ conversation.context_label }}</a>
                 </div>
             </div>
             <button v-if="!fullScreen" class="p-2 text-gray-500 hover:text-gray-800" @click="emit('minimise')">

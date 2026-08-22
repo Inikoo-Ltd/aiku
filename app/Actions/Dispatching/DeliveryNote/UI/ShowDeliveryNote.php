@@ -1092,6 +1092,11 @@ class ShowDeliveryNote extends OrgAction
                 'previous' => $this->getPrevious($deliveryNote, $request),
                 'next'     => $this->getNext($deliveryNote, $request),
             ],
+            'staff_chat'    => [
+                'context_type' => 'DeliveryNote',
+                'context_id'   => $deliveryNote->id,
+                'audiences'    => [['key' => 'crm', 'label' => __('Ask CRM')]],
+            ],
             'pageHead'      => [
                 'title'           => $deliveryNote->reference,
                 'model'           => $model,
