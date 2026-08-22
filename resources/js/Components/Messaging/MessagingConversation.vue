@@ -62,7 +62,7 @@ const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
 
 const quickReplies = [
     trans("Done"),
-    trans("Help?"),
+    trans("Help!"),
     trans("Call me"),
     trans("OK"),
     trans("Thanks"),
