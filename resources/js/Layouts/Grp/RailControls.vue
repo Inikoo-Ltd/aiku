@@ -23,11 +23,11 @@ const layout = inject('layout', layoutStructure)
 
 <template>
     <div
-        class="border-b border-[#44475a] flex-shrink-0"
+        class="border-b border-[var(--chat-line)] flex-shrink-0"
         :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2 px-2 py-2' : 'flex flex-col items-center gap-y-3 py-3'">
         <!-- Button: Profile -->
         <div @click="layout.stackedComponents.push({ component: Profile})"
-            class="flex overflow-hidden items-center rounded-full bg-[#44475a] text-sm focus:outline-none focus:ring-2 focus:ring-[#bd93f9] cursor-pointer shrink-0"
+            class="flex overflow-hidden items-center rounded-full bg-[var(--chat-line)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--chat-accent)] cursor-pointer shrink-0"
             :class="layout.messagingSidebar.show ? '' : 'order-first'">
             <span class="sr-only">{{ trans("Open user menu") }}</span>
             <Image class="h-8 w-8 rounded-full" :src="layout.avatar_thumbnail" alt="" />

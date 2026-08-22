@@ -34,6 +34,7 @@ class GetLayout
                 'org' => GetOrganisationsLayout::run($user),
             ],
             'app_theme'      => $user->settings['app_theme'] ?? null,
+            'chat_theme'     => $user->settings['chat_theme'] ?? 'dracula',
 
 
         ];

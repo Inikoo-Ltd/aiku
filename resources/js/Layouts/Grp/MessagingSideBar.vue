@@ -275,7 +275,7 @@ onUnmounted(() => {
 
 <template>
     <div
-        class="hidden md:flex md:flex-col fixed inset-y-0 right-0 h-full bg-[#282a36] border-l border-[#44475a] z-[22] transition-all duration-300 ease-in-out"
+        class="hidden md:flex md:flex-col fixed inset-y-0 right-0 h-full bg-[var(--chat-bg)] border-l border-[var(--chat-line)] z-[22] transition-all duration-300 ease-in-out"
         :class="[
             layout.messagingSidebar.show ? 'md:w-56' : 'md:w-12',
         ]"
@@ -283,11 +283,11 @@ onUnmounted(() => {
         <!-- Toggle: collapse-expand MessagingSideBar -->
         <div
             @click="handleToggle"
-            class="absolute z-10 left-0 top-2/4 -translate-y-full -translate-x-1/2 w-8 lg:w-5 aspect-square border border-[#6272a4] rounded-full bg-[#44475a] flex justify-center items-center cursor-pointer"
+            class="absolute z-10 left-0 top-2/4 -translate-y-full -translate-x-1/2 w-8 lg:w-5 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center cursor-pointer"
             :title="layout.messagingSidebar.show ? 'Collapse the bar' : 'Expand the bar'">
             <FontAwesomeIcon
                 icon="far fa-chevron-left"
-                class="h-[10px] leading-none transition-all duration-300 ease-in-out text-[#f8f8f2]"
+                class="h-[10px] leading-none transition-all duration-300 ease-in-out text-[var(--chat-text)]"
                 aria-hidden="true"
                 :class="layout.messagingSidebar.show ? 'rotate-180' : ''" />
         </div>
@@ -296,50 +296,50 @@ onUnmounted(() => {
 
         <!-- Online counters -->
         <!-- COLLAPSED: three counters -->
-        <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center gap-y-1 pt-2 pb-1 border-b border-[#44475a]">
-            <div class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'all' ? 'bg-[#44475a]' : ''" v-tooltip="trans('Everyone online')" @click="togglePeopleFilter('all')">
-                <FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" />
-                <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span>
+        <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center gap-y-1 pt-2 pb-1 border-b border-[var(--chat-line)]">
+            <div class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'all' ? 'bg-[var(--chat-line)]' : ''" v-tooltip="trans('Everyone online')" @click="togglePeopleFilter('all')">
+                <FontAwesomeIcon icon="fal fa-gopuram" class="text-[var(--chat-green)] text-xs" fixed-width aria-hidden="true" />
+                <span class="text-xxs tabular-nums text-[var(--chat-text)]">{{ allOnlineCount }}</span>
             </div>
-            <div class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'org' ? 'bg-[#44475a]' : ''" v-tooltip="trans('Online in my organisation')" @click="togglePeopleFilter('org')">
-                <FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" />
-                <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span>
+            <div class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'org' ? 'bg-[var(--chat-line)]' : ''" v-tooltip="trans('Online in my organisation')" @click="togglePeopleFilter('org')">
+                <FontAwesomeIcon icon="fal fa-home-alt" class="text-[var(--chat-cyan)] text-xs" fixed-width aria-hidden="true" />
+                <span class="text-xxs tabular-nums text-[var(--chat-text)]">{{ orgOnlineCount }}</span>
             </div>
-            <div class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'team' ? 'bg-[#44475a]' : ''" v-tooltip="trans('Online in my team')" @click="togglePeopleFilter('team')">
-                <FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" />
-                <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span>
+            <div class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'team' ? 'bg-[var(--chat-line)]' : ''" v-tooltip="trans('Online in my team')" @click="togglePeopleFilter('team')">
+                <FontAwesomeIcon icon="fal fa-heart" class="text-[var(--chat-accent)] text-xs" fixed-width aria-hidden="true" />
+                <span class="text-xxs tabular-nums text-[var(--chat-text)]">{{ teamOnlineCount }}</span>
             </div>
         </div>
 
         <!-- EXPANDED: three counters -->
-        <div v-else class="px-3 py-2 flex items-center gap-x-3 border-b border-[#44475a] text-xs">
-            <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'all' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('all')"><FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('all') }}</span></span>
-            <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'org' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('org')"><FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('org') }}</span></span>
-            <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'team' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('team')"><FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('team') }}</span></span>
+        <div v-else class="px-3 py-2 flex items-center gap-x-3 border-b border-[var(--chat-line)] text-xs">
+            <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'all' ? 'bg-[var(--chat-line)]' : ''" @click="togglePeopleFilter('all')"><FontAwesomeIcon icon="fal fa-gopuram" class="text-[var(--chat-green)] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[var(--chat-text)]">{{ allOnlineCount }}</span><span class="text-[var(--chat-label)]">{{ trans('all') }}</span></span>
+            <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'org' ? 'bg-[var(--chat-line)]' : ''" @click="togglePeopleFilter('org')"><FontAwesomeIcon icon="fal fa-home-alt" class="text-[var(--chat-cyan)] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[var(--chat-text)]">{{ orgOnlineCount }}</span><span class="text-[var(--chat-label)]">{{ trans('org') }}</span></span>
+            <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'team' ? 'bg-[var(--chat-line)]' : ''" @click="togglePeopleFilter('team')"><FontAwesomeIcon icon="fal fa-heart" class="text-[var(--chat-accent)] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[var(--chat-text)]">{{ teamOnlineCount }}</span><span class="text-[var(--chat-label)]">{{ trans('team') }}</span></span>
         </div>
 
         <!-- Messaging button -->
         <div v-if="!layout.messagingSidebar.show" class="pt-2 flex justify-center items-center">
-            <button class="h-9 w-9 flex items-center justify-center text-[#6272a4] hover:text-[#f8f8f2]" v-tooltip="trans('Open messaging')" @click="openFullMessaging">
+            <button class="h-9 w-9 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]" v-tooltip="trans('Open messaging')" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
             </button>
         </div>
         <div v-else class="pt-2 pb-1 px-3">
-            <button class="w-full flex items-center gap-x-3 text-[#6272a4] hover:text-[#f8f8f2]" @click="openFullMessaging">
+            <button class="w-full flex items-center gap-x-3 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
-                <span class="text-xs text-[#f8f8f2]">{{ trans('Messaging') }}</span>
+                <span class="text-xs text-[var(--chat-text)]">{{ trans('Messaging') }}</span>
             </button>
         </div>
 
         <!-- Unread chats chip -->
-        <div v-if="store.totalUnread > 0" class="border-b border-[#44475a] py-2 flex justify-center items-center" :class="layout.messagingSidebar.show ? 'gap-2' : ''">
+        <div v-if="store.totalUnread > 0" class="border-b border-[var(--chat-line)] py-2 flex justify-center items-center" :class="layout.messagingSidebar.show ? 'gap-2' : ''">
             <div
-                class="bg-[#ff5555] text-white rounded-md min-w-[2rem] h-7 px-2 flex items-center justify-center text-xs font-medium tabular-nums cursor-pointer"
+                class="bg-[var(--chat-red)] text-white rounded-md min-w-[2rem] h-7 px-2 flex items-center justify-center text-xs font-medium tabular-nums cursor-pointer"
                 v-tooltip="trans('Unread chats')"
                 @click="!layout.messagingSidebar.show && handleToggle()">
                 {{ store.totalUnread > 99 ? '99+' : store.totalUnread }}
             </div>
-            <span v-if="layout.messagingSidebar.show" class="text-[#f8f8f2] text-xs">{{ trans('unread') }}</span>
+            <span v-if="layout.messagingSidebar.show" class="text-[var(--chat-text)] text-xs">{{ trans('unread') }}</span>
         </div>
 
         <!-- COLLAPSED: avatar rail -->
@@ -347,25 +347,25 @@ onUnmounted(() => {
             <button
                 v-for="item in railVisible"
                 :key="'rail-' + item.coworker.id"
-                class="relative h-7 w-7 rounded-full overflow-hidden bg-[#44475a] shrink-0"
+                class="relative h-7 w-7 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0"
                 :class="item.online ? '' : 'opacity-40'"
                 :title="getTooltipName(item.coworker.name, item.coworker.id)"
                 v-tooltip
                 @click="openUser(item.coworker.id)">
                 <Image v-if="item.coworker.avatar" :src="item.coworker.avatar" :alt="item.coworker.name" image-cover />
-                <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-[#282a36]" :class="[presence(item.coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(item.coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(item.coworker) === 'idle' ? trans('Idle') : ''" />
-                <span v-if="unreadForUser(item.coworker.id) > 0" class="absolute -top-1 -right-1 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(item.coworker.id) }}</span>
+                <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(item.coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(item.coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(item.coworker) === 'idle' ? trans('Idle') : ''" />
+                <span v-if="unreadForUser(item.coworker.id) > 0" class="absolute -top-1 -right-1 bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(item.coworker.id) }}</span>
             </button>
             <button
                 v-if="railOverflowCount > 0"
-                class="relative h-7 w-7 rounded-full bg-[#44475a] shrink-0 flex items-center justify-center text-xxs text-[#f8f8f2]"
+                class="relative h-7 w-7 rounded-full bg-[var(--chat-line)] shrink-0 flex items-center justify-center text-xxs text-[var(--chat-text)]"
                 v-tooltip="trans('Show all')"
                 @click="handleToggle">
                 +{{ railOverflowCount }}
             </button>
             <button
-                class="h-9 w-9 rounded-full bg-transparent border border-dashed border-[#6272a4] shrink-0 flex items-center justify-center text-[#6272a4] hover:text-[#f8f8f2] hover:border-[#f8f8f2]"
+                class="h-9 w-9 rounded-full bg-transparent border border-dashed border-[var(--chat-muted)] shrink-0 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)] hover:border-[var(--chat-text)]"
                 v-tooltip="trans('New message')"
                 @click="openNewMessageFromCollapsed">
                 <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
@@ -376,16 +376,16 @@ onUnmounted(() => {
         <div v-else class="flex-1 flex flex-col overflow-y-auto custom-hide-scrollbar pt-2 pb-3">
             <div v-if="showInput" class="p-3 pb-2 shrink-0">
                 <div class="relative">
-                    <FontAwesomeIcon icon="fal fa-search" class="absolute left-2 top-1/2 -translate-y-1/2 text-[#6272a4] text-xs" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-search" class="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--chat-muted)] text-xs" fixed-width aria-hidden="true" />
                     <input
                         ref="searchInput"
                         v-model="search"
                         type="text"
                         :placeholder="searchPlaceholder"
-                        class="w-full pl-7 pr-7 py-1.5 text-xs bg-[#21222c] text-[#f8f8f2] placeholder-[#6272a4] border border-[#44475a] rounded-md focus:outline-none focus:ring-1 focus:ring-[#bd93f9]"
+                        class="w-full pl-7 pr-7 py-1.5 text-xs bg-[var(--chat-bg-alt)] text-[var(--chat-text)] placeholder-[var(--chat-muted)] border border-[var(--chat-line)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--chat-accent)]"
                         @input="onSearchInput"
                         @keydown.esc="closeSearch" />
-                    <button v-if="plusOpened || search" class="absolute right-2 top-1/2 -translate-y-1/2 text-[#6272a4] hover:text-[#f8f8f2]" @click="closeSearch">
+                    <button v-if="plusOpened || search" class="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="closeSearch">
                         <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                     </button>
                 </div>
@@ -397,35 +397,35 @@ onUnmounted(() => {
                     v-for="coworker in sortedSearchResults"
                     :key="'search-' + coworker.id"
                     role="button" tabindex="0"
-                    class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left cursor-pointer"
+                    class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left cursor-pointer"
                     :class="presence(coworker) !== 'offline' ? '' : 'opacity-40'"
                     @click="openSearchResult(coworker)">
-                    <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[#44475a] shrink-0">
+                    <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
                         <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                        <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                        <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="[presence(coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
+                        <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                        <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
                     </div>
                     <div class="flex-1 flex flex-col min-w-0">
-                        <span class="text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                        <span class="text-xs truncate text-[var(--chat-text)]">{{ coworker.name }}</span>
                         <template v-if="getCurrentPage(coworker.id)?.label">
-                            <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[#8b91ad] truncate hover:underline">
+                            <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[var(--chat-label)] truncate hover:underline">
                                 {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
                             </a>
-                            <span v-else class="text-xxs text-[#8b91ad] truncate">
+                            <span v-else class="text-xxs text-[var(--chat-label)] truncate">
                                 {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
                             </span>
                         </template>
                     </div>
                     <span role="button" tabindex="0" class="shrink-0" @click="toggleTeam(coworker, $event)" v-tooltip="coworker.in_team ? trans('In my team') : trans('Add to my team')">
-                        <FontAwesomeIcon :icon="coworker.in_team ? 'fas fa-star' : 'fal fa-star'" :class="coworker.in_team ? 'text-[#f1fa8c]' : 'text-[#6272a4]'" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon :icon="coworker.in_team ? 'fas fa-star' : 'fal fa-star'" :class="coworker.in_team ? 'text-[var(--chat-yellow)]' : 'text-[var(--chat-muted)]'" fixed-width aria-hidden="true" />
                     </span>
                 </div>
             </template>
 
             <template v-else-if="!peopleFilter">
-            <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6272a4]">
+            <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[var(--chat-muted)]">
                 <span>{{ trans('My team') }} ({{ teamOnlineCount }}/{{ teamCoworkers.length }} {{ trans('online') }})</span>
-                <button class="shrink-0 text-[#bd93f9] hover:text-[#f8f8f2]" @click="isManageTeamOpen = true" v-tooltip="trans('Manage my team')">
+                <button class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="isManageTeamOpen = true" v-tooltip="trans('Manage my team')">
                     <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
                 </button>
             </div>
@@ -433,64 +433,64 @@ onUnmounted(() => {
                 v-for="coworker in filteredTeamCoworkers"
                 :key="'exp-team-' + coworker.id"
                 role="button" tabindex="0"
-                class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left cursor-pointer"
+                class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left cursor-pointer"
                 :class="presence(coworker) !== 'offline' ? '' : 'opacity-40'"
                 @click="openUser(coworker.id)">
-                <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[#44475a] shrink-0">
+                <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
                     <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                    <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="[presence(coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
+                    <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
                 </div>
                 <div class="flex-1 flex flex-col min-w-0">
-                    <span class="text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                    <span class="text-xs truncate text-[var(--chat-text)]">{{ coworker.name }}</span>
                     <template v-if="getCurrentPage(coworker.id)?.label">
-                        <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[#8b91ad] truncate hover:underline">
+                        <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[var(--chat-label)] truncate hover:underline">
                             {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
                         </a>
-                        <span v-else class="text-xxs text-[#8b91ad] truncate">
+                        <span v-else class="text-xxs text-[var(--chat-label)] truncate">
                             {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
                         </span>
                     </template>
                 </div>
-                <span v-if="unreadForUser(coworker.id) > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
+                <span v-if="unreadForUser(coworker.id) > 0" class="bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
                 <span role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click.stop="store.openWithUser(coworker.id)" v-tooltip="trans('Message')">
-                    <FontAwesomeIcon icon="fal fa-comment" class="text-[#6272a4] hover:text-[#f8f8f2]" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-comment" class="text-[var(--chat-muted)] hover:text-[var(--chat-text)]" fixed-width aria-hidden="true" />
                 </span>
             </div>
 
-            <div class="border-t border-[#44475a] mt-2">
-                <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6272a4]">
+            <div class="border-t border-[var(--chat-line)] mt-2">
+                <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[var(--chat-muted)]">
                     <span>{{ trans('Messages') }}</span>
-                    <button v-if="!plusOpened" class="shrink-0 text-[#bd93f9] hover:text-[#f8f8f2]" @click="openPlusSearch" v-tooltip="trans('New message')">
+                    <button v-if="!plusOpened" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="openPlusSearch" v-tooltip="trans('New message')">
                         <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
                     </button>
                 </div>
                 <button
                     v-for="conversation in sortedConversations"
                     :key="'conv-' + conversation.ulid"
-                    class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left"
+                    class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
                     @click="store.openConversation(conversation.ulid)">
-                    <div v-if="conversation.type === 'group'" class="h-6 w-6 rounded-full bg-[#44475a] flex items-center justify-center shrink-0">
-                        <FontAwesomeIcon icon="fal fa-comments" class="text-[#bd93f9]" fixed-width aria-hidden="true" />
+                    <div v-if="conversation.type === 'group'" class="h-6 w-6 rounded-full bg-[var(--chat-line)] flex items-center justify-center shrink-0">
+                        <FontAwesomeIcon icon="fal fa-comments" class="text-[var(--chat-accent)]" fixed-width aria-hidden="true" />
                     </div>
-                    <div v-else class="relative h-6 w-6 rounded-full overflow-hidden bg-[#44475a] shrink-0">
+                    <div v-else class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
                         <Image v-if="conversationAvatar(conversation)" :src="conversationAvatar(conversation)" :alt="conversationTitle(conversation)" image-cover />
-                        <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                        <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="isOnline(conversationOtherId(conversation)) ? 'bg-[#50fa7b]' : 'bg-[#6272a4]'" />
+                        <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                        <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="isOnline(conversationOtherId(conversation)) ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="text-xs truncate text-[#f8f8f2]">{{ conversationTitle(conversation) }}</div>
-                        <div class="text-xxs text-[#6272a4] truncate">{{ useTruncate(conversation.last_message ?? '', 26) }}</div>
+                        <div class="text-xs truncate text-[var(--chat-text)]">{{ conversationTitle(conversation) }}</div>
+                        <div class="text-xxs text-[var(--chat-muted)] truncate">{{ useTruncate(conversation.last_message ?? '', 26) }}</div>
                     </div>
-                    <span v-if="conversation.unread_count > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
+                    <span v-if="conversation.unread_count > 0" class="bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
                 </button>
             </div>
             </template>
 
             <template v-else>
-            <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6272a4]">
+            <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[var(--chat-muted)]">
                 <span>{{ peopleFilterHeader }}</span>
-                <button class="shrink-0 text-[#6272a4] hover:text-[#f8f8f2]" @click="clearPeopleFilter" v-tooltip="trans('Clear filter')">
+                <button class="shrink-0 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="clearPeopleFilter" v-tooltip="trans('Clear filter')">
                     <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                 </button>
             </div>
@@ -498,39 +498,39 @@ onUnmounted(() => {
                 v-for="coworker in filteredPeopleList"
                 :key="'filter-' + coworker.id"
                 role="button" tabindex="0"
-                class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left cursor-pointer"
+                class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left cursor-pointer"
                 :class="presence(coworker) !== 'offline' ? '' : 'opacity-40'"
                 @click="openUser(coworker.id)">
-                <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[#44475a] shrink-0">
+                <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
                     <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                    <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="[presence(coworker) === 'online' ? 'bg-[#50fa7b]' : (presence(coworker) === 'idle' ? 'bg-[#f1fa8c]' : 'bg-[#6272a4]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
+                    <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
                 </div>
                 <div class="flex-1 flex flex-col min-w-0">
-                    <span class="text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                    <span class="text-xs truncate text-[var(--chat-text)]">{{ coworker.name }}</span>
                     <template v-if="getCurrentPage(coworker.id)?.label">
-                        <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[#8b91ad] truncate hover:underline">
+                        <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[var(--chat-label)] truncate hover:underline">
                             {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
                         </a>
-                        <span v-else class="text-xxs text-[#8b91ad] truncate">
+                        <span v-else class="text-xxs text-[var(--chat-label)] truncate">
                             {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
                         </span>
                     </template>
                 </div>
-                <span v-if="unreadForUser(coworker.id) > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
+                <span v-if="unreadForUser(coworker.id) > 0" class="bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
                 <span class="shrink-0" @click.stop="store.openWithUser(coworker.id)" v-tooltip="trans('Message')">
-                    <FontAwesomeIcon icon="fal fa-comment" class="text-[#6272a4] hover:text-[#f8f8f2]" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-comment" class="text-[var(--chat-muted)] hover:text-[var(--chat-text)]" fixed-width aria-hidden="true" />
                 </span>
                 <span v-if="peopleFilter !== 'team'" role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click="toggleTeam(coworker, $event)" v-tooltip="coworker.in_team ? trans('In my team') : trans('Add to my team')">
-                    <FontAwesomeIcon :icon="coworker.in_team ? 'fas fa-star' : 'fal fa-star'" :class="coworker.in_team ? 'text-[#f1fa8c]' : 'text-[#6272a4]'" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon :icon="coworker.in_team ? 'fas fa-star' : 'fal fa-star'" :class="coworker.in_team ? 'text-[var(--chat-yellow)]' : 'text-[var(--chat-muted)]'" fixed-width aria-hidden="true" />
                 </span>
             </div>
 
-            <div class="border-t border-[#44475a] mt-2 flex items-center justify-between px-3 py-2">
-                <button class="text-left text-xs text-[#6272a4] hover:text-[#f8f8f2]" @click="clearPeopleFilter">
+            <div class="border-t border-[var(--chat-line)] mt-2 flex items-center justify-between px-3 py-2">
+                <button class="text-left text-xs text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="clearPeopleFilter">
                     {{ trans('Messages') }} ({{ conversationsSummary.total }}, {{ conversationsSummary.unread }} {{ trans('unread') }})
                 </button>
-                <button v-if="!plusOpened" class="shrink-0 text-[#bd93f9] hover:text-[#f8f8f2]" @click="openPlusSearch" v-tooltip="trans('New message')">
+                <button v-if="!plusOpened" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="openPlusSearch" v-tooltip="trans('New message')">
                     <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
                 </button>
             </div>
@@ -538,7 +538,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Bottom-pinned: customer chats trigger -->
-        <div v-if="layout?.user?.is_agent" class="mt-auto shrink-0 border-t border-[#44475a] pt-2 pb-7">
+        <div v-if="layout?.user?.is_agent" class="mt-auto shrink-0 border-t border-[var(--chat-line)] pt-2 pb-7">
             <FooterMessage in-rail />
         </div>
     </div>

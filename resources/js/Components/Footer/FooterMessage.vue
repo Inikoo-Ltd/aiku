@@ -326,14 +326,14 @@ onUnmounted(() => {
     <div v-if="inRail" class="relative w-full mb-1">
         <!-- Trigger: rail -->
         <div ref="railTrigger" class="cursor-pointer" @click="togglePopover">
-            <div v-if="layout?.messagingSidebar?.show" class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left">
-                <FontAwesomeIcon icon="fal fa-comment-alt-lines" class="text-[#6272a4]" fixed-width aria-hidden="true" />
-                <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ trans('Customer chats') }}</span>
-                <span v-if="totalUnread > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
+            <div v-if="layout?.messagingSidebar?.show" class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left">
+                <FontAwesomeIcon icon="fal fa-comment-alt-lines" class="text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                <span class="flex-1 text-xs truncate text-[var(--chat-text)]">{{ trans('Customer chats') }}</span>
+                <span v-if="totalUnread > 0" class="bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
             </div>
-            <div v-else class="relative h-9 w-9 mx-auto rounded flex items-center justify-center text-[#6272a4] hover:text-[#f8f8f2]">
+            <div v-else class="relative h-9 w-9 mx-auto rounded flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]">
                 <FontAwesomeIcon icon="fal fa-comment-alt-lines" fixed-width aria-hidden="true" />
-                <span v-if="totalUnread > 0" class="absolute -top-0.5 -right-0.5 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
+                <span v-if="totalUnread > 0" class="absolute -top-0.5 -right-0.5 bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
             </div>
         </div>
 

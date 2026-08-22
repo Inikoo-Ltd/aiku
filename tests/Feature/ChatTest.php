@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Chat\Agent\AssignChatAgentToScope;
+use Illuminate\Support\Arr;
 use App\Actions\Chat\Agent\DeleteAgent;
 use App\Actions\Chat\Agent\StoreAgent;
 use App\Actions\Chat\Agent\UpdateAgent;
@@ -2412,6 +2413,22 @@ describe('staff messaging nickname', function () {
 
         actingAs($other)
             ->patchJson(route('grp.models.profile.update'), ['nickname' => 'SharedNick'])
+            ->assertStatus(422);
+    });
+});
+
+describe('staff messaging chat theme', function () {
+    test('user can set chat theme', function () {
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['chat_theme' => 'nord'])
+            ->assertOk();
+
+        expect(Arr::get($this->user->fresh()->settings, 'chat_theme'))->toBe('nord');
+    });
+
+    test('invalid chat theme is rejected', function () {
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['chat_theme' => 'not-a-theme'])
             ->assertStatus(422);
     });
 });

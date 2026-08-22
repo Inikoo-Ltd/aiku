@@ -23,6 +23,7 @@ import Theme from '@/Components/Forms/Fields/Theme.vue'
 import ColorMode from '@/Components/Forms/Fields/ColorMode.vue'
 import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
+import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import AppLogin from '@/Components/Forms/Fields/AppLogin.vue'
 import Pin from '@/Components/Forms/Fields/Pin.vue'
@@ -152,6 +153,7 @@ export const componentsList: { [key: string]: Component } = {
     'checkbox': Checkbox,
     'app_login': AppLogin,
     'app_theme': AppTheme,
+    'chat_theme': ChatTheme,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,
     'pin': Pin,

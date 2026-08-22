@@ -264,30 +264,30 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 <template>
     <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
         <!-- Header -->
-        <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? 'shrink-0 border-gray-200 bg-gray-50' : 'rounded-t-lg border-[#44475a] bg-[#282a36]'">
+        <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? 'shrink-0 border-gray-200 bg-gray-50' : 'rounded-t-lg border-[var(--chat-line)] bg-[var(--chat-bg)]'">
             <button v-if="fullScreen" class="p-2 -ml-2 text-gray-600" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
             </button>
-            <div class="relative h-7 w-7 rounded-full overflow-hidden shrink-0" :class="fullScreen ? 'bg-gray-200' : 'bg-[#44475a]'">
+            <div class="relative h-7 w-7 rounded-full overflow-hidden shrink-0" :class="fullScreen ? 'bg-gray-200' : 'bg-[var(--chat-line)]'">
                 <Image v-if="displayAvatar" :src="displayAvatar" :alt="displayName" image-cover />
-                <span v-else class="flex items-center justify-center h-full text-xs" :class="fullScreen ? 'text-gray-600' : 'text-[#f8f8f2]'">{{ displayName?.[0] }}</span>
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1" :class="[fullScreen ? 'ring-white' : 'ring-[#282a36]', isOnline ? (fullScreen ? 'bg-green-500' : 'bg-[#50fa7b]') : (fullScreen ? 'bg-gray-400' : 'bg-[#6272a4]')]" />
+                <span v-else class="flex items-center justify-center h-full text-xs" :class="fullScreen ? 'text-gray-600' : 'text-[var(--chat-text)]'">{{ displayName?.[0] }}</span>
+                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1" :class="[fullScreen ? 'ring-white' : 'ring-[var(--chat-bg)]', isOnline ? (fullScreen ? 'bg-green-500' : 'bg-[var(--chat-green)]') : (fullScreen ? 'bg-gray-400' : 'bg-[var(--chat-muted)]')]" />
             </div>
             <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate" :class="fullScreen ? '' : 'text-[#f8f8f2]'">{{ displayName }}</div>
-                <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[#6272a4]'">
+                <div class="text-sm font-medium truncate" :class="fullScreen ? '' : 'text-[var(--chat-text)]'">{{ displayName }}</div>
+                <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[var(--chat-muted)]'">
                     <span v-if="typingUser">{{ typingUser }} {{ trans('is typing…') }}</span>
                     <span v-else-if="lastSeenAt && !isOnline">{{ trans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
-                    <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-indigo-600 hover:underline' : 'text-[#bd93f9] hover:underline'">{{ conversation.context_label }}</a>
+                    <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-indigo-600 hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
                 </div>
             </div>
-            <button v-if="!fullScreen" v-tooltip="trans('Open full view')" class="p-2 text-[#6272a4] hover:text-[#f8f8f2]" @click="store.dismissWindow(conversation.ulid); router.visit(route('grp.chat.staff.show', conversation.ulid))">
+            <button v-if="!fullScreen" v-tooltip="trans('Open full view')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="store.dismissWindow(conversation.ulid); router.visit(route('grp.chat.staff.show', conversation.ulid))">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
             </button>
-            <button v-if="!fullScreen" v-tooltip="trans('Minimize')" class="p-2 text-[#6272a4] hover:text-[#f8f8f2]" @click="emit('minimise')">
+            <button v-if="!fullScreen" v-tooltip="trans('Minimize')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('minimise')">
                 <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
             </button>
-            <button v-tooltip="conversation.type === 'dm' ? trans('Done talking to :name', { name: displayName }) : trans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[#6272a4] hover:text-[#f8f8f2]'" @click="emit('close')">
+            <button v-tooltip="conversation.type === 'dm' ? trans('Done talking to :name', { name: displayName }) : trans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
         </div>
