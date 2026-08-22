@@ -39,7 +39,6 @@ const search = ref("")
 const coworkers = ref<StaffCoworker[]>([])
 const searchResults = ref<StaffCoworker[]>([])
 const plusOpened = ref(false)
-const teamSection = ref<HTMLElement | null>(null)
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 let refreshInterval: ReturnType<typeof setInterval> | null = null
 
@@ -117,9 +116,13 @@ const toggleTeam = async (coworker: StaffCoworker, event: Event) => {
 const isManageTeamOpen = ref(false)
 const onTeamChanged = () => fetchCoworkers(search.value)
 
-const focusTeamSection = () => {
+const peopleFilter = ref<null | "all" | "org" | "team">(null)
+const togglePeopleFilter = (filter: "all" | "org" | "team") => {
     if (!layout.messagingSidebar.show) handleToggle()
-    setTimeout(() => teamSection.value?.scrollIntoView({ behavior: "smooth", block: "start" }), 50)
+    peopleFilter.value = peopleFilter.value === filter ? null : filter
+}
+const clearPeopleFilter = () => {
+    peopleFilter.value = null
 }
 
 const myId = computed(() => layout.user?.id)
@@ -131,6 +134,31 @@ const conversationAvatar = (conversation: any) =>
     conversation.participants.find((p: any) => p.id !== myId.value)?.avatar ?? null
 
 const teamOfflineCoworkers = computed(() => teamCoworkers.value.filter((c) => !isOnline(c.id)))
+
+const filteredPeopleList = computed(() => {
+    if (peopleFilter.value === "all") {
+        return coworkers.value.filter((c) => isOnline(c.id) && c.id !== myId.value).sort(byName)
+    }
+    if (peopleFilter.value === "org") {
+        return coworkers.value.filter((c) => c.is_close && isOnline(c.id) && c.id !== myId.value).sort(byName)
+    }
+    if (peopleFilter.value === "team") {
+        return teamCoworkers.value
+    }
+    return []
+})
+
+const peopleFilterHeader = computed(() => {
+    if (peopleFilter.value === "all") return `${trans('Online now')} (${filteredPeopleList.value.length})`
+    if (peopleFilter.value === "org") return `${trans('Online in my organisation')} (${filteredPeopleList.value.length})`
+    if (peopleFilter.value === "team") return `${trans('My team')} (${teamOnlineCount.value} ${trans('online')})`
+    return ""
+})
+
+const conversationsSummary = computed(() => ({
+    total: store.conversations.length,
+    unread: store.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0),
+}))
 
 const conversationUserIds = computed(() => new Set(
     store.conversations.filter((c) => c.type === "dm").map((c) => conversationOtherId(c))
@@ -226,25 +254,25 @@ onUnmounted(() => {
         <!-- Online counters -->
         <!-- COLLAPSED: three counters -->
         <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center gap-y-1 pt-2 pb-1 border-b border-[#44475a]">
-            <div class="flex items-center gap-x-1" v-tooltip="trans('Everyone online')">
+            <div class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'all' ? 'bg-[#44475a]' : ''" v-tooltip="trans('Everyone online')" @click="togglePeopleFilter('all')">
                 <FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span>
             </div>
-            <div class="flex items-center gap-x-1" v-tooltip="trans('Online in my organisation')">
+            <div class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'org' ? 'bg-[#44475a]' : ''" v-tooltip="trans('Online in my organisation')" @click="togglePeopleFilter('org')">
                 <FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span>
             </div>
-            <div class="flex items-center gap-x-1 cursor-pointer" v-tooltip="trans('Online in my team')" @click="focusTeamSection">
+            <div class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'team' ? 'bg-[#44475a]' : ''" v-tooltip="trans('Online in my team')" @click="togglePeopleFilter('team')">
                 <FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span>
             </div>
         </div>
 
         <!-- EXPANDED: three counters -->
-        <div v-else class="px-3 py-2 flex items-center gap-x-3 border-b border-[#44475a] text-xs cursor-pointer" @click="focusTeamSection">
-            <span class="flex items-center gap-x-1" v-tooltip="trans('Everyone online')"><FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('all') }}</span></span>
-            <span class="flex items-center gap-x-1" v-tooltip="trans('Online in my organisation')"><FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('org') }}</span></span>
-            <span class="flex items-center gap-x-1 cursor-pointer" v-tooltip="trans('Online in my team')" @click="focusTeamSection"><FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('team') }}</span></span>
+        <div v-else class="px-3 py-2 flex items-center gap-x-3 border-b border-[#44475a] text-xs">
+            <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'all' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('all')"><FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('all') }}</span></span>
+            <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'org' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('org')"><FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('org') }}</span></span>
+            <span class="flex items-center gap-x-1 cursor-pointer rounded px-1" :class="peopleFilter === 'team' ? 'bg-[#44475a]' : ''" @click="togglePeopleFilter('team')"><FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span><span class="text-[#8b91ad]">{{ trans('team') }}</span></span>
         </div>
 
         <!-- Unread chats chip -->
@@ -282,13 +310,7 @@ onUnmounted(() => {
         </div>
 
         <!-- EXPANDED -->
-        <div v-else class="flex-1 flex flex-col overflow-y-auto custom-hide-scrollbar pt-4 pb-3">
-            <div class="px-3 py-2 flex items-center justify-end border-b border-[#44475a] text-xxs">
-                <button v-if="!plusOpened" class="shrink-0 text-[#bd93f9] hover:text-[#f8f8f2]" @click="openPlusSearch" v-tooltip="trans('New message')">
-                    <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
-                </button>
-            </div>
-
+        <div v-else class="flex-1 flex flex-col overflow-y-auto custom-hide-scrollbar pt-2 pb-3">
             <div v-if="showInput" class="p-3 pb-2 shrink-0">
                 <div class="relative">
                     <FontAwesomeIcon icon="fal fa-search" class="absolute left-2 top-1/2 -translate-y-1/2 text-[#6272a4] text-xs" fixed-width aria-hidden="true" />
@@ -327,8 +349,8 @@ onUnmounted(() => {
                 </div>
             </template>
 
-            <template v-else>
-            <div ref="teamSection" class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6272a4]">
+            <template v-else-if="!peopleFilter">
+            <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6272a4]">
                 <span>{{ trans('My team') }} ({{ teamOnlineCount }} {{ trans('online') }})</span>
                 <button class="shrink-0 text-[#bd93f9] hover:text-[#f8f8f2]" @click="isManageTeamOpen = true" v-tooltip="trans('Manage my team')">
                     <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
@@ -351,13 +373,15 @@ onUnmounted(() => {
                 <span role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click.stop="store.openWithUser(coworker.id)" v-tooltip="trans('Message')">
                     <FontAwesomeIcon icon="fal fa-comment" class="text-[#6272a4] hover:text-[#f8f8f2]" fixed-width aria-hidden="true" />
                 </span>
-                <span role="button" tabindex="0" class="shrink-0 opacity-100 group-hover:opacity-100" @click="toggleTeam(coworker, $event)" v-tooltip="trans('In my team')">
-                    <FontAwesomeIcon :icon="coworker.in_team ? 'fas fa-star' : 'fal fa-star'" :class="coworker.in_team ? 'text-[#f1fa8c]' : 'text-[#6272a4]'" fixed-width aria-hidden="true" />
-                </span>
             </div>
 
             <div class="border-t border-[#44475a] mt-2">
-                <div class="px-3 pt-2 pb-1 text-xs text-[#6272a4]">{{ trans('Conversations') }}</div>
+                <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6272a4]">
+                    <span>{{ trans('Conversations') }}</span>
+                    <button v-if="!plusOpened" class="shrink-0 text-[#bd93f9] hover:text-[#f8f8f2]" @click="openPlusSearch" v-tooltip="trans('New message')">
+                        <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
+                    </button>
+                </div>
                 <button
                     v-for="conversation in sortedConversations"
                     :key="'conv-' + conversation.ulid"
@@ -378,6 +402,40 @@ onUnmounted(() => {
                     <span v-if="conversation.unread_count > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
                 </button>
             </div>
+            </template>
+
+            <template v-else>
+            <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6272a4]">
+                <span>{{ peopleFilterHeader }}</span>
+                <button class="shrink-0 text-[#6272a4] hover:text-[#f8f8f2]" @click="clearPeopleFilter" v-tooltip="trans('Clear filter')">
+                    <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+            <div
+                v-for="coworker in filteredPeopleList"
+                :key="'filter-' + coworker.id"
+                role="button" tabindex="0"
+                class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left cursor-pointer"
+                :class="isOnline(coworker.id) ? '' : 'opacity-40'"
+                @click="openUser(coworker.id)">
+                <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[#44475a] shrink-0">
+                    <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
+                    <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
+                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[#282a36]" :class="isOnline(coworker.id) ? 'bg-[#50fa7b]' : 'bg-[#6272a4]'" />
+                </div>
+                <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
+                <span v-if="unreadForUser(coworker.id) > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
+                <span role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click.stop="store.openWithUser(coworker.id)" v-tooltip="trans('Message')">
+                    <FontAwesomeIcon icon="fal fa-comment" class="text-[#6272a4] hover:text-[#f8f8f2]" fixed-width aria-hidden="true" />
+                </span>
+                <span role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click="toggleTeam(coworker, $event)" v-tooltip="coworker.in_team ? trans('In my team') : trans('Add to my team')">
+                    <FontAwesomeIcon :icon="coworker.in_team ? 'fas fa-star' : 'fal fa-star'" :class="coworker.in_team ? 'text-[#f1fa8c]' : 'text-[#6272a4]'" fixed-width aria-hidden="true" />
+                </span>
+            </div>
+
+            <button class="w-full text-left px-3 py-2 text-xs text-[#6272a4] hover:text-[#f8f8f2] border-t border-[#44475a] mt-2" @click="clearPeopleFilter">
+                {{ trans('Conversations') }} ({{ conversationsSummary.total }}, {{ conversationsSummary.unread }} {{ trans('unread') }})
+            </button>
             </template>
         </div>
 
