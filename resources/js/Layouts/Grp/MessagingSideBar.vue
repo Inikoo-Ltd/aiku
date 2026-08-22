@@ -85,24 +85,17 @@ const teamOnlineCoworkers = computed(() => teamCoworkers.value.filter((c) => isO
 const onlineCoworkers = computed(() =>
     coworkers.value.filter((c) => isOnline(c.id) && !c.in_team).sort(byName)
 )
-const offlineCoworkers = computed(() =>
-    coworkers.value.filter((c) => !isOnline(c.id) && !c.in_team).sort(byName)
-)
 
 const allOnlineCount = computed(() => useLiveUsers().count)
 const orgOnlineCount = computed(() => coworkers.value.filter((c) => c.is_close && isOnline(c.id)).length)
 const teamOnlineCount = computed(() => teamOnlineCoworkers.value.length)
 
-const manyOnline = computed(() => onlineCoworkers.value.length > 10)
-const showInput = computed(() => plusOpened.value || manyOnline.value)
-const searchPlaceholder = computed(() => plusOpened.value ? trans('Find a coworker…') : trans('Filter…'))
+const showInput = computed(() => plusOpened.value)
+const searchPlaceholder = computed(() => trans('Find a coworker…'))
 const query = computed(() => search.value.trim().toLowerCase())
 const clientFilterActive = computed(() => !plusOpened.value && query.value.length > 0)
 const filteredTeamCoworkers = computed(() =>
     clientFilterActive.value ? teamCoworkers.value.filter((c) => c.name.toLowerCase().includes(query.value)) : teamCoworkers.value
-)
-const filteredOnlineCoworkers = computed(() =>
-    clientFilterActive.value ? onlineCoworkers.value.filter((c) => c.name.toLowerCase().includes(query.value)) : onlineCoworkers.value
 )
 const showSearchResults = computed(() => plusOpened.value && query.value.length > 0)
 const sortedSearchResults = computed(() =>
@@ -133,27 +126,35 @@ const conversationOtherId = (conversation: any) =>
 const conversationAvatar = (conversation: any) =>
     conversation.participants.find((p: any) => p.id !== myId.value)?.avatar ?? null
 
-const onlineCoworkerIds = computed(() => new Set(onlineCoworkers.value.map((c) => c.id)))
-
-const extraConversations = computed(() =>
-    store.conversations.filter((c) => c.type === "group" || !onlineCoworkerIds.value.has(conversationOtherId(c)))
-)
-
 const teamOfflineCoworkers = computed(() => teamCoworkers.value.filter((c) => !isOnline(c.id)))
 
+const conversationUserIds = computed(() => new Set(
+    store.conversations.filter((c) => c.type === "dm").map((c) => conversationOtherId(c))
+))
+
 const railOfflineWithConversation = computed(() => {
-    const conversationUserIds = new Set(
-        store.conversations.filter((c) => c.type === "dm").map((c) => conversationOtherId(c))
-    )
-    return offlineCoworkers.value.filter((c) => conversationUserIds.has(c.id))
+    return coworkers.value.filter((c) => !c.in_team && !isOnline(c.id) && conversationUserIds.value.has(c.id))
+})
+
+const railOnlineWithConversation = computed(() => {
+    return onlineCoworkers.value.filter((c) => conversationUserIds.value.has(c.id))
 })
 
 const railCandidates = computed(() => [
     ...teamOnlineCoworkers.value.map((coworker) => ({ coworker, online: true })),
-    ...onlineCoworkers.value.map((coworker) => ({ coworker, online: true })),
     ...teamOfflineCoworkers.value.map((coworker) => ({ coworker, online: false })),
+    ...railOnlineWithConversation.value.map((coworker) => ({ coworker, online: true })),
     ...railOfflineWithConversation.value.map((coworker) => ({ coworker, online: false })),
 ])
+
+const sortedConversations = computed(() => {
+    return [...store.conversations].sort((a, b) => {
+        if (a.unread_count !== b.unread_count) {
+            return b.unread_count - a.unread_count
+        }
+        return conversationTitle(a).localeCompare(conversationTitle(b))
+    })
+})
 
 const railOrdered = computed(() => {
     const withUnread = railCandidates.value
@@ -343,33 +344,10 @@ onUnmounted(() => {
                 </span>
             </div>
 
-            <div class="px-3 pt-2 pb-1 text-xs text-[#6272a4]">{{ trans('Online') }} ({{ onlineCoworkers.length }})</div>
-            <div
-                v-for="coworker in filteredOnlineCoworkers"
-                :key="'exp-on-' + coworker.id"
-                role="button" tabindex="0"
-                class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left cursor-pointer"
-                @click="openUser(coworker.id)">
-                <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[#44475a] shrink-0">
-                    <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                    <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full bg-[#50fa7b] ring-1 ring-[#282a36]" />
-                </div>
-                <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ coworker.name }}</span>
-                <span v-if="unreadForUser(coworker.id) > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
-                <span role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click.stop="store.openWithUser(coworker.id)" v-tooltip="trans('Message')">
-                    <FontAwesomeIcon icon="fal fa-comment" class="text-[#6272a4] hover:text-[#f8f8f2]" fixed-width aria-hidden="true" />
-                </span>
-                <span role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click="toggleTeam(coworker, $event)" v-tooltip="trans('Add to my team')">
-                    <FontAwesomeIcon icon="fal fa-star" class="text-[#6272a4]" fixed-width aria-hidden="true" />
-                </span>
-            </div>
-            </template>
-
             <div class="border-t border-[#44475a] mt-2">
                 <div class="px-3 pt-2 pb-1 text-xs text-[#6272a4]">{{ trans('Conversations') }}</div>
                 <button
-                    v-for="conversation in extraConversations"
+                    v-for="conversation in sortedConversations"
                     :key="'conv-' + conversation.ulid"
                     class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left"
                     @click="store.openConversation(conversation.ulid)">
@@ -388,10 +366,11 @@ onUnmounted(() => {
                     <span v-if="conversation.unread_count > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
                 </button>
             </div>
+            </template>
         </div>
 
         <!-- Bottom-pinned: customer chats trigger -->
-        <div class="mt-auto shrink-0 border-t border-[#44475a] pt-3 pb-8">
+        <div class="mt-auto shrink-0 border-t border-[#44475a] pt-2 pb-7">
             <FooterMessage v-if="layout?.user?.is_agent" in-rail />
         </div>
     </div>
