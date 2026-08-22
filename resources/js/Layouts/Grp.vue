@@ -218,10 +218,10 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
             :class="[
 				layout.leftSidebar.show
 					? (layout.messagingSidebar.show
-						? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-384px)] lg:w-[calc(100%-384px)]'
-						: 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-192px)] lg:w-[calc(100%-240px)]')
+						? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-416px)] lg:w-[calc(100%-416px)]'
+						: 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-192px)] lg:w-[calc(100%-272px)]')
 					: (layout.messagingSidebar.show
-						? 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-288px)] lg:w-[calc(100%-288px)]'
+						? 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-320px)] lg:w-[calc(100%-320px)]'
 						: 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-36px)] lg:w-[calc(100%-48px)]'),
 				layout.hasTopBanner ? 'top-11 lg:top-16' : 'top-11 lg:top-10',
 			]"
@@ -247,7 +247,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
             class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
-				layout.messagingSidebar.show ? 'md:mr-48' : 'md:mr-12',
+				layout.messagingSidebar.show ? 'md:mr-56' : 'md:mr-12',
 				layout.hasTopBanner ? 'mt-6' : '',
 			]">
             <slot />

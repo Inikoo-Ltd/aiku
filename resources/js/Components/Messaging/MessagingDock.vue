@@ -23,7 +23,7 @@ library.add(faComments, faSearch, faUser, faChevronLeft)
 
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
-const desktopAnchor = computed(() => (layout.messagingSidebar.show ? "right-52" : "right-16"))
+const desktopAnchor = computed(() => (layout.messagingSidebar.show ? "right-60" : "right-16"))
 const isMobile = ref(window.innerWidth < 768)
 const onResize = () => (isMobile.value = window.innerWidth < 768)
 

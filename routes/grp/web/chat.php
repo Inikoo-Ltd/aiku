@@ -27,5 +27,6 @@ Route::prefix('staff')->name('staff.')->group(function () {
     Route::post('/conversations/{staffConversation}/read', \App\Actions\Chat\Staff\MarkStaffConversationRead::class)->name('conversations.read');
     Route::post('/messages/{staffMessage}/reactions', \App\Actions\Chat\Staff\ToggleStaffMessageReaction::class)->name('messages.reactions.toggle');
     Route::post('/context', \App\Actions\Chat\Staff\OpenStaffContextConversation::class)->name('context.open');
+    Route::post('/team/toggle', \App\Actions\Chat\Staff\ToggleStaffTeamMember::class)->name('team.toggle');
     Route::get('/coworkers', \App\Actions\Chat\Staff\Json\GetStaffCoworkers::class)->name('coworkers.index');
 });

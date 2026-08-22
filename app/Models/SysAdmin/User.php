@@ -257,6 +257,11 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     }
 
 
+    public function teamMembers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_has_team_members', 'user_id', 'member_user_id')->withTimestamps();
+    }
+
     public function employees(): MorphToMany
     {
         return $this->morphedByMany(Employee::class, 'model', 'user_has_models')->withTimestamps();

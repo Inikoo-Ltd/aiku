@@ -2300,3 +2300,19 @@ describe('staff messaging context shortcuts', function () {
             ->and($resource['context_url'])->toContain($order->slug);
     });
 });
+
+describe('staff messaging team', function () {
+    test('team membership toggles and coworkers endpoint flags it', function () {
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+
+        expect(\App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other))->toBeTrue()
+            ->and($this->user->teamMembers()->count())->toBe(1);
+
+        $coworkers = actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk()->json('data');
+        expect(collect($coworkers)->firstWhere('id', $other->id)['in_team'])->toBeTrue();
+
+        expect(\App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other))->toBeFalse()
+            ->and($this->user->teamMembers()->count())->toBe(0);
+    });
+});

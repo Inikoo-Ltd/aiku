@@ -39,7 +39,7 @@ const deploymentTooltip = computed(() => {
 </script>
 
 <template>
-    <footer class="z-20 fixed w-screen bottom-0 left-0 text-white bg-black transition-all duration-300 ease-in-out" :class="layout?.messagingSidebar?.show ? 'md:pr-48' : 'md:pr-12'">
+    <footer class="z-20 fixed w-screen bottom-0 left-0 text-white bg-black transition-all duration-300 ease-in-out" :class="layout?.messagingSidebar?.show ? 'md:pr-56' : 'md:pr-12'">
         <!-- Helper: Product background (close popup purpose) -->
         <div class="flex justify-between">
             <!-- Left: Logo Section -->
