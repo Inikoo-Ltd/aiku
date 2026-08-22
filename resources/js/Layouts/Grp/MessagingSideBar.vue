@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Common/Components/Image.vue"
 import RailControls from "@/Layouts/Grp/RailControls.vue"
 import FooterMessage from "@/Components/Footer/FooterMessage.vue"
+import ManageTeamModal from "@/Components/Messaging/ManageTeamModal.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
@@ -112,6 +113,9 @@ const toggleTeam = async (coworker: StaffCoworker, event: Event) => {
     const { data } = await axios.post(route("grp.chat.staff.team.toggle"), { user_id: coworker.id })
     coworker.in_team = data.in_team
 }
+
+const isManageTeamOpen = ref(false)
+const onTeamChanged = () => fetchCoworkers(search.value)
 
 const focusTeamSection = () => {
     if (!layout.messagingSidebar.show) handleToggle()
@@ -324,7 +328,12 @@ onUnmounted(() => {
             </template>
 
             <template v-else>
-            <div ref="teamSection" class="px-3 pt-2 pb-1 text-xs text-[#6272a4]">{{ trans('My team') }} ({{ teamOnlineCount }} {{ trans('online') }})</div>
+            <div ref="teamSection" class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6272a4]">
+                <span>{{ trans('My team') }} ({{ teamOnlineCount }} {{ trans('online') }})</span>
+                <button class="shrink-0 text-[#bd93f9] hover:text-[#f8f8f2]" @click="isManageTeamOpen = true" v-tooltip="trans('Manage my team')">
+                    <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
+                </button>
+            </div>
             <div
                 v-for="coworker in filteredTeamCoworkers"
                 :key="'exp-team-' + coworker.id"
@@ -377,6 +386,14 @@ onUnmounted(() => {
             <FooterMessage v-if="layout?.user?.is_agent" in-rail />
         </div>
     </div>
+
+    <Teleport to="body">
+        <ManageTeamModal
+            v-if="isManageTeamOpen"
+            :is-open="isManageTeamOpen"
+            @close="isManageTeamOpen = false"
+            @changed="onTeamChanged" />
+    </Teleport>
 </template>
 
 <style>
