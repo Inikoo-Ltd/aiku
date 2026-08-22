@@ -2349,6 +2349,9 @@ describe('aurora provisional cost fix', function () {
     test('update does not clobber a supplied org_amount', function () {
         [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFE');
 
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
         $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
             'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
             'quantity' => 100,
@@ -2359,7 +2362,7 @@ describe('aurora provisional cost fix', function () {
 
         $orgStock->update(['value_in_locations' => 7905, 'current_supplier_sku_cost' => 7]);
         $movement = UpdateOrgStockMovement::make()->action($movement->fresh(), ['quantity' => 200], strict: false);
-        expect((float) $movement->org_amount)->toBe(1400.0);
+        expect((float) $movement->org_amount)->toBe(1000.0);
     });
 
     test('restore command reverts pre corruption-window movements to snapshot values', function () {
