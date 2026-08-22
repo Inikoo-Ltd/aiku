@@ -5,21 +5,22 @@
   -->
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from "vue"
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 import { usePage } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { formatDistanceToNow } from "date-fns"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip } from "@fal"
+import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffConversation, type StaffMessage } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip)
+library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile)
 
 const GifPicker = defineAsyncComponent(() => import("./GifPicker.vue"))
+const EmojiPicker = defineAsyncComponent(() => import("./EmojiPicker.vue"))
 
 const props = defineProps<{
     conversation: StaffConversation
@@ -56,6 +57,7 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const textarea = ref<HTMLTextAreaElement | null>(null)
 const activeReactionFor = ref<number | null>(null)
 const showGifPicker = ref(false)
+const showEmojiPicker = ref(false)
 const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
 
 const quickReplies = [
@@ -157,7 +159,35 @@ watch(
     { deep: true }
 )
 
-onMounted(scrollBottom)
+const emojiPickerContainer = ref<HTMLElement | null>(null)
+
+const closePickers = () => {
+    showGifPicker.value = false
+    showEmojiPicker.value = false
+}
+
+const handleEscapeKey = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+        closePickers()
+    }
+}
+
+const handleClickOutside = (event: MouseEvent) => {
+    if (!emojiPickerContainer.value?.contains(event.target as Node)) {
+        showEmojiPicker.value = false
+    }
+}
+
+onMounted(() => {
+    scrollBottom()
+    window.addEventListener("keydown", handleEscapeKey)
+    document.addEventListener("click", handleClickOutside)
+})
+
+onUnmounted(() => {
+    window.removeEventListener("keydown", handleEscapeKey)
+    document.removeEventListener("click", handleClickOutside)
+})
 
 let typingTimeout: ReturnType<typeof setTimeout> | null = null
 const handleTypingInput = () => {
@@ -196,6 +226,18 @@ const sendCurrent = async () => {
 const pickGif = async (url: string) => {
     showGifPicker.value = false
     await store.send(props.conversation.ulid, url)
+}
+
+const pickEmoji = (emoji: string) => {
+    if (!textarea.value) return
+    const start = textarea.value.selectionStart
+    const end = textarea.value.selectionEnd
+    newMessage.value = newMessage.value.slice(0, start) + emoji + newMessage.value.slice(end)
+    nextTick(() => {
+        textarea.value?.focus()
+        const newPos = start + emoji.length
+        textarea.value!.setSelectionRange(newPos, newPos)
+    })
 }
 
 const sendQuickReply = async (text: string) => {
@@ -349,6 +391,9 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div v-if="showGifPicker" class="absolute bottom-full left-0 mb-1 z-20" :class="fullScreen ? 'w-full max-w-md' : ''">
                     <GifPicker class="w-full" @pick="pickGif" @close="showGifPicker = false" />
                 </div>
+                <div v-if="showEmojiPicker" ref="emojiPickerContainer" class="absolute bottom-full left-0 mb-1 z-20">
+                    <EmojiPicker @pick="pickEmoji" />
+                </div>
                 <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
                 <button
                     class="shrink-0 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
@@ -358,10 +403,18 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
                 </button>
                 <button
+                    v-tooltip="trans('Emoji')"
+                    class="shrink-0 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                    :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
+                    @click.stop="showEmojiPicker = !showEmojiPicker; showGifPicker = false"
+                >
+                    <FontAwesomeIcon icon="fal fa-smile" fixed-width aria-hidden="true" />
+                </button>
+                <button
                     v-tooltip="trans('Send a GIF')"
                     class="shrink-0 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100 text-xxs font-medium"
                     :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
-                    @click="showGifPicker = !showGifPicker"
+                    @click="showGifPicker = !showGifPicker; showEmojiPicker = false"
                 >
                     GIF
                 </button>
