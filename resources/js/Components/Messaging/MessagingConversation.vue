@@ -204,26 +204,26 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 <template>
     <div class="flex flex-col bg-white text-gray-900 text-left h-full" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
         <!-- Header -->
-        <div class="flex items-center gap-x-2 px-3 py-2 border-b border-gray-200 bg-gray-50" :class="fullScreen ? 'shrink-0' : 'rounded-t-lg'">
+        <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? 'shrink-0 border-gray-200 bg-gray-50' : 'rounded-t-lg border-[#44475a] bg-[#282a36]'">
             <button v-if="fullScreen" class="p-2 -ml-2 text-gray-600" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
             </button>
-            <div class="relative h-7 w-7 rounded-full overflow-hidden bg-gray-200 shrink-0">
+            <div class="relative h-7 w-7 rounded-full overflow-hidden shrink-0" :class="fullScreen ? 'bg-gray-200' : 'bg-[#44475a]'">
                 <Image v-if="displayAvatar" :src="displayAvatar" :alt="displayName" image-cover />
-                <span v-else class="flex items-center justify-center h-full text-xs text-gray-600">{{ displayName?.[0] }}</span>
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-white" :class="isOnline ? 'bg-green-500' : 'bg-gray-400'" />
+                <span v-else class="flex items-center justify-center h-full text-xs" :class="fullScreen ? 'text-gray-600' : 'text-[#f8f8f2]'">{{ displayName?.[0] }}</span>
+                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1" :class="[fullScreen ? 'ring-white' : 'ring-[#282a36]', isOnline ? (fullScreen ? 'bg-green-500' : 'bg-[#50fa7b]') : (fullScreen ? 'bg-gray-400' : 'bg-[#6272a4]')]" />
             </div>
             <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate">{{ displayName }}</div>
-                <div class="text-xs text-gray-500 h-4">
+                <div class="text-sm font-medium truncate" :class="fullScreen ? '' : 'text-[#f8f8f2]'">{{ displayName }}</div>
+                <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[#6272a4]'">
                     <span v-if="typingUser">{{ typingUser }} {{ trans('is typing…') }}</span>
-                    <a v-else-if="conversation.context_url" :href="conversation.context_url" class="text-indigo-600 hover:underline">{{ conversation.context_label }}</a>
+                    <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-indigo-600 hover:underline' : 'text-[#bd93f9] hover:underline'">{{ conversation.context_label }}</a>
                 </div>
             </div>
-            <button v-if="!fullScreen" class="p-2 text-gray-500 hover:text-gray-800" @click="emit('minimise')">
+            <button v-if="!fullScreen" class="p-2 text-[#6272a4] hover:text-[#f8f8f2]" @click="emit('minimise')">
                 <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
             </button>
-            <button class="p-2 text-gray-500 hover:text-gray-800" @click="emit('close')">
+            <button class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[#6272a4] hover:text-[#f8f8f2]'" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
         </div>

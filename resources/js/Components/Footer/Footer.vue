@@ -5,7 +5,6 @@
   -->
 
 <script setup lang="ts">
-import MessagingDock from '@/Components/Messaging/MessagingDock.vue'
 import FooterLanguage from '@/Components/Footer/FooterLanguage.vue'
 import FooterCurrency from '@/Components/Footer/FooterCurrency.vue'
 import { faHeart, faComputerClassic } from '@fas'
@@ -40,7 +39,7 @@ const deploymentTooltip = computed(() => {
 </script>
 
 <template>
-    <footer class="z-20 fixed w-screen bottom-0 left-0  text-white bg-black">
+    <footer class="z-20 fixed w-screen bottom-0 left-0 text-white bg-black transition-all duration-300 ease-in-out" :class="layout?.messagingSidebar?.show ? 'md:pr-48' : 'md:pr-12'">
         <!-- Helper: Product background (close popup purpose) -->
         <div class="flex justify-between">
             <!-- Left: Logo Section -->
@@ -77,7 +76,6 @@ const deploymentTooltip = computed(() => {
                 </div>
                <!--  <FooterCurrency /> -->
                 <FooterLanguage />
-                <MessagingDock />
                 <FooterMessage v-if="layout?.user?.is_agent" />
             </div>
         </div>

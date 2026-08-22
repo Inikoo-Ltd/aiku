@@ -5,7 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
@@ -13,7 +14,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faComments, faSearch, faUser, faChevronLeft } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useTruncate } from "@/Composables/useTruncate"
@@ -21,7 +21,9 @@ import MessagingConversation from "@/Components/Messaging/MessagingConversation.
 
 library.add(faComments, faSearch, faUser, faChevronLeft)
 
+const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
+const desktopAnchor = computed(() => (layout.messagingSidebar.show ? "right-52" : "right-16"))
 const isMobile = ref(window.innerWidth < 768)
 const onResize = () => (isMobile.value = window.innerWidth < 768)
 
@@ -197,90 +199,6 @@ onUnmounted(() => {
             </Teleport>
         </template>
 
-        <!-- Desktop: footer button + panel -->
-        <Popover v-else v-slot="{ open, close }" class="relative h-full">
-            <PopoverButton :class="open ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-200'"
-                class="group inline-flex items-center px-3 h-full font-medium">
-                <div class="relative text-xs flex items-center gap-x-1.5">
-                    <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
-                    <span>{{ trans('Messaging') }}</span>
-                    <span v-if="store.totalUnread > 0" class="bg-red-500 text-white rounded-full px-1.5 text-xxs leading-4">{{ store.totalUnread }}</span>
-                    <div class="ring-1 h-2 aspect-square rounded-full"
-                        :class="[useLiveUsers().count > 0 ? 'bg-green-400 ring-green-600' : 'bg-gray-400 ring-gray-600']" />
-                </div>
-            </PopoverButton>
-
-            <transition name="headlessui">
-                <PopoverPanel
-                    class="absolute bottom-full right-0 z-40 mb-1 w-80 rounded-t-lg bg-white text-gray-900 text-left border border-gray-200 shadow-xl flex flex-col max-h-[28rem]"
-                >
-                    <div class="p-2 border-b border-gray-200 shrink-0 flex items-center gap-x-2">
-                        <div class="relative flex-1">
-                            <FontAwesomeIcon icon="fal fa-search" class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs" fixed-width aria-hidden="true" />
-                            <input
-                                v-model="search"
-                                type="text"
-                                :placeholder="trans('Search coworkers…')"
-                                class="w-full pl-7 pr-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto">
-                        <div v-if="!search">
-                            <button
-                                v-for="conversation in store.conversations"
-                                :key="conversation.ulid"
-                                class="w-full flex items-center gap-x-2 px-3 py-2 hover:bg-gray-50 text-left"
-                                @click="openConversationFromList(conversation.ulid); close()"
-                            >
-                                <div class="relative h-8 w-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
-                                    <Image v-if="otherAvatar(conversation)" :src="otherAvatar(conversation)" :alt="otherName(conversation)" image-cover />
-                                    <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-gray-500" fixed-width aria-hidden="true" />
-                                    <span
-                                        v-if="conversation.type === 'dm'"
-                                        class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-white"
-                                        :class="otherOnline(conversation) ? 'bg-green-500' : 'bg-gray-400'"
-                                    />
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="text-sm font-medium truncate">{{ otherName(conversation) }}</div>
-                                    <div class="text-xs text-gray-500 truncate">{{ lastMessagePreview(conversation.last_message) }}</div>
-                                </div>
-                                <span v-if="conversation.unread_count > 0" class="bg-indigo-600 text-white rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-xxs shrink-0">
-                                    {{ conversation.unread_count }}
-                                </span>
-                            </button>
-                        </div>
-
-                        <div class="border-t border-gray-100">
-                            <div class="px-3 pt-2 pb-1 text-xs text-gray-400 font-medium">{{ trans('Coworkers') }}</div>
-                            <button
-                                v-for="coworker in visibleCoworkers"
-                                :key="coworker.id"
-                                class="w-full flex items-center gap-x-2 px-3 py-2 hover:bg-gray-50 text-left"
-                                @click="openCoworker(coworker.id); close()"
-                            >
-                                <div class="relative h-8 w-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
-                                    <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                                    <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-gray-500" fixed-width aria-hidden="true" />
-                                    <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-white" :class="isCoworkerOnline(coworker.id) ? 'bg-green-500' : 'bg-gray-400'" />
-                                </div>
-                                <div class="text-sm truncate">{{ coworker.name }}</div>
-                            </button>
-                            <button
-                                v-if="!showAllCoworkers && sortedCoworkers.length > 8"
-                                class="w-full text-left px-3 py-2 text-xs text-indigo-600 hover:underline"
-                                @click="showAllCoworkers = true"
-                            >
-                                {{ trans('Show more') }}
-                            </button>
-                        </div>
-                    </div>
-                </PopoverPanel>
-            </transition>
-        </Popover>
-
         <Teleport to="body">
         <!-- Mobile: single full-screen sheet -->
         <template v-if="isMobile">
@@ -296,7 +214,7 @@ onUnmounted(() => {
 
         <!-- Desktop: mini windows stacked right-to-left -->
         <template v-else>
-            <div class="fixed bottom-6 right-4 z-[30] flex flex-row-reverse items-end gap-x-3 text-gray-900">
+            <div class="fixed bottom-6 z-[30] flex flex-row-reverse items-end gap-x-3 text-gray-900" :class="desktopAnchor">
                 <div v-for="(w, index) in store.openWindowsVisible" :key="w.ulid" class="w-80 h-96">
                     <MessagingConversation
                         :conversation="store.conversationByUlid(w.ulid)!"
@@ -312,7 +230,8 @@ onUnmounted(() => {
             v-for="w in store.openWindowsMinimised"
             :key="w.ulid"
             class="fixed z-[30] h-12 w-12 rounded-full shadow-lg cursor-pointer touch-none"
-            :style="{ ...bubbleStyle(w.ulid), bottom: w.x == null ? '4.5rem' : undefined, right: w.x == null ? '1rem' : undefined }"
+            :class="w.x == null ? desktopAnchor : ''"
+            :style="{ ...bubbleStyle(w.ulid), bottom: w.x == null ? '4.5rem' : undefined }"
             @pointerdown="onBubblePointerDown($event, w.ulid)"
             @pointermove="onBubblePointerMove"
             @pointerup="onBubblePointerUp(w.ulid)"
