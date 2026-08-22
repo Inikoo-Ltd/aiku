@@ -15,6 +15,7 @@ use App\Models\CRM\Prospect;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
 use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -169,14 +170,13 @@ class ReclassifyAiTrafficSourceTouches
         return 'traffic-source:reclassify-ai {--dry-run}';
     }
 
-    public function asCommand(): void
+    public function asCommand(Command $command): void
     {
-        $summary = $this->handle((bool) $this->option('dry-run'));
+        $summary = $this->handle((bool) $command->option('dry-run'));
 
-        $this->table(
+        $command->table(
             ['what', 'count'],
             collect($summary)
-                ->map(fn ($value) => is_array($value) ? implode(', ', $value) ?: '-' : $value)
                 ->map(fn ($value, $key) => [$key, $value])
                 ->values()
                 ->all()
