@@ -31,10 +31,15 @@ const props = defineProps<{
 const store = useStaffMessaging()
 const myId = computed(() => usePage().props?.auth?.user?.id)
 
-const selectedUlid = ref<string | null>(props.selected_ulid)
+const selectedUlid = ref<string | null>(window.innerWidth < 768 ? null : props.selected_ulid)
+const isMobile = ref(window.innerWidth < 768)
 const query = ref("")
 const coworkerResults = ref<StaffCoworker[]>([])
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
+
+const handleResize = () => {
+    isMobile.value = window.innerWidth < 768
+}
 
 const conversationTitle = (conversation: any) =>
     conversation.name || conversation.participants.filter((p: any) => p.id !== myId.value).map((p: any) => p.name).join(", ")
@@ -64,11 +69,16 @@ const onSearchInput = () => {
 }
 
 const selectConversation = (ulid: string) => {
-    selectedUlid.value = ulid
     store.fullViewUlid = ulid
     store.loadMessages(ulid)
     store.markRead(ulid)
-    window.history.replaceState({}, "", route("grp.chat.staff.show", ulid))
+
+    if (isMobile.value) {
+        store.openConversation(ulid)
+    } else {
+        selectedUlid.value = ulid
+        window.history.replaceState({}, "", route("grp.chat.staff.show", ulid))
+    }
 }
 
 const startChatWith = async (coworker: StaffCoworker) => {
@@ -88,8 +98,12 @@ const closeConversation = () => {
 const selectedConversation = computed(() => selectedUlid.value ? store.conversationByUlid(selectedUlid.value) : null)
 
 onMounted(async () => {
+    window.addEventListener('resize', handleResize)
     await store.fetchConversations()
-    if (selectedUlid.value) {
+
+    if (isMobile.value && props.selected_ulid) {
+        store.openConversation(props.selected_ulid)
+    } else if (selectedUlid.value) {
         store.fullViewUlid = selectedUlid.value
         store.loadMessages(selectedUlid.value)
         store.markRead(selectedUlid.value)
@@ -98,6 +112,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
     store.fullViewUlid = null
+    window.removeEventListener('resize', handleResize)
     if (searchTimeout) clearTimeout(searchTimeout)
 })
 </script>
@@ -106,7 +121,7 @@ onUnmounted(() => {
     <Head :title="title" />
     <PageHeading :data="pageHead" />
 
-    <div class="flex min-h-[70vh] h-[calc(100vh-10rem)] border-t border-gray-200">
+    <div class="flex min-h-[50vh] md:min-h-[70vh] h-[calc(100vh-10rem)] border-t border-gray-200">
         <!-- LEFT: conversation list -->
         <div class="w-full md:w-80 shrink-0 border-r border-gray-200 bg-white flex flex-col" :class="selectedUlid ? 'hidden md:flex' : 'flex'">
             <div class="p-3 border-b border-gray-200">

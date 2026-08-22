@@ -6,18 +6,18 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
-import { usePage } from "@inertiajs/vue3"
+import { usePage, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { formatDistanceToNow } from "date-fns"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile } from "@fal"
+import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffConversation, type StaffMessage } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile)
+library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt)
 
 const GifPicker = defineAsyncComponent(() => import("./GifPicker.vue"))
 const EmojiPicker = defineAsyncComponent(() => import("./EmojiPicker.vue"))
@@ -281,6 +281,9 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-indigo-600 hover:underline' : 'text-[#bd93f9] hover:underline'">{{ conversation.context_label }}</a>
                 </div>
             </div>
+            <button v-if="!fullScreen" v-tooltip="trans('Open full view')" class="p-2 text-[#6272a4] hover:text-[#f8f8f2]" @click="router.visit(route('grp.chat.staff.show', conversation.ulid))">
+                <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
+            </button>
             <button v-if="!fullScreen" v-tooltip="trans('Minimize')" class="p-2 text-[#6272a4] hover:text-[#f8f8f2]" @click="emit('minimise')">
                 <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
             </button>
@@ -374,7 +377,8 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     <button
                         v-for="reply in quickReplies"
                         :key="reply"
-                        class="px-2 py-0.5 rounded-full border border-gray-300 text-xxs text-gray-700 hover:bg-gray-100 whitespace-nowrap"
+                        class="rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100 whitespace-nowrap"
+                        :class="fullScreen ? 'text-xs px-3 py-1.5' : 'text-xxs px-2 py-0.5'"
                         @click="sendQuickReply(reply)"
                     >
                         {{ reply }}
@@ -384,20 +388,23 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
                     <button
                         v-tooltip="trans('Send a GIF')"
-                        class="h-[22px] min-w-[28px] px-1.5 rounded-full border border-gray-300 text-gray-500 text-xxs flex items-center justify-center hover:bg-gray-100"
+                        class="rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                        :class="fullScreen ? 'h-8 min-w-[36px] text-xs' : 'h-[22px] min-w-[28px] px-1.5 text-xxs'"
                         @click.stop="showGifPicker = !showGifPicker; showEmojiPicker = false"
                     >
-                        <span class="text-xxs font-medium">GIF</span>
+                        <span :class="fullScreen ? 'text-xs' : 'text-xxs'" class="font-medium">GIF</span>
                     </button>
                     <button
                         v-tooltip="trans('Emoji')"
-                        class="h-[22px] min-w-[28px] px-1.5 rounded-full border border-gray-300 text-gray-500 text-xxs flex items-center justify-center hover:bg-gray-100"
+                        class="rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                        :class="fullScreen ? 'h-8 min-w-[36px] text-xs' : 'h-[22px] min-w-[28px] px-1.5 text-xxs'"
                         @click.stop="showEmojiPicker = !showEmojiPicker; showGifPicker = false"
                     >
                         <FontAwesomeIcon icon="fal fa-smile" fixed-width aria-hidden="true" />
                     </button>
                     <button
-                        class="h-[22px] min-w-[28px] px-1.5 rounded-full border border-gray-300 text-gray-500 text-xxs flex items-center justify-center hover:bg-gray-100"
+                        class="rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                        :class="fullScreen ? 'h-8 min-w-[36px] text-xs' : 'h-[22px] min-w-[28px] px-1.5 text-xxs'"
                         @click="pickImage"
                     >
                         <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
