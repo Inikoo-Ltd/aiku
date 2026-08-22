@@ -39,6 +39,7 @@ class StaffMessageResource extends JsonResource
             'translations'      => $translations,
             'reactions'         => $reactions,
             'image'             => $this->media_id ? $this->imageSources(0, 0, 'attachment') : null,
+            'gif_url'           => preg_match('#^https://media\.tenor\.com/\S+\.gif$#', (string) $this->body) ? $this->body : null,
             'created_at'        => $this->created_at,
         ];
     }

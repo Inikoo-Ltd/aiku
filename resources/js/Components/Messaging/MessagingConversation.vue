@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue"
+import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from "vue"
 import { usePage } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { formatDistanceToNow } from "date-fns"
@@ -18,6 +18,8 @@ import { useStaffMessaging, type StaffConversation, type StaffMessage } from "@/
 import { useFormatTime } from "@/Composables/useFormatTime"
 
 library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip)
+
+const GifPicker = defineAsyncComponent(() => import("./GifPicker.vue"))
 
 const props = defineProps<{
     conversation: StaffConversation
@@ -53,6 +55,7 @@ const showOriginal = ref<Record<number, boolean>>({})
 const messagesContainer = ref<HTMLElement | null>(null)
 const textarea = ref<HTMLTextAreaElement | null>(null)
 const activeReactionFor = ref<number | null>(null)
+const showGifPicker = ref(false)
 const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
 
 const quickReplies = [
@@ -190,6 +193,11 @@ const sendCurrent = async () => {
     parentMessage.value = null
 }
 
+const pickGif = async (url: string) => {
+    showGifPicker.value = false
+    await store.send(props.conversation.ulid, url)
+}
+
 const sendQuickReply = async (text: string) => {
     await store.send(props.conversation.ulid, text, parentMessage.value?.id ?? null)
     parentMessage.value = null
@@ -264,9 +272,10 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                             {{ message.user_name }}
                         </div>
                         <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
-                        <div v-if="messageText(message)" class="whitespace-pre-wrap break-words">{{ messageText(message) }}</div>
+                        <img v-if="message.gif_url" :src="message.gif_url" loading="lazy" class="rounded max-w-[240px]" />
+                        <div v-else-if="messageText(message)" class="whitespace-pre-wrap break-words">{{ messageText(message) }}</div>
                         <button
-                            v-if="hasTranslation(message)"
+                            v-if="!message.gif_url && hasTranslation(message)"
                             class="text-xxs underline opacity-70 mt-1"
                             :class="message.user_id === myId ? 'text-indigo-100' : 'text-gray-500'"
                             @click="showOriginal[message.id] = !showOriginal[message.id]"
@@ -336,7 +345,10 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 </button>
             </div>
 
-            <div class="flex items-end gap-x-2 pb-2">
+            <div class="relative flex items-end gap-x-2 pb-2">
+                <div v-if="showGifPicker" class="absolute bottom-full left-0 mb-1 z-20" :class="fullScreen ? 'w-full max-w-md' : ''">
+                    <GifPicker class="w-full" @pick="pickGif" @close="showGifPicker = false" />
+                </div>
                 <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
                 <button
                     class="shrink-0 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
@@ -344,6 +356,14 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     @click="pickImage"
                 >
                     <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+                </button>
+                <button
+                    v-tooltip="trans('Send a GIF')"
+                    class="shrink-0 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100 text-xxs font-medium"
+                    :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
+                    @click="showGifPicker = !showGifPicker"
+                >
+                    GIF
                 </button>
                 <textarea
                     ref="textarea"

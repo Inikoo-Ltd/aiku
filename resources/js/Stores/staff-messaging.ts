@@ -26,6 +26,7 @@ export interface StaffMessage {
     translations: Record<string, string>
     reactions: StaffMessageReactions
     image: any
+    gif_url?: string | null
     created_at: string
 }
 

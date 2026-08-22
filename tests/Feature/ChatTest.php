@@ -2352,3 +2352,28 @@ describe('staff messaging archive', function () {
         expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->not->toBeNull();
     });
 });
+
+describe('staff messaging gifs', function () {
+    test('search returns mapped tenor results', function () {
+        \Illuminate\Support\Facades\Http::fake([
+            'tenor.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([
+                'results' => [
+                    [
+                        'id'            => '1',
+                        'media_formats' => [
+                            'tinygif' => ['url' => 'https://media.tenor.com/a/b.gif', 'dims' => [100, 80]],
+                            'gif'     => ['url' => 'https://media.tenor.com/a/c.gif', 'dims' => [200, 160]],
+                        ],
+                    ],
+                ],
+                'next' => 'x',
+            ]),
+        ]);
+        config(['services.tenor.key' => 'k']);
+
+        actingAs($this->user)
+            ->getJson(route('grp.chat.staff.gifs.search', ['q' => 'cat']))
+            ->assertOk()
+            ->assertJsonPath('data.0.url', 'https://media.tenor.com/a/c.gif');
+    });
+});
