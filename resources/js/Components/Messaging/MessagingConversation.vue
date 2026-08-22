@@ -126,20 +126,23 @@ const onScroll = () => {
     const el = messagesContainer.value
     if (!el) return
     isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
-    if (el.scrollTop < 40) {
+    if (el.scrollTop < 40 && el.scrollHeight > el.clientHeight + 10) {
         loadOlder()
     }
 }
 
 let isLoadingOlder = false
+let hasOlder = true
 const loadOlder = async () => {
-    if (isLoadingOlder || !messages.value.length) return
+    if (isLoadingOlder || !hasOlder || !messages.value.length) return
     isLoadingOlder = true
     const el = messagesContainer.value
     const prevHeight = el?.scrollHeight ?? 0
+    const prevCount = messages.value.length
     await store.loadMessages(props.conversation.ulid, messages.value[0].id)
+    hasOlder = messages.value.length > prevCount
     nextTick(() => {
-        if (el) el.scrollTop = el.scrollHeight - prevHeight
+        if (el && hasOlder) el.scrollTop = el.scrollHeight - prevHeight
     })
     isLoadingOlder = false
 }
