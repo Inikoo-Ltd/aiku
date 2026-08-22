@@ -40,7 +40,7 @@ class LogUserRequestMiddleware
         $user = $request->user();
 
         if ($user) {
-            Cache::put('staff-last-active:'.$user->id, now()->timestamp, now()->addHours(2));
+            rescue(fn () => Cache::put('staff-last-active:'.$user->id, now()->timestamp, now()->addHours(2)), report: false);
         }
 
         if (!app()->runningUnitTests() && $user) {

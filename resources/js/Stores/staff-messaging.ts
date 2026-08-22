@@ -164,6 +164,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         },
 
         closeConversation(ulid: string) {
+            localStorage.removeItem(`staff-chat-bubble-${ulid}`)
             this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)
             axios.post(route("grp.chat.staff.conversations.archive", ulid)).catch(() => { })
             const index = this.conversations.findIndex((c) => c.ulid === ulid)
