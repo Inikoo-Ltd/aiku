@@ -9,7 +9,7 @@ import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment } from "@fal"
+import { faChevronLeft, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart } from "@fal"
 import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Common/Components/Image.vue"
@@ -20,7 +20,7 @@ import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faChevronLeft, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment)
+library.add(faChevronLeft, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart)
 
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
@@ -223,24 +223,24 @@ onUnmounted(() => {
         <!-- COLLAPSED: three counters -->
         <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center gap-y-1 pt-2 pb-1 border-b border-[#44475a]">
             <div class="flex items-center gap-x-1" v-tooltip="trans('Online')">
-                <span class="h-1.5 w-1.5 rounded-full bg-[#50fa7b]" />
+                <FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span>
             </div>
             <div class="flex items-center gap-x-1" v-tooltip="trans('Online in my organisation')">
-                <span class="h-1.5 w-1.5 rounded-full bg-[#8be9fd]" />
+                <FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span>
             </div>
             <div class="flex items-center gap-x-1 cursor-pointer" v-tooltip="trans('Online in my team')" @click="focusTeamSection">
-                <span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" />
+                <FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span>
             </div>
         </div>
 
         <!-- EXPANDED: three counters -->
         <div v-else class="px-3 py-2 flex items-center gap-x-3 border-b border-[#44475a] text-xxs cursor-pointer" @click="focusTeamSection">
-            <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#50fa7b]" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span> {{ trans('all') }}</span>
-            <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#8be9fd]" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span> {{ trans('org') }}</span>
-            <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span> {{ trans('team') }}</span>
+            <span class="flex items-center gap-x-1"><FontAwesomeIcon icon="fal fa-gopuram" class="text-[#50fa7b] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span> {{ trans('all') }}</span>
+            <span class="flex items-center gap-x-1"><FontAwesomeIcon icon="fal fa-home-alt" class="text-[#8be9fd] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span> {{ trans('org') }}</span>
+            <span class="flex items-center gap-x-1"><FontAwesomeIcon icon="fal fa-heart" class="text-[#bd93f9] text-xs" fixed-width aria-hidden="true" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span> {{ trans('team') }}</span>
         </div>
 
         <!-- Unread chats chip -->
