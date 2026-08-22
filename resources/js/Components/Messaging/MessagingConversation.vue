@@ -299,11 +299,11 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 </button>
             </div>
 
-            <div class="flex gap-x-1.5 overflow-x-auto pb-1.5 -mx-1 px-1">
+            <div class="flex flex-wrap gap-1.5 pb-1.5">
                 <button
                     v-for="reply in quickReplies"
                     :key="reply"
-                    class="shrink-0 px-3 py-1.5 rounded-full border border-gray-300 text-xs text-gray-700 hover:bg-gray-100 whitespace-nowrap"
+                    class="px-2.5 py-1 rounded-full border border-gray-300 text-xs text-gray-700 hover:bg-gray-100 whitespace-nowrap"
                     @click="sendQuickReply(reply)"
                 >
                     {{ reply }}
