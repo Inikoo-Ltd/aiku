@@ -8,6 +8,7 @@
 import { computed, nextTick, onMounted, ref, watch } from "vue"
 import { usePage } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
+import { formatDistanceToNow } from "date-fns"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -41,6 +42,7 @@ const typingUser = computed(() => store.typingByUlid[props.conversation.ulid]?.u
 const otherParticipants = computed(() => props.conversation.participants.filter((p) => p.id !== myId.value))
 const displayName = computed(() => props.conversation.name || otherParticipants.value.map((p) => p.name).join(", "))
 const displayAvatar = computed(() => otherParticipants.value[0]?.avatar ?? null)
+const lastSeenAt = computed(() => props.conversation.type === "dm" && otherParticipants.value[0]?.last_seen_at ? otherParticipants.value[0].last_seen_at : null)
 
 const newMessage = ref("")
 const pendingImage = ref<File | null>(null)
@@ -217,6 +219,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div class="text-sm font-medium truncate" :class="fullScreen ? '' : 'text-[#f8f8f2]'">{{ displayName }}</div>
                 <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[#6272a4]'">
                     <span v-if="typingUser">{{ typingUser }} {{ trans('is typing…') }}</span>
+                    <span v-else-if="lastSeenAt && !isOnline">{{ trans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
                     <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-indigo-600 hover:underline' : 'text-[#bd93f9] hover:underline'">{{ conversation.context_label }}</a>
                 </div>
             </div>
@@ -303,7 +306,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <button
                     v-for="reply in quickReplies"
                     :key="reply"
-                    class="px-2.5 py-1 rounded-full border border-gray-300 text-xs text-gray-700 hover:bg-gray-100 whitespace-nowrap"
+                    class="px-2 py-0.5 rounded-full border border-gray-300 text-xxs text-gray-700 hover:bg-gray-100 whitespace-nowrap"
                     @click="sendQuickReply(reply)"
                 >
                     {{ reply }}
