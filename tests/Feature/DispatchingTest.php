@@ -3665,3 +3665,30 @@ test('the return delivery note dropdown label shows what the operator can check 
         ->and($label)->toContain('r_labelcheck')
         ->and($label)->toContain('TRACK-99001');
 });
+
+test('the return delivery note lookup leads with the search index hits and still falls back to sql', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
+    $this->shop->update(['is_aiku' => true]);
+
+    $action = new \App\Actions\Dispatching\DeliveryNote\Json\GetDeliveryNoteValidForReturn();
+
+    expect($action->indexHits($deliveryNote->reference, $this->organisation->id))->toBe([]);
+
+    $parameters = $action::searchParameters('GB58630', $this->organisation->id);
+    expect($parameters['filter_by'])->toBe('organisation_id:='.$this->organisation->id.' && state:=dispatched')
+        ->and($parameters['query_by'])->toContain('tracking', 'order_references', 'address')
+        ->and($parameters['num_typos'])->toBe(2);
+
+    $document = $deliveryNote->refresh()->toSearchableArray();
+    expect($document['order_references'])->toContain($deliveryNote->orders()->first()->reference)
+        ->and($document['customer_name'])->toBe($this->customer->name)
+        ->and($document)->toHaveKeys(['tracking', 'customer_reference', 'address']);
+
+    $response = getJson(route('grp.json.delivery_note_valid_for_return', [
+        'warehouse' => $this->warehouse->slug,
+        'filter'    => ['global' => $deliveryNote->reference],
+    ]));
+    $response->assertOk();
+    expect(collect($response->json('data'))->pluck('id'))->toContain($deliveryNote->id);
+});

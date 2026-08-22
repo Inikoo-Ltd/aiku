@@ -273,6 +273,20 @@ class DeliveryNote extends Model implements Auditable
             'phone'           => (string)$this->phone,
             'company_name'    => (string)$this->company_name,
             'contact_name'    => (string)$this->contact_name,
+            'tracking'        => (string)$this->tracking_number,
+            'customer_name'   => (string)$this->customer?->name,
+            'customer_reference' => (string)$this->customer?->reference,
+            'order_references' => $this->orders()->get()->flatMap(fn (Order $order) => [
+                $order->reference,
+                $order->customer_reference,
+                $order->external_id,
+            ])->filter()->values()->all(),
+            'address'         => trim(implode(' ', array_filter([
+                $this->address?->address_line_1,
+                $this->address?->address_line_2,
+                $this->address?->locality,
+                $this->address?->postal_code,
+            ]))),
             'date'            => is_string($this->date) ? Carbon::parse($this->date)->timestamp : $this->date->timestamp,
         ];
     }
