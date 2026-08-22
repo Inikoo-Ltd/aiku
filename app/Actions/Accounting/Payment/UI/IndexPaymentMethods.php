@@ -9,11 +9,15 @@ namespace App\Actions\Accounting\Payment\UI;
 
 use App\Actions\Accounting\Payment\WithPaymentSubNavigation;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
+use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Http\Resources\Accounting\PaymentMethodsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Payment;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -26,33 +30,43 @@ use Lorisleiva\Actions\ActionRequest;
 class IndexPaymentMethods extends OrgAction
 {
     use WithPaymentSubNavigation;
+    use WithAccountingSubNavigation;
 
-    protected Organisation $parent;
+    protected Organisation|Shop $parent;
 
-    public function handle(Organisation $parent, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|Shop $parent, ?string $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
         $queryBuilder = QueryBuilder::for(Payment::class);
-        $queryBuilder->where('payments.organisation_id', $parent->id);
+        if ($parent instanceof Shop) {
+            $queryBuilder->where('payments.shop_id', $parent->id);
+        } else {
+            $queryBuilder->where('payments.organisation_id', $parent->id);
+        }
         $queryBuilder->leftJoin('currencies', 'payments.currency_id', 'currencies.id');
         $queryBuilder->leftJoin('organisations', 'payments.organisation_id', 'organisations.id');
+        $queryBuilder->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id');
         $queryBuilder->whereNotNull('payments.method');
+        $queryBuilder->where('payments.type', PaymentTypeEnum::PAYMENT);
 
         return $queryBuilder
             ->defaultSort('method')
             ->select([
                 'payments.method',
+                'payment_accounts.type as payment_account_type',
                 DB::raw('COUNT(*) as number_payments'),
                 DB::raw("SUM(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN payments.amount ELSE 0 END) as total_sales"),
                 DB::raw("COUNT(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN 1 END) as number_success"),
                 DB::raw("ROUND((COUNT(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN 1 END) * 100.0 / COUNT(*)), 2) as success_rate"),
+                DB::raw("SUM(SUM(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN payments.amount ELSE 0 END)) OVER (PARTITION BY currencies.code) as currency_total_sales"),
                 'currencies.code as currency_code',
-                'organisations.slug as organisation_slug'
+                'organisations.slug as organisation_slug',
+                DB::raw(($parent instanceof Shop ? "'".$parent->slug."'" : 'NULL').' as shop_slug'),
             ])
-            ->groupBy('payments.method', 'currencies.code', 'organisations.slug')
+            ->groupBy('payments.method', 'payment_accounts.type', 'currencies.code', 'organisations.slug')
             ->allowedSorts(['method', 'number_payments', 'total_sales', 'number_success', 'success_rate'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -75,6 +89,7 @@ class IndexPaymentMethods extends OrgAction
                 ->column(key: 'method', label: __('Payment Method'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_payments', label: __('Total Payments'), canBeHidden: false, sortable: true, type: 'number')
                 ->column(key: 'total_sales', label: __('Total Sales'), canBeHidden: false, sortable: true, type: 'number')
+                ->column(key: 'sales_share', label: __('Share of Sales'), canBeHidden: false, type: 'number')
                 ->column(key: 'number_success', label: __('Successful Payments'), canBeHidden: false, sortable: true, type: 'number')
                 ->column(key: 'success_rate', label: __('Success Rate (%)'), canBeHidden: false, sortable: true, type: 'number')
                 ->column(key: 'currency_code', label: __('Currency'), canBeHidden: false, searchable: true);
@@ -89,11 +104,21 @@ class IndexPaymentMethods extends OrgAction
         return $this->handle($organisation);
     }
 
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($shop);
+    }
+
     public function htmlResponse(LengthAwarePaginator $paymentMethods, ActionRequest $request): Response
     {
         $routeName       = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
-        $subNavigation   = $this->getPaymentSubNavigation($this->parent);
+        $subNavigation   = $this->parent instanceof Shop
+            ? $this->getSubNavigationShop($this->parent)
+            : $this->getPaymentSubNavigation($this->parent);
 
         return Inertia::render(
             'Org/Accounting/PaymentMethods',
@@ -132,6 +157,11 @@ class IndexPaymentMethods extends OrgAction
             'grp.org.accounting.payments.methods.index' =>
             array_merge(
                 ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
+                $headCrumb()
+            ),
+            'grp.org.shops.show.dashboard.payments.accounting.payments.methods.index' =>
+            array_merge(
+                (new ShowShop())->getBreadcrumbs($routeParameters),
                 $headCrumb()
             ),
             default => []

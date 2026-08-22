@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\UI;
 
+use App\Actions\Accounting\Payment\UI\GetPaymentMethodsSummary;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
@@ -54,6 +55,13 @@ class ShowAccountingDashboard extends OrgAction
                 ],
 
 
+                'payment_methods' => [
+                    'summary' => GetPaymentMethodsSummary::run($organisation),
+                    'route'   => [
+                        'name'       => 'grp.org.accounting.payments.methods.index',
+                        'parameters' => [$organisation->slug],
+                    ],
+                ],
                 'flatTreeMaps' => [
                     [
 

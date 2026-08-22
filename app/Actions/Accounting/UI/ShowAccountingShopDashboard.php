@@ -10,6 +10,7 @@
 
 namespace App\Actions\Accounting\UI;
 
+use App\Actions\Accounting\Payment\UI\GetPaymentMethodsSummary;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -75,6 +76,13 @@ class ShowAccountingShopDashboard extends OrgAction
                     'title'         => __('Accounting dashboard'),
                     'subNavigation' => $subNavigation,
                 ],
+                'payment_methods' => $parent instanceof Shop ? [
+                    'summary' => GetPaymentMethodsSummary::run($parent),
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.dashboard.payments.accounting.payments.methods.index',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                ] : null,
                 'flatTreeMaps' => [
                     [
 

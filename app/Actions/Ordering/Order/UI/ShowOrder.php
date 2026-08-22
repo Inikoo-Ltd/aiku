@@ -59,6 +59,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\SysAdmin\Organisation;
@@ -335,6 +336,8 @@ class ShowOrder extends OrgAction
                 'id'              => $payment->id,
                 'amount'          => $payment->amount,
                 'created_at'      => $payment->created_at,
+                'method'          => $payment->method,
+                'method_label'    => Payment::methodLabel($payment->method, $payment->sub_method),
                 'payment_account' => [
                     'type' => $payment->paymentAccount->type,
                     'code' => $payment->paymentAccount->code,

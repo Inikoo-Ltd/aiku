@@ -120,6 +120,7 @@ class IndexPayments extends OrgAction
                 'payments.date',
                 'payments.amount',
                 'payments.method',
+                'payments.sub_method',
                 'payment_accounts.name as payment_account_name',
                 'payment_accounts.slug as payment_accounts_slug',
                 'payment_accounts.type as payment_account_type',

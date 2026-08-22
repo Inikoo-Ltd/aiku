@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheck, faEllipsisV } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '../Elements/Buttons/Button.vue'
+import PaymentMethodBadge from '@/Components/Accounting/PaymentMethodBadge.vue'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
@@ -39,6 +40,8 @@ const props = defineProps<{
         id: number
         amount: number
         created_at: string
+        method?: string | null
+        method_label?: string | null
         payment_account: {
             type: string
             code: string
@@ -135,6 +138,11 @@ const onPayWithBalance = () => {
                             width: (Number(payment.amount)/Number(totalAmount))*100 + '%',
                         }"
                     />
+                </div>
+                <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                    <PaymentMethodBadge v-for="payment in payments" :key="payment.id"
+                        :label="payment.method_label" :method="payment.method"
+                        :accountType="payment.payment_account?.type" :accountName="payment.payment_account?.name" />
                 </div>
             </div>
     

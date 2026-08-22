@@ -45,12 +45,8 @@ class StorePayment extends OrgAction
         data_set($modelData, 'org_amount', Arr::get($modelData, 'amount') * GetCurrencyExchange::run($customer->shop->currency, $paymentAccount->organisation->currency), overwrite: false);
         data_set($modelData, 'grp_amount', Arr::get($modelData, 'amount') * GetCurrencyExchange::run($customer->shop->currency, $paymentAccount->organisation->group->currency), overwrite: false);
 
-        if (isset($modelData['source'])) {
-            data_set($modelData, 'method', Arr::get($modelData, 'source.card_wallet_type', strtolower(Arr::get($modelData, 'source.scheme', $paymentAccount->type->value))));
-            unset($modelData['source']);
-        } else {
-            data_set($modelData, 'method', $paymentAccount->type->value);
-        }
+        $source    = Arr::pull($modelData, 'source');
+        $modelData = array_merge($modelData, self::methodFromSource($source, $paymentAccount));
 
         /** @var Payment $payment */
         $payment = $paymentAccount->payments()->create($modelData);
@@ -62,6 +58,25 @@ class StorePayment extends OrgAction
         }
 
         return $payment;
+    }
+
+    /**
+     * checkout.com describes the instrument in source: type (card, klarna, paypal, ideal...),
+     * card_wallet_type for Apple/Google Pay and scheme (VISA, MASTERCARD) for cards. The wallet or
+     * type is the method staff care about; the scheme is kept as sub_method. Without a source the
+     * payment account type is the best that is known.
+     *
+     * @return array{method: string, sub_method: string|null}
+     */
+    public static function methodFromSource(?array $source, PaymentAccount $paymentAccount): array
+    {
+        $method    = Arr::get($source, 'card_wallet_type') ?: Arr::get($source, 'type') ?: $paymentAccount->type->value;
+        $subMethod = Arr::get($source, 'scheme') ?: null;
+
+        return [
+            'method'     => strtolower(trim($method)),
+            'sub_method' => $subMethod ? strtolower(trim($subMethod)) : null,
+        ];
     }
 
     public function prepareForValidation(): void
