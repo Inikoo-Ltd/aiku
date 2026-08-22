@@ -304,8 +304,8 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 
                 <div class="flex items-end gap-x-1" :class="message.user_id === myId ? 'flex-row-reverse' : ''">
                     <div
-                        class="relative max-w-[80%] px-3 py-2 rounded-lg text-sm"
-                        :class="message.user_id === myId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'"
+                        class="relative max-w-[80%] rounded-lg text-sm"
+                        :class="[message.gif_url ? 'p-1' : 'px-3 py-2', message.user_id === myId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900']"
                         @mouseenter="!fullScreen && (activeReactionFor = message.id)"
                         @mouseleave="!fullScreen && (activeReactionFor = null)"
                         @click="fullScreen && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
@@ -314,7 +314,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                             {{ message.user_name }}
                         </div>
                         <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
-                        <img v-if="message.gif_url" :src="message.gif_url" loading="lazy" class="rounded max-w-[240px]" />
+                        <img v-if="message.gif_url" :src="message.gif_url" loading="lazy" class="max-w-full rounded max-h-[240px]" />
                         <div v-else-if="messageText(message)" class="whitespace-pre-wrap break-words">{{ messageText(message) }}</div>
                         <button
                             v-if="!message.gif_url && hasTranslation(message)"
@@ -369,15 +369,40 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 </button>
             </div>
 
-            <div class="flex flex-wrap gap-1.5 pb-1.5">
-                <button
-                    v-for="reply in quickReplies"
-                    :key="reply"
-                    class="px-2 py-0.5 rounded-full border border-gray-300 text-xxs text-gray-700 hover:bg-gray-100 whitespace-nowrap"
-                    @click="sendQuickReply(reply)"
-                >
-                    {{ reply }}
-                </button>
+            <div class="flex items-start gap-1.5 pb-1.5">
+                <div class="flex flex-wrap gap-1.5 flex-1">
+                    <button
+                        v-for="reply in quickReplies"
+                        :key="reply"
+                        class="px-2 py-0.5 rounded-full border border-gray-300 text-xxs text-gray-700 hover:bg-gray-100 whitespace-nowrap"
+                        @click="sendQuickReply(reply)"
+                    >
+                        {{ reply }}
+                    </button>
+                </div>
+                <div class="flex items-center gap-x-1 shrink-0">
+                    <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
+                    <button
+                        v-tooltip="trans('Send a GIF')"
+                        class="h-7 w-7 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                        @click.stop="showGifPicker = !showGifPicker; showEmojiPicker = false"
+                    >
+                        <span class="text-xxs font-medium">GIF</span>
+                    </button>
+                    <button
+                        v-tooltip="trans('Emoji')"
+                        class="h-7 w-7 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                        @click.stop="showEmojiPicker = !showEmojiPicker; showGifPicker = false"
+                    >
+                        <FontAwesomeIcon icon="fal fa-smile" fixed-width aria-hidden="true" />
+                    </button>
+                    <button
+                        class="h-7 w-7 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                        @click="pickImage"
+                    >
+                        <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+                    </button>
+                </div>
             </div>
 
             <div v-if="pendingImagePreview" class="relative inline-block mb-1.5">
@@ -394,30 +419,6 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div v-if="showEmojiPicker" ref="emojiPickerContainer" class="absolute bottom-full left-0 mb-1 z-20">
                     <EmojiPicker @pick="pickEmoji" />
                 </div>
-                <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
-                <button
-                    class="shrink-0 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
-                    :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
-                    @click="pickImage"
-                >
-                    <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
-                </button>
-                <button
-                    v-tooltip="trans('Emoji')"
-                    class="shrink-0 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
-                    :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
-                    @click.stop="showEmojiPicker = !showEmojiPicker; showGifPicker = false"
-                >
-                    <FontAwesomeIcon icon="fal fa-smile" fixed-width aria-hidden="true" />
-                </button>
-                <button
-                    v-tooltip="trans('Send a GIF')"
-                    class="shrink-0 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100 text-xxs font-medium"
-                    :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
-                    @click="showGifPicker = !showGifPicker; showEmojiPicker = false"
-                >
-                    GIF
-                </button>
                 <textarea
                     ref="textarea"
                     v-model="newMessage"

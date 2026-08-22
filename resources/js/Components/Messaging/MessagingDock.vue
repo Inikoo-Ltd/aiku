@@ -25,7 +25,16 @@ const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
 const desktopAnchor = computed(() => (layout.messagingSidebar.show ? "right-60" : "right-16"))
 const isMobile = ref(window.innerWidth < 768)
-const onResize = () => (isMobile.value = window.innerWidth < 768)
+const maxVisible = computed(() => (window.innerWidth < 1280 ? 2 : 3))
+const onResize = () => {
+    isMobile.value = window.innerWidth < 768
+    store.maxVisible = window.innerWidth < 1280 ? 2 : 3
+    const visible = store.openWindows.filter((w) => !w.minimised)
+    while (visible.length > store.maxVisible) {
+        const oldest = visible.shift()
+        if (oldest) oldest.minimised = true
+    }
+}
 
 const mobilePanelOpen = ref(false)
 
@@ -132,6 +141,7 @@ watch(
 )
 
 onMounted(() => {
+    store.maxVisible = maxVisible.value
     window.addEventListener("resize", onResize)
     window.visualViewport?.addEventListener("resize", syncSheetToViewport)
     window.visualViewport?.addEventListener("scroll", syncSheetToViewport)
@@ -215,7 +225,7 @@ onUnmounted(() => {
         <!-- Desktop: mini windows stacked right-to-left -->
         <template v-else>
             <div class="fixed bottom-6 z-[30] flex flex-row-reverse items-end gap-x-3 text-gray-900" :class="desktopAnchor">
-                <div v-for="(w, index) in store.openWindowsVisible" :key="w.ulid" class="w-96 h-[32rem]">
+                <div v-for="(w, index) in store.openWindowsVisible" :key="w.ulid" class="w-[28rem] h-[38rem] max-h-[calc(100vh-6rem)]">
                     <MessagingConversation
                         :conversation="store.conversationByUlid(w.ulid)!"
                         @close="store.closeConversation(w.ulid)"

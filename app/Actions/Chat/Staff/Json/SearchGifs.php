@@ -37,7 +37,7 @@ class SearchGifs
 
         $page ??= 1;
 
-        return Cache::remember("klipy-search:{$q}:{$page}", now()->addMinutes(10), function () use ($key, $q, $page) {
+        return Cache::remember("klipy-search:{$q}:{$page}", $q === '' ? now()->addDay() : now()->addHours(6), function () use ($key, $q, $page) {
             try {
                 $endpoint = $q ? 'https://api.klipy.com/api/v1/{key}/gifs/search' : 'https://api.klipy.com/api/v1/{key}/gifs/trending';
                 $endpoint = str_replace('{key}', $key, $endpoint);

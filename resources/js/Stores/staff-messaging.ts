@@ -82,6 +82,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         typingByUlid: {} as Record<string, { user_name: string; expiresAt: number }>,
         loadingMessages: {} as Record<string, boolean>,
         fetched: false,
+        maxVisible: 3,
     }),
 
     getters: {
@@ -132,7 +133,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             }
 
             const visible = this.openWindows.filter((w) => !w.minimised)
-            if (visible.length >= 3) {
+            if (visible.length >= this.maxVisible) {
                 const oldest = visible[0]
                 oldest.minimised = true
             }
