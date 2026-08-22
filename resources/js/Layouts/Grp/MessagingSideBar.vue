@@ -125,14 +125,6 @@ const focusTeamSection = () => {
     setTimeout(() => teamSection.value?.scrollIntoView({ behavior: "smooth", block: "start" }), 50)
 }
 
-const conversationsSection = ref<HTMLElement | null>(null)
-const openInternalChats = () => {
-    if (!layout.messagingSidebar.show) {
-        handleToggle()
-    }
-    setTimeout(() => conversationsSection.value?.scrollIntoView({ behavior: "smooth", block: "start" }), 50)
-}
-
 const myId = computed(() => layout.user?.id)
 const conversationTitle = (conversation: any) =>
     conversation.name || conversation.participants.filter((p: any) => p.id !== myId.value).map((p: any) => p.name).join(", ")
@@ -155,6 +147,26 @@ const railOfflineWithConversation = computed(() => {
     )
     return offlineCoworkers.value.filter((c) => conversationUserIds.has(c.id))
 })
+
+const railCandidates = computed(() => [
+    ...teamOnlineCoworkers.value.map((coworker) => ({ coworker, online: true })),
+    ...onlineCoworkers.value.map((coworker) => ({ coworker, online: true })),
+    ...teamOfflineCoworkers.value.map((coworker) => ({ coworker, online: false })),
+    ...railOfflineWithConversation.value.map((coworker) => ({ coworker, online: false })),
+])
+
+const railOrdered = computed(() => {
+    const withUnread = railCandidates.value
+        .filter((item) => unreadForUser(item.coworker.id) > 0)
+        .sort((a, b) => unreadForUser(b.coworker.id) - unreadForUser(a.coworker.id))
+    const withUnreadIds = new Set(withUnread.map((item) => item.coworker.id))
+    const rest = railCandidates.value.filter((item) => !withUnreadIds.has(item.coworker.id))
+    return [...withUnread, ...rest]
+})
+
+const RAIL_AVATAR_LIMIT = 8
+const railOverflowCount = computed(() => Math.max(0, railOrdered.value.length - RAIL_AVATAR_LIMIT))
+const railVisible = computed(() => railOrdered.value.slice(0, railOverflowCount.value > 0 ? RAIL_AVATAR_LIMIT - 1 : RAIL_AVATAR_LIMIT))
 
 const unreadForUser = (userId: number) => {
     const conversation = store.conversations.find((c) => c.type === "dm" && conversationOtherId(c) === userId)
@@ -221,6 +233,10 @@ onUnmounted(() => {
                 <span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" />
                 <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span>
             </div>
+            <div class="flex items-center gap-x-1" v-tooltip="trans('Unread chats')">
+                <FontAwesomeIcon icon="fal fa-comments" class="text-[7px]" :class="store.totalUnread > 0 ? 'text-[#6272a4]' : 'text-[#6272a4] opacity-50'" fixed-width aria-hidden="true" />
+                <span class="text-xxs tabular-nums" :class="store.totalUnread > 0 ? 'text-[#f8f8f2]' : 'text-[#6272a4]'">{{ store.totalUnread }}</span>
+            </div>
         </div>
 
         <!-- EXPANDED: three counters -->
@@ -228,68 +244,32 @@ onUnmounted(() => {
             <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#50fa7b]" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span> {{ trans('all') }}</span>
             <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#8be9fd]" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span> {{ trans('org') }}</span>
             <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span> {{ trans('team') }}</span>
-        </div>
-
-        <!-- Internal chats trigger -->
-        <div
-            class="cursor-pointer mb-1"
-            @click="openInternalChats">
-            <div v-if="layout.messagingSidebar.show" class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[#44475a] text-left">
-                <FontAwesomeIcon icon="fal fa-comments" class="text-[#6272a4]" fixed-width aria-hidden="true" />
-                <span class="flex-1 text-xs truncate text-[#f8f8f2]">{{ trans('Internal chats') }}</span>
-                <span v-if="store.totalUnread > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ store.totalUnread > 99 ? '99+' : store.totalUnread }}</span>
-            </div>
-            <div v-else class="relative h-9 w-9 mx-auto rounded flex items-center justify-center text-[#6272a4] hover:text-[#f8f8f2]">
-                <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
-                <span v-if="store.totalUnread > 0" class="absolute -top-0.5 -right-0.5 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ store.totalUnread > 99 ? '99+' : store.totalUnread }}</span>
-            </div>
+            <span class="flex items-center gap-x-1" v-tooltip="trans('Unread chats')">
+                <FontAwesomeIcon icon="fal fa-comments" :class="store.totalUnread > 0 ? 'text-[#6272a4]' : 'text-[#6272a4] opacity-50'" fixed-width aria-hidden="true" />
+                <span class="tabular-nums" :class="store.totalUnread > 0 ? 'text-[#f8f8f2]' : 'text-[#6272a4]'">{{ store.totalUnread }}</span>
+            </span>
         </div>
 
         <!-- COLLAPSED: avatar rail -->
         <div v-if="!layout.messagingSidebar.show" class="flex-1 flex flex-col items-center gap-y-3 pt-4 overflow-y-auto custom-hide-scrollbar">
             <button
-                v-for="coworker in teamOnlineCoworkers"
-                :key="'rail-team-on-' + coworker.id"
+                v-for="item in railVisible"
+                :key="'rail-' + item.coworker.id"
                 class="relative h-7 w-7 rounded-full overflow-hidden bg-[#44475a] shrink-0"
-                v-tooltip="coworker.name"
-                @click="openUser(coworker.id)">
-                <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
+                :class="item.online ? '' : 'opacity-40'"
+                v-tooltip="item.coworker.name"
+                @click="openUser(item.coworker.id)">
+                <Image v-if="item.coworker.avatar" :src="item.coworker.avatar" :alt="item.coworker.name" image-cover />
                 <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-[#50fa7b] ring-1 ring-[#282a36]" />
-                <span v-if="unreadForUser(coworker.id) > 0" class="absolute -top-1 -right-1 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(coworker.id) }}</span>
+                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-[#282a36]" :class="item.online ? 'bg-[#50fa7b]' : 'bg-[#6272a4]'" />
+                <span v-if="unreadForUser(item.coworker.id) > 0" class="absolute -top-1 -right-1 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(item.coworker.id) }}</span>
             </button>
             <button
-                v-for="coworker in onlineCoworkers"
-                :key="'rail-on-' + coworker.id"
-                class="relative h-7 w-7 rounded-full overflow-hidden bg-[#44475a] shrink-0"
-                v-tooltip="coworker.name"
-                @click="openUser(coworker.id)">
-                <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-[#50fa7b] ring-1 ring-[#282a36]" />
-                <span v-if="unreadForUser(coworker.id) > 0" class="absolute -top-1 -right-1 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(coworker.id) }}</span>
-            </button>
-            <button
-                v-for="coworker in teamOfflineCoworkers"
-                :key="'rail-team-off-' + coworker.id"
-                class="relative h-7 w-7 rounded-full overflow-hidden bg-[#44475a] shrink-0 opacity-40"
-                v-tooltip="coworker.name"
-                @click="openUser(coworker.id)">
-                <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-[#6272a4] ring-1 ring-[#282a36]" />
-                <span v-if="unreadForUser(coworker.id) > 0" class="absolute -top-1 -right-1 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(coworker.id) }}</span>
-            </button>
-            <button
-                v-for="coworker in railOfflineWithConversation"
-                :key="'rail-off-' + coworker.id"
-                class="relative h-7 w-7 rounded-full overflow-hidden bg-[#44475a] shrink-0 opacity-40"
-                v-tooltip="coworker.name"
-                @click="openUser(coworker.id)">
-                <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[#6272a4]" fixed-width aria-hidden="true" />
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-[#6272a4] ring-1 ring-[#282a36]" />
-                <span v-if="unreadForUser(coworker.id) > 0" class="absolute -top-1 -right-1 bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(coworker.id) }}</span>
+                v-if="railOverflowCount > 0"
+                class="relative h-7 w-7 rounded-full bg-[#44475a] shrink-0 flex items-center justify-center text-xxs text-[#f8f8f2]"
+                v-tooltip="trans('Show all')"
+                @click="handleToggle">
+                +{{ railOverflowCount }}
             </button>
         </div>
 
@@ -386,7 +366,7 @@ onUnmounted(() => {
             </div>
             </template>
 
-            <div ref="conversationsSection" class="border-t border-[#44475a] mt-2">
+            <div class="border-t border-[#44475a] mt-2">
                 <div class="px-3 pt-2 pb-1 text-xs text-[#6272a4]">{{ trans('Conversations') }}</div>
                 <button
                     v-for="conversation in extraConversations"
