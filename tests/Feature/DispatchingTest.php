@@ -3578,3 +3578,17 @@ test('repair cancel leaves the old pickings and their stock alone', function () 
         ->and($deliveryNote->pickings()->count())->toBe($pickings)
         ->and($deliveryNote->deliveryNoteItems()->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED->value)->count())->toBe(0);
 });
+
+test('a dispatched marketplace delivery note can be picked up for a return', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
+    $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL, 'is_aiku' => true]);
+
+    $response = get(route('grp.json.delivery_note_valid_for_return', [
+        'warehouse' => $this->warehouse->slug,
+    ]));
+
+    $response->assertOk();
+    expect(collect($response->json('data'))->pluck('id'))->toContain($deliveryNote->id);
+});
