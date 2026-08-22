@@ -24,6 +24,7 @@ use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use ReflectionMethod;
 
 it('returns null route scope for unknown route prefix', function () {
     $action = app(Search::class);
@@ -213,4 +214,30 @@ it('indexes the identity document number and no longer the retired eori and ukim
     expect($searchable['identity_document_number'])->toBe('ID-123')
         ->and($searchable)->not->toHaveKey('eori')
         ->and($searchable)->not->toHaveKey('ukims');
+});
+
+it('emits every required typesense schema field in toSearchableArray', function () {
+    // ponytail: source-text match, not a real instance — catches fields dropped from the
+    // model but left in the schema (the AIKU-1939 shape), not fields emitted behind an if.
+    $drift = [];
+
+    foreach (config('scout.typesense.model-settings') as $model => $settings) {
+        $method = new ReflectionMethod($model, 'toSearchableArray');
+        $body   = implode('', array_slice(
+            file($method->getFileName()),
+            $method->getStartLine() - 1,
+            $method->getEndLine() - $method->getStartLine() + 1
+        ));
+
+        $missing = collect($settings['collection-schema']['fields'] ?? [])
+            ->reject(fn (array $field) => ($field['optional'] ?? false) || str_starts_with($field['name'], '__'))
+            ->pluck('name')
+            ->reject(fn (string $name) => str_contains($body, "'$name'") || str_contains($body, "\"$name\""));
+
+        if ($missing->isNotEmpty()) {
+            $drift[class_basename($model)] = $missing->values()->all();
+        }
+    }
+
+    expect($drift)->toBe([]);
 });
