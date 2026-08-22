@@ -384,20 +384,20 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
                     <button
                         v-tooltip="trans('Send a GIF')"
-                        class="h-7 w-7 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                        class="h-[22px] min-w-[28px] px-1.5 rounded-full border border-gray-300 text-gray-500 text-xxs flex items-center justify-center hover:bg-gray-100"
                         @click.stop="showGifPicker = !showGifPicker; showEmojiPicker = false"
                     >
                         <span class="text-xxs font-medium">GIF</span>
                     </button>
                     <button
                         v-tooltip="trans('Emoji')"
-                        class="h-7 w-7 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                        class="h-[22px] min-w-[28px] px-1.5 rounded-full border border-gray-300 text-gray-500 text-xxs flex items-center justify-center hover:bg-gray-100"
                         @click.stop="showEmojiPicker = !showEmojiPicker; showGifPicker = false"
                     >
                         <FontAwesomeIcon icon="fal fa-smile" fixed-width aria-hidden="true" />
                     </button>
                     <button
-                        class="h-7 w-7 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
+                        class="h-[22px] min-w-[28px] px-1.5 rounded-full border border-gray-300 text-gray-500 text-xxs flex items-center justify-center hover:bg-gray-100"
                         @click="pickImage"
                     >
                         <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
