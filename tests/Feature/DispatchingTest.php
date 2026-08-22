@@ -3240,6 +3240,7 @@ test('picking from waiting keeps the line at its discounted price', function () 
 
     [$deliveryNote, $item, $los] = handlingItemWithLocation($this);
     $item->update(['quantity_required' => 15, 'quantity_waiting_warehouse' => 3, 'locked_at' => null]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::PICKED]);
 
     $item = $item->refresh();
     $item->load('transaction');

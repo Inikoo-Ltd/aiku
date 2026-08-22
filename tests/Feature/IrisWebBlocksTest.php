@@ -36,6 +36,7 @@ const PRODUCT_WEBPAGE_BLOCKS = [
     'product',
     'product-1',
     'product-2',
+    'product-3',
     'recommendation-customer-recently-bought-1',
 ];
 

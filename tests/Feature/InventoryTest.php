@@ -2357,9 +2357,9 @@ describe('aurora provisional cost fix', function () {
         $movement = UpdateOrgStockMovement::make()->action($movement, ['quantity' => 100, 'org_amount' => 500], strict: false);
         expect((float) $movement->org_amount)->toBe(500.0);
 
-        $orgStock->update(['value_in_locations' => 7905]);
-        $movement = UpdateOrgStockMovement::make()->action($movement->fresh(), ['quantity' => 100], strict: false);
-        expect((float) $movement->org_amount)->toBe(790500.0);
+        $orgStock->update(['value_in_locations' => 7905, 'current_supplier_sku_cost' => 7]);
+        $movement = UpdateOrgStockMovement::make()->action($movement->fresh(), ['quantity' => 200], strict: false);
+        expect((float) $movement->org_amount)->toBe(1400.0);
     });
 
     test('restore command reverts pre corruption-window movements to snapshot values', function () {
