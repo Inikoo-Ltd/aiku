@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, inject, onMounted, onUnmounted, ref } from "vue"
+import { computed, inject, nextTick, onMounted, onUnmounted, ref } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -69,6 +69,14 @@ const onSearchInput = () => {
 const openPlusSearch = () => {
     plusOpened.value = true
     setTimeout(() => searchInput.value?.focus(), 50)
+}
+
+const openNewMessageFromCollapsed = async () => {
+    if (!layout.messagingSidebar.show) {
+        handleToggle()
+        await nextTick()
+    }
+    setTimeout(() => openPlusSearch(), 50)
 }
 
 const closeSearch = () => {
@@ -279,12 +287,12 @@ onUnmounted(() => {
         </div>
 
         <!-- Messaging button -->
-        <div v-if="!layout.messagingSidebar.show" class="py-2 border-b border-[#44475a] flex justify-center items-center">
+        <div v-if="!layout.messagingSidebar.show" class="pt-2 flex justify-center items-center">
             <button class="h-9 w-9 flex items-center justify-center text-[#6272a4] hover:text-[#f8f8f2]" v-tooltip="trans('Open messaging')" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
             </button>
         </div>
-        <div v-else class="py-2 border-b border-[#44475a] px-3">
+        <div v-else class="pt-2 pb-1 px-3">
             <button class="w-full flex items-center gap-x-3 text-[#6272a4] hover:text-[#f8f8f2]" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                 <span class="text-xs text-[#f8f8f2]">{{ trans('Messaging') }}</span>
@@ -322,6 +330,12 @@ onUnmounted(() => {
                 v-tooltip="trans('Show all')"
                 @click="handleToggle">
                 +{{ railOverflowCount }}
+            </button>
+            <button
+                class="h-9 w-9 rounded-full bg-transparent border border-dashed border-[#6272a4] shrink-0 flex items-center justify-center text-[#6272a4] hover:text-[#f8f8f2] hover:border-[#f8f8f2]"
+                v-tooltip="trans('New message')"
+                @click="openNewMessageFromCollapsed">
+                <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
             </button>
         </div>
 
