@@ -26,7 +26,8 @@ class GetStaffConversations
         return StaffConversation::query()
             ->join('staff_conversation_participants as me', function ($join) use ($user) {
                 $join->on('me.staff_conversation_id', '=', 'staff_conversations.id')
-                    ->where('me.user_id', $user->id);
+                    ->where('me.user_id', $user->id)
+                    ->whereNull('me.archived_at');
             })
             ->select('staff_conversations.*')
             ->addSelect([

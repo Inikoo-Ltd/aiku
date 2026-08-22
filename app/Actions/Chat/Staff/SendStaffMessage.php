@@ -45,6 +45,7 @@ class SendStaffMessage
         }
 
         $conversation->update(['last_message_at' => $message->created_at]);
+        $conversation->participants()->newPivotStatement()->where('staff_conversation_id', $conversation->id)->update(['archived_at' => null]);
         $conversation->participants()->updateExistingPivot($sender->id, ['last_read_at' => $message->created_at]);
 
         StaffMessageSent::dispatch($message);

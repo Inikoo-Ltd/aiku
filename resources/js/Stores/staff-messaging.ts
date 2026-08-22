@@ -145,6 +145,12 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
         closeConversation(ulid: string) {
             this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)
+            axios.post(route("grp.chat.staff.conversations.archive", ulid)).catch(() => { })
+            const index = this.conversations.findIndex((c) => c.ulid === ulid)
+            if (index !== -1) {
+                this.conversations.splice(index, 1)
+            }
+            delete this.messagesByUlid[ulid]
         },
 
         minimiseConversation(ulid: string, minimised: boolean) {

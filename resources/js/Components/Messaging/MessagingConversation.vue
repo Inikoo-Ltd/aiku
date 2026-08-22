@@ -223,10 +223,10 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-indigo-600 hover:underline' : 'text-[#bd93f9] hover:underline'">{{ conversation.context_label }}</a>
                 </div>
             </div>
-            <button v-if="!fullScreen" class="p-2 text-[#6272a4] hover:text-[#f8f8f2]" @click="emit('minimise')">
+            <button v-if="!fullScreen" v-tooltip="trans('Minimize')" class="p-2 text-[#6272a4] hover:text-[#f8f8f2]" @click="emit('minimise')">
                 <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
             </button>
-            <button class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[#6272a4] hover:text-[#f8f8f2]'" @click="emit('close')">
+            <button v-tooltip="conversation.type === 'dm' ? trans('Done talking to :name', { name: displayName }) : trans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[#6272a4] hover:text-[#f8f8f2]'" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
         </div>
