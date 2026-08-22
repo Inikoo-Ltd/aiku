@@ -154,6 +154,10 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             this.markRead(ulid)
         },
 
+        dismissWindow(ulid: string) {
+            this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)
+        },
+
         closeConversation(ulid: string) {
             this.openWindows = this.openWindows.filter((w) => w.ulid !== ulid)
             axios.post(route("grp.chat.staff.conversations.archive", ulid)).catch(() => { })
