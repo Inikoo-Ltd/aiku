@@ -14,6 +14,7 @@ import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Common/Components/Image.vue"
 import RailControls from "@/Layouts/Grp/RailControls.vue"
+import FooterMessage from "@/Components/Footer/FooterMessage.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
@@ -197,24 +198,8 @@ onUnmounted(() => {
 
         <RailControls />
 
-        <!-- COLLAPSED: three counters -->
-        <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center gap-y-1 pt-2 pb-1 border-b border-[#44475a] shrink-0">
-            <div class="flex items-center gap-x-1" v-tooltip="trans('Online')">
-                <span class="h-1.5 w-1.5 rounded-full bg-[#50fa7b]" />
-                <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span>
-            </div>
-            <div class="flex items-center gap-x-1" v-tooltip="trans('Online in my organisation')">
-                <span class="h-1.5 w-1.5 rounded-full bg-[#8be9fd]" />
-                <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span>
-            </div>
-            <div class="flex items-center gap-x-1 cursor-pointer" v-tooltip="trans('Online in my team')" @click="focusTeamSection">
-                <span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" />
-                <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span>
-            </div>
-        </div>
-
         <!-- COLLAPSED: avatar rail -->
-        <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center gap-y-2 pt-3 overflow-y-auto custom-hide-scrollbar">
+        <div v-if="!layout.messagingSidebar.show" class="flex-1 flex flex-col items-center gap-y-2 pt-3 overflow-y-auto custom-hide-scrollbar">
             <button
                 v-for="coworker in teamOnlineCoworkers"
                 :key="'rail-team-on-' + coworker.id"
@@ -262,13 +247,8 @@ onUnmounted(() => {
         </div>
 
         <!-- EXPANDED -->
-        <div v-else class="flex flex-col flex-grow overflow-y-auto custom-hide-scrollbar pb-3">
-            <div class="px-3 py-2 flex items-center justify-between border-b border-[#44475a] text-xxs">
-                <div class="flex items-center gap-x-3 cursor-pointer" @click="focusTeamSection">
-                    <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#50fa7b]" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span> {{ trans('all') }}</span>
-                    <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#8be9fd]" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span> {{ trans('org') }}</span>
-                    <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span> {{ trans('team') }}</span>
-                </div>
+        <div v-else class="flex-1 flex flex-col overflow-y-auto custom-hide-scrollbar pb-3">
+            <div class="px-3 py-2 flex items-center justify-end border-b border-[#44475a] text-xxs">
                 <button v-if="!plusOpened" class="shrink-0 text-[#bd93f9] hover:text-[#f8f8f2]" @click="openPlusSearch" v-tooltip="trans('New message')">
                     <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
                 </button>
@@ -380,6 +360,34 @@ onUnmounted(() => {
                     </div>
                     <span v-if="conversation.unread_count > 0" class="bg-[#ff5555] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- Bottom-pinned: customer chats trigger + online counters -->
+        <div class="mt-auto shrink-0">
+            <FooterMessage v-if="layout?.user?.is_agent" in-rail />
+
+            <!-- COLLAPSED: three counters -->
+            <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center gap-y-1 pt-2 pb-1 border-t border-[#44475a]">
+                <div class="flex items-center gap-x-1" v-tooltip="trans('Online')">
+                    <span class="h-1.5 w-1.5 rounded-full bg-[#50fa7b]" />
+                    <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span>
+                </div>
+                <div class="flex items-center gap-x-1" v-tooltip="trans('Online in my organisation')">
+                    <span class="h-1.5 w-1.5 rounded-full bg-[#8be9fd]" />
+                    <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span>
+                </div>
+                <div class="flex items-center gap-x-1 cursor-pointer" v-tooltip="trans('Online in my team')" @click="focusTeamSection">
+                    <span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" />
+                    <span class="text-xxs tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span>
+                </div>
+            </div>
+
+            <!-- EXPANDED: three counters -->
+            <div v-else class="px-3 py-2 flex items-center gap-x-3 border-t border-[#44475a] text-xxs cursor-pointer" @click="focusTeamSection">
+                <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#50fa7b]" /><span class="tabular-nums text-[#f8f8f2]">{{ allOnlineCount }}</span> {{ trans('all') }}</span>
+                <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#8be9fd]" /><span class="tabular-nums text-[#f8f8f2]">{{ orgOnlineCount }}</span> {{ trans('org') }}</span>
+                <span class="flex items-center gap-x-1"><span class="h-1.5 w-1.5 rounded-full bg-[#bd93f9]" /><span class="tabular-nums text-[#f8f8f2]">{{ teamOnlineCount }}</span> {{ trans('team') }}</span>
             </div>
         </div>
     </div>

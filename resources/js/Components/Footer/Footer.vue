@@ -14,7 +14,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { computed, inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import FooterMessage from '@/Components/Footer/FooterMessage.vue'
 import TimezoneDisplay from './TimezoneDisplay.vue'
 import { useFormatTime } from '@/Composables/useFormatTime.js'
 import { Link } from '@inertiajs/vue3'
@@ -76,7 +75,6 @@ const deploymentTooltip = computed(() => {
                 </div>
                <!--  <FooterCurrency /> -->
                 <FooterLanguage />
-                <FooterMessage v-if="layout?.user?.is_agent" />
             </div>
         </div>
     </footer>
