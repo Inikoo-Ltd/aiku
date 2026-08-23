@@ -10,13 +10,14 @@
     <meta property="og:title" content="{{ $title ?? 'aiku' }}">
     <meta property="og:description" content="{{ $description ?? 'aiku is an open source operating system for commerce.' }}">
     <meta property="og:url" content="{{ $canonical ?? url()->current() }}">
-    <meta property="og:image" content="{{ url('art/readme/sketch-group-dashboard.jpg') }}">
+    <meta property="og:image" content="{{ url('favicon.png') }}">
     <meta name="twitter:card" content="summary_large_image">
     @if (config('app.env') === 'staging')
         <meta name="robots" content="noindex">
     @endif
     <link rel="icon" href="{{ url('favicon.svg') }}" type="image/svg+xml">
-    <link rel="icon" type="image/png" href="{{ url('favicon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicon-32.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png') }}">
     <link rel="alternate" type="application/xml" title="Sitemap" href="{{ route('aiku-public.sitemap') }}">
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
     <link rel="stylesheet" href="https://fonts.bunny.net/css?family=newsreader:400,400i,600|inter:400,500,600|jetbrains-mono:400&display=swap">
