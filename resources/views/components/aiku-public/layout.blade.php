@@ -42,7 +42,7 @@
         .narrow { max-width: 720px; margin: 0 auto; padding: 0 24px; }
         header.site { display: flex; align-items: center; justify-content: space-between; padding: 28px 0; border-bottom: 1px solid var(--rule); }
         header.site .brand { display: flex; align-items: center; gap: 12px; color: var(--ink); font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
-        header.site .brand img { width: 34px; height: 34px; }
+        header.site .brand svg { width: 34px; height: 37px; color: var(--ink); }
         header.site nav { display: flex; gap: 28px; font-size: 15px; font-weight: 500; }
         header.site nav a { color: var(--muted); }
         header.site nav a[aria-current] { color: var(--ink); }
@@ -103,7 +103,7 @@
 <body>
 <div class="wrap">
     <header class="site">
-        <a class="brand" href="{{ route('aiku-public.home') }}"><img src="{{ url('art/logo-sketch.svg') }}" alt="">aiku</a>
+        <a class="brand" href="{{ route('aiku-public.home') }}">{!! str_replace('style="color:#1f1e2a" ', '', file_get_contents(public_path('art/logo-sketch.svg'))) !!}aiku</a>
         <nav>
             <a href="{{ route('aiku-public.home') }}" @if(request()->routeIs('aiku-public.home')) aria-current="page" @endif>What it is</a>
             <a href="{{ route('aiku-public.blog.index') }}" @if(request()->routeIs('aiku-public.blog.*')) aria-current="page" @endif>Notes</a>
