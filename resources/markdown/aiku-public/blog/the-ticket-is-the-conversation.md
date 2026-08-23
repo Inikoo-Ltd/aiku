@@ -39,6 +39,14 @@ Tickets rot. Every few months someone walks the oldest hundred open ones with tw
 
 One small lesson from a sweep: a ticket whose title begins "Re:" and whose parent is already closed is *not* automatically a duplicate. Two of them carried a new symptom each. Read before closing.
 
+## Honest part: this is still the biggest challenge
+
+Everything above is the part that works. It would be dishonest to stop there.
+
+Requests still arrive by WhatsApp, by phone, on a piece of paper left on a desk, in a corridor. Some of them are acted on before they ever become a ticket, which means the ticket system is not the record of what was asked — it is the record of what was asked *politely*. Two people ask for exactly opposite things in the same week, each certain, and the engineer in the middle has to decide which one the business actually wants. A feature gets built because person A asked for it, and person B is offended to discover it in production — even when the heads‑up was sent, because person B was busy that day and the heads‑up was one more unread line.
+
+None of that is a tooling problem and no ticket system, ours or anyone's, will fix it on its own. The honest answer is process and habit: every request, however it arrives, gets written down in the one place; conflicting requests are surfaced to both people together rather than decided in private; changes that touch somebody's screen get a note *before* they ship, and we accept that the note will sometimes be ignored and do it anyway. We try our best. We do not always manage. Shipping seventeen times a week makes this harder, not easier, and we would rather say so than pretend the flow on this page is the whole story.
+
 ## The tease
 
 We keep an eye on what Jira gives us — a form, a thread, a status, a link to a record — and on how much of our time goes to the seams: pasting references, copying context from the chat, writing the same three lines, walking backlogs by hand. And we run a system that already has the customer, the order, the delivery note, the chat, the user and the audit trail, one join away from each other.
