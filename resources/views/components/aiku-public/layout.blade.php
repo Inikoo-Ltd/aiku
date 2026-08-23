@@ -48,7 +48,7 @@
         a:hover { text-decoration: underline; text-underline-offset: 3px; }
         .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
         .narrow { max-width: 720px; margin: 0 auto; padding: 0 24px; }
-        header.site { display: flex; align-items: center; justify-content: space-between; padding: 28px 0; border-bottom: 1px solid var(--rule); }
+        header.site { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; padding: 28px 0; border-bottom: 1px solid var(--rule); }
         header.site .brand { display: flex; align-items: center; gap: 12px; color: var(--ink); font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
         header.site .brand svg { width: 34px; height: 37px; color: var(--ink); }
         header.site nav { display: flex; gap: 28px; font-size: 15px; font-weight: 500; }
@@ -89,7 +89,7 @@
         .tags span, .tags a { margin-right: 12px; color: var(--muted); }
         .pager { display: flex; justify-content: space-between; align-items: center; padding: 28px 0 0; border-top: 1px solid var(--rule); font-weight: 500; }
         .pager .muted { color: var(--muted); font-size: 14px; font-weight: 400; }
-        .search { display: flex; gap: 12px; align-items: center; margin: 32px 0 4px; }
+        .search { display: flex; gap: 12px; align-items: center; margin: 32px 0 4px; position: relative; }
         .search input { flex: 1; max-width: 420px; font: inherit; font-size: 15px; padding: 9px 14px; border: 1px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink); }
         .search input:focus { outline: none; border-color: var(--accent); }
         .search a { font-size: 14px; }
@@ -100,7 +100,10 @@
         .search-results li p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
         .search-results li.empty, .search-results li.engine { color: var(--muted); font-size: 13px; }
         .search-results mark { background: var(--accent-soft); color: inherit; border-radius: 3px; padding: 0 2px; }
-        header.site .search-header { display: flex; align-items: center; }
+        header.site .search-header { display: flex; align-items: center; position: relative; }
+        .search-results.floating { position: absolute; top: calc(100% + 8px); right: 0; width: 340px; max-width: 90vw; margin: 0; z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,.12); max-height: 60vh; overflow-y: auto; }
+        .search-results.floating li p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .search .search-results.floating { left: 0; right: auto; width: 100%; max-width: 420px; }
         header.site .search-header input { font: inherit; font-size: 14px; padding: 7px 12px; border: 1px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink); width: 160px; }
         header.site .search-header input:focus { outline: none; border-color: var(--accent); }
         .tagbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 8px; }
@@ -156,10 +159,65 @@
             <a href="https://github.com/Inikoo-Ltd/aiku" rel="noopener"><svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Source</a>
         </nav>
         <form class="search-header" method="get" action="{{ route('aiku-public.blog.index') }}" role="search">
-            <input type="search" name="q" placeholder="Search notes…" aria-label="Search the engineering notes">
+            <input type="search" name="q" placeholder="Search notes…" aria-label="Search the engineering notes" id="header-search-input">
+            <ul class="search-results floating" id="header-search-results" hidden></ul>
         </form>
     </header>
 </div>
+
+<script>
+    window.wireNotesSearch = function (input, results) {
+        if (!input || !results) return;
+        var timer = null;
+
+        function clearResults() {
+            results.hidden = true;
+            results.innerHTML = '';
+        }
+
+        function render(data, query) {
+            if (!data.hits.length) {
+                results.innerHTML = '<li class="empty">No matches for "' + query + '".</li>';
+                results.hidden = false;
+                return;
+            }
+            results.innerHTML = data.hits.map(function (hit) {
+                return '<li><a href="' + hit.url + '">' + hit.highlight.title + '</a>'
+                    + '<p>' + hit.highlight.summary + '</p></li>';
+            }).join('') + '<li class="engine">via ' + (data.engine === 'typesense' ? 'Typesense' : 'search') + '</li>';
+            results.hidden = false;
+        }
+
+        input.addEventListener('input', function () {
+            var query = input.value.trim();
+            clearTimeout(timer);
+            if (query.length < 2) {
+                clearResults();
+                return;
+            }
+            timer = setTimeout(function () {
+                fetch('{{ route('aiku-public.search') }}?q=' + encodeURIComponent(query))
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) { render(data, query); })
+                    .catch(clearResults);
+            }, 150);
+        });
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                input.value = '';
+                clearResults();
+            }
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!input.contains(event.target) && !results.contains(event.target)) {
+                clearResults();
+            }
+        });
+    };
+    window.wireNotesSearch(document.getElementById('header-search-input'), document.getElementById('header-search-results'));
+</script>
 
 {{ $slot }}
 

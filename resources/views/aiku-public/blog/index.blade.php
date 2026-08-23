@@ -9,12 +9,12 @@
             @if ($tag)<input type="hidden" name="tag" value="{{ $tag }}">@endif
             <input type="search" name="q" value="{{ $query }}" placeholder="Search the notes…" aria-label="Search the notes" id="notes-search-input">
             @if ($query)<a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag])) }}">clear</a>@endif
+            <ul class="search-results floating" id="notes-search-results" hidden></ul>
         </form>
-        <ul class="search-results" id="notes-search-results" hidden></ul>
         @php
             $shown = $tags->filter(fn ($count) => $count >= 2);
             $top = $shown->sortByDesc(fn ($count, $name) => [$count, $name])->sortBy(fn ($count, $name) => -$count)->take(12);
-            if ($tag && !$top->has($tag) && $shown->has($tag)) { $top = $top->put($tag, $shown[$tag]); }
+            if ($tag && !$top->has($tag)) { $top = $top->put($tag, $tags[$tag]); }
             $rest = $shown->except($top->keys())->sortKeys();
         @endphp
         <nav class="tagbar" aria-label="Filter by tag">
@@ -65,53 +65,6 @@
         @endif
     </div>
     <script>
-        (function () {
-            var input = document.getElementById('notes-search-input');
-            var results = document.getElementById('notes-search-results');
-            if (!input || !results) return;
-            var timer = null;
-            var lastQuery = '';
-
-            function clearResults() {
-                results.hidden = true;
-                results.innerHTML = '';
-            }
-
-            function render(data, query) {
-                lastQuery = query;
-                if (!data.hits.length) {
-                    results.innerHTML = '<li class="empty">No matches for "' + query + '".</li>';
-                    results.hidden = false;
-                    return;
-                }
-                results.innerHTML = data.hits.map(function (hit) {
-                    return '<li><a href="' + hit.url + '">' + hit.highlight.title + '</a>'
-                        + '<p>' + hit.highlight.summary + '</p></li>';
-                }).join('') + '<li class="engine">via ' + (data.engine === 'typesense' ? 'Typesense' : 'search') + '</li>';
-                results.hidden = false;
-            }
-
-            input.addEventListener('input', function () {
-                var query = input.value.trim();
-                clearTimeout(timer);
-                if (query.length < 2) {
-                    clearResults();
-                    return;
-                }
-                timer = setTimeout(function () {
-                    fetch('{{ route('aiku-public.search') }}?q=' + encodeURIComponent(query))
-                        .then(function (response) { return response.json(); })
-                        .then(function (data) { render(data, query); })
-                        .catch(clearResults);
-                }, 150);
-            });
-
-            input.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape') {
-                    input.value = '';
-                    clearResults();
-                }
-            });
-        })();
+        window.wireNotesSearch(document.getElementById('notes-search-input'), document.getElementById('notes-search-results'));
     </script>
 </x-aiku-public.layout>

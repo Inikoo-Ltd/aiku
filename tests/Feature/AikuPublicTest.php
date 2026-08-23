@@ -7,6 +7,7 @@
  */
 
 use App\Actions\UI\AikuPublic\BlogPosts;
+use App\Actions\UI\AikuPublic\IndexNotesInTypesense;
 use App\Actions\UI\AikuPublic\PingIndexNow;
 use Illuminate\Support\Facades\Http;
 
@@ -92,6 +93,11 @@ test('sitemap and robots are served', function () {
 });
 
 test('search.json returns hits for a word from the first post title', function () {
+    try {
+        (new IndexNotesInTypesense())->handle();
+    } catch (Throwable) {
+    }
+
     $first = BlogPosts::all()->first();
     $word = collect(preg_split('/\W+/', $first['title']))->filter(fn ($w) => mb_strlen($w) > 5)->first();
 
