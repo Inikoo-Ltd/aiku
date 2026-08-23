@@ -12,6 +12,7 @@ use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Dashboards\WithMarketingPeriod;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
@@ -26,6 +27,7 @@ class IndexPaymentMethods extends OrgAction
 {
     use WithPaymentSubNavigation;
     use WithAccountingSubNavigation;
+    use WithMarketingPeriod;
 
     protected Organisation|Shop $parent;
 
@@ -39,7 +41,9 @@ class IndexPaymentMethods extends OrgAction
         $query = Payment::query()
             ->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
             ->whereNotNull('payments.method')->where('payments.method', '!=', '')
-            ->where('payments.type', PaymentTypeEnum::PAYMENT);
+            ->where('payments.type', PaymentTypeEnum::PAYMENT)
+            ->when($this->periodFrom, fn ($q) => $q->where('payments.date', '>=', $this->periodFrom))
+            ->when($this->periodTo, fn ($q) => $q->where('payments.date', '<=', $this->periodTo));
 
         if ($parent instanceof Shop) {
             $query->where('payments.shop_id', $parent->id);
@@ -73,6 +77,9 @@ class IndexPaymentMethods extends OrgAction
         return [
             'currency_code'  => $parent->currency->code,
             'payments_route' => $paymentsRoute,
+            'period_label'   => $this->periodLabels()['period_label'],
+            'period_from'    => $this->periodFrom?->toDateString(),
+            'period_to'      => $this->periodTo?->toDateString(),
             'rows'           => $rows->map(fn ($row) => [
                 'method'               => $row->method,
                 'method_label'         => $row->method === $row->payment_account_type && in_array($row->method, ['checkout', 'braintree'])
@@ -94,6 +101,7 @@ class IndexPaymentMethods extends OrgAction
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
+        $this->setMarketingPeriod($request->user()->settings);
 
         return $this->handle($organisation);
     }
@@ -102,6 +110,7 @@ class IndexPaymentMethods extends OrgAction
     {
         $this->parent = $shop;
         $this->initialisation($organisation, $request);
+        $this->setMarketingPeriod($request->user()->settings);
 
         return $this->handle($shop);
     }
@@ -125,6 +134,8 @@ class IndexPaymentMethods extends OrgAction
                     'title'         => __('Payment Methods'),
                 ],
                 'data'        => $paymentMethods,
+                'intervals'   => $this->intervalsProp($request->user()->settings),
+                'settings'    => [],
             ]
         );
     }
