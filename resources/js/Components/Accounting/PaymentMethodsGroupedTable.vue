@@ -121,8 +121,12 @@ const columnHelp = {
             <tbody v-for="group in groups" :key="group.key">
                 <tr class="text-gray-900 bg-gray-100/80 border-t-2 border-b border-gray-300 font-medium leading-tight">
                     <td class="py-1 pr-2">
-                        <img v-if="group.logo" :src="group.logo" :alt="group.label" class="inline-block mr-2 h-3 w-auto max-w-16 opacity-70 align-middle" />
-                        {{ group.label }}
+                        <span class="inline-flex items-center gap-2">
+                            <span v-if="groupBy === 'provider'" class="inline-flex w-16 shrink-0 justify-center">
+                                <img v-if="group.logo" :src="group.logo" :alt="group.label" class="h-3 w-auto max-w-16 opacity-70" />
+                            </span>
+                            <span>{{ group.label }}</span>
+                        </span>
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
                         <span class="inline-grid grid-cols-[4.5rem_3.25rem]">
@@ -148,7 +152,7 @@ const columnHelp = {
                 </tr>
                 <tr v-for="child in (showDetail && expandable(group) ? group.children : [])" :key="child.key"
                     class="border-b border-gray-50 text-gray-600">
-                    <td class="py-1.5 pr-2 pl-5">
+                    <td class="py-1.5 pr-2" :class="groupBy === 'provider' ? 'pl-[4.5rem]' : 'pl-5'">
                         <Link :href="route(child.route.name, child.route.parameters)" class="text-gray-500 hover:text-gray-900 hover:underline">{{ child.label }}</Link>
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -177,7 +181,7 @@ const columnHelp = {
 
             <tfoot>
                 <tr class="text-gray-900 border-t-2 border-gray-300 font-medium">
-                    <td class="py-1.5 pr-2">{{ trans('All') }}</td>
+                    <td class="py-1.5 pr-2" :class="groupBy === 'provider' ? 'pl-[4.5rem]' : ''">{{ trans('All') }}</td>
                     <td class="text-right px-2 tabular-nums"><span class="inline-grid grid-cols-[4.5rem_3.25rem]"><span>{{ locale.number(totals.number_payments) }}</span><span></span></span></td>
                     <td class="text-right px-2 tabular-nums">
                         <span class="inline-grid grid-cols-[4.5rem_3.5rem]">
