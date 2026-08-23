@@ -55,6 +55,8 @@ use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\ShowUser;
+use App\Actions\HumanResources\StaffChat\UI\ShowStaffChatConversation;
+use App\Actions\SysAdmin\UI\IndexStaffChatAnalytics;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Actions\UI\HumanResources\ShowOrgChart;
 use App\Actions\HumanResources\Leave\ApproveLeave;
@@ -87,6 +89,8 @@ use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 Route::get('/org-chart', ShowOrgChart::class)->name('org_chart');
+Route::get('/staff-chat', [IndexStaffChatAnalytics::class, 'inOrganisation'])->name('staff_chat.index');
+Route::get('/staff-chat/{staffConversation}', ShowStaffChatConversation::class)->name('staff_chat.show');
 
 Route::prefix('employees')->as('employees.')->group(function () {
     Route::get('', IndexEmployees::class)->name('index');

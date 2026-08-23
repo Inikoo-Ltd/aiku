@@ -17,6 +17,8 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Chat\StaffConversation;
 use App\Models\Chat\StaffMessage;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
+use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,8 +29,18 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexStaffChatAnalytics extends OrgAction
 {
+    public ?Organisation $scopedOrganisation = null;
+
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->scopedOrganisation) {
+            return $request->user()->authTo([
+                "human-resources.{$this->scopedOrganisation->id}.view",
+                "org-supervisor.{$this->scopedOrganisation->id}.human-resources",
+                "org-admin.{$this->scopedOrganisation->id}",
+            ]);
+        }
+
         return $request->user()->authTo('sysadmin.view');
     }
 
@@ -42,10 +54,13 @@ class IndexStaffChatAnalytics extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(StaffMessage::class)
+        $queryBuilder = QueryBuilder::for(StaffMessage::class)
             ->join('staff_conversations', 'staff_conversations.id', '=', 'staff_messages.staff_conversation_id')
             ->join('users', 'users.id', '=', 'staff_messages.user_id')
-            ->where('staff_conversations.group_id', $group->id)
+            ->where('staff_conversations.group_id', $group->id);
+        GetStaffChatAnalytics::scopeToOrganisation($queryBuilder, $this->scopedOrganisation);
+
+        return $queryBuilder
             ->selectRaw('
                 users.username,
                 count(*) as messages,
@@ -78,10 +93,14 @@ class IndexStaffChatAnalytics extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(StaffConversation::class)
-            ->where('staff_conversations.group_id', $group->id)
+        $queryBuilder = QueryBuilder::for(StaffConversation::class)
+            ->where('staff_conversations.group_id', $group->id);
+        GetStaffChatAnalytics::scopeToOrganisation($queryBuilder, $this->scopedOrganisation);
+
+        return $queryBuilder
             ->selectRaw("
                 staff_conversations.id,
+                staff_conversations.ulid,
                 staff_conversations.type,
                 regexp_replace(staff_conversations.context_type, '^.*\\\\', '') as context,
                 staff_conversations.last_message_at,
@@ -163,9 +182,15 @@ class IndexStaffChatAnalytics extends OrgAction
                     ],
                     'title' => __('Staff chat analytics'),
                 ],
-                'insights'      => GetStaffChatAnalytics::run($this->group),
+                'insights'      => GetStaffChatAnalytics::run($this->group, 30, $this->scopedOrganisation),
                 'users'         => StaffChatUsersResource::collection($users),
                 'conversations' => StaffChatConversationsResource::collection($this->handleConversations($this->group)),
+                'index_route'   => $this->scopedOrganisation
+                    ? ['name' => 'grp.org.hr.staff_chat.index', 'parameters' => ['organisation' => $this->scopedOrganisation->slug]]
+                    : ['name' => 'grp.sysadmin.staff_chat.index', 'parameters' => []],
+                'show_route'    => $this->scopedOrganisation
+                    ? ['name' => 'grp.org.hr.staff_chat.show', 'parameters' => ['organisation' => $this->scopedOrganisation->slug]]
+                    : null,
             ]
         )->table($this->tableStructure())
             ->table($this->conversationsTableStructure());
@@ -173,6 +198,24 @@ class IndexStaffChatAnalytics extends OrgAction
 
     public function getBreadcrumbs(): array
     {
+        if ($this->scopedOrganisation) {
+            return array_merge(
+                ShowHumanResourcesDashboard::make()->getBreadcrumbs(['organisation' => $this->scopedOrganisation->slug]),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.hr.staff_chat.index',
+                                'parameters' => ['organisation' => $this->scopedOrganisation->slug],
+                            ],
+                            'label' => __('Staff chat'),
+                        ]
+                    ]
+                ]
+            );
+        }
+
         return array_merge(
             ShowGroupDashboard::make()->getBreadcrumbs(),
             [
@@ -192,6 +235,14 @@ class IndexStaffChatAnalytics extends OrgAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($this->group);
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->scopedOrganisation = $organisation;
+        $this->initialisation($organisation, $request);
 
         return $this->handle($this->group);
     }

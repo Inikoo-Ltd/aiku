@@ -40,7 +40,12 @@ const props = defineProps<{
     }
     users: any
     conversations: any
+    index_route: { name: string; parameters: Record<string, string> }
+    show_route?: { name: string; parameters: Record<string, string> } | null
 }>()
+
+const indexUrl = () => route(props.index_route.name, props.index_route.parameters)
+const showUrl = (ulid: string) => props.show_route ? route(props.show_route.name, { ...props.show_route.parameters, staffConversation: ulid }) : null
 
 const activeTab = ref<'users' | 'conversations'>('users')
 
@@ -170,7 +175,7 @@ const hourlyChartOptions = {
     <Table v-show="activeTab === 'users'" :resource="users" class="mt-2">
         <template #cell(username)="{ item }">
             <Link
-                :href="`${route('grp.sysadmin.staff_chat.index')}?conversations_filter[global]=${encodeURIComponent(item.username)}`"
+                :href="`${indexUrl()}?conversations_filter[global]=${encodeURIComponent(item.username)}`"
                 class="font-medium text-indigo-600 hover:underline"
                 v-tooltip="ctrans('See conversations of this user')"
                 @click="activeTab = 'conversations'"
@@ -188,7 +193,8 @@ const hourlyChartOptions = {
 
     <Table v-show="activeTab === 'conversations'" :resource="conversations" name="conversations" class="mt-2">
         <template #cell(members)="{ item }">
-            <span class="font-medium">{{ item.members ?? '-' }}</span>
+            <Link v-if="showUrl(item.ulid)" :href="showUrl(item.ulid)!" class="font-medium text-indigo-600 hover:underline">{{ item.members ?? '-' }}</Link>
+            <span v-else class="font-medium">{{ item.members ?? '-' }}</span>
         </template>
         <template #cell(type)="{ item }">
             <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ item.type }}</span>

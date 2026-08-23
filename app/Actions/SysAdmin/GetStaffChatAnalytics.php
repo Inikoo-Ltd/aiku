@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin;
 use App\Models\Chat\StaffConversation;
 use App\Models\Chat\StaffMessage;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -18,13 +19,14 @@ class GetStaffChatAnalytics
 {
     use AsObject;
 
-    public function handle(Group $group, int $days = 30): array
+    public function handle(Group $group, int $days = 30, ?Organisation $organisation = null): array
     {
         $since = now()->subDays($days);
 
         $base = StaffMessage::join('staff_conversations', 'staff_conversations.id', '=', 'staff_messages.staff_conversation_id')
             ->where('staff_conversations.group_id', $group->id)
             ->where('staff_messages.created_at', '>=', $since);
+        self::scopeToOrganisation($base, $organisation);
 
         $totals = (clone $base)
             ->selectRaw('
@@ -80,7 +82,9 @@ class GetStaffChatAnalytics
             ]);
 
         $byContext = StaffConversation::where('group_id', $group->id)
-            ->whereNotNull('context_type')
+            ->whereNotNull('context_type');
+        self::scopeToOrganisation($byContext, $organisation);
+        $byContext = $byContext
             ->selectRaw("regexp_replace(context_type, '^.*\\\\', '') as context, count(*) as conversations")
             ->groupBy('context_type')
             ->orderByDesc('conversations')
@@ -95,7 +99,9 @@ class GetStaffChatAnalytics
         $unreadConversations = DB::table('staff_conversation_participants')
             ->join('staff_conversations', 'staff_conversations.id', '=', 'staff_conversation_participants.staff_conversation_id')
             ->where('staff_conversations.group_id', $group->id)
-            ->whereNotNull('staff_conversations.last_message_at')
+            ->whereNotNull('staff_conversations.last_message_at');
+        self::scopeToOrganisation($unreadConversations, $organisation);
+        $unreadConversations = $unreadConversations
             ->where(function ($query) {
                 $query->whereNull('staff_conversation_participants.last_read_at')
                     ->orWhereColumn('staff_conversation_participants.last_read_at', '<', 'staff_conversations.last_message_at');
@@ -119,6 +125,21 @@ class GetStaffChatAnalytics
             'top_pairs'            => $topPairs,
             'by_context'           => $byContext,
         ];
+    }
+
+    public static function scopeToOrganisation($query, ?Organisation $organisation): void
+    {
+        if (!$organisation) {
+            return;
+        }
+
+        $query->whereExists(function ($sub) use ($organisation) {
+            $sub->selectRaw('1')
+                ->from('staff_conversation_participants as org_scp')
+                ->join('users as org_users', 'org_users.id', '=', 'org_scp.user_id')
+                ->whereColumn('org_scp.staff_conversation_id', 'staff_conversations.id')
+                ->where('org_users.employed_in_organisation_id', $organisation->id);
+        });
     }
 
     private function participantNames(int $conversationId): string

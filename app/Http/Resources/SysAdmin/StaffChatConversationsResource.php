@@ -12,6 +12,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property int $id
+ * @property string $ulid
  * @property string $type
  * @property string|null $context
  * @property string|null $members
@@ -26,6 +27,7 @@ class StaffChatConversationsResource extends JsonResource
     {
         return [
             'id'              => $this->id,
+            'ulid'            => $this->ulid,
             'type'            => $this->type,
             'context'         => $this->context,
             'members'         => $this->members,

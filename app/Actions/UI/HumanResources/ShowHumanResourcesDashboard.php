@@ -10,6 +10,7 @@ namespace App\Actions\UI\HumanResources;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\GetStaffChatAnalytics;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Leave\LeaveCategoryEnum;
@@ -59,6 +60,7 @@ class ShowHumanResourcesDashboard extends OrgAction
         $lateCount       = $attendance->where('is_late', true)->count();
         $workingCount    = $this->organisation->humanResourcesStats->number_employees_state_working;
         $absentCount     = max(0, $workingCount - $presentCount - $onLeaveCount);
+        $staffChatInsights = GetStaffChatAnalytics::run($this->organisation->group, 30, $this->organisation);
 
         return Inertia::render(
             'Org/HumanResources/HumanResourcesDashboard',
@@ -135,6 +137,16 @@ class ShowHumanResourcesDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-stopwatch'],
                         'route' => [
                             'name'       => 'grp.org.hr.timesheets.index',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    [
+                        'name'  => __('Staff chat'),
+                        'stat'  => $staffChatInsights['messages'],
+                        'color' => 'sky',
+                        'icon'  => ['fal', 'fa-comments-alt'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.staff_chat.index',
                             'parameters' => $routeParameters
                         ]
                     ],

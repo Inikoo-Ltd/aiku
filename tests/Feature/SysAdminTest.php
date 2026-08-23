@@ -1716,6 +1716,40 @@ test('UI sysadmin staff chat analytics index', function (User $user) {
     });
 })->depends('SetUserAuthorisedModels command');
 
+test('UI hr staff chat analytics and conversation scoped to organisation', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    $organisation = $user->authorisedOrganisations()->first();
+    $user->update(['employed_in_organisation_id' => $organisation->id]);
+    $conversation = \App\Models\Chat\StaffConversation::first();
+
+    $response = get(route('grp.org.hr.dashboard', [$organisation->slug]));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->where('stats.5.name', 'Staff chat')->where('stats.5.stat', 3));
+
+    $response = get(route('grp.org.hr.staff_chat.index', [$organisation->slug]));
+    $response->assertInertia(function (AssertableInertia $page) use ($organisation) {
+        $page
+            ->component('SysAdmin/StaffChatAnalytics')
+            ->where('insights.messages', 3)
+            ->where('show_route.name', 'grp.org.hr.staff_chat.show')
+            ->where('show_route.parameters.organisation', $organisation->slug)
+            ->has('conversations.data', 1);
+    });
+
+    $response = get(route('grp.org.hr.staff_chat.show', [$organisation->slug, $conversation->ulid]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/HumanResources/StaffChatConversation')
+            ->has('messages', 3)
+            ->where('messages.0.body', 'hello');
+    });
+
+    $user->update(['employed_in_organisation_id' => null]);
+    $response = get(route('grp.org.hr.staff_chat.index', [$organisation->slug]));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->where('insights.messages', 0));
+})->depends('SetUserAuthorisedModels command');
+
 test('UI sysadmin guest show and edit', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);
