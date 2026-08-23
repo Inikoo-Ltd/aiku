@@ -30,7 +30,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { trans } from "laravel-vue-i18n"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute } from "@fal"
+import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute, faUserSecret } from "@fal"
 import { routeType } from "@/types/route"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue"
@@ -42,8 +42,10 @@ import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOf
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 
-library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute)
+library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute, faUserSecret)
 
 
 const props = defineProps<{
@@ -107,6 +109,21 @@ const isModalUploadOpen = ref(false)
 const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
+const isAnonymiseModalOpen = ref(false)
+const anonymiseForm = useForm({
+    reason: "",
+    reference: "",
+    keep_company_name: false
+})
+const submitAnonymise = (routeToPost: routeType) => {
+    anonymiseForm.post(route(routeToPost.name, routeToPost.parameters), {
+        onSuccess: () => {
+            isAnonymiseModalOpen.value = false
+            anonymiseForm.reset()
+        }
+    })
+}
+
 const orderForm = useForm({
     sales_channel_id: null as number | null
 })
@@ -156,6 +173,36 @@ const layout = inject('layout')
                         @click="changeModel" />
                 </template>
             </ModalConfirmationDelete>
+        </template>
+        <template #button-anonymise-customer="{ action }">
+            <div>
+                <Button :style="'delete'" :icon="action.icon" :label="action.label" v-tooltip="action.tooltip"
+                    @click="isAnonymiseModalOpen = true" />
+                <Modal :isOpen="isAnonymiseModalOpen" @onClose="isAnonymiseModalOpen = false" width="w-full max-w-lg">
+                    <div class="space-y-4">
+                        <h3 class="text-base font-semibold">{{ trans("Anonymise customer") }} {{ action.reference }}</h3>
+                        <p class="text-sm text-gray-600">
+                            {{ trans("Personal data (names, email, phone, addresses, notes, login) will be erased and the customer soft deleted. Invoices, orders and payments are kept. This can not be undone.") }}
+                        </p>
+                        <PureTextarea v-model="anonymiseForm.reason" :placeholder="trans('Reason (e.g. erasure request received on ...)')" :rows="3" />
+                        <p v-if="anonymiseForm.errors.reason" class="text-xs text-red-500">{{ anonymiseForm.errors.reason }}</p>
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="checkbox" v-model="anonymiseForm.keep_company_name" />
+                            {{ trans("Keep company name and tax number (business customer)") }}
+                        </label>
+                        <div>
+                            <p class="text-sm mb-1">{{ trans("Type the customer reference") }} <strong>{{ action.reference }}</strong> {{ trans("to confirm") }}</p>
+                            <PureInput v-model="anonymiseForm.reference" :placeholder="action.reference" />
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <Button type="secondary" :label="trans('Cancel')" @click="isAnonymiseModalOpen = false" />
+                            <Button type="delete" :label="trans('Anonymise')" :loading="anonymiseForm.processing"
+                                :disabled="!anonymiseForm.reason || anonymiseForm.reference !== action.reference"
+                                @click="submitAnonymise(action.route)" />
+                        </div>
+                    </div>
+                </Modal>
+            </div>
         </template>
         <template #other>
             <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />

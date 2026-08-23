@@ -13,6 +13,7 @@ use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
@@ -159,6 +160,20 @@ class ShowCustomer extends OrgAction
                                 'name'       => 'grp.models.customer.delete',
                                 'parameters' => ['customer' => $customer->id],
                                 'method'     => 'delete',
+                            ]
+                        ] : false,
+                        $this->isSupervisor && !AnonymiseCustomer::isAnonymised($customer) ? [
+                            'key'     => 'anonymise_customer',
+                            'type'    => 'button',
+                            'style'   => 'delete',
+                            'icon'    => 'fal fa-user-secret',
+                            'label'   => __('Anonymise (GDPR)'),
+                            'tooltip' => __('Erase personal data and soft delete the customer. Invoices and orders stay.'),
+                            'reference' => $customer->reference,
+                            'route'   => [
+                                'name'       => 'grp.models.customer.anonymise',
+                                'parameters' => ['customer' => $customer->id],
+                                'method'     => 'post',
                             ]
                         ] : false,
                     ])),
