@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\UI;
 
 use App\Actions\Accounting\Payment\UI\GetPaymentMethodsSummary;
+use App\Actions\Traits\Dashboards\WithMarketingPeriod;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowAccountingDashboard extends OrgAction
 {
+    use WithMarketingPeriod;
     use WithAccountingAuthorisation;
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
@@ -32,6 +34,7 @@ class ShowAccountingDashboard extends OrgAction
 
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
+        $this->setMarketingPeriod($request->user()->settings);
         $parameters = $request->route()->originalParameters();
 
         return Inertia::render(
@@ -56,12 +59,15 @@ class ShowAccountingDashboard extends OrgAction
 
 
                 'payment_methods' => [
-                    'summary' => GetPaymentMethodsSummary::run($organisation),
+                    'summary' => GetPaymentMethodsSummary::run($organisation, $this->periodFrom, $this->periodTo),
                     'route'   => [
                         'name'       => 'grp.org.accounting.payments.methods.index',
                         'parameters' => [$organisation->slug],
                     ],
+                    'period_label' => $this->periodFrom ? $this->periodLabels()['period_label'] : __('All time'),
                 ],
+                'intervals' => $this->intervalsProp($request->user()->settings),
+                'settings'  => [],
                 'flatTreeMaps' => [
                     [
 

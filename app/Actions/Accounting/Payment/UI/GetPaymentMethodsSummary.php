@@ -13,24 +13,26 @@ use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * Dashboard digest of the payment methods table: successful payments of the last N days by
- * method, with the share of sales, in the parent's currency.
+ * Dashboard digest of the payment methods table: successful payments in the period by method,
+ * with the share of sales, in the parent's currency.
  */
 class GetPaymentMethodsSummary
 {
     use AsObject;
 
-    public function handle(Organisation|Shop $parent, int $days = 30, int $limit = 6): array
+    public function handle(Organisation|Shop $parent, ?Carbon $from = null, ?Carbon $to = null, int $limit = 6): array
     {
         $query = Payment::query()
             ->join('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
             ->where('payments.type', PaymentTypeEnum::PAYMENT)
             ->where('payments.status', PaymentStatusEnum::SUCCESS)
-            ->where('payments.date', '>=', now()->subDays($days))
+            ->when($from, fn ($q) => $q->where('payments.date', '>=', $from))
+            ->when($to, fn ($q) => $q->where('payments.date', '<=', $to))
             ->whereNotNull('payments.method');
 
         if ($parent instanceof Shop) {
@@ -49,7 +51,6 @@ class GetPaymentMethodsSummary
 
         return [
             'currency_code' => $parent->currency->code,
-            'days'          => $days,
             'total_sales'   => $total,
             'methods'       => $rows->take($limit)->map(fn ($row) => [
                 'method'               => $row->method,
