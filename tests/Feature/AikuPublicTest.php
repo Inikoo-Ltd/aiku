@@ -102,3 +102,30 @@ test('search.json returns empty for a query shorter than 2 characters', function
         ->assertOk()
         ->assertJson(['hits' => [], 'found' => 0]);
 });
+
+test('feed.xml lists every note with link, date and categories', function () {
+    $all = BlogPosts::all();
+    $response = get($this->host.'/feed.xml')
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/rss+xml; charset=UTF-8')
+        ->assertSee('<rss version="2.0"', false);
+
+    $all->each(fn (array $post) => $response->assertSee('<link>'.route('aiku-public.blog.show', $post['slug']).'</link>', false));
+    $first = $all->first();
+    $response->assertSee('<pubDate>'.$first['date']->toRssString().'</pubDate>', false)
+        ->assertSee('<category>'.$first['tags'][0].'</category>', false);
+    expect(simplexml_load_string($response->getContent()))->not->toBeFalse();
+
+    get($this->host.'/')->assertSee('type="application/rss+xml"', false);
+});
+
+test('llms.txt and home JSON-LD are served', function () {
+    get($this->host.'/llms.txt')
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+        ->assertSee(route('aiku-public.blog.index'), false);
+
+    get($this->host.'/')
+        ->assertSee('"@type":"Organization"', false)
+        ->assertSee('"@type":"WebSite"', false);
+});

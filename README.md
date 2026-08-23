@@ -6,6 +6,8 @@
 
 <h3 align="center">The open source operating system for commerce.</h3>
 
+<p align="center"><a href="https://aiku.io">aiku.io</a> · <a href="https://aiku.io/blog">Engineering notes</a></p>
+
 <p align="center">
   One platform to run wholesale, retail, dropshipping, marketplaces, 3PL fulfilment and your own storefronts —<br>
   across many companies, warehouses, countries and currencies.

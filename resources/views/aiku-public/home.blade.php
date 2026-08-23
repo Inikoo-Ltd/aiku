@@ -1,4 +1,13 @@
 <x-aiku-public.layout title="aiku — the open source operating system for commerce" description="aiku runs a whole trading business from one codebase: ERP, warehouse and dispatch, 3PL fulfilment, storefronts, marketplaces, dropshipping, CRM, marketing and accounting. Open source, AGPL.">
+    <x-slot:head>
+        <script type="application/ld+json">{!! json_encode([
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                ['@type' => 'Organization', 'name' => 'aiku', 'url' => route('aiku-public.home'), 'logo' => url('art/logo-sketch.svg'), 'sameAs' => ['https://github.com/Inikoo-Ltd/aiku']],
+                ['@type' => 'WebSite', 'name' => 'aiku', 'url' => route('aiku-public.home')],
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    </x-slot:head>
     <div class="wrap">
         <section class="hero">
             <div class="eyebrow">Open source software for people who ship things</div>
