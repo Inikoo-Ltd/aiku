@@ -58,7 +58,7 @@
         h2 { font-size: clamp(28px, 3.6vw, 40px); margin-top: 1.6em; }
         h3 { font-size: 24px; margin-top: 1.4em; }
         p.lede { font-family: var(--serif); font-size: clamp(20px, 2.4vw, 26px); line-height: 1.4; color: var(--muted); max-width: 34em; }
-        .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+        .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
         .hero { padding: 96px 0 48px; }
         .hero .actions { margin-top: 36px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; font-weight: 500; }
         .btn { display: inline-block; padding: 12px 20px; border: 1px solid var(--ink); border-radius: 999px; color: var(--ink); font-weight: 500; }
@@ -91,7 +91,7 @@
         .tagbar a span { opacity: .6; margin-left: 3px; }
         .tagbar a[aria-current] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
         .tagbar a:hover { text-decoration: none; border-color: var(--ink); }
-        article.post { padding: 64px 0; }
+        article.post { padding: 72px 0; }
         article.post .meta { color: var(--muted); font-size: 15px; margin-bottom: 40px; }
         article.post .body { font-size: 18px; }
         article.post .body p, article.post .body li { line-height: 1.75; }
