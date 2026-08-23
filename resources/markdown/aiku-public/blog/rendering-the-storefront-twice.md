@@ -23,7 +23,7 @@ The fix went into the deploy: after every release the SSR port is **health‑che
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>SSR checksum saving, health-checking and the supervisor restart are deploy tasks in [deploy/deploy.php](https://github.com/Inikoo-Ltd/aiku/blob/main/deploy/deploy.php): <code>deploy:save-ssr-checksums</code> and <code>deploy:restart-ssr-by-supervisorctl</code>.</li>
+<li>SSR checksum saving, health-checking and the supervisor restart are deploy tasks in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/deploy/deploy.php">deploy/deploy.php</a>: <code>deploy:save-ssr-checksums</code> and <code>deploy:restart-ssr-by-supervisorctl</code>.</li>
 </ul></aside>
 
 ## Where the second goes

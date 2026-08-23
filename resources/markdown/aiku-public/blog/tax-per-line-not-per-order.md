@@ -23,8 +23,8 @@ The preset name is stored for bulk edits and *derived again* on every write of t
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>Preset expansion and per-line tax resolution live in [app/Actions/Traits/WithLineTaxCategories.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Traits/WithLineTaxCategories.php).</li>
-<li>Bulk editing of the master-product presets is exposed in [resources/js/Components/Tables/Grp/Goods/TableMasterProductsBulkEditV2.vue](https://github.com/Inikoo-Ltd/aiku/blob/main/resources/js/Components/Tables/Grp/Goods/TableMasterProductsBulkEditV2.vue).</li>
+<li>Preset expansion and per-line tax resolution live in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Traits/WithLineTaxCategories.php">app/Actions/Traits/WithLineTaxCategories.php</a>.</li>
+<li>Bulk editing of the master-product presets is exposed in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/resources/js/Components/Tables/Grp/Goods/TableMasterProductsBulkEditV2.vue">resources/js/Components/Tables/Grp/Goods/TableMasterProductsBulkEditV2.vue</a>.</li>
 </ul></aside>
 
 ## Tax is versioned like price

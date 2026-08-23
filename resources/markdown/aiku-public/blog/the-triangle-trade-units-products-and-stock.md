@@ -52,8 +52,8 @@ The rules that came out of it:
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>The units-integrity repair command is [app/Actions/Maintenance/Masters/RepairMasterProductUnitsIntegrity.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Maintenance/Masters/RepairMasterProductUnitsIntegrity.php).</li>
-<li>The group-wide sync that cascades weights, stock links and flags when a master's pack size changes is [app/Actions/Maintenance/Masters/SyncMasterChildTradeUnitCompositionToMaster.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Maintenance/Masters/SyncMasterChildTradeUnitCompositionToMaster.php).</li>
+<li>The units-integrity repair command is <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Maintenance/Masters/RepairMasterProductUnitsIntegrity.php">app/Actions/Maintenance/Masters/RepairMasterProductUnitsIntegrity.php</a>.</li>
+<li>The group-wide sync that cascades weights, stock links and flags when a master's pack size changes is <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Maintenance/Masters/SyncMasterChildTradeUnitCompositionToMaster.php">app/Actions/Maintenance/Masters/SyncMasterChildTradeUnitCompositionToMaster.php</a>.</li>
 </ul></aside>
 
 ## Why keep the triangle at all

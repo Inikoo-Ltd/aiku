@@ -25,8 +25,8 @@ We host the store ourselves, on the staging box: a machine we already run for [b
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>NightOwl config lives in [config/nightowl.php](https://github.com/Inikoo-Ltd/aiku/blob/main/config/nightowl.php).</li>
-<li>Read-only SQL access to the telemetry store is exposed to the AI assistant through [app/Mcp/Tools/SqlQueryTool.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/SqlQueryTool.php) and [app/Mcp/Tools/DescribeTablesTool.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/DescribeTablesTool.php), gated by [app/Mcp/Tools/WithMcpSqlAccess.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/WithMcpSqlAccess.php).</li>
+<li>NightOwl config lives in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/config/nightowl.php">config/nightowl.php</a>.</li>
+<li>Read-only SQL access to the telemetry store is exposed to the AI assistant through <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/SqlQueryTool.php">app/Mcp/Tools/SqlQueryTool.php</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/DescribeTablesTool.php">app/Mcp/Tools/DescribeTablesTool.php</a>, gated by <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/WithMcpSqlAccess.php">app/Mcp/Tools/WithMcpSqlAccess.php</a>.</li>
 </ul></aside>
 
 ## The accident: SQL to the telemetry

@@ -27,8 +27,8 @@ A customer writes in Romanian; the agent reads it in English and answers in Engl
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>The core session model is [app/Models/Chat/ChatSession.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Chat/ChatSession.php), surfaced via [app/Http/Resources/CRM/Livechat/ChatSessionResource.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Http/Resources/CRM/Livechat/ChatSessionResource.php).</li>
-<li>Turning a session into something else is its own action: [app/Actions/Chat/ChatSession/SummarizeChatSession.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Chat/ChatSession/SummarizeChatSession.php) and [app/Actions/Chat/ChatSession/ShareChatSessionToSlack.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Chat/ChatSession/ShareChatSessionToSlack.php).</li>
+<li>The core session model is <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Chat/ChatSession.php">app/Models/Chat/ChatSession.php</a>, surfaced via <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Http/Resources/CRM/Livechat/ChatSessionResource.php">app/Http/Resources/CRM/Livechat/ChatSessionResource.php</a>.</li>
+<li>Turning a session into something else is its own action: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Chat/ChatSession/SummarizeChatSession.php">app/Actions/Chat/ChatSession/SummarizeChatSession.php</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Chat/ChatSession/ShareChatSessionToSlack.php">app/Actions/Chat/ChatSession/ShareChatSessionToSlack.php</a>.</li>
 </ul></aside>
 
 From a session, with the context pre‑filled: a **ticket** in the help project (the conversation, the customer, the order, the agent's chosen priority and labels); a **Slack thread** for a shop's channel when the team wants eyes on something; a **summary**, generated on demand, for the handover at the end of a shift or the note on the customer's record. Closing a session does not lose it — closed sessions are searchable, exportable, and appear on the customer's timeline for the next agent.

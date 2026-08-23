@@ -71,9 +71,9 @@ When a product changes, the application bans exactly the pages that carry it. Wh
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>Ban and purge actions live under [app/Actions/Web/Webpage](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Webpage/BanVarnishWebpage.php) and [app/Actions/Web/Website](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/BreakWebsiteVarnishCache.php), with the shared ban logic in [app/Actions/Traits/WithVarnishBan.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Traits/WithVarnishBan.php).</li>
-<li>The VCL that implements the hash buckets and tag-based bans is checked into [devops/varnish/default.vcl](https://github.com/Inikoo-Ltd/aiku/blob/main/devops/varnish/default.vcl).</li>
-<li>Hit-rate and memory usage are recorded by [RecordVarnishHitRatio.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/Analytics/RecordVarnishHitRatio.php) and [RecordVarnishMemoryUsage.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/Analytics/RecordVarnishMemoryUsage.php).</li>
+<li>Ban and purge actions live under <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Webpage/BanVarnishWebpage.php">app/Actions/Web/Webpage</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/BreakWebsiteVarnishCache.php">app/Actions/Web/Website</a>, with the shared ban logic in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Traits/WithVarnishBan.php">app/Actions/Traits/WithVarnishBan.php</a>.</li>
+<li>The VCL that implements the hash buckets and tag-based bans is checked into <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/devops/varnish/default.vcl">devops/varnish/default.vcl</a>.</li>
+<li>Hit-rate and memory usage are recorded by <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/Analytics/RecordVarnishHitRatio.php">RecordVarnishHitRatio.php</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/Analytics/RecordVarnishMemoryUsage.php">RecordVarnishMemoryUsage.php</a>.</li>
 <li>Varnish's own ban and vary mechanics are documented at <code>vcl_hash</code> and <code>ban()</code> in the <a href="https://varnish-cache.org/docs/">Varnish documentation</a>.</li>
 </ul></aside>
 

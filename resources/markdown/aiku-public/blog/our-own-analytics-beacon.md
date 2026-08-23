@@ -24,7 +24,7 @@ All of it lands on queues; the request itself returns in a few milliseconds.
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>The endpoint's action is [app/Actions/Web/Website/Analytics/RecordWebsiteHit.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/Analytics/RecordWebsiteHit.php), routed at <code>POST /analytics/hit</code> in [routes/analytics/analytics.php](https://github.com/Inikoo-Ltd/aiku/blob/main/routes/analytics/analytics.php).</li>
+<li>The endpoint's action is <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/Website/Analytics/RecordWebsiteHit.php">app/Actions/Web/Website/Analytics/RecordWebsiteHit.php</a>, routed at <code>POST /analytics/hit</code> in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/routes/analytics/analytics.php">routes/analytics/analytics.php</a>.</li>
 </ul></aside>
 
 ## Bots

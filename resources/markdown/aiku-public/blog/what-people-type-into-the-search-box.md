@@ -48,8 +48,8 @@ And one finding that revised our whole view: **the dominant search‑quality pro
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>Scout is configured to Typesense in [config/scout.php](https://github.com/Inikoo-Ltd/aiku/blob/main/config/scout.php).</li>
-<li>Typesense-specific actions live under [app/Actions/Search](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Search/WithTypesenseApi.php), including [SetupTypesenseSearchAnalytics.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Search/SetupTypesenseSearchAnalytics.php) and the metrics reader [GetTypesenseMetrics.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Overview/GetTypesenseMetrics.php).</li>
+<li>Scout is configured to Typesense in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/config/scout.php">config/scout.php</a>.</li>
+<li>Typesense-specific actions live under <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Search/WithTypesenseApi.php">app/Actions/Search</a>, including <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Search/SetupTypesenseSearchAnalytics.php">SetupTypesenseSearchAnalytics.php</a> and the metrics reader <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Overview/GetTypesenseMetrics.php">GetTypesenseMetrics.php</a>.</li>
 <li>Typo-tolerance parameters (<code>num_typos</code>, <code>min_len_1typo</code>, token splitting/joining) and synonym sets are documented in the <a href="https://typesense.org/docs/">Typesense docs</a>.</li>
 </ul></aside>
 

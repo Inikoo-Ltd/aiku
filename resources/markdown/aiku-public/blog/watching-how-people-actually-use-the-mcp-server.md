@@ -17,8 +17,8 @@ Every tool call writes a row: the user, the tool, the arguments, the duration in
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>The logging middleware is [app/Http/Middleware/LogMcpRequest.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Http/Middleware/LogMcpRequest.php); access gating is [app/Http/Middleware/EnsureCanUseMcp.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Http/Middleware/EnsureCanUseMcp.php).</li>
-<li>The server and its tools live under [app/Mcp/Servers/AikuServer.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Servers/AikuServer.php) and [app/Mcp/Tools](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/SqlQueryTool.php), including the SQL-gating trait [WithMcpSqlAccess.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/WithMcpSqlAccess.php).</li>
+<li>The logging middleware is <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Http/Middleware/LogMcpRequest.php">app/Http/Middleware/LogMcpRequest.php</a>; access gating is <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Http/Middleware/EnsureCanUseMcp.php">app/Http/Middleware/EnsureCanUseMcp.php</a>.</li>
+<li>The server and its tools live under <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Servers/AikuServer.php">app/Mcp/Servers/AikuServer.php</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/SqlQueryTool.php">app/Mcp/Tools</a>, including the SQL-gating trait <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Mcp/Tools/WithMcpSqlAccess.php">WithMcpSqlAccess.php</a>.</li>
 <li>Built on <code>laravel/mcp</code> — see the <a href="https://laravel.com/docs/mcp">Laravel MCP docs</a> for tool registration and authorization patterns.</li>
 </ul></aside>
 

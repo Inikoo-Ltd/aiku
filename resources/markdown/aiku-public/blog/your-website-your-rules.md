@@ -35,9 +35,9 @@ Saving in the workshop does not change the live site. Publishing takes a **snaps
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>Web blocks are modelled in [app/Models/Web/WebBlock.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/WebBlock.php) and [WebBlockType.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/WebBlockType.php), attached to pages via [ModelHasWebBlocks.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/ModelHasWebBlocks.php), with edit history in [WebBlockHistory.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/WebBlockHistory.php).</li>
-<li>Publishing takes a snapshot via [StoreWebpageSnapshot.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Helpers/Snapshot/StoreWebpageSnapshot.php).</li>
-<li>Layout templates live under [app/Models/Web/WebLayoutTemplate.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/WebLayoutTemplate.php), applied to a shop's site by [ApplyWebLayoutTemplate.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/WebLayoutTemplate/ApplyWebLayoutTemplate.php).</li>
+<li>Web blocks are modelled in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/WebBlock.php">app/Models/Web/WebBlock.php</a> and <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/WebBlockType.php">WebBlockType.php</a>, attached to pages via <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/ModelHasWebBlocks.php">ModelHasWebBlocks.php</a>, with edit history in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/WebBlockHistory.php">WebBlockHistory.php</a>.</li>
+<li>Publishing takes a snapshot via <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Helpers/Snapshot/StoreWebpageSnapshot.php">StoreWebpageSnapshot.php</a>.</li>
+<li>Layout templates live under <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Web/WebLayoutTemplate.php">app/Models/Web/WebLayoutTemplate.php</a>, applied to a shop's site by <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Web/WebLayoutTemplate/ApplyWebLayoutTemplate.php">ApplyWebLayoutTemplate.php</a>.</li>
 </ul></aside>
 
 ## Layouts are templates, shared across shops

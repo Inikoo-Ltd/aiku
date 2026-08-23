@@ -32,8 +32,8 @@ One guard we added after watching the floor: **a low‑stock audit is locked whi
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>Movements: [app/Models/Inventory/OrgStockMovement.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Inventory/OrgStockMovement.php), written via [app/Actions/Inventory/OrgStockMovement/StoreOrgStockMovement.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Inventory/OrgStockMovement/StoreOrgStockMovement.php).</li>
-<li>Audits: [app/Actions/Inventory/LocationOrgStock/AuditLocationOrgStock.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Inventory/LocationOrgStock/AuditLocationOrgStock.php) and the bulk variant [app/Actions/Inventory/LocationOrgStock/BulkAuditLocationOrgStock.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Inventory/LocationOrgStock/BulkAuditLocationOrgStock.php).</li>
+<li>Movements: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Models/Inventory/OrgStockMovement.php">app/Models/Inventory/OrgStockMovement.php</a>, written via <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Inventory/OrgStockMovement/StoreOrgStockMovement.php">app/Actions/Inventory/OrgStockMovement/StoreOrgStockMovement.php</a>.</li>
+<li>Audits: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Inventory/LocationOrgStock/AuditLocationOrgStock.php">app/Actions/Inventory/LocationOrgStock/AuditLocationOrgStock.php</a> and the bulk variant <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Inventory/LocationOrgStock/BulkAuditLocationOrgStock.php">app/Actions/Inventory/LocationOrgStock/BulkAuditLocationOrgStock.php</a>.</li>
 </ul></aside>
 
 ## Lost, found, and the `-error` rule

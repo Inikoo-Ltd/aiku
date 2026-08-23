@@ -47,7 +47,7 @@ The switch lives in the group settings as two radio cards, with a confirmation t
 
 <aside class="technical"><strong>Technical box</strong>
 <ul>
-<li>The switch is <code>OrgStockValuationMethodEnum</code> in [app/Enums/Inventory/OrgStock/OrgStockValuationMethodEnum.php](https://github.com/Inikoo-Ltd/aiku/blob/main/app/Enums/Inventory/OrgStock/OrgStockValuationMethodEnum.php), with cases <code>WAC</code> and <code>FIFO</code> and an <code>official()</code> resolver.</li>
+<li>The switch is <code>OrgStockValuationMethodEnum</code> in <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Enums/Inventory/OrgStock/OrgStockValuationMethodEnum.php">app/Enums/Inventory/OrgStock/OrgStockValuationMethodEnum.php</a>, with cases <code>WAC</code> and <code>FIFO</code> and an <code>official()</code> resolver.</li>
 <li>Everything reading a value calls <code>official()</code> rather than storing the method locally, so a stray "last purchase price" setting can never silently become the accounting figure.</li>
 </ul></aside>
 
