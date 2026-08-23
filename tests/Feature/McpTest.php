@@ -28,6 +28,10 @@ use App\Mcp\Tools\EmployeeDirectoryTool;
 use App\Mcp\Tools\FamilySalesTool;
 use App\Mcp\Tools\GroupSalesTool;
 use App\Mcp\Tools\MailshotPerformanceTool;
+use App\Mcp\Tools\MarketingPerformanceTool;
+use App\Mcp\Tools\MarketingTrendTool;
+use App\Mcp\Tools\EmailMarketingPerformanceTool;
+use App\Mcp\Tools\OfferPerformanceTool;
 use App\Mcp\Tools\MarginTrendTool;
 use App\Mcp\Tools\MyAccessTool;
 use App\Mcp\Tools\OffersOverviewTool;
@@ -1303,5 +1307,58 @@ describe('lookup tools', function () {
         ]);
 
         $response->assertHasErrors(['You do not have access to any shop.']);
+    });
+});
+
+describe('marketing attribution tools', function () {
+    test('user without marketing view permission is denied on every marketing tool', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        foreach ([MarketingPerformanceTool::class, MarketingTrendTool::class, EmailMarketingPerformanceTool::class, OfferPerformanceTool::class] as $tool) {
+            AikuServer::actingAs($guest->getUser())->tool($tool, ['shop' => $this->shop->slug])
+                ->assertHasErrors(['You do not have access to any shop.']);
+        }
+
+        AikuServer::actingAs($guest->getUser())->tool(MarketingPerformanceTool::class, [])
+            ->assertHasErrors(['You do not have marketing access to any shop. Pass a shop or organisation you may read.']);
+    });
+
+    test('admin user gets shop marketing performance with a previous period comparison', function () {
+        $response = AikuServer::actingAs($this->user)->tool(MarketingPerformanceTool::class, [
+            'shop' => $this->shop->slug,
+            'from' => '2026-08-01',
+            'to'   => '2026-08-31',
+        ]);
+
+        $response->assertOk()
+            ->assertSee('"type":"shop"')
+            ->assertSee('"previous_period":{"from":"2026-07-01","to":"2026-07-31"}')
+            ->assertSee('"channel_groups"')
+            ->assertSee('"change_pct"')
+            ->assertDontSee('"route"');
+    });
+
+    test('admin user gets organisation and group marketing roll-ups', function () {
+        AikuServer::actingAs($this->user)->tool(MarketingPerformanceTool::class, [
+            'organisation' => $this->organisation->slug,
+        ])->assertOk()->assertSee('"type":"organisation"')->assertSee('"shops"');
+
+        AikuServer::actingAs($this->user)->tool(MarketingPerformanceTool::class, [])
+            ->assertOk()->assertSee('"type":"group"');
+    });
+
+    test('admin user gets the monthly marketing trend, email and offer performance', function () {
+        AikuServer::actingAs($this->user)->tool(MarketingTrendTool::class, [
+            'shop'  => $this->shop->slug,
+            'group' => 'organic',
+        ])->assertOk()->assertSee('"granularity":"month"')->assertSee('"series"');
+
+        AikuServer::actingAs($this->user)->tool(EmailMarketingPerformanceTool::class, [
+            'shop' => $this->shop->slug,
+        ])->assertOk()->assertSee('"mailshots":[]');
+
+        AikuServer::actingAs($this->user)->tool(OfferPerformanceTool::class, [
+            'shop' => $this->shop->slug,
+        ])->assertOk()->assertSee('"offers"');
     });
 });

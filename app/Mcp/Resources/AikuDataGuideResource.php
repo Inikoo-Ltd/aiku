@@ -87,6 +87,13 @@ organisation, group (parent only — group records table does not exist yet).
 - **Polymorphic columns store short aliases**, not class names: `'Customer'`,
   `'Employee'`, `'Shop'` — not `App\Models\...`.
 - Money columns are numeric; always state which currency you are reporting.
+- **Marketing attribution**: a customer's credit is split across the channels that touched
+  them (`model_has_traffic_sources.share`, summing to 1 per customer), so always multiply by
+  `share`; revenue is credited to the ORDER date within the shop's attribution window
+  (`shops.settings->marketing->attribution_window_days`, default 90); recording started
+  7 Aug 2026, so earlier periods are zero, not "no marketing". Email sending has no invoiced
+  cost, it is estimated. Prefer marketing-performance-tool, marketing-trend-tool and
+  email-marketing-performance-tool over SQL: they encode all of this.
 
 ## Where common things live
 
@@ -100,7 +107,8 @@ organisation, group (parent only — group records table does not exist yet).
 | Dispatch | `delivery_notes`, `delivery_note_items`, `picking_sessions` |
 | Warehouse labour | `pickings` (`picker_user_id`, `last_picked_at`), `packings` (`packer_user_id`, `queued_at`, `packing_at`, `done_at`). Neither carries `warehouse_id`: join `delivery_notes`. Only trust rows where `created_at >= shops.migrated_to_aiku_on` and `delivery_notes.source_id IS NULL`; earlier work was picked on paper. For per line packing rates exclude `packings.data->>'auto_packed' = 'true'`, those lines were swept up by one click on the note rather than packed one by one |
 | Suppliers / purchasing | `suppliers`, `supplier_products`, `purchase_orders`, `stock_deliveries` |
-| Marketing | `mailshots` + `mailshot_stats`, `outboxes`, `dispatched_emails`, `email_bulk_runs` |
+| Marketing (email) | `mailshots` + `mailshot_stats`, `outboxes`, `dispatched_emails`, `email_bulk_runs` |
+| Marketing attribution (traffic sources, ROI) | `traffic_sources` (one row per shop per channel `type`: google-ads, meta-ads, organic-google, organic-search, newsletter, marketing-mailshot, email-automated, referral, ai...), `traffic_source_campaigns` (`reference` = ad platform campaign id, `mailshot-N`, or the referring host for referral/organic-search/ai; unique per traffic source for those host channels), `model_has_traffic_sources` (pivot: `model_type` Customer/Order/Prospect, `share` 0-1, `traffic_source_campaign_id`, `first_touch_at`/`last_touch_at`), `traffic_source_costs` (daily ad spend), `traffic_source_stats` / `traffic_source_campaign_stats` (hydrated lifetime totals). Read revenue ONLY through the views: `marketing_channel_daily` (per shop/channel/day: cost, revenue, invoices, registrations), `marketing_channel_performance` (lifetime per channel with roas), `marketing_mailshot_performance` (per mailshot attributed revenue), `marketing_attributable_invoices` (the invoice rows behind them, already windowed and shared) |
 | Offers | `offers` + `offer_stats`, `offer_campaigns` |
 | Reviews | `reviews`, `shop_review_stats` |
 | Web | `websites`, `webpages`, `web_user_requests` (logged-in traffic only) |
