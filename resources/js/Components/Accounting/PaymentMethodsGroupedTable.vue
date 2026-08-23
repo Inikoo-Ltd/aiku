@@ -7,6 +7,8 @@ import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { routeType } from '@/types/route'
 import { paymentProviderLogo } from '@/Composables/usePaymentProviderLogo'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faCheckCircle } from '@fas'
 
 export type PaymentMethodRow = {
     method: string
@@ -87,8 +89,10 @@ const expandable = (g: any) => g.children.length > 1
 
 const money = (value: number) => locale.currencyFormat(props.currencyCode, value)
 const share = (part: number, whole: number) => whole > 0 ? (part / whole * 100).toFixed(1) + '%' : '—'
-/* Shown only when something failed: a column of 100% says nothing, the one 93% line is the signal. */
+/* A rate only when something failed: a column of 100% says nothing, the one 93% line is the signal.
+   All-good rows carry a faint tick instead so the column does not look unfinished. */
 const successRate = (success: number, total: number) => total > 0 && success < total ? (success / total * 100).toFixed(1) + '%' : ''
+const allGood = (success: number, total: number) => total > 0 && success === total
 const rateClass = (success: number, total: number) => {
     if (total === 0) return 'text-gray-400'
     const rate = success / total
@@ -148,7 +152,7 @@ const columnHelp = {
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
                         <span class="inline-grid grid-cols-[4.5rem_3.5rem]">
                             <span>{{ locale.number(group.number_success) }}</span>
-                            <span class="font-normal" :class="rateClass(group.number_success, group.number_payments)">{{ successRate(group.number_success, group.number_payments) }}</span>
+                            <span class="font-normal" :class="rateClass(group.number_success, group.number_payments)"><FontAwesomeIcon v-if="allGood(group.number_success, group.number_payments)" :icon="faCheckCircle" class="opacity-25" fixed-width /><template v-else>{{ successRate(group.number_success, group.number_payments) }}</template></span>
                         </span>
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -175,7 +179,7 @@ const columnHelp = {
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
                         <span class="inline-grid grid-cols-[4.5rem_3.5rem]">
                             <span>{{ locale.number(child.number_success) }}</span>
-                            <span :class="rateClass(child.number_success, child.number_payments)">{{ successRate(child.number_success, child.number_payments) }}</span>
+                            <span :class="rateClass(child.number_success, child.number_payments)"><FontAwesomeIcon v-if="allGood(child.number_success, child.number_payments)" :icon="faCheckCircle" class="opacity-25" fixed-width /><template v-else>{{ successRate(child.number_success, child.number_payments) }}</template></span>
                         </span>
                     </td>
                     <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -199,7 +203,7 @@ const columnHelp = {
                     <td class="text-right px-2 tabular-nums">
                         <span class="inline-grid grid-cols-[4.5rem_3.5rem]">
                             <span>{{ locale.number(totals.number_success) }}</span>
-                            <span class="font-normal" :class="rateClass(totals.number_success, totals.number_payments)">{{ successRate(totals.number_success, totals.number_payments) }}</span>
+                            <span class="font-normal" :class="rateClass(totals.number_success, totals.number_payments)"><FontAwesomeIcon v-if="allGood(totals.number_success, totals.number_payments)" :icon="faCheckCircle" class="opacity-25" fixed-width /><template v-else>{{ successRate(totals.number_success, totals.number_payments) }}</template></span>
                         </span>
                     </td>
                     <td class="text-right px-2 tabular-nums"><span class="inline-grid grid-cols-[7rem_3.5rem]"><span>{{ money(totals.total_sales) }}</span><span></span></span></td>
