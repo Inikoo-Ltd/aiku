@@ -16,6 +16,7 @@ use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -40,6 +41,7 @@ class StoreFailedCheckoutComPayment
 
         return StorePayment::make()->action($customer, $paymentAccountShop->paymentAccount, array_filter([
             'reference'               => $reference,
+            'date'                    => self::dateOf($checkoutComPayment),
             'amount'                  => Arr::get($checkoutComPayment, 'amount', 0) / 100,
             'status'                  => PaymentStatusEnum::FAIL,
             'state'                   => self::stateFor(Arr::get($checkoutComPayment, 'status'), $eventType),
@@ -57,6 +59,13 @@ class StoreFailedCheckoutComPayment
                 ]),
             ],
         ], fn ($value) => $value !== null));
+    }
+
+    public static function dateOf(array $checkoutComPayment): ?Carbon
+    {
+        $raw = Arr::get($checkoutComPayment, 'processed_on') ?? Arr::get($checkoutComPayment, 'requested_on');
+
+        return $raw ? Carbon::parse($raw) : null;
     }
 
     public static function stateFor(?string $status, ?string $eventType): PaymentStateEnum

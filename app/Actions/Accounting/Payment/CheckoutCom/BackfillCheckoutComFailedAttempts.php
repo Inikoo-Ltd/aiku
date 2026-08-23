@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Payment\CheckoutCom;
 
 use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Accounting\TopUpPaymentApiPoint\TopUpPaymentApiPointStateEnum;
@@ -34,7 +35,7 @@ class BackfillCheckoutComFailedAttempts
 
     public string $commandSignature = 'payments:backfill_checkout_com_failed_attempts {--commit}';
 
-    private array $counts = ['stored' => 0, 'skipped' => 0, 'unresolved' => 0];
+    private array $counts = ['stored' => 0, 'skipped' => 0, 'dated' => 0, 'unresolved' => 0];
 
     private bool $commit = false;
 
@@ -82,7 +83,7 @@ class BackfillCheckoutComFailedAttempts
                 }
             });
 
-        $command->info(($this->commit ? 'Stored' : 'Would store')." {$this->counts['stored']}, already known {$this->counts['skipped']}, unresolved {$this->counts['unresolved']}");
+        $command->info(($this->commit ? 'Stored' : 'Would store')." {$this->counts['stored']}, already known {$this->counts['skipped']} (dates repaired {$this->counts['dated']}), unresolved {$this->counts['unresolved']}");
 
         return 0;
     }
@@ -96,8 +97,10 @@ class BackfillCheckoutComFailedAttempts
             return;
         }
 
-        if (Payment::where('reference', $reference)->exists()) {
+        $known = Payment::where('reference', $reference)->first();
+        if ($known) {
             $this->counts['skipped']++;
+            $this->repairDate($known, $checkoutComPayment);
 
             return;
         }
@@ -105,6 +108,20 @@ class BackfillCheckoutComFailedAttempts
         $this->counts['stored']++;
         if ($this->commit) {
             StoreFailedCheckoutComPayment::run($customer, $paymentAccountShop, $checkoutComPayment, $eventType, $apiPoint);
+        }
+    }
+
+    /** Failed attempts stored before the date was taken from the payload carry the day they were backfilled */
+    private function repairDate(Payment $payment, array $checkoutComPayment): void
+    {
+        $date = StoreFailedCheckoutComPayment::dateOf($checkoutComPayment);
+        if ($payment->status != PaymentStatusEnum::FAIL || !$date || $payment->date->isSameDay($date)) {
+            return;
+        }
+
+        $this->counts['dated']++;
+        if ($this->commit) {
+            $payment->update(['date' => $date, 'created_at' => $date]);
         }
     }
 

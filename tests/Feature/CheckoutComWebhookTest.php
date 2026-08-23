@@ -361,6 +361,7 @@ test('webhook payment_declined marks the api point as failure and leaves the ord
     $payload = fakeCheckoutComWebhookPayload('payment_declined', 'evt_test_declined', 'pay_test_declined', $orderPaymentApiPoint, 2500);
     $payload['data']['source']           = ['type' => 'card', 'scheme' => 'VISA'];
     $payload['data']['response_summary'] = 'Insufficient Funds';
+    $payload['data']['processed_on']     = '2026-03-04T10:20:30Z';
 
     $paymentGatewayLog = $this->group->paymentGatewayLogs()->create([
         'payload' => $payload,
@@ -388,6 +389,7 @@ test('webhook payment_declined marks the api point as failure and leaves the ord
         ->and($failedPayment->sub_method)->toBe('visa')
         ->and((float) $failedPayment->amount)->toBe(25.0)
         ->and($failedPayment->data['checkout_com']['response_summary'])->toBe('Insufficient Funds')
+        ->and($failedPayment->date->toDateString())->toBe('2026-03-04')
         ->and($failedPayment->orders()->count())->toBe(0);
 
     /** The same decline delivered again (duplicate webhook, or redirect after webhook) is stored once */
