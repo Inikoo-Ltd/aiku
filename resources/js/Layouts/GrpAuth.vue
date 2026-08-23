@@ -26,15 +26,15 @@ console.log('environment:', useLayoutStore().app.environment)
 
 <template>
     <ScreenWarning v-if="layout.app.environment === 'staging'" />
-    <div :style="{'background-image': `${'url(/art/background-guest.webp'}`, 'background-repeat': 'no-repeat', 'background-size': 'cover', 'background-position': 'center'}"
-          class="relative min-h-[100dvh] w-screen flex items-center justify-center bg-gradient-to-bl from-indigo-400 to-indigo-600 sm:px-6 lg:px-8">
-        <div class="absolute bottom-5 left-10 flex items-center justify-center gap-x-2">
-            <img class="h-12 w-auto" src="/art/logo-yellow.svg" alt="Aiku" />
-            <span style="font-family: Fira, sans-serif" class="text-4xl text-white leading-none">aiku</span>
+    <div :style="{'background-image': 'url(/art/background-watercolour.svg)', 'background-size': 'cover', 'background-position': 'center'}"
+          class="relative min-h-[100dvh] w-screen flex items-center justify-center bg-[#fbf7ee] sm:px-6 lg:px-8">
+        <div class="absolute top-8 left-10 flex items-center gap-x-3 select-none">
+            <img class="h-14 w-auto" src="/art/logo-sketch.svg" alt="aiku" />
+            <span style="font-family: Georgia, 'Times New Roman', serif" class="text-4xl font-semibold text-[#1c1b22] leading-none tracking-tight">aiku</span>
         </div>
 
         <div class="mt-8 mx-auto md:w-full max-w-md">
-            <div class="relative bg-white/65 py-8 px-4 shadow rounded-lg md:px-10">
+            <div class="relative bg-white/80 backdrop-blur-sm py-8 px-4 rounded-lg md:px-10 border border-[#1c1b22]/10 shadow-[0_8px_30px_rgba(28,27,34,0.08)]">
                 <slot />
             </div>
         </div>
