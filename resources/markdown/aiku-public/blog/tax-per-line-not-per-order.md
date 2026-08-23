@@ -1,13 +1,13 @@
 ---
 title: Tax per line, not per order
-summary: For years VAT was calculated once for the whole order, so zero‑rated tea on a UK invoice was charged at 20%. The fix was not "read the product's tax code" — it was presets instead of codes for staff, tax versioned like price on the historic line, frozen once sold, and a repair that re‑rated three hundred open baskets to the penny.
+summary: For years every line we sold carried the same VAT rate, so one rate per order was simply true. Then the range grew to include tea — zero‑rated in one market, reduced in another — and "which rate" became a question per line. The answer was not "read the product's tax code": it was presets instead of codes for staff, tax versioned like price on the historic line, frozen once sold, and a migration that re‑rated the open baskets to the penny.
 date: 2026-08-02
 tags: tax, accounting, ordering, postgres
 ---
 
-A customer in the UK buys a box of herbal tea and a candle. Tea is zero‑rated; the candle is 20%. For a long time aiku charged 20% on both — because the order carried one tax category, applied to every line, and the per‑product tax data that had been imported from the legacy system was stored and never read.
+For most of aiku's life the question "which VAT rate does this line pay" had one answer per order, and that answer was right: giftware, candles, aromatherapy, incense — everything in the range sat at the standard rate of whichever country the order fell under. One tax category on the order, applied to every line, was not a simplification; it was the truth of the catalogue.
 
-Nobody noticed for a surprising time, because the invoices *looked* right: one rate, one total, the arithmetic correct. It took a customer's accountant to notice the rate was wrong for the tea. Two tickets later, we rebuilt how tax attaches to a line.
+Then the range changed. We started selling tea, and then other food and drink, and a box of herbal tea next to a candle on a UK order is zero‑rated next to twenty per cent. In Spain the same tea is at a reduced rate and the candle is not. A per‑order rate stopped being true the day the first tea shipped, and the per‑product tax data that had been sitting in the catalogue since the migration — stored, never needed — suddenly was. So we rebuilt how tax attaches to a line.
 
 ## Tax belongs to the line
 
@@ -29,7 +29,7 @@ The consequence is exactly what accountants want: change a product's preset and 
 
 Going live was a data problem as much as a code one. The legacy system held per‑product tax data for hundreds of thousands of products, and its "empty" marker differed between the live copy and our local mirrors — a filter that looked right locally chewed through 409,000 rows of filler in production for hours before we noticed. Once fixed, the seeder mapped 166 products to *Food* and 10 to *Dried flowers*, zero to *Custom*, and re‑rated the open baskets: 305 UK tea lines to 0%, Spanish lines to their 10% and 11.4% reduced rates, with the rehearsed basket matching production to the penny.
 
-Historic invoices are **not** recalculated. The amount of VAT over‑charged in the past is a conversation with the accountants, not a script. We have the number; the decision is theirs.
+Historic invoices are **not** recalculated; anything about the past is a conversation with the accountants, not a script. We have the number; the decision is theirs.
 
 ## A note on credit notes
 
@@ -37,4 +37,4 @@ A VAT‑only credit note must return exactly the VAT the invoice charged — per
 
 ## What we learned
 
-Tax is a property of the line, versioned like price, chosen by staff as a named intent rather than a code, and frozen once sold. And "the invoice looks right" is not evidence; only an accountant with a calculator is.
+Tax is a property of the line, versioned like price, chosen by staff as a named intent rather than a code, and frozen once sold. And a model that was true for years can stop being true the day the catalogue grows — the range changes faster than the schema, so the schema should be ready for the range.
