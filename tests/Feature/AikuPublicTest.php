@@ -71,6 +71,10 @@ test('blog post renders markdown and structured data', function () {
         ->assertSee($post['title'], false);
 });
 
+test('renamed slugs redirect permanently', function () {
+    get($this->host.'/blog/an-mcp-server-for-a-whole-business')->assertRedirect(route('aiku-public.blog.show', 'rag-is-dead-give-the-model-the-tools'))->assertStatus(301);
+});
+
 test('unknown post is 404 and slug is validated', function () {
     get($this->host.'/blog/does-not-exist')->assertNotFound();
     expect(BlogPosts::find('../../.env'))->toBeNull();

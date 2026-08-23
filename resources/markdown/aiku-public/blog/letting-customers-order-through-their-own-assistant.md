@@ -5,7 +5,7 @@ date: 2026-08-24
 tags: mcp, ai, customer-portal, dropshipping, b2b
 ---
 
-We already run an [MCP server for staff](/blog/an-mcp-server-for-a-whole-business). The question that followed within a week was obvious: why not for customers?
+We already run an [MCP server for staff](/blog/rag-is-dead-give-the-model-the-tools). The question that followed within a week was obvious: why not for customers?
 
 A trade customer re‑orders the same forty lines every month. A dropshipper checks stock on their portfolio before they run an ad. Both of them increasingly have an assistant open — a desktop AI client, a chat product, an agent framework — and both would rather say *"reorder last month's candles, skip anything out of stock, ship to the Leeds address"* than click through a portal. We think the businesses that let them do that early will be the ones they stay with.
 

@@ -31,7 +31,7 @@ We host the store ourselves, on the staging box: a machine we already run for [b
 
 ## The accident: SQL to the telemetry
 
-The part we did not plan became the part we use most. Because the telemetry is PostgreSQL, we gave an AI assistant a **read‑only role** on that database and connected it through a local tunnel — the same way the assistant already reads the application's own data through [MCP](/blog/an-mcp-server-for-a-whole-business). Now "which jobs got slower after Thursday's deploy", "show me the requests over two seconds on the storefront this morning", "how many times did this exception fire per hour last week" are questions answered with a query, in seconds, with the rows to prove it — no dashboard clicking, no export.
+The part we did not plan became the part we use most. Because the telemetry is PostgreSQL, we gave an AI assistant a **read‑only role** on that database and connected it through a local tunnel — the same way the assistant already reads the application's own data through [MCP](/blog/rag-is-dead-give-the-model-the-tools). Now "which jobs got slower after Thursday's deploy", "show me the requests over two seconds on the storefront this morning", "how many times did this exception fire per hour last week" are questions answered with a query, in seconds, with the rows to prove it — no dashboard clicking, no export.
 
 It is also how several of the incidents written up elsewhere on this site were diagnosed: the [stray workers](/blog/twenty-six-queues-and-the-feeling-of-cpu-at-100) running a query 780,000 times an hour were found by grouping the query table by hour; the [cache warmer's surge](/blog/warming-the-cache-three-times) by counting storefront renders per minute around a deploy.
 

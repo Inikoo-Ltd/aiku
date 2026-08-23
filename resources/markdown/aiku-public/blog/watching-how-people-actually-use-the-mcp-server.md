@@ -7,7 +7,7 @@ tags: mcp, ai, observability, sysadmin
 
 <aside class="tldr"><strong>TL;DR</strong>We log every call to aiku's staff MCP server — user, tool, duration, error and error text — and surface it on a sysadmin dashboard. Two weeks of data showed one user driving 63% of traffic and another with 454 calls at a 100% error rate, because her assistant kept reaching for tools she had no permission for. The fix was server-side: register denied tools with a reason instead of "unknown tool", and route the instructions so the model's first guess is right.</aside>
 
-When we opened the [staff MCP server](/blog/an-mcp-server-for-a-whole-business), the question we could not answer was the obvious one: *is anyone using it, and is it working for them?* A model talking to an API fails quietly. It gets a permission error, tries a different tool, gets another, gives up, and the person on the other end sees a vague "I couldn't find that" — and never files a bug.
+When we opened the [staff MCP server](/blog/rag-is-dead-give-the-model-the-tools), the question we could not answer was the obvious one: *is anyone using it, and is it working for them?* A model talking to an API fails quietly. It gets a permission error, tries a different tool, gets another, gives up, and the person on the other end sees a vague "I couldn't find that" — and never files a bug.
 
 So the first thing we added after the tools was a log.
 

@@ -29,7 +29,7 @@ Pseudo‑positions exist for people who are not employees in the HR sense (an ex
 
 ## One check, three doors
 
-A permission is checked in the action, not in the screen. The same action serves the web page, the API and the [MCP server](/blog/an-mcp-server-for-a-whole-business), so the three agree by construction. The UI hides what you cannot do as a courtesy; the action refuses it as a rule. Lists are scoped in the query — *where organisation_id in (the ones you may see)* — before a row is fetched, so a list never contains something you then cannot open.
+A permission is checked in the action, not in the screen. The same action serves the web page, the API and the [MCP server](/blog/rag-is-dead-give-the-model-the-tools), so the three agree by construction. The UI hides what you cannot do as a courtesy; the action refuses it as a rule. Lists are scoped in the query — *where organisation_id in (the ones you may see)* — before a row is fetched, so a list never contains something you then cannot open.
 
 ## The team id that makes everything false
 

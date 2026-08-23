@@ -9,14 +9,23 @@
 namespace App\Actions\UI\AikuPublic;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\Concerns\AsController;
 
 class ShowBlogPost
 {
     use AsController;
 
-    public function handle(string $slug): View
+    public const array RENAMED = [
+        'an-mcp-server-for-a-whole-business' => 'rag-is-dead-give-the-model-the-tools',
+    ];
+
+    public function handle(string $slug): View|RedirectResponse
     {
+        if (isset(self::RENAMED[$slug])) {
+            return redirect()->route('aiku-public.blog.show', self::RENAMED[$slug], 301);
+        }
+
         $post = BlogPosts::find($slug);
         abort_unless($post, 404);
 
