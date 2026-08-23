@@ -23,11 +23,17 @@ test('home renders server side with drawings and latest notes', function () {
         ->assertSee(BlogPosts::all()->first()['title'], false);
 });
 
-test('blog index lists every post', function () {
-    $response = get($this->host.'/blog');
+test('blog index paginates ten per page, newest first', function () {
+    $all = BlogPosts::all();
+    $first = get($this->host.'/blog')->assertOk();
+    $all->take(10)->each(fn (array $post) => $first->assertSee(route('aiku-public.blog.show', $post['slug']), false));
 
-    $response->assertOk();
-    BlogPosts::all()->each(fn (array $post) => $response->assertSee(route('aiku-public.blog.show', $post['slug']), false));
+    if ($all->count() > 10) {
+        $first->assertSee('Older notes', false)->assertDontSee(route('aiku-public.blog.show', $all->last()['slug']), false);
+        get($this->host.'/blog?page=2')->assertOk()->assertSee(route('aiku-public.blog.show', $all[10]['slug']), false);
+    }
+
+    get($this->host.'/blog?page=999')->assertOk()->assertSee(route('aiku-public.blog.show', $all->last()['slug']), false);
 });
 
 test('blog index filters by tag and ignores unknown tags', function () {
@@ -42,7 +48,7 @@ test('blog index filters by tag and ignores unknown tags', function () {
 
     $response = get($this->host.'/blog?tag=nope');
     $response->assertOk();
-    BlogPosts::all()->each(fn (array $post) => $response->assertSee(route('aiku-public.blog.show', $post['slug']), false));
+    BlogPosts::all()->take(10)->each(fn (array $post) => $response->assertSee(route('aiku-public.blog.show', $post['slug']), false));
 });
 
 test('blog post renders markdown and structured data', function () {

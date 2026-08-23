@@ -1,4 +1,4 @@
-<x-aiku-public.layout :title="($tag ? '#'.$tag.' — ' : '').'Engineering notes — aiku'" description="Notes from building aiku: how the warehouse, marketing attribution, the MCP server, stock valuation and the deploy pipeline came to be the way they are." :canonical="$tag ? route('aiku-public.blog.index', ['tag' => $tag]) : route('aiku-public.blog.index')">
+<x-aiku-public.layout :title="($tag ? '#'.$tag.' — ' : '').'Engineering notes — aiku'" description="Notes from building aiku: how the warehouse, marketing attribution, the MCP server, stock valuation and the deploy pipeline came to be the way they are." :canonical="route('aiku-public.blog.index', array_filter(['tag' => $tag, 'page' => request()->integer('page') > 1 ? request()->integer('page') : null]))">
     <div class="wrap">
         <section class="hero" style="padding-bottom:0">
             <div class="eyebrow">Engineering notes</div>
@@ -23,5 +23,20 @@
                 </li>
             @endforeach
         </ul>
+        @if ($lastPage > 1)
+            <nav class="pager" aria-label="Pages">
+                @if ($page > 1)
+                    <a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag, 'page' => $page - 1 > 1 ? $page - 1 : null])) }}">← Newer notes</a>
+                @else
+                    <span></span>
+                @endif
+                <span class="muted">Page {{ $page }} of {{ $lastPage }}</span>
+                @if ($page < $lastPage)
+                    <a href="{{ route('aiku-public.blog.index', array_filter(['tag' => $tag, 'page' => $page + 1])) }}">Older notes →</a>
+                @else
+                    <span></span>
+                @endif
+            </nav>
+        @endif
     </div>
 </x-aiku-public.layout>

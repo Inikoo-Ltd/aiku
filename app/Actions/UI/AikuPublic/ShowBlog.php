@@ -23,10 +23,18 @@ class ShowBlog
         $tag = $request->query('tag');
         $tag = $tags->has($tag) ? $tag : null;
 
+        $filtered = $tag ? $posts->filter(fn (array $post) => in_array($tag, $post['tags'], true))->values() : $posts;
+        $perPage = 10;
+        $page = max(1, (int) $request->query('page', 1));
+        $lastPage = max(1, (int) ceil($filtered->count() / $perPage));
+        $page = min($page, $lastPage);
+
         return view('aiku-public.blog.index', [
-            'posts' => $tag ? $posts->filter(fn (array $post) => in_array($tag, $post['tags'], true))->values() : $posts,
+            'posts' => $filtered->forPage($page, $perPage)->values(),
             'tags' => $tags,
             'tag' => $tag,
+            'page' => $page,
+            'lastPage' => $lastPage,
         ]);
     }
 }
