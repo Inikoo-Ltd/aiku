@@ -15,7 +15,7 @@ use Illuminate\Support\MessageBag;
 if (!function_exists('group')) {
     function group(): ?Group
     {
-        return Group::first();
+        return Group::orderBy('id')->first();
     }
 }
 
