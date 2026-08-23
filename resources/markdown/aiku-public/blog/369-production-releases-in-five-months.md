@@ -5,6 +5,8 @@ date: 2026-08-22
 tags: delivery, ci, deploy, github-actions
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>v2.0.0 on 20 Mar 2026, v2.369.0 on 21 Aug: 369 production releases in 154 days, ~17 a week, from a 19‑person team on one monolith. Push to <code>production</code> → GitHub Actions → Deployer; tests gate against a real database; the deploy never cuts the branch it sits on; small releases are the safety feature; AI agents raised the cadence without lowering the bar.</aside>
+
 Version 2.0.0 of aiku went to production on 20 March 2026. Version 2.369.0 went on 21 August. That is **369 production releases in 154 days** — about seventeen a week, every week, on a system that runs live warehouses, storefronts and a sales floor in several countries.
 
 Some more numbers, since the repository is public and you can check them: about **14,000 commits so far this year** across 221 working days; roughly **68 commits a day** since June; **nineteen people** have landed code in 2026; about one in every six files touched since June was a test. None of this is a sprint. It is what a normal Tuesday looks like.
@@ -16,6 +18,15 @@ This note is about the machinery that makes that cadence safe rather than reckle
 There is no release branch, no release manager, no Friday freeze. We pick our battles: work that changes money, stock or a contract with another system goes through a pull request and a second pair of eyes; the rest — the copy fix, the new column on a report, the hydrator that was missing a case — lands on `main` directly, because the pipeline is a well‑oiled machine and the tests are the reviewer that never gets tired. The judgement about which is which is the team's, not a rule's. When `main` is ready, it is pushed to `production` and a GitHub Actions workflow takes it from there: bump the semantic version, build the front ends, and hand the release to Deployer. The deploy workflow runs under a single concurrency key, so two pushes queue rather than race.
 
 The version bump is automatic and semantic; the number on the status bar of the staff app is the number of the release that is serving you. When someone reports "it broke", the first question is already answered.
+
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Pipeline: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/.github/workflows/deploy.yml">.github/workflows/deploy.yml</a> (push to <code>production</code>, single concurrency key, semver bump) → <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/deploy/deploy.php">deploy/deploy.php</a> (Deployer 8 task list).</li>
+<li>Tests: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/.github/workflows/testing.yml">.github/workflows/testing.yml</a> — pest <code>--parallel --processes=10 --stop-on-defect</code>, then touched test files re‑run twice in isolation.</li>
+<li>Release number surfaced from <code>RELEASE=</code> in the release's <code>.env</code>; written by the <code>deploy:set-release</code> task.</li>
+<li>Counts in this note: <code>git rev-list --count</code>, <code>git log --since</code>, <code>git tag</code> on the public repository.</li>
+</ul></aside>
 
 ## Tests that gate, not decorate
 
@@ -48,3 +59,5 @@ What it did not change is the gate. An agent's diff is a diff like any other: re
 - Put the release number where the users can see it.
 - Keep the monolith if it is a good monolith. One repository, one pipeline, one version number is a feature when you ship this often.
 - Count. The numbers at the top of this note are ten minutes with `git log`; knowing them keeps the cadence honest.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Ship constantly by making the deploy boring, gating on real‑database tests, putting the version where users see it, keeping the monolith, picking which changes need a second pair of eyes, and counting.</aside>

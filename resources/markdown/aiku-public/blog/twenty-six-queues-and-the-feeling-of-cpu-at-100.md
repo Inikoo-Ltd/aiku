@@ -5,6 +5,8 @@ date: 2026-08-01
 tags: horizon, queues, ops, reliability, laravel
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Twenty‑six Horizon supervisors across two servers run everything that is not a page view. The bad mornings: stray workers after a deploy (a query 780k×/hour), a supervisor killed with its children alive (every queue twice), retry‑after shorter than the job, ten thousand jobs from one loop, a 5 s timeout on a 6 s job, an O(n²) recipient list. Each became a rule. The beast is tamed; the dashboard is boring.</aside>
+
 Open Horizon's dashboard on a normal afternoon and you see the whole business breathing: emails going out, stock counters recalculating, time series folding, search reindexing, marketplace portfolios syncing, a newsletter's recipient list being prepared, a backfill of two million historic jobs quietly draining at the back. **Twenty‑six supervisors**, each with its own queues, process counts, memory and timeout, split across the primary and the replica. Almost everything that makes aiku feel instant is something that was done on a queue a moment earlier.
 
 That same dashboard, on a bad morning, shows CPU pinned at 100% and a number in the tens of thousands next to a queue name, and you know — before you know why — that a small bug has found a way to multiply itself. This note is about the queues, and about those mornings, because the second part is what taught us how to run the first.
@@ -22,6 +24,15 @@ The supervisors exist because jobs are not alike. A rough map:
 - **long‑running**, **long‑high‑priority**, **long‑low‑priority** — the honest admission that some jobs take an hour.
 
 Two Redis connections back them: one with a short reservation window for fast jobs that should self‑heal quickly, one with a long window for jobs that genuinely run long. Which connection a supervisor uses is the single most consequential line in its config, as we will see.
+
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Supervisors and lanes: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/config/horizon.php">config/horizon.php</a> — two Redis connections (short vs long reservation window); <code>retry_after</code> comes from <code>config/queue.php</code>, not the supervisor block.</li>
+<li>Process manager: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/devops/supervisor/aiku-production-octane.conf">devops/supervisor/</a> — <code>stopwaitsecs</code> must be shorter than the unit's stop timeout; watch <code>KillMode=process</code> on packaged systemd units.</li>
+<li>Orphan check before any restart: <code>ps -eo args | grep -o 'supervisor=[^ ]*' | sort -u</code>.</li>
+<li>Deploy step: <code>artisan:horizon:terminate</code> in <code>deploy/deploy.php</code>.</li>
+</ul></aside>
 
 ## The mornings, in order of pain
 
@@ -49,3 +60,5 @@ Two Redis connections back them: one with a short reservation window for fast jo
 Horizon is still the best thing about the system. It is also a very efficient way to make a small mistake large. The haunting feeling — 100% CPU, a queue in the tens of thousands — is the system asking you which of the rules above you forgot. It has always been one of them.
 
 And, for the record: we finally tamed the beast. The mornings described here are from the first half of this year. Since the rules went on the wall the dashboard has been boring — the backfill drains overnight at its own pace, deploys terminate cleanly, the failed‑jobs table is a short list with a reason next to each line, and the CPU graph looks like a business, not an alarm. Boring is what we were after.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Lanes per kind of work; deploy terminates Horizon by script; stop timeout longer than the drain; retry‑after longer than the worker timeout; bulk work fans out to unique chunk jobs on a long lane; backfills get their own lane; failures get a root cause from the database, not a retry.</aside>

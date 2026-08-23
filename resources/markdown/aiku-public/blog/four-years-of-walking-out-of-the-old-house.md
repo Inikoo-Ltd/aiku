@@ -5,6 +5,8 @@ date: 2026-08-17
 tags: migration, architecture, data, postgres
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>We never cut over. From Aug 2022 a fetcher per entity (106 today) pulled the old system's rows into aiku, writing the old key into <code>source_id</code> (115 tables); companies switched one at a time over four years. The hard part was deciding, in code, that the new system is the truth for anything its people touched — a following list, an allow‑list, a transitive gate in the one shared entry point, and a guard that froze the catalogue tier. Twenty years of audit history (88M rows) came across through 21 parsers; closed shops were made pristine.</aside>
+
 The system aiku replaced had been running the business since the early 2000s. It was good — better than most of what was on the market when it was written — and by 2022 it had one database per company, a schema nobody dared change, and a backlog of wants that would take years to build inside it. The usual answer is a rewrite and a cut‑over weekend. We did not do that, and the way we did not do it is the most consequential architectural decision in the repository.
 
 ## Build beside, pull across, switch one at a time
@@ -25,6 +27,15 @@ Once a company has switched, its staff edit things in aiku. If a fetcher for tha
 
 The principle, stated late and held since: **the new system is the truth for anything its people have touched; the old system may only add, never change.**
 
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>Fetchers: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Transfers/Aurora">app/Transfers/Aurora/</a> (106 classes) driven by <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Actions/Transfers/Aurora/FetchAuroraAction.php">FetchAuroraAction</a>; following organisations + allowed fetchers in <code>config/aurora.php</code>.</li>
+<li>Transitive gate: static <code>run()</code> override in <code>FetchAuroraAction</code> returns null when <code>AuroraOrganisationService::allowsFetchOnMiss()</code> says no.</li>
+<li>Catalogue freeze: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Transfers/AuroraCatalogueGuard.php">AuroraCatalogueGuard</a> wraps every entry point; the shared <code>WithActionUpdate::update()</code> refuses protected models unless <code>wasRecentlyCreated</code> (<a href="https://github.com/Inikoo-Ltd/aiku/commit/1370a0a6b4">1370a0a6b4</a>).</li>
+<li>History import: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/app/Transfers/Aurora/History/Parsers">History/Parsers/</a> (21 pure parsers) + <code>HistoryValueExtractor</code>; keyset pagination on the source key.</li>
+</ul></aside>
+
 ## Two decades of audit trail
 
 Late in the project management asked for the old system's *history* — who changed what, when — to come across too: roughly **88 million rows** spanning four companies and twenty years, in four different markup eras, with localised field labels, character‑set damage and the occasional credential that should never have been logged. Twenty‑one parsers, each a pure function from an old history row to an audit entry on the right new model (a "Part" history might belong to a trade unit, an org stock or a supplier product — the parser decides); a value extractor that knows the four eras and repairs the text; a dispatcher that resolves the target by source id and parks what it cannot yet resolve. Keyset pagination, after an offset bug skipped half the rows the first time. Some categories were deliberately skipped with management's agreement, because nobody would ever read them. The result is a single audit timeline per record that starts in 2004.
@@ -38,3 +49,5 @@ A migration drags in everything, including the shops that closed years ago. We d
 Do not cut over; pull across. Put the old key on every new row and keep it forever. Decide early, and in code, which side may write what — and put that decision in the one place every writer passes through, because the dangerous writes are the transitive ones. Bring the history; people will want it later. And when a thing is closed, make it *unable* to change rather than merely hidden.
 
 It took four years. It never once required a weekend of downtime, and nobody had to learn the new system before it could do their job.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>Build beside, pull across, switch one company at a time; keep the old key on every row; put "who may write what" in the one place every writer passes through; bring the history; make closed things unable to change. No downtime weekend in four years.</aside>

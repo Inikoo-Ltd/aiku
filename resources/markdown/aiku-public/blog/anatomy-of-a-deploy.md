@@ -5,6 +5,8 @@ date: 2026-08-19
 tags: deploy, ci, ops, octane, zero-downtime
 ---
 
+<aside class="tldr"><strong>TL;DR</strong>Push to <code>production</code> → GitHub Actions bumps the semver and hands to Deployer. Twenty steps in order: prepare, vendors, stop crawls, set release, build caches into the new dir, migrate on one host only, diff the front end and build‑or‑rsync, save the SSR checksum, publish, prune, Horizon terminate, sync the Octane anchor, restart telemetry if its code changed, Octane reload, SSR restart‑if‑changed + health check, log, tell open tabs, flush Varnish‑if‑changed + warm, chores. No half‑deployed request, no killed job, rollback is a redeploy.</aside>
+
 Other notes cover *why* we ship [seventeen times a week](/blog/369-production-releases-in-five-months), *why* the application server reloads from an [anchor directory](/blog/moving-to-octane), and *why* the storefront cache is [flushed only when it changed](/blog/only-flush-the-cache-you-changed). This one is the *how*: the exact sequence a deploy runs, in order, and what each step is protecting. It is a Deployer script in the repository; anyone can read it, which is part of the point.
 
 ## Before the script: the push
@@ -36,6 +38,15 @@ A push to the `production` branch starts a GitHub Actions workflow under a singl
 
 That is the list. It is long because each line is a thing that once hurt; it is boring because that is what we wanted.
 
+
+<aside class="technical"><strong>Technical box</strong>
+<ul>
+<li>The script: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/deploy/deploy.php">deploy/deploy.php</a> — the <code>deploy</code> task lists every step in order; read it top to bottom.</li>
+<li>Trigger: <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/.github/workflows/deploy.yml">.github/workflows/deploy.yml</a> (<code>concurrency: production_deployment</code>).</li>
+<li>Anchor: <code>rsync -ahHq --delete {release}/ {deploy_path}/anchor/octane</code>; Octane and SSR run from <code>anchor/octane</code>.</li>
+<li>SSR checksum: sha256 of <code>ssr-manifest.json</code> + <code>ssr-iris.mjs</code> + the storefront manifest → <code>SSR_CHECKSUM</code>; flush and SSR restart read it.</li>
+</ul></aside>
+
 ## What "zero downtime" means here
 
 No request ever hits a half‑deployed release: the symlink flips atomically and the workers reload one at a time from a directory that does not move. No queue job is killed mid‑flight: workers are asked to finish. No customer sees a cold storefront unless the storefront actually changed. No migration runs twice. If any step fails before *publish*, nothing is live; if one fails after, the failing step is isolated and the previous behaviour persists (the old workers keep serving, the old cache keeps serving). Rollback is a redeploy of the previous tag.
@@ -43,3 +54,5 @@ No request ever hits a half‑deployed release: the symlink flips atomically and
 ## What it is not
 
 It is not blue/green infrastructure, not a container orchestrator, not a canary system. It is a script, a symlink, a supervisor and two servers, written to the shape of this application. We would rather have thirty steps we can read than three we cannot.
+
+<aside class="tldr bottom"><strong>In one paragraph</strong>A script, a symlink, a supervisor, two servers: each of the steps is a thing that once hurt, and the whole is boring on purpose.</aside>

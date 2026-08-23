@@ -118,6 +118,15 @@
         article.post .body pre code { background: none; padding: 0; }
         article.post .body table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 1.5em 0; }
         article.post .body th, article.post .body td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+        article.post .body aside.tldr { margin: 0 0 2.2em; padding: 18px 22px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0; font-family: var(--serif); font-size: 19px; line-height: 1.5; }
+        article.post .body aside.tldr strong { font-family: var(--sans); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 6px; }
+        article.post .body aside.tldr.bottom { margin: 2.5em 0 0; }
+        article.post .body aside.technical { margin: 2.4em 0; padding: 18px 22px; background: var(--code-bg); border: 1px solid var(--rule); border-radius: 8px; font-family: var(--mono); font-size: 13.5px; line-height: 1.7; }
+        article.post .body aside.technical strong { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+        article.post .body aside.technical ul { margin: 0; padding-left: 1.1em; }
+        article.post .body aside.technical li { line-height: 1.7; }
+        article.post .body aside.technical a { word-break: break-all; }
+        article.post .body aside.technical code { background: none; padding: 0; }
         article.post .body img { max-width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 8px; }
         footer.site { margin-top: 96px; padding: 40px 0 64px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
         footer.site a { color: var(--muted); margin-right: 20px; }
