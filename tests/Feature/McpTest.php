@@ -352,16 +352,14 @@ describe('the schema guide', function () {
         $response->assertHasErrors(['SQL access is disabled: this environment has no dedicated read-only database user configured.']);
     });
 
-    test('a user without sql access cannot even reach the tool', function () {
+    test('a user without sql access gets an actionable denial instead of an unknown tool error', function () {
         $this->user->update(['can_use_mcp_sql' => false]);
 
-        actingAs($this->user);
+        $response = AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, [
+            'search' => 'shops',
+        ]);
 
-        expect((new DescribeTablesTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeFalse();
-
-        $this->user->update(['can_use_mcp_sql' => true]);
-
-        expect((new DescribeTablesTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeTrue();
+        $response->assertHasErrors()->assertSee('SQL access is not enabled for this user. Do not retry');
     });
 
     test('search finds tables by partial name', function () {
@@ -421,14 +419,23 @@ describe('the sql query tool', function () {
         config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
     });
 
-    test('user without sql access is not offered the tool at all', function () {
-        actingAs($this->user);
+    test('user without sql access is denied with guidance', function () {
+        $this->user->update(['can_use_mcp_sql' => false]);
 
-        expect((new SqlQueryTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeFalse();
+        $response = AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
+            'sql' => 'select 1',
+        ]);
 
-        $this->user->update(['can_use_mcp_sql' => true]);
+        $response->assertHasErrors()->assertSee('ask a sysadmin to enable it');
+    });
 
-        expect((new SqlQueryTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeTrue();
+    test('the request logger captures the error message', function () {
+        $middleware = new App\Http\Middleware\LogMcpRequest();
+        $method = new ReflectionMethod($middleware, 'responseError');
+
+        expect($method->invoke($middleware, '{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"ok"}]}}'))->toBeNull()
+            ->and($method->invoke($middleware, '{"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"Tool [sql-query-tool] not found."}}'))->toBe('Tool [sql-query-tool] not found.')
+            ->and($method->invoke($middleware, "event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"isError\":true,\"content\":[{\"type\":\"text\",\"text\":\"Query failed: column x does not exist\"}]}}\n\n"))->toBe('Query failed: column x does not exist');
     });
 
     test('user with sql access can run a select', function () {
@@ -531,19 +538,17 @@ describe('the my access tool', function () {
         $response->assertOk()->assertSee($this->shop->name);
     });
 
-    test('sql users are offered only the database tools', function () {
+    test('sql users are not offered the purpose built tools', function () {
         $this->user->update(['can_use_mcp_sql' => true]);
 
         actingAs($this->user);
         $mcpRequest = new Laravel\Mcp\Request();
 
-        expect((new ShopSalesTool())->shouldRegister($mcpRequest))->toBeFalse()
-            ->and((new SqlQueryTool())->shouldRegister($mcpRequest))->toBeTrue();
+        expect((new ShopSalesTool())->shouldRegister($mcpRequest))->toBeFalse();
 
         $this->user->update(['can_use_mcp_sql' => false]);
 
-        expect((new ShopSalesTool())->shouldRegister($mcpRequest))->toBeTrue()
-            ->and((new SqlQueryTool())->shouldRegister($mcpRequest))->toBeFalse();
+        expect((new ShopSalesTool())->shouldRegister($mcpRequest))->toBeTrue();
     });
 });
 
@@ -1218,5 +1223,61 @@ describe('web tools', function () {
 
         $response->assertOk()
             ->assertSee('"website_name":"'.$website->name.'"');
+    });
+});
+
+describe('lookup tools', function () {
+    test('product lookup finds a product by code and name', function () {
+        [, $product] = createProduct($this->shop);
+
+        $response = AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\ProductLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => $product->code,
+        ]);
+
+        $response->assertOk()
+            ->assertSee('"code":"'.$product->code.'"')
+            ->assertSee('"price"')
+            ->assertSee('"available_quantity"');
+
+        $response = AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\ProductLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => 'no-such-product-xyz',
+        ]);
+
+        $response->assertOk()->assertSee('"results":[]');
+    });
+
+    test('product lookup is denied without products permission', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        $response = AikuServer::actingAs($guest->getUser())->tool(App\Mcp\Tools\ProductLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => 'abc',
+        ]);
+
+        $response->assertHasErrors(['You do not have access to any shop.']);
+    });
+
+    test('customer lookup finds a customer by name and returns the slug for notes', function () {
+        $response = AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\CustomerLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => substr($this->customer->name, 0, 4),
+        ]);
+
+        $response->assertOk()
+            ->assertSee('"slug":"'.$this->customer->slug.'"')
+            ->assertSee('"number_orders"');
+    });
+
+    test('customer lookup is denied without crm permission', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        $response = AikuServer::actingAs($guest->getUser())->tool(App\Mcp\Tools\CustomerLookupTool::class, [
+            'shop'  => $this->shop->slug,
+            'query' => 'abc',
+        ]);
+
+        $response->assertHasErrors(['You do not have access to any shop.']);
     });
 });
