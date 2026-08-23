@@ -54,3 +54,9 @@ We keep an eye on what Jira gives us — a form, a thread, a status, a link to a
 So there is a standing temptation to build our own ticket system inside aiku. Not because Jira is bad — it is fine — but **because we can, and because we would do it our way**: a ticket *on* the record it is about, not linked to it; the three closing lines as fields, not prose; the backlog sweep as a query, not an afternoon; the reporter's chat, the engineer's commit and the release number on one screen. The same argument that gave us [our own CMS](/blog/your-website-your-rules), [our own search](/blog/what-people-type-into-the-search-box) and [our own staff chat](/blog/staff-chat-for-people-holding-a-scanner).
 
 We have not decided. When we do, it will be a ticket — titled, plainly, in the words of the person who asked for it.
+
+## A note to our dear reporters
+
+If you have ever raised one of the tickets above and are reading this: none of it was personal. We did our best with the odd job of being engineers and, some of the time, referees — the people who have to say "not this one", or "not yet", or "those two cannot both be true". Ninety‑nine per cent of what you ask for is a good idea. The trouble is that a system is an equilibrium: every good idea for one desk moves something on another desk, and somebody has to hold the balance. We would love the process to be a democracy; a company, by its nature, is not quite one, and the engineer in the middle is neither the voter nor the government — just the person trying to keep the building standing while everyone redecorates.
+
+Two things will get better. Assistance from AI is already shortening the wait between "I raised it" and "it is fixed", and that gap will keep closing. And the more of this we write down — here, in the tickets, in the three closing lines — the fewer decisions are made in a corridor. Thank you for your patience, and for the haunting screams. We hear them.
