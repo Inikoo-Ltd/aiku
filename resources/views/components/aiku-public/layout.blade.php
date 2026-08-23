@@ -37,6 +37,12 @@
         * { box-sizing: border-box; }
         html { -webkit-text-size-adjust: 100%; }
         body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.6; }
+        body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none; opacity: .9;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' seed='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.86 0 0 0 0 0.82 0 0 0 0 0.72 0 0 0 0.45 -0.1'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23p)'/%3E%3C/svg%3E"); }
+        .hero { position: relative; }
+        .hero::before { content: ""; position: absolute; z-index: -1; right: -8%; top: -20%; width: 46%; aspect-ratio: 1; border-radius: 48% 52% 55% 45% / 50% 45% 55% 50%; background: #8b5cf6; opacity: .16; filter: blur(28px); mix-blend-mode: multiply; }
+        .hero::after { content: ""; position: absolute; z-index: -1; left: -14%; bottom: -30%; width: 30%; aspect-ratio: 1; border-radius: 55% 45% 48% 52% / 45% 55% 50% 50%; background: #f3c04a; opacity: .18; filter: blur(26px); mix-blend-mode: multiply; }
+        @media (prefers-color-scheme: dark) { body::before, .hero::before, .hero::after { display: none; } }
         a { color: var(--accent); text-decoration: none; }
         a:hover { text-decoration: underline; text-underline-offset: 3px; }
         .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
@@ -123,7 +129,7 @@
             <a href="https://github.com/Inikoo-Ltd/aiku/blob/main/LICENSE" rel="noopener">AGPL-3.0</a>
             <a href="{{ route('aiku-public.sitemap') }}">Sitemap</a>
         </div>
-        <div>aiku is free software. Screens shown are from a demo group with generated data.</div>
+        <div>aiku is free software.</div>
     </footer>
 </div>
 </body>
