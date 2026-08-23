@@ -268,6 +268,7 @@ class Payment extends Model implements Auditable
             'bancontact'       => 'Bancontact',
             'multibanco'       => 'Multibanco',
             'mbway'            => 'MB WAY',
+            'account'          => 'Accounts (customer credits)',
             'checkout'         => 'Checkout.com',
             'braintree'        => 'Braintree',
             'cash_on_delivery' => 'Cash on delivery',
