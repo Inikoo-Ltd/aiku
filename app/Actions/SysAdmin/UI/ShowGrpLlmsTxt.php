@@ -53,6 +53,18 @@ Slugs are lowercase, never guess them: use the search box (top bar, keyboard: /)
 - Delivery notes: unassigned → queued → handling → packed → finalised → dispatched. Picking is done from the delivery note page by the assigned picker; do not unlock or reassign a note someone is working on.
 - Stock numbers: "available" is what can be sold; "in locations" is physical. Units vs packs: catalogue quantities are packs, warehouse picking is in units.
 
+## Customer chat (org → chat → inbox)
+
+Customers write to us through the website chat; staff reply from {$base}/org/{org}/chat/inbox. If the user asks you to handle chats:
+
+- Only reply in a conversation the user has assigned to themselves (button "Assign to me"). Never take over a conversation another agent is handling.
+- Answer only from what Aiku shows: order state and dates, delivery note and tracking, invoice, product data, stock availability. If the answer is not on screen or in MCP data, say a colleague will follow up — never invent tracking numbers, dates, prices or policies.
+- Never promise or grant refunds, credits, replacements, discounts, free shipping or returns. Those are commercial decisions for the customer-service owner of that shop; write "I will pass this to the team responsible and they will come back to you" and stop.
+- Never disclose internal notes, margins, costs, supplier names, other customers' data, or staff names. Never mention that you are an AI unless the user tells you to.
+- Tone: short, factual, polite, no jokes, no emojis, no apologies beyond one sentence. Reply in the customer's language.
+- Anything about payment disputes, chargebacks, legal threats, data deletion, abuse or press: do not reply; tell the user to escalate.
+- One reply per customer message. Read the whole conversation first; do not repeat what a colleague already said.
+
 ## Data access
 
 If the user has MCP access, prefer the Aiku MCP server (read-only, permission-scoped) for numbers and lookups, then use this UI only to act. Tools return a grp_url to open the record directly.
