@@ -374,7 +374,7 @@ class GetAggregatedMarketingOverview
 
         $campaigns = DB::table('traffic_source_campaigns')
             ->whereIn('traffic_source_id', $kindBySource->keys())
-            ->get(['id', 'name', 'traffic_source_id'])
+            ->get(['id', 'name', 'reference', 'traffic_source_id'])
             ->keyBy('id');
 
         if ($campaigns->isEmpty()) {
@@ -403,12 +403,22 @@ class GetAggregatedMarketingOverview
             ->select('p.traffic_source_campaign_id as campaign_id', DB::raw("SUM(invoices.{$revenueColumn} * p.share) as revenue"))
             ->pluck('revenue', 'campaign_id');
 
+        /* Every shop carries its own campaign row for the same host, so the rows are folded by host:
+           this list is about which site sends the group visitors, not which shop they landed on. */
         return $campaigns
             ->map(fn ($campaign) => [
-                'host'     => $campaign->name,
-                'kind'     => TrafficSourcesTypeEnum::referrerKind($kindBySource[$campaign->traffic_source_id] ?? ''),
-                'visitors' => round((float) ($visitors[$campaign->id] ?? 0), 2),
-                'revenue'  => round((float) ($revenue[$campaign->id] ?? 0), 2),
+                'host'      => $campaign->name,
+                'reference' => $campaign->reference,
+                'kind'      => TrafficSourcesTypeEnum::referrerKind($kindBySource[$campaign->traffic_source_id] ?? ''),
+                'visitors'  => (float) ($visitors[$campaign->id] ?? 0),
+                'revenue'   => (float) ($revenue[$campaign->id] ?? 0),
+            ])
+            ->groupBy(fn (array $referrer) => $referrer['reference'].'|'.$referrer['kind'])
+            ->map(fn (Collection $rows) => [
+                'host'     => $rows->first()['host'],
+                'kind'     => $rows->first()['kind'],
+                'visitors' => round($rows->sum('visitors'), 2),
+                'revenue'  => round($rows->sum('revenue'), 2),
             ])
             ->filter(fn (array $referrer) => $referrer['visitors'] > 0 || $referrer['revenue'] > 0)
             ->sortByDesc(fn (array $referrer) => [$referrer['revenue'], $referrer['visitors']])

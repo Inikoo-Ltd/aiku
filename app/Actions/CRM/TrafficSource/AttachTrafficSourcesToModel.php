@@ -175,7 +175,7 @@ class AttachTrafficSourcesToModel
         return $dates;
     }
 
-    private function resolveCampaignId(TrafficSource $trafficSource, string $reference): ?int
+    public function resolveCampaignId(TrafficSource $trafficSource, string $reference): ?int
     {
         try {
             $campaignId = TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)
@@ -219,8 +219,8 @@ class AttachTrafficSourcesToModel
                 ]
             )->id;
         } catch (\Throwable) {
-            /* `reference` is globally unique: the same ad-platform campaign id appearing under a
-               different shop's source cannot create a second row. The touch keeps its source-level
+            /* An ad-platform campaign id is unique across the whole table: appearing under a
+               different shop's source it cannot create a second row. The touch keeps its source-level
                share; only the campaign breakdown is unavailable for it. */
             return null;
         }

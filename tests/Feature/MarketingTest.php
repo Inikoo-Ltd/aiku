@@ -28,6 +28,7 @@ use App\Actions\CRM\TrafficSource\GetShopMarketingOverview;
 use App\Actions\CRM\TrafficSource\GetShopOfferPerformance;
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromRefererHeader;
 use App\Actions\CRM\TrafficSource\ReclassifyAiTrafficSourceTouches;
+use App\Actions\CRM\TrafficSource\RepairHostReferencedCampaignAttribution;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceCampaignHydrateStats;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCosts;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
@@ -1235,6 +1236,97 @@ describe('referral traffic sources', function () {
             ->toContain(TrafficSourcesTypeEnum::AI->value)
             ->and(TrafficSourceCampaign::where('reference', 'esources.co.uk')->value('traffic_source_id'))
             ->toBe($this->referral->id);
+    });
+
+    it('lets every shop carry the same referring host as its own campaign', function () {
+        list(, , $otherShop) = createOwnShop('referral traffic sources other shop');
+        $otherReferral = createTrafficSource($otherShop, 'referral', 'Referral');
+        $host          = 'tradeleads.co.uk';
+
+        $customer = StoreCustomer::make()->action(
+            $this->shop,
+            array_merge(Customer::factory()->definition(), ['traffic_sources' => now()->subDay()->timestamp.'q'.$host])
+        );
+        $otherCustomer = StoreCustomer::make()->action(
+            $otherShop,
+            array_merge(Customer::factory()->definition(), ['traffic_sources' => now()->subDay()->timestamp.'q'.$host])
+        );
+
+        $campaign      = TrafficSourceCampaign::where('traffic_source_id', $this->referral->id)->where('reference', $host)->first();
+        $otherCampaign = TrafficSourceCampaign::where('traffic_source_id', $otherReferral->id)->where('reference', $host)->first();
+
+        expect($campaign)->not->toBeNull()
+            ->and($otherCampaign)->not->toBeNull()
+            ->and($otherCampaign->id)->not->toBe($campaign->id)
+            ->and($customer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($campaign->id)
+            ->and($otherCustomer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($otherCampaign->id);
+    });
+
+    it('keeps an ad-platform campaign id unique across shops', function () {
+        list(, , $otherShop) = createOwnShop('referral traffic sources other shop');
+        $googleAds      = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
+        $otherGoogleAds = createTrafficSource($otherShop, 'google-ads', 'Google Ads');
+
+        campaignFor($googleAds, '777000123');
+
+        expect(fn () => TrafficSourceCampaign::create([
+            'traffic_source_id' => $otherGoogleAds->id,
+            'reference'         => '777000123',
+            'name'              => '777000123',
+            'type'              => 'google-ads',
+        ]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+    });
+
+    it('repairs the shops whose host campaigns were locked out by the old table-wide uniqueness', function () {
+        list(, , $otherShop) = createOwnShop('referral traffic sources other shop');
+        $otherReferral = createTrafficSource($otherShop, 'referral', 'Referral');
+        $host          = 'findabusiness.co.uk';
+        $recorded      = now()->subDay()->timestamp;
+
+        campaignFor($this->referral, $host);
+
+        $customer = StoreCustomer::make()->action(
+            $otherShop,
+            array_merge(Customer::factory()->definition(), ['traffic_sources' => $recorded.'q'.$host])
+        );
+        $undecidedCustomer = StoreCustomer::make()->action(
+            $otherShop,
+            array_merge(Customer::factory()->definition(), ['traffic_sources' => $recorded.'q'.$host.'|'.$recorded.'qother-directory.co.uk'])
+        );
+
+        $orderFor = fn (Customer $orderCustomer) => \App\Actions\Ordering\Order\StoreOrder::make()->action($orderCustomer, [
+            'reference'        => 'ref-'.$orderCustomer->id,
+            'date'             => now()->toDateString(),
+            'customer_id'      => $orderCustomer->id,
+            'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+            'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        ]);
+        $order          = $orderFor($customer);
+        $undecidedOrder = $orderFor($undecidedCustomer);
+
+        foreach ([$order, $undecidedOrder] as $snapshotOrder) {
+            $snapshotOrder->trafficSources()->detach();
+            $snapshotOrder->trafficSources()->attach($otherReferral->id, [
+                'share'             => 1.0,
+                'attribution_model' => ProcessTrafficSourceShare::ATTRIBUTION_LINEAR,
+            ]);
+        }
+
+        TrafficSourceCampaign::where('traffic_source_id', $otherReferral->id)->where('reference', $host)->delete();
+
+        expect($customer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBeNull();
+
+        $summary = RepairHostReferencedCampaignAttribution::run($otherShop);
+
+        $otherCampaign = TrafficSourceCampaign::where('traffic_source_id', $otherReferral->id)->where('reference', $host)->first();
+
+        expect($otherCampaign)->not->toBeNull()
+            ->and($customer->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($otherCampaign->id)
+            ->and($order->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBe($otherCampaign->id)
+            ->and($undecidedOrder->trafficSources()->first()->pivot->traffic_source_campaign_id)->toBeNull()
+            ->and($undecidedCustomer->trafficSources()->pluck('traffic_source_campaign_id')->filter()->count())->toBe(2)
+            ->and($summary)->toMatchArray(['customers' => 2, 'orders' => 1, 'orders_ambiguous' => 1, 'failed' => 0])
+            ->and(TrafficSourceCampaign::where('traffic_source_id', $this->referral->id)->where('reference', $host)->exists())->toBeTrue();
     });
 
     it('records an arrival from an AI assistant as AI traffic, named by the assistant', function () {
