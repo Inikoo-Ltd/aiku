@@ -10,6 +10,7 @@ import { useLayoutStore } from "@/Stores/layout"
 import { usePage } from '@inertiajs/vue3'
 import { loadLanguageAsync } from 'laravel-vue-i18n'
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
+import { watercolourBackground } from "@/Composables/useWatercolourBackground"
 
 provide('layout', useLayoutStore())
 
@@ -26,7 +27,7 @@ console.log('environment:', useLayoutStore().app.environment)
 
 <template>
     <ScreenWarning v-if="layout.app.environment === 'staging'" />
-    <div :style="{'background-image': 'url(/art/background-watercolour.svg)', 'background-size': 'cover', 'background-position': 'center'}"
+    <div :style="{'background-image': watercolourBackground(), 'background-size': 'cover', 'background-position': 'center'}"
           class="relative min-h-[100dvh] w-screen flex items-center justify-center bg-[#fbf7ee] sm:px-6 lg:px-8">
         <div class="absolute top-8 left-10 flex items-center gap-x-3 select-none">
             <img class="h-14 w-auto" src="/art/logo-sketch.svg" alt="aiku" />
